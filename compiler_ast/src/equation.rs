@@ -491,7 +491,7 @@ mod parse_equation {
             Pattern::typed(Typed {
                 pattern: syn::parse_quote!(o),
                 colon_token: syn::parse_quote!(:),
-                typing: Typ::Integer,
+                typing: Typ::int(),
             }),
             syn::parse_quote!(=),
             stream::Expr::ite(IfThenElse::new(
@@ -522,12 +522,12 @@ mod parse_equation {
                 Pattern::Typed(Typed {
                     pattern: syn::parse_quote!(o1),
                     colon_token: syn::parse_quote!(:),
-                    typing: Typ::Integer,
+                    typing: Typ::int(),
                 }),
                 Pattern::Typed(Typed {
                     pattern: syn::parse_quote!(o2),
                     colon_token: syn::parse_quote!(:),
-                    typing: Typ::Integer,
+                    typing: Typ::int(),
                 }),
             ])),
             syn::parse_quote!(=),

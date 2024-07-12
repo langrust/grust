@@ -1,8 +1,4 @@
-use itertools::Itertools;
-
-prelude! {
-    hir::{Pattern, pattern}, lir::item::Import,
-}
+prelude! { hir::{Pattern, pattern} }
 
 use super::LIRFromHIR;
 
@@ -54,57 +50,21 @@ impl LIRFromHIR for Pattern {
             pattern::Kind::Default => lir::Pattern::Default,
             pattern::Kind::PresentEvent { event_id, pattern } => {
                 match symbol_table.get_type(event_id) {
-                    Typ::SMEvent(_) => lir::Pattern::some(pattern.lir_from_hir(symbol_table)),
-                    Typ::SMTimeout(_) => {
+                    Typ::SMEvent { .. } => lir::Pattern::some(pattern.lir_from_hir(symbol_table)),
+                    Typ::SMTimeout { .. } => {
                         lir::Pattern::some(lir::Pattern::ok(pattern.lir_from_hir(symbol_table)))
                     }
                     _ => unreachable!(),
                 }
             }
             pattern::Kind::TimeoutEvent { event_id } => match symbol_table.get_type(event_id) {
-                Typ::SMTimeout(_) => lir::Pattern::some(lir::Pattern::err()),
+                Typ::SMTimeout { .. } => lir::Pattern::some(lir::Pattern::err()),
                 _ => unreachable!(),
             },
             pattern::Kind::NoEvent { event_id } => match symbol_table.get_type(event_id) {
-                Typ::SMEvent(_) | Typ::SMTimeout(_) => lir::Pattern::none(),
+                Typ::SMEvent { .. } | Typ::SMTimeout { .. } => lir::Pattern::none(),
                 _ => unreachable!(),
             },
-        }
-    }
-
-    fn get_imports(&self, symbol_table: &SymbolTable) -> Vec<Import> {
-        match &self.kind {
-            pattern::Kind::Identifier { .. }
-            | pattern::Kind::Constant { .. }
-            | pattern::Kind::NoEvent { .. }
-            | pattern::Kind::TimeoutEvent { .. }
-            | pattern::Kind::None
-            | pattern::Kind::Default => vec![],
-            pattern::Kind::Structure { id, fields } => {
-                let mut imports = fields
-                    .iter()
-                    .flat_map(|(_, optional_pattern)| {
-                        optional_pattern
-                            .as_ref()
-                            .map_or(vec![], |pattern| pattern.get_imports(symbol_table))
-                    })
-                    .unique()
-                    .collect::<Vec<_>>();
-                imports.push(Import::Structure(symbol_table.get_name(*id).clone()));
-
-                imports
-            }
-            pattern::Kind::Enumeration { enum_id, .. } => {
-                vec![Import::Enumeration(symbol_table.get_name(*enum_id).clone())]
-            }
-            pattern::Kind::Tuple { elements } => elements
-                .iter()
-                .flat_map(|pattern| pattern.get_imports(symbol_table))
-                .unique()
-                .collect(),
-            pattern::Kind::Some { pattern }
-            | pattern::Kind::Typed { pattern, .. }
-            | pattern::Kind::PresentEvent { pattern, .. } => pattern.get_imports(symbol_table),
         }
     }
 }

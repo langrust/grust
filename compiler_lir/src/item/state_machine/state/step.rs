@@ -5,8 +5,6 @@ prelude! {}
 pub struct Step {
     /// The node's name.
     pub node_name: String,
-    /// The input's generic types.
-    pub generics: Vec<(String, Typ)>,
     /// The output type.
     pub output_type: Typ,
     /// The body of the step function.
@@ -22,7 +20,6 @@ pub struct Step {
 mk_new! { impl Step =>
     new {
         node_name: impl Into<String> = node_name.into(),
-        generics: Vec<(String, Typ)>,
         output_type: Typ,
         body: Vec<Stmt>,
         state_elements_step: Vec<StateElementStep>,

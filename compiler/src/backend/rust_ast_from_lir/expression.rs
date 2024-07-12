@@ -515,7 +515,7 @@ mod rust_ast_from_lir {
     #[test]
     fn should_create_rust_ast_closure_from_lir_lambda() {
         let expression = lir::Expr::lambda(
-            vec![("x".into(), Typ::Integer)],
+            vec![("x".into(), Typ::int())],
             Typ::int(),
             lir::Expr::block(Block {
                 statements: vec![

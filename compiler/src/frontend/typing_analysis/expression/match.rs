@@ -34,7 +34,7 @@ where
                                 .map_or(Ok(()), |expression| {
                                     expression.typing(symbol_table, errors)?;
                                     expression.get_type().unwrap().eq_check(
-                                        &Typ::Boolean,
+                                        &Typ::bool(),
                                         location.clone(),
                                         errors,
                                     )

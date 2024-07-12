@@ -1,5 +1,7 @@
 use std::fmt::{self, Display};
 
+use macro2::Span;
+
 prelude! {
     syn::{
         parse::Parse,
@@ -21,99 +23,194 @@ prelude! {
 /// - [Typ::Array] is the array type, if `a = [1, 2, 3]` then `a: [int; 3]`
 /// - [Typ::SMEvent] is the event type for StateMachine, noted `n: int?`
 /// - [Typ::SMTimeout] is the timeout type for StateMachine, noted `n: int!`
-/// - [Typ::Enumeration] is an user defined enumeration, if `c = Color.Yellow` then `c:
-///   Enumeration(Color)`
-/// - [Typ::Structure] is an user defined structure, if `p = Point { x: 1, y: 0}` then `p:
-///   Structure(Point)`
+/// - [Typ::Enumeration] is an user defined enumeration, if `c = Color.Yellow` then `c: Enumeration(Color)`
+/// - [Typ::Structure] is an user defined structure, if `p = Point { x: 1, y: 0}` then `p: Structure(Point)`
 /// - [Typ::NotDefinedYet] is not defined yet, if `x: Color` then `x: NotDefinedYet(Color)`
 /// - [Typ::Abstract] are functions types, if `f = |x| x+1` then `f: int -> int`
-/// - [Typ::Polymorphism] is an inferable function type, if `add = |x, y| x+y` then
-///   `add: 't -> 't -> 't` with `'t` in `{int, float}`
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+/// - [Typ::Polymorphism] is an inferable function type, if `add = |x, y| x+y` then `add: 't -> 't -> 't` with `'t` in `{int, float}`
+#[derive(Debug, Eq, Hash, Clone)]
 pub enum Typ {
     /// [i64] integers, if `n = 1` then `n: int`
-    Integer,
+    Integer(keyword::int),
     /// [f64] floats, if `r = 1.0` then `r: float`
-    Float,
+    Float(keyword::float),
     /// [bool] type for booleans, if `b = true` then `b: bool`
-    Boolean,
+    Boolean(keyword::bool),
     /// Unit type, if `u = ()` then `u: unit`
-    Unit,
+    Unit(syn::token::Paren),
     /// Array type, if `a = [1, 2, 3]` then `a: [int; 3]`
-    Array(Box<Typ>, usize),
+    Array {
+        bracket_token: syn::token::Bracket,
+        ty: Box<Typ>,
+        semi_token: Token![;],
+        size: syn::LitInt,
+    },
     /// SMEvent type, noted `n: int?`
-    SMEvent(Box<Typ>),
+    SMEvent {
+        ty: Box<Typ>,
+        question_token: Token![?],
+    },
     /// SMTimeout type, noted `n: int!`
-    SMTimeout(Box<Typ>),
+    SMTimeout { ty: Box<Typ>, not_token: Token![!] },
     /// User defined enumeration, if `c = Color.Yellow` then `c: Enumeration(Color)`
     Enumeration {
         /// Enumeration's name.
-        name: String,
+        name: syn::Ident,
         /// Enumeration's identifier.
         id: usize,
     },
     /// User defined structure, if `p = Point { x: 1, y: 0}` then `p: Structure(Point)`
     Structure {
         /// Structure's name.
-        name: String,
+        name: syn::Ident,
         /// Structure's identifier.
         id: usize,
     },
     /// Functions types, if `f = |x| x+1` then `f: int -> int`
-    Abstract(Vec<Typ>, Box<Typ>),
+    Abstract {
+        paren_token: Option<syn::token::Paren>,
+        inputs: Punctuated<Typ, Token![,]>,
+        arrow_token: Token![->],
+        output: Box<Typ>,
+    },
     /// Tuple type, if `z = zip(a, b)` with `a: [int; 5]` and `b: [float; 5]` then
     /// `z: [(int, float); 5]`
-    Tuple(Vec<Typ>),
-    /// Generic type.
-    Generic(String),
+    Tuple {
+        paren_token: syn::token::Paren,
+        elements: Punctuated<Typ, Token![,]>,
+    },
     /// Signal type, in interface if `s' = map(s, |x| x + 1)` then `s': signal int`
-    Signal(Box<Typ>),
+    Signal {
+        signal_token: keyword::signal,
+        ty: Box<Typ>,
+    },
     /// Event type, in interface if `e' = map(e, |x| x + 1)` then `e': event int`
-    Event(Box<Typ>),
+    Event {
+        event_token: keyword::event,
+        ty: Box<Typ>,
+    },
     /// Timeout type, in interface if `e' = timeout(e, 10)` then `e': event timeout(int)`
-    Timeout(Box<Typ>),
+    Timeout {
+        timeout_token: keyword::timeout,
+        ty: Box<Typ>,
+    },
     /// Time type.
     Time,
     /// Not defined yet, if `x: Color` then `x: NotDefinedYet(Color)`
-    NotDefinedYet(String),
+    NotDefinedYet(syn::Ident),
     /// Polymorphic type, if `add = |x, y| x+y` then `add: 't : Typ -> t -> 't -> 't`
     Polymorphism(fn(Vec<Typ>, Location) -> Res<Typ>),
     /// Match any type.
     Any,
 }
+impl PartialEq for Typ {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Integer(_), Self::Integer(_))
+            | (Self::Float(_), Self::Float(_))
+            | (Self::Boolean(_), Self::Boolean(_))
+            | (Self::Unit(_), Self::Unit(_))
+            | (Self::Time, Self::Time)
+            | (Self::NotDefinedYet(_), Self::NotDefinedYet(_))
+            | (Self::Polymorphism(_), Self::Polymorphism(_))
+            | (Self::Any, Self::Any) => true,
+            (
+                Self::Array {
+                    ty: l_ty,
+                    size: l_size,
+                    ..
+                },
+                Self::Array {
+                    ty: r_ty,
+                    size: r_size,
+                    ..
+                },
+            ) => l_ty == r_ty && l_size == r_size,
+            (Self::SMEvent { ty: l_ty, .. }, Self::SMEvent { ty: r_ty, .. }) => l_ty == r_ty,
+            (Self::SMTimeout { ty: l_ty, .. }, Self::SMTimeout { ty: r_ty, .. }) => l_ty == r_ty,
+            (
+                Self::Enumeration {
+                    name: l_name,
+                    id: l_id,
+                },
+                Self::Enumeration {
+                    name: r_name,
+                    id: r_id,
+                },
+            ) => l_name.to_string() == r_name.to_string() && l_id == r_id,
+            (
+                Self::Structure {
+                    name: l_name,
+                    id: l_id,
+                },
+                Self::Structure {
+                    name: r_name,
+                    id: r_id,
+                },
+            ) => l_name.to_string() == r_name.to_string() && l_id == r_id,
+            (
+                Self::Abstract {
+                    inputs: l_inputs,
+                    output: l_output,
+                    ..
+                },
+                Self::Abstract {
+                    inputs: r_inputs,
+                    output: r_output,
+                    ..
+                },
+            ) => l_inputs.iter().zip(r_inputs).all(|(a, b)| a == b) && l_output == r_output,
+            (
+                Self::Tuple {
+                    elements: l_elements,
+                    ..
+                },
+                Self::Tuple {
+                    elements: r_elements,
+                    ..
+                },
+            ) => l_elements.iter().zip(r_elements).all(|(a, b)| a == b),
+            (Self::Signal { ty: l_ty, .. }, Self::Signal { ty: r_ty, .. }) => l_ty == r_ty,
+            (Self::Event { ty: l_ty, .. }, Self::Event { ty: r_ty, .. }) => l_ty == r_ty,
+            (Self::Timeout { ty: l_ty, .. }, Self::Timeout { ty: r_ty, .. }) => l_ty == r_ty,
+            _ => false,
+        }
+    }
+}
 impl Display for Typ {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Typ::Integer => write!(f, "i64"),
-            Typ::Float => write!(f, "f64"),
-            Typ::Boolean => write!(f, "bool"),
-            Typ::Unit => write!(f, "()"),
-            Typ::Array(t, n) => write!(f, "[{}; {n}]", *t),
-            Typ::SMEvent(t) => write!(f, "SMEvent<{}>", *t),
-            Typ::SMTimeout(t) => write!(f, "SMTimeout<{}>", *t),
+            Typ::Integer(_) => write!(f, "i64"),
+            Typ::Float(_) => write!(f, "f64"),
+            Typ::Boolean(_) => write!(f, "bool"),
+            Typ::Unit(_) => write!(f, "()"),
+            Typ::Array { ty, size, .. } => write!(f, "[{}; {size}]", *ty),
+            Typ::SMEvent { ty, .. } => write!(f, "SMEvent<{}>", *ty),
+            Typ::SMTimeout { ty, .. } => write!(f, "SMTimeout<{}>", *ty),
             Typ::Enumeration { name, .. } => write!(f, "{name}"),
             Typ::Structure { name, .. } => write!(f, "{name}"),
-            Typ::Abstract(t1, t2) => write!(
+            Typ::Abstract { inputs, output, .. } => write!(
                 f,
                 "({}) -> {}",
-                t1.into_iter()
+                inputs
+                    .into_iter()
                     .map(|input_type| input_type.to_string())
                     .collect::<Vec<_>>()
                     .join(", "),
-                *t2
+                *output
             ),
-            Typ::Tuple(ts) => write!(
+            Typ::Tuple { elements, .. } => write!(
                 f,
                 "({})",
-                ts.into_iter()
+                elements
+                    .into_iter()
                     .map(|input_type| input_type.to_string())
                     .collect::<Vec<_>>()
                     .join(", "),
             ),
-            Typ::Generic(name) => write!(f, "{name}"),
-            Typ::Signal(ty) => write!(f, "Signal<{}>", *ty),
-            Typ::Event(ty) => write!(f, "Event<{}>", *ty),
-            Typ::Timeout(ty) => write!(f, "Timeout<{}>", *ty),
+            Typ::Signal { ty, .. } => write!(f, "Signal<{}>", *ty),
+            Typ::Event { ty, .. } => write!(f, "Event<{}>", *ty),
+            Typ::Timeout { ty, .. } => write!(f, "Timeout<{}>", *ty),
             Typ::Time => write!(f, "Time"),
             Typ::NotDefinedYet(s) => write!(f, "{s}"),
             Typ::Polymorphism(v_t) => write!(f, "{:#?}", v_t),
@@ -124,58 +221,92 @@ impl Display for Typ {
 impl Parse for Typ {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let mut ty = if input.peek(keyword::int) {
-            let _: keyword::int = input.parse()?;
-            Typ::Integer
+            let keyword: keyword::int = input.parse()?;
+            Typ::Integer(keyword)
         } else if input.peek(keyword::float) {
-            let _: keyword::float = input.parse()?;
-            Typ::Float
+            let keyword: keyword::float = input.parse()?;
+            Typ::Float(keyword)
         } else if input.peek(keyword::bool) {
-            let _: keyword::bool = input.parse()?;
-            Typ::Boolean
+            let keyword: keyword::bool = input.parse()?;
+            Typ::Boolean(keyword)
         } else if input.peek(syn::token::Paren) {
             let content;
-            let _ = syn::parenthesized!(content in input);
+            let paren_token = syn::parenthesized!(content in input);
             if content.is_empty() {
-                Typ::Unit
+                Typ::Unit(paren_token)
             } else {
-                let types: Punctuated<Typ, Token![,]> = Punctuated::parse_terminated(&content)?;
-                Typ::Tuple(types.into_iter().collect())
+                let elements: Punctuated<Typ, Token![,]> = Punctuated::parse_terminated(&content)?;
+                Typ::Tuple {
+                    paren_token,
+                    elements,
+                }
             }
         } else if input.peek(syn::token::Bracket) {
             let content;
-            let _ = syn::bracketed!(content in input);
+            let bracket_token = syn::bracketed!(content in input);
             if content.is_empty() {
                 return Err(input.error("expected type: `int`, `float`, etc"));
             } else {
                 let ty = content.parse()?;
-                let _: Token![;] = content.parse()?;
+                let semi_token: Token![;] = content.parse()?;
                 let size: syn::LitInt = content.parse()?;
-                Typ::Array(Box::new(ty), size.base10_parse().unwrap())
+                Typ::Array {
+                    bracket_token,
+                    ty: Box::new(ty),
+                    semi_token,
+                    size,
+                }
             }
         } else if input.peek(keyword::timeout) {
-            let _: keyword::timeout = input.parse()?;
+            let timeout_token: keyword::timeout = input.parse()?;
             let content;
             let _ = syn::parenthesized!(content in input);
             let ty = content.parse()?;
-            Typ::Timeout(Box::new(ty))
+            Typ::Timeout {
+                timeout_token,
+                ty: Box::new(ty),
+            }
         } else {
             let ident: syn::Ident = input.parse()?;
-            Typ::NotDefinedYet(ident.to_string())
+            Typ::NotDefinedYet(ident)
         };
 
         loop {
             if input.peek(Token![?]) {
-                let _: Token![?] = input.parse()?;
-                ty = Typ::SMEvent(Box::new(ty))
+                let question_token: Token![?] = input.parse()?;
+                ty = Typ::SMEvent {
+                    ty: Box::new(ty),
+                    question_token,
+                }
             } else if input.peek(Token![!]) {
-                let _: Token![!] = input.parse()?;
-                ty = Typ::SMTimeout(Box::new(ty))
+                let not_token: Token![!] = input.parse()?;
+                ty = Typ::SMTimeout {
+                    ty: Box::new(ty),
+                    not_token,
+                }
             } else if input.peek(Token![->]) {
-                let _: Token![->] = input.parse()?;
+                let arrow_token: Token![->] = input.parse()?;
                 let out_ty = input.parse()?;
                 ty = match ty {
-                    Typ::Tuple(v_ty) => Typ::Abstract(v_ty, Box::new(out_ty)),
-                    _ => Typ::Abstract(vec![ty], Box::new(out_ty)),
+                    Typ::Tuple {
+                        paren_token,
+                        elements,
+                    } => Typ::Abstract {
+                        paren_token: Some(paren_token),
+                        inputs: elements,
+                        arrow_token,
+                        output: Box::new(out_ty),
+                    },
+                    _ => {
+                        let mut inputs = syn::punctuated::Punctuated::new();
+                        inputs.push_value(ty);
+                        Typ::Abstract {
+                            paren_token: None,
+                            inputs,
+                            arrow_token,
+                            output: Box::new(out_ty),
+                        }
+                    }
                 }
             } else {
                 break;
@@ -187,35 +318,74 @@ impl Parse for Typ {
 }
 
 mk_new! { impl Typ =>
-    Integer: int()
-    Float: float()
-    Boolean: bool()
-    Unit: unit()
-    Array: array(
-        ty: Self = Box::new(ty),
-        size: usize = size,
+    Integer: int (
+        keyword = Default::default()
     )
-    SMEvent: sm_event(ty: Self = Box::new(ty))
-    SMTimeout: sm_timeout(ty: Self = Box::new(ty))
+    Float: float (
+        keyword = Default::default()
+    )
+    Boolean: bool (
+        keyword = Default::default()
+    )
+    Unit: unit (
+        keyword = Default::default()
+    )
+    Array: array {
+        bracket_token = Default::default(),
+        ty: Typ = ty.into(),
+        semi_token = Default::default(),
+        size: usize = syn::LitInt::new(&format!("{size}"), Span::call_site()),
+    }
     Enumeration: enumeration {
-        name: impl Into<String> = name.into(),
+        name: impl Into<String> = syn::Ident::new(&name.into(), Span::call_site()),
         id: usize,
     }
     Structure: structure {
-        name: impl Into<String> = name.into(),
+        name: impl Into<String> = syn::Ident::new(&name.into(), Span::call_site()),
         id: usize,
     }
-    Abstract: function(
-        args: Vec<Self> = args,
-        ret: Self = Box::new(ret),
-    )
-    Tuple: tuple(tys: Vec<Self> = tys)
-    Generic: generic(name: impl Into<String> = name.into())
-    Signal: signal(ty: Self = Box::new(ty))
-    Event: event(ty: Self = Box::new(ty))
-    Timeout: timeout(ty: Self = Box::new(ty))
+    Abstract: function {
+        paren_token = Default::default(),
+        inputs: Vec<Typ> = {
+            let mut args = Punctuated::new();
+            args.extend(inputs);
+            args
+        },
+        arrow_token = Default::default(),
+        output: Typ = output.into(),
+    }
+    Tuple: tuple {
+        paren_token = Default::default(),
+        elements: Vec<Typ> = {
+            let mut tys = Punctuated::new();
+            tys.extend(elements);
+            tys
+        },
+    }
+    SMEvent: sm_event {
+        ty: Typ = ty.into(),
+        question_token = Default::default(),
+    }
+    SMTimeout: sm_timeout {
+        ty: Typ = ty.into(),
+        not_token = Default::default(),
+    }
+    Signal: signal {
+        signal_token = Default::default(),
+        ty: Typ = ty.into(),
+    }
+    Event: event {
+        event_token = Default::default(),
+        ty: Typ = ty.into(),
+    }
+    Timeout: timeout {
+        timeout_token = Default::default(),
+        ty: Typ = ty.into(),
+    }
     Time: time()
-    NotDefinedYet: undef(name: impl Into<String> = name.into())
+    NotDefinedYet: undef(
+        name: impl Into<String> = syn::Ident::new(&name.into(), Span::call_site())
+    )
     Polymorphism: poly(f : fn(Vec<Self>, Location) -> Res<Self> = f)
     Any: any()
 }
@@ -233,10 +403,9 @@ impl Typ {
     /// # compiler_common::prelude! {}
     /// let mut errors = vec![];
     ///
-    /// let input_types = vec![Typ::Integer];
-    /// let output_type = Typ::Boolean;
-    /// let mut abstraction_type =
-    ///     Typ::Abstract(input_types.clone(), Box::new(output_type.clone()));
+    /// let input_types = vec![Typ::int()];
+    /// let output_type = Typ::bool();
+    /// let mut abstraction_type = Typ::function(input_types.clone(), output_type.clone());
     ///
     /// let application_result = abstraction_type
     ///     .apply(input_types, Location::default(), &mut errors)
@@ -253,7 +422,7 @@ impl Typ {
         match self {
             // if self is an abstraction, check if the input types are equal
             // and return the output type as the type of the application
-            Typ::Abstract(inputs, output) => {
+            Typ::Abstract { inputs, output, .. } => {
                 if input_types.len() == inputs.len() {
                     input_types
                         .iter()
@@ -307,8 +476,8 @@ impl Typ {
     /// # compiler_common::prelude! {}
     /// let mut errors = vec![];
     ///
-    /// let given_type = Typ::Integer;
-    /// let expected_type = Typ::Integer;
+    /// let given_type = Typ::int();
+    /// let expected_type = Typ::int();
     ///
     /// given_type.eq_check(&expected_type, Location::default(), &mut errors).unwrap();
     /// assert!(errors.is_empty());
@@ -341,16 +510,12 @@ impl Typ {
     ///
     /// ```rust
     /// # compiler_common::prelude! {}
-    /// let abstraction_type = Typ::Abstract(
-    ///     vec![Typ::Integer, Typ::Integer],
-    ///     Box::new(Typ::Integer)
-    /// );
-    ///
-    /// assert_eq!(abstraction_type.get_inputs(), vec![Typ::Integer, Typ::Integer]);
+    /// let abstraction_type = Typ::function(vec![Typ::int(), Typ::int()], Typ::int());
+    /// assert!(abstraction_type.get_inputs().all(|ty| ty == &Typ::int()));
     /// ```
-    pub fn get_inputs(&self) -> Vec<Typ> {
+    pub fn get_inputs<'a>(&'a self) -> impl Iterator<Item = &'a Typ> + 'a {
         match self {
-            Typ::Abstract(inputs, _) => inputs.clone(),
+            Typ::Abstract { inputs, .. } => inputs.iter(),
             _ => unreachable!(),
         }
     }
@@ -363,9 +528,9 @@ impl Typ {
     ///
     /// ```rust
     /// # compiler_common::prelude! {}
-    /// let s_type = Typ::Signal(Box::new(Typ::Integer));
-    /// let e_type = Typ::Event(Box::new(Typ::Boolean));
-    /// let t_type = Typ::Event(Box::new(Typ::Timeout(Box::new(Typ::Float))));
+    /// let s_type = Typ::signal(Typ::int());
+    /// let e_type = Typ::event(Typ::bool());
+    /// let t_type = Typ::event(Typ::timeout(Typ::float()));
     ///
     /// assert_eq!(s_type, Typ::signal(Typ::int()));
     /// assert_eq!(e_type, Typ::event(Typ::bool()));
@@ -400,10 +565,16 @@ impl Typ {
     /// ```
     pub fn convert(&self) -> Self {
         match self {
-            Typ::Signal(t) => t.as_ref().clone(),
-            Typ::Event(t) => match t.as_ref() {
-                Typ::Timeout(t) => Typ::SMTimeout(t.clone()),
-                _ => Typ::SMEvent(t.clone()),
+            Typ::Signal { ty, .. } => ty.as_ref().clone(),
+            Typ::Event { ty, event_token } => match ty.as_ref() {
+                Typ::Timeout { ty, timeout_token } => Typ::SMTimeout {
+                    ty: ty.clone(),
+                    not_token: Token![!](timeout_token.span),
+                },
+                _ => Typ::SMEvent {
+                    ty: ty.clone(),
+                    question_token: Token![?](event_token.span),
+                },
             },
             _ => unreachable!(),
         }
@@ -411,7 +582,7 @@ impl Typ {
 
     pub fn is_event(&self) -> bool {
         match self {
-            Typ::Event(_) | Typ::SMEvent(_) | Typ::SMTimeout(_) => true,
+            Typ::Event { .. } | Typ::SMEvent { .. } | Typ::SMTimeout { .. } => true,
             _ => false,
         }
     }
@@ -424,35 +595,35 @@ impl Typ {
         'go_down: loop {
             match curr {
                 // early return, bypass the whole stack
-                Polymorphism { .. } | NotDefinedYet(_) | Generic(_) => return true,
+                Polymorphism { .. } | NotDefinedYet(_) => return true,
                 // leaves that don't require going down
-                Integer
-                | Float
-                | Boolean
-                | Unit
+                Integer(_)
+                | Float(_)
+                | Boolean(_)
+                | Unit(_)
                 | Enumeration { .. }
                 | Structure { .. }
                 | Time
                 | Any => (),
                 // nodes we need to go down into
-                Array(ty, _)
-                | SMEvent(ty)
-                | SMTimeout(ty)
-                | Signal(ty)
-                | Event(ty)
-                | Timeout(ty) => {
+                Array { ty, .. }
+                | SMEvent { ty, .. }
+                | SMTimeout { ty, .. }
+                | Signal { ty, .. }
+                | Event { ty, .. }
+                | Timeout { ty, .. } => {
                     curr = ty;
                     continue 'go_down;
                 }
-                Abstract(tys, ty) => {
-                    for ty in tys {
+                Abstract { inputs, output, .. } => {
+                    for ty in inputs {
                         stack.push(ty);
                     }
-                    curr = ty;
+                    curr = output;
                     continue 'go_down;
                 }
-                Tuple(tys) => {
-                    let mut tys = tys.iter();
+                Tuple { elements, .. } => {
+                    let mut tys = elements.iter();
                     if let Some(ty) = tys.next() {
                         curr = ty;
                         for ty in tys {
@@ -484,7 +655,7 @@ mod apply {
             let type_2 = input_types.pop().unwrap();
             let type_1 = input_types.pop().unwrap();
             if type_1 == type_2 {
-                Ok(Typ::Abstract(vec![type_1, type_2], Box::new(Typ::Boolean)))
+                Ok(Typ::function(vec![type_1, type_2], Typ::bool()))
             } else {
                 let error = Error::IncompatibleType {
                     given_type: type_2,
@@ -507,10 +678,9 @@ mod apply {
     fn should_apply_input_to_abstraction_when_compatible() {
         let mut errors = vec![];
 
-        let input_types = vec![Typ::Integer];
-        let output_type = Typ::Boolean;
-        let mut abstraction_type =
-            Typ::Abstract(input_types.clone(), Box::new(output_type.clone()));
+        let input_types = vec![Typ::int()];
+        let output_type = Typ::bool();
+        let mut abstraction_type = Typ::function(input_types.clone(), output_type.clone());
 
         let application_result = abstraction_type
             .apply(input_types, Location::default(), &mut errors)
@@ -523,12 +693,12 @@ mod apply {
     fn should_raise_error_when_incompatible_abstraction() {
         let mut errors = vec![];
 
-        let input_types = vec![Typ::Integer];
-        let output_type = Typ::Boolean;
-        let mut abstraction_type = Typ::Abstract(input_types, Box::new(output_type));
+        let input_types = vec![Typ::int()];
+        let output_type = Typ::bool();
+        let mut abstraction_type = Typ::function(input_types, output_type);
 
         abstraction_type
-            .apply(vec![Typ::Float], Location::default(), &mut errors)
+            .apply(vec![Typ::float()], Location::default(), &mut errors)
             .unwrap_err();
     }
 
@@ -536,17 +706,17 @@ mod apply {
     fn should_return_nonpolymorphic() {
         let mut errors = vec![];
 
-        let mut polymorphic_type = Typ::Polymorphism(equality);
+        let mut polymorphic_type = Typ::poly(equality);
 
         let application_result = polymorphic_type
             .apply(
-                vec![Typ::Integer, Typ::Integer],
+                vec![Typ::int(), Typ::int()],
                 Location::default(),
                 &mut errors,
             )
             .unwrap();
 
-        let control = Typ::Boolean;
+        let control = Typ::bool();
 
         assert_eq!(application_result, control);
     }
@@ -555,11 +725,11 @@ mod apply {
     fn should_raise_error_when_incompatible_polymorphic_type() {
         let mut errors = vec![];
 
-        let mut polymorphic_type = Typ::Polymorphism(equality);
+        let mut polymorphic_type = Typ::poly(equality);
 
         let _ = polymorphic_type
             .apply(
-                vec![Typ::Integer, Typ::Float],
+                vec![Typ::int(), Typ::float()],
                 Location::default(),
                 &mut errors,
             )
@@ -570,17 +740,17 @@ mod apply {
     fn should_modify_polymorphic_type_to_nonpolymorphic() {
         let mut errors = vec![];
 
-        let mut polymorphic_type = Typ::Polymorphism(equality);
+        let mut polymorphic_type = Typ::poly(equality);
 
         let _ = polymorphic_type
             .apply(
-                vec![Typ::Integer, Typ::Integer],
+                vec![Typ::int(), Typ::int()],
                 Location::default(),
                 &mut errors,
             )
             .unwrap();
 
-        let control = Typ::Abstract(vec![Typ::Integer, Typ::Integer], Box::new(Typ::Boolean));
+        let control = Typ::function(vec![Typ::int(), Typ::int()], Typ::bool());
 
         assert_eq!(polymorphic_type, control);
     }
@@ -592,19 +762,18 @@ mod get_inputs {
 
     #[test]
     fn should_return_inputs_from_abstraction_type() {
-        let abstraction_type =
-            Typ::Abstract(vec![Typ::Integer, Typ::Integer], Box::new(Typ::Integer));
+        let abstraction_type = Typ::function(vec![Typ::int(), Typ::int()], Typ::int());
 
         assert_eq!(
-            abstraction_type.get_inputs(),
-            vec![Typ::Integer, Typ::Integer]
+            abstraction_type.get_inputs().cloned().collect::<Vec<_>>(),
+            vec![Typ::int(), Typ::int()]
         );
     }
 
     #[test]
     #[should_panic]
     fn should_panic_when_not_abstraction_type() {
-        let not_abstraction_type = Typ::Integer;
-        not_abstraction_type.get_inputs();
+        let not_abstraction_type = Typ::int();
+        let _ = not_abstraction_type.get_inputs();
     }
 }

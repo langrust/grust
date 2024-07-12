@@ -1,7 +1,5 @@
-use itertools::Itertools;
-
 prelude! {
-    hir::{IdentifierCreator, Node},
+    hir::Node,
     lir::{
         item::state_machine::{
             input::{Input, InputElement},
@@ -17,13 +15,11 @@ impl LIRFromHIR for Node {
     type LIR = StateMachine;
 
     fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
-        let mut identifier_creator = IdentifierCreator::from(vec![]);
-
         // get node name
         let name = symbol_table.get_name(self.id).clone();
 
         // get node inputs
-        let mut inputs = symbol_table
+        let inputs = symbol_table
             .get_node_inputs(self.id)
             .into_iter()
             .map(|id| {
@@ -36,7 +32,7 @@ impl LIRFromHIR for Node {
 
         // get node output type
         let outputs = symbol_table.get_node_outputs(self.id);
-        let mut output_type = {
+        let output_type = {
             let mut types = outputs
                 .iter()
                 .map(|(_, output_id)| symbol_table.get_type(*output_id).clone())
@@ -44,7 +40,7 @@ impl LIRFromHIR for Node {
             if types.len() == 1 {
                 types.pop().unwrap()
             } else {
-                Typ::Tuple(types)
+                Typ::tuple(types)
             }
         };
 
@@ -66,37 +62,6 @@ impl LIRFromHIR for Node {
             }
         };
 
-        // collect imports from statements, inputs and output types, memory and contracts
-        let mut imports = self
-            .statements
-            .iter()
-            .flat_map(|equation| equation.get_imports(symbol_table))
-            .unique()
-            .collect::<Vec<_>>();
-        let mut inputs_type_imports = inputs
-            .iter()
-            .flat_map(|(_, typing)| typing.get_imports(symbol_table))
-            .unique()
-            .collect::<Vec<_>>();
-        let mut output_type_imports = output_type.get_imports(symbol_table);
-        let mut memory_imports = self.memory.get_imports(symbol_table);
-        let mut contract_imports = self.contract.get_imports(symbol_table);
-
-        // combining all imports and eliminate duplicates
-        imports.append(&mut inputs_type_imports);
-        imports.append(&mut output_type_imports);
-        imports.append(&mut memory_imports);
-        imports.append(&mut contract_imports);
-        let imports = imports.into_iter().unique().collect::<Vec<_>>();
-
-        // get input's generics: function types in inputs
-        let mut generics = inputs
-            .iter_mut()
-            .flat_map(|(_, typing)| typing.get_generics(&mut identifier_creator))
-            .collect::<Vec<_>>();
-        let mut output_generics = output_type.get_generics(&mut identifier_creator);
-        generics.append(&mut output_generics);
-
         // get memory/state elements
         let (elements, state_elements_init, state_elements_step) =
             self.memory.get_state_elements(symbol_table);
@@ -106,14 +71,12 @@ impl LIRFromHIR for Node {
 
         StateMachine {
             name: name.clone(),
-            imports,
             input: Input {
                 node_name: name.clone(),
                 elements: inputs
                     .into_iter()
                     .map(|(identifier, r#type)| InputElement { identifier, r#type })
                     .collect(),
-                generics: generics.clone(),
             },
             state: State {
                 node_name: name.clone(),
@@ -121,7 +84,6 @@ impl LIRFromHIR for Node {
                 step: Step {
                     contract,
                     node_name: name.clone(),
-                    generics,
                     output_type,
                     body: self
                         .statements

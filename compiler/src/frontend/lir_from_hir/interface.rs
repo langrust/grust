@@ -208,7 +208,7 @@ impl Service {
                         | flow::Kind::Scan { period_ms, .. } => {
                             // add new timing event into the identifier creator
                             let fresh_name = identifier_creator.fresh_identifier("period");
-                            let typing = Typ::Event(Box::new(Typ::Time));
+                            let typing = Typ::event(Typ::time());
                             let fresh_id =
                                 symbol_table.insert_fresh_period(fresh_name.clone(), *period_ms);
 
@@ -238,7 +238,7 @@ impl Service {
                         flow::Kind::Timeout { deadline, .. } => {
                             // add new timing event into the identifier creator
                             let fresh_name = identifier_creator.fresh_identifier("timeout");
-                            let typing = Typ::Event(Box::new(Typ::Time));
+                            let typing = Typ::event(Typ::time());
                             let fresh_id =
                                 symbol_table.insert_fresh_deadline(fresh_name.clone(), *deadline);
 
@@ -270,7 +270,7 @@ impl Service {
                             if let Some(period) = symbol_table.get_node_period(*component_id) {
                                 // add new timing event into the identifier creator
                                 let fresh_name = identifier_creator.fresh_identifier("period");
-                                let typing = Typ::Event(Box::new(Typ::Time));
+                                let typing = Typ::event(Typ::time());
                                 let fresh_id =
                                     symbol_table.insert_fresh_period(fresh_name.clone(), period);
                                 symbol_table.set_node_period_id(*component_id, fresh_id);
@@ -377,7 +377,7 @@ impl FlowStatement {
                     // push in signals context
                     let source_name = symbol_table.get_name(id).clone();
                     let flow_name = symbol_table.get_name(pattern_id).clone();
-                    let ty = Typ::SMEvent(Box::new(symbol_table.get_type(id).clone()));
+                    let ty = Typ::sm_event(symbol_table.get_type(id).clone());
                     flows_context.add_element(source_name, &ty);
                     flows_context.add_element(flow_name, &ty);
                 }

@@ -1,6 +1,6 @@
 prelude! {
     hir::contract::Contract,
-    lir::{contract::Contract as LIRContract, item::import::Import},
+    lir::contract::Contract as LIRContract,
 }
 
 use super::LIRFromHIR;
@@ -29,24 +29,6 @@ impl LIRFromHIR for Contract {
                 .map(|term| term.lir_from_hir(symbol_table))
                 .collect(),
         }
-    }
-
-    fn get_imports(&self, _symbol_table: &SymbolTable) -> Vec<Import> {
-        let mut imports = vec![];
-
-        if !self.invariant.is_empty() {
-            imports.push(Import::creusot("ensures"));
-            imports.push(Import::creusot("requires"));
-        } else {
-            if !self.ensures.is_empty() {
-                imports.push(Import::creusot("ensures"));
-            }
-            if !self.requires.is_empty() {
-                imports.push(Import::creusot("requires"));
-            }
-        }
-
-        imports
     }
 }
 
@@ -98,17 +80,19 @@ mod term {
                 ),
                 term::Kind::PresentEvent { event_id, pattern } => {
                     match symbol_table.get_type(event_id) {
-                        Typ::SMEvent(_) => lir::contract::Term::some(lir::contract::Term::ident(
-                            symbol_table.get_name(pattern),
-                        )),
-                        Typ::SMTimeout(_) => lir::contract::Term::some(lir::contract::Term::ok(
+                        Typ::SMEvent { .. } => lir::contract::Term::some(
                             lir::contract::Term::ident(symbol_table.get_name(pattern)),
-                        )),
+                        ),
+                        Typ::SMTimeout { .. } => {
+                            lir::contract::Term::some(lir::contract::Term::ok(
+                                lir::contract::Term::ident(symbol_table.get_name(pattern)),
+                            ))
+                        }
                         _ => unreachable!(),
                     }
                 }
                 term::Kind::TimeoutEvent { event_id } => match symbol_table.get_type(event_id) {
-                    Typ::SMTimeout(_) => lir::contract::Term::some(lir::contract::Term::err()),
+                    Typ::SMTimeout { .. } => lir::contract::Term::some(lir::contract::Term::err()),
                     _ => unreachable!(),
                 },
             }

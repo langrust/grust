@@ -40,7 +40,7 @@ where
                                     Ok(field_type)
                                 } else {
                                     let error = Error::UnknownField {
-                                        structure_name: name.clone(),
+                                        structure_name: name.to_string(),
                                         field_name: field.clone(),
                                         location: location.clone(),
                                     };

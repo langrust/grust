@@ -26,7 +26,7 @@ where
                     })
                     .collect::<TRes<Vec<Typ>>>()?;
 
-                let tuple_type = Typ::Tuple(elements_types);
+                let tuple_type = Typ::tuple(elements_types);
 
                 Ok(tuple_type)
             }

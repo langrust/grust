@@ -1,58 +1,52 @@
-prelude! {
-    macro2::Span,
-    syn::*,
-}
+prelude! { syn::* }
 
 /// Transform LIR type into RustAST type.
 pub fn rust_ast_from_lir(r#type: Typ) -> Type {
     match r#type {
-        Typ::Integer => parse_quote!(i64),
-        Typ::Float => parse_quote!(f64),
-        Typ::Boolean => parse_quote!(bool),
-        Typ::Unit => parse_quote!(()),
-        Typ::Any => parse_quote!(std::any::Any),
+        Typ::Integer(_) => parse_quote!(i64),
+        Typ::Float(_) => parse_quote!(f64),
+        Typ::Boolean(_) => parse_quote!(bool),
+        Typ::Unit(_) => parse_quote!(()),
         Typ::Enumeration { name, .. } => {
-            let identifier = Ident::new(&name, Span::call_site());
-            parse_quote!(#identifier)
+            parse_quote!(#name)
         }
         Typ::Structure { name, .. } => {
-            let identifier = Ident::new(&name, Span::call_site());
-            parse_quote!(#identifier)
+            parse_quote!(#name)
         }
-        Typ::Array(element, size) => {
-            let ty = rust_ast_from_lir(*element);
+        Typ::Array { ty, size, .. } => {
+            let ty = rust_ast_from_lir(*ty);
+            let size = syn::Lit::Int(LitInt::new(
+                &(size.base10_digits().to_owned() + "usize"),
+                size.span(),
+            ));
 
             parse_quote!([#ty; #size])
         }
-        Typ::Abstract(arguments, output) => {
-            let arguments = arguments.into_iter().map(rust_ast_from_lir);
+        Typ::Abstract { inputs, output, .. } => {
+            let arguments = inputs.into_iter().map(rust_ast_from_lir);
             let output = rust_ast_from_lir(*output);
             parse_quote!(impl Fn(#(#arguments),*) -> #output)
         }
-        Typ::Tuple(elements) => {
+        Typ::Tuple { elements, .. } => {
             let tys = elements.into_iter().map(rust_ast_from_lir);
 
             parse_quote!((#(#tys),*))
         }
-        Typ::Generic(name) => {
-            let identifier = Ident::new(&name, Span::call_site());
-            parse_quote!(#identifier)
-        }
-        Typ::Event(element) | Typ::Signal(element) => rust_ast_from_lir(*element),
-        Typ::Timeout(element) => {
-            let ty = rust_ast_from_lir(*element);
+        Typ::Event { ty, .. } | Typ::Signal { ty, .. } => rust_ast_from_lir(*ty),
+        Typ::Timeout { ty, .. } => {
+            let ty = rust_ast_from_lir(*ty);
             parse_quote!(Result<#ty, ()>)
         }
-        Typ::SMEvent(element) => {
-            let ty = rust_ast_from_lir(*element);
+        Typ::SMEvent { ty, .. } => {
+            let ty = rust_ast_from_lir(*ty);
             parse_quote!(Option<#ty>)
         }
-        Typ::SMTimeout(element) => {
-            let ty = rust_ast_from_lir(*element);
+        Typ::SMTimeout { ty, .. } => {
+            let ty = rust_ast_from_lir(*ty);
             parse_quote!(Option<Result<#ty, ()>>)
         }
         Typ::Time => parse_quote!(tokio::time::Interval),
-        Typ::NotDefinedYet(_) | Typ::Polymorphism(_) => {
+        Typ::NotDefinedYet(_) | Typ::Polymorphism(_) | Typ::Any => {
             unreachable!()
         }
     }
@@ -66,28 +60,28 @@ mod rust_ast_from_lir {
     }
 
     #[test]
-    fn should_create_rust_ast_owned_i64_from_lir_integer() {
+    fn should_create_i64_from_lir_integer() {
         let r#type = Typ::int();
         let control = parse_quote! { i64 };
         assert_eq!(rust_ast_from_lir(r#type), control)
     }
 
     #[test]
-    fn should_create_rust_ast_owned_f64_from_lir_float() {
+    fn should_create_f64_from_lir_float() {
         let r#type = Typ::float();
         let control = parse_quote! { f64 };
         assert_eq!(rust_ast_from_lir(r#type), control)
     }
 
     #[test]
-    fn should_create_rust_ast_owned_bool_from_lir_boolean() {
+    fn should_create_bool_from_lir_boolean() {
         let r#type = Typ::bool();
         let control = parse_quote! { bool };
         assert_eq!(rust_ast_from_lir(r#type), control)
     }
 
     #[test]
-    fn should_create_rust_ast_owned_unit_from_lir_unit() {
+    fn should_create_unit_from_lir_unit() {
         let r#type = Typ::unit();
         let control = parse_quote! { () };
 
@@ -95,7 +89,7 @@ mod rust_ast_from_lir {
     }
 
     #[test]
-    fn should_create_rust_ast_owned_structure_from_lir_structure() {
+    fn should_create_structure_from_lir_structure() {
         let r#type = Typ::structure("Point", 0);
         let control = parse_quote! { Point };
 
@@ -103,7 +97,7 @@ mod rust_ast_from_lir {
     }
 
     #[test]
-    fn should_create_rust_ast_owned_enumeration_from_lir_enumeration() {
+    fn should_create_enumeration_from_lir_enumeration() {
         let r#type = Typ::enumeration("Color", 0);
         let control = parse_quote! { Color };
 
@@ -111,24 +105,23 @@ mod rust_ast_from_lir {
     }
 
     #[test]
-    fn should_create_rust_ast_owned_array_from_lir_array() {
+    fn should_create_array_from_lir_array() {
         let r#type = Typ::array(Typ::float(), 5);
         let control = parse_quote! { [f64; 5usize] };
 
         assert_eq!(rust_ast_from_lir(r#type), control)
     }
 
-    // // #TODO come back to this test when we have options proper
-    // #[test]
-    // fn should_create_rust_ast_owned_generic_from_lir_option() {
-    //     let r#type = Typ::sm_event(Typ::float());
-    //     let control = parse_quote!(Option<f64>);
-    //     assert_eq!(rust_ast_from_lir(r#type), control)
-    // }
+    #[test]
+    fn should_create_option_from_lir_statemachine_event() {
+        let r#type = Typ::sm_event(Typ::float());
+        let control = parse_quote!(Option<f64>);
+        assert_eq!(rust_ast_from_lir(r#type), control)
+    }
 
     #[test]
-    fn should_create_rust_ast_owned_closure_from_lir_abstract() {
-        let r#type = Typ::function(vec![Typ::Integer], Typ::float());
+    fn should_create_closure_from_lir_abstract() {
+        let r#type = Typ::function(vec![Typ::int()], Typ::float());
         let control = parse_quote!(impl Fn(i64) -> f64);
 
         assert_eq!(rust_ast_from_lir(r#type), control)

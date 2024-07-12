@@ -7,8 +7,6 @@ pub struct Input {
     pub node_name: String,
     /// The input's elements.
     pub elements: Vec<InputElement>,
-    /// The input's generic types.
-    pub generics: Vec<(String, Typ)>,
 }
 
 /// An input element structure.

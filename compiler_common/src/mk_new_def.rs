@@ -66,12 +66,12 @@ macro_rules! mk_new {
     { // pure `struct` constructor
         $(#[$meta:meta])*
         $fn_id:ident {
-            $( $field:ident : $param_ty:ty $(= $value:expr )? ),* $(,)?
+            $( $field:ident $(: $param_ty:ty)? $(= $value:expr )? ),* $(,)?
         }
         $($stuff:tt)*
     } => {
         $(#[$meta])*
-        pub fn $fn_id( $($field : $param_ty ,)* ) -> Self {
+        pub fn $fn_id( $($($field : $param_ty ,)?)* ) -> Self {
             Self {
                 $(
                     $field $(: $value)? ,
@@ -84,12 +84,12 @@ macro_rules! mk_new {
     { // `enum` variant: `struct`-like
         $(#[$meta:meta])*
         $id:ident : $fn_id:ident {
-            $( $field:ident : $param_ty:ty $(= $value:expr )? ),* $(,)?
+            $( $field:ident $(: $param_ty:ty)? $(= $value:expr )? ),* $(,)?
         }
         $($stuff:tt)*
     } => {
         $(#[$meta])*
-        pub fn $fn_id( $($field : $param_ty ,)* ) -> Self {
+        pub fn $fn_id( $($($field : $param_ty ,)?)* ) -> Self {
             Self::$id {
                 $(
                     $field $(: $value)? ,
@@ -112,12 +112,12 @@ macro_rules! mk_new {
     { // `enum` variant: tuple-like
         $(#[$meta:meta])*
         $id:ident : $fn_id:ident (
-            $( $field:ident : $param_ty:ty = $value:expr ),* $(,)?
+            $( $field:ident $(: $param_ty:ty)? = $value:expr ),* $(,)?
         )
         $($stuff:tt)*
     } => {
         $(#[$meta])*
-        pub fn $fn_id( $($field : $param_ty ,)* ) -> Self {
+        pub fn $fn_id( $($($field : $param_ty ,)?)* ) -> Self {
             Self::$id ( $( $value, )* )
         }
         $crate::mk_new! { $($stuff)* }

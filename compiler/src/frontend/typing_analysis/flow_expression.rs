@@ -20,7 +20,7 @@ impl TypeAnalysis for flow::Expr {
                 // get expression type
                 let typing = flow_expression.get_type().unwrap();
                 match typing {
-                    Typ::Event(typing) => {
+                    Typ::Event { ty: typing, .. } => {
                         // set typing
                         self.typing = Some(Typ::signal((**typing).clone()));
                         Ok(())
@@ -42,7 +42,7 @@ impl TypeAnalysis for flow::Expr {
                 // get expression type
                 let typing = flow_expression.get_type().unwrap();
                 match typing {
-                    Typ::Signal(typing) => {
+                    Typ::Signal { ty: typing, .. } => {
                         // set typing
                         self.typing = Some(Typ::event((**typing).clone()));
                         Ok(())
@@ -63,7 +63,7 @@ impl TypeAnalysis for flow::Expr {
                 flow_expression.typing(symbol_table, errors)?;
                 // get expression type
                 match flow_expression.get_type().unwrap() {
-                    Typ::Event(typing) => {
+                    Typ::Event { ty: typing, .. } => {
                         // set typing
                         self.typing = Some(Typ::event(Typ::timeout((**typing).clone())));
                         Ok(())
@@ -86,7 +86,7 @@ impl TypeAnalysis for flow::Expr {
                 // get expression type
                 let typing = flow_expression.get_type().unwrap();
                 match typing {
-                    Typ::Signal(typing) => {
+                    Typ::Signal { ty: typing, .. } => {
                         let delta_ty = delta.get_type();
                         typing.eq_check(&delta_ty, location, errors)?;
                         // set typing
@@ -108,7 +108,7 @@ impl TypeAnalysis for flow::Expr {
                 // get expression type
                 let typing = flow_expression.get_type().unwrap();
                 match typing {
-                    Typ::Signal(typing) => {
+                    Typ::Signal { ty: typing, .. } => {
                         // set typing
                         self.typing = Some(Typ::event((**typing).clone()));
                         Ok(())
@@ -132,9 +132,9 @@ impl TypeAnalysis for flow::Expr {
                 flow_expression_2.typing(symbol_table, errors)?;
                 // get expression type
                 match flow_expression_1.get_type().unwrap() {
-                    Typ::Event(typing_1) => {
+                    Typ::Event { ty: typing_1, .. } => {
                         match flow_expression_2.get_type().unwrap() {
-                            Typ::Event(typing_2) => {
+                            Typ::Event { ty: typing_2, .. } => {
                                 typing_2.eq_check(typing_1.as_ref(), location, errors)?;
                                 // set typing
                                 self.typing = Some(Typ::event((**typing_1).clone()));
@@ -182,8 +182,8 @@ impl TypeAnalysis for flow::Expr {
                     .get_node_outputs(*component_id)
                     .iter()
                     .map(|(_, output_id)| match symbol_table.get_type(*output_id) {
-                        Typ::SMTimeout(ty) => Typ::event(Typ::timeout((**ty).clone())),
-                        Typ::SMEvent(ty) => Typ::event((**ty).clone()),
+                        Typ::SMTimeout { ty, .. } => Typ::event(Typ::timeout((**ty).clone())),
+                        Typ::SMEvent { ty, .. } => Typ::event((**ty).clone()),
                         ty => Typ::signal(ty.clone()),
                     })
                     .collect::<Vec<_>>();

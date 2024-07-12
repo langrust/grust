@@ -147,14 +147,14 @@ impl BinaryOperator {
         if input_types.len() == 2 {
             let type_2 = input_types.pop().unwrap();
             let type_1 = input_types.pop().unwrap();
-            if type_1 != Typ::Float && type_1 != Typ::Integer {
+            if type_1 != Typ::float() && type_1 != Typ::int() {
                 let error = Error::ExpectNumber {
                     given_type: type_1,
                     location,
                 };
                 return Err(error);
             };
-            if type_2 != Typ::Float && type_2 != Typ::Integer {
+            if type_2 != Typ::float() && type_2 != Typ::int() {
                 let error = Error::ExpectNumber {
                     given_type: type_2,
                     location,
@@ -169,10 +169,7 @@ impl BinaryOperator {
                 };
                 return Err(error);
             };
-            Ok(Typ::Abstract(
-                vec![type_1.clone(), type_2],
-                Box::new(type_1),
-            ))
+            Ok(Typ::function(vec![type_1.clone(), type_2], type_1))
         } else {
             let error = Error::IncompatibleInputsNumber {
                 given_inputs_number: input_types.len(),
@@ -187,14 +184,14 @@ impl BinaryOperator {
         if input_types.len() == 2 {
             let type_2 = input_types.pop().unwrap();
             let type_1 = input_types.pop().unwrap();
-            if type_1 != Typ::Float && type_1 != Typ::Integer {
+            if type_1 != Typ::float() && type_1 != Typ::int() {
                 let error = Error::ExpectNumber {
                     given_type: type_1,
                     location,
                 };
                 return Err(error);
             };
-            if type_2 != Typ::Float && type_2 != Typ::Integer {
+            if type_2 != Typ::float() && type_2 != Typ::int() {
                 let error = Error::ExpectNumber {
                     given_type: type_2,
                     location,
@@ -209,7 +206,7 @@ impl BinaryOperator {
                 };
                 return Err(error);
             };
-            Ok(Typ::Abstract(vec![type_1, type_2], Box::new(Typ::Boolean)))
+            Ok(Typ::function(vec![type_1, type_2], Typ::bool()))
         } else {
             let error = Error::IncompatibleInputsNumber {
                 given_inputs_number: input_types.len(),
@@ -225,7 +222,7 @@ impl BinaryOperator {
             let type_2 = input_types.pop().unwrap();
             let type_1 = input_types.pop().unwrap();
             if type_1 == type_2 {
-                Ok(Typ::Abstract(vec![type_1, type_2], Box::new(Typ::Boolean)))
+                Ok(Typ::function(vec![type_1, type_2], Typ::bool()))
             } else {
                 let error = Error::IncompatibleType {
                     given_type: type_2,
@@ -272,7 +269,7 @@ impl BinaryOperator {
             BinaryOperator::Eq | BinaryOperator::Dif => Typ::Polymorphism(BinaryOperator::equality),
             // If self is a logical operator then its type is `bool -> bool -> bool`
             BinaryOperator::And | BinaryOperator::Or => {
-                Typ::Abstract(vec![Typ::Boolean, Typ::Boolean], Box::new(Typ::Boolean))
+                Typ::function(vec![Typ::bool(), Typ::bool()], Typ::bool())
             }
         }
     }
@@ -322,8 +319,8 @@ impl UnaryOperator {
     fn numerical_negation(mut input_types: Vec<Typ>, location: Location) -> Res<Typ> {
         if input_types.len() == 1 {
             let type_1 = input_types.pop().unwrap();
-            if type_1 == Typ::Float || type_1 == Typ::Integer {
-                Ok(Typ::Abstract(vec![type_1.clone()], Box::new(type_1)))
+            if type_1 == Typ::float() || type_1 == Typ::int() {
+                Ok(Typ::function(vec![type_1.clone()], type_1))
             } else {
                 let error = Error::ExpectNumber {
                     given_type: type_1,
@@ -357,7 +354,7 @@ impl UnaryOperator {
             // then it is a [Typ::Polymorphism]
             UnaryOperator::Neg => Typ::Polymorphism(UnaryOperator::numerical_negation),
             // If self is the logical negation then its type is `bool -> bool`
-            UnaryOperator::Not => Typ::Abstract(vec![Typ::Boolean], Box::new(Typ::Boolean)),
+            UnaryOperator::Not => Typ::function(vec![Typ::bool()], Typ::bool()),
         }
     }
 }
@@ -385,10 +382,10 @@ impl OtherOperator {
             let type_3 = input_types.pop().unwrap();
             let type_2 = input_types.pop().unwrap();
             let type_1 = input_types.pop().unwrap();
-            if type_1 != Typ::Boolean {
+            if type_1 != Typ::bool() {
                 let error = Error::IncompatibleType {
                     given_type: type_1,
-                    expected_type: Typ::Boolean,
+                    expected_type: Typ::bool(),
                     location,
                 };
                 return Err(error);
@@ -401,10 +398,7 @@ impl OtherOperator {
                 };
                 return Err(error);
             };
-            Ok(Typ::Abstract(
-                vec![type_1, type_2.clone(), type_3],
-                Box::new(type_2),
-            ))
+            Ok(Typ::function(vec![type_1, type_2.clone(), type_3], type_2))
         } else {
             let error = Error::IncompatibleInputsNumber {
                 given_inputs_number: input_types.len(),

@@ -24,7 +24,9 @@ where
 
                 // verify it is an array
                 match expression.get_type().unwrap() {
-                    Typ::Array(element_type, _) => {
+                    Typ::Array {
+                        ty: element_type, ..
+                    } => {
                         // type the initialization expression
                         initialization_expression.typing(symbol_table, errors)?;
                         let initialization_type = initialization_expression.get_type().unwrap();
