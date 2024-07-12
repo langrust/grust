@@ -284,19 +284,19 @@ pub mod runtime {
     #[derive(PartialEq)]
     pub enum RuntimeTimer {
         period_fresh_ident,
-        period_fresh_ident,
+        period_fresh_ident_1,
     }
     impl timer_stream::Timing for RuntimeTimer {
         fn get_duration(&self) -> std::time::Duration {
             match self {
                 T::period_fresh_ident => std::time::Duration::from_millis(10u64),
-                T::period_fresh_ident => std::time::Duration::from_millis(10u64),
+                T::period_fresh_ident_1 => std::time::Duration::from_millis(10u64),
             }
         }
         fn do_reset(&self) -> bool {
             match self {
                 T::period_fresh_ident => false,
-                T::period_fresh_ident => false,
+                T::period_fresh_ident_1 => false,
             }
         }
     }
@@ -622,9 +622,9 @@ pub mod runtime {
                 activation: ActivationRequest,
             ) {
             }
-            pub async fn handle_period_fresh_ident(&mut self, instant: std::time::Instant) {
+            pub async fn handle_period_fresh_ident_1(&mut self, instant: std::time::Instant) {
                 {
-                    let res = self.timer.send((T::period_fresh_ident, instant)).await;
+                    let res = self.timer.send((T::period_fresh_ident_1, instant)).await;
                     if res.is_err() {
                         return;
                     }
@@ -680,7 +680,7 @@ pub mod runtime {
             {
                 let res = runtime
                     .timer
-                    .send((T::period_fresh_ident, init_instant))
+                    .send((T::period_fresh_ident_1, init_instant))
                     .await;
                 if res.is_err() {
                     return;
@@ -747,9 +747,9 @@ pub mod runtime {
                             {
                                 runtime.another_speed_limiter.handle_activation(instant,
                                 activation).await;
-                            }, I :: timer(T :: period_fresh_ident, instant) =>
+                            }, I :: timer(T :: period_fresh_ident_1, instant) =>
                             {
-                                runtime.another_speed_limiter.handle_period_fresh_ident(instant).await;
+                                runtime.another_speed_limiter.handle_period_fresh_ident_1(instant).await;
                             }, I :: failure(failure, instant) =>
                             {
                                 runtime.another_speed_limiter.handle_failure(instant,
