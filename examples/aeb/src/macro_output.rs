@@ -106,22 +106,22 @@ pub mod runtime {
     }
     pub struct Runtime {
         aeb: aeb_service::AebService,
-        output: futures::channel::mpsc::Sender<O>,
+        timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
     }
     impl Runtime {
         pub fn new(
             output: futures::channel::mpsc::Sender<O>,
             timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
         ) -> Runtime {
-            let aeb = aeb_service::AebService::init(output.clone(), timer.clone());
-            Runtime { aeb, output, timer }
+            let aeb = aeb_service::AebService::init(output, timer.clone());
+            Runtime { aeb, timer }
         }
         pub async fn run_loop(
             self,
             init_instant: std::time::Instant,
             input: impl futures::Stream<Item = I>,
         ) {
-            tokio::pin!(input);
+            futures::pin_mut!(input);
             let mut runtime = self;
             {
                 let res = runtime
@@ -132,27 +132,20 @@ pub mod runtime {
                     return;
                 }
             }
-            loop {
-                tokio::select! {
-                    input = input.next() => if let Some(input) = input
-                    {
-                        match input
-                        {
-                            I :: speed_km_h(speed_km_h, instant) =>
-                            {
-                                runtime.aeb.handle_speed_km_h(instant, speed_km_h).await;
-                            }, I :: pedestrian_l(pedestrian_l, instant) =>
-                            {
-                                runtime.aeb.handle_pedestrian_l(instant,
-                                pedestrian_l).await;
-                            }, I :: pedestrian_r(pedestrian_r, instant) =>
-                            {
-                                runtime.aeb.handle_pedestrian_r(instant,
-                                pedestrian_r).await;
-                            }, I :: timer(T :: timeout_fresh_ident, instant) =>
-                            { runtime.aeb.handle_timeout_fresh_ident(instant).await; }
-                        }
-                    } else { break; }
+            while let Some(input) = input.next().await {
+                match input {
+                    I::speed_km_h(speed_km_h, instant) => {
+                        runtime.aeb.handle_speed_km_h(instant, speed_km_h).await;
+                    }
+                    I::pedestrian_l(pedestrian_l, instant) => {
+                        runtime.aeb.handle_pedestrian_l(instant, pedestrian_l).await;
+                    }
+                    I::pedestrian_r(pedestrian_r, instant) => {
+                        runtime.aeb.handle_pedestrian_r(instant, pedestrian_r).await;
+                    }
+                    I::timer(T::timeout_fresh_ident, instant) => {
+                        runtime.aeb.handle_timeout_fresh_ident(instant).await;
+                    }
                 }
             }
         }
