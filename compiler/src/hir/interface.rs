@@ -28,7 +28,10 @@ impl Service {
                     .map(|id| symbol_table.get_name(id).clone()),
             })
     }
-    pub fn get_flows_ids<'a>(&'a self) -> impl IntoIterator<Item = usize> + 'a {
+    pub fn get_flows_ids<'a>(
+        &'a self,
+        imports: impl Iterator<Item = &'a FlowImport> + 'a,
+    ) -> impl Iterator<Item = usize> + 'a {
         self.statements
             .values()
             .flat_map(|statement| match statement {
@@ -37,6 +40,7 @@ impl Service {
                     pattern.identifiers()
                 }
             })
+            .chain(imports.map(|import| import.id))
     }
 }
 
