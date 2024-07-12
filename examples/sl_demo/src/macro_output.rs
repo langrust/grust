@@ -507,6 +507,35 @@ pub mod runtime {
                 instant: std::time::Instant,
                 kickdown: Kickdown,
             ) {
+                let (state, on_state, in_regulation_aux, state_update) =
+                    self.speed_limiter
+                        .step(
+                            self.context
+                                .get_speed_limiter_inputs(None, Some(kickdown), None),
+                        );
+                self.context.state = state;
+                self.context.on_state = on_state;
+                self.context.in_regulation_aux = in_regulation_aux;
+                self.context.state_update = state_update;
+                let in_regulation_aux = self.context.in_regulation_aux;
+                let in_regulation = in_regulation_aux;
+                {
+                    let res = self
+                        .output
+                        .send(O::InRegulation(in_regulation, instant))
+                        .await;
+                    if res.is_err() {
+                        return;
+                    }
+                }
+                let on_state = self.context.on_state;
+                let sl_state = on_state;
+                {
+                    let res = self.output.send(O::SlState(sl_state, instant)).await;
+                    if res.is_err() {
+                        return;
+                    }
+                }
             }
             pub async fn handle_set_speed(&mut self, instant: std::time::Instant, set_speed: f64) {
                 if (self.context.flow_expression_fresh_ident - set_speed).abs() >= 1.0 {
@@ -549,8 +578,63 @@ pub mod runtime {
                 instant: std::time::Instant,
                 activation: ActivationRequest,
             ) {
+                let (state, on_state, in_regulation_aux, state_update) =
+                    self.speed_limiter
+                        .step(
+                            self.context
+                                .get_speed_limiter_inputs(Some(activation), None, None),
+                        );
+                self.context.state = state;
+                self.context.on_state = on_state;
+                self.context.in_regulation_aux = in_regulation_aux;
+                self.context.state_update = state_update;
+                let in_regulation_aux = self.context.in_regulation_aux;
+                let in_regulation = in_regulation_aux;
+                {
+                    let res = self
+                        .output
+                        .send(O::InRegulation(in_regulation, instant))
+                        .await;
+                    if res.is_err() {
+                        return;
+                    }
+                }
+                let on_state = self.context.on_state;
+                let sl_state = on_state;
+                {
+                    let res = self.output.send(O::SlState(sl_state, instant)).await;
+                    if res.is_err() {
+                        return;
+                    }
+                }
             }
             pub async fn handle_period_fresh_ident(&mut self, instant: std::time::Instant) {
+                let (state, on_state, in_regulation_aux, state_update) = self
+                    .speed_limiter
+                    .step(self.context.get_speed_limiter_inputs(None, None, None));
+                self.context.state = state;
+                self.context.on_state = on_state;
+                self.context.in_regulation_aux = in_regulation_aux;
+                self.context.state_update = state_update;
+                let in_regulation_aux = self.context.in_regulation_aux;
+                let in_regulation = in_regulation_aux;
+                {
+                    let res = self
+                        .output
+                        .send(O::InRegulation(in_regulation, instant))
+                        .await;
+                    if res.is_err() {
+                        return;
+                    }
+                }
+                let on_state = self.context.on_state;
+                let sl_state = on_state;
+                {
+                    let res = self.output.send(O::SlState(sl_state, instant)).await;
+                    if res.is_err() {
+                        return;
+                    }
+                }
                 {
                     let res = self.timer.send((T::PeriodFreshIdent, instant)).await;
                     if res.is_err() {
@@ -558,7 +642,37 @@ pub mod runtime {
                     }
                 }
             }
-            pub async fn handle_failure(&mut self, instant: std::time::Instant, failure: Failure) {}
+            pub async fn handle_failure(&mut self, instant: std::time::Instant, failure: Failure) {
+                let (state, on_state, in_regulation_aux, state_update) =
+                    self.speed_limiter
+                        .step(
+                            self.context
+                                .get_speed_limiter_inputs(None, None, Some(failure)),
+                        );
+                self.context.state = state;
+                self.context.on_state = on_state;
+                self.context.in_regulation_aux = in_regulation_aux;
+                self.context.state_update = state_update;
+                let in_regulation_aux = self.context.in_regulation_aux;
+                let in_regulation = in_regulation_aux;
+                {
+                    let res = self
+                        .output
+                        .send(O::InRegulation(in_regulation, instant))
+                        .await;
+                    if res.is_err() {
+                        return;
+                    }
+                }
+                let on_state = self.context.on_state;
+                let sl_state = on_state;
+                {
+                    let res = self.output.send(O::SlState(sl_state, instant)).await;
+                    if res.is_err() {
+                        return;
+                    }
+                }
+            }
         }
     }
 }
