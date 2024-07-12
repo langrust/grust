@@ -1769,18 +1769,6 @@
   }
 }
 ,{
-  "timestamp": 1460,
-  "message": {
-    "InRegulation": false
-  }
-}
-,{
-  "timestamp": 1460,
-  "message": {
-    "SlState": 3
-  }
-}
-,{
   "timestamp": 1450,
   "message": {
     "InRegulation": false
@@ -1790,6 +1778,18 @@
   "timestamp": 1450,
   "message": {
     "SlState": 4
+  }
+}
+,{
+  "timestamp": 1460,
+  "message": {
+    "InRegulation": true
+  }
+}
+,{
+  "timestamp": 1460,
+  "message": {
+    "SlState": 3
   }
 }
 ,{
@@ -2352,6 +2352,18 @@
 }
 ,{
   "timestamp": 1920,
+  "message": {
+    "SlState": 3
+  }
+}
+,{
+  "timestamp": 1930,
+  "message": {
+    "InRegulation": true
+  }
+}
+,{
+  "timestamp": 1930,
   "message": {
     "SlState": 3
   }
@@ -2372,18 +2384,6 @@
   "timestamp": 1920,
   "message": {
     "VSet": 10.0
-  }
-}
-,{
-  "timestamp": 1930,
-  "message": {
-    "InRegulation": false
-  }
-}
-,{
-  "timestamp": 1930,
-  "message": {
-    "SlState": 2
   }
 }
 ,{
