@@ -639,6 +639,38 @@ pub mod runtime {
                 self.context.speed = speed;
             }
             pub async fn handle_period_fresh_ident(&mut self, instant: std::time::Instant) {
+                let (v_set_aux, v_update) = self
+                    .process_set_speed
+                    .step(self.context.get_process_set_speed_inputs());
+                self.context.v_set_aux = v_set_aux;
+                self.context.v_update = v_update;
+                let v_set_aux = self.context.v_set_aux;
+                let v_set = v_set_aux;
+                self.context.v_set = v_set;
+                {
+                    let res = self.output.send(O::VSet(v_set, instant)).await;
+                    if res.is_err() {
+                        return;
+                    }
+                }
+                let (state, on_state, in_regulation_aux, state_update) = self
+                    .speed_limiter
+                    .step(self.context.get_speed_limiter_inputs());
+                self.context.state = state;
+                self.context.on_state = on_state;
+                self.context.in_regulation_aux = in_regulation_aux;
+                self.context.state_update = state_update;
+                let in_regulation_aux = self.context.in_regulation_aux;
+                let in_regulation = in_regulation_aux;
+                {
+                    let res = self
+                        .output
+                        .send(O::InRegulation(in_regulation, instant))
+                        .await;
+                    if res.is_err() {
+                        return;
+                    }
+                }
                 {
                     let res = self.timer.send((T::PeriodFreshIdent, instant)).await;
                     if res.is_err() {
@@ -728,6 +760,38 @@ pub mod runtime {
                 self.context.vdc = vdc;
             }
             pub async fn handle_period_fresh_ident_1(&mut self, instant: std::time::Instant) {
+                let (v_set_aux, v_update) = self
+                    .process_set_speed
+                    .step(self.context.get_process_set_speed_inputs());
+                self.context.v_set_aux = v_set_aux;
+                self.context.v_update = v_update;
+                let v_set_aux = self.context.v_set_aux;
+                let v_set = v_set_aux;
+                self.context.v_set = v_set;
+                {
+                    let res = self.output.send(O::VSet(v_set, instant)).await;
+                    if res.is_err() {
+                        return;
+                    }
+                }
+                let (state, on_state, in_regulation_aux, state_update) = self
+                    .speed_limiter
+                    .step(self.context.get_speed_limiter_inputs());
+                self.context.state = state;
+                self.context.on_state = on_state;
+                self.context.in_regulation_aux = in_regulation_aux;
+                self.context.state_update = state_update;
+                let in_regulation_aux = self.context.in_regulation_aux;
+                let in_regulation = in_regulation_aux;
+                {
+                    let res = self
+                        .output
+                        .send(O::InRegulation(in_regulation, instant))
+                        .await;
+                    if res.is_err() {
+                        return;
+                    }
+                }
                 {
                     let res = self.timer.send((T::PeriodFreshIdent1, instant)).await;
                     if res.is_err() {
