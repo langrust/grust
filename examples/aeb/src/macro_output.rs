@@ -49,30 +49,30 @@ pub mod runtime {
     use RuntimeTimer as T;
     #[derive(PartialEq)]
     pub enum RuntimeTimer {
-        timeout_fresh_ident,
+        TimeoutFreshIdent,
     }
     impl timer_stream::Timing for RuntimeTimer {
         fn get_duration(&self) -> std::time::Duration {
             match self {
-                T::timeout_fresh_ident => std::time::Duration::from_millis(2000u64),
+                T::TimeoutFreshIdent => std::time::Duration::from_millis(2000u64),
             }
         }
         fn do_reset(&self) -> bool {
             match self {
-                T::timeout_fresh_ident => true,
+                T::TimeoutFreshIdent => true,
             }
         }
     }
     pub enum RuntimeInput {
-        pedestrian_l(f64, std::time::Instant),
-        pedestrian_r(f64, std::time::Instant),
-        speed_km_h(f64, std::time::Instant),
-        timer(T, std::time::Instant),
+        PedestrianL(f64, std::time::Instant),
+        PedestrianR(f64, std::time::Instant),
+        SpeedKmH(f64, std::time::Instant),
+        Timer(T, std::time::Instant),
     }
     impl priority_stream::Reset for RuntimeInput {
         fn do_reset(&self) -> bool {
             match self {
-                RuntimeInput::timer(timer, _) => timer_stream::Timing::do_reset(timer),
+                I::Timer(timer, _) => timer_stream::Timing::do_reset(timer),
                 _ => false,
             }
         }
@@ -80,10 +80,10 @@ pub mod runtime {
     impl PartialEq for RuntimeInput {
         fn eq(&self, other: &Self) -> bool {
             match (self, other) {
-                (I::pedestrian_l(this, _), I::pedestrian_l(other, _)) => this.eq(other),
-                (I::pedestrian_r(this, _), I::pedestrian_r(other, _)) => this.eq(other),
-                (I::speed_km_h(this, _), I::speed_km_h(other, _)) => this.eq(other),
-                (I::timer(this, _), I::timer(other, _)) => this.eq(other),
+                (I::PedestrianL(this, _), I::PedestrianL(other, _)) => this.eq(other),
+                (I::PedestrianR(this, _), I::PedestrianR(other, _)) => this.eq(other),
+                (I::SpeedKmH(this, _), I::SpeedKmH(other, _)) => this.eq(other),
+                (I::Timer(this, _), I::Timer(other, _)) => this.eq(other),
                 _ => false,
             }
         }
@@ -91,10 +91,10 @@ pub mod runtime {
     impl RuntimeInput {
         pub fn get_instant(&self) -> std::time::Instant {
             match self {
-                I::pedestrian_l(_, instant) => *instant,
-                I::pedestrian_r(_, instant) => *instant,
-                I::speed_km_h(_, instant) => *instant,
-                I::timer(_, instant) => *instant,
+                I::PedestrianL(_, instant) => *instant,
+                I::PedestrianR(_, instant) => *instant,
+                I::SpeedKmH(_, instant) => *instant,
+                I::Timer(_, instant) => *instant,
             }
         }
         pub fn order(v1: &Self, v2: &Self) -> std::cmp::Ordering {
@@ -102,7 +102,7 @@ pub mod runtime {
         }
     }
     pub enum RuntimeOutput {
-        brakes(Braking, std::time::Instant),
+        Brakes(Braking, std::time::Instant),
     }
     pub struct Runtime {
         aeb: aeb_service::AebService,
@@ -126,7 +126,7 @@ pub mod runtime {
             {
                 let res = runtime
                     .timer
-                    .send((T::timeout_fresh_ident, init_instant))
+                    .send((T::TimeoutFreshIdent, init_instant))
                     .await;
                 if res.is_err() {
                     return;
@@ -134,16 +134,16 @@ pub mod runtime {
             }
             while let Some(input) = input.next().await {
                 match input {
-                    I::speed_km_h(speed_km_h, instant) => {
+                    I::SpeedKmH(speed_km_h, instant) => {
                         runtime.aeb.handle_speed_km_h(instant, speed_km_h).await;
                     }
-                    I::pedestrian_l(pedestrian_l, instant) => {
+                    I::PedestrianL(pedestrian_l, instant) => {
                         runtime.aeb.handle_pedestrian_l(instant, pedestrian_l).await;
                     }
-                    I::pedestrian_r(pedestrian_r, instant) => {
+                    I::PedestrianR(pedestrian_r, instant) => {
                         runtime.aeb.handle_pedestrian_r(instant, pedestrian_r).await;
                     }
-                    I::timer(T::timeout_fresh_ident, instant) => {
+                    I::Timer(T::TimeoutFreshIdent, instant) => {
                         runtime.aeb.handle_timeout_fresh_ident(instant).await;
                     }
                 }
@@ -207,7 +207,7 @@ pub mod runtime {
                 let flow_expression_fresh_ident = pedestrian_l;
                 let pedestrian = Ok(flow_expression_fresh_ident);
                 {
-                    let res = self.timer.send((T::timeout_fresh_ident, instant)).await;
+                    let res = self.timer.send((T::TimeoutFreshIdent, instant)).await;
                     if res.is_err() {
                         return;
                     }
@@ -218,7 +218,7 @@ pub mod runtime {
                 self.context.brakes = brakes;
                 let brakes = self.context.brakes;
                 {
-                    let res = self.output.send(O::brakes(brakes, instant)).await;
+                    let res = self.output.send(O::Brakes(brakes, instant)).await;
                     if res.is_err() {
                         return;
                     }
@@ -232,7 +232,7 @@ pub mod runtime {
                 let flow_expression_fresh_ident = pedestrian_r;
                 let pedestrian = Ok(flow_expression_fresh_ident);
                 {
-                    let res = self.timer.send((T::timeout_fresh_ident, instant)).await;
+                    let res = self.timer.send((T::TimeoutFreshIdent, instant)).await;
                     if res.is_err() {
                         return;
                     }
@@ -243,7 +243,7 @@ pub mod runtime {
                 self.context.brakes = brakes;
                 let brakes = self.context.brakes;
                 {
-                    let res = self.output.send(O::brakes(brakes, instant)).await;
+                    let res = self.output.send(O::Brakes(brakes, instant)).await;
                     if res.is_err() {
                         return;
                     }
@@ -252,7 +252,7 @@ pub mod runtime {
             pub async fn handle_timeout_fresh_ident(&mut self, instant: std::time::Instant) {
                 let pedestrian = Err(());
                 {
-                    let res = self.timer.send((T::timeout_fresh_ident, instant)).await;
+                    let res = self.timer.send((T::TimeoutFreshIdent, instant)).await;
                     if res.is_err() {
                         return;
                     }
@@ -263,7 +263,7 @@ pub mod runtime {
                 self.context.brakes = brakes;
                 let brakes = self.context.brakes;
                 {
-                    let res = self.output.send(O::brakes(brakes, instant)).await;
+                    let res = self.output.send(O::Brakes(brakes, instant)).await;
                     if res.is_err() {
                         return;
                     }

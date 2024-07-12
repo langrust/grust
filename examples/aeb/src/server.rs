@@ -70,15 +70,15 @@ lazy_static! {
 
 fn into_aeb_service_input(input: Input) -> Option<RuntimeInput> {
     match input.message {
-        Some(Message::PedestrianL(Pedestrian { distance })) => Some(RuntimeInput::pedestrian_l(
+        Some(Message::PedestrianL(Pedestrian { distance })) => Some(RuntimeInput::PedestrianL(
             distance,
             INIT.clone() + Duration::from_millis(input.timestamp as u64),
         )),
-        Some(Message::PedestrianR(Pedestrian { distance })) => Some(RuntimeInput::pedestrian_r(
+        Some(Message::PedestrianR(Pedestrian { distance })) => Some(RuntimeInput::PedestrianR(
             distance,
             INIT.clone() + Duration::from_millis(input.timestamp as u64),
         )),
-        Some(Message::Speed(Speed { value })) => Some(RuntimeInput::speed_km_h(
+        Some(Message::Speed(Speed { value })) => Some(RuntimeInput::SpeedKmH(
             value,
             INIT.clone() + Duration::from_millis(input.timestamp as u64),
         )),
@@ -88,13 +88,13 @@ fn into_aeb_service_input(input: Input) -> Option<RuntimeInput> {
 
 fn from_aeb_service_output(output: RuntimeOutput) -> Result<Output, Status> {
     match output {
-        RuntimeOutput::brakes(aeb::Braking::UrgentBrake, instant) => Ok(Output {
+        RuntimeOutput::Brakes(aeb::Braking::UrgentBrake, instant) => Ok(Output {
             brakes: Braking::UrgentBrake.into(),
         }),
-        RuntimeOutput::brakes(aeb::Braking::SoftBrake, instant) => Ok(Output {
+        RuntimeOutput::Brakes(aeb::Braking::SoftBrake, instant) => Ok(Output {
             brakes: Braking::SoftBrake.into(),
         }),
-        RuntimeOutput::brakes(aeb::Braking::NoBrake, instant) => Ok(Output {
+        RuntimeOutput::Brakes(aeb::Braking::NoBrake, instant) => Ok(Output {
             brakes: Braking::NoBrake.into(),
         }),
     }
@@ -118,7 +118,7 @@ impl Aeb for AebRuntime {
             .filter_map(|input| async { input.map(into_aeb_service_input).ok().flatten() });
         let timers_stream = timers_stream.map(|(timer, instant): (RuntimeTimer, Instant)| {
             let deadline = instant + timer_stream::Timing::get_duration(&timer);
-            RuntimeInput::timer(timer, deadline)
+            RuntimeInput::Timer(timer, deadline)
         });
         let input_stream = prio_stream::<_, _, 100>(
             futures::stream::select(request_stream, timers_stream),

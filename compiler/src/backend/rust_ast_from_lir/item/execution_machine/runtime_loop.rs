@@ -18,10 +18,13 @@ pub fn rust_ast_from_lir(run_loop: RuntimeLoop) -> ImplItem {
         .filter_map(|input_flow| -> Option<Stmt> {
             match &input_flow.arriving_flow {
                 ArrivingFlow::Channel(_, _, _) => None,
-                ArrivingFlow::Period(identifier) | ArrivingFlow::Deadline(identifier) => {
-                    let timer_ident = format_ident!("{}", identifier);
+                ArrivingFlow::Period(time_flow_name) | ArrivingFlow::Deadline(time_flow_name) => {
+                    let enum_ident = Ident::new(
+                        to_camel_case(time_flow_name.as_str()).as_str(),
+                        Span::call_site(),
+                    );
                     Some(parse_quote!({
-                        let res = runtime.timer.send((T::#timer_ident, init_instant)).await;
+                        let res = runtime.timer.send((T::#enum_ident, init_instant)).await;
                         if res.is_err() {return}
                     }))
                 }
@@ -37,27 +40,28 @@ pub fn rust_ast_from_lir(run_loop: RuntimeLoop) -> ImplItem {
             }| {
                 match arriving_flow {
                     ArrivingFlow::Channel(flow_name, _, _) => {
-                        let ident: Ident = Ident::new(flow_name.as_str(), Span::call_site());
+                        let enum_ident = Ident::new(to_camel_case(flow_name.as_str()).as_str(), Span::call_site());
+                        let ident = Ident::new(flow_name.as_str(), Span::call_site());
                         let function_name: Ident = format_ident!("handle_{flow_name}");
                         let call_services_handlers = services.iter().map(|service_name| -> syn::Stmt {
-                            let service_name: Ident = Ident::new(service_name, Span::call_site());
+                            let service_name = Ident::new(service_name, Span::call_site());
                             parse_quote! { runtime.#service_name.#function_name(instant, #ident).await; }
                         });
                         input_arms.push(parse_quote! {
-                            I::#ident(#ident, instant) => {
+                            I::#enum_ident(#ident, instant) => {
                                 #(#call_services_handlers)*
                             }
                         })
                     },
                     ArrivingFlow::Period(time_flow_name) | ArrivingFlow::Deadline(time_flow_name) => {
-                        let ident: Ident = Ident::new(time_flow_name.as_str(), Span::call_site());
+                        let enum_ident = Ident::new(to_camel_case(time_flow_name.as_str()).as_str(), Span::call_site());
                         let function_name: Ident = format_ident!("handle_{time_flow_name}");
                         let call_services_handlers = services.iter().map(|service_name| -> syn::Stmt {
-                            let service_name: Ident = Ident::new(service_name, Span::call_site());
+                            let service_name = Ident::new(service_name, Span::call_site());
                             parse_quote! { runtime.#service_name.#function_name(instant).await; }
                         });
                         input_arms.push(parse_quote! {
-                            I::timer(T::#ident, instant) => {
+                            I::Timer(T::#enum_ident, instant) => {
                                 #(#call_services_handlers)*
                             }
                         })
