@@ -11,4 +11,5 @@ members = [
     "compiler_lir",
     "priority_stream",
     "timer_stream",
+    "json",
 ]
