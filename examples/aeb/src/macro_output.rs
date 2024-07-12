@@ -108,6 +108,55 @@ pub mod runtime {
         aeb: aeb_service::AebService,
         output: futures::channel::mpsc::Sender<O>,
     }
+    impl Runtime {
+        pub fn new(
+            output: futures::channel::mpsc::Sender<O>,
+            timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
+        ) -> Runtime {
+            let aeb = aeb_service::AebService::init(output.clone(), timer.clone());
+            Runtime { aeb, output, timer }
+        }
+        pub async fn run_loop(
+            self,
+            init_instant: std::time::Instant,
+            input: impl futures::Stream<Item = I>,
+        ) {
+            tokio::pin!(input);
+            let mut runtime = self;
+            {
+                let res = runtime
+                    .timer
+                    .send((T::timeout_fresh_ident, init_instant))
+                    .await;
+                if res.is_err() {
+                    return;
+                }
+            }
+            loop {
+                tokio::select! {
+                    input = input.next() => if let Some(input) = input
+                    {
+                        match input
+                        {
+                            I :: speed_km_h(speed_km_h, instant) =>
+                            {
+                                runtime.aeb.handle_speed_km_h(instant, speed_km_h).await;
+                            }, I :: pedestrian_l(pedestrian_l, instant) =>
+                            {
+                                runtime.aeb.handle_pedestrian_l(instant,
+                                pedestrian_l).await;
+                            }, I :: pedestrian_r(pedestrian_r, instant) =>
+                            {
+                                runtime.aeb.handle_pedestrian_r(instant,
+                                pedestrian_r).await;
+                            }, I :: timer(T :: timeout_fresh_ident, instant) =>
+                            { runtime.aeb.handle_timeout_fresh_ident(instant).await; }
+                        }
+                    } else { break; }
+                }
+            }
+        }
+    }
     pub mod aeb_service {
         use super::*;
         use futures::{sink::SinkExt, stream::StreamExt};
@@ -225,56 +274,6 @@ pub mod runtime {
                     if res.is_err() {
                         return;
                     }
-                }
-            }
-        }
-    }
-    impl Runtime {
-        pub fn new(
-            output: futures::channel::mpsc::Sender<O>,
-            timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
-        ) -> Runtime {
-            let aeb = aeb_service::AebService::init(output.clone(), timer.clone());
-            Runtime { aeb, output, timer }
-        }
-        pub async fn run_loop(
-            self,
-            init_instant: std::time::Instant,
-            input: impl futures::Stream<Item = I>,
-        ) {
-            tokio::pin!(input);
-            let mut runtime = self;
-            {
-                let res = runtime
-                    .timer
-                    .send((T::timeout_fresh_ident, init_instant))
-                    .await;
-                if res.is_err() {
-                    return;
-                }
-            }
-            loop {
-                tokio::select! {
-                    input = input.next() => if let Some(input) = input
-                    {
-                        match input
-                        {
-                            I :: speed_km_h(speed_km_h, instant) =>
-                            {
-                                runtime.aeb.handle_speed_km_h(instant, speed_km_h).await;
-                            }, I :: pedestrian_l(pedestrian_l, instant) =>
-                            {
-                                runtime.aeb.handle_pedestrian_l(instant,
-                                pedestrian_l).await;
-                            }, I :: pedestrian_r(pedestrian_r, instant) =>
-                            {
-                                runtime.aeb.handle_pedestrian_r(instant,
-                                pedestrian_r).await;
-                            }, I :: timer(T :: timeout_fresh_ident, instant) =>
-                            { runtime.aeb.handle_timeout_fresh_ident(instant).await; }
-                        }
-                    } else { break; }, _ = timeout_fresh_ident.as_mut() =>
-                    service.handle_timeout_fresh_ident(timeout_fresh_ident.as_mut()).await,
                 }
             }
         }

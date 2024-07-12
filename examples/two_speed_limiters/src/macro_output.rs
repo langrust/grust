@@ -361,6 +361,134 @@ pub mod runtime {
         output: futures::channel::mpsc::Sender<O>,
         timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
     }
+    impl Runtime {
+        pub fn new(
+            output: futures::channel::mpsc::Sender<O>,
+            timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
+        ) -> Runtime {
+            let speed_limiter =
+                speed_limiter_service::SpeedLimiterService::init(output.clone(), timer.clone());
+            let another_speed_limiter =
+                another_speed_limiter_service::AnotherSpeedLimiterService::init(
+                    output.clone(),
+                    timer.clone(),
+                );
+            Runtime {
+                speed_limiter,
+                another_speed_limiter,
+                output,
+                timer,
+            }
+        }
+        pub async fn run_loop(
+            self,
+            init_instant: std::time::Instant,
+            input: impl futures::Stream<Item = I>,
+        ) {
+            tokio::pin!(input);
+            let mut runtime = self;
+            {
+                let res = runtime
+                    .timer
+                    .send((T::period_fresh_ident, init_instant))
+                    .await;
+                if res.is_err() {
+                    return;
+                }
+            }
+            {
+                let res = runtime
+                    .timer
+                    .send((T::period_fresh_ident, init_instant))
+                    .await;
+                if res.is_err() {
+                    return;
+                }
+            }
+            {
+                let res = runtime
+                    .timer
+                    .send((T::period_fresh_ident_1, init_instant))
+                    .await;
+                if res.is_err() {
+                    return;
+                }
+            }
+            loop {
+                tokio::select! {
+                    input = input.next() => if let Some(input) = input
+                    {
+                        match input
+                        {
+                            I :: speed(speed, instant) =>
+                            {
+                                runtime.speed_limiter.handle_speed(instant, speed).await;
+                            }, I :: kickdown(kickdown, instant) =>
+                            {
+                                runtime.speed_limiter.handle_kickdown(instant,
+                                kickdown).await;
+                            }, I :: set_speed(set_speed, instant) =>
+                            {
+                                runtime.speed_limiter.handle_set_speed(instant,
+                                set_speed).await;
+                            }, I :: vdc(vdc, instant) =>
+                            { runtime.speed_limiter.handle_vdc(instant, vdc).await; }, I
+                            :: vacuum_brake(vacuum_brake, instant) =>
+                            {
+                                runtime.speed_limiter.handle_vacuum_brake(instant,
+                                vacuum_brake).await;
+                            }, I :: timer(T :: period_fresh_ident, instant) =>
+                            {
+                                runtime.speed_limiter.handle_period_fresh_ident(instant).await;
+                            }, I :: activation(activation, instant) =>
+                            {
+                                runtime.speed_limiter.handle_activation(instant,
+                                activation).await;
+                            }, I :: failure(failure, instant) =>
+                            {
+                                runtime.speed_limiter.handle_failure(instant,
+                                failure).await;
+                            }, I :: speed(speed, instant) =>
+                            {
+                                runtime.another_speed_limiter.handle_speed(instant,
+                                speed).await;
+                            }, I :: kickdown(kickdown, instant) =>
+                            {
+                                runtime.another_speed_limiter.handle_kickdown(instant,
+                                kickdown).await;
+                            }, I :: set_speed(set_speed, instant) =>
+                            {
+                                runtime.another_speed_limiter.handle_set_speed(instant,
+                                set_speed).await;
+                            }, I :: vdc(vdc, instant) =>
+                            {
+                                runtime.another_speed_limiter.handle_vdc(instant,
+                                vdc).await;
+                            }, I :: vacuum_brake(vacuum_brake, instant) =>
+                            {
+                                runtime.another_speed_limiter.handle_vacuum_brake(instant,
+                                vacuum_brake).await;
+                            }, I :: timer(T :: period_fresh_ident, instant) =>
+                            {
+                                runtime.another_speed_limiter.handle_period_fresh_ident(instant).await;
+                            }, I :: activation(activation, instant) =>
+                            {
+                                runtime.another_speed_limiter.handle_activation(instant,
+                                activation).await;
+                            }, I :: timer(T :: period_fresh_ident_1, instant) =>
+                            {
+                                runtime.another_speed_limiter.handle_period_fresh_ident_1(instant).await;
+                            }, I :: failure(failure, instant) =>
+                            {
+                                runtime.another_speed_limiter.handle_failure(instant,
+                                failure).await;
+                            }
+                        }
+                    } else { break; }
+                }
+            }
+        }
+    }
     pub mod speed_limiter_service {
         use super::*;
         use futures::{sink::SinkExt, stream::StreamExt};
@@ -631,134 +759,6 @@ pub mod runtime {
                 }
             }
             pub async fn handle_failure(&mut self, instant: std::time::Instant, failure: Failure) {}
-        }
-    }
-    impl Runtime {
-        pub fn new(
-            output: futures::channel::mpsc::Sender<O>,
-            timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
-        ) -> Runtime {
-            let speed_limiter =
-                speed_limiter_service::SpeedLimiterService::init(output.clone(), timer.clone());
-            let another_speed_limiter =
-                another_speed_limiter_service::AnotherSpeedLimiterService::init(
-                    output.clone(),
-                    timer.clone(),
-                );
-            Runtime {
-                speed_limiter,
-                another_speed_limiter,
-                output,
-                timer,
-            }
-        }
-        pub async fn run_loop(
-            self,
-            init_instant: std::time::Instant,
-            input: impl futures::Stream<Item = I>,
-        ) {
-            tokio::pin!(input);
-            let mut runtime = self;
-            {
-                let res = runtime
-                    .timer
-                    .send((T::period_fresh_ident, init_instant))
-                    .await;
-                if res.is_err() {
-                    return;
-                }
-            }
-            {
-                let res = runtime
-                    .timer
-                    .send((T::period_fresh_ident, init_instant))
-                    .await;
-                if res.is_err() {
-                    return;
-                }
-            }
-            {
-                let res = runtime
-                    .timer
-                    .send((T::period_fresh_ident_1, init_instant))
-                    .await;
-                if res.is_err() {
-                    return;
-                }
-            }
-            loop {
-                tokio::select! {
-                    input = input.next() => if let Some(input) = input
-                    {
-                        match input
-                        {
-                            I :: speed(speed, instant) =>
-                            {
-                                runtime.speed_limiter.handle_speed(instant, speed).await;
-                            }, I :: kickdown(kickdown, instant) =>
-                            {
-                                runtime.speed_limiter.handle_kickdown(instant,
-                                kickdown).await;
-                            }, I :: set_speed(set_speed, instant) =>
-                            {
-                                runtime.speed_limiter.handle_set_speed(instant,
-                                set_speed).await;
-                            }, I :: vdc(vdc, instant) =>
-                            { runtime.speed_limiter.handle_vdc(instant, vdc).await; }, I
-                            :: vacuum_brake(vacuum_brake, instant) =>
-                            {
-                                runtime.speed_limiter.handle_vacuum_brake(instant,
-                                vacuum_brake).await;
-                            }, I :: timer(T :: period_fresh_ident, instant) =>
-                            {
-                                runtime.speed_limiter.handle_period_fresh_ident(instant).await;
-                            }, I :: activation(activation, instant) =>
-                            {
-                                runtime.speed_limiter.handle_activation(instant,
-                                activation).await;
-                            }, I :: failure(failure, instant) =>
-                            {
-                                runtime.speed_limiter.handle_failure(instant,
-                                failure).await;
-                            }, I :: speed(speed, instant) =>
-                            {
-                                runtime.another_speed_limiter.handle_speed(instant,
-                                speed).await;
-                            }, I :: kickdown(kickdown, instant) =>
-                            {
-                                runtime.another_speed_limiter.handle_kickdown(instant,
-                                kickdown).await;
-                            }, I :: set_speed(set_speed, instant) =>
-                            {
-                                runtime.another_speed_limiter.handle_set_speed(instant,
-                                set_speed).await;
-                            }, I :: vdc(vdc, instant) =>
-                            {
-                                runtime.another_speed_limiter.handle_vdc(instant,
-                                vdc).await;
-                            }, I :: vacuum_brake(vacuum_brake, instant) =>
-                            {
-                                runtime.another_speed_limiter.handle_vacuum_brake(instant,
-                                vacuum_brake).await;
-                            }, I :: timer(T :: period_fresh_ident, instant) =>
-                            {
-                                runtime.another_speed_limiter.handle_period_fresh_ident(instant).await;
-                            }, I :: activation(activation, instant) =>
-                            {
-                                runtime.another_speed_limiter.handle_activation(instant,
-                                activation).await;
-                            }, I :: timer(T :: period_fresh_ident_1, instant) =>
-                            {
-                                runtime.another_speed_limiter.handle_period_fresh_ident_1(instant).await;
-                            }, I :: failure(failure, instant) =>
-                            {
-                                runtime.another_speed_limiter.handle_failure(instant,
-                                failure).await;
-                            }
-                        }
-                    } else { break; }
-                }
-            }
         }
     }
 }
