@@ -14,7 +14,10 @@ pub struct Service {
     pub graph: DiGraphMap<usize, ()>,
 }
 impl Service {
-    pub fn get_flows_names(&self, symbol_table: &SymbolTable) -> Vec<String> {
+    pub fn get_flows_names<'a>(
+        &'a self,
+        symbol_table: &'a SymbolTable,
+    ) -> impl Iterator<Item = String> + 'a {
         self.statements
             .values()
             .flat_map(|statement| match statement {
@@ -24,7 +27,6 @@ impl Service {
                     .into_iter()
                     .map(|id| symbol_table.get_name(id).clone()),
             })
-            .collect()
     }
     pub fn get_flows_ids<'a>(&'a self) -> impl IntoIterator<Item = usize> + 'a {
         self.statements

@@ -12,7 +12,7 @@ impl IdentifierCreator {
     /// Create a new identifier creator from a list of identifiers.
     ///
     /// It will store all existing id from the list.
-    pub fn from(identifiers: Vec<String>) -> Self {
+    pub fn from(identifiers: impl IntoIterator<Item = String>) -> Self {
         IdentifierCreator {
             identifiers: HashSet::from_iter(identifiers),
         }
