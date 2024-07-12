@@ -14,30 +14,10 @@ pub fn rust_ast_from_lir(input: Input) -> ItemStruct {
         fields.push(parse_quote! { pub #identifier : #ty });
     }
 
-    let mut generics: Vec<GenericParam> = vec![];
-    for (generic_name, generic_type) in input.generics {
-        if let Typ::Abstract(arguments, output) = generic_type {
-            let arguments = arguments.into_iter().map(type_rust_ast_from_lir);
-            let output = type_rust_ast_from_lir(*output);
-            let identifier = format_ident!("{generic_name}");
-            generics.push(parse_quote! { #identifier: Fn(#(#arguments),*) -> #output });
-        } else {
-            unreachable!()
-        }
-    }
-
     let name = format_ident!("{}", to_camel_case(&format!("{}Input", input.node_name)));
-    if generics.is_empty() {
-        parse_quote! {
-            pub struct #name {
-                #(#fields,)*
-            }
-        }
-    } else {
-        parse_quote! {
-            pub struct #name<#(#generics),*> {
-                #(#fields,)*
-            }
+    parse_quote! {
+        pub struct #name {
+            #(#fields,)*
         }
     }
 }
@@ -56,9 +36,8 @@ mod rust_ast_from_lir {
             node_name: format!("Node"),
             elements: vec![InputElement {
                 identifier: format!("i"),
-                r#type: Typ::Integer,
+                r#type: Typ::int(),
             }],
-            generics: vec![],
         };
         let control = parse_quote!(
             pub struct NodeInput {

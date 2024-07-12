@@ -1,7 +1,4 @@
-prelude! {
-    hir::Stmt,
-    lir::item::Import,
-}
+prelude! { hir::Stmt }
 
 use super::LIRFromHIR;
 
@@ -21,9 +18,5 @@ where
             pattern: pattern.lir_from_hir(symbol_table),
             expression: expression.lir_from_hir(symbol_table),
         }
-    }
-
-    fn get_imports(&self, symbol_table: &SymbolTable) -> Vec<Import> {
-        self.expression.get_imports(symbol_table)
     }
 }

@@ -1,8 +1,6 @@
-use itertools::Itertools;
-
 prelude! {
-    hir::{Function, IdentifierCreator},
-    lir::{ Block, item::{Function as LIRFunction, Import}, Stmt },
+    hir::Function,
+    lir::{ Block, item::Function as LIRFunction, Stmt },
 }
 
 use super::LIRFromHIR;
@@ -23,7 +21,7 @@ impl LIRFromHIR for Function {
         let name = symbol_table.get_name(id).clone();
 
         // get function inputs
-        let mut inputs = symbol_table
+        let inputs = symbol_table
             .get_function_input(id)
             .into_iter()
             .map(|id| {
@@ -35,49 +33,7 @@ impl LIRFromHIR for Function {
             .collect::<Vec<_>>();
 
         // get function output type
-        let mut output = symbol_table.get_function_output_type(id).clone();
-
-        // collect imports from statements, inputs and output types and returned expression
-        let mut imports = statements
-            .iter()
-            .flat_map(|equation| equation.get_imports(symbol_table))
-            .unique()
-            .collect::<Vec<_>>();
-        let mut inputs_type_imports = inputs
-            .iter()
-            .flat_map(|(_, typing)| typing.get_imports(symbol_table))
-            .unique()
-            .collect::<Vec<_>>();
-        let mut output_type_imports = output.get_imports(symbol_table);
-        let mut expression_imports = returned.get_imports(symbol_table);
-        let mut contract_imports = contract.get_imports(symbol_table);
-
-        // combining all imports, eliminate duplicates and filter function imports
-        imports.append(&mut inputs_type_imports);
-        imports.append(&mut output_type_imports);
-        imports.append(&mut expression_imports);
-        imports.append(&mut contract_imports);
-        let imports = imports
-            .into_iter()
-            .unique()
-            .filter(|import| match import {
-                Import::Enumeration(_)
-                | Import::Structure(_)
-                | Import::ArrayAlias(_)
-                | Import::Creusot(_) => true,
-                Import::Function(_) => false,
-                Import::StateMachine(_) => unreachable!(),
-            })
-            .collect::<Vec<_>>();
-
-        // get input's generics: function types in inputs
-        let mut identifier_creator = IdentifierCreator::from(vec![]);
-        let mut generics = inputs
-            .iter_mut()
-            .flat_map(|(_, typing)| typing.get_generics(&mut identifier_creator))
-            .collect::<Vec<_>>();
-        let mut output_generics = output.get_generics(&mut identifier_creator);
-        generics.append(&mut output_generics);
+        let output = symbol_table.get_function_output_type(id).clone();
 
         // tranforms into LIR statements
         let mut statements = statements
@@ -93,11 +49,9 @@ impl LIRFromHIR for Function {
 
         LIRFunction {
             name,
-            generics,
             inputs,
             output,
             body: Block { statements },
-            imports,
             contract,
         }
     }

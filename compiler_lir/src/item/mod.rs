@@ -1,6 +1,6 @@
 pub use self::{
     array_alias::ArrayAlias, enumeration::Enumeration, execution_machine::ExecutionMachine,
-    function::Function, import::Import, state_machine::StateMachine, structure::Structure,
+    function::Function, state_machine::StateMachine, structure::Structure,
 };
 
 /// LIR [ArrayAlias](crate::lir::item::array_alias::ArrayAlias) module.
@@ -10,8 +10,6 @@ pub mod enumeration;
 pub mod execution_machine;
 /// LIR [Function](crate::lir::item::function::Function) module.
 pub mod function;
-/// LIR [Import](crate::lir::item::import::Import) module.
-pub mod import;
 /// LIR [StateMachine](crate::lir::item::state_machine::StateMachine) module.
 pub mod state_machine;
 /// LIR [Structure](crate::lir::item::structure::Structure) module.

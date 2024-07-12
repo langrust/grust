@@ -12,7 +12,7 @@ prelude! {
         contract::{Contract, Term},
         item::function::Function},
     macro2::{Span, TokenStream},
-    quote::{format_ident, quote},
+    quote::quote,
     syn::*,
 }
 
@@ -112,24 +112,6 @@ pub fn rust_ast_from_lir(function: Function, crates: &mut BTreeSet<String>) -> I
     attributes.append(&mut ensures_attributes);
     attributes.append(&mut invariant_attributes);
 
-    // create generics
-    let mut generic_params: Vec<GenericParam> = vec![];
-    for (generic_name, generic_type) in function.generics {
-        if let Typ::Abstract(arguments, output) = generic_type {
-            let arguments = arguments.into_iter().map(type_rust_ast_from_lir);
-            let output = type_rust_ast_from_lir(*output);
-            let identifier = format_ident!("{generic_name}");
-            generic_params.push(parse_quote! { #identifier: Fn(#(#arguments),*) -> #output });
-        } else {
-            unreachable!()
-        }
-    }
-    let generics = if generic_params.is_empty() {
-        Default::default()
-    } else {
-        parse_quote! { <#(#generic_params),*> }
-    };
-
     let inputs = function
         .inputs
         .into_iter()
@@ -151,7 +133,7 @@ pub fn rust_ast_from_lir(function: Function, crates: &mut BTreeSet<String>) -> I
         abi: None,
         fn_token: Default::default(),
         ident: Ident::new(&function.name, Span::call_site()),
-        generics,
+        generics: Default::default(),
         paren_token: Default::default(),
         inputs,
         variadic: None,
@@ -183,9 +165,8 @@ mod rust_ast_from_lir {
     fn should_create_rust_ast_function_from_lir_function() {
         let function = Function {
             name: "foo".into(),
-            generics: vec![],
-            inputs: vec![("a".into(), Typ::Integer), ("b".into(), Typ::Integer)],
-            output: Typ::Integer,
+            inputs: vec![("a".into(), Typ::int()), ("b".into(), Typ::int())],
+            output: Typ::int(),
             body: Block {
                 statements: vec![Stmt::ExprLast {
                     expression: lir::Expr::binop(
@@ -195,7 +176,6 @@ mod rust_ast_from_lir {
                     ),
                 }],
             },
-            imports: vec![],
             contract: Default::default(),
         };
 

@@ -50,7 +50,7 @@ impl TypeAnalysis for stream::Expr {
                     if outputs_types.len() == 1 {
                         outputs_types.pop().unwrap()
                     } else {
-                        Typ::Tuple(outputs_types)
+                        Typ::tuple(outputs_types)
                     }
                 };
 

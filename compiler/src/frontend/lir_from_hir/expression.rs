@@ -1,8 +1,6 @@
 prelude! {
-    itertools::Itertools,
-    strum::IntoEnumIterator,
-    operator::{BinaryOperator, OtherOperator, UnaryOperator},
-    lir::{ Block, FieldIdentifier, item::Import, Pattern, Stmt },
+    operator::OtherOperator,
+    lir::{ Block, FieldIdentifier, Pattern, Stmt },
 }
 
 use super::LIRFromHIR;
@@ -244,178 +242,6 @@ where
             _ => false,
         }
     }
-
-    fn get_imports(&self, symbol_table: &SymbolTable) -> Vec<Import> {
-        match self {
-            Self::Constant { .. } => vec![],
-            Self::Identifier { id } => {
-                if symbol_table.is_function(*id) {
-                    if let Some(_) = BinaryOperator::iter()
-                        .find(|binary| binary.to_string().eq(symbol_table.get_name(*id)))
-                    {
-                        vec![]
-                    } else if let Some(_) = UnaryOperator::iter()
-                        .find(|unary| unary.to_string().eq(symbol_table.get_name(*id)))
-                    {
-                        vec![]
-                    } else if let Some(_) = OtherOperator::iter()
-                        .find(|op| op.to_string().eq(symbol_table.get_name(*id)))
-                    {
-                        vec![]
-                    } else {
-                        vec![Import::Function(symbol_table.get_name(*id).clone())]
-                    }
-                } else {
-                    vec![]
-                }
-            }
-            Self::Unop { expression, .. } => expression.get_imports(symbol_table),
-            Self::Binop {
-                left_expression,
-                right_expression,
-                ..
-            } => {
-                let mut imports = left_expression.get_imports(symbol_table);
-                let mut right_imports = right_expression.get_imports(symbol_table);
-                imports.append(&mut right_imports);
-                imports
-            }
-            Self::IfThenElse {
-                expression,
-                true_expression,
-                false_expression,
-            } => {
-                let mut imports = expression.get_imports(symbol_table);
-                let mut true_imports = true_expression.get_imports(symbol_table);
-                let mut false_imports = false_expression.get_imports(symbol_table);
-                imports.append(&mut true_imports);
-                imports.append(&mut false_imports);
-                imports
-            }
-            Self::Application {
-                function_expression,
-                inputs,
-            } => {
-                let mut imports = function_expression.get_imports(symbol_table);
-                let mut inputs_imports = inputs
-                    .iter()
-                    .flat_map(|expression| expression.get_imports(symbol_table))
-                    .unique()
-                    .collect::<Vec<_>>();
-                imports.append(&mut inputs_imports);
-                imports
-            }
-            Self::Abstraction { expression, .. } => expression.get_imports(symbol_table),
-            Self::Structure { id, fields } => {
-                let mut imports = fields
-                    .iter()
-                    .flat_map(|(_, expression)| expression.get_imports(symbol_table))
-                    .unique()
-                    .collect::<Vec<_>>();
-                imports.push(Import::Structure(symbol_table.get_name(*id).clone()));
-
-                imports
-            }
-            Self::Enumeration { enum_id, .. } => {
-                vec![Import::Enumeration(symbol_table.get_name(*enum_id).clone())]
-            }
-            Self::Array { elements } | Self::Tuple { elements } => elements
-                .iter()
-                .flat_map(|expression| expression.get_imports(symbol_table))
-                .unique()
-                .collect(),
-            Self::Match { expression, arms } => {
-                let mut imports = expression.get_imports(symbol_table);
-                let mut arms_imports = arms
-                    .iter()
-                    .flat_map(|(pattern, option, statements, expression)| {
-                        let mut pattern_imports = pattern.get_imports(symbol_table);
-                        let mut option_imports = option
-                            .as_ref()
-                            .map_or(vec![], |expression| expression.get_imports(symbol_table));
-                        pattern_imports.append(&mut option_imports);
-                        let mut statements_imports = statements
-                            .iter()
-                            .flat_map(|statement| statement.get_imports(symbol_table))
-                            .unique()
-                            .collect::<Vec<_>>();
-                        pattern_imports.append(&mut statements_imports);
-                        let mut expression_imports = expression.get_imports(symbol_table);
-                        pattern_imports.append(&mut expression_imports);
-                        pattern_imports
-                    })
-                    .unique()
-                    .collect::<Vec<_>>();
-                imports.append(&mut arms_imports);
-                imports
-            }
-            Self::When {
-                option,
-                present,
-                present_body,
-                default,
-                default_body,
-                ..
-            } => {
-                let mut imports = option.get_imports(symbol_table);
-                let mut present_imports = present.get_imports(symbol_table);
-                imports.append(&mut present_imports);
-                let mut present_body_imports = present_body
-                    .iter()
-                    .flat_map(|statement| statement.get_imports(symbol_table))
-                    .unique()
-                    .collect::<Vec<_>>();
-                imports.append(&mut present_body_imports);
-                let mut default_imports = default.get_imports(symbol_table);
-                imports.append(&mut default_imports);
-                let mut default_body_imports = default_body
-                    .iter()
-                    .flat_map(|statement| statement.get_imports(symbol_table))
-                    .unique()
-                    .collect::<Vec<_>>();
-                imports.append(&mut default_body_imports);
-                imports
-            }
-            Self::FieldAccess { expression, .. } => expression.get_imports(symbol_table),
-            Self::TupleElementAccess { expression, .. } => expression.get_imports(symbol_table),
-            Self::Map {
-                expression,
-                function_expression,
-            } => {
-                let mut imports = expression.get_imports(symbol_table);
-                let mut function_imports = function_expression.get_imports(symbol_table);
-                imports.append(&mut function_imports);
-                imports
-            }
-            Self::Fold {
-                expression,
-                initialization_expression,
-                function_expression,
-            } => {
-                let mut imports = expression.get_imports(symbol_table);
-                let mut initialization_imports =
-                    initialization_expression.get_imports(symbol_table);
-                imports.append(&mut initialization_imports);
-                let mut function_imports = function_expression.get_imports(symbol_table);
-                imports.append(&mut function_imports);
-                imports
-            }
-            Self::Sort {
-                expression,
-                function_expression,
-            } => {
-                let mut imports = expression.get_imports(symbol_table);
-                let mut function_imports = function_expression.get_imports(symbol_table);
-                imports.append(&mut function_imports);
-                imports
-            }
-            Self::Zip { arrays } => arrays
-                .iter()
-                .flat_map(|expression| expression.get_imports(symbol_table))
-                .unique()
-                .collect(),
-        }
-    }
 }
 
 impl LIRFromHIR for hir::Expr {
@@ -430,9 +256,5 @@ impl LIRFromHIR for hir::Expr {
 
     fn is_if_then_else(&self, symbol_table: &SymbolTable) -> bool {
         self.kind.is_if_then_else(symbol_table)
-    }
-
-    fn get_imports(&self, symbol_table: &SymbolTable) -> Vec<Import> {
-        self.kind.get_imports(symbol_table)
     }
 }

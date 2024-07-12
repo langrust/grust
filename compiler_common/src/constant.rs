@@ -36,10 +36,10 @@ impl Constant {
     /// Get the [Typ] of the constant.
     pub fn get_type(&self) -> Typ {
         match self {
-            Constant::Integer(_) => Typ::Integer,
-            Constant::Float(_) => Typ::Float,
-            Constant::Boolean(_) => Typ::Boolean,
-            Constant::Unit(_) => Typ::Unit,
+            Constant::Integer(lit) => Typ::Integer(keyword::int { span: lit.span() }),
+            Constant::Float(lit) => Typ::Float(keyword::float { span: lit.span() }),
+            Constant::Boolean(lit) => Typ::Boolean(keyword::bool { span: lit.span() }),
+            Constant::Unit(paren) => Typ::Unit(paren.clone()),
         }
     }
 }

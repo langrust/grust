@@ -23,22 +23,32 @@ where
 
                 // verify it is an array
                 match expression.get_type().unwrap() {
-                    Typ::Array(element_type, size) => {
+                    Typ::Array {
+                        ty: element_type,
+                        size,
+                        bracket_token,
+                        semi_token,
+                    } => {
                         // type the function expression
                         function_expression.typing(symbol_table, errors)?;
                         let function_type = function_expression.get_type_mut().unwrap();
 
                         // check it is a sorting function: (element_type, element_type) -> int
                         function_type.eq_check(
-                            &Typ::Abstract(
+                            &Typ::function(
                                 vec![*element_type.clone(), *element_type.clone()],
-                                Box::new(Typ::Integer),
+                                Typ::int(),
                             ),
                             location.clone(),
                             errors,
                         )?;
 
-                        Ok(Typ::Array(element_type.clone(), *size))
+                        Ok(Typ::Array {
+                            ty: element_type.clone(),
+                            size: size.clone(),
+                            bracket_token: *bracket_token,
+                            semi_token: *semi_token,
+                        })
                     }
                     given_type => {
                         let error = Error::ExpectArray {

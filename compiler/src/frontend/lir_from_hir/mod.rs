@@ -1,6 +1,4 @@
-prelude! {
-    lir::item::import::Import,
-}
+prelude! {}
 
 /// LIR file construction from HIR project.
 pub mod file;
@@ -50,10 +48,5 @@ pub trait LIRFromHIR {
     /// Tell if LIR construct is an IfThenElse operator.
     fn is_if_then_else(&self, _symbol_table: &SymbolTable) -> bool {
         false
-    }
-
-    /// Get imports from LIR.
-    fn get_imports(&self, _symbol_table: &SymbolTable) -> Vec<Import> {
-        vec![]
     }
 }

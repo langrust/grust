@@ -1,6 +1,8 @@
 prelude! {
     frontend::TypeAnalysis,
     hir::{Contract, contract},
+    macro2::Span,
+    syn::Ident,
 }
 
 impl TypeAnalysis for Contract {
@@ -33,7 +35,7 @@ impl TypeAnalysis for contract::Term {
             contract::term::Kind::Constant { constant } => constant.get_type(),
             contract::term::Kind::Identifier { id } => symbol_table.get_type(*id).clone(),
             contract::term::Kind::Enumeration { enum_id, .. } => Typ::Enumeration {
-                name: symbol_table.get_name(*enum_id).clone(),
+                name: Ident::new(symbol_table.get_name(*enum_id), Span::call_site()),
                 id: *enum_id,
             },
             contract::term::Kind::Unary { op, term } => {
@@ -53,23 +55,23 @@ impl TypeAnalysis for contract::Term {
             contract::term::Kind::ForAll { term, .. } => {
                 term.typing(symbol_table, errors)?;
                 let ty = term.typing.as_ref().unwrap();
-                ty.eq_check(&Typ::Boolean, self.location.clone(), errors)?;
-                Typ::Boolean
+                ty.eq_check(&Typ::bool(), self.location.clone(), errors)?;
+                Typ::bool()
             }
             contract::term::Kind::Implication { left, right } => {
                 left.typing(symbol_table, errors)?;
                 let ty = left.typing.as_ref().unwrap();
-                ty.eq_check(&Typ::Boolean, self.location.clone(), errors)?;
+                ty.eq_check(&Typ::bool(), self.location.clone(), errors)?;
                 right.typing(symbol_table, errors)?;
                 let ty = right.typing.as_ref().unwrap();
-                ty.eq_check(&Typ::Boolean, self.location.clone(), errors)?;
-                Typ::Boolean
+                ty.eq_check(&Typ::bool(), self.location.clone(), errors)?;
+                ty.clone()
             }
             contract::term::Kind::PresentEvent { event_id, pattern } => {
                 let typing = symbol_table.get_type(*event_id).clone();
                 match &typing {
-                    Typ::SMEvent(expected_type) | Typ::SMTimeout(expected_type) => {
-                        symbol_table.set_type(*pattern, *expected_type.clone());
+                    Typ::SMEvent { ty, .. } | Typ::SMTimeout { ty, .. } => {
+                        symbol_table.set_type(*pattern, *ty.clone());
                     }
                     _ => unreachable!(),
                 };
@@ -78,7 +80,7 @@ impl TypeAnalysis for contract::Term {
             contract::term::Kind::TimeoutEvent { event_id } => {
                 let typing = symbol_table.get_type(*event_id).clone();
                 match &typing {
-                    Typ::SMTimeout(_) => (),
+                    Typ::SMTimeout { .. } => (),
                     _ => panic!("error, should be 'event timeout'"),
                 };
                 typing

@@ -57,7 +57,9 @@ impl Pattern {
                 Ok(())
             }
             Kind::Tuple { ref mut elements } => match expected_type {
-                Typ::Tuple(types) => {
+                Typ::Tuple {
+                    elements: types, ..
+                } => {
                     if elements.len() != types.len() {
                         let error = Error::IncompatibleTuple {
                             location: self.location.clone(),
@@ -90,8 +92,8 @@ impl Pattern {
                 }
             },
             Kind::Some { ref mut pattern } => match expected_type {
-                Typ::SMEvent(expected_type) => {
-                    pattern.typing(expected_type, symbol_table, errors)?;
+                Typ::SMEvent { ty, .. } => {
+                    pattern.typing(ty, symbol_table, errors)?;
                     let pattern_type = pattern.get_type().unwrap().clone();
                     self.typing = Some(Typ::sm_event(pattern_type));
                     Ok(())
@@ -120,8 +122,8 @@ impl Pattern {
                 expected_type.eq_check(&typing, self.location.clone(), errors)?;
 
                 match &typing {
-                    Typ::SMEvent(expected_type) | Typ::SMTimeout(expected_type) => {
-                        pattern.typing(&expected_type.clone(), symbol_table, errors)?
+                    Typ::SMEvent { ty, .. } | Typ::SMTimeout { ty, .. } => {
+                        pattern.typing(&ty, symbol_table, errors)?
                     }
                     _ => unreachable!(),
                 };
@@ -134,7 +136,7 @@ impl Pattern {
                 expected_type.eq_check(&typing, self.location.clone(), errors)?;
 
                 match &typing {
-                    Typ::SMTimeout(_) => (),
+                    Typ::SMTimeout { .. } => (),
                     _ => panic!("error, should be 'event timeout'"),
                 };
 

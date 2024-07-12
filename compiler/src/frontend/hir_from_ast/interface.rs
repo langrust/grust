@@ -77,8 +77,8 @@ impl HIRFromAST for FlowImport {
                 .right
                 .hir_from_ast(&location, symbol_table, errors)?;
             match kind {
-                FlowKind::Signal(_) => Typ::Signal(Box::new(inner)),
-                FlowKind::Event(_) => Typ::Event(Box::new(inner)),
+                FlowKind::Signal(_) => Typ::signal(inner),
+                FlowKind::Event(_) => Typ::event(inner),
             }
         };
         let id = symbol_table.insert_flow(
@@ -127,8 +127,8 @@ impl HIRFromAST for FlowExport {
                 .right
                 .hir_from_ast(&location, symbol_table, errors)?;
             match kind {
-                FlowKind::Signal(_) => Typ::Signal(Box::new(inner)),
-                FlowKind::Event(_) => Typ::Event(Box::new(inner)),
+                FlowKind::Signal(_) => Typ::signal(inner),
+                FlowKind::Event(_) => Typ::event(inner),
             }
         };
         let id = symbol_table.insert_flow(
@@ -230,10 +230,10 @@ impl HIRFromAST for FlowPattern {
             FlowPattern::SingleTyped {
                 kind, ident, ty, ..
             } => {
-                let typing = ty.hir_from_ast(&location, symbol_table, errors)?;
+                let inner = ty.hir_from_ast(&location, symbol_table, errors)?;
                 let flow_typing = match kind {
-                    FlowKind::Signal(_) => Typ::Signal(Box::new(typing)),
-                    FlowKind::Event(_) => Typ::Event(Box::new(typing)),
+                    FlowKind::Signal(_) => Typ::signal(inner),
+                    FlowKind::Event(_) => Typ::event(inner),
                 };
                 let id = symbol_table.insert_flow(
                     ident.to_string(),
@@ -270,7 +270,7 @@ impl HIRFromAST for FlowPattern {
                     .collect();
                 Ok(Pattern {
                     kind: hir::pattern::Kind::Tuple { elements },
-                    typing: Some(Typ::Tuple(types)),
+                    typing: Some(Typ::tuple(types)),
                     location,
                 })
             }

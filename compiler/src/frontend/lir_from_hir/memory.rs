@@ -2,10 +2,7 @@ use itertools::Itertools;
 
 prelude! {
     hir::memory::{Buffer, CalledNode, Memory},
-    lir::item::{
-        import::Import,
-        state_machine::state::{init::StateElementInit, step::StateElementStep, StateElement},
-    },
+    lir::item::state_machine::state::{init::StateElementInit, step::StateElementStep, StateElement},
 }
 
 use super::LIRFromHIR;
@@ -67,37 +64,5 @@ impl Memory {
             });
 
         (elements, inits, steps)
-    }
-
-    /// Get imports from memory.
-    pub fn get_imports(&self, symbol_table: &SymbolTable) -> Vec<Import> {
-        let mut imports = self
-            .buffers
-            .values()
-            .flat_map(
-                |Buffer {
-                     expression, typing, ..
-                 }| {
-                    let mut imports = expression.get_imports(symbol_table);
-                    let mut typing_imports = typing.get_imports(symbol_table);
-                    imports.append(&mut typing_imports);
-                    imports
-                },
-            )
-            .unique()
-            .collect::<Vec<_>>();
-        let mut called_node_imports = self
-            .called_nodes
-            .values()
-            .flat_map(|CalledNode { node_id, .. }| {
-                vec![Import::StateMachine(
-                    symbol_table.get_name(*node_id).clone(),
-                )]
-            })
-            .unique()
-            .collect::<Vec<_>>();
-
-        imports.append(&mut called_node_imports);
-        imports
     }
 }

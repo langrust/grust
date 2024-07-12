@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 prelude! {
     macro2::{Span, TokenStream},
-    quote::{format_ident, quote},
+    quote::quote,
     syn::*,
     backend::rust_ast_from_lir::{
         expression::{
@@ -124,35 +124,11 @@ pub fn rust_ast_from_lir(step: Step, crates: &mut BTreeSet<String>) -> ImplItemF
     attributes.append(&mut ensures_attributes);
     attributes.append(&mut invariant_attributes);
 
-    // create generics
-    let mut generic_params: Vec<GenericParam> = vec![];
-    let mut generic_idents: Vec<Ident> = vec![];
-    for (generic_name, generic_type) in step.generics {
-        if let Typ::Abstract(arguments, output) = generic_type {
-            let arguments = arguments.into_iter().map(type_rust_ast_from_lir);
-            let output = type_rust_ast_from_lir(*output);
-            let identifier = format_ident!("{generic_name}");
-            generic_params.push(parse_quote! { #identifier: Fn(#(#arguments),*) -> #output });
-            generic_idents.push(identifier);
-        } else {
-            unreachable!()
-        }
-    }
-    let generics = if generic_params.is_empty() {
-        Default::default()
-    } else {
-        parse_quote! { <#(#generic_params),*> }
-    };
-
     let input_ty_name = Ident::new(
         &to_camel_case(&format!("{}Input", step.node_name)),
         Span::call_site(),
     );
-    let ty = if generic_idents.is_empty() {
-        parse_quote! { #input_ty_name }
-    } else {
-        parse_quote! { #input_ty_name<#(#generic_idents),*> }
-    };
+    let ty = parse_quote! { #input_ty_name };
 
     let inputs = vec![
         parse_quote!(&mut self),
@@ -179,7 +155,7 @@ pub fn rust_ast_from_lir(step: Step, crates: &mut BTreeSet<String>) -> ImplItemF
         abi: None,
         fn_token: Default::default(),
         ident: Ident::new("step", Span::call_site()),
-        generics,
+        generics: Default::default(),
         paren_token: Default::default(),
         inputs,
         variadic: None,
@@ -256,8 +232,7 @@ mod rust_ast_from_lir {
         let init = Step {
             contract: Default::default(),
             node_name: format!("Node"),
-            generics: vec![],
-            output_type: Typ::Integer,
+            output_type: Typ::int(),
             body: vec![
                 Stmt::Let {
                     pattern: Pattern::ident("o"),

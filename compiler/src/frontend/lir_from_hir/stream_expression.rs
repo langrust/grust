@@ -1,9 +1,4 @@
-use itertools::Itertools;
-
-prelude! {
-    hir::stream,
-    lir::item::Import,
-}
+prelude! { hir::stream }
 
 use super::LIRFromHIR;
 
@@ -48,28 +43,6 @@ impl LIRFromHIR for stream::Expr {
         match &self.kind {
             stream::Kind::Expression { expression } => expression.is_if_then_else(symbol_table),
             _ => false,
-        }
-    }
-
-    fn get_imports(&self, symbol_table: &SymbolTable) -> Vec<Import> {
-        match &self.kind {
-            stream::Kind::Expression { expression } => expression.get_imports(symbol_table),
-            stream::Kind::NodeApplication {
-                called_node_id,
-                inputs,
-                ..
-            } => {
-                let mut imports = inputs
-                    .iter()
-                    .flat_map(|(_, expression)| expression.get_imports(symbol_table))
-                    .unique()
-                    .collect::<Vec<_>>();
-                imports.push(Import::StateMachine(
-                    symbol_table.get_name(*called_node_id).clone(),
-                ));
-                imports
-            }
-            stream::Kind::FollowedBy { .. } => unreachable!(),
         }
     }
 }

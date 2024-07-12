@@ -1,5 +1,5 @@
 prelude! {
-    frontend::typing_analysis::TypeAnalysis,
+    frontend::typing_analysis::TypeAnalysis, macro2::Span,
 }
 
 impl<E> hir::expr::Kind<E>
@@ -32,7 +32,7 @@ where
                     .collect::<TRes<()>>()?;
 
                 Ok(Typ::Structure {
-                    name: symbol_table.get_name(*id).clone(),
+                    name: syn::Ident::new(symbol_table.get_name(*id), Span::call_site()),
                     id: *id,
                 })
             }

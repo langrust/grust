@@ -156,9 +156,9 @@ impl flow::Expr {
                 let fresh_name = identifier_creator.fresh_identifier("flow_expression");
                 let typing = self.get_type().unwrap();
                 let kind = match typing {
-                    Typ::Signal(_) => FlowKind::Signal(Default::default()),
-                    Typ::Event(_) => FlowKind::Event(Default::default()),
-                    Typ::Tuple(_) => panic!("tuple of flows can not be converted into flow"),
+                    Typ::Signal { .. } => FlowKind::Signal(Default::default()),
+                    Typ::Event { .. } => FlowKind::Event(Default::default()),
+                    Typ::Tuple { .. } => panic!("tuple of flows can not be converted into flow"),
                     _ => unreachable!(),
                 };
                 let fresh_id = symbol_table.insert_fresh_flow(fresh_name, kind, typing.clone());

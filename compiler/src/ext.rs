@@ -335,15 +335,6 @@ impl FunctionExt for ast::Function {
 }
 
 pub trait TypExt {
-    /// Get imports from type.
-    fn get_imports(&self, symbol_table: &SymbolTable) -> Vec<lir::item::Import>;
-
-    /// Get generics from type.
-    fn get_generics(
-        &mut self,
-        identifier_creator: &mut hir::IdentifierCreator,
-    ) -> Vec<(String, Typ)>;
-
     /// Transforms AST into HIR and check identifiers good use.
     fn hir_from_ast(
         self,
@@ -354,92 +345,14 @@ pub trait TypExt {
 }
 
 mod typ {
-    prelude! {
-        ast::Typ,
-        lir::item::Import,
-        hir::IdentifierCreator,
-    }
+    use syn::{
+        punctuated::{Pair, Punctuated},
+        Token,
+    };
+
+    prelude! { ast::Typ }
 
     impl TypExt for Typ {
-        fn get_imports(&self, symbol_table: &SymbolTable) -> Vec<Import> {
-            use itertools::*;
-            match self {
-                Typ::Any | Typ::Integer | Typ::Float | Typ::Boolean | Typ::Unit | Typ::Time => {
-                    vec![]
-                }
-                Typ::Enumeration { name, .. } => vec![Import::Enumeration(name.clone())],
-                Typ::Structure { name, .. } => vec![Import::Structure(name.clone())],
-                Typ::Array(typing, _)
-                | Typ::SMEvent(typing)
-                | Typ::SMTimeout(typing)
-                | Typ::Signal(typing)
-                | Typ::Event(typing)
-                | Typ::Timeout(typing) => typing.get_imports(symbol_table),
-                Typ::Tuple(elements_types) => elements_types
-                    .iter()
-                    .flat_map(|typing| typing.get_imports(symbol_table))
-                    .unique()
-                    .collect(),
-                Typ::Abstract(inputs_types, output_type) => {
-                    let mut imports = output_type.get_imports(symbol_table);
-                    let mut inputs_imports = inputs_types
-                        .iter()
-                        .flat_map(|typing| typing.get_imports(symbol_table))
-                        .unique()
-                        .collect::<Vec<_>>();
-                    imports.append(&mut inputs_imports);
-                    imports
-                }
-                Typ::NotDefinedYet(_) | Typ::Polymorphism(_) | Typ::Generic(_) => unreachable!(),
-            }
-        }
-
-        /// Get generics from type.
-        fn get_generics(
-            &mut self,
-            identifier_creator: &mut IdentifierCreator,
-        ) -> Vec<(String, Typ)> {
-            match self {
-                Typ::Integer
-                | Typ::Float
-                | Typ::Boolean
-                | Typ::Enumeration { .. }
-                | Typ::Structure { .. }
-                | Typ::Any
-                | Typ::Unit
-                | Typ::Time => vec![],
-                Typ::Array(typing, _)
-                | Typ::SMEvent(typing)
-                | Typ::SMTimeout(typing)
-                | Typ::Signal(typing)
-                | Typ::Event(typing)
-                | Typ::Timeout(typing) => typing.get_generics(identifier_creator),
-                Typ::Abstract(inputs_types, output_type) => {
-                    let mut generics = output_type.get_generics(identifier_creator);
-                    let mut inputs_generics = inputs_types
-                        .iter_mut()
-                        .flat_map(|typing| typing.get_generics(identifier_creator))
-                        .collect::<Vec<_>>();
-                    generics.append(&mut inputs_generics);
-
-                    // create fresh identifier for the generic type implementing function and add it to
-                    // the generics
-                    let fresh_name = identifier_creator.new_type_identifier("F");
-                    generics.push((fresh_name.clone(), self.clone()));
-
-                    // modify self to be a generic type
-                    *self = Typ::Generic(fresh_name);
-
-                    generics
-                }
-                Typ::Tuple(elements_types) => elements_types
-                    .iter_mut()
-                    .flat_map(|typing| typing.get_generics(identifier_creator))
-                    .collect(),
-                Typ::NotDefinedYet(_) | Typ::Polymorphism(_) | Typ::Generic(_) => unreachable!(),
-            }
-        }
-
         /// Transforms AST into HIR and check identifiers good use.
         fn hir_from_ast(
             self,
@@ -450,67 +363,68 @@ mod typ {
             // precondition: Typedefs are stored in symbol table
             // postcondition: construct a new Type without `Typ::NotDefinedYet`
             match self {
-                Typ::Array(array_type, array_size) => Ok(Typ::array(
-                    array_type.hir_from_ast(location, symbol_table, errors)?,
-                    array_size,
-                )),
-                Typ::SMEvent(event_type) => Ok(Typ::sm_event(event_type.hir_from_ast(
-                    location,
-                    symbol_table,
-                    errors,
-                )?)),
-                Typ::SMTimeout(timeout_type) => Ok(Typ::sm_timeout(timeout_type.hir_from_ast(
-                    location,
-                    symbol_table,
-                    errors,
-                )?)),
-                Typ::Tuple(tuple_types) => Ok(Typ::tuple(
-                    tuple_types
-                        .into_iter()
-                        .map(|element_type| element_type.hir_from_ast(location, symbol_table, errors))
-                        .collect::<TRes<Vec<_>>>()?,
-                )),
+                Typ::Array { bracket_token, ty, semi_token, size } => Ok(Typ::Array {
+                    bracket_token,
+                    ty: Box::new(ty.hir_from_ast(location, symbol_table, errors)?),
+                    semi_token,
+                    size
+                }),
+                Typ::Tuple { paren_token, elements } => Ok(Typ::Tuple {
+                    paren_token,
+                    elements: elements.into_pairs()
+                    .map(|pair| {
+                        let (ty, comma) = pair.into_tuple();
+                        let ty = ty.hir_from_ast(location, symbol_table, errors)?;
+                        Ok(Pair::new(ty, comma))
+                    }).collect::<TRes<Punctuated<Typ, Token![,]>>>()?
+                }),
                 Typ::NotDefinedYet(name) => symbol_table
-                    .get_struct_id(&name, false, location.clone(), &mut vec![])
-                    .map(|id| Typ::structure(name.clone(), id))
+                    .get_struct_id(&name.to_string(), false, location.clone(), &mut vec![])
+                    .map(|id| Typ::Structure { name: name.clone(), id })
                     .or_else(|_| {
                         symbol_table
-                            .get_enum_id(&name, false, location.clone(), &mut vec![])
-                            .map(|id| Typ::enumeration(name.clone(), id))
+                            .get_enum_id(&name.to_string(), false, location.clone(), &mut vec![])
+                            .map(|id| Typ::Enumeration { name: name.clone(), id })
                     })
                     .or_else(|_| {
-                        let id = symbol_table.get_array_id(&name, false, location.clone(), errors)?;
+                        let id = symbol_table.get_array_id(&name.to_string(), false, location.clone(), errors)?;
                         Ok(symbol_table.get_array(id))
                     }),
-                Typ::Abstract(inputs_types, output_type) => {
-                    let inputs_types = inputs_types
-                        .into_iter()
-                        .map(|input_type| input_type.hir_from_ast(location, symbol_table, errors))
-                        .collect::<TRes<Vec<_>>>()?;
-                    let output_type = output_type.hir_from_ast(location, symbol_table, errors)?;
-                    Ok(Typ::function(inputs_types, output_type))
+                Typ::Abstract { paren_token, inputs, arrow_token, output } => {
+                    let inputs = inputs.into_pairs()
+                    .map(|pair| {
+                        let (ty, comma) = pair.into_tuple();
+                        let ty = ty.hir_from_ast(location, symbol_table, errors)?;
+                        Ok(Pair::new(ty, comma))
+                    }).collect::<TRes<Punctuated<Typ, Token![,]>>>()?;
+                    let output = output.hir_from_ast(location, symbol_table, errors)?;
+                    Ok(Typ::Abstract { paren_token, inputs, arrow_token, output: output.into() })
                 }
-                Typ::Signal(signal_type) => Ok(Typ::signal(signal_type.hir_from_ast(
-                    location,
-                    symbol_table,
-                    errors,
-                )?)),
-                Typ::Event(event_type) => Ok(Typ::event(event_type.hir_from_ast(
-                    location,
-                    symbol_table,
-                    errors,
-                )?)),
-                Typ::Timeout(timeout_type) => Ok(Typ::timeout(timeout_type.hir_from_ast(
-                    location,
-                    symbol_table,
-                    errors,
-                )?)),
-                Typ::Integer | Typ::Float | Typ::Boolean | Typ::Unit| Typ::Time => Ok(self),
+                Typ::SMEvent { ty, question_token } => Ok(Typ::SMEvent {
+                    ty: Box::new(ty.hir_from_ast(location, symbol_table, errors)?),
+                    question_token
+                }),
+                Typ::SMTimeout { ty, not_token } => Ok(Typ::SMTimeout {
+                    ty: Box::new(ty.hir_from_ast(location, symbol_table, errors)?),
+                    not_token
+                }),
+                Typ::Signal { signal_token, ty } => Ok(Typ::Signal {
+                    signal_token,
+                    ty: Box::new(ty.hir_from_ast(location, symbol_table, errors)?),
+                }),
+                Typ::Event { event_token, ty } => Ok(Typ::Event {
+                    event_token,
+                    ty: Box::new(ty.hir_from_ast(location, symbol_table, errors)?),
+                }),
+                Typ::Timeout { timeout_token, ty } => Ok(Typ::Timeout {
+                    timeout_token,
+                    ty: Box::new(ty.hir_from_ast(location, symbol_table, errors)?),
+                }),
+                Typ::Integer(_) | Typ::Float(_) | Typ::Boolean(_) | Typ::Unit(_) | Typ::Time => Ok(self),
                 Typ::Enumeration { .. }    // no enumeration at this time: they are `NotDefinedYet`
                 | Typ::Structure { .. }    // no structure at this time: they are `NotDefinedYet`
                 | Typ::Any                 // users can not write `Any` type
                 | Typ::Polymorphism(_)     // users can not write `Polymorphism` type
-                | Typ::Generic(_)          // users can not write `Generic` type
                  => unreachable!(),
             }
         }

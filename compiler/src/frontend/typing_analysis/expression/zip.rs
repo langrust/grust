@@ -29,7 +29,7 @@ where
                     .collect::<TRes<()>>()?;
 
                 let length = match arrays[0].get_type().unwrap() {
-                    Typ::Array(_, n) => Ok(n),
+                    Typ::Array { size: n, .. } => Ok(n),
                     ty => {
                         let error = Error::ExpectArray {
                             given_type: ty.clone(),
@@ -42,11 +42,11 @@ where
                 let tuple_types = arrays
                     .iter()
                     .map(|array| match array.get_type().unwrap() {
-                        Typ::Array(ty, n) if n == length => Ok(*ty.clone()),
-                        Typ::Array(_, n) => {
+                        Typ::Array { ty, size: n, .. } if n == length => Ok(*ty.clone()),
+                        Typ::Array { size: n, .. } => {
                             let error = Error::IncompatibleLength {
-                                given_length: *n,
-                                expected_length: *length,
+                                given_length: n.base10_parse().unwrap(),
+                                expected_length: length.base10_parse().unwrap(),
                                 location: location.clone(),
                             };
                             errors.push(error);
@@ -64,9 +64,12 @@ where
                     .collect::<TRes<Vec<Typ>>>()?;
 
                 let array_type = if tuple_types.len() > 1 {
-                    Typ::Array(Box::new(Typ::Tuple(tuple_types)), *length)
+                    Typ::array(Typ::tuple(tuple_types), length.base10_parse().unwrap())
                 } else {
-                    Typ::Array(Box::new(tuple_types.get(0).unwrap().clone()), *length)
+                    Typ::array(
+                        tuple_types.get(0).unwrap().clone(),
+                        length.base10_parse().unwrap(),
+                    )
                 };
 
                 Ok(array_type)

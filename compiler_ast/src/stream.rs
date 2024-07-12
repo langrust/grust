@@ -419,7 +419,7 @@ mod parse_stream_expression {
     fn should_parse_typed_abstraction() {
         let expression: Expr = syn::parse_quote! {|x: int| f(x)};
         let control = Expr::type_abstraction(TypedAbstraction::new(
-            vec![("x".into(), Typ::Integer)],
+            vec![("x".into(), Typ::int())],
             Expr::app(Application::new(Expr::ident("f"), vec![Expr::ident("x")])),
         ));
         assert_eq!(expression, control)

@@ -1,5 +1,5 @@
 prelude! {
-    frontend::typing_analysis::TypeAnalysis,
+    frontend::typing_analysis::TypeAnalysis, macro2::Span
 }
 
 impl<E> hir::expr::Kind<E>
@@ -13,7 +13,7 @@ where
             hir::expr::Kind::Enumeration { ref enum_id, .. } => {
                 // type each field and check their type
                 Ok(Typ::Enumeration {
-                    name: symbol_table.get_name(*enum_id).clone(),
+                    name: syn::Ident::new(symbol_table.get_name(*enum_id), Span::call_site()),
                     id: *enum_id,
                 })
             }

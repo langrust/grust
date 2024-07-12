@@ -1,6 +1,4 @@
-prelude! { just
-    item::{ Import, state_machine::{input::Input, state::State} },
-}
+prelude! { just item::state_machine::{input::Input, state::State} }
 
 /// LIR [Input](crate::lir::item::state_machine::input::Input) module.
 pub mod input;
@@ -12,8 +10,6 @@ pub mod state;
 pub struct StateMachine {
     /// The node's name.
     pub name: String,
-    /// The imports (used typedefs, functions and nodes).
-    pub imports: Vec<Import>,
     /// The input structure.
     pub input: Input,
     /// The state structure.

@@ -618,7 +618,7 @@ impl SymbolTable {
                 kind: FlowKind::Event(Default::default()),
                 period: Some(period),
                 deadline: None,
-                typing: Typ::Event(Box::new(Typ::Time)),
+                typing: Typ::event(Typ::time()),
             },
             name: fresh_name,
         };
@@ -635,7 +635,7 @@ impl SymbolTable {
                 kind: FlowKind::Event(Default::default()),
                 period: None,
                 deadline: Some(deadline),
-                typing: Typ::Event(Box::new(Typ::Time)),
+                typing: Typ::event(Typ::time()),
             },
             name: fresh_name,
         };
@@ -755,7 +755,7 @@ impl SymbolTable {
                     panic!("a symbol type can not be modified")
                 }
                 *output_type = Some(new_type.clone());
-                *typing = Some(Typ::Abstract(inputs_type, Box::new(new_type)))
+                *typing = Some(Typ::function(inputs_type, new_type))
             }
             _ => unreachable!(),
         }
@@ -1075,10 +1075,9 @@ impl SymbolTable {
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Array { array_type, size } => Typ::Array(
-                Box::new(array_type.as_ref().expect("expect type").clone()),
-                *size,
-            ),
+            SymbolKind::Array { array_type, size } => {
+                Typ::array(array_type.as_ref().expect("expect type").clone(), *size)
+            }
             _ => unreachable!(),
         }
     }
