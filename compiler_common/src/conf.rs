@@ -36,6 +36,14 @@ fn write<T>(f: impl FnOnce(&mut Conf) -> T) -> T {
     f(&mut *conf)
 }
 
+/// Resets the global configuration to its default value.
+///
+/// The global state is maintained between proc-macro expansions, we need to reset before parsing a
+/// new configuration to avoid errors such as "code-dump target already defined".
+pub fn reset() {
+    write(|conf| *conf = Conf::default())
+}
+
 macro_rules! def {
     { $(
         $typ:ty { $(
