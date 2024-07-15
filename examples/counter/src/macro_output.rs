@@ -35,12 +35,9 @@ impl TestState {
         }
     }
     pub fn step(&mut self, input: TestInput) -> i64 {
-        let stream_expression_fresh_ident = self.mem;
+        let x = self.mem;
         let half = self.mem_1;
-        let y = self.counter.step(CounterInput {
-            res: stream_expression_fresh_ident,
-            tick: half,
-        });
+        let y = self.counter.step(CounterInput { res: x, tick: half });
         self.mem = y > 35i64;
         self.mem_1 = !half;
         y

@@ -49,17 +49,17 @@ pub mod runtime {
     use RuntimeTimer as T;
     #[derive(PartialEq)]
     pub enum RuntimeTimer {
-        TimeoutFreshIdent,
+        TimeoutPedestrian,
     }
     impl timer_stream::Timing for RuntimeTimer {
         fn get_duration(&self) -> std::time::Duration {
             match self {
-                T::TimeoutFreshIdent => std::time::Duration::from_millis(2000u64),
+                T::TimeoutPedestrian => std::time::Duration::from_millis(2000u64),
             }
         }
         fn do_reset(&self) -> bool {
             match self {
-                T::TimeoutFreshIdent => true,
+                T::TimeoutPedestrian => true,
             }
         }
     }
@@ -126,7 +126,7 @@ pub mod runtime {
             {
                 let res = runtime
                     .timer
-                    .send((T::TimeoutFreshIdent, init_instant))
+                    .send((T::TimeoutPedestrian, init_instant))
                     .await;
                 if res.is_err() {
                     return;
@@ -143,8 +143,8 @@ pub mod runtime {
                     I::PedestrianR(pedestrian_r, instant) => {
                         runtime.aeb.handle_pedestrian_r(instant, pedestrian_r).await;
                     }
-                    I::Timer(T::TimeoutFreshIdent, instant) => {
-                        runtime.aeb.handle_timeout_fresh_ident(instant).await;
+                    I::Timer(T::TimeoutPedestrian, instant) => {
+                        runtime.aeb.handle_timeout_pedestrian(instant).await;
                     }
                 }
             }
@@ -204,10 +204,10 @@ pub mod runtime {
                 instant: std::time::Instant,
                 pedestrian_l: f64,
             ) {
-                let flow_expression_fresh_ident = pedestrian_l;
-                let pedestrian = Ok(flow_expression_fresh_ident);
+                let x = pedestrian_l;
+                let pedestrian = Ok(x);
                 {
-                    let res = self.timer.send((T::TimeoutFreshIdent, instant)).await;
+                    let res = self.timer.send((T::TimeoutPedestrian, instant)).await;
                     if res.is_err() {
                         return;
                     }
@@ -229,10 +229,10 @@ pub mod runtime {
                 instant: std::time::Instant,
                 pedestrian_r: f64,
             ) {
-                let flow_expression_fresh_ident = pedestrian_r;
-                let pedestrian = Ok(flow_expression_fresh_ident);
+                let x = pedestrian_r;
+                let pedestrian = Ok(x);
                 {
-                    let res = self.timer.send((T::TimeoutFreshIdent, instant)).await;
+                    let res = self.timer.send((T::TimeoutPedestrian, instant)).await;
                     if res.is_err() {
                         return;
                     }
@@ -249,10 +249,10 @@ pub mod runtime {
                     }
                 }
             }
-            pub async fn handle_timeout_fresh_ident(&mut self, instant: std::time::Instant) {
+            pub async fn handle_timeout_pedestrian(&mut self, instant: std::time::Instant) {
                 let pedestrian = Err(());
                 {
-                    let res = self.timer.send((T::TimeoutFreshIdent, instant)).await;
+                    let res = self.timer.send((T::TimeoutPedestrian, instant)).await;
                     if res.is_err() {
                         return;
                     }

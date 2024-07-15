@@ -153,7 +153,7 @@ impl flow::Expr {
                 let mut statements = self.normal_form(identifier_creator, symbol_table);
 
                 // create fresh identifier for the new statement
-                let fresh_name = identifier_creator.fresh_identifier("flow_expression");
+                let fresh_name = identifier_creator.fresh_identifier("", "x");
                 let typing = self.get_type().unwrap();
                 let kind = match typing {
                     Typ::Signal { .. } => FlowKind::Signal(Default::default()),
