@@ -70,8 +70,8 @@ impl IdentifierCreator {
         self.new_identifier_with("", name, "")
     }
 
-    pub fn fresh_identifier(&mut self, kind: &str) -> String {
-        self.new_identifier_with(kind, "fresh_ident", "")
+    pub fn fresh_identifier(&mut self, kind: &str, name: &str) -> String {
+        self.new_identifier_with(kind, name, "")
     }
 
     /// Create new type identifier.

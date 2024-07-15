@@ -97,7 +97,8 @@ impl stream::Expr {
                 );
 
                 // create fresh identifier for the new statement
-                let fresh_name = identifier_creator.fresh_identifier("node_application");
+                let fresh_name = identifier_creator
+                    .fresh_identifier("comp_app", symbol_table.get_name(called_node_id));
                 let typing = self.get_type().cloned();
                 let fresh_id =
                     symbol_table.insert_fresh_signal(fresh_name, Scope::Local, typing.clone());
@@ -162,7 +163,7 @@ impl stream::Expr {
                     self.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
 
                 // create fresh identifier for the new statement
-                let fresh_name = identifier_creator.fresh_identifier("stream_expression");
+                let fresh_name = identifier_creator.fresh_identifier("", "x");
                 let typing = self.get_type();
                 let fresh_id =
                     symbol_table.insert_fresh_signal(fresh_name, Scope::Local, typing.cloned());

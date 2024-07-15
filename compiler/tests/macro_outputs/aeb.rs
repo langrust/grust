@@ -59,17 +59,17 @@ pub mod runtime {
     use RuntimeTimer as T;
     #[derive(PartialEq)]
     pub enum RuntimeTimer {
-        TimeoutFreshIdent,
+        TimeoutPedestrian,
     }
     impl timer_stream::Timing for RuntimeTimer {
         fn get_duration(&self) -> std::time::Duration {
             match self {
-                T::TimeoutFreshIdent => std::time::Duration::from_millis(500u64),
+                T::TimeoutPedestrian => std::time::Duration::from_millis(500u64),
             }
         }
         fn do_reset(&self) -> bool {
             match self {
-                T::TimeoutFreshIdent => true,
+                T::TimeoutPedestrian => true,
             }
         }
     }
@@ -136,7 +136,7 @@ pub mod runtime {
             {
                 let res = runtime
                     .timer
-                    .send((T::TimeoutFreshIdent, init_instant))
+                    .send((T::TimeoutPedestrian, init_instant))
                     .await;
                 if res.is_err() {
                     return;
@@ -147,8 +147,8 @@ pub mod runtime {
                     I::PedestrianR(pedestrian_r, instant) => {
                         runtime.aeb.handle_pedestrian_r(instant, pedestrian_r).await;
                     }
-                    I::Timer(T::TimeoutFreshIdent, instant) => {
-                        runtime.aeb.handle_timeout_fresh_ident(instant).await;
+                    I::Timer(T::TimeoutPedestrian, instant) => {
+                        runtime.aeb.handle_timeout_pedestrian(instant).await;
                     }
                     I::SpeedKmH(speed_km_h, instant) => {
                         runtime.aeb.handle_speed_km_h(instant, speed_km_h).await;
@@ -208,10 +208,10 @@ pub mod runtime {
                 pedestrian_r: f64,
             ) {
             }
-            pub async fn handle_timeout_fresh_ident(&mut self, instant: std::time::Instant) {
+            pub async fn handle_timeout_pedestrian(&mut self, instant: std::time::Instant) {
                 let pedestrian = Err(());
                 {
-                    let res = self.timer.send((T::TimeoutFreshIdent, instant)).await;
+                    let res = self.timer.send((T::TimeoutPedestrian, instant)).await;
                     if res.is_err() {
                         return;
                     }
@@ -242,7 +242,7 @@ pub mod runtime {
             ) {
                 let pedestrian = Ok(pedestrian_l);
                 {
-                    let res = self.timer.send((T::TimeoutFreshIdent, instant)).await;
+                    let res = self.timer.send((T::TimeoutPedestrian, instant)).await;
                     if res.is_err() {
                         return;
                     }

@@ -976,7 +976,10 @@ impl<'a> PropagationBuilder<'a> {
                         flow::Kind::Sample { period_ms, .. }
                         | flow::Kind::Scan { period_ms, .. } => {
                             // add new timing event into the identifier creator
-                            let fresh_name = identifier_creator.fresh_identifier("period");
+                            let flow_name =
+                                symbol_table.get_name(pattern.identifiers().pop().unwrap());
+                            let fresh_name =
+                                identifier_creator.fresh_identifier("period", flow_name);
                             let typing = Typ::event(Typ::time());
                             let fresh_id =
                                 symbol_table.insert_fresh_period(fresh_name.clone(), *period_ms);
@@ -1006,7 +1009,10 @@ impl<'a> PropagationBuilder<'a> {
                         }
                         flow::Kind::Timeout { deadline, .. } => {
                             // add new timing event into the identifier creator
-                            let fresh_name = identifier_creator.fresh_identifier("timeout");
+                            let flow_name =
+                                symbol_table.get_name(pattern.identifiers().pop().unwrap());
+                            let fresh_name =
+                                identifier_creator.fresh_identifier("timeout", flow_name);
                             let typing = Typ::event(Typ::time());
                             let fresh_id =
                                 symbol_table.insert_fresh_deadline(fresh_name.clone(), *deadline);
@@ -1035,10 +1041,12 @@ impl<'a> PropagationBuilder<'a> {
                             })
                         }
                         flow::Kind::ComponentCall { component_id, .. } => {
+                            let comp_name = symbol_table.get_name(*component_id).clone();
                             // add potential period constrains
                             if let Some(period) = symbol_table.get_node_period(*component_id) {
                                 // add new timing event into the identifier creator
-                                let fresh_name = identifier_creator.fresh_identifier("period");
+                                let fresh_name =
+                                    identifier_creator.fresh_identifier("period", &comp_name);
                                 let typing = Typ::event(Typ::time());
                                 let fresh_id =
                                     symbol_table.insert_fresh_period(fresh_name.clone(), period);
@@ -1067,7 +1075,7 @@ impl<'a> PropagationBuilder<'a> {
                                     kind: TimingEventKind::Period(period.clone()),
                                 })
                             }
-                            components.push(symbol_table.get_name(*component_id).clone())
+                            components.push(comp_name)
                         }
                     }
                 }
