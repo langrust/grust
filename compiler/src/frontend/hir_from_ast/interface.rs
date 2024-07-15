@@ -1,7 +1,7 @@
 prelude! {
     ast::interface::{
-        FlowDeclaration, FlowExport, FlowExpression, FlowImport, FlowInstantiation,
-        FlowKind, FlowPattern, FlowStatement, Service,
+        Constrains, FlowDeclaration, FlowExport, FlowExpression, FlowImport,
+        FlowInstantiation, FlowKind, FlowPattern, FlowStatement, Service,
     },
     hir::{
         Pattern, flow,
@@ -25,12 +25,19 @@ impl HIRFromAST for Service {
     ) -> TRes<Self::HIR> {
         let Service {
             ident,
+            constrains,
             flow_statements,
             ..
         } = self;
 
         let id =
             symbol_table.insert_service(ident.to_string(), true, Location::default(), errors)?;
+
+        let constrains = if let Some(Constrains { min, max, .. }) = constrains {
+            (min.base10_parse().unwrap(), max.base10_parse().unwrap())
+        } else {
+            (10, 500)
+        };
 
         symbol_table.local();
         let statements = flow_statements
@@ -46,6 +53,7 @@ impl HIRFromAST for Service {
 
         Ok(hir::Service {
             id,
+            constrains,
             statements,
             graph,
         })
