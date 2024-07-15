@@ -15,8 +15,9 @@ impl Parse for ConfigItem {
         let ident: syn::Ident = input.parse()?;
         match ident.to_string().as_str() {
             "dump" => {
-                if conf::dump_code().is_some() {
-                    return Err(syn::Error::new_spanned(ident, "dump code only once"));
+                if let Some(prev) = conf::dump_code() {
+                    let msg = format!("code-dump target already set to `{prev}`");
+                    return Err(syn::Error::new_spanned(ident, msg));
                 }
                 let _: Token![=] = input.parse()?;
                 let val: syn::LitStr = input.parse()?;
@@ -64,6 +65,9 @@ impl Parse for Config {
             .call(syn::Attribute::parse_inner)
             .map(|attrs| !attrs.is_empty())
         {
+            // reset config before parsing items
+            conf::reset();
+
             let _: Token![#] = input.parse()?;
             let _: Token![!] = input.parse()?;
             let content;

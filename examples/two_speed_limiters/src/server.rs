@@ -27,7 +27,7 @@ mod sl {
             return Hysterisis { value: value, flag: true };
         }
 
-        // Enumerates the kinds of activation resquests.
+        // Enumerates the kinds of activation requests.
         enum ActivationRequest { Off, On }
 
         // Vehicle dynamic control states.

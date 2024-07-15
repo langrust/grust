@@ -3,10 +3,7 @@ prelude! {
     syn::*,
     quote::format_ident,
     backend::rust_ast_from_lir::{
-        item::execution_machine::{
-            flows_context::rust_ast_from_lir as flows_context_rust_ast_from_lir,
-            instruction_flow::rust_ast_from_lir as instruction_flow_rust_ast_from_lir
-        },
+        item::execution_machine::{flows_context, instruction_flow},
         r#type::rust_ast_from_lir as type_rust_ast_from_lir,
     },
     lir::item::execution_machine::{
@@ -25,7 +22,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
     } = run_loop;
 
     // result
-    let mut items = flows_context_rust_ast_from_lir(flows_context);
+    let mut items = flows_context::rust_ast_from_lir(flows_context);
 
     // create service structure
     let mut service_fields: Vec<Field> = vec![parse_quote! { context: Context }];
@@ -92,9 +89,13 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
                     let ty = type_rust_ast_from_lir(flow_type);
                     let instructions = instructions
                         .into_iter()
-                        .map(instruction_flow_rust_ast_from_lir);
+                        .map(instruction_flow::rust_ast_from_lir);
                     impl_items.push(parse_quote! {
-                        pub async fn #function_name(&mut self, instant: std::time::Instant, #ident: #ty) {
+                        pub async fn #function_name(
+                            &mut self,
+                            instant: std::time::Instant,
+                            #ident: #ty,
+                        ) {
                             #(#instructions)*
                         }
                     })
@@ -103,7 +104,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
                     let function_name: Ident = format_ident!("handle_{time_flow_name}");
                     let instructions = instructions
                         .into_iter()
-                        .map(instruction_flow_rust_ast_from_lir);
+                        .map(instruction_flow::rust_ast_from_lir);
                     impl_items.push(parse_quote! {
                         pub async fn #function_name(&mut self, instant: std::time::Instant) {
                             #(#instructions)*
