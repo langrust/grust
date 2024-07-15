@@ -149,171 +149,23 @@ impl Service {
         timing_events: &mut Vec<TimingEvent>,
         symbol_table: &mut SymbolTable,
     ) -> ServiceHandler {
+        // get service's name
+        let service = symbol_table.get_name(self.id).to_string();
+
         symbol_table.local();
-        let mut flows_context = self.get_flows_context(symbol_table);
-        let mut identifier_creator = IdentifierCreator::from(
-            self.get_flows_names(symbol_table).chain(
-                imports
-                    .values()
-                    .map(|import| symbol_table.get_name(import.id).clone()),
-            ),
-        );
 
-        // collects components, input flows, output flows, timing events that are present in the service
         let mut components = vec![];
-        let mut stmts_timers = HashMap::new();
-        let mut on_change_events = HashMap::new();
-        self.statements.iter().for_each(|(stmt_id, statement)| {
-            let stmt_id = *stmt_id;
-            match statement {
-                FlowStatement::Declaration(FlowDeclaration {
-                    pattern,
-                    flow_expression,
-                    ..
-                })
-                | FlowStatement::Instantiation(FlowInstantiation {
-                    pattern,
-                    flow_expression,
-                    ..
-                }) => {
-                    match &flow_expression.kind {
-                        flow::Kind::Ident { .. }
-                        | flow::Kind::Throttle { .. }
-                        | flow::Kind::Merge { .. } => (),
-                        flow::Kind::OnChange { .. } => {
-                            // get the identifier of the created event
-                            let mut ids = pattern.identifiers();
-                            debug_assert!(ids.len() == 1);
-                            let flow_event_id = ids.pop().unwrap();
-                            let event_name = symbol_table.get_name(flow_event_id).clone();
-
-                            // add new event into the identifier creator
-                            let fresh_name =
-                                identifier_creator.new_identifier_with("", &event_name, "old");
-                            let typing = symbol_table.get_type(flow_event_id).clone();
-                            let kind = symbol_table.get_flow_kind(flow_event_id).clone();
-                            let fresh_id = symbol_table.insert_fresh_flow(
-                                fresh_name.clone(),
-                                kind,
-                                typing.clone(),
-                            );
-
-                            // add event_old in flows_context
-                            flows_context.add_element(fresh_name, &typing);
-
-                            // push in on_change_events
-                            on_change_events.insert(flow_event_id, fresh_id);
-                        }
-                        flow::Kind::Sample { period_ms, .. }
-                        | flow::Kind::Scan { period_ms, .. } => {
-                            // add new timing event into the identifier creator
-                            let fresh_name = identifier_creator.fresh_identifier("period");
-                            let typing = Typ::event(Typ::time());
-                            let fresh_id =
-                                symbol_table.insert_fresh_period(fresh_name.clone(), *period_ms);
-
-                            // add timing_event in imports
-                            let fresh_statement_id = symbol_table.get_fresh_id();
-                            imports.insert(
-                                fresh_statement_id,
-                                FlowImport {
-                                    import_token: Default::default(),
-                                    id: fresh_id,
-                                    path: format_ident!("{fresh_name}").into(),
-                                    colon_token: Default::default(),
-                                    flow_type: typing,
-                                    semi_token: Default::default(),
-                                },
-                            );
-                            // add timing_event in graph
-                            self.graph.add_edge(fresh_statement_id, stmt_id, ());
-
-                            // push timing_event
-                            stmts_timers.insert(stmt_id, fresh_id);
-                            timing_events.push(TimingEvent {
-                                identifier: fresh_name,
-                                kind: TimingEventKind::Period(period_ms.clone()),
-                            });
-                        }
-                        flow::Kind::Timeout { deadline, .. } => {
-                            // add new timing event into the identifier creator
-                            let fresh_name = identifier_creator.fresh_identifier("timeout");
-                            let typing = Typ::event(Typ::time());
-                            let fresh_id =
-                                symbol_table.insert_fresh_deadline(fresh_name.clone(), *deadline);
-
-                            // add timing_event in imports
-                            let fresh_statement_id = symbol_table.get_fresh_id();
-                            imports.insert(
-                                fresh_statement_id,
-                                FlowImport {
-                                    import_token: Default::default(),
-                                    id: fresh_id,
-                                    path: format_ident!("{fresh_name}").into(),
-                                    colon_token: Default::default(),
-                                    flow_type: typing,
-                                    semi_token: Default::default(),
-                                },
-                            );
-                            // add timing_event in graph
-                            self.graph.add_edge(fresh_statement_id, stmt_id, ());
-
-                            // push timing_event
-                            stmts_timers.insert(stmt_id, fresh_id);
-                            timing_events.push(TimingEvent {
-                                identifier: fresh_name,
-                                kind: TimingEventKind::Timeout(deadline.clone()),
-                            })
-                        }
-                        flow::Kind::ComponentCall { component_id, .. } => {
-                            // add potential period constrains
-                            if let Some(period) = symbol_table.get_node_period(*component_id) {
-                                // add new timing event into the identifier creator
-                                let fresh_name = identifier_creator.fresh_identifier("period");
-                                let typing = Typ::event(Typ::time());
-                                let fresh_id =
-                                    symbol_table.insert_fresh_period(fresh_name.clone(), period);
-                                symbol_table.set_node_period_id(*component_id, fresh_id);
-
-                                // add timing_event in imports
-                                let fresh_statement_id = symbol_table.get_fresh_id();
-                                imports.insert(
-                                    fresh_statement_id,
-                                    FlowImport {
-                                        import_token: Default::default(),
-                                        id: fresh_id,
-                                        path: format_ident!("{fresh_name}").into(),
-                                        colon_token: Default::default(),
-                                        flow_type: typing,
-                                        semi_token: Default::default(),
-                                    },
-                                );
-                                // add timing_event in graph
-                                self.graph.add_edge(fresh_statement_id, stmt_id, ());
-
-                                // push timing_event
-                                stmts_timers.insert(stmt_id, fresh_id);
-                                timing_events.push(TimingEvent {
-                                    identifier: fresh_name,
-                                    kind: TimingEventKind::Period(period.clone()),
-                                })
-                            }
-                            components.push(symbol_table.get_name(*component_id).clone())
-                        }
-                    }
-                }
-            };
-        });
+        let mut flows_context = self.get_flows_context(symbol_table);
 
         // create flow propagations
         let mut propag_builder = PropagationBuilder::new(
-            &self,
+            &mut self,
             symbol_table,
-            &flows_context,
+            &mut flows_context,
             imports,
             exports,
-            on_change_events,
-            stmts_timers,
+            timing_events,
+            &mut components,
         );
         propag_builder.propagate();
         let propagations = propag_builder.into_propagations();
@@ -323,7 +175,7 @@ impl Service {
 
         symbol_table.global();
         ServiceHandler {
-            service: symbol_table.get_name(self.id).to_string(),
+            service,
             components,
             flows_handling,
             flows_context,
@@ -1011,14 +863,24 @@ impl<'a> PropagationBuilder<'a> {
     /// After creating the builder, you only need to [propagate](Self::propagate) the input flows.
     /// This will create the instructions to run when the input flow arrives.
     pub fn new(
-        service: &'a Service,
-        symbol_table: &'a SymbolTable,
-        flows_context: &'a FlowsContext,
-        imports: &'a HashMap<usize, FlowImport>,
+        service: &'a mut Service,
+        symbol_table: &'a mut SymbolTable,
+        flows_context: &'a mut FlowsContext,
+        imports: &'a mut HashMap<usize, FlowImport>,
         exports: &'a HashMap<usize, FlowExport>,
-        on_change_events: HashMap<usize, usize>,
-        stmts_timers: HashMap<usize, usize>,
+        timing_events: &'a mut Vec<TimingEvent>,
+        components: &'a mut Vec<String>,
     ) -> PropagationBuilder<'a> {
+        // retrieve timer and onchange events from service
+        let (stmts_timers, on_change_events) = Self::build_stmt_events(
+            service,
+            symbol_table,
+            flows_context,
+            imports,
+            timing_events,
+            components,
+        );
+
         // create events isles
         let mut isle_builder = IsleBuilder::new(symbol_table, service);
         isle_builder.trace_events(service.get_flows_ids(imports.values()));
@@ -1050,6 +912,169 @@ impl<'a> PropagationBuilder<'a> {
             on_change_events,
             stmts_timers,
         }
+    }
+
+    fn build_stmt_events(
+        service: &mut Service,
+        symbol_table: &mut SymbolTable,
+        flows_context: &mut FlowsContext,
+        imports: &mut HashMap<usize, FlowImport>,
+        timing_events: &mut Vec<TimingEvent>,
+        components: &mut Vec<String>,
+    ) -> (HashMap<usize, usize>, HashMap<usize, usize>) {
+        // collects components, timing events, on_change_events that are present in the service
+        let mut identifier_creator = IdentifierCreator::from(
+            service.get_flows_names(symbol_table).chain(
+                imports
+                    .values()
+                    .map(|import| symbol_table.get_name(import.id).clone()),
+            ),
+        );
+        let mut stmts_timers = HashMap::new();
+        let mut on_change_events = HashMap::new();
+        service.statements.iter().for_each(|(stmt_id, statement)| {
+            let stmt_id = *stmt_id;
+            match statement {
+                FlowStatement::Declaration(FlowDeclaration {
+                    pattern,
+                    flow_expression,
+                    ..
+                })
+                | FlowStatement::Instantiation(FlowInstantiation {
+                    pattern,
+                    flow_expression,
+                    ..
+                }) => {
+                    match &flow_expression.kind {
+                        flow::Kind::Ident { .. }
+                        | flow::Kind::Throttle { .. }
+                        | flow::Kind::Merge { .. } => (),
+                        flow::Kind::OnChange { .. } => {
+                            // get the identifier of the created event
+                            let mut ids = pattern.identifiers();
+                            debug_assert!(ids.len() == 1);
+                            let flow_event_id = ids.pop().unwrap();
+                            let event_name = symbol_table.get_name(flow_event_id).clone();
+
+                            // add new event into the identifier creator
+                            let fresh_name =
+                                identifier_creator.new_identifier_with("", &event_name, "old");
+                            let typing = symbol_table.get_type(flow_event_id).clone();
+                            let kind = symbol_table.get_flow_kind(flow_event_id).clone();
+                            let fresh_id = symbol_table.insert_fresh_flow(
+                                fresh_name.clone(),
+                                kind,
+                                typing.clone(),
+                            );
+
+                            // add event_old in flows_context
+                            flows_context.add_element(fresh_name, &typing);
+
+                            // push in on_change_events
+                            on_change_events.insert(flow_event_id, fresh_id);
+                        }
+                        flow::Kind::Sample { period_ms, .. }
+                        | flow::Kind::Scan { period_ms, .. } => {
+                            // add new timing event into the identifier creator
+                            let fresh_name = identifier_creator.fresh_identifier("period");
+                            let typing = Typ::event(Typ::time());
+                            let fresh_id =
+                                symbol_table.insert_fresh_period(fresh_name.clone(), *period_ms);
+
+                            // add timing_event in imports
+                            let fresh_statement_id = symbol_table.get_fresh_id();
+                            imports.insert(
+                                fresh_statement_id,
+                                FlowImport {
+                                    import_token: Default::default(),
+                                    id: fresh_id,
+                                    path: format_ident!("{fresh_name}").into(),
+                                    colon_token: Default::default(),
+                                    flow_type: typing,
+                                    semi_token: Default::default(),
+                                },
+                            );
+                            // add timing_event in graph
+                            service.graph.add_edge(fresh_statement_id, stmt_id, ());
+
+                            // push timing_event
+                            stmts_timers.insert(stmt_id, fresh_id);
+                            timing_events.push(TimingEvent {
+                                identifier: fresh_name,
+                                kind: TimingEventKind::Period(period_ms.clone()),
+                            });
+                        }
+                        flow::Kind::Timeout { deadline, .. } => {
+                            // add new timing event into the identifier creator
+                            let fresh_name = identifier_creator.fresh_identifier("timeout");
+                            let typing = Typ::event(Typ::time());
+                            let fresh_id =
+                                symbol_table.insert_fresh_deadline(fresh_name.clone(), *deadline);
+
+                            // add timing_event in imports
+                            let fresh_statement_id = symbol_table.get_fresh_id();
+                            imports.insert(
+                                fresh_statement_id,
+                                FlowImport {
+                                    import_token: Default::default(),
+                                    id: fresh_id,
+                                    path: format_ident!("{fresh_name}").into(),
+                                    colon_token: Default::default(),
+                                    flow_type: typing,
+                                    semi_token: Default::default(),
+                                },
+                            );
+                            // add timing_event in graph
+                            service.graph.add_edge(fresh_statement_id, stmt_id, ());
+
+                            // push timing_event
+                            stmts_timers.insert(stmt_id, fresh_id);
+                            timing_events.push(TimingEvent {
+                                identifier: fresh_name,
+                                kind: TimingEventKind::Timeout(deadline.clone()),
+                            })
+                        }
+                        flow::Kind::ComponentCall { component_id, .. } => {
+                            // add potential period constrains
+                            if let Some(period) = symbol_table.get_node_period(*component_id) {
+                                // add new timing event into the identifier creator
+                                let fresh_name = identifier_creator.fresh_identifier("period");
+                                let typing = Typ::event(Typ::time());
+                                let fresh_id =
+                                    symbol_table.insert_fresh_period(fresh_name.clone(), period);
+                                symbol_table.set_node_period_id(*component_id, fresh_id);
+
+                                // add timing_event in imports
+                                let fresh_statement_id = symbol_table.get_fresh_id();
+                                imports.insert(
+                                    fresh_statement_id,
+                                    FlowImport {
+                                        import_token: Default::default(),
+                                        id: fresh_id,
+                                        path: format_ident!("{fresh_name}").into(),
+                                        colon_token: Default::default(),
+                                        flow_type: typing,
+                                        semi_token: Default::default(),
+                                    },
+                                );
+                                // add timing_event in graph
+                                service.graph.add_edge(fresh_statement_id, stmt_id, ());
+
+                                // push timing_event
+                                stmts_timers.insert(stmt_id, fresh_id);
+                                timing_events.push(TimingEvent {
+                                    identifier: fresh_name,
+                                    kind: TimingEventKind::Period(period.clone()),
+                                })
+                            }
+                            components.push(symbol_table.get_name(*component_id).clone())
+                        }
+                    }
+                }
+            };
+        });
+
+        (stmts_timers, on_change_events)
     }
 
     /// Destroy PropagationsBuilder into Propagations.
