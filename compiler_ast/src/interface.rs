@@ -572,11 +572,48 @@ impl Parse for FlowStatement {
     }
 }
 
+/// Service's time constrains.
+pub struct Constrains {
+    pub at_token: Token![@],
+    pub bracket_token: token::Bracket,
+    pub min: syn::LitInt,
+    pub comma_token: Token![,],
+    pub max: syn::LitInt,
+}
+impl Constrains {
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        input.peek(Token![@])
+    }
+}
+impl Parse for Constrains {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let at_token: token::At = input.parse()?;
+        let content;
+        let bracket_token: token::Bracket = syn::bracketed!(content in input);
+        let min: syn::LitInt = content.parse()?;
+        let comma_token: token::Comma = content.parse()?;
+        let max: syn::LitInt = content.parse()?;
+        if content.is_empty() {
+            Ok(Constrains {
+                at_token,
+                bracket_token,
+                min,
+                comma_token,
+                max,
+            })
+        } else {
+            Err(content.error("expected something like `@ [min, max]`"))
+        }
+    }
+}
+
 /// GRust service AST.
 pub struct Service {
     pub service_token: keyword::service,
     /// Service identifier.
     pub ident: syn::Ident,
+    /// Service's time constrains.
+    pub constrains: Option<Constrains>,
     pub brace: token::Brace,
     /// Service's flow statements.
     pub flow_statements: Vec<FlowStatement>,
@@ -590,6 +627,11 @@ impl Parse for Service {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let service_token: keyword::service = input.parse()?;
         let ident: syn::Ident = input.parse()?;
+        let constrains = if Constrains::peek(input) {
+            Some(input.parse()?)
+        } else {
+            None
+        };
         let content;
         let brace: token::Brace = syn::braced!(content in input);
         let flow_statements: Vec<FlowStatement> = {
@@ -602,6 +644,7 @@ impl Parse for Service {
         Ok(Service {
             service_token,
             ident,
+            constrains,
             brace,
             flow_statements,
         })
