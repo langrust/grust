@@ -50,16 +50,22 @@ pub mod runtime {
     #[derive(PartialEq)]
     pub enum RuntimeTimer {
         TimeoutPedestrian,
+        DelayAeb,
+        TimeoutAeb,
     }
     impl timer_stream::Timing for RuntimeTimer {
         fn get_duration(&self) -> std::time::Duration {
             match self {
                 T::TimeoutPedestrian => std::time::Duration::from_millis(2000u64),
+                T::DelayAeb => std::time::Duration::from_millis(10u64),
+                T::TimeoutAeb => std::time::Duration::from_millis(500u64),
             }
         }
         fn do_reset(&self) -> bool {
             match self {
                 T::TimeoutPedestrian => true,
+                T::DelayAeb => true,
+                T::TimeoutAeb => true,
             }
         }
     }
@@ -132,6 +138,7 @@ pub mod runtime {
         ) -> Result<(), futures::channel::mpsc::SendError> {
             futures::pin_mut!(input);
             let mut runtime = self;
+            runtime.send_timer(T::TimeoutAeb, init_instant).await?;
             runtime
                 .send_timer(T::TimeoutPedestrian, init_instant)
                 .await?;
@@ -139,6 +146,9 @@ pub mod runtime {
                 match input {
                     I::SpeedKmH(speed_km_h, instant) => {
                         runtime.aeb.handle_speed_km_h(instant, speed_km_h).await?;
+                    }
+                    I::Timer(T::TimeoutAeb, instant) => {
+                        runtime.aeb.handle_timeout_aeb(instant).await?;
                     }
                     I::PedestrianL(pedestrian_l, instant) => {
                         runtime
@@ -154,6 +164,9 @@ pub mod runtime {
                     }
                     I::Timer(T::TimeoutPedestrian, instant) => {
                         runtime.aeb.handle_timeout_pedestrian(instant).await?;
+                    }
+                    I::Timer(T::DelayAeb, instant) => {
+                        runtime.aeb.handle_delay_aeb(instant).await?;
                     }
                 }
             }
@@ -231,6 +244,27 @@ pub mod runtime {
                 self.context.speed_km_h = speed_km_h;
                 Ok(())
             }
+            pub async fn handle_timeout_aeb(
+                &mut self,
+                instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.reset_time_constrains(instant).await?;
+                let brakes = self
+                    .braking_state
+                    .step(self.context.get_braking_state_inputs(None));
+                self.context.brakes = brakes;
+                let brakes = self.context.brakes;
+                self.send_output(O::Brakes(brakes, instant)).await?;
+                Ok(())
+            }
+            #[inline]
+            pub async fn reset_service_timeout(
+                &mut self,
+                instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.timer.send((T::TimeoutAeb, instant)).await?;
+                Ok(())
+            }
             pub async fn handle_pedestrian_l(
                 &mut self,
                 instant: std::time::Instant,
@@ -275,6 +309,44 @@ pub mod runtime {
                 self.context.brakes = brakes;
                 let brakes = self.context.brakes;
                 self.send_output(O::Brakes(brakes, instant)).await?;
+                Ok(())
+            }
+            pub async fn handle_delay_aeb(
+                &mut self,
+                instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                if self.input_store.not_empty() {
+                    self.reset_time_constrains(instant).await?;
+                    self.handle_input_store(instant).await?;
+                } else {
+                    self.delayed = true;
+                }
+                Ok(())
+            }
+            #[inline]
+            pub async fn reset_service_delay(
+                &mut self,
+                instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.timer.send((T::DelayAeb, instant)).await?;
+                Ok(())
+            }
+            #[inline]
+            pub async fn handle_input_store(
+                &mut self,
+                instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                todo!();
+                Ok(())
+            }
+            #[inline]
+            pub async fn reset_time_constrains(
+                &mut self,
+                instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.reset_service_delay(instant).await?;
+                self.reset_service_timeout(instant).await?;
+                self.delayed = false;
                 Ok(())
             }
             #[inline]

@@ -4,7 +4,7 @@ use grust::grust;
 pub mod macro_output;
 
 grust! {
-    #![dump = "examples/speed_limiter/src/macro_output.rs"]
+    #![dump = "examples/speed_limiter/src/macro_output.rs", test]
     // # Imports
     import signal  car::hmi::speed_limiter::activation : ActivationRequest;
     import signal  car::hmi::speed_limiter::set_speed : float;
