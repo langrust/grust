@@ -286,18 +286,24 @@ pub mod runtime {
     pub enum RuntimeTimer {
         PeriodInRegulation,
         PeriodSpeedLimiter,
+        DelaySpeedLimiter,
+        TimeoutSpeedLimiter,
     }
     impl timer_stream::Timing for RuntimeTimer {
         fn get_duration(&self) -> std::time::Duration {
             match self {
                 T::PeriodInRegulation => std::time::Duration::from_millis(10u64),
                 T::PeriodSpeedLimiter => std::time::Duration::from_millis(10u64),
+                T::DelaySpeedLimiter => std::time::Duration::from_millis(10u64),
+                T::TimeoutSpeedLimiter => std::time::Duration::from_millis(500u64),
             }
         }
         fn do_reset(&self) -> bool {
             match self {
                 T::PeriodInRegulation => false,
                 T::PeriodSpeedLimiter => false,
+                T::DelaySpeedLimiter => true,
+                T::TimeoutSpeedLimiter => true,
             }
         }
     }
@@ -391,6 +397,9 @@ pub mod runtime {
                 .send_timer(T::PeriodSpeedLimiter, init_instant)
                 .await?;
             runtime
+                .send_timer(T::TimeoutSpeedLimiter, init_instant)
+                .await?;
+            runtime
                 .send_timer(T::PeriodInRegulation, init_instant)
                 .await?;
             while let Some(input) = input.next().await {
@@ -416,6 +425,12 @@ pub mod runtime {
                             .handle_set_speed(instant, set_speed)
                             .await?;
                     }
+                    I::Timer(T::TimeoutSpeedLimiter, instant) => {
+                        runtime
+                            .speed_limiter
+                            .handle_timeout_speed_limiter(instant)
+                            .await?;
+                    }
                     I::Vdc(vdc, instant) => {
                         runtime.speed_limiter.handle_vdc(instant, vdc).await?;
                     }
@@ -435,6 +450,12 @@ pub mod runtime {
                         runtime
                             .speed_limiter
                             .handle_activation(instant, activation)
+                            .await?;
+                    }
+                    I::Timer(T::DelaySpeedLimiter, instant) => {
+                        runtime
+                            .speed_limiter
+                            .handle_delay_speed_limiter(instant)
                             .await?;
                     }
                     I::Failure(failure, instant) => {
@@ -614,6 +635,28 @@ pub mod runtime {
                 }
                 Ok(())
             }
+            pub async fn handle_timeout_speed_limiter(
+                &mut self,
+                instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.reset_time_constrains(instant).await?;
+                let (state, on_state, in_regulation_aux, state_update) = self
+                    .speed_limiter
+                    .step(self.context.get_speed_limiter_inputs(None, None, None));
+                self.context.state = state;
+                self.context.on_state = on_state;
+                self.context.in_regulation_aux = in_regulation_aux;
+                self.context.state_update = state_update;
+                Ok(())
+            }
+            #[inline]
+            pub async fn reset_service_timeout(
+                &mut self,
+                instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.timer.send((T::TimeoutSpeedLimiter, instant)).await?;
+                Ok(())
+            }
             pub async fn handle_vdc(
                 &mut self,
                 instant: std::time::Instant,
@@ -657,6 +700,26 @@ pub mod runtime {
                 self.context.state_update = state_update;
                 Ok(())
             }
+            pub async fn handle_delay_speed_limiter(
+                &mut self,
+                instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                if self.input_store.not_empty() {
+                    self.reset_time_constrains(instant).await?;
+                    self.handle_input_store(instant).await?;
+                } else {
+                    self.delayed = true;
+                }
+                Ok(())
+            }
+            #[inline]
+            pub async fn reset_service_delay(
+                &mut self,
+                instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.timer.send((T::DelaySpeedLimiter, instant)).await?;
+                Ok(())
+            }
             pub async fn handle_failure(
                 &mut self,
                 instant: std::time::Instant,
@@ -672,6 +735,24 @@ pub mod runtime {
                 self.context.on_state = on_state;
                 self.context.in_regulation_aux = in_regulation_aux;
                 self.context.state_update = state_update;
+                Ok(())
+            }
+            #[inline]
+            pub async fn handle_input_store(
+                &mut self,
+                instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                todo!();
+                Ok(())
+            }
+            #[inline]
+            pub async fn reset_time_constrains(
+                &mut self,
+                instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.reset_service_delay(instant).await?;
+                self.reset_service_timeout(instant).await?;
+                self.delayed = false;
                 Ok(())
             }
             #[inline]
