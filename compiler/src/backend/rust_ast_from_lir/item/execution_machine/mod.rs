@@ -243,6 +243,12 @@ pub fn rust_ast_from_lir(execution_machine: ExecutionMachine) -> syn::Item {
             impl Runtime {
                 #new_runtime
 
+                #[inline]
+                pub async fn send_timer(&mut self, timer: T, instant: std::time::Instant) -> Result<(), futures::channel::mpsc::SendError> {
+                    self.timer.send((timer, instant)).await?;
+                    Ok(())
+                }
+
                 #run_loop
             }
 

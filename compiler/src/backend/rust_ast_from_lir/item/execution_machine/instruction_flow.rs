@@ -33,10 +33,7 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
         FlowInstruction::Send(ident, flow_expression) => {
             let enum_ident = Ident::new(to_camel_case(ident.as_str()).as_str(), Span::call_site());
             let expression = flow_expression_rust_ast_from_lir(flow_expression);
-            parse_quote!({
-                let res = self.output.send(O::#enum_ident(#expression, instant)).await;
-                if res.is_err() {return}
-            })
+            parse_quote! { self.send_output(O::#enum_ident(#expression, instant)).await?; }
         }
         FlowInstruction::IfThrottle(receiver_name, source_name, delta, instruction) => {
             let receiver_ident = Ident::new(&receiver_name, Span::call_site());
@@ -76,10 +73,7 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
                 to_camel_case(timer_name.as_str()).as_str(),
                 Span::call_site(),
             );
-            parse_quote!({
-                let res = self.timer.send((T::#enum_ident, instant)).await;
-                if res.is_err() {return}
-            })
+            parse_quote! { self.send_timer(T::#enum_ident, instant).await?; }
         }
         FlowInstruction::ComponentCall(pattern, component_name, events) => {
             let outputs = pattern_rust_ast_from_lir(pattern);

@@ -116,38 +116,48 @@ pub mod runtime {
             let aeb = aeb_service::AebService::init(output, timer.clone());
             Runtime { aeb, timer }
         }
+        #[inline]
+        pub async fn send_timer(
+            &mut self,
+            timer: T,
+            instant: std::time::Instant,
+        ) -> Result<(), futures::channel::mpsc::SendError> {
+            self.timer.send((timer, instant)).await?;
+            Ok(())
+        }
         pub async fn run_loop(
             self,
             init_instant: std::time::Instant,
             input: impl futures::Stream<Item = I>,
-        ) {
+        ) -> Result<(), futures::channel::mpsc::SendError> {
             futures::pin_mut!(input);
             let mut runtime = self;
-            {
-                let res = runtime
-                    .timer
-                    .send((T::TimeoutPedestrian, init_instant))
-                    .await;
-                if res.is_err() {
-                    return;
-                }
-            }
+            runtime
+                .send_timer(T::TimeoutPedestrian, init_instant)
+                .await?;
             while let Some(input) = input.next().await {
                 match input {
                     I::SpeedKmH(speed_km_h, instant) => {
-                        runtime.aeb.handle_speed_km_h(instant, speed_km_h).await;
+                        runtime.aeb.handle_speed_km_h(instant, speed_km_h).await?;
                     }
                     I::PedestrianL(pedestrian_l, instant) => {
-                        runtime.aeb.handle_pedestrian_l(instant, pedestrian_l).await;
+                        runtime
+                            .aeb
+                            .handle_pedestrian_l(instant, pedestrian_l)
+                            .await?;
                     }
                     I::PedestrianR(pedestrian_r, instant) => {
-                        runtime.aeb.handle_pedestrian_r(instant, pedestrian_r).await;
+                        runtime
+                            .aeb
+                            .handle_pedestrian_r(instant, pedestrian_r)
+                            .await?;
                     }
                     I::Timer(T::TimeoutPedestrian, instant) => {
-                        runtime.aeb.handle_timeout_pedestrian(instant).await;
+                        runtime.aeb.handle_timeout_pedestrian(instant).await?;
                     }
                 }
             }
+            Ok(())
         }
     }
     pub mod aeb_service {
@@ -196,78 +206,72 @@ pub mod runtime {
                 &mut self,
                 instant: std::time::Instant,
                 speed_km_h: f64,
-            ) {
+            ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.context.speed_km_h = speed_km_h;
+                Ok(())
             }
             pub async fn handle_pedestrian_l(
                 &mut self,
                 instant: std::time::Instant,
                 pedestrian_l: f64,
-            ) {
+            ) -> Result<(), futures::channel::mpsc::SendError> {
                 let x = pedestrian_l;
                 let pedestrian = Ok(x);
-                {
-                    let res = self.timer.send((T::TimeoutPedestrian, instant)).await;
-                    if res.is_err() {
-                        return;
-                    }
-                }
+                self.send_timer(T::TimeoutPedestrian, instant).await?;
                 let brakes = self
                     .braking_state
                     .step(self.context.get_braking_state_inputs(Some(pedestrian)));
                 self.context.brakes = brakes;
                 let brakes = self.context.brakes;
-                {
-                    let res = self.output.send(O::Brakes(brakes, instant)).await;
-                    if res.is_err() {
-                        return;
-                    }
-                }
+                self.send_output(O::Brakes(brakes, instant)).await?;
+                Ok(())
             }
             pub async fn handle_pedestrian_r(
                 &mut self,
                 instant: std::time::Instant,
                 pedestrian_r: f64,
-            ) {
+            ) -> Result<(), futures::channel::mpsc::SendError> {
                 let x = pedestrian_r;
                 let pedestrian = Ok(x);
-                {
-                    let res = self.timer.send((T::TimeoutPedestrian, instant)).await;
-                    if res.is_err() {
-                        return;
-                    }
-                }
+                self.send_timer(T::TimeoutPedestrian, instant).await?;
                 let brakes = self
                     .braking_state
                     .step(self.context.get_braking_state_inputs(Some(pedestrian)));
                 self.context.brakes = brakes;
                 let brakes = self.context.brakes;
-                {
-                    let res = self.output.send(O::Brakes(brakes, instant)).await;
-                    if res.is_err() {
-                        return;
-                    }
-                }
+                self.send_output(O::Brakes(brakes, instant)).await?;
+                Ok(())
             }
-            pub async fn handle_timeout_pedestrian(&mut self, instant: std::time::Instant) {
+            pub async fn handle_timeout_pedestrian(
+                &mut self,
+                instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
                 let pedestrian = Err(());
-                {
-                    let res = self.timer.send((T::TimeoutPedestrian, instant)).await;
-                    if res.is_err() {
-                        return;
-                    }
-                }
+                self.send_timer(T::TimeoutPedestrian, instant).await?;
                 let brakes = self
                     .braking_state
                     .step(self.context.get_braking_state_inputs(Some(pedestrian)));
                 self.context.brakes = brakes;
                 let brakes = self.context.brakes;
-                {
-                    let res = self.output.send(O::Brakes(brakes, instant)).await;
-                    if res.is_err() {
-                        return;
-                    }
-                }
+                self.send_output(O::Brakes(brakes, instant)).await?;
+                Ok(())
+            }
+            #[inline]
+            pub async fn send_output(
+                &mut self,
+                output: O,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.output.send(output).await?;
+                Ok(())
+            }
+            #[inline]
+            pub async fn send_timer(
+                &mut self,
+                timer: T,
+                instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.timer.send((timer, instant)).await?;
+                Ok(())
             }
         }
     }
