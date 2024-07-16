@@ -756,6 +756,12 @@ impl Propagations {
 pub struct Stack {
     /// Current statements stack.
     current: Vec<usize>,
+    /// Cached memory of the statements visited.
+    memory: HashSet<usize>,
+    /// Events currently triggered during a traversal.
+    events: HashSet<usize>,
+    /// Signals currently defined during a traversal.
+    signals: HashSet<usize>,
     /// Next statements stack.
     next: Option<Box<Stack>>,
 }
@@ -764,6 +770,9 @@ impl Stack {
     pub fn new() -> Self {
         Self {
             current: Vec::new(),
+            memory: Default::default(),
+            events: Default::default(),
+            signals: Default::default(),
             next: None,
         }
     }
@@ -771,8 +780,45 @@ impl Stack {
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             current: Vec::with_capacity(capacity),
+            memory: HashSet::with_capacity(capacity),
+            events: HashSet::with_capacity(capacity),
+            signals: HashSet::with_capacity(capacity),
             next: None,
         }
+    }
+    /// Clear the stack.
+    pub fn clear(&mut self) {
+        self.current.clear();
+        self.memory.clear();
+        self.events.clear();
+        self.signals.clear();
+        self.next.take();
+    }
+    /// Inserts an event.
+    pub fn insert_event(&mut self, id_event: usize) {
+        self.events.insert(id_event);
+    }
+    /// Inserts an signal.
+    pub fn insert_signal(&mut self, id_signal: usize) {
+        self.signals.insert(id_signal);
+    }
+    /// Removes an event.
+    pub fn remove_event(&mut self, id_event: usize) {
+        self.events.remove(&id_event);
+    }
+    /// Tells if it contains the event.
+    pub fn contains_event(&mut self, id_event: usize) -> bool {
+        self.events.contains(&id_event)
+    }
+    /// Tells if it contains the signal.
+    pub fn contains_signal(&mut self, id_signal: usize) -> bool {
+        self.signals.contains(&id_signal)
+    }
+    pub fn get_activated_events<'a>(&'a self, dependencies: Vec<usize>) -> Vec<usize> {
+        dependencies
+            .into_iter()
+            .filter(|id| self.events.contains(id))
+            .collect()
     }
     /// Tells if the stack is empty.
     pub fn is_empty(&self) -> bool {
@@ -791,6 +837,9 @@ impl Stack {
         let old = std::mem::take(self);
         *self = Self {
             current: old.current.clone(),
+            memory: old.memory.clone(),
+            events: old.events.clone(),
+            signals: old.signals.clone(),
             next: Some(old.into()),
         }
     }
@@ -816,9 +865,22 @@ impl Stack {
         iter: impl Iterator<Item = usize>,
         compare: impl Fn(usize) -> usize + Clone,
     ) {
-        iter.for_each(|next_statement_id| {
+        iter.filter_map(|to_insert| {
+            // remove already visited
+            if self.memory.contains(&to_insert) {
+                return None;
+            }
+            Some(to_insert)
+        })
+        .for_each(|next_statement_id| {
             // insert statements into the sorted stack
-            self.insert_ordered(next_statement_id, compare.clone())
+            match self
+                .current
+                .binary_search_by_key(&compare(next_statement_id), |stmt_id| compare(*stmt_id))
+            {
+                Err(pos) => self.current.insert(pos, next_statement_id),
+                Ok(_) => (), // already in the stack
+            }
         })
     }
 }
@@ -843,12 +905,6 @@ pub struct PropagationBuilder<'a> {
     incoming_flow: usize,
     /// Cached stack of statements to visit.
     stack: Stack,
-    /// Cached memory of the statements visited.
-    memory: HashSet<usize>,
-    /// Events currently triggered during a traversal.
-    events: HashSet<usize>,
-    /// Signals currently defined during a traversal.
-    signals: HashSet<usize>,
     /// The dependency order the statements should follow.
     statements_order: HashMap<usize, usize>,
     /// Maps on_change event indices to the indices of signals containing their previous values.
@@ -1105,38 +1161,19 @@ impl<'a> PropagationBuilder<'a> {
         // get the flows defined by parent statement
         let parent_flows = self.get_def_flows(parent);
 
-        let dependencies = self
-            .service
-            .graph
-            .neighbors(parent)
-            .filter_map(|child| {
+        let dependencies = self.service.graph.neighbors(parent).filter_map(|child| {
                 // filter component call because they will appear in isles
                 if self.service.is_comp_call(child) {
                     return None;
                 }
                 Some(child)
-            })
-            .filter_map(|to_insert| {
-                // remove already visited
-                if self.memory.contains(&to_insert) {
-                    println!("filter dependencies");
-                    return None;
-                }
-                Some(to_insert)
             });
 
         let isles = parent_flows
             .iter()
             .filter_map(|parent_flow| self.isles.get_isle_for(*parent_flow))
             .flatten()
-            .filter_map(|to_insert| {
-                // remove already visited
-                if self.memory.contains(to_insert) {
-                    println!("filter isles");
-                    return None;
-                }
-                Some(*to_insert)
-            });
+            .map(|to_insert| *to_insert);
 
         // extend stack with union of event isle and dependencies
         let to_insert = isles.chain(dependencies).unique();
@@ -1160,7 +1197,7 @@ impl<'a> PropagationBuilder<'a> {
             source_name,
         );
         self.stack.fork();
-        self.events.insert(id_event);
+        self.stack.insert_event(id_event);
     }
     /// Switch to an default branch.
     fn default(&mut self) -> usize {
@@ -1176,13 +1213,11 @@ impl<'a> PropagationBuilder<'a> {
     /// Get the next statement identifier to analyse.
     fn pop_stack(&mut self) -> Option<usize> {
         if let Some(value) = self.stack.pop() {
-            let _unique = self.memory.insert(value);
-            debug_assert!(_unique);
             return Some(value);
         }
         if self.propagations.is_onchange_block(self.incoming_flow) {
             let id_event = self.default();
-            self.events.remove(&id_event);
+            self.stack.remove_event(id_event);
             return self.pop_stack();
         }
         if self.propagations.is_default_block(self.incoming_flow) {
@@ -1200,10 +1235,7 @@ impl<'a> PropagationBuilder<'a> {
         // for every incoming flows, compute their handlers
         self.imports.iter().for_each(|(import_id, import)| {
             self.incoming_flow = import.id;
-            self.propagations.init_propagation(import.id);
-            self.memory.clear();
-            self.events.clear();
-            self.signals.clear();
+            self.stack.clear();
             self.propagate_import(*import_id)
         });
     }
@@ -1231,10 +1263,9 @@ impl<'a> PropagationBuilder<'a> {
             } else
             // get flow import related to stmt_id
             if let Some(import) = self.imports.get(&stmt_id) {
-                if self.symbol_table.get_flow_kind(import.id).is_event() {
-                    self.events.insert(import.id);
+                    self.stack.insert_event(import.id)
                 } else {
-                    self.signals.insert(import.id);
+                    self.stack.insert_signal(import.id)
                 }
                 self.update_ctx(import.id);
             } else
@@ -1317,7 +1348,7 @@ impl<'a> PropagationBuilder<'a> {
         let timer_id = self.stmts_timers[&stmt_id];
 
         // source is an event, look if it is activated
-        if self.events.contains(&id_source) {
+        if self.stack.contains_event(id_source) {
             // if activated, store event value
             self.push_instr(FlowInstruction::update_ctx(
                 source_name,
@@ -1326,7 +1357,7 @@ impl<'a> PropagationBuilder<'a> {
         }
 
         // if timing event is activated
-        if self.events.contains(&timer_id) {
+        if self.stack.contains_event(timer_id) {
             // if activated, update signal by taking from stored event value
             self.push_instr(FlowInstruction::update_ctx(
                 flow_name,
@@ -1356,13 +1387,13 @@ impl<'a> PropagationBuilder<'a> {
         let timer_id = self.stmts_timers[&stmt_id];
 
         // timer is an event, look if it is activated
-        if self.events.contains(&timer_id) {
+        if self.stack.contains_event(timer_id) {
             // if activated, create event
-            self.events.insert(id_pattern);
+            self.stack.insert_event(id_pattern);
 
             // add event creation in instructions
             // source is a signal, look if it is defined
-            if self.signals.contains(&id_source) {
+            if self.stack.contains_signal(id_source) {
                 self.push_instr(FlowInstruction::def_let(
                     flow_name,
                     Expression::ident(source_name),
@@ -1459,17 +1490,15 @@ impl<'a> PropagationBuilder<'a> {
         let flow_name = self.symbol_table.get_name(id_pattern);
 
         // get the potential activated event
-        let dependencies: HashSet<usize> = dependencies.into_iter().collect();
-        let mut overlapping_events = dependencies.intersection(&self.events);
-        debug_assert!(overlapping_events.clone().collect::<Vec<_>>().len() <= 1);
+        let mut overlapping_events = self.stack.get_activated_events(dependencies);
 
         // if one event is activated, create event
-        if let Some(flow_event_id) = overlapping_events.next() {
+        if let Some(flow_event_id) = overlapping_events.pop() {
             // get event's name
-            let event_name = self.symbol_table.get_name(*flow_event_id);
+            let event_name = self.symbol_table.get_name(flow_event_id);
 
             // if activated, create event
-            self.events.insert(id_pattern);
+            self.stack.insert_event(id_pattern);
 
             // add event creation in instruction
             self.push_instr(FlowInstruction::def_let(
@@ -1487,10 +1516,12 @@ impl<'a> PropagationBuilder<'a> {
         inputs: &Vec<(usize, flow::Expr)>,
     ) {
         // get events that call the component
-        let events = inputs.iter().filter_map(|(_, flow_expr)| {
+        let events = inputs
+            .iter()
+            .filter_map(|(_, flow_expr)| {
             match flow_expr.kind {
                 flow::Kind::Ident { id } => {
-                    if self.events.contains(&id) {
+                        if self.stack.contains_event(id) {
                         let event_name = self.symbol_table.get_name(id).clone();
                         Some(Some(event_name))
                     } else if self.symbol_table.get_flow_kind(id).is_event() {
@@ -1501,10 +1532,11 @@ impl<'a> PropagationBuilder<'a> {
                 }
                 _ => unreachable!(), // normalized
             }
-        });
+            })
+            .collect();
 
         // call component with the events and update output signals
-        self.call_component(component_id, pattern.clone(), events.collect());
+        self.call_component(component_id, pattern.clone(), events);
     }
 
     /// Push an instruction in the current propagation branch.
@@ -1516,19 +1548,19 @@ impl<'a> PropagationBuilder<'a> {
     fn define_signal(&mut self, signal_id: usize, expr: Expression) {
         let signal_name = self.symbol_table.get_name(signal_id);
         self.push_instr(FlowInstruction::def_let(signal_name, expr));
-        self.signals.insert(signal_id);
+        self.stack.insert_signal(signal_id);
     }
 
     /// Get signal call expression.
     fn get_signal(&mut self, signal_id: usize) -> Expression {
         let signal_name = self.symbol_table.get_name(signal_id);
         // if signal not already defined, define local identifier from context value
-        if !self.signals.contains(&signal_id) {
+        if !self.stack.contains_signal(signal_id) {
             self.push_instr(FlowInstruction::def_let(
                 signal_name,
                 Expression::in_ctx(signal_name),
             ));
-            self.signals.insert(signal_id);
+            self.stack.insert_signal(signal_id);
         }
         Expression::ident(signal_name)
     }
@@ -1537,12 +1569,12 @@ impl<'a> PropagationBuilder<'a> {
     fn get_signal_name(&mut self, signal_id: usize) -> &'a String {
         let signal_name = self.symbol_table.get_name(signal_id);
         // if signal not already defined, define local identifier from context value
-        if !self.signals.contains(&signal_id) {
+        if !self.stack.contains_signal(signal_id) {
             self.push_instr(FlowInstruction::def_let(
                 signal_name,
                 Expression::in_ctx(signal_name),
             ));
-            self.signals.insert(signal_id);
+            self.stack.insert_signal(signal_id);
         }
         signal_name
     }
@@ -1552,7 +1584,7 @@ impl<'a> PropagationBuilder<'a> {
         if let Some(expr) = opt_expr {
             let event_name = self.symbol_table.get_name(event_id);
             self.push_instr(FlowInstruction::def_let(event_name, expr));
-            self.events.insert(event_id);
+            self.stack.insert_event(event_id);
         }
     }
 
@@ -1567,7 +1599,7 @@ impl<'a> PropagationBuilder<'a> {
     /// Get event call expression.
     fn get_event(&mut self, event_id: usize) -> Option<Expression> {
         // return expression only if event is defined
-        if self.events.contains(&event_id) {
+        if self.stack.contains_event(event_id) {
             let event_name = self.symbol_table.get_name(event_id);
             Some(Expression::ident(event_name))
         } else {
