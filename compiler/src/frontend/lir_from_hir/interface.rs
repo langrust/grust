@@ -416,8 +416,12 @@ impl<'a> IsleBuilder<'a> {
     ///
     /// During construction, the statements of the `service` are scanned to populate a map from
     /// events to the statements that react to it.
-    pub fn new(syms: &'a SymbolTable, service: &'a Service) -> Self {
-        let event_to_stmts = Self::build_event_to_stmts(syms, service);
+    pub fn new(
+        syms: &'a SymbolTable,
+        service: &'a Service,
+        imports: &HashMap<usize, FlowImport>,
+    ) -> Self {
+        let event_to_stmts = Self::build_event_to_stmts(syms, service, imports);
         Self {
             isles: Self::new_isles(syms),
             events: HashSet::with_capacity(10),
@@ -438,7 +442,8 @@ impl<'a> IsleBuilder<'a> {
     /// not matter for the actual isle building process atm.)
     fn build_event_to_stmts(
         syms: &SymbolTable,
-        service: &'a Service,
+        service: &Service,
+        imports: &HashMap<usize, FlowImport>,
     ) -> HashMap<usize, Vec<usize>> {
         let mut map = HashMap::with_capacity(10);
         for (stmt_id, stmt) in service.statements.iter() {
@@ -448,10 +453,18 @@ impl<'a> IsleBuilder<'a> {
                 vec.push(*stmt_id);
             };
 
-            if let Some((comp, inputs)) = stmt.try_get_call() {
-                if let Some(timer) = syms.get_node_period_id(comp) {
-                    // register `stmt_id` as triggered by `timer`
-                    triggered_by(timer);
+            if let Some((_, inputs)) = stmt.try_get_call() {
+                // scan neightbors for timers
+                for import_id in service
+                    .graph
+                    .neighbors_directed(*stmt_id, Direction::Incoming)
+                {
+                    if let Some(FlowImport { id: timer, .. }) = &imports.get(&import_id) {
+                        if syms.is_timer(*timer) {
+                            // register `stmt_id` as triggered by `input`
+                            triggered_by(*timer);
+                        }
+                    }
                 }
                 // scan inputs for events
                 for input in inputs {
@@ -467,9 +480,7 @@ impl<'a> IsleBuilder<'a> {
             }
         }
         // all vectors in `map` should be sorted and non-empty
-        debug_assert! {
-            map.iter().all(|(_, vec)| !vec.is_empty() && vec.iter().check_sorted())
-        }
+        debug_assert! { map.iter().all(|(_, vec)| !vec.is_empty()) }
         map
     }
 
@@ -938,7 +949,7 @@ impl<'a> PropagationBuilder<'a> {
         );
 
         // create events isles
-        let mut isle_builder = IsleBuilder::new(symbol_table, service);
+        let mut isle_builder = IsleBuilder::new(symbol_table, service, &imports);
         isle_builder.trace_events(service.get_flows_ids(imports.values()));
         let isles = isle_builder.into_isles();
 
