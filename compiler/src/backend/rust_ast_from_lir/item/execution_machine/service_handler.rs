@@ -138,22 +138,37 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
                     let ty = type_rust_ast_from_lir(flow_type);
                     let instructions = instructions
                         .into_iter()
-                        .map(instruction_flow::rust_ast_from_lir);
+                        .map(instruction_flow_rust_ast_from_lir);
+                    let message = syn::LitStr::new(format!("{flow_name} changes too frequently").as_str(), Span::call_site());
                     impl_items.push(parse_quote! {
                         pub async fn #function_name(&mut self, instant: std::time::Instant, #ident: #ty) -> Result<(), futures::channel::mpsc::SendError> {
-                            #(#instructions)*
+                            if self.delayed {
+                                self.reset_time_constrains(instant).await?;
+                                #(#instructions)*
+                            } else {
+                                let unique = self.input_store.#ident.replace((#ident, instant));
+                                assert!(unique.is_none(), #message);
+                            }
                             Ok(())
                         }
                     })
                 }
                 ArrivingFlow::Period(time_flow_name) | ArrivingFlow::Deadline(time_flow_name) => {
+                    let ident = Ident::new(time_flow_name.as_str(), Span::call_site());
                     let function_name: Ident = format_ident!("handle_{time_flow_name}");
                     let instructions = instructions
                         .into_iter()
-                        .map(instruction_flow::rust_ast_from_lir);
+                        .map(instruction_flow_rust_ast_from_lir);
+                    let message = syn::LitStr::new(format!("{time_flow_name} changes too frequently").as_str(), Span::call_site());
                     impl_items.push(parse_quote! {
                         pub async fn #function_name(&mut self, instant: std::time::Instant) -> Result<(), futures::channel::mpsc::SendError> {
-                            #(#instructions)*
+                            if self.delayed {
+                                self.reset_time_constrains(instant).await?;
+                                #(#instructions)*
+                            } else {
+                                let unique = self.input_store.#ident.replace(((), instant));
+                                assert!(unique.is_none(), #message);
+                            }
                             Ok(())
                         }
                     })
