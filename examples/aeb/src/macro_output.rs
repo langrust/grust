@@ -241,7 +241,13 @@ pub mod runtime {
                 instant: std::time::Instant,
                 speed_km_h: f64,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.context.speed_km_h = speed_km_h;
+                if self.delayed {
+                    self.reset_time_constrains(instant).await?;
+                    self.context.speed_km_h = speed_km_h;
+                } else {
+                    let unique = self.input_store.speed_km_h.replace((speed_km_h, instant));
+                    assert!(unique.is_none(), "speed_km_h changes too frequently");
+                }
                 Ok(())
             }
             pub async fn handle_timeout_aeb(
@@ -270,15 +276,24 @@ pub mod runtime {
                 instant: std::time::Instant,
                 pedestrian_l: f64,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                let x = pedestrian_l;
-                let pedestrian = Ok(x);
-                self.send_timer(T::TimeoutPedestrian, instant).await?;
-                let brakes = self
-                    .braking_state
-                    .step(self.context.get_braking_state_inputs(Some(pedestrian)));
-                self.context.brakes = brakes;
-                let brakes = self.context.brakes;
-                self.send_output(O::Brakes(brakes, instant)).await?;
+                if self.delayed {
+                    self.reset_time_constrains(instant).await?;
+                    let x = pedestrian_l;
+                    let pedestrian = Ok(x);
+                    self.send_timer(T::TimeoutPedestrian, instant).await?;
+                    let brakes = self
+                        .braking_state
+                        .step(self.context.get_braking_state_inputs(Some(pedestrian)));
+                    self.context.brakes = brakes;
+                    let brakes = self.context.brakes;
+                    self.send_output(O::Brakes(brakes, instant)).await?;
+                } else {
+                    let unique = self
+                        .input_store
+                        .pedestrian_l
+                        .replace((pedestrian_l, instant));
+                    assert!(unique.is_none(), "pedestrian_l changes too frequently");
+                }
                 Ok(())
             }
             pub async fn handle_pedestrian_r(
@@ -286,29 +301,47 @@ pub mod runtime {
                 instant: std::time::Instant,
                 pedestrian_r: f64,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                let x = pedestrian_r;
-                let pedestrian = Ok(x);
-                self.send_timer(T::TimeoutPedestrian, instant).await?;
-                let brakes = self
-                    .braking_state
-                    .step(self.context.get_braking_state_inputs(Some(pedestrian)));
-                self.context.brakes = brakes;
-                let brakes = self.context.brakes;
-                self.send_output(O::Brakes(brakes, instant)).await?;
+                if self.delayed {
+                    self.reset_time_constrains(instant).await?;
+                    let x = pedestrian_r;
+                    let pedestrian = Ok(x);
+                    self.send_timer(T::TimeoutPedestrian, instant).await?;
+                    let brakes = self
+                        .braking_state
+                        .step(self.context.get_braking_state_inputs(Some(pedestrian)));
+                    self.context.brakes = brakes;
+                    let brakes = self.context.brakes;
+                    self.send_output(O::Brakes(brakes, instant)).await?;
+                } else {
+                    let unique = self
+                        .input_store
+                        .pedestrian_r
+                        .replace((pedestrian_r, instant));
+                    assert!(unique.is_none(), "pedestrian_r changes too frequently");
+                }
                 Ok(())
             }
             pub async fn handle_timeout_pedestrian(
                 &mut self,
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                let pedestrian = Err(());
-                self.send_timer(T::TimeoutPedestrian, instant).await?;
-                let brakes = self
-                    .braking_state
-                    .step(self.context.get_braking_state_inputs(Some(pedestrian)));
-                self.context.brakes = brakes;
-                let brakes = self.context.brakes;
-                self.send_output(O::Brakes(brakes, instant)).await?;
+                if self.delayed {
+                    self.reset_time_constrains(instant).await?;
+                    let pedestrian = Err(());
+                    self.send_timer(T::TimeoutPedestrian, instant).await?;
+                    let brakes = self
+                        .braking_state
+                        .step(self.context.get_braking_state_inputs(Some(pedestrian)));
+                    self.context.brakes = brakes;
+                    let brakes = self.context.brakes;
+                    self.send_output(O::Brakes(brakes, instant)).await?;
+                } else {
+                    let unique = self.input_store.timeout_pedestrian.replace(((), instant));
+                    assert!(
+                        unique.is_none(),
+                        "timeout_pedestrian changes too frequently"
+                    );
+                }
                 Ok(())
             }
             pub async fn handle_delay_aeb(
