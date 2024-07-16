@@ -669,18 +669,13 @@ pub struct Propagations {
 impl Propagations {
     /// Inserts an instruction for a flow.
     pub fn insert(&mut self, flow: usize, instruction: FlowInstruction) {
-        self.input_flows_propagation
-            .get_mut(&flow)
-            .unwrap()
-            .push(instruction)
-    }
-    pub fn init_propagation(&mut self, flow: usize) {
-        let _unique = self
+        let vec = self
             .input_flows_propagation
-            .insert(flow, Accumulator::with_capacity(10));
-        debug_assert!(_unique.is_none())
+            .entry(flow)
+            .or_insert_with(|| Accumulator::with_capacity(10));
+        vec.push(instruction);
     }
-    /// Makes t possible to iter on propagations.
+    /// Makes it possible to iter on propagations.
     pub fn into_iter(self) -> impl Iterator<Item = (usize, Vec<FlowInstruction>)> {
         self.input_flows_propagation
             .into_iter()
@@ -692,13 +687,15 @@ impl Propagations {
     }
     /// Tells if in 'onchange' branch.
     pub fn is_onchange_block(&self, flow: usize) -> bool {
-        let accumulator = self.input_flows_propagation.get(&flow).unwrap();
-        accumulator.onchange_block.is_some()
+        self.input_flows_propagation
+            .get(&flow)
+            .map_or(false, |accumulator| accumulator.onchange_block.is_some())
     }
     /// Tells if in 'default' branch.
     pub fn is_default_block(&self, flow: usize) -> bool {
-        let accumulator = self.input_flows_propagation.get(&flow).unwrap();
-        accumulator.default_block.is_some()
+        self.input_flows_propagation
+            .get(&flow)
+            .map_or(false, |accumulator| accumulator.default_block.is_some())
     }
     /// Switch to a onchange branch.
     pub fn onchange(
