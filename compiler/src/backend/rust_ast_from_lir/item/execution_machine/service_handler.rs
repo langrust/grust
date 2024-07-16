@@ -24,9 +24,54 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
     // result
     let mut items = flows_context::rust_ast_from_lir(flows_context);
 
+    // store all inputs in a service_store
+    let mut service_store_fields: Vec<Field> = vec![];
+    let mut service_store_is_somes: Vec<Expr> = vec![];
+    flows_handling
+        .iter()
+        .for_each(|FlowHandler { arriving_flow, .. }| match arriving_flow {
+            ArrivingFlow::Channel(flow_name, flow_type, _) => {
+                let ident = Ident::new(flow_name.as_str(), Span::call_site());
+                let ty = type_rust_ast_from_lir(flow_type.clone());
+                service_store_fields
+                    .push(parse_quote! { #ident: Option<(#ty, std::time::Instant)> });
+                service_store_is_somes.push(parse_quote! { self.#ident.is_some() });
+            }
+            ArrivingFlow::Period(time_flow_name) | ArrivingFlow::Deadline(time_flow_name) => {
+                let ident = Ident::new(time_flow_name.as_str(), Span::call_site());
+                service_store_fields
+                    .push(parse_quote! { #ident: Option<((), std::time::Instant)> });
+                service_store_is_somes.push(parse_quote! { self.#ident.is_some() });
+            }
+        });
+    // service store
+    let service_store_name = format_ident!("{}", to_camel_case(&format!("{service}ServiceStore")));
+    items.push(Item::Struct(parse_quote! {
+        #[derive(Default)]
+        pub struct #service_store_name {
+            #(#service_store_fields),*
+        }
+    }));
+    // tells is the service_store is not empty
+    items.push(Item::Impl(parse_quote! {
+        impl #service_store_name {
+            pub fn not_empty(&self) -> bool {
+                #(#service_store_is_somes)||*
+            }
+        }
+    }));
+
     // create service structure
-    let mut service_fields: Vec<Field> = vec![parse_quote! { context: Context }];
-    let mut field_values: Vec<FieldValue> = vec![parse_quote! { context }];
+    let mut service_fields: Vec<Field> = vec![
+        parse_quote! { context: Context },
+        parse_quote! { delayed: bool },
+        parse_quote! { input_store: #service_store_name },
+    ];
+    let mut field_values: Vec<FieldValue> = vec![
+        parse_quote! { context },
+        parse_quote! { delayed },
+        parse_quote! { input_store },
+    ];
     // with components states
     components.iter().for_each(|component_name| {
         let component_state_struct =
@@ -61,6 +106,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
         };
         state
     });
+
     // `init` function
     impl_items.push(parse_quote! {
         pub fn init(
@@ -68,6 +114,8 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
             timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>
         ) -> #service_name {
             let context = Context::init();
+            let delayed = true;
+            let input_store = Default::default();
             #(#components_states)*
             #service_name {
                 #(#field_values),*
@@ -113,7 +161,8 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
         },
     );
 
-    items.push(parse_quote! {
+    // service handlers in an implementation block
+    items.push(Item::Impl(parse_quote! {
         impl #service_name {
             #(#impl_items)*
             #[inline]
@@ -127,8 +176,9 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
                 Ok(())
             }
         }
-    });
+    }));
 
+    // service module
     let module_name = format_ident!("{service}_service");
     Item::Mod(parse_quote! {
        pub mod #module_name {

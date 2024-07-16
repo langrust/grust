@@ -587,8 +587,31 @@ pub mod runtime {
                 }
             }
         }
+        #[derive(Default)]
+        pub struct SpeedLimiterServiceStore {
+            activation: Option<(ActivationRequest, std::time::Instant)>,
+            kickdown: Option<(KickdownState, std::time::Instant)>,
+            vdc: Option<(VdcState, std::time::Instant)>,
+            set_speed: Option<(f64, std::time::Instant)>,
+            speed: Option<(f64, std::time::Instant)>,
+            period_speed_limiter: Option<((), std::time::Instant)>,
+            vacuum_brake: Option<(VacuumBrakeState, std::time::Instant)>,
+        }
+        impl SpeedLimiterServiceStore {
+            pub fn not_empty(&self) -> bool {
+                self.activation.is_some()
+                    || self.kickdown.is_some()
+                    || self.vdc.is_some()
+                    || self.set_speed.is_some()
+                    || self.speed.is_some()
+                    || self.period_speed_limiter.is_some()
+                    || self.vacuum_brake.is_some()
+            }
+        }
         pub struct SpeedLimiterService {
             context: Context,
+            delayed: bool,
+            input_store: SpeedLimiterServiceStore,
             speed_limiter: SpeedLimiterState,
             process_set_speed: ProcessSetSpeedState,
             output: futures::channel::mpsc::Sender<O>,
@@ -600,10 +623,14 @@ pub mod runtime {
                 timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
             ) -> SpeedLimiterService {
                 let context = Context::init();
+                let delayed = true;
+                let input_store = Default::default();
                 let speed_limiter = SpeedLimiterState::init();
                 let process_set_speed = ProcessSetSpeedState::init();
                 SpeedLimiterService {
                     context,
+                    delayed,
+                    input_store,
                     speed_limiter,
                     process_set_speed,
                     output,
@@ -743,8 +770,33 @@ pub mod runtime {
                 }
             }
         }
+        #[derive(Default)]
+        pub struct AnotherSpeedLimiterServiceStore {
+            activation: Option<(ActivationRequest, std::time::Instant)>,
+            vdc: Option<(VdcState, std::time::Instant)>,
+            period_speed_limiter_1: Option<((), std::time::Instant)>,
+            speed: Option<(f64, std::time::Instant)>,
+            kickdown: Option<(KickdownState, std::time::Instant)>,
+            period_speed_limiter: Option<((), std::time::Instant)>,
+            set_speed: Option<(f64, std::time::Instant)>,
+            vacuum_brake: Option<(VacuumBrakeState, std::time::Instant)>,
+        }
+        impl AnotherSpeedLimiterServiceStore {
+            pub fn not_empty(&self) -> bool {
+                self.activation.is_some()
+                    || self.vdc.is_some()
+                    || self.period_speed_limiter_1.is_some()
+                    || self.speed.is_some()
+                    || self.kickdown.is_some()
+                    || self.period_speed_limiter.is_some()
+                    || self.set_speed.is_some()
+                    || self.vacuum_brake.is_some()
+            }
+        }
         pub struct AnotherSpeedLimiterService {
             context: Context,
+            delayed: bool,
+            input_store: AnotherSpeedLimiterServiceStore,
             speed_limiter: SpeedLimiterState,
             process_set_speed: ProcessSetSpeedState,
             output: futures::channel::mpsc::Sender<O>,
@@ -756,10 +808,14 @@ pub mod runtime {
                 timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
             ) -> AnotherSpeedLimiterService {
                 let context = Context::init();
+                let delayed = true;
+                let input_store = Default::default();
                 let speed_limiter = SpeedLimiterState::init();
                 let process_set_speed = ProcessSetSpeedState::init();
                 AnotherSpeedLimiterService {
                     context,
+                    delayed,
+                    input_store,
                     speed_limiter,
                     process_set_speed,
                     output,
