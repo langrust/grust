@@ -39,6 +39,8 @@ pub enum ArrivingFlow {
     Channel(String, Typ, syn::Path),
     Period(String),
     Deadline(String),
+    ServiceDelay(String),
+    ServiceTimeout(String),
 }
 
 /// A timing event structure.
@@ -53,4 +55,6 @@ pub struct TimingEvent {
 pub enum TimingEventKind {
     Period(u64),
     Timeout(u64),
+    ServiceTimeout(u64),
+    ServiceDelay(u64),
 }
