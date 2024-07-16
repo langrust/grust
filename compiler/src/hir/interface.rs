@@ -9,7 +9,7 @@ pub struct Service {
     /// Service's identifier.
     pub id: usize,
     /// Service's time constrains (min, max) periods.
-    pub constrains: (usize, usize),
+    pub constrains: (u64, u64),
     /// Service's statements.
     pub statements: HashMap<usize, FlowStatement>,
     /// Flows dependency graph.
