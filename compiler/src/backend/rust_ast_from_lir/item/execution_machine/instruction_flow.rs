@@ -92,5 +92,13 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
                 let #outputs = self.#component_ident.step(self.context.#input_getter(#(#args),*));
             }
         }
+        FlowInstruction::HandleDelay => parse_quote! {
+            if self.input_store.not_empty() {
+                self.reset_time_constrains(instant).await?;
+                self.handle_input_store(instant).await?;
+            } else {
+                self.delayed = true;
+            }
+        },
     }
 }

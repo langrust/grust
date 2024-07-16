@@ -17,7 +17,6 @@ pub struct ServiceHandler {
 #[derive(Debug, PartialEq)]
 pub struct FlowHandler {
     pub arriving_flow: ArrivingFlow,
-    pub deadline_args: Vec<String>,
     pub instructions: Vec<FlowInstruction>,
 }
 
@@ -30,6 +29,7 @@ pub enum FlowInstruction {
     IfChange(String, String, Vec<FlowInstruction>, Vec<FlowInstruction>),
     ResetTimer(String, u64),
     ComponentCall(Pattern, String, Vec<Option<String>>),
+    HandleDelay,
 }
 mk_new! { impl FlowInstruction =>
     Let: def_let (name: impl Into<String> = name.into(), expr: Expression = expr.into())
@@ -53,6 +53,7 @@ mk_new! { impl FlowInstruction =>
         name: impl Into<String> = name.into(),
         events: impl Into<Vec<Option<String>>> = events.into(),
     )
+    HandleDelay: handle_delay()
 }
 
 #[derive(Debug, PartialEq)]

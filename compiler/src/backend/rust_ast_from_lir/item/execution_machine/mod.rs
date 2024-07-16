@@ -57,7 +57,9 @@ pub fn rust_ast_from_lir(execution_machine: ExecutionMachine) -> syn::Item {
                         } });
                         timer_reset_arms.push(parse_quote! { T::#enum_ident => false });
                     }
-                    TimingEventKind::Timeout(duration) => {
+                    TimingEventKind::Timeout(duration)
+                    | TimingEventKind::ServiceTimeout(duration)
+                    | TimingEventKind::ServiceDelay(duration) => {
                         timer_duration_arms.push(parse_quote! { T::#enum_ident => {
                             std::time::Duration::from_millis(#duration)
                         } });
