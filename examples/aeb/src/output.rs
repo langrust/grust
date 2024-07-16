@@ -209,24 +209,24 @@ pub mod runtime {
             }
         }
         #[derive(Default)]
-        pub struct AebServiceInputStore {
+        pub struct AebServiceStore {
+            speed_km_h: Option<(f64, std::time::Instant)>,
             pedestrian_r: Option<(f64, std::time::Instant)>,
             pedestrian_l: Option<(f64, std::time::Instant)>,
             timeout_pedestrian: Option<((), std::time::Instant)>,
-            speed_km_h: Option<(f64, std::time::Instant)>,
         }
-        impl AebServiceInputStore {
+        impl AebServiceStore {
             pub fn not_empty(&self) -> bool {
-                self.pedestrian_r.is_some()
+                self.speed_km_h.is_some()
+                    || self.pedestrian_r.is_some()
                     || self.pedestrian_l.is_some()
                     || self.timeout_pedestrian.is_some()
-                    || self.speed_km_h.is_some()
             }
         }
         pub struct AebService {
             context: Context,
             delayed: bool,
-            input_store: AebServiceInputStore,
+            input_store: AebServiceStore,
             braking_state: BrakingStateState,
             output: futures::channel::mpsc::Sender<O>,
             timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
@@ -237,11 +237,13 @@ pub mod runtime {
                 timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
             ) -> AebService {
                 let context = Context::init();
+                let delayed = true;
+                let input_store = Default::default();
                 let braking_state = BrakingStateState::init();
                 AebService {
                     context,
-                    delayed: true,
-                    input_store: Default::default(),
+                    delayed,
+                    input_store,
                     braking_state,
                     output,
                     timer,

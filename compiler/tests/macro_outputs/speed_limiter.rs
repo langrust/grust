@@ -523,8 +523,31 @@ pub mod runtime {
                 }
             }
         }
+        #[derive(Default)]
+        pub struct SpeedLimiterServiceStore {
+            period_speed_limiter: Option<((), std::time::Instant)>,
+            activation: Option<(ActivationRequest, std::time::Instant)>,
+            kickdown: Option<(KickdownState, std::time::Instant)>,
+            vdc: Option<(VdcState, std::time::Instant)>,
+            set_speed: Option<(f64, std::time::Instant)>,
+            speed: Option<(f64, std::time::Instant)>,
+            vacuum_brake: Option<(VacuumBrakeState, std::time::Instant)>,
+        }
+        impl SpeedLimiterServiceStore {
+            pub fn not_empty(&self) -> bool {
+                self.period_speed_limiter.is_some()
+                    || self.activation.is_some()
+                    || self.kickdown.is_some()
+                    || self.vdc.is_some()
+                    || self.set_speed.is_some()
+                    || self.speed.is_some()
+                    || self.vacuum_brake.is_some()
+            }
+        }
         pub struct SpeedLimiterService {
             context: Context,
+            delayed: bool,
+            input_store: SpeedLimiterServiceStore,
             process_set_speed: ProcessSetSpeedState,
             speed_limiter: SpeedLimiterState,
             output: futures::channel::mpsc::Sender<O>,
@@ -536,10 +559,14 @@ pub mod runtime {
                 timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
             ) -> SpeedLimiterService {
                 let context = Context::init();
+                let delayed = true;
+                let input_store = Default::default();
                 let process_set_speed = ProcessSetSpeedState::init();
                 let speed_limiter = SpeedLimiterState::init();
                 SpeedLimiterService {
                     context,
+                    delayed,
+                    input_store,
                     process_set_speed,
                     speed_limiter,
                     output,
