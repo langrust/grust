@@ -5,6 +5,14 @@ prelude! {
     operator::*,
 }
 
+#[derive(Clone)]
+pub enum TimerKind {
+    Period(u64),
+    Deadline(u64),
+    ServiceTimeout(usize, u64),
+    ServiceDelay(usize, u64),
+}
+
 /// Symbol kinds.
 #[derive(Clone)]
 pub enum SymbolKind {
@@ -21,10 +29,8 @@ pub enum SymbolKind {
         path: Option<syn::Path>,
         /// FLow kind.
         kind: FlowKind,
-        /// Is periodic timer.
-        period: Option<u64>,
-        /// Is deadline timer.
-        deadline: Option<u64>,
+        /// Is timer.
+        timer: Option<TimerKind>,
         /// Flow type.
         typing: Typ,
     },
@@ -432,8 +438,7 @@ impl SymbolTable {
             kind: SymbolKind::Flow {
                 path,
                 kind,
-                period: None,
-                deadline: None,
+                timer: None,
                 typing,
             },
             name,
@@ -599,8 +604,7 @@ impl SymbolTable {
             kind: SymbolKind::Flow {
                 path: None,
                 kind,
-                period: None,
-                deadline: None,
+                timer: None,
                 typing,
             },
             name: fresh_name,
@@ -616,8 +620,7 @@ impl SymbolTable {
             kind: SymbolKind::Flow {
                 path: None,
                 kind: FlowKind::Event(Default::default()),
-                period: Some(period),
-                deadline: None,
+                timer: Some(TimerKind::Period(period)),
                 typing: Typ::event(Typ::time()),
             },
             name: fresh_name,
@@ -633,8 +636,49 @@ impl SymbolTable {
             kind: SymbolKind::Flow {
                 path: None,
                 kind: FlowKind::Event(Default::default()),
-                period: None,
-                deadline: Some(deadline),
+                timer: Some(TimerKind::Deadline(deadline)),
+                typing: Typ::event(Typ::time()),
+            },
+            name: fresh_name,
+        };
+
+        self.insert_symbol(symbol, false, Location::default(), &mut vec![])
+            .expect("you should not fail") // todo make it local
+    }
+
+    /// Insert service delay timer in symbol table.
+    pub fn insert_service_delay(
+        &mut self,
+        fresh_name: String,
+        service_id: usize,
+        delay: u64,
+    ) -> usize {
+        let symbol = Symbol {
+            kind: SymbolKind::Flow {
+                path: None,
+                kind: FlowKind::Event(Default::default()),
+                timer: Some(TimerKind::ServiceDelay(service_id, delay)),
+                typing: Typ::event(Typ::time()),
+            },
+            name: fresh_name,
+        };
+
+        self.insert_symbol(symbol, false, Location::default(), &mut vec![])
+            .expect("you should not fail") // todo make it local
+    }
+
+    /// Insert service timeout timer in symbol table.
+    pub fn insert_service_timeout(
+        &mut self,
+        fresh_name: String,
+        service_id: usize,
+        timeout: u64,
+    ) -> usize {
+        let symbol = Symbol {
+            kind: SymbolKind::Flow {
+                path: None,
+                kind: FlowKind::Event(Default::default()),
+                timer: Some(TimerKind::ServiceTimeout(service_id, timeout)),
                 typing: Typ::event(Typ::time()),
             },
             name: fresh_name,
@@ -987,13 +1031,27 @@ impl SymbolTable {
         }
     }
 
+    /// Tell wether the id is a timer.
+    pub fn is_timer(&self, id: usize) -> bool {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::Flow { timer, .. } => timer.is_some(),
+            _ => unreachable!(),
+        }
+    }
+
     /// Tell wether the id is a deadline timer.
     pub fn is_deadline(&self, id: usize) -> bool {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Flow { deadline, .. } => deadline.is_some(),
+            SymbolKind::Flow { timer, .. } => timer.as_ref().map_or(false, |timer| match timer {
+                TimerKind::Deadline(_) => true,
+                _ => false,
+            }),
             _ => unreachable!(),
         }
     }
@@ -1004,7 +1062,72 @@ impl SymbolTable {
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Flow { period, .. } => period.is_some(),
+            SymbolKind::Flow { timer, .. } => timer.as_ref().map_or(false, |timer| match timer {
+                TimerKind::Period(_) => true,
+                _ => false,
+            }),
+            _ => unreachable!(),
+        }
+    }
+
+    /// Tell wether the id is a service delay timer.
+    pub fn is_service_delay(&self, service_id: usize, id: usize) -> bool {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::Flow { timer, .. } => timer.as_ref().map_or(false, |timer| match timer {
+                TimerKind::ServiceDelay(other_service_id, _) if service_id == *other_service_id => {
+                    true
+                }
+                _ => false,
+            }),
+            _ => unreachable!(),
+        }
+    }
+
+    /// Tell wether the id is a service timeout timer.
+    pub fn is_timeout(&self, id: usize) -> bool {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::Flow { timer, .. } => timer.as_ref().map_or(false, |timer| match timer {
+                TimerKind::ServiceTimeout(_, _) => true,
+                _ => false,
+            }),
+            _ => unreachable!(),
+        }
+    }
+
+    /// Tell wether the id is the service delay timer.
+    pub fn is_delay(&self, id: usize) -> bool {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::Flow { timer, .. } => timer.as_ref().map_or(false, |timer| match timer {
+                TimerKind::ServiceDelay(_, _) => true,
+                _ => false,
+            }),
+            _ => unreachable!(),
+        }
+    }
+
+    /// Tell wether the id is the service timeout timer.
+    pub fn is_service_timeout(&self, service_id: usize, id: usize) -> bool {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::Flow { timer, .. } => timer.as_ref().map_or(false, |timer| match timer {
+                TimerKind::ServiceTimeout(other_service_id, _)
+                    if service_id == *other_service_id =>
+                {
+                    true
+                }
+                _ => false,
+            }),
             _ => unreachable!(),
         }
     }
@@ -1015,7 +1138,13 @@ impl SymbolTable {
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Flow { period, .. } => period.as_ref(),
+            SymbolKind::Flow { timer, .. } => timer
+                .as_ref()
+                .map(|timer| match timer {
+                    TimerKind::Period(period) => Some(period),
+                    _ => None,
+                })
+                .flatten(),
             _ => unreachable!(),
         }
     }
