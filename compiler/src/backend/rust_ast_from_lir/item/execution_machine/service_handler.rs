@@ -91,12 +91,9 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
                         .into_iter()
                         .map(instruction_flow::rust_ast_from_lir);
                     impl_items.push(parse_quote! {
-                        pub async fn #function_name(
-                            &mut self,
-                            instant: std::time::Instant,
-                            #ident: #ty,
-                        ) {
+                        pub async fn #function_name(&mut self, instant: std::time::Instant, #ident: #ty) -> Result<(), futures::channel::mpsc::SendError> {
                             #(#instructions)*
+                            Ok(())
                         }
                     })
                 }
@@ -106,8 +103,9 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
                         .into_iter()
                         .map(instruction_flow::rust_ast_from_lir);
                     impl_items.push(parse_quote! {
-                        pub async fn #function_name(&mut self, instant: std::time::Instant) {
+                        pub async fn #function_name(&mut self, instant: std::time::Instant) -> Result<(), futures::channel::mpsc::SendError> {
                             #(#instructions)*
+                            Ok(())
                         }
                     })
                 }
@@ -118,6 +116,16 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
     items.push(parse_quote! {
         impl #service_name {
             #(#impl_items)*
+            #[inline]
+            pub async fn send_output(&mut self, output: O) -> Result<(), futures::channel::mpsc::SendError> {
+                self.output.send(output).await?;
+                Ok(())
+            }
+            #[inline]
+            pub async fn send_timer(&mut self, timer: T, instant: std::time::Instant) -> Result<(), futures::channel::mpsc::SendError> {
+                self.timer.send((timer, instant)).await?;
+                Ok(())
+            }
         }
     });
 

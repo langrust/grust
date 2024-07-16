@@ -23,10 +23,7 @@ pub fn rust_ast_from_lir(run_loop: RuntimeLoop) -> ImplItem {
                         to_camel_case(time_flow_name.as_str()).as_str(),
                         Span::call_site(),
                     );
-                    Some(parse_quote!({
-                        let res = runtime.timer.send((T::#enum_ident, init_instant)).await;
-                        if res.is_err() {return}
-                    }))
+                    Some(parse_quote! { runtime.send_timer(T::#enum_ident, init_instant).await?; })
                 }
             }
         });
@@ -45,7 +42,7 @@ pub fn rust_ast_from_lir(run_loop: RuntimeLoop) -> ImplItem {
                         let function_name: Ident = format_ident!("handle_{flow_name}");
                         let call_services_handlers = services.iter().map(|service_name| -> syn::Stmt {
                             let service_name = Ident::new(service_name, Span::call_site());
-                            parse_quote! { runtime.#service_name.#function_name(instant, #ident).await; }
+                            parse_quote! { runtime.#service_name.#function_name(instant, #ident).await?; }
                         });
                         input_arms.push(parse_quote! {
                             I::#enum_ident(#ident, instant) => {
@@ -58,7 +55,7 @@ pub fn rust_ast_from_lir(run_loop: RuntimeLoop) -> ImplItem {
                         let function_name: Ident = format_ident!("handle_{time_flow_name}");
                         let call_services_handlers = services.iter().map(|service_name| -> syn::Stmt {
                             let service_name = Ident::new(service_name, Span::call_site());
-                            parse_quote! { runtime.#service_name.#function_name(instant).await; }
+                            parse_quote! { runtime.#service_name.#function_name(instant).await?; }
                         });
                         input_arms.push(parse_quote! {
                             I::Timer(T::#enum_ident, instant) => {
@@ -81,11 +78,12 @@ pub fn rust_ast_from_lir(run_loop: RuntimeLoop) -> ImplItem {
 
     // `run_loop` function
     ImplItem::Fn(parse_quote! {
-        pub async fn run_loop(self, init_instant: std::time::Instant, input: impl futures::Stream<Item = I>) {
+        pub async fn run_loop(self, init_instant: std::time::Instant, input: impl futures::Stream<Item = I>) -> Result<(), futures::channel::mpsc::SendError> {
             futures::pin_mut!(input);
             let mut runtime = self;
             #(#init_timers)*
             #async_loop
+            Ok(())
         }
     })
 }
