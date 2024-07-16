@@ -575,21 +575,36 @@ pub mod runtime {
                 instant: std::time::Instant,
                 speed: f64,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.context.speed = speed;
+                if self.delayed {
+                    self.reset_time_constrains(instant).await?;
+                    self.context.speed = speed;
+                } else {
+                    let unique = self.input_store.speed.replace((speed, instant));
+                    assert!(unique.is_none(), "speed changes too frequently");
+                }
                 Ok(())
             }
             pub async fn handle_period_speed_limiter(
                 &mut self,
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                let (state, on_state, in_regulation_aux, state_update) = self
-                    .speed_limiter
-                    .step(self.context.get_speed_limiter_inputs(None, None, None));
-                self.context.state = state;
-                self.context.on_state = on_state;
-                self.context.in_regulation_aux = in_regulation_aux;
-                self.context.state_update = state_update;
-                self.send_timer(T::PeriodSpeedLimiter, instant).await?;
+                if self.delayed {
+                    self.reset_time_constrains(instant).await?;
+                    let (state, on_state, in_regulation_aux, state_update) = self
+                        .speed_limiter
+                        .step(self.context.get_speed_limiter_inputs(None, None, None));
+                    self.context.state = state;
+                    self.context.on_state = on_state;
+                    self.context.in_regulation_aux = in_regulation_aux;
+                    self.context.state_update = state_update;
+                    self.send_timer(T::PeriodSpeedLimiter, instant).await?;
+                } else {
+                    let unique = self.input_store.period_speed_limiter.replace(((), instant));
+                    assert!(
+                        unique.is_none(),
+                        "period_speed_limiter changes too frequently"
+                    );
+                }
                 Ok(())
             }
             pub async fn handle_kickdown(
@@ -597,16 +612,22 @@ pub mod runtime {
                 instant: std::time::Instant,
                 kickdown: Kickdown,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                let (state, on_state, in_regulation_aux, state_update) =
-                    self.speed_limiter
+                if self.delayed {
+                    self.reset_time_constrains(instant).await?;
+                    let (state, on_state, in_regulation_aux, state_update) = self
+                        .speed_limiter
                         .step(
                             self.context
                                 .get_speed_limiter_inputs(None, Some(kickdown), None),
                         );
-                self.context.state = state;
-                self.context.on_state = on_state;
-                self.context.in_regulation_aux = in_regulation_aux;
-                self.context.state_update = state_update;
+                    self.context.state = state;
+                    self.context.on_state = on_state;
+                    self.context.in_regulation_aux = in_regulation_aux;
+                    self.context.state_update = state_update;
+                } else {
+                    let unique = self.input_store.kickdown.replace((kickdown, instant));
+                    assert!(unique.is_none(), "kickdown changes too frequently");
+                }
                 Ok(())
             }
             pub async fn handle_set_speed(
@@ -614,24 +635,30 @@ pub mod runtime {
                 instant: std::time::Instant,
                 set_speed: f64,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                if (self.context.x - set_speed).abs() >= 1.0 {
-                    self.context.x = set_speed;
-                }
-                let x = self.context.x;
-                if self.context.changed_set_speed_old != x {
-                    self.context.changed_set_speed_old = x;
-                    let changed_set_speed = x;
-                    let (v_set_aux, v_update) = self.process_set_speed.step(
-                        self.context
-                            .get_process_set_speed_inputs(Some(changed_set_speed)),
-                    );
-                    self.context.v_set_aux = v_set_aux;
-                    self.context.v_update = v_update;
-                    let v_set_aux = self.context.v_set_aux;
-                    let v_set = v_set_aux;
-                    self.context.v_set = v_set;
-                    self.send_output(O::VSet(v_set, instant)).await?;
+                if self.delayed {
+                    self.reset_time_constrains(instant).await?;
+                    if (self.context.x - set_speed).abs() >= 1.0 {
+                        self.context.x = set_speed;
+                    }
+                    let x = self.context.x;
+                    if self.context.changed_set_speed_old != x {
+                        self.context.changed_set_speed_old = x;
+                        let changed_set_speed = x;
+                        let (v_set_aux, v_update) = self.process_set_speed.step(
+                            self.context
+                                .get_process_set_speed_inputs(Some(changed_set_speed)),
+                        );
+                        self.context.v_set_aux = v_set_aux;
+                        self.context.v_update = v_update;
+                        let v_set_aux = self.context.v_set_aux;
+                        let v_set = v_set_aux;
+                        self.context.v_set = v_set;
+                        self.send_output(O::VSet(v_set, instant)).await?;
+                    } else {
+                    }
                 } else {
+                    let unique = self.input_store.set_speed.replace((set_speed, instant));
+                    assert!(unique.is_none(), "set_speed changes too frequently");
                 }
                 Ok(())
             }
@@ -662,17 +689,32 @@ pub mod runtime {
                 instant: std::time::Instant,
                 vdc: VdcState,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.context.vdc = vdc;
+                if self.delayed {
+                    self.reset_time_constrains(instant).await?;
+                    self.context.vdc = vdc;
+                } else {
+                    let unique = self.input_store.vdc.replace((vdc, instant));
+                    assert!(unique.is_none(), "vdc changes too frequently");
+                }
                 Ok(())
             }
             pub async fn handle_period_in_regulation(
                 &mut self,
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                let in_regulation = self.context.in_regulation_aux;
-                self.send_output(O::InRegulation(in_regulation, instant))
-                    .await?;
-                self.send_timer(T::PeriodInRegulation, instant).await?;
+                if self.delayed {
+                    self.reset_time_constrains(instant).await?;
+                    let in_regulation = self.context.in_regulation_aux;
+                    self.send_output(O::InRegulation(in_regulation, instant))
+                        .await?;
+                    self.send_timer(T::PeriodInRegulation, instant).await?;
+                } else {
+                    let unique = self.input_store.period_in_regulation.replace(((), instant));
+                    assert!(
+                        unique.is_none(),
+                        "period_in_regulation changes too frequently"
+                    );
+                }
                 Ok(())
             }
             pub async fn handle_vacuum_brake(
@@ -680,7 +722,16 @@ pub mod runtime {
                 instant: std::time::Instant,
                 vacuum_brake: VacuumBrakeState,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.context.vacuum_brake = vacuum_brake;
+                if self.delayed {
+                    self.reset_time_constrains(instant).await?;
+                    self.context.vacuum_brake = vacuum_brake;
+                } else {
+                    let unique = self
+                        .input_store
+                        .vacuum_brake
+                        .replace((vacuum_brake, instant));
+                    assert!(unique.is_none(), "vacuum_brake changes too frequently");
+                }
                 Ok(())
             }
             pub async fn handle_activation(
@@ -688,16 +739,22 @@ pub mod runtime {
                 instant: std::time::Instant,
                 activation: ActivationRequest,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                let (state, on_state, in_regulation_aux, state_update) =
-                    self.speed_limiter
+                if self.delayed {
+                    self.reset_time_constrains(instant).await?;
+                    let (state, on_state, in_regulation_aux, state_update) = self
+                        .speed_limiter
                         .step(
                             self.context
                                 .get_speed_limiter_inputs(Some(activation), None, None),
                         );
-                self.context.state = state;
-                self.context.on_state = on_state;
-                self.context.in_regulation_aux = in_regulation_aux;
-                self.context.state_update = state_update;
+                    self.context.state = state;
+                    self.context.on_state = on_state;
+                    self.context.in_regulation_aux = in_regulation_aux;
+                    self.context.state_update = state_update;
+                } else {
+                    let unique = self.input_store.activation.replace((activation, instant));
+                    assert!(unique.is_none(), "activation changes too frequently");
+                }
                 Ok(())
             }
             pub async fn handle_delay_speed_limiter(
@@ -725,16 +782,22 @@ pub mod runtime {
                 instant: std::time::Instant,
                 failure: Failure,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                let (state, on_state, in_regulation_aux, state_update) =
-                    self.speed_limiter
+                if self.delayed {
+                    self.reset_time_constrains(instant).await?;
+                    let (state, on_state, in_regulation_aux, state_update) = self
+                        .speed_limiter
                         .step(
                             self.context
                                 .get_speed_limiter_inputs(None, None, Some(failure)),
                         );
-                self.context.state = state;
-                self.context.on_state = on_state;
-                self.context.in_regulation_aux = in_regulation_aux;
-                self.context.state_update = state_update;
+                    self.context.state = state;
+                    self.context.on_state = on_state;
+                    self.context.in_regulation_aux = in_regulation_aux;
+                    self.context.state_update = state_update;
+                } else {
+                    let unique = self.input_store.failure.replace((failure, instant));
+                    assert!(unique.is_none(), "failure changes too frequently");
+                }
                 Ok(())
             }
             #[inline]
