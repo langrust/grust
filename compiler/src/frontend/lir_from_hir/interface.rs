@@ -730,29 +730,24 @@ impl Propagations {
         // for every propagation of incoming flows, create their handlers
         self.into_iter().map(|(flow_id, mut instructions)| {
             // determine weither this arriving flow is a timing event
-            let flow_name = symbol_table.get_name(flow_id).clone();
+            let flow_name = symbol_table.get_name(flow_id);
             let arriving_flow = if let Some(period) = symbol_table.get_period(flow_id) {
                 // add reset periodic timer
-                instructions.push(FlowInstruction::ResetTimer(flow_name.clone(), *period));
-                ArrivingFlow::Period(flow_name)
+                instructions.push(FlowInstruction::reset(flow_name, *period));
+                ArrivingFlow::Period(flow_name.clone())
             } else if symbol_table.is_deadline(flow_id) {
-                ArrivingFlow::Deadline(flow_name)
+                ArrivingFlow::Deadline(flow_name.clone())
+            } else if symbol_table.is_delay(flow_id) {
+                ArrivingFlow::ServiceDelay(flow_name.clone())
+            } else if symbol_table.is_timeout(flow_id) {
+                ArrivingFlow::ServiceTimeout(flow_name.clone())
             } else {
                 let flow_type = symbol_table.get_type(flow_id);
                 let path = symbol_table.get_path(flow_id);
-                ArrivingFlow::Channel(flow_name, flow_type.clone(), path.clone())
+                ArrivingFlow::Channel(flow_name.clone(), flow_type.clone(), path.clone())
             };
-            // get the name of timeout events from reset instructions
-            let timers_to_reset = instructions
-                .iter()
-                .filter_map(|instruction| match instruction {
-                    FlowInstruction::ResetTimer(deadline_name, _) => Some(deadline_name.clone()),
-                    _ => None,
-                })
-                .collect();
             FlowHandler {
                 arriving_flow,
-                deadline_args: timers_to_reset,
                 instructions,
             }
         })
@@ -935,14 +930,30 @@ impl<'a> PropagationBuilder<'a> {
         timing_events: &'a mut Vec<TimingEvent>,
         components: &'a mut Vec<String>,
     ) -> PropagationBuilder<'a> {
+        let mut identifier_creator = IdentifierCreator::from(
+            service.get_flows_names(symbol_table).chain(
+                imports
+                    .values()
+                    .map(|import| symbol_table.get_name(import.id).clone()),
+            ),
+        );
         // retrieve timer and onchange events from service
         let (stmts_timers, on_change_events) = Self::build_stmt_events(
+            &mut identifier_creator,
             service,
             symbol_table,
             flows_context,
             imports,
             timing_events,
             components,
+        );
+        // add events related to service's constrains
+        Self::build_constrains_events(
+            &mut identifier_creator,
+            service,
+            symbol_table,
+            imports,
+            timing_events,
         );
 
         // create events isles
@@ -968,10 +979,7 @@ impl<'a> PropagationBuilder<'a> {
             symbol_table,
             service,
             stack: Stack::new(),
-            memory: Default::default(),
             incoming_flow: 0,
-            events: Default::default(),
-            signals: Default::default(),
             statements_order,
             on_change_events,
             stmts_timers,
@@ -979,6 +987,7 @@ impl<'a> PropagationBuilder<'a> {
     }
 
     fn build_stmt_events(
+        identifier_creator: &mut IdentifierCreator,
         service: &mut Service,
         symbol_table: &mut SymbolTable,
         flows_context: &mut FlowsContext,
@@ -987,13 +996,6 @@ impl<'a> PropagationBuilder<'a> {
         components: &mut Vec<String>,
     ) -> (HashMap<usize, usize>, HashMap<usize, usize>) {
         // collects components, timing events, on_change_events that are present in the service
-        let mut identifier_creator = IdentifierCreator::from(
-            service.get_flows_names(symbol_table).chain(
-                imports
-                    .values()
-                    .map(|import| symbol_table.get_name(import.id).clone()),
-            ),
-        );
         let mut stmts_timers = HashMap::new();
         let mut on_change_events = HashMap::new();
         service.statements.iter().for_each(|(stmt_id, statement)| {
@@ -1149,6 +1151,72 @@ impl<'a> PropagationBuilder<'a> {
         (stmts_timers, on_change_events)
     }
 
+    /// Adds events related to service's constrains.
+    fn build_constrains_events(
+        identifier_creator: &mut IdentifierCreator,
+        service: &mut Service,
+        symbol_table: &mut SymbolTable,
+        imports: &mut HashMap<usize, FlowImport>,
+        timing_events: &mut Vec<TimingEvent>,
+    ) {
+        let min_delay = service.constrains.0;
+        // add new timing event into the identifier creator
+        let fresh_name =
+            identifier_creator.fresh_identifier("delay", symbol_table.get_name(service.id));
+        let typing = Typ::event(Typ::time());
+        let fresh_id = symbol_table.insert_service_delay(fresh_name.clone(), service.id, min_delay);
+        // add timing_event in imports
+        let fresh_statement_id = symbol_table.get_fresh_id();
+        imports.insert(
+            fresh_statement_id,
+            FlowImport {
+                import_token: Default::default(),
+                id: fresh_id,
+                path: format_ident!("{fresh_name}").into(),
+                colon_token: Default::default(),
+                flow_type: typing,
+                semi_token: Default::default(),
+            },
+        );
+        // push timing_event
+        timing_events.push(TimingEvent {
+            identifier: fresh_name,
+            kind: TimingEventKind::ServiceDelay(min_delay),
+        });
+
+        let max_timeout = service.constrains.1;
+        // add new timing event into the identifier creator
+        let fresh_name =
+            identifier_creator.fresh_identifier("timeout", symbol_table.get_name(service.id));
+        let typing = Typ::event(Typ::time());
+        let fresh_id =
+            symbol_table.insert_service_timeout(fresh_name.clone(), service.id, max_timeout);
+        // add timing_event in imports
+        let fresh_statement_id = symbol_table.get_fresh_id();
+        imports.insert(
+            fresh_statement_id,
+            FlowImport {
+                import_token: Default::default(),
+                id: fresh_id,
+                path: format_ident!("{fresh_name}").into(),
+                colon_token: Default::default(),
+                flow_type: typing,
+                semi_token: Default::default(),
+            },
+        );
+        // add timing_event in graph
+        service.statements.keys().for_each(|stmt_id| {
+            if service.statements[stmt_id].is_comp_call() {
+                service.graph.add_edge(fresh_statement_id, *stmt_id, ());
+            }
+        });
+        // push timing_event
+        timing_events.push(TimingEvent {
+            identifier: fresh_name,
+            kind: TimingEventKind::ServiceTimeout(max_timeout),
+        });
+    }
+
     /// Destroy PropagationsBuilder into Propagations.
     pub fn into_propagations(self) -> Propagations {
         self.propagations
@@ -1170,12 +1238,12 @@ impl<'a> PropagationBuilder<'a> {
         let parent_flows = self.get_def_flows(parent);
 
         let dependencies = self.service.graph.neighbors(parent).filter_map(|child| {
-                // filter component call because they will appear in isles
-                if self.service.is_comp_call(child) {
-                    return None;
-                }
-                Some(child)
-            });
+            // filter component call because they will appear in isles
+            if self.service.is_comp_call(child) {
+                return None;
+            }
+            Some(child)
+        });
 
         let isles = parent_flows
             .iter()
@@ -1271,6 +1339,12 @@ impl<'a> PropagationBuilder<'a> {
             } else
             // get flow import related to stmt_id
             if let Some(import) = self.imports.get(&stmt_id) {
+                if self
+                    .symbol_table
+                    .is_service_delay(self.service.id, import.id)
+                {
+                    self.push_instr(FlowInstruction::handle_delay())
+                } else if self.symbol_table.get_flow_kind(import.id).is_event() {
                     self.stack.insert_event(import.id)
                 } else {
                     self.stack.insert_signal(import.id)
@@ -1527,19 +1601,19 @@ impl<'a> PropagationBuilder<'a> {
         let events = inputs
             .iter()
             .filter_map(|(_, flow_expr)| {
-            match flow_expr.kind {
-                flow::Kind::Ident { id } => {
+                match flow_expr.kind {
+                    flow::Kind::Ident { id } => {
                         if self.stack.contains_event(id) {
-                        let event_name = self.symbol_table.get_name(id).clone();
-                        Some(Some(event_name))
-                    } else if self.symbol_table.get_flow_kind(id).is_event() {
-                        Some(None)
-                    } else {
-                        None
+                            let event_name = self.symbol_table.get_name(id).clone();
+                            Some(Some(event_name))
+                        } else if self.symbol_table.get_flow_kind(id).is_event() {
+                            Some(None)
+                        } else {
+                            None
+                        }
                     }
+                    _ => unreachable!(), // normalized
                 }
-                _ => unreachable!(), // normalized
-            }
             })
             .collect();
 
