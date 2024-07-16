@@ -17,8 +17,10 @@ pub fn rust_ast_from_lir(run_loop: RuntimeLoop) -> ImplItem {
         .iter()
         .filter_map(|input_flow| -> Option<Stmt> {
             match &input_flow.arriving_flow {
-                ArrivingFlow::Channel(_, _, _) => None,
-                ArrivingFlow::Period(time_flow_name) | ArrivingFlow::Deadline(time_flow_name) => {
+                ArrivingFlow::Channel(_, _, _) | ArrivingFlow::ServiceDelay(_) => None,
+                ArrivingFlow::Period(time_flow_name)
+                | ArrivingFlow::Deadline(time_flow_name)
+                | ArrivingFlow::ServiceTimeout(time_flow_name) => {
                     let enum_ident = Ident::new(
                         to_camel_case(time_flow_name.as_str()).as_str(),
                         Span::call_site(),
@@ -50,7 +52,10 @@ pub fn rust_ast_from_lir(run_loop: RuntimeLoop) -> ImplItem {
                             }
                         })
                     },
-                    ArrivingFlow::Period(time_flow_name) | ArrivingFlow::Deadline(time_flow_name) => {
+                    ArrivingFlow::Period(time_flow_name)
+                    | ArrivingFlow::Deadline(time_flow_name)
+                    | ArrivingFlow::ServiceDelay(time_flow_name)
+                    | ArrivingFlow::ServiceTimeout(time_flow_name) => {
                         let enum_ident = Ident::new(to_camel_case(time_flow_name.as_str()).as_str(), Span::call_site());
                         let function_name: Ident = format_ident!("handle_{time_flow_name}");
                         let call_services_handlers = services.iter().map(|service_name| -> syn::Stmt {

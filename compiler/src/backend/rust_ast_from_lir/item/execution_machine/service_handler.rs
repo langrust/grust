@@ -43,6 +43,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
                     .push(parse_quote! { #ident: Option<((), std::time::Instant)> });
                 service_store_is_somes.push(parse_quote! { self.#ident.is_some() });
             }
+            ArrivingFlow::ServiceDelay(_) | ArrivingFlow::ServiceTimeout(_) => (),
         });
     // service store
     let service_store_name = format_ident!("{}", to_camel_case(&format!("{service}ServiceStore")));
@@ -157,14 +158,77 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
                         }
                     })
                 }
+                ArrivingFlow::ServiceDelay(service_delay) => {
+                    let function_name: Ident = format_ident!("handle_{service_delay}");
+                    let instructions = instructions
+                        .into_iter()
+                        .map(instruction_flow_rust_ast_from_lir);
+                    impl_items.push(parse_quote! {
+                        pub async fn #function_name(&mut self, instant: std::time::Instant) -> Result<(), futures::channel::mpsc::SendError> {
+                            #(#instructions)*
+                            Ok(())
+                        }
+                    });
+                    let enum_ident = Ident::new(
+                        to_camel_case(service_delay.as_str()).as_str(),
+                        Span::call_site(),
+                    );
+                    impl_items.push(parse_quote! {
+                        #[inline]
+                        pub async fn reset_service_delay(&mut self, instant: std::time::Instant) -> Result<(), futures::channel::mpsc::SendError> {
+                            self.timer.send((T::#enum_ident, instant)).await?;
+                            Ok(())
+                        }
+                    })
+                }
+                ArrivingFlow::ServiceTimeout(service_timeout) => {
+                    let function_name: Ident = format_ident!("handle_{service_timeout}");
+                    let instructions = instructions
+                        .into_iter()
+                        .map(instruction_flow_rust_ast_from_lir);
+                    impl_items.push(parse_quote! {
+                        pub async fn #function_name(&mut self, instant: std::time::Instant) -> Result<(), futures::channel::mpsc::SendError> {
+                            self.reset_time_constrains(instant).await?;
+                            #(#instructions)*
+                            Ok(())
+                        }
+                    });
+                    let enum_ident = Ident::new(
+                        to_camel_case(service_timeout.as_str()).as_str(),
+                        Span::call_site(),
+                    );
+                    impl_items.push(parse_quote! {
+                        #[inline]
+                        pub async fn reset_service_timeout(&mut self, instant: std::time::Instant) -> Result<(), futures::channel::mpsc::SendError> {
+                            self.timer.send((T::#enum_ident, instant)).await?;
+                            Ok(())
+                        }
+                    })
+                }
             }
         },
     );
+
+    // handle service store
+    impl_items.push(parse_quote! {
+        #[inline]
+        pub async fn handle_input_store(&mut self, instant: std::time::Instant) -> Result<(), futures::channel::mpsc::SendError> {
+            todo!();
+            Ok(())
+        }
+    });
 
     // service handlers in an implementation block
     items.push(Item::Impl(parse_quote! {
         impl #service_name {
             #(#impl_items)*
+            #[inline]
+            pub async fn reset_time_constrains(&mut self, instant: std::time::Instant) -> Result<(), futures::channel::mpsc::SendError> {
+                self.reset_service_delay(instant).await?;
+                self.reset_service_timeout(instant).await?;
+                self.delayed = false;
+                Ok(())
+            }
             #[inline]
             pub async fn send_output(&mut self, output: O) -> Result<(), futures::channel::mpsc::SendError> {
                 self.output.send(output).await?;
