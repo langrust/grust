@@ -42,9 +42,17 @@ where
                     // the stream have a value
                     Poll::Ready(Some((kind, pushed_instant))) => {
                         // if it is sleeping timer's kind then abort sleep
-                        if let Some((sleeping_timer, _)) = project.sleeping_timer.as_ref() {
+                        if let Some((sleeping_timer, sleeping_deadline)) =
+                            project.sleeping_timer.as_ref()
+                        {
                             if kind.do_reset() && kind.eq(sleeping_timer) {
                                 abort = true;
+                            }
+                            if sleeping_deadline > &(pushed_instant + kind.get_duration()) {
+                                abort = true;
+                                let (sleeping_timer, sleeping_deadline) =
+                                    project.sleeping_timer.take().unwrap();
+                                queue.push(Timer::from_deadline(sleeping_deadline, sleeping_timer))
                             }
                         }
                         if kind.do_reset() {
@@ -81,7 +89,7 @@ where
                 }
                 None => {
                     if project.sleeping_timer.is_some() {
-                        let output = std::mem::take(project.sleeping_timer);
+                        let output = project.sleeping_timer.take();
                         Poll::Ready(output)
                     } else {
                         if *project.end {
