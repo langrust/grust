@@ -58,7 +58,7 @@ pub mod runtime {
             match self {
                 T::TimeoutPedestrian => std::time::Duration::from_millis(2000u64),
                 T::DelayAeb => std::time::Duration::from_millis(10u64),
-                T::TimeoutAeb => std::time::Duration::from_millis(500u64),
+                T::TimeoutAeb => std::time::Duration::from_millis(3000u64),
             }
         }
         fn do_reset(&self) -> bool {

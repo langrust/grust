@@ -42,13 +42,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     begin_json(OUTPATH);
     // collect all outputs
     let mut resp_stream = response.into_inner();
-    let mut counter = 0;
     while let Some(received) = resp_stream.next().await {
-        counter += 1;
         let received = received.unwrap();
+        let end = received.timestamp > 2000;
         println!("\treceived message: `{:?}`", received.message);
         append_json(OUTPATH, received);
-        if counter > 1000 {
+        if end {
             break;
         }
     }
