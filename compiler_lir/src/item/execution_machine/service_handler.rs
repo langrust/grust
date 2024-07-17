@@ -29,7 +29,7 @@ pub enum FlowInstruction {
     IfChange(String, String, Vec<FlowInstruction>, Vec<FlowInstruction>),
     ResetTimer(String, u64),
     ComponentCall(Pattern, String, Vec<Option<String>>),
-    HandleDelay,
+    HandleDelay(Vec<String>, Vec<MatchArm>),
 }
 mk_new! { impl FlowInstruction =>
     Let: def_let (name: impl Into<String> = name.into(), expr: Expression = expr.into())
@@ -53,7 +53,22 @@ mk_new! { impl FlowInstruction =>
         name: impl Into<String> = name.into(),
         events: impl Into<Vec<Option<String>>> = events.into(),
     )
-    HandleDelay: handle_delay()
+    HandleDelay: handle_delay(
+        input_names: impl Iterator<Item = String> = input_names.collect(),
+        arms: impl Iterator<Item = MatchArm> = arms.collect(),
+    )
+}
+
+#[derive(Debug, PartialEq)]
+pub struct MatchArm {
+    pub patterns: Vec<Pattern>,
+    pub block: Vec<FlowInstruction>,
+}
+mk_new! { impl MatchArm =>
+    new {
+        patterns: impl Iterator<Item = Pattern> = patterns.collect(),
+        block: Vec<FlowInstruction> = block,
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -93,7 +108,6 @@ pub enum Expression {
     /// Err expression: `Err`.
     Err,
 }
-
 mk_new! { impl Expression =>
     Literal: lit {
         literal: Constant = literal
