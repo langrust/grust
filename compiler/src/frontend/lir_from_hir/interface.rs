@@ -843,9 +843,9 @@ impl Propagations {
             .map(|(flow_id, mut instructions)| {
                 // determine weither this arriving flow is a timing event
                 let flow_name = symbol_table.get_name(flow_id);
-                let arriving_flow = if let Some(period) = symbol_table.get_period(flow_id) {
+                let arriving_flow = if symbol_table.is_period(flow_id) {
                     // add reset periodic timer
-                    instructions.push(FlowInstruction::reset(flow_name, *period));
+                    instructions.push(FlowInstruction::reset(flow_name, flow_name));
                     ArrivingFlow::Period(flow_name.clone())
                 } else if symbol_table.is_deadline(flow_id) {
                     ArrivingFlow::Deadline(flow_name.clone())
@@ -870,8 +870,9 @@ impl Propagations {
 /// Stack of statements indices that can handle forks.
 #[derive(Default)]
 pub struct Stack {
-    /// Current statements stack.
-    current: Vec<usize>,
+    /// Current statements (and the import flows from which they come from) stack:
+    /// `(import_flow_id, stmt)`.
+    current: Vec<(usize, usize)>,
     /// Cached memory of the statements visited.
     memory: HashSet<usize>,
     /// Events currently triggered during a traversal.
@@ -940,12 +941,13 @@ impl Stack {
     pub fn is_empty(&self) -> bool {
         self.current.is_empty() && self.next.as_ref().map_or(true, |stack| stack.is_empty())
     }
-    /// Appends a statement identifier to the end of the current stack.
-    pub fn push(&mut self, stmt_id: usize) {
-        self.current.push(stmt_id)
+    /// Appends a statement identifier (and the import flow from which it come from)
+    /// to the end of the current stack: `(import_flow_id, stmt)`.
+    pub fn push(&mut self, import_flow_id: usize, stmt_id: usize) {
+        self.current.push((import_flow_id, stmt_id))
     }
     /// Pop the next statement identifier from the current stack.
-    pub fn pop(&mut self) -> Option<usize> {
+    pub fn pop(&mut self) -> Option<(usize, usize)> {
         self.current.pop()
     }
     /// Fork the stack.
@@ -966,18 +968,24 @@ impl Stack {
         *self = *std::mem::take(self).next.unwrap()
     }
     /// Insert in the stack in dependencies order.
-    pub fn insert_ordered<F: Fn(usize) -> usize>(&mut self, value: usize, f: F) {
+    pub fn insert_ordered<F: Fn(usize) -> usize>(
+        &mut self,
+        import_flow: usize,
+        stmt_to_insert: usize,
+        f: F,
+    ) {
         match self
             .current
-            .binary_search_by_key(&f(value), |stmt_id| f(*stmt_id))
+            .binary_search_by_key(&f(stmt_to_insert), |(_, stmt_id)| f(*stmt_id))
         {
-            Err(pos) => self.current.insert(pos, value),
+            Err(pos) => self.current.insert(pos, (import_flow, stmt_to_insert)),
             Ok(_) => (), // already in the stack
         }
     }
     /// Extend the stack in dependencies order.
     pub fn extend_ordered(
         &mut self,
+        import_flow: usize,
         iter: impl Iterator<Item = usize>,
         compare: impl Fn(usize) -> usize + Clone,
     ) {
@@ -992,15 +1000,16 @@ impl Stack {
             // insert statements into the sorted stack
             match self
                 .current
-                .binary_search_by_key(&compare(next_statement_id), |stmt_id| compare(*stmt_id))
-            {
-                Err(pos) => self.current.insert(pos, next_statement_id),
+                .binary_search_by_key(&compare(next_statement_id), |(_, stmt_id)| {
+                    compare(*stmt_id)
+                }) {
+                Err(pos) => self.current.insert(pos, (import_flow, next_statement_id)),
                 Ok(_) => (), // already in the stack
             }
         })
     }
     /// Extend the stack in no order.
-    pub fn extend(&mut self, iter: impl Iterator<Item = usize>) {
+    pub fn extend(&mut self, iter: impl Iterator<Item = (usize, usize)>) {
         self.current.extend(iter)
     }
 }
@@ -1367,7 +1376,7 @@ impl<'a> PropagationBuilder<'a> {
     }
 
     /// Extend the stack with the next statements to compute.
-    fn extend_with_next(&mut self, parent: usize) {
+    fn extend_with_next(&mut self, import_flow: usize, parent: usize) {
         // get the flows defined by parent statement
         let parent_flows = self.get_def_flows(parent);
 
@@ -1390,7 +1399,7 @@ impl<'a> PropagationBuilder<'a> {
 
         // gives the order of statements indices
         let compare = |statement_id| self.statements_order[&statement_id];
-        self.stack.extend_ordered(to_insert, compare)
+        self.stack.extend_ordered(import_flow, to_insert, compare)
     }
 
     /// Returns the input flows of the service that are (currently) detected.
@@ -1429,7 +1438,7 @@ impl<'a> PropagationBuilder<'a> {
     }
 
     /// Get the next statement identifier to analyse.
-    fn pop_stack(&mut self) -> Option<usize> {
+    fn pop_stack(&mut self) -> Option<(usize, usize)> {
         if let Some(value) = self.stack.pop() {
             return Some(value);
         }
@@ -1496,10 +1505,10 @@ impl<'a> PropagationBuilder<'a> {
             .imports
             .iter()
             .filter(move |(_, import)| incoming_flows.contains(&import.id))
-            .map(|(import_id, _)| *import_id);
+            .map(|(import_id, import)| (import.id, *import_id));
         self.stack.extend(imports);
 
-        while let Some(stmt_id) = self.pop_stack() {
+        while let Some((import_flow, stmt_id)) = self.pop_stack() {
             // get flow statement related to stmt_id
             if let Some(flow_statement) = self.service.statements.get(&stmt_id) {
                 match flow_statement {
@@ -1512,7 +1521,7 @@ impl<'a> PropagationBuilder<'a> {
                         pattern,
                         flow_expression,
                         ..
-                    }) => self.handle_expr(stmt_id, pattern, flow_expression),
+                    }) => self.handle_expr(import_flow, stmt_id, pattern, flow_expression),
                 }
             } else
             // get flow import related to stmt_id
@@ -1526,12 +1535,12 @@ impl<'a> PropagationBuilder<'a> {
             } else
             // get flow export related to stmt_id
             if let Some(export) = self.exports.get(&stmt_id) {
-                self.send(export.id)
+                self.send(export.id, import_flow)
             } else {
                 unreachable!("{}", stmt_id)
             }
 
-            self.extend_with_next(stmt_id);
+            self.extend_with_next(import_flow, stmt_id);
         }
     }
 
@@ -1539,6 +1548,7 @@ impl<'a> PropagationBuilder<'a> {
     #[inline]
     fn handle_expr(
         &mut self,
+        import_flow: usize,
         stmt_id: usize,
         pattern: &hir::Pattern,
         flow_expression: &flow::Expr,
@@ -1548,8 +1558,8 @@ impl<'a> PropagationBuilder<'a> {
             flow::Kind::Ident { id } => self.handle_ident(pattern, *id),
             flow::Kind::Sample { .. } => self.handle_sample(stmt_id, pattern, dependencies),
             flow::Kind::Scan { .. } => self.handle_scan(stmt_id, pattern, dependencies),
-            flow::Kind::Timeout { deadline, .. } => {
-                self.handle_timeout(stmt_id, pattern, dependencies, *deadline)
+            flow::Kind::Timeout { .. } => {
+                self.handle_timeout(import_flow, stmt_id, pattern, dependencies)
             }
             flow::Kind::Throttle { delta, .. } => {
                 self.handle_throttle(pattern, dependencies, delta.clone())
@@ -1666,10 +1676,10 @@ impl<'a> PropagationBuilder<'a> {
     /// Compute the instructions from a timeout expression.
     fn handle_timeout(
         &mut self,
+        import_flow: usize,
         stmt_id: usize,
         pattern: &hir::Pattern,
         mut dependencies: Vec<usize>,
-        deadline: u64,
     ) {
         // get the id of pattern's flow, debug-check there is only one flow
         let mut ids = pattern.identifiers();
@@ -1685,12 +1695,12 @@ impl<'a> PropagationBuilder<'a> {
         let expr = self.get_event(id_source).map(Expression::ok);
         if expr.is_some() {
             self.define_event(id_pattern, expr);
-            self.reset_timer(timer_id, deadline)
+            self.reset_timer(timer_id, import_flow)
         } else {
             let expr = self.get_event(timer_id).map(|_| Expression::err());
             if expr.is_some() {
                 self.define_event(id_pattern, expr);
-                self.reset_timer(timer_id, deadline)
+                self.reset_timer(timer_id, import_flow)
             }
         }
     }
@@ -1846,9 +1856,10 @@ impl<'a> PropagationBuilder<'a> {
     }
 
     /// Add reset timer in current propagation branch.
-    fn reset_timer(&mut self, timer_id: usize, deadline: u64) {
+    fn reset_timer(&mut self, timer_id: usize, import_flow: usize) {
         let timer_name = self.symbol_table.get_name(timer_id);
-        self.push_instr(FlowInstruction::reset(timer_name, deadline));
+        let import_name = self.symbol_table.get_name(import_flow);
+        self.push_instr(FlowInstruction::reset(timer_name, import_name));
     }
 
     /// Get event call expression.
@@ -1884,28 +1895,30 @@ impl<'a> PropagationBuilder<'a> {
     }
 
     /// Add signal send in current propagation branch.
-    fn send_signal(&mut self, signal_id: usize, expr: Expression) {
+    fn send_signal(&mut self, signal_id: usize, expr: Expression, import_flow: usize) {
         let signal_name = self.symbol_table.get_name(signal_id);
-        self.push_instr(FlowInstruction::send(signal_name, expr));
+        let import_name = self.symbol_table.get_name(import_flow);
+        self.push_instr(FlowInstruction::send(signal_name, expr, import_name));
     }
 
     /// Add event send in current propagation branch.
-    fn send_event(&mut self, event_id: usize, opt_expr: Option<Expression>) {
+    fn send_event(&mut self, event_id: usize, opt_expr: Option<Expression>, import_flow: usize) {
         if let Some(expr) = opt_expr {
             let event_name = self.symbol_table.get_name(event_id);
-            self.push_instr(FlowInstruction::send(event_name, expr));
+            let import_name = self.symbol_table.get_name(import_flow);
+            self.push_instr(FlowInstruction::send(event_name, expr, import_name));
         }
     }
 
     /// Add flow send in current propagation branch.
-    fn send(&mut self, flow_id: usize) {
+    fn send(&mut self, flow_id: usize, import_flow: usize) {
         // insert instruction only if source is a signal or an activated event
         if self.symbol_table.get_flow_kind(flow_id).is_signal() {
             let expr = self.get_signal(flow_id);
-            self.send_signal(flow_id, expr);
+            self.send_signal(flow_id, expr, import_flow);
         } else {
             let expr = self.get_event(flow_id);
-            self.send_event(flow_id, expr);
+            self.send_event(flow_id, expr, import_flow);
         }
     }
 

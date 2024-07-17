@@ -558,23 +558,24 @@ pub mod runtime {
             }
             pub async fn handle_speed(
                 &mut self,
-                instant: std::time::Instant,
+                speed_instant: std::time::Instant,
                 speed: f64,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(instant).await?;
+                    self.reset_time_constrains(speed_instant).await?;
                     self.context.speed = speed;
                 } else {
-                    let unique = self.input_store.speed.replace((speed, instant));
+                    let unique = self.input_store.speed.replace((speed, speed_instant));
                     assert!(unique.is_none(), "speed changes too frequently");
                 }
                 Ok(())
             }
             pub async fn handle_timeout_speed_limiter(
                 &mut self,
-                instant: std::time::Instant,
+                timeout_speed_limiter_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.reset_time_constrains(instant).await?;
+                self.reset_time_constrains(timeout_speed_limiter_instant)
+                    .await?;
                 let (state, on_state, in_regulation_aux, state_update) = self
                     .speed_limiter
                     .step(self.context.get_speed_limiter_inputs(None, None, None));
@@ -584,11 +585,15 @@ pub mod runtime {
                 self.context.state_update = state_update;
                 let in_regulation_aux = self.context.in_regulation_aux;
                 let in_regulation = in_regulation_aux;
-                self.send_output(O::InRegulation(in_regulation, instant))
-                    .await?;
+                self.send_output(O::InRegulation(
+                    in_regulation,
+                    timeout_speed_limiter_instant,
+                ))
+                .await?;
                 let on_state = self.context.on_state;
                 let sl_state = on_state;
-                self.send_output(O::SlState(sl_state, instant)).await?;
+                self.send_output(O::SlState(sl_state, timeout_speed_limiter_instant))
+                    .await?;
                 Ok(())
             }
             #[inline]
@@ -601,11 +606,11 @@ pub mod runtime {
             }
             pub async fn handle_kickdown(
                 &mut self,
-                instant: std::time::Instant,
+                kickdown_instant: std::time::Instant,
                 kickdown: Kickdown,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(instant).await?;
+                    self.reset_time_constrains(kickdown_instant).await?;
                     let (state, on_state, in_regulation_aux, state_update) = self
                         .speed_limiter
                         .step(
@@ -618,24 +623,28 @@ pub mod runtime {
                     self.context.state_update = state_update;
                     let in_regulation_aux = self.context.in_regulation_aux;
                     let in_regulation = in_regulation_aux;
-                    self.send_output(O::InRegulation(in_regulation, instant))
+                    self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                         .await?;
                     let on_state = self.context.on_state;
                     let sl_state = on_state;
-                    self.send_output(O::SlState(sl_state, instant)).await?;
+                    self.send_output(O::SlState(sl_state, kickdown_instant))
+                        .await?;
                 } else {
-                    let unique = self.input_store.kickdown.replace((kickdown, instant));
+                    let unique = self
+                        .input_store
+                        .kickdown
+                        .replace((kickdown, kickdown_instant));
                     assert!(unique.is_none(), "kickdown changes too frequently");
                 }
                 Ok(())
             }
             pub async fn handle_set_speed(
                 &mut self,
-                instant: std::time::Instant,
+                set_speed_instant: std::time::Instant,
                 set_speed: f64,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(instant).await?;
+                    self.reset_time_constrains(set_speed_instant).await?;
                     if (self.context.x - set_speed).abs() >= 1.0 {
                         self.context.x = set_speed;
                     }
@@ -652,53 +661,56 @@ pub mod runtime {
                         let v_set_aux = self.context.v_set_aux;
                         let v_set = v_set_aux;
                         self.context.v_set = v_set;
-                        self.send_output(O::VSet(v_set, instant)).await?;
+                        self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                     } else {
                     }
                 } else {
-                    let unique = self.input_store.set_speed.replace((set_speed, instant));
+                    let unique = self
+                        .input_store
+                        .set_speed
+                        .replace((set_speed, set_speed_instant));
                     assert!(unique.is_none(), "set_speed changes too frequently");
                 }
                 Ok(())
             }
             pub async fn handle_vdc(
                 &mut self,
-                instant: std::time::Instant,
+                vdc_instant: std::time::Instant,
                 vdc: VdcState,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(instant).await?;
+                    self.reset_time_constrains(vdc_instant).await?;
                     self.context.vdc = vdc;
                 } else {
-                    let unique = self.input_store.vdc.replace((vdc, instant));
+                    let unique = self.input_store.vdc.replace((vdc, vdc_instant));
                     assert!(unique.is_none(), "vdc changes too frequently");
                 }
                 Ok(())
             }
             pub async fn handle_vacuum_brake(
                 &mut self,
-                instant: std::time::Instant,
+                vacuum_brake_instant: std::time::Instant,
                 vacuum_brake: VacuumBrakeState,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(instant).await?;
+                    self.reset_time_constrains(vacuum_brake_instant).await?;
                     self.context.vacuum_brake = vacuum_brake;
                 } else {
                     let unique = self
                         .input_store
                         .vacuum_brake
-                        .replace((vacuum_brake, instant));
+                        .replace((vacuum_brake, vacuum_brake_instant));
                     assert!(unique.is_none(), "vacuum_brake changes too frequently");
                 }
                 Ok(())
             }
             pub async fn handle_activation(
                 &mut self,
-                instant: std::time::Instant,
+                activation_instant: std::time::Instant,
                 activation: ActivationRequest,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(instant).await?;
+                    self.reset_time_constrains(activation_instant).await?;
                     let (state, on_state, in_regulation_aux, state_update) = self
                         .speed_limiter
                         .step(
@@ -711,23 +723,28 @@ pub mod runtime {
                     self.context.state_update = state_update;
                     let in_regulation_aux = self.context.in_regulation_aux;
                     let in_regulation = in_regulation_aux;
-                    self.send_output(O::InRegulation(in_regulation, instant))
+                    self.send_output(O::InRegulation(in_regulation, activation_instant))
                         .await?;
                     let on_state = self.context.on_state;
                     let sl_state = on_state;
-                    self.send_output(O::SlState(sl_state, instant)).await?;
+                    self.send_output(O::SlState(sl_state, activation_instant))
+                        .await?;
                 } else {
-                    let unique = self.input_store.activation.replace((activation, instant));
+                    let unique = self
+                        .input_store
+                        .activation
+                        .replace((activation, activation_instant));
                     assert!(unique.is_none(), "activation changes too frequently");
                 }
                 Ok(())
             }
             pub async fn handle_period_speed_limiter(
                 &mut self,
-                instant: std::time::Instant,
+                period_speed_limiter_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(instant).await?;
+                    self.reset_time_constrains(period_speed_limiter_instant)
+                        .await?;
                     let (state, on_state, in_regulation_aux, state_update) = self
                         .speed_limiter
                         .step(self.context.get_speed_limiter_inputs(None, None, None));
@@ -737,14 +754,19 @@ pub mod runtime {
                     self.context.state_update = state_update;
                     let in_regulation_aux = self.context.in_regulation_aux;
                     let in_regulation = in_regulation_aux;
-                    self.send_output(O::InRegulation(in_regulation, instant))
+                    self.send_output(O::InRegulation(in_regulation, period_speed_limiter_instant))
                         .await?;
                     let on_state = self.context.on_state;
                     let sl_state = on_state;
-                    self.send_output(O::SlState(sl_state, instant)).await?;
-                    self.send_timer(T::PeriodSpeedLimiter, instant).await?;
+                    self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
+                        .await?;
+                    self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                        .await?;
                 } else {
-                    let unique = self.input_store.period_speed_limiter.replace(((), instant));
+                    let unique = self
+                        .input_store
+                        .period_speed_limiter
+                        .replace(((), period_speed_limiter_instant));
                     assert!(
                         unique.is_none(),
                         "period_speed_limiter changes too frequently"
@@ -754,11 +776,11 @@ pub mod runtime {
             }
             pub async fn handle_failure(
                 &mut self,
-                instant: std::time::Instant,
+                failure_instant: std::time::Instant,
                 failure: Failure,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(instant).await?;
+                    self.reset_time_constrains(failure_instant).await?;
                     let (state, on_state, in_regulation_aux, state_update) = self
                         .speed_limiter
                         .step(
@@ -771,13 +793,14 @@ pub mod runtime {
                     self.context.state_update = state_update;
                     let in_regulation_aux = self.context.in_regulation_aux;
                     let in_regulation = in_regulation_aux;
-                    self.send_output(O::InRegulation(in_regulation, instant))
+                    self.send_output(O::InRegulation(in_regulation, failure_instant))
                         .await?;
                     let on_state = self.context.on_state;
                     let sl_state = on_state;
-                    self.send_output(O::SlState(sl_state, instant)).await?;
+                    self.send_output(O::SlState(sl_state, failure_instant))
+                        .await?;
                 } else {
-                    let unique = self.input_store.failure.replace((failure, instant));
+                    let unique = self.input_store.failure.replace((failure, failure_instant));
                     assert!(unique.is_none(), "failure changes too frequently");
                 }
                 Ok(())
@@ -824,11 +847,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -854,11 +878,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -888,7 +913,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -902,11 +927,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -921,11 +947,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -952,11 +979,15 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
+                            self.send_output(O::InRegulation(
+                                in_regulation,
+                                period_speed_limiter_instant,
+                            ))
+                            .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -985,7 +1016,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -999,11 +1030,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -1018,11 +1050,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -1051,11 +1084,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -1084,7 +1118,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(None, None, None));
@@ -1094,169 +1128,18 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(None, None, None));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            None,
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            None,
-                            Some((activation, activation_instant)),
-                            None,
-                            Some((failure, failure_instant)),
-                        ) => {
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        None,
-                                        Some(failure),
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        None,
-                                        Some(failure),
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((vdc, vdc_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                            } else {
-                            }
-                        }
-                        (
-                            None,
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                        ) => {
-                            self.context.vdc = vdc;
-                            self.context.vacuum_brake = vacuum_brake;
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(None, None, None));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -1267,11 +1150,192 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                            }
+                        }
+                        (
+                            None,
+                            None,
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
+                            Some((activation, activation_instant)),
+                            None,
+                            Some((failure, failure_instant)),
+                        ) => {
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        None,
+                                        Some(failure),
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        None,
+                                        Some(failure),
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
+                            }
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            None,
+                            Some((set_speed, set_speed_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            self.context.vdc = vdc;
+                            self.context.speed = speed;
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                            } else {
+                            }
+                        }
+                        (
+                            None,
+                            None,
+                            Some((set_speed, set_speed_instant)),
+                            Some((vdc, vdc_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                        ) => {
+                            self.context.vdc = vdc;
+                            self.context.vacuum_brake = vacuum_brake;
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(None, None, None));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(None, None, None));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
                             }
                         }
                         (
@@ -1302,7 +1366,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -1316,11 +1380,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -1335,11 +1400,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -1366,11 +1432,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -1400,7 +1467,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -1414,11 +1481,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -1433,11 +1501,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -1464,11 +1533,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -1496,11 +1566,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -1531,7 +1602,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -1545,11 +1616,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -1564,11 +1636,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -1599,7 +1672,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -1613,11 +1686,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -1632,11 +1706,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -1663,11 +1738,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -1692,11 +1768,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -1726,7 +1803,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -1740,11 +1817,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -1759,11 +1837,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -1793,7 +1872,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -1807,11 +1886,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -1826,11 +1906,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -1861,7 +1942,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -1875,11 +1956,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -1894,11 +1976,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -1930,7 +2013,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -1944,11 +2027,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -1963,11 +2047,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -1996,7 +2081,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -2010,11 +2095,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -2029,11 +2115,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -2059,11 +2146,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -2093,7 +2181,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -2107,11 +2195,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -2126,11 +2215,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -2157,11 +2247,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -2188,11 +2279,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -2222,7 +2314,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -2236,11 +2328,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -2255,11 +2348,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -2289,7 +2383,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -2303,11 +2397,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -2322,11 +2417,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -2353,11 +2449,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -2386,7 +2483,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -2400,11 +2497,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -2419,11 +2517,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -2454,7 +2553,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -2468,11 +2567,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -2487,11 +2587,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -2518,11 +2619,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -2534,556 +2636,6 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.speed = speed;
-                            self.context.vacuum_brake = vacuum_brake;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    Some(activation),
-                                    Some(kickdown),
-                                    Some(failure),
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            None,
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            None,
-                        ) => {
-                            self.context.vacuum_brake = vacuum_brake;
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        None,
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        None,
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            None,
-                            None,
-                            Some((activation, activation_instant)),
-                            None,
-                            None,
-                        ) => {
-                            self.context.speed = speed;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    Some(activation),
-                                    Some(kickdown),
-                                    None,
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            None,
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                            } else {
-                            }
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some((activation, activation_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                        ) => {
-                            self.context.speed = speed;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    Some(activation),
-                                    None,
-                                    None,
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((activation, activation_instant)),
-                            None,
-                            Some((failure, failure_instant)),
-                        ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    Some(activation),
-                                    Some(kickdown),
-                                    Some(failure),
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            None,
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((activation, activation_instant)),
-                            None,
-                            None,
-                        ) => {
-                            self.context.vdc = vdc;
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        None,
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        None,
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            Some((failure, failure_instant)),
-                        ) => {
-                            self.context.vacuum_brake = vacuum_brake;
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        Some(kickdown),
-                                        Some(failure),
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        Some(kickdown),
-                                        Some(failure),
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            None,
-                        ) => {
-                            self.context.vacuum_brake = vacuum_brake;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    Some(activation),
-                                    None,
-                                    None,
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            None,
-                        ) => {
-                            self.context.speed = speed;
-                            self.context.vacuum_brake = vacuum_brake;
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        None,
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        None,
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            None,
-                            None,
-                            Some((activation, activation_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                        ) => {
-                            self.context.speed = speed;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    Some(activation),
-                                    Some(kickdown),
-                                    None,
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some((activation, activation_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                        ) => {
-                            self.context.speed = speed;
-                            self.context.vacuum_brake = vacuum_brake;
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        Some(kickdown),
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        Some(kickdown),
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            Some((failure, failure_instant)),
-                        ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
                             let (state, on_state, in_regulation_aux, state_update) = self
@@ -3099,11 +2651,599 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                        }
+                        (
+                            None,
+                            None,
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            None,
+                        ) => {
+                            self.context.vacuum_brake = vacuum_brake;
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        None,
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    activation_instant,
+                                ))
+                                .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, activation_instant))
+                                    .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        None,
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    activation_instant,
+                                ))
+                                .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, activation_instant))
+                                    .await?;
+                            }
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                            None,
+                            None,
+                            None,
+                            Some((activation, activation_instant)),
+                            None,
+                            None,
+                        ) => {
+                            self.context.speed = speed;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    Some(activation),
+                                    Some(kickdown),
+                                    None,
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                        }
+                        (
+                            None,
+                            None,
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                            } else {
+                            }
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                            Some((activation, activation_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                        ) => {
+                            self.context.speed = speed;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    Some(activation),
+                                    None,
+                                    None,
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(
+                                in_regulation,
+                                period_speed_limiter_instant,
+                            ))
+                            .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
+                                .await?;
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((activation, activation_instant)),
+                            None,
+                            Some((failure, failure_instant)),
+                        ) => {
+                            self.context.vdc = vdc;
+                            self.context.speed = speed;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    Some(activation),
+                                    Some(kickdown),
+                                    Some(failure),
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                        }
+                        (
+                            None,
+                            None,
+                            Some((set_speed, set_speed_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((activation, activation_instant)),
+                            None,
+                            None,
+                        ) => {
+                            self.context.vdc = vdc;
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        None,
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    activation_instant,
+                                ))
+                                .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, activation_instant))
+                                    .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        None,
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    activation_instant,
+                                ))
+                                .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, activation_instant))
+                                    .await?;
+                            }
+                        }
+                        (
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            Some((failure, failure_instant)),
+                        ) => {
+                            self.context.vacuum_brake = vacuum_brake;
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        Some(kickdown),
+                                        Some(failure),
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        Some(kickdown),
+                                        Some(failure),
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
+                            }
+                        }
+                        (
+                            None,
+                            None,
+                            None,
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            None,
+                        ) => {
+                            self.context.vacuum_brake = vacuum_brake;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    Some(activation),
+                                    None,
+                                    None,
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(in_regulation, activation_instant))
+                                .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, activation_instant))
+                                .await?;
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            None,
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            None,
+                        ) => {
+                            self.context.speed = speed;
+                            self.context.vacuum_brake = vacuum_brake;
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        None,
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    activation_instant,
+                                ))
+                                .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, activation_instant))
+                                    .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        None,
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    activation_instant,
+                                ))
+                                .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, activation_instant))
+                                    .await?;
+                            }
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                            None,
+                            None,
+                            None,
+                            Some((activation, activation_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                        ) => {
+                            self.context.speed = speed;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    Some(activation),
+                                    Some(kickdown),
+                                    None,
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((activation, activation_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                        ) => {
+                            self.context.speed = speed;
+                            self.context.vacuum_brake = vacuum_brake;
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        Some(kickdown),
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        Some(kickdown),
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
+                            }
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                            None,
+                            Some((vdc, vdc_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            Some((failure, failure_instant)),
+                        ) => {
+                            self.context.vdc = vdc;
+                            self.context.speed = speed;
+                            self.context.vacuum_brake = vacuum_brake;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    Some(activation),
+                                    Some(kickdown),
+                                    Some(failure),
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -3128,11 +3268,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -3162,7 +3303,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -3176,11 +3317,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -3195,11 +3337,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -3226,11 +3369,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -3256,11 +3400,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -3290,7 +3435,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -3304,11 +3449,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -3323,11 +3469,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -3358,7 +3505,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -3372,11 +3519,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -3391,11 +3539,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -3425,7 +3574,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -3439,11 +3588,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -3458,11 +3608,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -3488,11 +3639,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -3522,7 +3674,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -3536,11 +3688,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -3555,11 +3708,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -3591,7 +3745,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -3605,11 +3759,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -3624,11 +3779,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -3658,7 +3814,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -3672,11 +3828,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -3691,11 +3848,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -3725,7 +3883,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -3739,11 +3897,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -3758,11 +3917,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -3792,7 +3952,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -3806,11 +3966,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -3825,11 +3986,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -3857,11 +4019,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -3888,11 +4051,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, activation_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, activation_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -3920,7 +4084,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -3934,11 +4098,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -3953,11 +4118,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -3986,11 +4152,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -4013,11 +4180,15 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
+                            self.send_output(O::InRegulation(
+                                in_regulation,
+                                period_speed_limiter_instant,
+                            ))
+                            .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -4043,11 +4214,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, activation_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, activation_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -4073,11 +4245,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
                         }
                         (None, None, None, Some((vdc, vdc_instant)), None, None, None, None) => {
                             self.context.vdc = vdc;
@@ -4108,7 +4281,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -4122,11 +4295,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -4141,11 +4315,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -4174,7 +4349,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -4188,11 +4363,15 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    activation_instant,
+                                ))
+                                .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, activation_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -4207,11 +4386,15 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    activation_instant,
+                                ))
+                                .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, activation_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -4242,7 +4425,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -4256,11 +4439,18 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -4275,11 +4465,18 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
                             }
                         }
                         (
@@ -4308,11 +4505,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -4338,11 +4536,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -4371,7 +4570,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -4385,11 +4584,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -4404,11 +4604,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -4438,7 +4639,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -4452,11 +4653,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -4471,11 +4673,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -4507,7 +4710,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                             } else {
                             }
                         }
@@ -4536,11 +4739,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -4566,11 +4770,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -4595,11 +4800,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -4626,11 +4832,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -4659,7 +4866,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -4673,11 +4880,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -4692,11 +4900,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -4724,11 +4933,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -4751,11 +4961,15 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
+                            self.send_output(O::InRegulation(
+                                in_regulation,
+                                period_speed_limiter_instant,
+                            ))
+                            .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -4796,7 +5010,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(None, None, None));
@@ -4806,918 +5020,18 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(None, None, None));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            None,
-                            None,
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                        ) => {
-                            self.context.speed = speed;
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        None,
-                                        Some(kickdown),
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        None,
-                                        Some(kickdown),
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            None,
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some((activation, activation_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                        ) => {
-                            self.context.vacuum_brake = vacuum_brake;
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        None,
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        None,
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            None,
-                            None,
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            None,
-                            None,
-                            Some((failure, failure_instant)),
-                        ) => {
-                            self.context.vdc = vdc;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    None,
-                                    None,
-                                    Some(failure),
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
                                 .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            None,
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((activation, activation_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                        ) => {
-                            self.context.vdc = vdc;
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        None,
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        None,
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            None,
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((failure, failure_instant)),
-                        ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    None,
-                                    None,
-                                    Some(failure),
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
                                 .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((activation, activation_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                        ) => {
-                            self.context.vdc = vdc;
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        Some(kickdown),
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        Some(kickdown),
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
-                            self.context.vacuum_brake = vacuum_brake;
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        None,
-                                        Some(kickdown),
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        None,
-                                        Some(kickdown),
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            None,
-                            None,
-                            None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some((activation, activation_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                        ) => {
-                            self.context.vdc = vdc;
-                            self.context.vacuum_brake = vacuum_brake;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    Some(activation),
-                                    None,
-                                    None,
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    None,
-                                    Some(kickdown),
-                                    None,
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            None,
-                            Some((failure, failure_instant)),
-                        ) => {
-                            self.context.speed = speed;
-                            self.context.vacuum_brake = vacuum_brake;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    None,
-                                    Some(kickdown),
-                                    Some(failure),
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some((failure, failure_instant)),
-                        ) => {
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        None,
-                                        Some(kickdown),
-                                        Some(failure),
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        None,
-                                        Some(kickdown),
-                                        Some(failure),
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            None,
-                            Some((failure, failure_instant)),
-                        ) => {
-                            self.context.speed = speed;
-                            self.context.vacuum_brake = vacuum_brake;
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        None,
-                                        Some(kickdown),
-                                        Some(failure),
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        None,
-                                        Some(kickdown),
-                                        Some(failure),
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some((activation, activation_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                        ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
-                            self.context.vacuum_brake = vacuum_brake;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    Some(activation),
-                                    Some(kickdown),
-                                    None,
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            None,
-                            Some((failure, failure_instant)),
-                        ) => {
-                            self.context.vdc = vdc;
-                            self.context.vacuum_brake = vacuum_brake;
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        None,
-                                        Some(kickdown),
-                                        Some(failure),
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        None,
-                                        Some(kickdown),
-                                        Some(failure),
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((failure, failure_instant)),
-                        ) => {
-                            self.context.vdc = vdc;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    None,
-                                    Some(kickdown),
-                                    Some(failure),
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some((activation, activation_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                        ) => {
-                            self.context.vacuum_brake = vacuum_brake;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    Some(activation),
-                                    None,
-                                    None,
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((activation, activation_instant)),
-                            None,
-                            None,
-                        ) => {
-                            self.context.vdc = vdc;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    Some(activation),
-                                    Some(kickdown),
-                                    None,
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                        ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
-                            self.context.vacuum_brake = vacuum_brake;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    None,
-                                    Some(kickdown),
-                                    None,
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                        ) => {
-                            self.context.speed = speed;
-                            self.context.vacuum_brake = vacuum_brake;
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(None, None, None));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -5728,11 +5042,995 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                            }
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                        ) => {
+                            self.context.speed = speed;
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        None,
+                                        Some(kickdown),
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        None,
+                                        Some(kickdown),
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
+                            }
+                        }
+                        (
+                            None,
+                            None,
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((activation, activation_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                        ) => {
+                            self.context.vacuum_brake = vacuum_brake;
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        None,
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        None,
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                            }
+                        }
+                        (
+                            None,
+                            None,
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            None,
+                            None,
+                            Some((failure, failure_instant)),
+                        ) => {
+                            self.context.vdc = vdc;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    None,
+                                    None,
+                                    Some(failure),
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
+                                .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
+                        }
+                        (
+                            None,
+                            None,
+                            Some((set_speed, set_speed_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((activation, activation_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                        ) => {
+                            self.context.vdc = vdc;
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        None,
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        None,
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                            }
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            None,
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            Some((failure, failure_instant)),
+                        ) => {
+                            self.context.vdc = vdc;
+                            self.context.speed = speed;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    None,
+                                    None,
+                                    Some(failure),
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
+                                .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
+                        }
+                        (
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                            Some((set_speed, set_speed_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((activation, activation_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                        ) => {
+                            self.context.vdc = vdc;
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        Some(kickdown),
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        Some(kickdown),
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
+                            }
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                            Some((set_speed, set_speed_instant)),
+                            Some((vdc, vdc_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            self.context.vdc = vdc;
+                            self.context.speed = speed;
+                            self.context.vacuum_brake = vacuum_brake;
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        None,
+                                        Some(kickdown),
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        None,
+                                        Some(kickdown),
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
+                            }
+                        }
+                        (
+                            None,
+                            None,
+                            None,
+                            Some((vdc, vdc_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((activation, activation_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                        ) => {
+                            self.context.vdc = vdc;
+                            self.context.vacuum_brake = vacuum_brake;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    Some(activation),
+                                    None,
+                                    None,
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(
+                                in_regulation,
+                                period_speed_limiter_instant,
+                            ))
+                            .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
+                                .await?;
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            self.context.vdc = vdc;
+                            self.context.speed = speed;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    None,
+                                    Some(kickdown),
+                                    None,
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                            None,
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            Some((failure, failure_instant)),
+                        ) => {
+                            self.context.speed = speed;
+                            self.context.vacuum_brake = vacuum_brake;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    None,
+                                    Some(kickdown),
+                                    Some(failure),
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                        }
+                        (
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                            Some((failure, failure_instant)),
+                        ) => {
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        None,
+                                        Some(kickdown),
+                                        Some(failure),
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        None,
+                                        Some(kickdown),
+                                        Some(failure),
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
+                            }
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            Some((failure, failure_instant)),
+                        ) => {
+                            self.context.speed = speed;
+                            self.context.vacuum_brake = vacuum_brake;
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        None,
+                                        Some(kickdown),
+                                        Some(failure),
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        None,
+                                        Some(kickdown),
+                                        Some(failure),
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
+                            }
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                            None,
+                            Some((vdc, vdc_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((activation, activation_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                        ) => {
+                            self.context.vdc = vdc;
+                            self.context.speed = speed;
+                            self.context.vacuum_brake = vacuum_brake;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    Some(activation),
+                                    Some(kickdown),
+                                    None,
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                        }
+                        (
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                            Some((set_speed, set_speed_instant)),
+                            Some((vdc, vdc_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            Some((failure, failure_instant)),
+                        ) => {
+                            self.context.vdc = vdc;
+                            self.context.vacuum_brake = vacuum_brake;
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        None,
+                                        Some(kickdown),
+                                        Some(failure),
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        None,
+                                        Some(kickdown),
+                                        Some(failure),
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
+                            }
+                        }
+                        (
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            Some((failure, failure_instant)),
+                        ) => {
+                            self.context.vdc = vdc;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    None,
+                                    Some(kickdown),
+                                    Some(failure),
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                        }
+                        (
+                            None,
+                            None,
+                            None,
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((activation, activation_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                        ) => {
+                            self.context.vacuum_brake = vacuum_brake;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    Some(activation),
+                                    None,
+                                    None,
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(
+                                in_regulation,
+                                period_speed_limiter_instant,
+                            ))
+                            .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
+                                .await?;
+                        }
+                        (
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((activation, activation_instant)),
+                            None,
+                            None,
+                        ) => {
+                            self.context.vdc = vdc;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    Some(activation),
+                                    Some(kickdown),
+                                    None,
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                            None,
+                            Some((vdc, vdc_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                        ) => {
+                            self.context.vdc = vdc;
+                            self.context.speed = speed;
+                            self.context.vacuum_brake = vacuum_brake;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    None,
+                                    Some(kickdown),
+                                    None,
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            None,
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                        ) => {
+                            self.context.speed = speed;
+                            self.context.vacuum_brake = vacuum_brake;
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(None, None, None));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(None, None, None));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
                             }
                         }
                         (
@@ -5764,7 +6062,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -5778,11 +6076,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -5797,11 +6096,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -5833,7 +6133,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -5847,11 +6147,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -5866,11 +6167,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -5898,11 +6200,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -5931,7 +6234,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -5945,11 +6248,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -5964,11 +6268,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -5999,7 +6304,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -6013,11 +6318,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -6032,11 +6338,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -6063,11 +6370,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, activation_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, activation_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -6093,11 +6401,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -6127,7 +6436,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                             } else {
                             }
                         }
@@ -6150,11 +6459,15 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
+                            self.send_output(O::InRegulation(
+                                in_regulation,
+                                period_speed_limiter_instant,
+                            ))
+                            .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -6183,7 +6496,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -6197,11 +6510,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -6216,11 +6530,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -6248,11 +6563,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -6278,11 +6594,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -6311,7 +6628,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -6325,11 +6642,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -6344,11 +6662,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -6375,11 +6694,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -6408,7 +6728,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -6422,11 +6742,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -6441,11 +6762,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -6475,7 +6797,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -6489,11 +6811,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -6508,11 +6831,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -6538,11 +6862,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -6572,7 +6897,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -6586,11 +6911,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -6605,11 +6931,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -6639,7 +6966,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -6653,11 +6980,18 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -6672,11 +7006,18 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
                             }
                         }
                         (
@@ -6704,11 +7045,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -6738,7 +7080,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -6752,11 +7094,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -6771,11 +7114,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -6801,11 +7145,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -6843,11 +7188,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -6874,11 +7220,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -6908,7 +7255,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -6922,11 +7269,15 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    activation_instant,
+                                ))
+                                .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, activation_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -6941,11 +7292,15 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    activation_instant,
+                                ))
+                                .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, activation_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -6977,7 +7332,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -6991,115 +7346,22 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        None,
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((activation, activation_instant)),
-                            None,
-                            Some((failure, failure_instant)),
-                        ) => {
-                            self.context.vdc = vdc;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    Some(activation),
-                                    Some(kickdown),
-                                    Some(failure),
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    activation_instant,
+                                ))
                                 .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            None,
-                            Some((activation, activation_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((failure, failure_instant)),
-                        ) => {
-                            self.context.speed = speed;
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        Some(kickdown),
-                                        Some(failure),
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, activation_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
                                         Some(activation),
-                                        Some(kickdown),
-                                        Some(failure),
+                                        None,
+                                        None,
                                     ));
                                 self.context.state = state;
                                 self.context.on_state = on_state;
@@ -7107,11 +7369,15 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    activation_instant,
+                                ))
+                                .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, activation_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -7121,8 +7387,8 @@ pub mod runtime {
                             Some((vdc, vdc_instant)),
                             None,
                             Some((activation, activation_instant)),
-                            Some(((), period_speed_limiter_instant)),
                             None,
+                            Some((failure, failure_instant)),
                         ) => {
                             self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
@@ -7130,6 +7396,106 @@ pub mod runtime {
                                 .step(self.context.get_speed_limiter_inputs(
                                     Some(activation),
                                     Some(kickdown),
+                                    Some(failure),
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
+                            Some((activation, activation_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            Some((failure, failure_instant)),
+                        ) => {
+                            self.context.speed = speed;
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        Some(kickdown),
+                                        Some(failure),
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        Some(kickdown),
+                                        Some(failure),
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
+                            }
+                        }
+                        (
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((activation, activation_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                        ) => {
+                            self.context.vdc = vdc;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    Some(activation),
+                                    Some(kickdown),
                                     None,
                                 ));
                             self.context.state = state;
@@ -7138,11 +7504,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -7166,11 +7533,15 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
+                            self.send_output(O::InRegulation(
+                                in_regulation,
+                                period_speed_limiter_instant,
+                            ))
+                            .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -7198,7 +7569,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -7212,11 +7583,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -7231,11 +7603,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -7264,7 +7637,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -7278,11 +7651,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -7297,11 +7671,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -7328,11 +7703,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -7359,11 +7735,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -7388,11 +7765,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -7421,7 +7799,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -7435,11 +7813,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -7454,11 +7833,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -7486,11 +7866,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -7519,7 +7900,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -7533,11 +7914,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -7552,11 +7934,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -7587,7 +7970,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(None, None, None));
@@ -7597,826 +7980,18 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(None, None, None));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some((activation, activation_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                        ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
-                            self.context.vacuum_brake = vacuum_brake;
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        None,
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        None,
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            None,
-                            None,
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((activation, activation_instant)),
-                            None,
-                            Some((failure, failure_instant)),
-                        ) => {
-                            self.context.vdc = vdc;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    Some(activation),
-                                    None,
-                                    Some(failure),
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
                                 .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            None,
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((activation, activation_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((failure, failure_instant)),
-                        ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    Some(activation),
-                                    None,
-                                    Some(failure),
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
                                 .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        None,
-                                        Some(kickdown),
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        None,
-                                        Some(kickdown),
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            None,
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some((activation, activation_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                        ) => {
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    Some(activation),
-                                    None,
-                                    None,
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((failure, failure_instant)),
-                        ) => {
-                            self.context.speed = speed;
-                            self.context.vacuum_brake = vacuum_brake;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    None,
-                                    Some(kickdown),
-                                    Some(failure),
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some((activation, activation_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                        ) => {
-                            self.context.speed = speed;
-                            self.context.vacuum_brake = vacuum_brake;
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        None,
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        None,
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            None,
-                            None,
-                            None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            None,
-                        ) => {
-                            self.context.vdc = vdc;
-                            self.context.vacuum_brake = vacuum_brake;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    Some(activation),
-                                    None,
-                                    None,
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            None,
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some((activation, activation_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                        ) => {
-                            self.context.speed = speed;
-                            self.context.vacuum_brake = vacuum_brake;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    Some(activation),
-                                    None,
-                                    None,
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some((failure, failure_instant)),
-                        ) => {
-                            self.context.speed = speed;
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        None,
-                                        Some(kickdown),
-                                        Some(failure),
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        None,
-                                        Some(kickdown),
-                                        Some(failure),
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            None,
-                        ) => {
-                            self.context.speed = speed;
-                            self.context.vacuum_brake = vacuum_brake;
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        Some(kickdown),
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        Some(kickdown),
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            None,
-                            Some((activation, activation_instant)),
-                            None,
-                            None,
-                        ) => {
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        Some(kickdown),
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        Some(kickdown),
-                                        None,
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            None,
-                            None,
-                            Some((activation, activation_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                        ) => {
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    Some(activation),
-                                    Some(kickdown),
-                                    None,
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            None,
-                            None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
-                            self.context.vacuum_brake = vacuum_brake;
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((failure, failure_instant)),
-                        ) => {
-                            self.context.speed = speed;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    None,
-                                    None,
-                                    Some(failure),
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((failure, failure_instant)),
-                        ) => {
-                            self.context.speed = speed;
-                            self.context.vacuum_brake = vacuum_brake;
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        None,
-                                        None,
-                                        Some(failure),
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        None,
-                                        None,
-                                        Some(failure),
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            None,
-                            None,
-                            Some((activation, activation_instant)),
-                            None,
-                            Some((failure, failure_instant)),
-                        ) => {
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    Some(activation),
-                                    Some(kickdown),
-                                    Some(failure),
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            None,
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            None,
-                            None,
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                        ) => {
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(None, None, None));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -8427,11 +8002,900 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                            }
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            None,
+                            Some((set_speed, set_speed_instant)),
+                            Some((vdc, vdc_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((activation, activation_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                        ) => {
+                            self.context.vdc = vdc;
+                            self.context.speed = speed;
+                            self.context.vacuum_brake = vacuum_brake;
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        None,
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        None,
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                            }
+                        }
+                        (
+                            None,
+                            None,
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((activation, activation_instant)),
+                            None,
+                            Some((failure, failure_instant)),
+                        ) => {
+                            self.context.vdc = vdc;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    Some(activation),
+                                    None,
+                                    Some(failure),
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
+                                .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            None,
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((activation, activation_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            Some((failure, failure_instant)),
+                        ) => {
+                            self.context.vdc = vdc;
+                            self.context.speed = speed;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    Some(activation),
+                                    None,
+                                    Some(failure),
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
+                                .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
+                        }
+                        (
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        None,
+                                        Some(kickdown),
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        None,
+                                        Some(kickdown),
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
+                            }
+                        }
+                        (
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            Some((activation, activation_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                        ) => {
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    Some(activation),
+                                    None,
+                                    None,
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(
+                                in_regulation,
+                                period_speed_limiter_instant,
+                            ))
+                            .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
+                                .await?;
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                            None,
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            Some((failure, failure_instant)),
+                        ) => {
+                            self.context.speed = speed;
+                            self.context.vacuum_brake = vacuum_brake;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    None,
+                                    Some(kickdown),
+                                    Some(failure),
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            None,
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((activation, activation_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                        ) => {
+                            self.context.speed = speed;
+                            self.context.vacuum_brake = vacuum_brake;
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        None,
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        None,
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                            }
+                        }
+                        (
+                            None,
+                            None,
+                            None,
+                            Some((vdc, vdc_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            None,
+                        ) => {
+                            self.context.vdc = vdc;
+                            self.context.vacuum_brake = vacuum_brake;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    Some(activation),
+                                    None,
+                                    None,
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(in_regulation, activation_instant))
+                                .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, activation_instant))
+                                .await?;
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            None,
+                            None,
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((activation, activation_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                        ) => {
+                            self.context.speed = speed;
+                            self.context.vacuum_brake = vacuum_brake;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    Some(activation),
+                                    None,
+                                    None,
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(
+                                in_regulation,
+                                period_speed_limiter_instant,
+                            ))
+                            .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
+                                .await?;
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                            Some((failure, failure_instant)),
+                        ) => {
+                            self.context.speed = speed;
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        None,
+                                        Some(kickdown),
+                                        Some(failure),
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        None,
+                                        Some(kickdown),
+                                        Some(failure),
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
+                            }
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            None,
+                        ) => {
+                            self.context.speed = speed;
+                            self.context.vacuum_brake = vacuum_brake;
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        Some(kickdown),
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        Some(kickdown),
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
+                            }
+                        }
+                        (
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
+                            Some((activation, activation_instant)),
+                            None,
+                            None,
+                        ) => {
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        Some(kickdown),
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        Some(kickdown),
+                                        None,
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
+                            }
+                        }
+                        (
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                            None,
+                            None,
+                            None,
+                            Some((activation, activation_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                        ) => {
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    Some(activation),
+                                    Some(kickdown),
+                                    None,
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            None,
+                            None,
+                            Some((vdc, vdc_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            self.context.vdc = vdc;
+                            self.context.speed = speed;
+                            self.context.vacuum_brake = vacuum_brake;
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            Some((failure, failure_instant)),
+                        ) => {
+                            self.context.speed = speed;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    None,
+                                    None,
+                                    Some(failure),
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
+                                .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            None,
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            Some((failure, failure_instant)),
+                        ) => {
+                            self.context.speed = speed;
+                            self.context.vacuum_brake = vacuum_brake;
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        None,
+                                        None,
+                                        Some(failure),
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        None,
+                                        None,
+                                        Some(failure),
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
+                            }
+                        }
+                        (
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                            None,
+                            None,
+                            None,
+                            Some((activation, activation_instant)),
+                            None,
+                            Some((failure, failure_instant)),
+                        ) => {
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    Some(activation),
+                                    Some(kickdown),
+                                    Some(failure),
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                        }
+                        (
+                            None,
+                            None,
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                        ) => {
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(None, None, None));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(None, None, None));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
                             }
                         }
                         (
@@ -8460,7 +8924,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -8474,11 +8938,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -8493,11 +8958,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -8528,7 +8994,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -8542,11 +9008,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -8561,11 +9028,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -8594,7 +9062,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -8608,11 +9076,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -8627,11 +9096,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -8659,11 +9129,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -8692,7 +9163,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                             } else {
                             }
                         }
@@ -8737,7 +9208,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -8751,11 +9222,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -8770,11 +9242,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -8798,11 +9271,15 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
+                            self.send_output(O::InRegulation(
+                                in_regulation,
+                                period_speed_limiter_instant,
+                            ))
+                            .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -8829,11 +9306,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -8863,7 +9341,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -8877,11 +9355,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -8896,11 +9375,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -8931,7 +9411,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -8945,11 +9425,15 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    activation_instant,
+                                ))
+                                .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, activation_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -8964,11 +9448,15 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    activation_instant,
+                                ))
+                                .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, activation_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -8998,7 +9486,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -9012,11 +9500,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -9031,11 +9520,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -9063,11 +9553,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -9093,11 +9584,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -9124,11 +9616,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -9154,11 +9647,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -9186,11 +9680,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -9219,7 +9714,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -9233,11 +9728,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -9252,11 +9748,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -9282,11 +9779,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, activation_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, activation_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -9316,7 +9814,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -9330,11 +9828,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -9349,11 +9848,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -9383,7 +9883,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -9397,11 +9897,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -9416,11 +9917,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -9452,7 +9954,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -9466,11 +9968,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -9485,11 +9988,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -9516,11 +10020,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -9550,7 +10055,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -9564,11 +10069,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -9583,11 +10089,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -9610,11 +10117,15 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
+                            self.send_output(O::InRegulation(
+                                in_regulation,
+                                period_speed_limiter_instant,
+                            ))
+                            .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -9643,7 +10154,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -9657,11 +10168,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -9676,11 +10188,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -9710,7 +10223,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -9724,11 +10237,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -9743,11 +10257,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -9775,11 +10290,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -9801,11 +10317,15 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
+                            self.send_output(O::InRegulation(
+                                in_regulation,
+                                period_speed_limiter_instant,
+                            ))
+                            .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -9834,7 +10354,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(None, None, None));
@@ -9844,300 +10364,18 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(None, None, None));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((vdc, vdc_instant)),
-                            None,
-                            None,
-                            None,
-                            Some((failure, failure_instant)),
-                        ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        None,
-                                        None,
-                                        Some(failure),
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        None,
-                                        None,
-                                        Some(failure),
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            None,
-                            None,
-                            None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            Some((failure, failure_instant)),
-                        ) => {
-                            self.context.vdc = vdc;
-                            self.context.vacuum_brake = vacuum_brake;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    Some(activation),
-                                    None,
-                                    Some(failure),
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
                                 .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                        ) => {
-                            self.context.speed = speed;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    None,
-                                    Some(kickdown),
-                                    None,
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
                                 .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            None,
-                            None,
-                            Some((failure, failure_instant)),
-                        ) => {
-                            self.context.vdc = vdc;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    None,
-                                    Some(kickdown),
-                                    Some(failure),
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            Some((failure, failure_instant)),
-                        ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
-                            self.context.vacuum_brake = vacuum_brake;
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        None,
-                                        Some(failure),
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            } else {
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(
-                                        Some(activation),
-                                        None,
-                                        Some(failure),
-                                    ));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
-                            }
-                        }
-                        (
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                        ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
-                            self.context.vacuum_brake = vacuum_brake;
-                            if (self.context.x - set_speed).abs() >= 1.0 {
-                                self.context.x = set_speed;
-                            }
-                            let x = self.context.x;
-                            if self.context.changed_set_speed_old != x {
-                                self.context.changed_set_speed_old = x;
-                                let changed_set_speed = x;
-                                let (v_set_aux, v_update) = self.process_set_speed.step(
-                                    self.context
-                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
-                                );
-                                self.context.v_set_aux = v_set_aux;
-                                self.context.v_update = v_update;
-                                let v_set_aux = self.context.v_set_aux;
-                                let v_set = v_set_aux;
-                                self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
-                                let (state, on_state, in_regulation_aux, state_update) = self
-                                    .speed_limiter
-                                    .step(self.context.get_speed_limiter_inputs(None, None, None));
-                                self.context.state = state;
-                                self.context.on_state = on_state;
-                                self.context.in_regulation_aux = in_regulation_aux;
-                                self.context.state_update = state_update;
-                                let in_regulation_aux = self.context.in_regulation_aux;
-                                let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
-                                let on_state = self.context.on_state;
-                                let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -10148,11 +10386,328 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                            }
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            None,
+                            Some((set_speed, set_speed_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            None,
+                            None,
+                            Some((failure, failure_instant)),
+                        ) => {
+                            self.context.vdc = vdc;
+                            self.context.speed = speed;
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        None,
+                                        None,
+                                        Some(failure),
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        None,
+                                        None,
+                                        Some(failure),
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
+                            }
+                        }
+                        (
+                            None,
+                            None,
+                            None,
+                            Some((vdc, vdc_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            Some((failure, failure_instant)),
+                        ) => {
+                            self.context.vdc = vdc;
+                            self.context.vacuum_brake = vacuum_brake;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    Some(activation),
+                                    None,
+                                    Some(failure),
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
+                                .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                        ) => {
+                            self.context.speed = speed;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    None,
+                                    Some(kickdown),
+                                    None,
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                        }
+                        (
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            None,
+                            None,
+                            Some((failure, failure_instant)),
+                        ) => {
+                            self.context.vdc = vdc;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    None,
+                                    Some(kickdown),
+                                    Some(failure),
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                                .await?;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            None,
+                            Some((set_speed, set_speed_instant)),
+                            Some((vdc, vdc_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            Some((failure, failure_instant)),
+                        ) => {
+                            self.context.vdc = vdc;
+                            self.context.speed = speed;
+                            self.context.vacuum_brake = vacuum_brake;
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        None,
+                                        Some(failure),
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(
+                                        Some(activation),
+                                        None,
+                                        Some(failure),
+                                    ));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
+                                    .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
+                            }
+                        }
+                        (
+                            Some((speed, speed_instant)),
+                            None,
+                            Some((set_speed, set_speed_instant)),
+                            Some((vdc, vdc_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                        ) => {
+                            self.context.vdc = vdc;
+                            self.context.speed = speed;
+                            self.context.vacuum_brake = vacuum_brake;
+                            if (self.context.x - set_speed).abs() >= 1.0 {
+                                self.context.x = set_speed;
+                            }
+                            let x = self.context.x;
+                            if self.context.changed_set_speed_old != x {
+                                self.context.changed_set_speed_old = x;
+                                let changed_set_speed = x;
+                                let (v_set_aux, v_update) = self.process_set_speed.step(
+                                    self.context
+                                        .get_process_set_speed_inputs(Some(changed_set_speed)),
+                                );
+                                self.context.v_set_aux = v_set_aux;
+                                self.context.v_update = v_update;
+                                let v_set_aux = self.context.v_set_aux;
+                                let v_set = v_set_aux;
+                                self.context.v_set = v_set;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(None, None, None));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                            } else {
+                                let (state, on_state, in_regulation_aux, state_update) = self
+                                    .speed_limiter
+                                    .step(self.context.get_speed_limiter_inputs(None, None, None));
+                                self.context.state = state;
+                                self.context.on_state = on_state;
+                                self.context.in_regulation_aux = in_regulation_aux;
+                                self.context.state_update = state_update;
+                                let in_regulation_aux = self.context.in_regulation_aux;
+                                let in_regulation = in_regulation_aux;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
+                                let on_state = self.context.on_state;
+                                let sl_state = on_state;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
                             }
                         }
                         (
@@ -10182,7 +10737,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                             } else {
                             }
                         }
@@ -10211,11 +10766,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -10245,7 +10801,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -10259,11 +10815,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -10278,11 +10835,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -10314,7 +10872,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -10328,11 +10886,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -10347,11 +10906,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -10380,11 +10940,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -10415,7 +10976,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -10429,11 +10990,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -10448,11 +11010,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -10483,7 +11046,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -10497,11 +11060,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -10516,11 +11080,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -10549,11 +11114,15 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
+                            self.send_output(O::InRegulation(
+                                in_regulation,
+                                period_speed_limiter_instant,
+                            ))
+                            .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -10579,11 +11148,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -10610,11 +11180,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -10643,7 +11214,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -10657,11 +11228,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -10676,11 +11248,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -10710,7 +11283,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -10724,11 +11297,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -10743,11 +11317,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -10777,7 +11352,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                             } else {
                             }
                         }
@@ -10808,7 +11383,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -10822,11 +11397,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -10841,11 +11417,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -10874,7 +11451,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -10888,11 +11465,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -10907,11 +11485,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -10941,7 +11520,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -10955,11 +11534,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -10974,11 +11554,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -11008,7 +11589,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -11022,11 +11603,15 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    activation_instant,
+                                ))
+                                .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, activation_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -11041,11 +11626,15 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    activation_instant,
+                                ))
+                                .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, activation_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -11074,11 +11663,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -11108,7 +11698,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -11122,11 +11712,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -11141,11 +11732,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -11174,11 +11766,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -11204,11 +11797,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -11234,11 +11828,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -11281,7 +11876,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -11295,11 +11890,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -11314,11 +11910,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -11349,7 +11946,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                             } else {
                             }
                         }
@@ -11377,11 +11974,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -11411,7 +12009,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -11425,11 +12023,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -11444,11 +12043,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -11479,7 +12079,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -11493,11 +12093,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -11512,11 +12113,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -11543,11 +12145,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -11575,11 +12178,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -11610,7 +12214,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -11624,11 +12228,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -11643,11 +12248,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -11677,7 +12283,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -11691,11 +12297,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -11710,11 +12317,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -11745,7 +12353,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -11759,11 +12367,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -11778,11 +12387,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -11813,7 +12423,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -11827,11 +12437,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -11846,11 +12457,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -11873,11 +12485,15 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
+                            self.send_output(O::InRegulation(
+                                in_regulation,
+                                period_speed_limiter_instant,
+                            ))
+                            .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -11907,7 +12523,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -11921,11 +12537,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -11940,11 +12557,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -11972,11 +12590,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, activation_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, activation_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -12003,11 +12622,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -12034,11 +12654,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -12064,11 +12685,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -12095,11 +12717,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -12126,11 +12749,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -12157,11 +12781,15 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
+                            self.send_output(O::InRegulation(
+                                in_regulation,
+                                period_speed_limiter_instant,
+                            ))
+                            .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -12188,11 +12816,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -12222,7 +12851,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -12236,11 +12865,18 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -12255,11 +12891,18 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
                             }
                         }
                         (
@@ -12289,7 +12932,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -12303,11 +12946,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -12322,11 +12966,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -12369,7 +13014,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -12383,11 +13028,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -12402,11 +13048,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -12435,7 +13082,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -12449,11 +13096,18 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -12468,11 +13122,18 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
-                                    .await?;
+                                self.send_output(O::InRegulation(
+                                    in_regulation,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(
+                                    sl_state,
+                                    period_speed_limiter_instant,
+                                ))
+                                .await?;
                             }
                         }
                         (
@@ -12500,11 +13161,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -12531,11 +13193,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -12565,7 +13228,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -12579,11 +13242,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -12598,11 +13262,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, failure_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, failure_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -12630,11 +13295,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, failure_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -12659,11 +13325,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -12690,11 +13357,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
                         }
                         (
                             None,
@@ -12723,7 +13391,7 @@ pub mod runtime {
                                 let v_set_aux = self.context.v_set_aux;
                                 let v_set = v_set_aux;
                                 self.context.v_set = v_set;
-                                self.send_output(O::VSet(v_set, instant)).await?;
+                                self.send_output(O::VSet(v_set, set_speed_instant)).await?;
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
                                     .step(self.context.get_speed_limiter_inputs(
@@ -12737,11 +13405,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             } else {
                                 let (state, on_state, in_regulation_aux, state_update) = self
                                     .speed_limiter
@@ -12756,11 +13425,12 @@ pub mod runtime {
                                 self.context.state_update = state_update;
                                 let in_regulation_aux = self.context.in_regulation_aux;
                                 let in_regulation = in_regulation_aux;
-                                self.send_output(O::InRegulation(in_regulation, instant))
+                                self.send_output(O::InRegulation(in_regulation, kickdown_instant))
                                     .await?;
                                 let on_state = self.context.on_state;
                                 let sl_state = on_state;
-                                self.send_output(O::SlState(sl_state, instant)).await?;
+                                self.send_output(O::SlState(sl_state, kickdown_instant))
+                                    .await?;
                             }
                         }
                         (
@@ -12789,11 +13459,12 @@ pub mod runtime {
                             self.context.state_update = state_update;
                             let in_regulation_aux = self.context.in_regulation_aux;
                             let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
+                            self.send_output(O::InRegulation(in_regulation, activation_instant))
                                 .await?;
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            self.send_output(O::SlState(sl_state, activation_instant))
+                                .await?;
                         }
                     }
                 } else {
