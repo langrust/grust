@@ -88,7 +88,7 @@ where
             // and add its dealine to the next timer (if it exists)
             if &curr.get_kind() == &value.get_kind() {
                 self.queue[index] = None;
-                self.queue[index..=self.len].rotate_left(1);
+                self.queue[index..self.len].rotate_left(1);
                 self.len -= 1;
             }
         }

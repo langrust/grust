@@ -107,7 +107,7 @@ where
             // and add its dealine to the next timer (if it exists)
             if value.eq(curr) {
                 self.queue[index] = None;
-                self.queue[index..=self.len].rotate_left(1);
+                self.queue[index..self.len].rotate_left(1);
                 self.len -= 1;
             }
         }
