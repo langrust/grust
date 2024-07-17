@@ -76,7 +76,7 @@ pub struct MatchArm {
 }
 mk_new! { impl MatchArm =>
     new {
-        patterns: impl Iterator<Item = Pattern> = patterns.collect(),
+        patterns: Vec<Pattern> = patterns,
         block: Vec<FlowInstruction> = block,
     }
 }

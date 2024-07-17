@@ -813,24 +813,32 @@ impl Propagations {
         // It propagates all changes stored in the service_store by matching
         // each one of its elements (that are of type Option<(Value, Instant)>).
         debug_assert!(symbol_table.is_delay(delay));
-        let arms = input_store.map(|(flows, block)| {
-            let patterns = input_ids.iter().map(|id| {
-                if flows.contains(id) {
-                    if symbol_table.is_timer(*id) {
-                        Pattern::some(Pattern::tuple(vec![
-                            Pattern::literal(Constant::unit(Default::default())),
-                            Pattern::ident(format!("{}_instant", symbol_table.get_name(*id))),
-                        ]))
+        let arms = input_store.map(|(flows, mut block)| {
+            let patterns = input_ids
+                .iter()
+                .map(|id| {
+                    if flows.contains(id) {
+                        let flow_name = symbol_table.get_name(*id);
+                        if symbol_table.is_period(*id) {
+                            // add reset periodic timer
+                            block.push(FlowInstruction::reset(flow_name, flow_name));
+                        }
+                        if symbol_table.is_timer(*id) {
+                            Pattern::some(Pattern::tuple(vec![
+                                Pattern::literal(Constant::unit(Default::default())),
+                                Pattern::ident(format!("{}_instant", flow_name)),
+                            ]))
+                        } else {
+                            Pattern::some(Pattern::tuple(vec![
+                                Pattern::ident(flow_name),
+                                Pattern::ident(format!("{}_instant", flow_name)),
+                            ]))
+                        }
                     } else {
-                        Pattern::some(Pattern::tuple(vec![
-                            Pattern::ident(symbol_table.get_name(*id)),
-                            Pattern::ident(format!("{}_instant", symbol_table.get_name(*id))),
-                        ]))
+                        Pattern::none()
                     }
-                } else {
-                    Pattern::none()
-                }
-            });
+                })
+                .collect();
             MatchArm::new(patterns, block)
         });
         let delay_handler = FlowHandler {
