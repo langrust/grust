@@ -24,17 +24,24 @@ pub struct FlowHandler {
 pub enum FlowInstruction {
     Let(String, Expression),
     UpdateContext(String, Expression),
-    Send(String, Expression),
+    Send(String, Expression, String),
     IfThrottle(String, String, Constant, Box<FlowInstruction>),
     IfChange(String, String, Vec<FlowInstruction>, Vec<FlowInstruction>),
-    ResetTimer(String, u64),
+    ResetTimer(String, String),
     ComponentCall(Pattern, String, Vec<Option<String>>),
     HandleDelay(Vec<String>, Vec<MatchArm>),
 }
 mk_new! { impl FlowInstruction =>
-    Let: def_let (name: impl Into<String> = name.into(), expr: Expression = expr.into())
+    Let: def_let (
+        name: impl Into<String> = name.into(),
+        expr: Expression = expr.into(),
+    )
     UpdateContext: update_ctx (name: impl Into<String> = name.into(), expr: Expression = expr.into())
-    Send: send (name: impl Into<String> = name.into(), expr: Expression = expr.into())
+    Send: send (
+        name: impl Into<String> = name.into(),
+        expr: Expression = expr.into(),
+        instant: impl Into<String> = instant.into(),
+    )
     IfThrottle: if_throttle (
         flow_name: impl Into<String> = flow_name.into(),
         source_name: impl Into<String> = source_name.into(),
@@ -47,7 +54,10 @@ mk_new! { impl FlowInstruction =>
         then: Vec<FlowInstruction> = then,
         els: Vec<FlowInstruction> = els,
     )
-    ResetTimer: reset (name: impl Into<String> = name.into(), val: u64 = val)
+    ResetTimer: reset (
+        name: impl Into<String> = name.into(),
+        instant: impl Into<String> = instant.into(),
+    )
     ComponentCall: comp_call (
         pat: Pattern = pat,
         name: impl Into<String> = name.into(),

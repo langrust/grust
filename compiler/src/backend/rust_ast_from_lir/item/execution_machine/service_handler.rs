@@ -134,6 +134,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
             match arriving_flow {
                 ArrivingFlow::Channel(flow_name, flow_type, _) => {
                     let ident = Ident::new(flow_name.as_str(), Span::call_site());
+                    let instant = format_ident!("{flow_name}_instant");
                     let function_name: Ident = format_ident!("handle_{flow_name}");
                     let ty = type_rust_ast_from_lir(flow_type);
                     let instructions = instructions
@@ -141,12 +142,12 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
                         .map(instruction_flow_rust_ast_from_lir);
                     let message = syn::LitStr::new(format!("{flow_name} changes too frequently").as_str(), Span::call_site());
                     impl_items.push(parse_quote! {
-                        pub async fn #function_name(&mut self, instant: std::time::Instant, #ident: #ty) -> Result<(), futures::channel::mpsc::SendError> {
+                        pub async fn #function_name(&mut self, #instant: std::time::Instant, #ident: #ty) -> Result<(), futures::channel::mpsc::SendError> {
                             if self.delayed {
-                                self.reset_time_constrains(instant).await?;
+                                self.reset_time_constrains(#instant).await?;
                                 #(#instructions)*
                             } else {
-                                let unique = self.input_store.#ident.replace((#ident, instant));
+                                let unique = self.input_store.#ident.replace((#ident, #instant));
                                 assert!(unique.is_none(), #message);
                             }
                             Ok(())
@@ -155,18 +156,19 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
                 }
                 ArrivingFlow::Period(time_flow_name) | ArrivingFlow::Deadline(time_flow_name) => {
                     let ident = Ident::new(time_flow_name.as_str(), Span::call_site());
+                    let instant = format_ident!("{time_flow_name}_instant");
                     let function_name: Ident = format_ident!("handle_{time_flow_name}");
                     let instructions = instructions
                         .into_iter()
                         .map(instruction_flow_rust_ast_from_lir);
                     let message = syn::LitStr::new(format!("{time_flow_name} changes too frequently").as_str(), Span::call_site());
                     impl_items.push(parse_quote! {
-                        pub async fn #function_name(&mut self, instant: std::time::Instant) -> Result<(), futures::channel::mpsc::SendError> {
+                        pub async fn #function_name(&mut self,  #instant: std::time::Instant) -> Result<(), futures::channel::mpsc::SendError> {
                             if self.delayed {
-                                self.reset_time_constrains(instant).await?;
+                                self.reset_time_constrains(#instant).await?;
                                 #(#instructions)*
                             } else {
-                                let unique = self.input_store.#ident.replace(((), instant));
+                                let unique = self.input_store.#ident.replace(((), #instant));
                                 assert!(unique.is_none(), #message);
                             }
                             Ok(())
@@ -197,13 +199,14 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
                     })
                 }
                 ArrivingFlow::ServiceTimeout(service_timeout) => {
+                    let instant = format_ident!("{service_timeout}_instant");
                     let function_name: Ident = format_ident!("handle_{service_timeout}");
                     let instructions = instructions
                         .into_iter()
                         .map(instruction_flow_rust_ast_from_lir);
                     impl_items.push(parse_quote! {
-                        pub async fn #function_name(&mut self, instant: std::time::Instant) -> Result<(), futures::channel::mpsc::SendError> {
-                            self.reset_time_constrains(instant).await?;
+                        pub async fn #function_name(&mut self, #instant: std::time::Instant) -> Result<(), futures::channel::mpsc::SendError> {
+                            self.reset_time_constrains(#instant).await?;
                             #(#instructions)*
                             Ok(())
                         }
