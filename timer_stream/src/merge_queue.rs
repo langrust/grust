@@ -120,7 +120,7 @@ where
             if let Some(curr_timer) = curr.into_ref() {
                 if *curr_timer.get_kind() == timer.get_kind() {
                     self.queue[index] = None;
-                    self.queue[index..=self.len].rotate_left(1);
+                    self.queue[index..self.len].rotate_left(1);
                     self.len -= 1;
                 }
             }
