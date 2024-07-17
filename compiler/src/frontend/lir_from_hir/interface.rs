@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use lir::item::execution_machine::service_handler::MatchArm;
 use petgraph::{algo::toposort, Direction};
 use std::collections::HashSet;
 
@@ -10,14 +11,17 @@ prelude! {
             FlowStatement, Interface, Service,
         },
     },
-    lir::item::execution_machine::{
-        ArrivingFlow,
-        flows_context::FlowsContext,
-        service_handler::{
-            Expression, FlowHandler, FlowInstruction, ServiceHandler,
+    lir::{
+        item::execution_machine::{
+            ArrivingFlow,
+            flows_context::FlowsContext,
+            service_handler::{
+                Expression, FlowHandler, FlowInstruction, ServiceHandler,
+            },
+            runtime_loop::{InputHandler, RuntimeLoop},
+            ExecutionMachine,TimingEvent, TimingEventKind, InterfaceFlow,
         },
-        runtime_loop::{InputHandler, RuntimeLoop},
-        ExecutionMachine,TimingEvent, TimingEventKind, InterfaceFlow,
+        Pattern,
     },
 }
 
@@ -665,61 +669,130 @@ impl Accumulator {
 pub struct Propagations {
     /// Maps flow indices to propagation instructions.
     input_flows_propagation: HashMap<usize, Accumulator>,
+    input_store_propagation: HashMap<Vec<usize>, (usize, Accumulator)>,
 }
 impl Propagations {
     /// Inserts an instruction for a flow.
-    pub fn insert(&mut self, flow: usize, instruction: FlowInstruction) {
-        let vec = self
-            .input_flows_propagation
-            .entry(flow)
-            .or_insert_with(|| Accumulator::with_capacity(10));
-        vec.push(instruction);
+    pub fn insert(&mut self, incoming_flows: &IncomingFlows, instruction: FlowInstruction) {
+        match incoming_flows {
+            IncomingFlows::One(flow) => {
+                let vec = self
+                    .input_flows_propagation
+                    .entry(*flow)
+                    .or_insert_with(|| Accumulator::with_capacity(10));
+                vec.push(instruction);
+            }
+            IncomingFlows::Many(delay, flows) => {
+                let (_, vec) = self
+                    .input_store_propagation
+                    .entry(flows.clone())
+                    .or_insert_with(|| (*delay, Accumulator::with_capacity(10)));
+                vec.push(instruction);
+            }
+            IncomingFlows::None => unreachable!(),
+        }
+    }
+    /// Empty propagation for service delay.
+    pub fn init_service_delay(&mut self, service_delay: usize) {
+        self.input_store_propagation
+            .insert(vec![], (service_delay, Accumulator::new()));
+    }
+    /// Get a mutable reference to the accumulator associated to the flow id.
+    fn get_mut(&mut self, incoming_flows: &IncomingFlows) -> Option<&mut Accumulator> {
+        match incoming_flows {
+            IncomingFlows::One(flow) => self.input_flows_propagation.get_mut(flow),
+            IncomingFlows::Many(delay, flows) => {
+                self.input_store_propagation
+                    .get_mut(flows)
+                    .map(|(id, acc)| {
+                        debug_assert!(id == delay);
+                        acc
+                    })
+            }
+            IncomingFlows::None => unreachable!(),
+        }
+    }
+    /// Get a reference to the accumulator associated to the flow id.
+    fn get(&self, incoming_flows: &IncomingFlows) -> Option<&Accumulator> {
+        match incoming_flows {
+            IncomingFlows::One(flow) => self.input_flows_propagation.get(&flow),
+            IncomingFlows::Many(delay, flows) => {
+                self.input_store_propagation.get(flows).map(|(id, acc)| {
+                    debug_assert!(id == delay);
+                    acc
+                })
+            }
+            IncomingFlows::None => unreachable!(),
+        }
     }
     /// Makes it possible to iter on propagations.
-    pub fn into_iter(self) -> impl Iterator<Item = (usize, Vec<FlowInstruction>)> {
-        self.input_flows_propagation
+    pub fn into_iter(
+        self,
+    ) -> (
+        impl Iterator<Item = (usize, Vec<FlowInstruction>)>,
+        (
+            usize,
+            impl Iterator<Item = (Vec<usize>, Vec<FlowInstruction>)>,
+        ),
+    ) {
+        let input_flows = self
+            .input_flows_propagation
             .into_iter()
             .map(|(flow, accumulator)| {
                 debug_assert!(accumulator.onchange_block.is_none());
                 debug_assert!(accumulator.default_block.is_none());
                 (flow, accumulator.current)
-            })
+            });
+        let delay = self.input_store_propagation[&vec![]].0;
+        let input_store =
+            self.input_store_propagation
+                .into_iter()
+                .map(move |(flows, (id, accumulator))| {
+                    debug_assert!(delay == id);
+                    debug_assert!(accumulator.onchange_block.is_none());
+                    debug_assert!(accumulator.default_block.is_none());
+                    (flows, accumulator.current)
+                });
+        (input_flows, (delay, input_store))
+    }
+    /// Returns the input flows of the service that are (currently) detected.
+    /// Service delay and timeout are not taken into account.
+    pub fn get_input_flows<'a>(&'a self) -> impl Iterator<Item = usize> + 'a {
+        self.input_flows_propagation.keys().cloned()
     }
     /// Tells if in 'onchange' branch.
-    pub fn is_onchange_block(&self, flow: usize) -> bool {
-        self.input_flows_propagation
-            .get(&flow)
+    pub fn is_onchange_block(&self, incoming_flows: &IncomingFlows) -> bool {
+        self.get(incoming_flows)
             .map_or(false, |accumulator| accumulator.onchange_block.is_some())
     }
     /// Tells if in 'default' branch.
-    pub fn is_default_block(&self, flow: usize) -> bool {
-        self.input_flows_propagation
-            .get(&flow)
+    pub fn is_default_block(&self, incoming_flows: &IncomingFlows) -> bool {
+        self.get(incoming_flows)
             .map_or(false, |accumulator| accumulator.default_block.is_some())
     }
     /// Switch to a onchange branch.
     pub fn onchange(
         &mut self,
-        flow: usize,
+        incoming_flows: &IncomingFlows,
         id_event: usize,
         event_name: impl Into<String>,
         old_event_name: impl Into<String>,
         source_name: impl Into<String>,
     ) {
-        let accumulator = self.input_flows_propagation.get_mut(&flow).unwrap();
+        let accumulator = self.get_mut(incoming_flows).unwrap();
         *accumulator =
             std::mem::take(accumulator).onchange(id_event, event_name, old_event_name, source_name);
     }
     /// Switch to an default branch.
-    pub fn default(&mut self, flow: usize) -> usize {
-        let accumulator = self.input_flows_propagation.get_mut(&flow).unwrap();
+    pub fn default(&mut self, incoming_flows: &IncomingFlows) -> usize {
+        let accumulator = self.get_mut(incoming_flows).unwrap();
         let (new_acc, id_event) = std::mem::take(accumulator).default();
         *accumulator = new_acc;
         id_event
     }
     /// Combine an onchange branch and a default branch to an if_change instruction.
-    pub fn combine(&mut self, flow: usize) {
-        let accumulator = self.input_flows_propagation.get_mut(&flow).unwrap();
+    pub fn combine(&mut self, incoming_flows: &IncomingFlows) {
+        let accumulator = self.get_mut(incoming_flows).unwrap();
         *accumulator = std::mem::take(accumulator).combine();
     }
     /// Transforms propagations into flow handlers.
@@ -727,30 +800,70 @@ impl Propagations {
         self,
         symbol_table: &'a SymbolTable,
     ) -> impl Iterator<Item = FlowHandler> + 'a {
+        let input_ids = self
+            .get_input_flows()
+            .filter(|id| !symbol_table.is_timeout(*id))
+            .collect::<Vec<_>>();
+        let input_names = input_ids
+            .iter()
+            .map(|id| symbol_table.get_name(*id).clone());
+        let (input_flows, (delay, input_store)) = self.into_iter();
+
+        // Create the handler of the delay timer.
+        // It propagates all changes stored in the service_store by matching
+        // each one of its elements (that are of type Option<(Value, Instant)>).
+        debug_assert!(symbol_table.is_delay(delay));
+        let arms = input_store.map(|(flows, block)| {
+            let patterns = input_ids.iter().map(|id| {
+                if flows.contains(id) {
+                    if symbol_table.is_timer(*id) {
+                        Pattern::some(Pattern::tuple(vec![
+                            Pattern::literal(Constant::unit(Default::default())),
+                            Pattern::ident(format!("{}_instant", symbol_table.get_name(*id))),
+                        ]))
+                    } else {
+                        Pattern::some(Pattern::tuple(vec![
+                            Pattern::ident(symbol_table.get_name(*id)),
+                            Pattern::ident(format!("{}_instant", symbol_table.get_name(*id))),
+                        ]))
+                    }
+                } else {
+                    Pattern::none()
+                }
+            });
+            MatchArm::new(patterns, block)
+        });
+        let delay_handler = FlowHandler {
+            arriving_flow: ArrivingFlow::ServiceDelay(symbol_table.get_name(delay).clone()),
+            instructions: vec![FlowInstruction::handle_delay(input_names, arms)],
+        };
+
         // for every propagation of incoming flows, create their handlers
-        self.into_iter().map(|(flow_id, mut instructions)| {
-            // determine weither this arriving flow is a timing event
-            let flow_name = symbol_table.get_name(flow_id);
-            let arriving_flow = if let Some(period) = symbol_table.get_period(flow_id) {
-                // add reset periodic timer
-                instructions.push(FlowInstruction::reset(flow_name, *period));
-                ArrivingFlow::Period(flow_name.clone())
-            } else if symbol_table.is_deadline(flow_id) {
-                ArrivingFlow::Deadline(flow_name.clone())
-            } else if symbol_table.is_delay(flow_id) {
-                ArrivingFlow::ServiceDelay(flow_name.clone())
-            } else if symbol_table.is_timeout(flow_id) {
-                ArrivingFlow::ServiceTimeout(flow_name.clone())
-            } else {
-                let flow_type = symbol_table.get_type(flow_id);
-                let path = symbol_table.get_path(flow_id);
-                ArrivingFlow::Channel(flow_name.clone(), flow_type.clone(), path.clone())
-            };
-            FlowHandler {
-                arriving_flow,
-                instructions,
-            }
-        })
+        input_flows
+            .map(|(flow_id, mut instructions)| {
+                // determine weither this arriving flow is a timing event
+                let flow_name = symbol_table.get_name(flow_id);
+                let arriving_flow = if let Some(period) = symbol_table.get_period(flow_id) {
+                    // add reset periodic timer
+                    instructions.push(FlowInstruction::reset(flow_name, *period));
+                    ArrivingFlow::Period(flow_name.clone())
+                } else if symbol_table.is_deadline(flow_id) {
+                    ArrivingFlow::Deadline(flow_name.clone())
+                } else if symbol_table.is_delay(flow_id) {
+                    panic!(); // this is handled by the `delay_handler`
+                } else if symbol_table.is_timeout(flow_id) {
+                    ArrivingFlow::ServiceTimeout(flow_name.clone())
+                } else {
+                    let flow_type = symbol_table.get_type(flow_id);
+                    let path = symbol_table.get_path(flow_id);
+                    ArrivingFlow::Channel(flow_name.clone(), flow_type.clone(), path.clone())
+                };
+                FlowHandler {
+                    arriving_flow,
+                    instructions,
+                }
+            })
+            .chain(std::iter::once(delay_handler)) // chain the `delay_handler`
     }
 }
 
@@ -886,6 +999,25 @@ impl Stack {
             }
         })
     }
+    /// Extend the stack in no order.
+    pub fn extend(&mut self, iter: impl Iterator<Item = usize>) {
+        self.current.extend(iter)
+    }
+}
+
+pub enum IncomingFlows {
+    None,
+    One(usize),
+    Many(usize, Vec<usize>),
+}
+impl IncomingFlows {
+    pub fn ids(&self) -> Vec<usize> {
+        match self {
+            IncomingFlows::None => vec![],
+            IncomingFlows::One(id) => vec![*id],
+            IncomingFlows::Many(_, ids) => ids.clone(),
+        }
+    }
 }
 
 /// A context to build [Propagations] of input flows.
@@ -904,8 +1036,8 @@ pub struct PropagationBuilder<'a> {
     symbol_table: &'a SymbolTable,
     /// Service to build isles for.
     service: &'a Service,
-    /// Cached indice of incoming flow.
-    incoming_flow: usize,
+    /// Cached indices of incoming flows.
+    incoming_flows: IncomingFlows,
     /// Cached stack of statements to visit.
     stack: Stack,
     /// The dependency order the statements should follow.
@@ -979,13 +1111,14 @@ impl<'a> PropagationBuilder<'a> {
             symbol_table,
             service,
             stack: Stack::new(),
-            incoming_flow: 0,
+            incoming_flows: IncomingFlows::None,
             statements_order,
             on_change_events,
             stmts_timers,
         }
     }
 
+    /// Adds events related to statements.
     fn build_stmt_events(
         identifier_creator: &mut IdentifierCreator,
         service: &mut Service,
@@ -1222,6 +1355,7 @@ impl<'a> PropagationBuilder<'a> {
         self.propagations
     }
 
+    /// Returns the identifiers of flows that are defined by the statement.
     fn get_def_flows(&self, id: usize) -> Vec<usize> {
         if let Some(stmt) = self.service.statements.get(&id) {
             stmt.get_identifiers()
@@ -1259,6 +1393,14 @@ impl<'a> PropagationBuilder<'a> {
         self.stack.extend_ordered(to_insert, compare)
     }
 
+    /// Returns the input flows of the service that are (currently) detected.
+    /// Service delay and timeout are not taken into account.
+    pub fn get_input_flows<'b>(&'b self) -> impl Iterator<Item = usize> + 'b {
+        self.propagations
+            .get_input_flows()
+            .filter(|id| !self.symbol_table.is_service_timeout(self.service.id, *id))
+    }
+
     /// Switch to a onchange branch.
     fn onchange(&mut self, id_event: usize, id_source: usize) {
         let event_name = self.symbol_table.get_name(id_event);
@@ -1266,7 +1408,7 @@ impl<'a> PropagationBuilder<'a> {
         let id_old_event = self.on_change_events[&id_event];
         let old_event_name = self.symbol_table.get_name(id_old_event);
         self.propagations.onchange(
-            self.incoming_flow,
+            &self.incoming_flows,
             id_event,
             event_name,
             old_event_name,
@@ -1277,13 +1419,13 @@ impl<'a> PropagationBuilder<'a> {
     }
     /// Switch to an default branch.
     fn default(&mut self) -> usize {
-        let id_event = self.propagations.default(self.incoming_flow);
+        let id_event = self.propagations.default(&self.incoming_flows);
         self.stack.next();
         id_event
     }
     /// Combine an default branch and a default branch to an default instruction.
     fn combine(&mut self) {
-        self.propagations.combine(self.incoming_flow);
+        self.propagations.combine(&self.incoming_flows);
     }
 
     /// Get the next statement identifier to analyse.
@@ -1291,12 +1433,12 @@ impl<'a> PropagationBuilder<'a> {
         if let Some(value) = self.stack.pop() {
             return Some(value);
         }
-        if self.propagations.is_onchange_block(self.incoming_flow) {
+        if self.propagations.is_onchange_block(&self.incoming_flows) {
             let id_event = self.default();
             self.stack.remove_event(id_event);
             return self.pop_stack();
         }
-        if self.propagations.is_default_block(self.incoming_flow) {
+        if self.propagations.is_default_block(&self.incoming_flows) {
             self.combine();
             return self.pop_stack();
         }
@@ -1308,18 +1450,54 @@ impl<'a> PropagationBuilder<'a> {
 
     /// Compute the instructions propagating the changes of all incoming flows.
     pub fn propagate(&mut self) {
+        let mut service_delay = 0;
         // for every incoming flows, compute their handlers
-        self.imports.iter().for_each(|(import_id, import)| {
-            self.incoming_flow = import.id;
-            self.stack.clear();
-            self.propagate_import(*import_id)
+        self.imports.values().for_each(|import| {
+            if self
+                .symbol_table
+                .is_service_delay(self.service.id, import.id)
+            {
+                service_delay = import.id;
+            } else {
+                self.incoming_flows = IncomingFlows::One(import.id);
+                self.stack.clear();
+                self.propagate_incoming_flows()
+            }
         });
+
+        // propagate the input_store when service_delay occurs
+        debug_assert!(service_delay != 0);
+        self.propagate_input_store(service_delay)
+    }
+
+    /// Compute the instructions propagating the changes of the input store.
+    fn propagate_input_store(&mut self, service_delay: usize) {
+        debug_assert!(self.stack.is_empty());
+        let input_flows = self.get_input_flows().collect::<Vec<_>>();
+        self.propagations.init_service_delay(service_delay);
+        for mut i in 0..(2i64.pow(input_flows.len() as u32)) {
+            let imports = input_flows.iter().filter_map(|input| {
+                let res = if i & 1 == 1 { Some(*input) } else { None };
+                i = i >> 1;
+                res
+            });
+            self.incoming_flows = IncomingFlows::Many(service_delay, imports.collect());
+            self.stack.clear();
+            self.propagate_incoming_flows()
+        }
     }
 
     /// Compute the instructions propagating the changes of one incoming flow.
-    fn propagate_import(&mut self, import_id: usize) {
+    fn propagate_incoming_flows(&mut self) {
         debug_assert!(self.stack.is_empty());
-        self.stack.push(import_id);
+        // get incoming imports ids
+        let incoming_flows = self.incoming_flows.ids();
+        let imports = self
+            .imports
+            .iter()
+            .filter(move |(_, import)| incoming_flows.contains(&import.id))
+            .map(|(import_id, _)| *import_id);
+        self.stack.extend(imports);
 
         while let Some(stmt_id) = self.pop_stack() {
             // get flow statement related to stmt_id
@@ -1339,12 +1517,7 @@ impl<'a> PropagationBuilder<'a> {
             } else
             // get flow import related to stmt_id
             if let Some(import) = self.imports.get(&stmt_id) {
-                if self
-                    .symbol_table
-                    .is_service_delay(self.service.id, import.id)
-                {
-                    self.push_instr(FlowInstruction::handle_delay())
-                } else if self.symbol_table.get_flow_kind(import.id).is_event() {
+                if self.symbol_table.get_flow_kind(import.id).is_event() {
                     self.stack.insert_event(import.id)
                 } else {
                     self.stack.insert_signal(import.id)
@@ -1355,7 +1528,7 @@ impl<'a> PropagationBuilder<'a> {
             if let Some(export) = self.exports.get(&stmt_id) {
                 self.send(export.id)
             } else {
-                unreachable!()
+                unreachable!("{}", stmt_id)
             }
 
             self.extend_with_next(stmt_id);
@@ -1510,14 +1683,16 @@ impl<'a> PropagationBuilder<'a> {
         let timer_id = self.stmts_timers[&stmt_id].clone();
 
         let expr = self.get_event(id_source).map(Expression::ok);
-        let mut to_reset = expr.is_some();
-        self.define_event(id_pattern, expr);
-
-        let expr = self.get_event(timer_id).map(|_| Expression::err());
-        to_reset = to_reset || expr.is_some();
-        self.define_event(id_pattern, expr);
-
-        self.reset_timer(to_reset, timer_id, deadline)
+        if expr.is_some() {
+            self.define_event(id_pattern, expr);
+            self.reset_timer(timer_id, deadline)
+        } else {
+            let expr = self.get_event(timer_id).map(|_| Expression::err());
+            if expr.is_some() {
+                self.define_event(id_pattern, expr);
+                self.reset_timer(timer_id, deadline)
+            }
+        }
     }
 
     /// Compute the instructions from a throttle expression.
@@ -1623,7 +1798,7 @@ impl<'a> PropagationBuilder<'a> {
 
     /// Push an instruction in the current propagation branch.
     fn push_instr(&mut self, instruction: FlowInstruction) {
-        self.propagations.insert(self.incoming_flow, instruction);
+        self.propagations.insert(&self.incoming_flows, instruction);
     }
 
     /// Add signal definition in current propagation branch.
@@ -1671,11 +1846,9 @@ impl<'a> PropagationBuilder<'a> {
     }
 
     /// Add reset timer in current propagation branch.
-    fn reset_timer(&mut self, to_reset: bool, timer_id: usize, deadline: u64) {
-        if to_reset {
-            let timer_name = self.symbol_table.get_name(timer_id);
-            self.push_instr(FlowInstruction::reset(timer_name, deadline));
-        }
+    fn reset_timer(&mut self, timer_id: usize, deadline: u64) {
+        let timer_name = self.symbol_table.get_name(timer_id);
+        self.push_instr(FlowInstruction::reset(timer_name, deadline));
     }
 
     /// Get event call expression.
@@ -1750,4 +1923,29 @@ impl<'a> PropagationBuilder<'a> {
             ))
         }
     }
+}
+
+#[test]
+fn bit_visitor() {
+    let mut partitions = [[0; 3]; 8];
+    for mut i in 0..8 {
+        let buf = &mut partitions[i];
+        for k in 0..3 {
+            if i & 1 == 1 {
+                buf[k] = 1;
+            }
+            i = i >> 1;
+        }
+    }
+    let control = [
+        [0, 0, 0],
+        [1, 0, 0],
+        [0, 1, 0],
+        [1, 1, 0],
+        [0, 0, 1],
+        [1, 0, 1],
+        [0, 1, 1],
+        [1, 1, 1],
+    ];
+    assert_eq!(control, partitions)
 }

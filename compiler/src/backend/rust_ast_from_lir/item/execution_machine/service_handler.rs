@@ -224,15 +224,6 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
         },
     );
 
-    // handle service store
-    impl_items.push(parse_quote! {
-        #[inline]
-        pub async fn handle_input_store(&mut self, instant: std::time::Instant) -> Result<(), futures::channel::mpsc::SendError> {
-            todo!();
-            Ok(())
-        }
-    });
-
     // service handlers in an implementation block
     items.push(Item::Impl(parse_quote! {
         impl #service_name {

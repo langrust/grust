@@ -14,7 +14,7 @@ prelude! { just
                 as pattern_rust_ast_from_lir,
         },
     },
-    lir::item::execution_machine::service_handler::FlowInstruction,
+    lir::item::execution_machine::service_handler::{FlowInstruction, MatchArm},
 }
 
 /// Transform LIR instruction on flows into statement.
@@ -92,13 +92,33 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
                 let #outputs = self.#component_ident.step(self.context.#input_getter(#(#args),*));
             }
         }
-        FlowInstruction::HandleDelay => parse_quote! {
-            if self.input_store.not_empty() {
-                self.reset_time_constrains(instant).await?;
-                self.handle_input_store(instant).await?;
-            } else {
-                self.delayed = true;
+        FlowInstruction::HandleDelay(input_flows, match_arms) => {
+            let input_flows = input_flows.iter().map(|name| -> Expr {
+                let ident = Ident::new(name, Span::call_site());
+                parse_quote! { self.input_store.#ident.take() }
+            });
+            let arms = match_arms.into_iter().map(match_arm_to_syn);
+            parse_quote! {
+                if self.input_store.not_empty() {
+                    self.reset_time_constrains(instant).await?;
+                    match (#(#input_flows),*) {
+                        #(#arms)*
+                    }
+                } else {
+                    self.delayed = true;
+                }
             }
-        },
+        }
+    }
+}
+
+fn match_arm_to_syn(match_arm: MatchArm) -> syn::Arm {
+    let MatchArm { patterns, block } = match_arm;
+    let syn_pats = patterns.into_iter().map(pattern_rust_ast_from_lir);
+    let syn_block = block.into_iter().map(rust_ast_from_lir);
+    parse_quote! {
+        (#(#syn_pats),*) => {
+            #(#syn_block)*
+        }
     }
 }
