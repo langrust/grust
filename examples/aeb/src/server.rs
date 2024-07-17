@@ -42,7 +42,7 @@ mod aeb {
             let previous_state: Braking = Braking::NoBrake fby state;
         }
 
-        service aeb {
+        service aeb @ [10, 3000] {
             let event pedestrian: timeout(float) = timeout(merge(pedestrian_l, pedestrian_r), 2000);
             brakes = braking_state(pedestrian, speed_km_h);
         }
