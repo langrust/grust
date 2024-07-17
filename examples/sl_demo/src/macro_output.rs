@@ -291,7 +291,7 @@ pub mod runtime {
         fn get_duration(&self) -> std::time::Duration {
             match self {
                 T::PeriodSpeedLimiter => std::time::Duration::from_millis(10u64),
-                T::DelaySpeedLimiter => std::time::Duration::from_millis(10u64),
+                T::DelaySpeedLimiter => std::time::Duration::from_millis(5u64),
                 T::TimeoutSpeedLimiter => std::time::Duration::from_millis(500u64),
             }
         }
@@ -853,6 +853,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, failure_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -883,6 +885,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -954,6 +958,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, failure_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -988,6 +994,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -1090,6 +1098,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, failure_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -1163,6 +1173,8 @@ pub mod runtime {
                                 ))
                                 .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -1337,6 +1349,8 @@ pub mod runtime {
                                 ))
                                 .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -1508,6 +1522,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -1571,6 +1587,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -2054,6 +2072,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -2152,6 +2172,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, failure_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -2285,6 +2307,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, failure_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -2424,6 +2448,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -2594,6 +2620,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, failure_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -2624,6 +2652,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -2656,6 +2686,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -2826,6 +2858,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -3141,6 +3175,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -3211,6 +3247,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -3375,6 +3413,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -3405,6 +3445,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -3476,6 +3518,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -3615,6 +3659,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, failure_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -3715,6 +3761,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, failure_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -3786,6 +3834,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -4125,6 +4175,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, failure_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -4188,6 +4240,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -4322,6 +4376,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, failure_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -4478,6 +4534,8 @@ pub mod runtime {
                                 ))
                                 .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -4541,6 +4599,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -4776,6 +4836,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -4837,6 +4899,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -4907,6 +4971,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, failure_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -4938,6 +5004,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -4970,6 +5038,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -5055,6 +5125,8 @@ pub mod runtime {
                                 ))
                                 .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -5124,6 +5196,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -5205,6 +5279,8 @@ pub mod runtime {
                                 ))
                                 .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -5317,6 +5393,8 @@ pub mod runtime {
                                 ))
                                 .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -5348,6 +5426,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -5418,6 +5498,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -5524,6 +5606,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -5759,6 +5843,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -5859,6 +5945,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -5894,6 +5982,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -5957,6 +6047,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -6032,6 +6124,8 @@ pub mod runtime {
                                 ))
                                 .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -6103,6 +6197,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -6275,6 +6371,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, failure_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -6345,6 +6443,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -6468,6 +6568,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -6537,6 +6639,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, failure_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -6569,6 +6673,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -6599,6 +6705,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -6669,6 +6777,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -6700,6 +6810,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -6769,6 +6881,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, failure_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -6838,6 +6952,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, failure_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -6868,6 +6984,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -6938,6 +7056,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -7019,6 +7139,8 @@ pub mod runtime {
                                 ))
                                 .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -7050,6 +7172,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -7150,6 +7274,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -7479,6 +7605,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -7509,6 +7637,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -7542,6 +7672,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -7610,6 +7742,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -7771,6 +7905,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -7872,6 +8008,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -7941,6 +8079,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -8015,6 +8155,8 @@ pub mod runtime {
                                 ))
                                 .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -8098,6 +8240,8 @@ pub mod runtime {
                                 ))
                                 .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -8160,6 +8304,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -8262,6 +8408,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -8293,6 +8441,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -8376,6 +8526,8 @@ pub mod runtime {
                                 ))
                                 .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -8443,6 +8595,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -8680,6 +8834,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -8724,6 +8880,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -8795,6 +8953,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, failure_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -8897,6 +9057,8 @@ pub mod runtime {
                                 ))
                                 .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -8965,6 +9127,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -9035,6 +9199,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -9103,6 +9269,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -9249,6 +9417,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, failure_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -9280,6 +9450,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -9527,6 +9699,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -9924,6 +10098,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -9995,6 +10171,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, failure_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -10026,6 +10204,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, failure_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -10096,6 +10276,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -10125,6 +10307,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -10264,6 +10448,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -10326,6 +10512,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -10399,6 +10587,8 @@ pub mod runtime {
                                 ))
                                 .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -10532,6 +10722,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -10709,6 +10901,8 @@ pub mod runtime {
                                 ))
                                 .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -10772,6 +10966,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -10842,6 +11038,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -11017,6 +11215,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -11123,6 +11323,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -11255,6 +11457,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -11492,6 +11696,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -11561,6 +11767,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -11669,6 +11877,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -11739,6 +11949,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -11771,6 +11983,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, failure_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -11834,6 +12048,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -11917,6 +12133,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, failure_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -11980,6 +12198,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, failure_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -12120,6 +12340,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -12150,6 +12372,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -12394,6 +12618,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, failure_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -12464,6 +12690,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -12494,6 +12722,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -12564,6 +12794,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -12660,6 +12892,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -12690,6 +12924,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -12722,6 +12958,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -12790,6 +13028,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, period_speed_limiter_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -12822,6 +13062,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -12904,6 +13146,8 @@ pub mod runtime {
                                 ))
                                 .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -13135,6 +13379,8 @@ pub mod runtime {
                                 ))
                                 .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -13166,6 +13412,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -13301,6 +13549,8 @@ pub mod runtime {
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, failure_instant))
                                 .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             None,
@@ -13330,6 +13580,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -13362,6 +13614,8 @@ pub mod runtime {
                             let on_state = self.context.on_state;
                             let sl_state = on_state;
                             self.send_output(O::SlState(sl_state, kickdown_instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
@@ -13432,6 +13686,8 @@ pub mod runtime {
                                 self.send_output(O::SlState(sl_state, kickdown_instant))
                                     .await?;
                             }
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
                         }
                         (
                             Some((speed, speed_instant)),
