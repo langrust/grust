@@ -233,7 +233,7 @@ mod sl {
             }
         }
 
-        service speed_limiter {
+        service speed_limiter @ [5, 500] {
             // # Speed Limiter Service
             let event changed_set_speed: float = on_change(throttle(set_speed, 1.0));
 
@@ -381,9 +381,9 @@ impl Sl for SlRuntime {
         let request_stream = request.into_inner().filter_map(|input| async {
             input.map(into_speed_limiter_service_input).ok().flatten()
         });
-        let timers_stream = timer_stream::<_, _, 1>(timers_stream)
+        let timers_stream = timer_stream::<_, _, 3>(timers_stream)
             .map(|(timer, deadline): (RuntimeTimer, Instant)| RuntimeInput::Timer(timer, deadline));
-        let input_stream = prio_stream::<_, _, 7>(
+        let input_stream = prio_stream::<_, _, 9>(
             futures::stream::select(request_stream, timers_stream),
             RuntimeInput::order,
         );

@@ -42,7 +42,7 @@ mod aeb {
             let previous_state: Braking = Braking::NoBrake fby state;
         }
 
-        service aeb {
+        service aeb @ [10, 3000] {
             let event pedestrian: timeout(float) = timeout(merge(pedestrian_l, pedestrian_r), 2000);
             brakes = braking_state(pedestrian, speed_km_h);
         }
@@ -126,9 +126,9 @@ impl Aeb for AebRuntime {
         let request_stream = request
             .into_inner()
             .filter_map(|input| async { input.map(into_aeb_service_input).ok().flatten() });
-        let timers_stream = timer_stream::<_, _, 1>(timers_stream)
+        let timers_stream = timer_stream::<_, _, 3>(timers_stream)
             .map(|(timer, deadline): (RuntimeTimer, Instant)| RuntimeInput::Timer(timer, deadline));
-        let input_stream = prio_stream::<_, _, 3>(
+        let input_stream = prio_stream::<_, _, 6>(
             futures::stream::select(request_stream, timers_stream),
             RuntimeInput::order,
         );
