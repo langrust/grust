@@ -832,8 +832,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -899,8 +899,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -1076,9 +1076,9 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -1254,8 +1254,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -1286,8 +1286,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -1362,8 +1362,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -1463,8 +1463,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -1566,9 +1566,9 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -1601,9 +1601,9 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -1672,8 +1672,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -1803,8 +1803,8 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -1942,8 +1942,8 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -2012,9 +2012,9 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -2185,8 +2185,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -2286,8 +2286,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -2320,8 +2320,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -2561,8 +2561,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -2666,8 +2666,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -2872,8 +2872,8 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -3079,8 +3079,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -3188,8 +3188,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -3260,9 +3260,9 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -3323,8 +3323,8 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -3459,8 +3459,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -3531,8 +3531,8 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -3702,8 +3702,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -3774,9 +3774,9 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -4054,8 +4054,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -4086,8 +4086,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -4188,9 +4188,9 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -4221,8 +4221,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(None, None, None));
@@ -4463,8 +4463,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -4547,9 +4547,9 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -4751,9 +4751,9 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -4784,8 +4784,8 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -4879,8 +4879,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -4984,8 +4984,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -5018,8 +5018,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(None, None, None));
@@ -5406,8 +5406,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -5511,9 +5511,9 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -5582,8 +5582,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -5619,8 +5619,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -5651,8 +5651,8 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -5751,8 +5751,8 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -5821,9 +5821,9 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -5856,8 +5856,8 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -6026,9 +6026,9 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -6061,8 +6061,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -6137,9 +6137,9 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -6210,9 +6210,9 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -6281,8 +6281,8 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -6384,8 +6384,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -6518,8 +6518,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -6652,8 +6652,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -6997,8 +6997,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -7152,8 +7152,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -7186,8 +7186,8 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -7288,8 +7288,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                         }
                         (
                             None,
@@ -7331,8 +7331,8 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -7363,8 +7363,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -7439,9 +7439,9 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -7651,9 +7651,9 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(None, None, None));
@@ -7854,8 +7854,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -7987,8 +7987,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -8092,8 +8092,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -8168,9 +8168,9 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -8284,8 +8284,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -8421,8 +8421,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -8455,8 +8455,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -8539,8 +8539,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -8571,8 +8571,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -8677,8 +8677,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -8847,9 +8847,9 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -8894,8 +8894,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -9140,8 +9140,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -9282,8 +9282,8 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -9345,8 +9345,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -9358,8 +9358,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -9430,8 +9430,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(None, None, None));
@@ -9463,8 +9463,8 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -9495,8 +9495,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -9565,8 +9565,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -9712,8 +9712,8 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -9775,8 +9775,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -9838,9 +9838,9 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -9970,8 +9970,8 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -10111,9 +10111,9 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -10217,8 +10217,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -10461,8 +10461,8 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -10600,8 +10600,8 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -10670,8 +10670,8 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -10766,9 +10766,9 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -10837,9 +10837,9 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -10945,8 +10945,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -10979,8 +10979,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -11051,9 +11051,9 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -11122,9 +11122,9 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -11155,9 +11155,9 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -11228,8 +11228,8 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -11298,9 +11298,9 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -11367,8 +11367,8 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -11855,9 +11855,9 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -11890,8 +11890,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -11962,9 +11962,9 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -12073,9 +12073,9 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -12146,8 +12146,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -12211,8 +12211,8 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -12281,8 +12281,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -12386,9 +12386,9 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -12419,9 +12419,9 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -12559,8 +12559,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -12631,8 +12631,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -12735,8 +12735,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -12807,8 +12807,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -12839,8 +12839,8 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -12871,8 +12871,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -12938,8 +12938,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -12972,8 +12972,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -13004,8 +13004,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -13041,8 +13041,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -13075,8 +13075,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -13228,8 +13228,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                         }
                         (
                             Some((speed, speed_instant)),
@@ -13392,8 +13392,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -13426,8 +13426,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -13458,8 +13458,8 @@ pub mod runtime {
                             None,
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.speed = speed;
+                            self.context.vdc = vdc;
                             if (self.context.x - set_speed).abs() >= 1.0 {
                                 self.context.x = set_speed;
                             }
@@ -13528,8 +13528,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             Some((failure, failure_instant)),
                         ) => {
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -13594,8 +13594,8 @@ pub mod runtime {
                             Some(((), period_speed_limiter_instant)),
                             None,
                         ) => {
-                            self.context.vdc = vdc;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
@@ -13699,9 +13699,9 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            self.context.vdc = vdc;
-                            self.context.speed = speed;
                             self.context.vacuum_brake = vacuum_brake;
+                            self.context.speed = speed;
+                            self.context.vdc = vdc;
                             let (state, on_state, in_regulation_aux, state_update) = self
                                 .speed_limiter
                                 .step(self.context.get_speed_limiter_inputs(
