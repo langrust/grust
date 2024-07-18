@@ -65,7 +65,8 @@ impl Service {
 
         // complete dependency graphs
         self.statements.iter().for_each(|(stmt_id, statement)| {
-            statement.add_dependencies(*stmt_id, &flows_statements, &mut graph)
+            statement.add_dependencies(*stmt_id, &flows_statements, &mut graph);
+            statement.add_priorities(&flows_statements, &mut graph);
         });
 
         // set service's graph
@@ -143,9 +144,26 @@ impl FlowStatement {
                 debug_assert!(flow_expression.is_normal());
                 let dependencies = flow_expression.get_dependencies();
                 dependencies.iter().for_each(|flow_id| {
-                    let index_statement = flows_statements.get(flow_id).expect("should be there");
-                    graph.add_edge(*index_statement, stmt_id, EdgeType::Dependency);
+                    let dep_id = flows_statements.get(flow_id).expect("should be there");
+                    graph.add_edge(*dep_id, stmt_id, EdgeType::Dependency);
                 });
+            }
+        }
+    }
+    pub fn add_priorities(
+        &self,
+        flows_statements: &HashMap<usize, usize>,
+        graph: &mut DiGraphMap<usize, EdgeType>,
+    ) {
+        match self {
+            FlowStatement::Declaration(FlowDeclaration {
+                flow_expression, ..
+            })
+            | FlowStatement::Instantiation(FlowInstantiation {
+                flow_expression, ..
+            }) => {
+                debug_assert!(flow_expression.is_normal());
+                flow_expression.add_priorities(flows_statements, graph);
             }
         }
     }
@@ -180,6 +198,33 @@ impl flow::Expr {
                 .iter()
                 .flat_map(|(_, flow_expression)| flow_expression.get_dependencies())
                 .collect(),
+        }
+    }
+
+    pub fn add_priorities(
+        &self,
+        flows_statements: &HashMap<usize, usize>,
+        graph: &mut DiGraphMap<usize, EdgeType>,
+    ) {
+        match &self.kind {
+            flow::Kind::Ident { .. }
+            | flow::Kind::Sample { .. }
+            | flow::Kind::Scan { .. }
+            | flow::Kind::Timeout { .. }
+            | flow::Kind::Throttle { .. }
+            | flow::Kind::OnChange { .. }
+            | flow::Kind::ComponentCall { .. } => (),
+            flow::Kind::Merge {
+                flow_expression_1: expr_1,
+                flow_expression_2: expr_2,
+            } => match (&expr_1.kind, &expr_2.kind) {
+                (flow::Kind::Ident { id: id_1 }, flow::Kind::Ident { id: id_2 }) => {
+                    let prio_id = flows_statements.get(id_1).expect("should be there");
+                    let not_prio_id = flows_statements.get(id_2).expect("should be there");
+                    graph.add_edge(*prio_id, *not_prio_id, EdgeType::Priority);
+                }
+                _ => unreachable!(),
+            },
         }
     }
 
