@@ -386,8 +386,7 @@ pub mod runtime {
                                 .step(self.context.get_braking_state_inputs(Some(pedestrian)));
                             self.context.brakes = brakes;
                             let brakes = self.context.brakes;
-                            self.send_output(O::Brakes(brakes, pedestrian_l_instant))
-                                .await?;
+                            self.send_output(O::Brakes(brakes, instant)).await?;
                         }
                         (Some((speed_km_h, speed_km_h_instant)), None, None, None) => {
                             self.context.speed_km_h = speed_km_h;
@@ -408,8 +407,7 @@ pub mod runtime {
                                 .step(self.context.get_braking_state_inputs(Some(pedestrian)));
                             self.context.brakes = brakes;
                             let brakes = self.context.brakes;
-                            self.send_output(O::Brakes(brakes, pedestrian_l_instant))
-                                .await?;
+                            self.send_output(O::Brakes(brakes, instant)).await?;
                         }
                         (None, None, Some((pedestrian_r, pedestrian_r_instant)), None) => {
                             let x = pedestrian_r;
@@ -421,8 +419,7 @@ pub mod runtime {
                                 .step(self.context.get_braking_state_inputs(Some(pedestrian)));
                             self.context.brakes = brakes;
                             let brakes = self.context.brakes;
-                            self.send_output(O::Brakes(brakes, pedestrian_r_instant))
-                                .await?;
+                            self.send_output(O::Brakes(brakes, instant)).await?;
                         }
                         (
                             None,
@@ -439,8 +436,7 @@ pub mod runtime {
                                 .step(self.context.get_braking_state_inputs(Some(pedestrian)));
                             self.context.brakes = brakes;
                             let brakes = self.context.brakes;
-                            self.send_output(O::Brakes(brakes, pedestrian_r_instant))
-                                .await?;
+                            self.send_output(O::Brakes(brakes, instant)).await?;
                         }
                         (
                             Some((speed_km_h, speed_km_h_instant)),
@@ -457,8 +453,7 @@ pub mod runtime {
                                 .step(self.context.get_braking_state_inputs(Some(pedestrian)));
                             self.context.brakes = brakes;
                             let brakes = self.context.brakes;
-                            self.send_output(O::Brakes(brakes, timeout_pedestrian_instant))
-                                .await?;
+                            self.send_output(O::Brakes(brakes, instant)).await?;
                         }
                         (
                             Some((speed_km_h, speed_km_h_instant)),
@@ -476,8 +471,7 @@ pub mod runtime {
                                 .step(self.context.get_braking_state_inputs(Some(pedestrian)));
                             self.context.brakes = brakes;
                             let brakes = self.context.brakes;
-                            self.send_output(O::Brakes(brakes, pedestrian_r_instant))
-                                .await?;
+                            self.send_output(O::Brakes(brakes, instant)).await?;
                         }
                         (
                             None,
@@ -494,8 +488,7 @@ pub mod runtime {
                                 .step(self.context.get_braking_state_inputs(Some(pedestrian)));
                             self.context.brakes = brakes;
                             let brakes = self.context.brakes;
-                            self.send_output(O::Brakes(brakes, pedestrian_l_instant))
-                                .await?;
+                            self.send_output(O::Brakes(brakes, instant)).await?;
                         }
                         (
                             Some((speed_km_h, speed_km_h_instant)),
@@ -513,8 +506,7 @@ pub mod runtime {
                                 .step(self.context.get_braking_state_inputs(Some(pedestrian)));
                             self.context.brakes = brakes;
                             let brakes = self.context.brakes;
-                            self.send_output(O::Brakes(brakes, pedestrian_l_instant))
-                                .await?;
+                            self.send_output(O::Brakes(brakes, instant)).await?;
                         }
                         (None, None, None, Some(((), timeout_pedestrian_instant))) => {
                             let pedestrian = Err(());
@@ -525,8 +517,7 @@ pub mod runtime {
                                 .step(self.context.get_braking_state_inputs(Some(pedestrian)));
                             self.context.brakes = brakes;
                             let brakes = self.context.brakes;
-                            self.send_output(O::Brakes(brakes, timeout_pedestrian_instant))
-                                .await?;
+                            self.send_output(O::Brakes(brakes, instant)).await?;
                         }
                         (None, Some((pedestrian_l, pedestrian_l_instant)), None, None) => {
                             let x = pedestrian_l;
@@ -538,8 +529,7 @@ pub mod runtime {
                                 .step(self.context.get_braking_state_inputs(Some(pedestrian)));
                             self.context.brakes = brakes;
                             let brakes = self.context.brakes;
-                            self.send_output(O::Brakes(brakes, pedestrian_l_instant))
-                                .await?;
+                            self.send_output(O::Brakes(brakes, instant)).await?;
                         }
                         (
                             Some((speed_km_h, speed_km_h_instant)),
@@ -557,8 +547,7 @@ pub mod runtime {
                                 .step(self.context.get_braking_state_inputs(Some(pedestrian)));
                             self.context.brakes = brakes;
                             let brakes = self.context.brakes;
-                            self.send_output(O::Brakes(brakes, pedestrian_r_instant))
-                                .await?;
+                            self.send_output(O::Brakes(brakes, instant)).await?;
                         }
                         (
                             Some((speed_km_h, speed_km_h_instant)),
@@ -576,8 +565,7 @@ pub mod runtime {
                                 .step(self.context.get_braking_state_inputs(Some(pedestrian)));
                             self.context.brakes = brakes;
                             let brakes = self.context.brakes;
-                            self.send_output(O::Brakes(brakes, pedestrian_l_instant))
-                                .await?;
+                            self.send_output(O::Brakes(brakes, instant)).await?;
                         }
                         (
                             Some((speed_km_h, speed_km_h_instant)),
@@ -595,8 +583,7 @@ pub mod runtime {
                                 .step(self.context.get_braking_state_inputs(Some(pedestrian)));
                             self.context.brakes = brakes;
                             let brakes = self.context.brakes;
-                            self.send_output(O::Brakes(brakes, pedestrian_l_instant))
-                                .await?;
+                            self.send_output(O::Brakes(brakes, instant)).await?;
                         }
                         (
                             None,
@@ -613,8 +600,7 @@ pub mod runtime {
                                 .step(self.context.get_braking_state_inputs(Some(pedestrian)));
                             self.context.brakes = brakes;
                             let brakes = self.context.brakes;
-                            self.send_output(O::Brakes(brakes, pedestrian_l_instant))
-                                .await?;
+                            self.send_output(O::Brakes(brakes, instant)).await?;
                         }
                     }
                 } else {
