@@ -5,6 +5,22 @@ prelude! {
     hir::{flow, Pattern},
 }
 
+/// The type of edge present in interface graph.
+pub enum EdgeType {
+    /// # Real dependency
+    ///
+    /// ## Example
+    ///
+    /// In `let event e = merge(e1, e2)`, `e` depends on `e1` and `e2`.
+    Dependency,
+    /// # Arbitrary priority
+    ///
+    /// ## Example
+    ///
+    /// In `let event e = merge(e1, e2)`, we chose `e1` to have priority over `e2`.
+    Priority,
+}
+
 pub struct Service {
     /// Service's identifier.
     pub id: usize,
@@ -13,7 +29,7 @@ pub struct Service {
     /// Service's statements.
     pub statements: HashMap<usize, FlowStatement>,
     /// Flows dependency graph.
-    pub graph: DiGraphMap<usize, ()>,
+    pub graph: DiGraphMap<usize, EdgeType>,
 }
 impl Service {
     pub fn get_flows_names<'a>(
