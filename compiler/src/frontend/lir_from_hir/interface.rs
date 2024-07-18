@@ -967,19 +967,18 @@ impl Stack {
     /// Extend the stack in dependencies order.
     pub fn extend_ordered(
         &mut self,
-        import_flow: usize,
-        iter: impl Iterator<Item = usize>,
+        iter: impl Iterator<Item = (usize, usize)>,
         compare: impl Fn(usize) -> usize + Clone,
     ) {
-        iter.filter_map(|to_insert| {
+        iter.filter(|(_, to_insert)| {
             // remove already visited
             if self.memory.contains(&to_insert) {
-                return None;
+                return false;
             }
-            self.memory.insert(to_insert);
-            Some(to_insert)
+            self.memory.insert(*to_insert);
+            true
         })
-        .for_each(|next_statement_id| {
+        .for_each(|(import_flow, next_statement_id)| {
             // insert statements into the sorted stack
             match self
                 .current
@@ -1410,8 +1409,9 @@ impl<'a> PropagationBuilder<'a> {
         let to_insert = isles.chain(dependencies).unique();
 
         // gives the order of statements indices
-        let compare = |statement_id| self.statements_order[&statement_id];
-        self.stack.extend_ordered(import_flow, to_insert, compare)
+        let compare = |stmt_id| self.statements_order[&stmt_id];
+        self.stack
+            .extend_ordered(to_insert.map(|stmt_id| (import_flow, stmt_id)), compare)
     }
 
     /// Extend the stack with given imports in no order.
