@@ -34,7 +34,7 @@ pub struct InterfaceFlow {
     pub r#type: Typ,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ArrivingFlow {
     Channel(String, Typ, syn::Path),
     Period(String),

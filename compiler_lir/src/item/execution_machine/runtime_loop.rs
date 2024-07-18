@@ -8,7 +8,7 @@ pub struct RuntimeLoop {
 }
 
 /// A flow structure.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct InputHandler {
     /// Arriving flow.
     pub arriving_flow: ArrivingFlow,
