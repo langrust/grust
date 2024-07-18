@@ -47,8 +47,7 @@ where
                         {
                             if kind.do_reset() && kind.eq(sleeping_timer) {
                                 abort = true;
-                            }
-                            if sleeping_deadline > &(pushed_instant + kind.get_duration()) {
+                            } else if sleeping_deadline > &(pushed_instant + kind.get_duration()) {
                                 abort = true;
                                 let (sleeping_timer, sleeping_deadline) =
                                     project.sleeping_timer.take().unwrap();
