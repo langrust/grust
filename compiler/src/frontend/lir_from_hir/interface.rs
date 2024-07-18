@@ -1192,6 +1192,7 @@ impl<'a> PropagationBuilder<'a> {
                                 },
                             );
                             // add timing_event in graph
+                            service.graph.add_node(fresh_statement_id);
                             service.graph.add_edge(
                                 fresh_statement_id,
                                 stmt_id,
@@ -1230,6 +1231,7 @@ impl<'a> PropagationBuilder<'a> {
                             );
 
                             // add timing_event in graph
+                            service.graph.add_node(fresh_statement_id);
                             let dep_stmt = service
                                 .graph
                                 .neighbors_directed(stmt_id, Direction::Incoming)
@@ -1279,6 +1281,7 @@ impl<'a> PropagationBuilder<'a> {
                                     },
                                 );
                                 // add timing_event in graph
+                                service.graph.add_node(fresh_statement_id);
                                 service.graph.add_edge(
                                     fresh_statement_id,
                                     stmt_id,
@@ -1329,6 +1332,8 @@ impl<'a> PropagationBuilder<'a> {
                 semi_token: Default::default(),
             },
         );
+        // add timing_event in graph
+        service.graph.add_node(fresh_statement_id);
         // push timing_event
         timing_events.push(TimingEvent {
             identifier: fresh_name,
@@ -1356,6 +1361,7 @@ impl<'a> PropagationBuilder<'a> {
             },
         );
         // add timing_event in graph
+        service.graph.add_node(fresh_statement_id);
         service.statements.keys().for_each(|stmt_id| {
             if service.statements[stmt_id].is_comp_call() {
                 service
@@ -1425,7 +1431,9 @@ impl<'a> PropagationBuilder<'a> {
             .filter(move |(_, import)| incoming_flows.contains(&import.id))
             .map(|(import_id, import)| (import.id, *import_id));
         // insert import flow in events/signals memory and context
-        imports.clone().for_each(|(import_flow, _)| {
+        imports.clone().for_each(|(import_flow, stmt_id)| {
+            debug_assert!(!self.stack.memory.contains(&stmt_id));
+            debug_assert!(self.statements_order.contains_key(&stmt_id));
             if self.symbol_table.get_flow_kind(import_flow).is_event() {
                 self.stack.insert_event(import_flow)
             } else {
@@ -1434,7 +1442,8 @@ impl<'a> PropagationBuilder<'a> {
             self.update_ctx(import_flow);
         });
         // extend the stack with no order
-        self.stack.extend(imports);
+        let compare = |stmt_id| self.statements_order[&stmt_id];
+        self.stack.extend_ordered(imports, compare)
     }
 
     /// Returns the input flows of the service that are (currently) detected.
@@ -1496,13 +1505,13 @@ impl<'a> PropagationBuilder<'a> {
     pub fn propagate(&mut self) {
         let mut service_delay = 0;
         // for every incoming flows, compute their handlers
-        self.imports.values().for_each(|import| {
+        self.imports.iter().for_each(|(import_id, import)| {
             if self
                 .symbol_table
                 .is_service_delay(self.service.id, import.id)
             {
                 service_delay = import.id;
-            } else {
+            } else if self.statements_order.contains_key(import_id) {
                 self.incoming_flows = IncomingFlows::One(import.id);
                 self.stack.clear();
                 self.propagate_incoming_flows()
