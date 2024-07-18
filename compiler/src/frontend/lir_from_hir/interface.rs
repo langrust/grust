@@ -8,7 +8,7 @@ prelude! {
     hir::{
         flow, IdentifierCreator, interface::{
             FlowDeclaration, FlowExport, FlowImport, FlowInstantiation,
-            FlowStatement, Interface, Service,
+            FlowStatement, Interface, Service, EdgeType
         },
     },
     lir::{
@@ -1199,7 +1199,7 @@ impl<'a> PropagationBuilder<'a> {
                                 },
                             );
                             // add timing_event in graph
-                            service.graph.add_edge(fresh_statement_id, stmt_id, ());
+                            service.graph.add_edge(fresh_statement_id, stmt_id, EdgeType::Dependency);
 
                             // push timing_event
                             stmts_timers.insert(stmt_id, fresh_id);
@@ -1232,7 +1232,7 @@ impl<'a> PropagationBuilder<'a> {
                                 },
                             );
                             // add timing_event in graph
-                            service.graph.add_edge(fresh_statement_id, stmt_id, ());
+                            service.graph.add_edge(fresh_statement_id, stmt_id, EdgeType::Dependency);
 
                             // push timing_event
                             stmts_timers.insert(stmt_id, fresh_id);
@@ -1267,7 +1267,7 @@ impl<'a> PropagationBuilder<'a> {
                                     },
                                 );
                                 // add timing_event in graph
-                                service.graph.add_edge(fresh_statement_id, stmt_id, ());
+                                service.graph.add_edge(fresh_statement_id, stmt_id, EdgeType::Dependency);
 
                                 // push timing_event
                                 stmts_timers.insert(stmt_id, fresh_id);
@@ -1342,7 +1342,7 @@ impl<'a> PropagationBuilder<'a> {
         // add timing_event in graph
         service.statements.keys().for_each(|stmt_id| {
             if service.statements[stmt_id].is_comp_call() {
-                service.graph.add_edge(fresh_statement_id, *stmt_id, ());
+                service.graph.add_edge(fresh_statement_id, *stmt_id, EdgeType::Dependency);
             }
         });
         // push timing_event
