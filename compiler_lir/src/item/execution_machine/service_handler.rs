@@ -24,7 +24,7 @@ pub struct FlowHandler {
 pub enum FlowInstruction {
     Let(String, Expression),
     UpdateContext(String, Expression),
-    Send(String, Expression, String),
+    Send(String, Expression, Option<String>),
     IfThrottle(String, String, Constant, Box<FlowInstruction>),
     IfChange(String, String, Vec<FlowInstruction>, Vec<FlowInstruction>),
     ResetTimer(String, String),
@@ -37,10 +37,15 @@ mk_new! { impl FlowInstruction =>
         expr: Expression = expr.into(),
     )
     UpdateContext: update_ctx (name: impl Into<String> = name.into(), expr: Expression = expr.into())
+    Send: send_from (
+        name: impl Into<String> = name.into(),
+        expr: Expression = expr.into(),
+        instant: impl Into<String> = Some(instant.into()),
+    )
     Send: send (
         name: impl Into<String> = name.into(),
         expr: Expression = expr.into(),
-        instant: impl Into<String> = instant.into(),
+        instant = None,
     )
     IfThrottle: if_throttle (
         flow_name: impl Into<String> = flow_name.into(),

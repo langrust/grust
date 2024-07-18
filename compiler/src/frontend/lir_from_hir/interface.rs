@@ -1939,16 +1939,24 @@ impl<'a> PropagationBuilder<'a> {
     /// Add signal send in current propagation branch.
     fn send_signal(&mut self, signal_id: usize, expr: Expression, import_flow: usize) {
         let signal_name = self.symbol_table.get_name(signal_id);
-        let import_name = self.symbol_table.get_name(import_flow);
-        self.push_instr(FlowInstruction::send(signal_name, expr, import_name));
+        if let IncomingFlows::Many(_, _) = self.incoming_flows {
+            self.push_instr(FlowInstruction::send(signal_name, expr));
+        } else {
+            let import_name = self.symbol_table.get_name(import_flow);
+            self.push_instr(FlowInstruction::send_from(signal_name, expr, import_name));
+        }
     }
 
     /// Add event send in current propagation branch.
     fn send_event(&mut self, event_id: usize, opt_expr: Option<Expression>, import_flow: usize) {
         if let Some(expr) = opt_expr {
             let event_name = self.symbol_table.get_name(event_id);
-            let import_name = self.symbol_table.get_name(import_flow);
-            self.push_instr(FlowInstruction::send(event_name, expr, import_name));
+            if let IncomingFlows::Many(_, _) = self.incoming_flows {
+                self.push_instr(FlowInstruction::send(event_name, expr));
+            } else {
+                let import_name = self.symbol_table.get_name(import_flow);
+                self.push_instr(FlowInstruction::send_from(event_name, expr, import_name));
+            }
         }
     }
 

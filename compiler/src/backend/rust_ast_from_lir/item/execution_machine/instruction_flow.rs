@@ -35,7 +35,11 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
         FlowInstruction::Send(ident, flow_expression, instant) => {
             let enum_ident = Ident::new(to_camel_case(ident.as_str()).as_str(), Span::call_site());
             let expression = flow_expression_rust_ast_from_lir(flow_expression);
-            let instant = format_ident!("{instant}_instant");
+            let instant = if let Some(instant) = instant {
+                format_ident!("{instant}_instant")
+            } else {
+                Ident::new("instant", Span::call_site())
+            };
             parse_quote! { self.send_output(O::#enum_ident(#expression, #instant)).await?; }
         }
         FlowInstruction::IfThrottle(receiver_name, source_name, delta, instruction) => {
