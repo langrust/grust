@@ -1395,6 +1395,29 @@ impl<'a> PropagationBuilder<'a> {
         self.stack.extend_ordered(import_flow, to_insert, compare)
     }
 
+    /// Extend the stack with given imports in no order.
+    fn extend_with_incoming_flows(&mut self) {
+        // get incoming flows ids
+        let incoming_flows = self.incoming_flows.ids();
+        // get incoming imports ids
+        let imports = self
+            .imports
+            .iter()
+            .filter(move |(_, import)| incoming_flows.contains(&import.id))
+            .map(|(import_id, import)| (import.id, *import_id));
+        // insert import flow in events/signals memory and context
+        imports.clone().for_each(|(import_flow, _)| {
+            if self.symbol_table.get_flow_kind(import_flow).is_event() {
+                self.stack.insert_event(import_flow)
+            } else {
+                self.stack.insert_signal(import_flow)
+            }
+            self.update_ctx(import_flow);
+        });
+        // extend the stack with no order
+        self.stack.extend(imports);
+    }
+
     /// Returns the input flows of the service that are (currently) detected.
     /// Service delay and timeout are not taken into account.
     pub fn get_input_flows<'b>(&'b self) -> impl Iterator<Item = usize> + 'b {
@@ -1492,14 +1515,8 @@ impl<'a> PropagationBuilder<'a> {
     /// Compute the instructions propagating the changes of one incoming flow.
     fn propagate_incoming_flows(&mut self) {
         debug_assert!(self.stack.is_empty());
-        // get incoming imports ids
-        let incoming_flows = self.incoming_flows.ids();
-        let imports = self
-            .imports
-            .iter()
-            .filter(move |(_, import)| incoming_flows.contains(&import.id))
-            .map(|(import_id, import)| (import.id, *import_id));
-        self.stack.extend(imports);
+        // extend stack with incoming flows
+        self.extend_with_incoming_flows();
 
         while let Some((import_flow, stmt_id)) = self.pop_stack() {
             // get flow statement related to stmt_id
@@ -1517,20 +1534,20 @@ impl<'a> PropagationBuilder<'a> {
                     }) => self.handle_expr(import_flow, stmt_id, pattern, flow_expression),
                 }
             } else
-            // get flow import related to stmt_id
-            if let Some(import) = self.imports.get(&stmt_id) {
-                if self.symbol_table.get_flow_kind(import.id).is_event() {
-                    self.stack.insert_event(import.id)
-                } else {
-                    self.stack.insert_signal(import.id)
-                }
-                self.update_ctx(import.id);
-            } else
             // get flow export related to stmt_id
             if let Some(export) = self.exports.get(&stmt_id) {
                 self.send(export.id, import_flow)
             } else {
-                unreachable!("{}", stmt_id)
+                debug_assert!(
+                    self.imports.get(&stmt_id).is_some(),
+                    "statement {} should be an import",
+                    stmt_id
+                );
+                debug_assert!(
+                    self.stack.memory.contains(&stmt_id),
+                    "import {} should have been seen",
+                    stmt_id
+                );
             }
 
             self.extend_with_next(import_flow, stmt_id);
