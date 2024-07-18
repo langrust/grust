@@ -111,7 +111,7 @@ impl Service {
         let mut graph = DiGraphMap::new();
 
         // add service's statements as vertices
-        for stmt_id in self.statements.keys() {
+        for stmt_id in flows_statements.values() {
             graph.add_node(*stmt_id);
         }
 
