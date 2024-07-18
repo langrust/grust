@@ -136,6 +136,7 @@ impl FlowStatement {
             | FlowStatement::Instantiation(FlowInstantiation {
                 flow_expression, ..
             }) => {
+                debug_assert!(flow_expression.is_normal());
                 let dependencies = flow_expression.get_dependencies();
                 dependencies.iter().for_each(|flow_id| {
                     let index_statement = flows_statements.get(flow_id).expect("should be there");
@@ -175,6 +176,40 @@ impl flow::Expr {
                 .iter()
                 .flat_map(|(_, flow_expression)| flow_expression.get_dependencies())
                 .collect(),
+        }
+    }
+
+    pub fn is_normal(&self) -> bool {
+        match &self.kind {
+            flow::Kind::Ident { .. } => true,
+            flow::Kind::Sample {
+                flow_expression, ..
+            }
+            | flow::Kind::Scan {
+                flow_expression, ..
+            }
+            | flow::Kind::Timeout {
+                flow_expression, ..
+            }
+            | flow::Kind::Throttle {
+                flow_expression, ..
+            }
+            | flow::Kind::OnChange { flow_expression } => flow_expression.is_ident(),
+            flow::Kind::Merge {
+                flow_expression_1,
+                flow_expression_2,
+            } => flow_expression_1.is_ident() && flow_expression_2.is_ident(),
+            flow::Kind::ComponentCall { inputs, .. } => inputs
+                .iter()
+                .all(|(_, flow_expression)| flow_expression.is_ident()),
+        }
+    }
+
+    fn is_ident(&self) -> bool {
+        if let flow::Kind::Ident { .. } = &self.kind {
+            true
+        } else {
+            false
         }
     }
 }
