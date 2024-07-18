@@ -1,5 +1,5 @@
 use futures::StreamExt;
-use interface::{sl_client::SlClient, Input};
+use interface::{output::Message, sl_client::SlClient, Input, Output};
 use json::*;
 use lazy_static::lazy_static;
 use std::time::Instant;
@@ -42,16 +42,62 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     begin_json(OUTPATH);
     // collect all outputs
     let mut resp_stream = response.into_inner();
-    let mut counter = 0;
     while let Some(received) = resp_stream.next().await {
-        counter += 1;
         let received = received.unwrap();
+        let end = received.timestamp > 2000;
         println!("\treceived message: `{:?}`", received.message);
         append_json(OUTPATH, received);
-        if counter > 1000 {
+        if end {
             break;
         }
     }
     end_json(OUTPATH);
+
+    // test that every output has its twin
+    test_equality_of_outputs();
+
     Ok(())
+}
+
+fn test_equality_of_outputs() {
+    let mut prev_timestamp = 0;
+    let mut recv_at_timestamp = vec![];
+    // test that every output has its twin
+    for output in read_json(OUTPATH) {
+        let output: Output = output.unwrap();
+        if output.timestamp != prev_timestamp {
+            prev_timestamp = output.timestamp;
+            // test that recv_at_timestamp contains twins of messages
+            assert!(contains_twins(&recv_at_timestamp));
+            recv_at_timestamp.clear();
+        }
+        recv_at_timestamp.push(output.message.unwrap());
+    }
+}
+
+fn contains_twins(v: &Vec<Message>) -> bool {
+    let n = v.len();
+    if (n % 2) != 0 {
+        return false;
+    }
+    let mut waiting = Vec::with_capacity(n / 2);
+    let mut len = 0;
+    for output in v {
+        // add or remove from waiting output
+        if let Some(index) = waiting.iter().position(|elem: &&Message| *elem == output) {
+            len -= 1;
+            waiting.remove(index);
+            println!("match!");
+        } else {
+            len += 1;
+            waiting.push(output);
+            println!("waiting!");
+        }
+        // early exit
+        if len > n / 2 {
+            return false;
+        }
+    }
+    // no output waits for its twin
+    waiting.is_empty()
 }
