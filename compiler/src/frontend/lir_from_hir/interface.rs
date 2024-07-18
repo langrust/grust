@@ -1225,8 +1225,23 @@ impl<'a> PropagationBuilder<'a> {
                                     semi_token: Default::default(),
                                 },
                             );
+
                             // add timing_event in graph
-                            service.graph.add_edge(fresh_statement_id, stmt_id, EdgeType::Dependency);
+                            let dep_stmt = service
+                                .graph
+                                .neighbors_directed(stmt_id, Direction::Incoming)
+                                .next()
+                                .expect("timeout without dependence");
+                            service.graph.add_edge(
+                                fresh_statement_id,
+                                stmt_id,
+                                EdgeType::Dependency,
+                            );
+                            service.graph.add_edge(
+                                dep_stmt,
+                                fresh_statement_id,
+                                EdgeType::Priority,
+                            );
 
                             // push timing_event
                             stmts_timers.insert(stmt_id, fresh_id);
