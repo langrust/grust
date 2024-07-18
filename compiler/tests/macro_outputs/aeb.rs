@@ -154,23 +154,23 @@ pub mod runtime {
             runtime.send_timer(T::TimeoutAeb, init_instant).await?;
             while let Some(input) = input.next().await {
                 match input {
-                    I::Timer(T::TimeoutPedestrian, instant) => {
-                        runtime.aeb.handle_timeout_pedestrian(instant).await?;
-                    }
-                    I::SpeedKmH(speed_km_h, instant) => {
-                        runtime.aeb.handle_speed_km_h(instant, speed_km_h).await?;
-                    }
                     I::PedestrianL(pedestrian_l, instant) => {
                         runtime
                             .aeb
                             .handle_pedestrian_l(instant, pedestrian_l)
                             .await?;
                     }
-                    I::Timer(T::TimeoutAeb, instant) => {
-                        runtime.aeb.handle_timeout_aeb(instant).await?;
+                    I::SpeedKmH(speed_km_h, instant) => {
+                        runtime.aeb.handle_speed_km_h(instant, speed_km_h).await?;
                     }
                     I::Timer(T::DelayAeb, instant) => {
                         runtime.aeb.handle_delay_aeb(instant).await?;
+                    }
+                    I::Timer(T::TimeoutPedestrian, instant) => {
+                        runtime.aeb.handle_timeout_pedestrian(instant).await?;
+                    }
+                    I::Timer(T::TimeoutAeb, instant) => {
+                        runtime.aeb.handle_timeout_aeb(instant).await?;
                     }
                 }
             }
@@ -379,14 +379,14 @@ pub mod runtime {
                             Some((pedestrian_l, pedestrian_l_instant)),
                         ) => {
                             let pedestrian = Ok(pedestrian_l);
-                            self.send_timer(T::TimeoutPedestrian, timeout_pedestrian_instant)
+                            self.send_timer(T::TimeoutPedestrian, pedestrian_l_instant)
                                 .await?;
                             let brakes = self
                                 .braking_state
                                 .step(self.context.get_braking_state_inputs(Some(pedestrian)));
                             self.context.brakes = brakes;
                             let brakes = self.context.brakes;
-                            self.send_output(O::Brakes(brakes, timeout_pedestrian_instant))
+                            self.send_output(O::Brakes(brakes, pedestrian_l_instant))
                                 .await?;
                         }
                         (
@@ -396,14 +396,14 @@ pub mod runtime {
                         ) => {
                             self.context.speed_km_h = speed_km_h;
                             let pedestrian = Ok(pedestrian_l);
-                            self.send_timer(T::TimeoutPedestrian, timeout_pedestrian_instant)
+                            self.send_timer(T::TimeoutPedestrian, pedestrian_l_instant)
                                 .await?;
                             let brakes = self
                                 .braking_state
                                 .step(self.context.get_braking_state_inputs(Some(pedestrian)));
                             self.context.brakes = brakes;
                             let brakes = self.context.brakes;
-                            self.send_output(O::Brakes(brakes, timeout_pedestrian_instant))
+                            self.send_output(O::Brakes(brakes, pedestrian_l_instant))
                                 .await?;
                         }
                         (Some(((), timeout_pedestrian_instant)), None, None) => {
