@@ -404,13 +404,10 @@ pub mod runtime {
                 .await?;
             while let Some(input) = input.next().await {
                 match input {
-                    I::Speed(speed, instant) => {
-                        runtime.speed_limiter.handle_speed(instant, speed).await?;
-                    }
-                    I::Timer(T::PeriodSpeedLimiter, instant) => {
+                    I::VacuumBrake(vacuum_brake, instant) => {
                         runtime
                             .speed_limiter
-                            .handle_period_speed_limiter(instant)
+                            .handle_vacuum_brake(instant, vacuum_brake)
                             .await?;
                     }
                     I::Kickdown(kickdown, instant) => {
@@ -425,31 +422,16 @@ pub mod runtime {
                             .handle_set_speed(instant, set_speed)
                             .await?;
                     }
-                    I::Timer(T::TimeoutSpeedLimiter, instant) => {
-                        runtime
-                            .speed_limiter
-                            .handle_timeout_speed_limiter(instant)
-                            .await?;
+                    I::Speed(speed, instant) => {
+                        runtime.speed_limiter.handle_speed(instant, speed).await?;
                     }
                     I::Vdc(vdc, instant) => {
                         runtime.speed_limiter.handle_vdc(instant, vdc).await?;
                     }
-                    I::Timer(T::PeriodInRegulation, instant) => {
+                    I::Timer(T::PeriodSpeedLimiter, instant) => {
                         runtime
                             .speed_limiter
-                            .handle_period_in_regulation(instant)
-                            .await?;
-                    }
-                    I::VacuumBrake(vacuum_brake, instant) => {
-                        runtime
-                            .speed_limiter
-                            .handle_vacuum_brake(instant, vacuum_brake)
-                            .await?;
-                    }
-                    I::Activation(activation, instant) => {
-                        runtime
-                            .speed_limiter
-                            .handle_activation(instant, activation)
+                            .handle_period_speed_limiter(instant)
                             .await?;
                     }
                     I::Failure(failure, instant) => {
@@ -458,10 +440,28 @@ pub mod runtime {
                             .handle_failure(instant, failure)
                             .await?;
                     }
+                    I::Timer(T::TimeoutSpeedLimiter, instant) => {
+                        runtime
+                            .speed_limiter
+                            .handle_timeout_speed_limiter(instant)
+                            .await?;
+                    }
                     I::Timer(T::DelaySpeedLimiter, instant) => {
                         runtime
                             .speed_limiter
                             .handle_delay_speed_limiter(instant)
+                            .await?;
+                    }
+                    I::Activation(activation, instant) => {
+                        runtime
+                            .speed_limiter
+                            .handle_activation(instant, activation)
+                            .await?;
+                    }
+                    I::Timer(T::PeriodInRegulation, instant) => {
+                        runtime
+                            .speed_limiter
+                            .handle_period_in_regulation(instant)
                             .await?;
                     }
                 }
