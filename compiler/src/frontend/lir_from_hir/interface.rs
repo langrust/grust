@@ -458,11 +458,8 @@ impl<'a> IsleBuilder<'a> {
             };
 
             if let Some((_, inputs)) = stmt.try_get_call() {
-                // scan neightbors for timers
-                for import_id in service
-                    .graph
-                    .neighbors_directed(*stmt_id, Direction::Incoming)
-                {
+                // scan incoming stmt for timers
+                for import_id in service.get_dependencies(*stmt_id) {
                     if let Some(FlowImport { id: timer, .. }) = &imports.get(&import_id) {
                         if syms.is_timer(*timer) {
                             // register `stmt_id` as triggered by `input`
@@ -552,11 +549,8 @@ impl<'a> IsleBuilder<'a> {
                 self.isles.insert(event, stmt_id);
             }
 
-            for stmt_id in self
-                .service
-                .graph
-                .neighbors_directed(stmt_id, Direction::Incoming)
-            {
+            // insert incoming stmt
+            for stmt_id in self.service.get_dependencies(stmt_id) {
                 self.stack.push((stmt_id, false));
             }
         }
