@@ -1,6 +1,6 @@
 prelude! {
     syn::Token,
-    graph::DiGraphMap,
+    graph::{DiGraphMap, Direction},
     ast::keyword,
     hir::{flow, Pattern},
 }
@@ -59,6 +59,14 @@ impl Service {
                 }
             })
             .chain(imports.map(|import| import.id))
+    }
+    pub fn get_dependencies<'a>(&'a self, stmt_id: usize) -> impl Iterator<Item = usize> + 'a {
+        self.graph
+            .edges_directed(stmt_id, Direction::Incoming)
+            .filter_map(|(incoming, _, edge)| match edge {
+                EdgeType::Dependency => Some(incoming),
+                EdgeType::Priority => None,
+            })
     }
 }
 

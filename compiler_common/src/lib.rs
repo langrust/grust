@@ -37,7 +37,7 @@ pub mod serialize;
 
 pub mod graph {
     pub use super::{
-        petgraph::graphmap::DiGraphMap,
+        petgraph::{graphmap::DiGraphMap, Direction},
         {color::Color, label::Label},
     };
 
