@@ -405,9 +405,9 @@ impl Sl for SlRuntime {
         let request_stream = request.into_inner().filter_map(|input| async {
             input.map(into_speed_limiter_service_input).ok().flatten()
         });
-        let timers_stream = timer_stream::<_, _, 3>(timers_stream)
+        let timers_stream = timer_stream::<_, _, 6>(timers_stream)
             .map(|(timer, deadline): (RuntimeTimer, Instant)| RuntimeInput::Timer(timer, deadline));
-        let input_stream = prio_stream::<_, _, 7>(
+        let input_stream = prio_stream::<_, _, 10>(
             futures::stream::select(request_stream, timers_stream),
             RuntimeInput::order,
         );
