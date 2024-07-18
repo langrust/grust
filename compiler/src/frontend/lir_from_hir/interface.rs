@@ -949,11 +949,6 @@ impl Stack {
     pub fn is_empty(&self) -> bool {
         self.current.is_empty() && self.next.as_ref().map_or(true, |stack| stack.is_empty())
     }
-    /// Appends a statement identifier (and the import flow from which it come from)
-    /// to the end of the current stack: `(import_flow_id, stmt)`.
-    pub fn push(&mut self, import_flow_id: usize, stmt_id: usize) {
-        self.current.push((import_flow_id, stmt_id))
-    }
     /// Pop the next statement identifier from the current stack.
     pub fn pop(&mut self) -> Option<(usize, usize)> {
         self.current.pop()
@@ -975,21 +970,6 @@ impl Stack {
         debug_assert!(self.next.is_some());
         *self = *std::mem::take(self).next.unwrap()
     }
-    /// Insert in the stack in dependencies order.
-    pub fn insert_ordered<F: Fn(usize) -> usize>(
-        &mut self,
-        import_flow: usize,
-        stmt_to_insert: usize,
-        f: F,
-    ) {
-        match self
-            .current
-            .binary_search_by_key(&f(stmt_to_insert), |(_, stmt_id)| f(*stmt_id))
-        {
-            Err(pos) => self.current.insert(pos, (import_flow, stmt_to_insert)),
-            Ok(_) => (), // already in the stack
-        }
-    }
     /// Extend the stack in dependencies order.
     pub fn extend_ordered(
         &mut self,
@@ -1002,6 +982,7 @@ impl Stack {
             if self.memory.contains(&to_insert) {
                 return None;
             }
+            self.memory.insert(to_insert);
             Some(to_insert)
         })
         .for_each(|next_statement_id| {
@@ -1017,7 +998,11 @@ impl Stack {
         })
     }
     /// Extend the stack in no order.
-    pub fn extend(&mut self, iter: impl Iterator<Item = (usize, usize)>) {
+    pub fn extend(&mut self, iter: impl Iterator<Item = (usize, usize)> + Clone) {
+        debug_assert!(iter
+            .clone()
+            .all(|(_, stmt_id)| !self.memory.contains(&stmt_id)));
+        self.memory.extend(iter.clone().map(|(_, stmt_id)| stmt_id));
         self.current.extend(iter)
     }
 }
