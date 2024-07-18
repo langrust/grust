@@ -45,22 +45,18 @@ impl Interface {
                 service.lir_from_hir(&mut imports, &exports, &mut timing_events, symbol_table)
             })
             .collect();
-
-        let input_handlers = services_handlers
-            .iter()
-            .map(|service_handler| {
-                service_handler.flows_handling.iter().map(|flow_handler| {
-                    (&flow_handler.arriving_flow, service_handler.service.clone())
+        let mut input_handlers = HashMap::new();
+        services_handlers.iter().for_each(|service_handler| {
+            service_handler
+                .flows_handling
+                .iter()
+                .for_each(|flow_handler| {
+                    input_handlers
+                        .entry(&flow_handler.arriving_flow)
+                        .or_insert_with(|| vec![])
+                        .push(service_handler.service.clone())
                 })
-            })
-            .flatten()
-            .group_by(|(arriving_flow, _)| *arriving_flow)
-            .into_iter()
-            .map(|(arriving_flow, services)| InputHandler {
-                arriving_flow: (*arriving_flow).clone(),
-                services: services.map(|(_, services)| services).collect(),
-            })
-            .collect();
+        });
         let input_flows = imports
             .into_values()
             .filter_map(|import| import.lir_from_hir(symbol_table))
@@ -70,7 +66,15 @@ impl Interface {
             .map(|export| export.lir_from_hir(symbol_table))
             .collect();
 
-        let runtime_loop = RuntimeLoop { input_handlers };
+        let runtime_loop = RuntimeLoop {
+            input_handlers: input_handlers
+                .into_iter()
+                .map(|(ref_to, services)| InputHandler {
+                    arriving_flow: ref_to.clone(),
+                    services,
+                })
+                .collect(),
+        };
 
         ExecutionMachine {
             runtime_loop,
