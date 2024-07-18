@@ -1,7 +1,11 @@
 prelude! {
     graph::DiGraphMap,
     hir::{
-        flow, interface::{ FlowDeclaration, FlowInstantiation, FlowStatement, Interface, Service }
+        flow,
+        interface::{
+            EdgeType, FlowDeclaration, FlowInstantiation,
+            FlowStatement, Interface, Service,
+        },
     },
 }
 
@@ -101,7 +105,7 @@ impl Service {
         &self,
         flows_statements: &HashMap<usize, usize>,
         flows_exports: &HashMap<usize, usize>,
-    ) -> DiGraphMap<usize, ()> {
+    ) -> DiGraphMap<usize, EdgeType> {
         // create an empty graph
         let mut graph = DiGraphMap::new();
 
@@ -113,7 +117,7 @@ impl Service {
         // add potential dependencies between export and service's statements
         flows_exports.iter().for_each(|(flow_id, export_id)| {
             if let Some(stmt_id) = flows_statements.get(flow_id) {
-                graph.add_edge(*stmt_id, *export_id, ());
+                graph.add_edge(*stmt_id, *export_id, EdgeType::Dependency);
             }
         });
 
@@ -127,7 +131,7 @@ impl FlowStatement {
         &self,
         stmt_id: usize,
         flows_statements: &HashMap<usize, usize>,
-        graph: &mut DiGraphMap<usize, ()>,
+        graph: &mut DiGraphMap<usize, EdgeType>,
     ) {
         match self {
             FlowStatement::Declaration(FlowDeclaration {
@@ -140,7 +144,7 @@ impl FlowStatement {
                 let dependencies = flow_expression.get_dependencies();
                 dependencies.iter().for_each(|flow_id| {
                     let index_statement = flows_statements.get(flow_id).expect("should be there");
-                    graph.add_edge(*index_statement, stmt_id, ());
+                    graph.add_edge(*index_statement, stmt_id, EdgeType::Dependency);
                 });
             }
         }
