@@ -37,7 +37,7 @@ pub enum Typ {
     /// [bool] type for booleans, if `b = true` then `b: bool`
     Boolean(keyword::bool),
     /// Unit type, if `u = ()` then `u: unit`
-    Unit(syn::token::Paren),
+    Unit(keyword::unit),
     /// Array type, if `a = [1, 2, 3]` then `a: [int; 3]`
     Array {
         bracket_token: syn::token::Bracket,
@@ -183,7 +183,7 @@ impl Display for Typ {
             Typ::Integer(_) => write!(f, "i64"),
             Typ::Float(_) => write!(f, "f64"),
             Typ::Boolean(_) => write!(f, "bool"),
-            Typ::Unit(_) => write!(f, "()"),
+            Typ::Unit(_) => write!(f, "unit"),
             Typ::Array { ty, size, .. } => write!(f, "[{}; {size}]", *ty),
             Typ::SMEvent { ty, .. } => write!(f, "SMEvent<{}>", *ty),
             Typ::SMTimeout { ty, .. } => write!(f, "SMTimeout<{}>", *ty),
@@ -229,17 +229,16 @@ impl Parse for Typ {
         } else if input.peek(keyword::bool) {
             let keyword: keyword::bool = input.parse()?;
             Typ::Boolean(keyword)
+        } else if input.peek(keyword::unit) {
+            let keyword: keyword::unit = input.parse()?;
+            Typ::Unit(keyword)
         } else if input.peek(syn::token::Paren) {
             let content;
             let paren_token = syn::parenthesized!(content in input);
-            if content.is_empty() {
-                Typ::Unit(paren_token)
-            } else {
-                let elements: Punctuated<Typ, Token![,]> = Punctuated::parse_terminated(&content)?;
-                Typ::Tuple {
-                    paren_token,
-                    elements,
-                }
+            let elements: Punctuated<Typ, Token![,]> = Punctuated::parse_terminated(&content)?;
+            Typ::Tuple {
+                paren_token,
+                elements,
             }
         } else if input.peek(syn::token::Bracket) {
             let content;

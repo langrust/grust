@@ -35,6 +35,7 @@ syn::custom_keyword!(merge);
 syn::custom_keyword!(int);
 syn::custom_keyword!(float);
 syn::custom_keyword!(bool);
+syn::custom_keyword!(unit);
 
 // Operators and constructs.
 syn::custom_keyword!(when);
