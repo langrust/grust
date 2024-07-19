@@ -30,6 +30,7 @@ mk_new! { impl Constant =>
     Float: float(l: LitFloat = l)
     Boolean: bool(l: LitBool = l)
     Unit: unit(l: Paren = l)
+    Unit: unit_default(l = Default::default())
 }
 
 impl Constant {

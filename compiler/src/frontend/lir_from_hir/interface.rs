@@ -97,7 +97,7 @@ impl LIRFromHIR for FlowImport {
             ..
         } = self;
 
-        if flow_type.eq(&Typ::event(Typ::time())) {
+        if flow_type.eq(&Typ::event(Typ::unit())) {
             None
         } else {
             Some(InterfaceFlow {
@@ -1178,7 +1178,7 @@ impl<'a> PropagationBuilder<'a> {
                                 symbol_table.get_name(pattern.identifiers().pop().unwrap());
                             let fresh_name =
                                 identifier_creator.fresh_identifier("period", flow_name);
-                            let typing = Typ::event(Typ::time());
+                            let typing = Typ::event(Typ::unit());
                             let fresh_id =
                                 symbol_table.insert_fresh_period(fresh_name.clone(), *period_ms);
 
@@ -1216,7 +1216,7 @@ impl<'a> PropagationBuilder<'a> {
                                 symbol_table.get_name(pattern.identifiers().pop().unwrap());
                             let fresh_name =
                                 identifier_creator.fresh_identifier("timeout", flow_name);
-                            let typing = Typ::event(Typ::time());
+                            let typing = Typ::event(Typ::unit());
                             let fresh_id =
                                 symbol_table.insert_fresh_deadline(fresh_name.clone(), *deadline);
 
@@ -1266,7 +1266,7 @@ impl<'a> PropagationBuilder<'a> {
                                 // add new timing event into the identifier creator
                                 let fresh_name =
                                     identifier_creator.fresh_identifier("period", &comp_name);
-                                let typing = Typ::event(Typ::time());
+                                let typing = Typ::event(Typ::unit());
                                 let fresh_id =
                                     symbol_table.insert_fresh_period(fresh_name.clone(), period);
                                 symbol_table.set_node_period_id(*component_id, fresh_id);
@@ -1321,7 +1321,7 @@ impl<'a> PropagationBuilder<'a> {
         // add new timing event into the identifier creator
         let fresh_name =
             identifier_creator.fresh_identifier("delay", symbol_table.get_name(service.id));
-        let typing = Typ::event(Typ::time());
+        let typing = Typ::event(Typ::unit());
         let fresh_id = symbol_table.insert_service_delay(fresh_name.clone(), service.id, min_delay);
         // add timing_event in imports
         let fresh_statement_id = symbol_table.get_fresh_id();
@@ -1346,9 +1346,8 @@ impl<'a> PropagationBuilder<'a> {
 
         let max_timeout = service.constrains.1;
         // add new timing event into the identifier creator
-        let fresh_name =
-            identifier_creator.fresh_identifier("timeout", symbol_table.get_name(service.id));
-        let typing = Typ::event(Typ::time());
+        let fresh_name = identifier_creator.fresh_identifier("", symbol_table.get_name(service.id));
+        let typing = Typ::event(Typ::unit());
         let fresh_id =
             symbol_table.insert_service_timeout(fresh_name.clone(), service.id, max_timeout);
         // add timing_event in imports
@@ -1734,14 +1733,12 @@ impl<'a> PropagationBuilder<'a> {
 
         let timer_id = self.stmts_timers[&stmt_id].clone();
 
-        let expr = self.get_event(id_source).map(Expression::ok);
-        if expr.is_some() {
-            self.define_event(id_pattern, expr);
+        if self.stack.contains_event(id_source) {
             self.reset_timer(timer_id, import_flow)
         } else {
-            let expr = self.get_event(timer_id).map(|_| Expression::err());
-            if expr.is_some() {
-                self.define_event(id_pattern, expr);
+            if self.stack.contains_event(timer_id) {
+                let unit_expr = Expression::lit(Constant::unit_default());
+                self.define_event(id_pattern, Some(unit_expr));
                 self.reset_timer(timer_id, import_flow)
             }
         }

@@ -71,30 +71,6 @@ impl Parse for EventWhen {
     }
 }
 
-/// Matching event timeout.
-#[derive(Debug, PartialEq, Clone)]
-pub struct TimeoutWhen {
-    /// The timeout.
-    pub timeout_token: keyword::timeout,
-    /// The expression to do.
-    pub expression: Box<Expr>,
-}
-
-mk_new! { impl TimeoutWhen =>
-    new {
-        timeout_token: keyword::timeout,
-        expression: Expr = expression.into(),
-    }
-}
-
-impl Parse for TimeoutWhen {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let timeout_token: keyword::timeout = input.parse()?;
-        let expression: Expr = input.parse()?;
-        Ok(TimeoutWhen::new(timeout_token, expression))
-    }
-}
-
 /// Matching absence of events.
 #[derive(Debug, PartialEq, Clone)]
 pub struct DefaultWhen {
@@ -123,8 +99,6 @@ impl Parse for DefaultWhen {
 pub struct When {
     /// Matching event presence.
     pub presence: EventWhen,
-    /// Optional, matching event timeout.
-    pub timeout: Option<TimeoutWhen>,
     /// Matching event presence.
     pub absence: DefaultWhen,
 }
@@ -132,7 +106,6 @@ pub struct When {
 mk_new! { impl When =>
     new {
         presence: EventWhen,
-        timeout: Option<TimeoutWhen>,
         absence: DefaultWhen,
     }
 }
@@ -146,13 +119,8 @@ impl Parse for When {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let _: keyword::when = input.parse()?;
         let presence = input.parse()?;
-        let timeout = if input.peek(keyword::timeout) {
-            Some(input.parse()?)
-        } else {
-            None
-        };
         let absence = input.parse()?;
-        Ok(When::new(presence, timeout, absence))
+        Ok(When::new(presence, absence))
     }
 }
 
@@ -347,7 +315,7 @@ impl Parse for Expr {
 
 #[cfg(test)]
 mod parse_stream_expression {
-    use stream::{DefaultWhen, EventWhen, TimeoutWhen, When};
+    use stream::{DefaultWhen, EventWhen, When};
 
     prelude! {
         expr::{
@@ -567,23 +535,7 @@ mod parse_stream_expression {
     }
 
     #[test]
-    fn should_parse_when_with_timeout() {
-        let expression: Expr = syn::parse_quote! {when d = p? then x timeout y otherwise z};
-        let control = Expr::when_match(When::new(
-            EventWhen::new(
-                Pattern::ident("d"),
-                "p",
-                Default::default(),
-                Expr::ident("x"),
-            ),
-            Some(TimeoutWhen::new(Default::default(), Expr::ident("y"))),
-            DefaultWhen::new(Default::default(), Expr::ident("z")),
-        ));
-        assert_eq!(expression, control)
-    }
-
-    #[test]
-    fn should_parse_when_without_timeout() {
+    fn should_parse_when() {
         let expression: Expr = syn::parse_quote! {when d = p? then x otherwise z};
         let control = Expr::when_match(When::new(
             EventWhen::new(
@@ -592,7 +544,6 @@ mod parse_stream_expression {
                 Default::default(),
                 Expr::ident("x"),
             ),
-            None,
             DefaultWhen::new(Default::default(), Expr::ident("z")),
         ));
         assert_eq!(expression, control)

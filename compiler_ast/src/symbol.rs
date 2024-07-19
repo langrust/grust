@@ -621,7 +621,7 @@ impl SymbolTable {
                 path: None,
                 kind: FlowKind::Event(Default::default()),
                 timer: Some(TimerKind::Period(period)),
-                typing: Typ::event(Typ::time()),
+                typing: Typ::event(Typ::unit()),
             },
             name: fresh_name,
         };
@@ -637,7 +637,7 @@ impl SymbolTable {
                 path: None,
                 kind: FlowKind::Event(Default::default()),
                 timer: Some(TimerKind::Deadline(deadline)),
-                typing: Typ::event(Typ::time()),
+                typing: Typ::event(Typ::unit()),
             },
             name: fresh_name,
         };
@@ -658,7 +658,7 @@ impl SymbolTable {
                 path: None,
                 kind: FlowKind::Event(Default::default()),
                 timer: Some(TimerKind::ServiceDelay(service_id, delay)),
-                typing: Typ::event(Typ::time()),
+                typing: Typ::event(Typ::unit()),
             },
             name: fresh_name,
         };
@@ -679,7 +679,7 @@ impl SymbolTable {
                 path: None,
                 kind: FlowKind::Event(Default::default()),
                 timer: Some(TimerKind::ServiceTimeout(service_id, timeout)),
-                typing: Typ::event(Typ::time()),
+                typing: Typ::event(Typ::unit()),
             },
             name: fresh_name,
         };

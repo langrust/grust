@@ -181,46 +181,6 @@ impl Parse for EventArmWhen {
     }
 }
 
-/// EventArmWhen for matching event.
-pub struct TimeoutArmWhen {
-    /// The timeout.
-    pub timeout_token: keyword::timeout,
-    /// The event to match.
-    pub event: syn::Ident,
-    pub arrow_token: Token![=>],
-    pub brace_token: token::Brace,
-    /// The equations.
-    pub equations: Vec<Equation>,
-}
-
-mk_new! { impl TimeoutArmWhen =>
-    new {
-        timeout_token: keyword::timeout,
-        event: syn::Ident,
-        arrow_token: Token![=>],
-        brace_token: token::Brace,
-        equations: Vec<Equation>,
-    }
-}
-
-impl Parse for TimeoutArmWhen {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let timeout = input.parse()?;
-        let event = input.parse()?;
-        let arrow = input.parse()?;
-        let content;
-        let brace = braced!(content in input);
-        let equations = {
-            let mut equations = Vec::new();
-            while !content.is_empty() {
-                equations.push(content.parse()?);
-            }
-            equations
-        };
-        Ok(TimeoutArmWhen::new(timeout, event, arrow, brace, equations))
-    }
-}
-
 /// DefaultArmWhen for absence of events.
 pub struct DefaultArmWhen {
     pub otherwise_token: keyword::otherwise,
@@ -259,13 +219,11 @@ impl Parse for DefaultArmWhen {
 /// ArmWhen for matching expression.
 pub enum ArmWhen {
     EventArmWhen(EventArmWhen),
-    TimeoutArmWhen(TimeoutArmWhen),
     Default(DefaultArmWhen),
 }
 
 mk_new! { impl ArmWhen =>
     EventArmWhen: event (e : EventArmWhen = e)
-    TimeoutArmWhen: timeout (e : TimeoutArmWhen = e)
     Default: default (e : DefaultArmWhen = e)
 }
 
@@ -273,8 +231,6 @@ impl Parse for ArmWhen {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         if input.peek(keyword::otherwise) {
             Ok(ArmWhen::default(input.parse()?))
-        } else if input.peek(keyword::timeout) {
-            Ok(ArmWhen::timeout(input.parse()?))
         } else {
             Ok(ArmWhen::event(input.parse()?))
         }
@@ -406,9 +362,6 @@ mod parse_equation {
                                     )),
                                     &arm.equations,
                                 ),
-                                super::ArmWhen::TimeoutArmWhen(arm) => {
-                                    (Some((&Pattern::Default, &arm.event, None)), &arm.equations)
-                                }
                                 super::ArmWhen::Default(arm) => (None, &arm.equations),
                             })
                             .collect::<Vec<_>>(),

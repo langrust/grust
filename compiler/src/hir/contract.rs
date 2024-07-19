@@ -54,11 +54,6 @@ pub mod term {
             /// The event pattern
             pattern: usize,
         },
-        /// Timeout event pattern
-        TimeoutEvent {
-            /// The event identifier
-            event_id: usize,
-        },
     }
 
     mk_new! { impl Kind =>
@@ -88,9 +83,6 @@ pub mod term {
         PresentEvent: present {
             event_id: usize,
             pattern: usize,
-        }
-        TimeoutEvent: timeout {
-            event_id: usize,
         }
     }
 
@@ -124,7 +116,7 @@ pub mod term {
                     dependencies.append(&mut dependencies_left);
                     dependencies
                 }
-                Kind::Constant { .. } | Kind::Enumeration { .. } | Kind::TimeoutEvent { .. } => {
+                Kind::Constant { .. } | Kind::Enumeration { .. } => {
                     vec![]
                 }
                 Kind::Identifier { id } | Kind::PresentEvent { pattern: id, .. } => vec![*id],
@@ -155,7 +147,7 @@ pub mod term {
         /// Substitude an identifier with another one.
         pub fn substitution(&mut self, old_id: usize, new_id: usize) {
             match &mut self.kind {
-                Kind::Constant { .. } | Kind::Enumeration { .. } | Kind::TimeoutEvent { .. } => (),
+                Kind::Constant { .. } | Kind::Enumeration { .. } => (),
                 Kind::Identifier { ref mut id }
                 | Kind::PresentEvent {
                     pattern: ref mut id,

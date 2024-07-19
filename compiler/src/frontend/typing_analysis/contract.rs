@@ -70,18 +70,10 @@ impl TypeAnalysis for contract::Term {
             contract::term::Kind::PresentEvent { event_id, pattern } => {
                 let typing = symbol_table.get_type(*event_id).clone();
                 match &typing {
-                    Typ::SMEvent { ty, .. } | Typ::SMTimeout { ty, .. } => {
+                    Typ::SMEvent { ty, .. } => {
                         symbol_table.set_type(*pattern, *ty.clone());
                     }
                     _ => unreachable!(),
-                };
-                typing
-            }
-            contract::term::Kind::TimeoutEvent { event_id } => {
-                let typing = symbol_table.get_type(*event_id).clone();
-                match &typing {
-                    Typ::SMTimeout { .. } => (),
-                    _ => panic!("error, should be 'event timeout'"),
                 };
                 typing
             }

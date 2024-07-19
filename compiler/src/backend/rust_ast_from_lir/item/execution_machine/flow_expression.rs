@@ -24,11 +24,6 @@ pub fn rust_ast_from_lir(expression: Expression) -> Expr {
             let expression = rust_ast_from_lir(*expression);
             parse_quote! { Some(#expression) }
         }
-        Expression::Ok { expression } => {
-            let expression = rust_ast_from_lir(*expression);
-            parse_quote! { Ok(#expression) }
-        }
         Expression::None => parse_quote! { None },
-        Expression::Err => parse_quote! { Err(()) },
     }
 }

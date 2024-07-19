@@ -22,7 +22,6 @@ prelude! {
 /// - [Typ::Unit] is the unit type, if `u = ()` then `u: unit`
 /// - [Typ::Array] is the array type, if `a = [1, 2, 3]` then `a: [int; 3]`
 /// - [Typ::SMEvent] is the event type for StateMachine, noted `n: int?`
-/// - [Typ::SMTimeout] is the timeout type for StateMachine, noted `n: int!`
 /// - [Typ::Enumeration] is an user defined enumeration, if `c = Color.Yellow` then `c: Enumeration(Color)`
 /// - [Typ::Structure] is an user defined structure, if `p = Point { x: 1, y: 0}` then `p: Structure(Point)`
 /// - [Typ::NotDefinedYet] is not defined yet, if `x: Color` then `x: NotDefinedYet(Color)`
@@ -50,8 +49,6 @@ pub enum Typ {
         ty: Box<Typ>,
         question_token: Token![?],
     },
-    /// SMTimeout type, noted `n: int!`
-    SMTimeout { ty: Box<Typ>, not_token: Token![!] },
     /// User defined enumeration, if `c = Color.Yellow` then `c: Enumeration(Color)`
     Enumeration {
         /// Enumeration's name.
@@ -89,13 +86,6 @@ pub enum Typ {
         event_token: keyword::event,
         ty: Box<Typ>,
     },
-    /// Timeout type, in interface if `e' = timeout(e, 10)` then `e': event timeout(int)`
-    Timeout {
-        timeout_token: keyword::timeout,
-        ty: Box<Typ>,
-    },
-    /// Time type.
-    Time,
     /// Not defined yet, if `x: Color` then `x: NotDefinedYet(Color)`
     NotDefinedYet(syn::Ident),
     /// Polymorphic type, if `add = |x, y| x+y` then `add: 't : Typ -> t -> 't -> 't`
@@ -110,7 +100,6 @@ impl PartialEq for Typ {
             | (Self::Float(_), Self::Float(_))
             | (Self::Boolean(_), Self::Boolean(_))
             | (Self::Unit(_), Self::Unit(_))
-            | (Self::Time, Self::Time)
             | (Self::NotDefinedYet(_), Self::NotDefinedYet(_))
             | (Self::Polymorphism(_), Self::Polymorphism(_))
             | (Self::Any, Self::Any) => true,
@@ -127,7 +116,6 @@ impl PartialEq for Typ {
                 },
             ) => l_ty == r_ty && l_size == r_size,
             (Self::SMEvent { ty: l_ty, .. }, Self::SMEvent { ty: r_ty, .. }) => l_ty == r_ty,
-            (Self::SMTimeout { ty: l_ty, .. }, Self::SMTimeout { ty: r_ty, .. }) => l_ty == r_ty,
             (
                 Self::Enumeration {
                     name: l_name,
@@ -172,7 +160,6 @@ impl PartialEq for Typ {
             ) => l_elements.iter().zip(r_elements).all(|(a, b)| a == b),
             (Self::Signal { ty: l_ty, .. }, Self::Signal { ty: r_ty, .. }) => l_ty == r_ty,
             (Self::Event { ty: l_ty, .. }, Self::Event { ty: r_ty, .. }) => l_ty == r_ty,
-            (Self::Timeout { ty: l_ty, .. }, Self::Timeout { ty: r_ty, .. }) => l_ty == r_ty,
             _ => false,
         }
     }
@@ -186,7 +173,6 @@ impl Display for Typ {
             Typ::Unit(_) => write!(f, "unit"),
             Typ::Array { ty, size, .. } => write!(f, "[{}; {size}]", *ty),
             Typ::SMEvent { ty, .. } => write!(f, "SMEvent<{}>", *ty),
-            Typ::SMTimeout { ty, .. } => write!(f, "SMTimeout<{}>", *ty),
             Typ::Enumeration { name, .. } => write!(f, "{name}"),
             Typ::Structure { name, .. } => write!(f, "{name}"),
             Typ::Abstract { inputs, output, .. } => write!(
@@ -210,8 +196,6 @@ impl Display for Typ {
             ),
             Typ::Signal { ty, .. } => write!(f, "Signal<{}>", *ty),
             Typ::Event { ty, .. } => write!(f, "Event<{}>", *ty),
-            Typ::Timeout { ty, .. } => write!(f, "Timeout<{}>", *ty),
-            Typ::Time => write!(f, "Time"),
             Typ::NotDefinedYet(s) => write!(f, "{s}"),
             Typ::Polymorphism(v_t) => write!(f, "{:#?}", v_t),
             Typ::Any => write!(f, "any"),
@@ -256,15 +240,6 @@ impl Parse for Typ {
                     size,
                 }
             }
-        } else if input.peek(keyword::timeout) {
-            let timeout_token: keyword::timeout = input.parse()?;
-            let content;
-            let _ = syn::parenthesized!(content in input);
-            let ty = content.parse()?;
-            Typ::Timeout {
-                timeout_token,
-                ty: Box::new(ty),
-            }
         } else {
             let ident: syn::Ident = input.parse()?;
             Typ::NotDefinedYet(ident)
@@ -276,12 +251,6 @@ impl Parse for Typ {
                 ty = Typ::SMEvent {
                     ty: Box::new(ty),
                     question_token,
-                }
-            } else if input.peek(Token![!]) {
-                let not_token: Token![!] = input.parse()?;
-                ty = Typ::SMTimeout {
-                    ty: Box::new(ty),
-                    not_token,
                 }
             } else if input.peek(Token![->]) {
                 let arrow_token: Token![->] = input.parse()?;
@@ -365,10 +334,6 @@ mk_new! { impl Typ =>
         ty: Typ = ty.into(),
         question_token = Default::default(),
     }
-    SMTimeout: sm_timeout {
-        ty: Typ = ty.into(),
-        not_token = Default::default(),
-    }
     Signal: signal {
         signal_token = Default::default(),
         ty: Typ = ty.into(),
@@ -377,11 +342,6 @@ mk_new! { impl Typ =>
         event_token = Default::default(),
         ty: Typ = ty.into(),
     }
-    Timeout: timeout {
-        timeout_token = Default::default(),
-        ty: Typ = ty.into(),
-    }
-    Time: time()
     NotDefinedYet: undef(
         name: impl Into<String> = syn::Ident::new(&name.into(), Span::call_site())
     )
@@ -521,7 +481,7 @@ impl Typ {
 
     /// Conversion from FRP types to StateMachine types.
     ///
-    /// Converts `signal T` into `T`, `event T` into `T?` and `event timeout T` into `T!`.
+    /// Converts `signal T` into `T` and `event T` into `T?`.
     ///
     /// **NB:** this function panics on any other input.
     ///
@@ -529,15 +489,12 @@ impl Typ {
     /// # compiler_common::prelude! {}
     /// let s_type = Typ::signal(Typ::int());
     /// let e_type = Typ::event(Typ::bool());
-    /// let t_type = Typ::event(Typ::timeout(Typ::float()));
     ///
     /// assert_eq!(s_type, Typ::signal(Typ::int()));
     /// assert_eq!(e_type, Typ::event(Typ::bool()));
-    /// assert_eq!(t_type, Typ::event(Typ::timeout(Typ::float())));
     ///
     /// assert_eq!(s_type.convert(), Typ::int());
     /// assert_eq!(e_type.convert(), Typ::sm_event(Typ::bool()));
-    /// assert_eq!(t_type.convert(), Typ::sm_timeout(Typ::float()));
     /// ```
     ///
     /// # Example
@@ -565,23 +522,41 @@ impl Typ {
     pub fn convert(&self) -> Self {
         match self {
             Typ::Signal { ty, .. } => ty.as_ref().clone(),
-            Typ::Event { ty, event_token } => match ty.as_ref() {
-                Typ::Timeout { ty, timeout_token } => Typ::SMTimeout {
-                    ty: ty.clone(),
-                    not_token: Token![!](timeout_token.span),
-                },
-                _ => Typ::SMEvent {
-                    ty: ty.clone(),
-                    question_token: Token![?](event_token.span),
-                },
+            Typ::Event { ty, event_token } => Typ::SMEvent {
+                ty: ty.clone(),
+                question_token: Token![?](event_token.span),
             },
             _ => unreachable!(),
+        }
+    }
+    /// Conversion from StateMachine types to FRP types.
+    ///
+    /// Converts `T` into `signal T` and `T?` into `event T`.
+    ///
+    /// **NB:** this function panics on `signal T` and `event T`.
+    ///
+    /// ```rust
+    /// # compiler_common::prelude! {}
+    /// let s_type = Typ::signal(Typ::int());
+    /// let e_type = Typ::event(Typ::bool());
+    ///
+    /// assert_eq!(s_type, Typ::signal(Typ::int()));
+    /// assert_eq!(e_type, Typ::event(Typ::bool()));
+    ///
+    /// assert_eq!(s_type.convert(), Typ::int());
+    /// assert_eq!(e_type.convert(), Typ::sm_event(Typ::bool()));
+    /// ```
+    pub fn rev_convert(&self) -> Self {
+        match self {
+            Typ::Signal { .. } | Typ::Event { .. } => unreachable!(),
+            Typ::SMEvent { ty, .. } => Typ::event((**ty).clone()),
+            ty => Typ::signal(ty.clone()),
         }
     }
 
     pub fn is_event(&self) -> bool {
         match self {
-            Typ::Event { .. } | Typ::SMEvent { .. } | Typ::SMTimeout { .. } => true,
+            Typ::Event { .. } | Typ::SMEvent { .. } => true,
             _ => false,
         }
     }
@@ -602,15 +577,9 @@ impl Typ {
                 | Unit(_)
                 | Enumeration { .. }
                 | Structure { .. }
-                | Time
                 | Any => (),
                 // nodes we need to go down into
-                Array { ty, .. }
-                | SMEvent { ty, .. }
-                | SMTimeout { ty, .. }
-                | Signal { ty, .. }
-                | Event { ty, .. }
-                | Timeout { ty, .. } => {
+                Array { ty, .. } | SMEvent { ty, .. } | Signal { ty, .. } | Event { ty, .. } => {
                     curr = ty;
                     continue 'go_down;
                 }
