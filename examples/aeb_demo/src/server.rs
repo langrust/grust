@@ -33,18 +33,28 @@ mod aeb {
             return response;
         }
 
-        component braking_state(pedest: float!, speed: float) -> (state: Braking)
+        component braking_state(pedest: float?, timeout_pedestrian: unit?, speed: float) -> (state: Braking)
             // requires { 0. <= speed && speed < 55. } // urban limit
             // ensures { pedest? => state != NoBrake } // safety
         {
-            state = when d = pedest? then brakes(d, speed)
-                    timeout Braking::NoBrake otherwise previous_state;
+            when {
+                d = pedest? => {
+                    state = brakes(d, speed);
+                },
+                _ = timeout_pedestrian? => {
+                    state = Braking::NoBrake;
+                },
+                otherwise => {
+                    state = Braking::NoBrake fby state;
+                }
+            }
             let previous_state: Braking = Braking::NoBrake fby state;
         }
 
         service aeb @ [10, 3000] {
-            let event pedestrian: timeout(float) = timeout(merge(pedestrian_l, pedestrian_r), 2000);
-            brakes = braking_state(pedestrian, speed_km_h);
+            let event pedestrian: float = merge(pedestrian_l, pedestrian_r);
+            let event timeout_pedestrian: unit = timeout(pedestrian, 2000);
+            brakes = braking_state(pedestrian, timeout_pedestrian, speed_km_h);
         }
     }
 }

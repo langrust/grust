@@ -285,30 +285,30 @@ pub mod runtime {
     pub enum RuntimeTimer {
         PeriodSpeedLimiter,
         DelaySpeedLimiter,
-        TimeoutSpeedLimiter,
+        SpeedLimiter,
         PeriodSpeedLimiter1,
         DelayAnotherSpeedLimiter,
-        TimeoutAnotherSpeedLimiter,
+        AnotherSpeedLimiter,
     }
     impl timer_stream::Timing for RuntimeTimer {
         fn get_duration(&self) -> std::time::Duration {
             match self {
                 T::PeriodSpeedLimiter => std::time::Duration::from_millis(10u64),
                 T::DelaySpeedLimiter => std::time::Duration::from_millis(10u64),
-                T::TimeoutSpeedLimiter => std::time::Duration::from_millis(500u64),
+                T::SpeedLimiter => std::time::Duration::from_millis(500u64),
                 T::PeriodSpeedLimiter1 => std::time::Duration::from_millis(10u64),
                 T::DelayAnotherSpeedLimiter => std::time::Duration::from_millis(10u64),
-                T::TimeoutAnotherSpeedLimiter => std::time::Duration::from_millis(500u64),
+                T::AnotherSpeedLimiter => std::time::Duration::from_millis(500u64),
             }
         }
         fn do_reset(&self) -> bool {
             match self {
                 T::PeriodSpeedLimiter => false,
                 T::DelaySpeedLimiter => true,
-                T::TimeoutSpeedLimiter => true,
+                T::SpeedLimiter => true,
                 T::PeriodSpeedLimiter1 => false,
                 T::DelayAnotherSpeedLimiter => true,
-                T::TimeoutAnotherSpeedLimiter => true,
+                T::AnotherSpeedLimiter => true,
             }
         }
     }
@@ -406,28 +406,23 @@ pub mod runtime {
         ) -> Result<(), futures::channel::mpsc::SendError> {
             futures::pin_mut!(input);
             let mut runtime = self;
+            runtime.send_timer(T::SpeedLimiter, init_instant).await?;
             runtime
                 .send_timer(T::PeriodSpeedLimiter, init_instant)
                 .await?;
             runtime
-                .send_timer(T::TimeoutAnotherSpeedLimiter, init_instant)
+                .send_timer(T::AnotherSpeedLimiter, init_instant)
                 .await?;
             runtime
                 .send_timer(T::PeriodSpeedLimiter1, init_instant)
                 .await?;
-            runtime
-                .send_timer(T::TimeoutSpeedLimiter, init_instant)
-                .await?;
             while let Some(input) = input.next().await {
                 match input {
-                    I::VacuumBrake(vacuum_brake, instant) => {
-                        runtime
-                            .speed_limiter
-                            .handle_vacuum_brake(instant, vacuum_brake)
-                            .await?;
+                    I::Speed(speed, instant) => {
+                        runtime.speed_limiter.handle_speed(instant, speed).await?;
                         runtime
                             .another_speed_limiter
-                            .handle_vacuum_brake(instant, vacuum_brake)
+                            .handle_speed(instant, speed)
                             .await?;
                     }
                     I::Kickdown(kickdown, instant) => {
@@ -450,11 +445,13 @@ pub mod runtime {
                             .handle_set_speed(instant, set_speed)
                             .await?;
                     }
-                    I::Speed(speed, instant) => {
-                        runtime.speed_limiter.handle_speed(instant, speed).await?;
+                    I::Timer(T::SpeedLimiter, instant) => {
+                        runtime.speed_limiter.handle_speed_limiter(instant).await?;
+                    }
+                    I::Timer(T::PeriodSpeedLimiter, instant) => {
                         runtime
-                            .another_speed_limiter
-                            .handle_speed(instant, speed)
+                            .speed_limiter
+                            .handle_period_speed_limiter(instant)
                             .await?;
                     }
                     I::Vdc(vdc, instant) => {
@@ -464,22 +461,26 @@ pub mod runtime {
                             .handle_vdc(instant, vdc)
                             .await?;
                     }
-                    I::Timer(T::PeriodSpeedLimiter, instant) => {
+                    I::Timer(T::AnotherSpeedLimiter, instant) => {
+                        runtime
+                            .another_speed_limiter
+                            .handle_another_speed_limiter(instant)
+                            .await?;
+                    }
+                    I::Timer(T::DelaySpeedLimiter, instant) => {
                         runtime
                             .speed_limiter
-                            .handle_period_speed_limiter(instant)
+                            .handle_delay_speed_limiter(instant)
                             .await?;
                     }
-                    I::Timer(T::TimeoutAnotherSpeedLimiter, instant) => {
+                    I::VacuumBrake(vacuum_brake, instant) => {
                         runtime
-                            .another_speed_limiter
-                            .handle_timeout_another_speed_limiter(instant)
+                            .speed_limiter
+                            .handle_vacuum_brake(instant, vacuum_brake)
                             .await?;
-                    }
-                    I::Timer(T::PeriodSpeedLimiter1, instant) => {
                         runtime
                             .another_speed_limiter
-                            .handle_period_speed_limiter_1(instant)
+                            .handle_vacuum_brake(instant, vacuum_brake)
                             .await?;
                     }
                     I::Failure(failure, instant) => {
@@ -492,18 +493,6 @@ pub mod runtime {
                             .handle_failure(instant, failure)
                             .await?;
                     }
-                    I::Timer(T::TimeoutSpeedLimiter, instant) => {
-                        runtime
-                            .speed_limiter
-                            .handle_timeout_speed_limiter(instant)
-                            .await?;
-                    }
-                    I::Timer(T::DelaySpeedLimiter, instant) => {
-                        runtime
-                            .speed_limiter
-                            .handle_delay_speed_limiter(instant)
-                            .await?;
-                    }
                     I::Activation(activation, instant) => {
                         runtime
                             .speed_limiter
@@ -512,6 +501,12 @@ pub mod runtime {
                         runtime
                             .another_speed_limiter
                             .handle_activation(instant, activation)
+                            .await?;
+                    }
+                    I::Timer(T::PeriodSpeedLimiter1, instant) => {
+                        runtime
+                            .another_speed_limiter
+                            .handle_period_speed_limiter_1(instant)
                             .await?;
                     }
                     I::Timer(T::DelayAnotherSpeedLimiter, instant) => {
@@ -624,12 +619,11 @@ pub mod runtime {
                     timer,
                 }
             }
-            pub async fn handle_timeout_speed_limiter(
+            pub async fn handle_speed_limiter(
                 &mut self,
-                timeout_speed_limiter_instant: std::time::Instant,
+                speed_limiter_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.reset_time_constrains(timeout_speed_limiter_instant)
-                    .await?;
+                self.reset_time_constrains(speed_limiter_instant).await?;
                 let (v_set_aux, v_update) = self
                     .process_set_speed
                     .step(self.context.get_process_set_speed_inputs(None));
@@ -638,7 +632,7 @@ pub mod runtime {
                 let v_set_aux = self.context.v_set_aux;
                 let v_set = v_set_aux;
                 self.context.v_set = v_set;
-                self.send_output(O::VSet(v_set, timeout_speed_limiter_instant))
+                self.send_output(O::VSet(v_set, speed_limiter_instant))
                     .await?;
                 let (state, on_state, in_regulation_aux, state_update) = self
                     .speed_limiter
@@ -649,14 +643,11 @@ pub mod runtime {
                 self.context.state_update = state_update;
                 let in_regulation_aux = self.context.in_regulation_aux;
                 let in_regulation = in_regulation_aux;
-                self.send_output(O::InRegulation(
-                    in_regulation,
-                    timeout_speed_limiter_instant,
-                ))
-                .await?;
+                self.send_output(O::InRegulation(in_regulation, speed_limiter_instant))
+                    .await?;
                 let on_state = self.context.on_state;
                 let sl_state = on_state;
-                self.send_output(O::SlState(sl_state, timeout_speed_limiter_instant))
+                self.send_output(O::SlState(sl_state, speed_limiter_instant))
                     .await?;
                 Ok(())
             }
@@ -665,7 +656,7 @@ pub mod runtime {
                 &mut self,
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.timer.send((T::TimeoutSpeedLimiter, instant)).await?;
+                self.timer.send((T::SpeedLimiter, instant)).await?;
                 Ok(())
             }
             pub async fn handle_speed(
@@ -13339,11 +13330,11 @@ pub mod runtime {
                 }
                 Ok(())
             }
-            pub async fn handle_timeout_another_speed_limiter(
+            pub async fn handle_another_speed_limiter(
                 &mut self,
-                timeout_another_speed_limiter_instant: std::time::Instant,
+                another_speed_limiter_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.reset_time_constrains(timeout_another_speed_limiter_instant)
+                self.reset_time_constrains(another_speed_limiter_instant)
                     .await?;
                 let (state, on_state, in_regulation_aux, state_update) = self
                     .speed_limiter
@@ -13354,13 +13345,13 @@ pub mod runtime {
                 self.context.state_update = state_update;
                 let on_state = self.context.on_state;
                 let sl_state = on_state;
-                self.send_output(O::SlState(sl_state, timeout_another_speed_limiter_instant))
+                self.send_output(O::SlState(sl_state, another_speed_limiter_instant))
                     .await?;
                 let in_regulation_aux = self.context.in_regulation_aux;
                 let in_regulation = in_regulation_aux;
                 self.send_output(O::InRegulation(
                     in_regulation,
-                    timeout_another_speed_limiter_instant,
+                    another_speed_limiter_instant,
                 ))
                 .await?;
                 Ok(())
@@ -13370,9 +13361,7 @@ pub mod runtime {
                 &mut self,
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.timer
-                    .send((T::TimeoutAnotherSpeedLimiter, instant))
-                    .await?;
+                self.timer.send((T::AnotherSpeedLimiter, instant)).await?;
                 Ok(())
             }
             pub async fn handle_kickdown(
