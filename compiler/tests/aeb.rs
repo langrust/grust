@@ -38,7 +38,7 @@ fn should_compile_aeb() {
             return response;
         }
 
-        component braking_state(pedest: float!, speed: float) -> (state: Braking)
+        component braking_state(pedest: float?, timeout_pedest: unit?, speed: float) -> (state: Braking)
             requires { 0. <= speed && speed < 50. } // urban limit
             ensures { when p = pedest? => state != Braking::NoBrake } // safety
         {
@@ -46,7 +46,7 @@ fn should_compile_aeb() {
                 d = pedest? => {
                     state = brakes(d, speed);
                 },
-                timeout pedest => {
+                _ = timeout_pedest? => {
                     state = Braking::NoBrake;
                 },
                 otherwise => {
@@ -56,8 +56,9 @@ fn should_compile_aeb() {
         }
 
         service aeb {
-            let event pedestrian: timeout(float) = timeout(pedestrian_l, 500);
-            brakes = braking_state(pedestrian, speed_km_h);
+            let event pedestrian: float = merge(pedestrian_l, pedestrian_r);
+            let event timeout_pedest: unit = timeout(pedestrian, 500);
+            brakes = braking_state(pedestrian, timeout_pedest, speed_km_h);
         }
     };
     let tokens = compiler::into_token_stream(ast);

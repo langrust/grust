@@ -39,12 +39,21 @@ grust! {
         return response;
     }
 
-    component braking_state(pedest: int!, speed: int) -> (state: Braking)
+    component braking_state(pedest: int?, timeout_pedest: unit?, speed: int) -> (state: Braking)
         requires { 0 <= speed && speed < 50 } // urban limit
         ensures  { when p = pedest? => state != Braking::NoBrake } // safety
     {
-        state = when d = pedest? then brakes(d, speed)
-                timeout Braking::NoBrake otherwise previous_state;
+        when {
+            d = pedest? => {
+                state = brakes(d, speed);
+            },
+            _ = timeout_pedest? => {
+                state = Braking::NoBrake;
+            },
+            otherwise => {
+                state = Braking::NoBrake fby state;
+            }
+        }
         let previous_state: Braking = Braking::NoBrake fby state;
     }
 }
