@@ -131,46 +131,6 @@ impl Parse for EventImplication {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
-/// Event timeout implication term.
-pub struct TimeoutImplication {
-    /// The timeout.
-    pub timeout_token: keyword::timeout,
-    /// The event to match.
-    pub event: String,
-    pub arrow: Token![=>],
-    pub term: Box<Term>,
-}
-
-mk_new! { impl TimeoutImplication =>
-    new {
-        timeout_token: keyword::timeout,
-        event: impl Into<String> = event.into(),
-        arrow: Token![=>],
-        term: Term = term.into(),
-    }
-}
-
-impl TimeoutImplication {
-    fn peek(input: syn::parse::ParseStream) -> bool {
-        input.peek(keyword::timeout)
-    }
-}
-impl Parse for TimeoutImplication {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let timeout_token: keyword::timeout = input.parse()?;
-        let event: syn::Ident = input.parse()?;
-        let arrow: Token![=>] = input.parse()?;
-        let term: Term = Term::parse_prec4(input)?;
-        Ok(TimeoutImplication::new(
-            timeout_token,
-            event.to_string(),
-            arrow,
-            term,
-        ))
-    }
-}
-
 /// Enumeration term.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Enumeration {
@@ -292,7 +252,6 @@ pub enum Term {
     ForAll(ForAll),
     Implication(Implication),
     EventImplication(EventImplication),
-    TimeoutImplication(TimeoutImplication),
 }
 
 mk_new! { impl Term =>
@@ -305,7 +264,6 @@ mk_new! { impl Term =>
     ForAll: forall (val: ForAll = val)
     Implication: implication (val: Implication = val)
     EventImplication: event (val: EventImplication = val)
-    TimeoutImplication: timeout (val: TimeoutImplication = val)
 }
 
 impl ParsePrec for Term {
@@ -385,8 +343,6 @@ impl Parse for Term {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let mut term = if ForAll::peek(input) {
             Self::forall(input.parse()?)
-        } else if TimeoutImplication::peek(input) {
-            Self::timeout(input.parse()?)
         } else if EventImplication::peek(input) {
             Self::event(input.parse()?)
         } else {
@@ -472,26 +428,6 @@ mod parse_term {
             Term::binary(Binary::new(
                 Term::ident("d"),
                 BinaryOperator::Grt,
-                Term::binary(Binary::new(
-                    Term::ident("x"),
-                    BinaryOperator::Add,
-                    Term::ident("y"),
-                )),
-            )),
-        ));
-        assert_eq!(term, control)
-    }
-
-    #[test]
-    fn should_parse_timeout_implication() {
-        let term: Term = syn::parse_quote! { timeout p => s == x+y};
-        let control = Term::timeout(TimeoutImplication::new(
-            Default::default(),
-            "p",
-            Default::default(),
-            Term::binary(Binary::new(
-                Term::ident("s"),
-                BinaryOperator::Eq,
                 Term::binary(Binary::new(
                     Term::ident("x"),
                     BinaryOperator::Add,

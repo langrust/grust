@@ -51,18 +51,11 @@ impl LIRFromHIR for Pattern {
             pattern::Kind::PresentEvent { event_id, pattern } => {
                 match symbol_table.get_type(event_id) {
                     Typ::SMEvent { .. } => lir::Pattern::some(pattern.lir_from_hir(symbol_table)),
-                    Typ::SMTimeout { .. } => {
-                        lir::Pattern::some(lir::Pattern::ok(pattern.lir_from_hir(symbol_table)))
-                    }
                     _ => unreachable!(),
                 }
             }
-            pattern::Kind::TimeoutEvent { event_id } => match symbol_table.get_type(event_id) {
-                Typ::SMTimeout { .. } => lir::Pattern::some(lir::Pattern::err()),
-                _ => unreachable!(),
-            },
             pattern::Kind::NoEvent { event_id } => match symbol_table.get_type(event_id) {
-                Typ::SMEvent { .. } | Typ::SMTimeout { .. } => lir::Pattern::none(),
+                Typ::SMEvent { .. } => lir::Pattern::none(),
                 _ => unreachable!(),
             },
         }

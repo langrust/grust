@@ -83,18 +83,9 @@ mod term {
                         Typ::SMEvent { .. } => lir::contract::Term::some(
                             lir::contract::Term::ident(symbol_table.get_name(pattern)),
                         ),
-                        Typ::SMTimeout { .. } => {
-                            lir::contract::Term::some(lir::contract::Term::ok(
-                                lir::contract::Term::ident(symbol_table.get_name(pattern)),
-                            ))
-                        }
                         _ => unreachable!(),
                     }
                 }
-                term::Kind::TimeoutEvent { event_id } => match symbol_table.get_type(event_id) {
-                    Typ::SMTimeout { .. } => lir::contract::Term::some(lir::contract::Term::err()),
-                    _ => unreachable!(),
-                },
             }
         }
     }

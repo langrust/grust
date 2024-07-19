@@ -155,7 +155,6 @@ mod equation {
                 }
                 Equation::MatchWhen(MatchWhen { arms, .. }) => match arms.first().unwrap() {
                     ArmWhen::EventArmWhen(EventArmWhen { equations, .. })
-                    | ArmWhen::TimeoutArmWhen(TimeoutArmWhen { equations, .. })
                     | ArmWhen::Default(DefaultArmWhen { equations, .. }) => {
                         let mut elements = equations
                             .iter()
@@ -201,7 +200,6 @@ mod equation {
                 }
                 Equation::MatchWhen(MatchWhen { arms, .. }) => arms.first().map(|arm| match arm {
                     ArmWhen::EventArmWhen(EventArmWhen { equations, .. })
-                    | ArmWhen::TimeoutArmWhen(TimeoutArmWhen { equations, .. })
                     | ArmWhen::Default(DefaultArmWhen { equations, .. }) => {
                         let local_declarations = {
                             let mut vec = Vec::with_capacity(25);
@@ -248,7 +246,6 @@ mod equation {
                 Equation::MatchWhen(MatchWhen { arms, .. }) => {
                     arms.first().map_or(Ok(vec![]), |arm| match arm {
                         ArmWhen::EventArmWhen(EventArmWhen { equations, .. })
-                        | ArmWhen::TimeoutArmWhen(TimeoutArmWhen { equations, .. })
                         | ArmWhen::Default(DefaultArmWhen { equations, .. }) => Ok(equations
                             .iter()
                             .map(|equation| equation.store_signals(symbol_table, errors))
@@ -404,10 +401,6 @@ mod typ {
                     ty: Box::new(ty.hir_from_ast(location, symbol_table, errors)?),
                     question_token
                 }),
-                Typ::SMTimeout { ty, not_token } => Ok(Typ::SMTimeout {
-                    ty: Box::new(ty.hir_from_ast(location, symbol_table, errors)?),
-                    not_token
-                }),
                 Typ::Signal { signal_token, ty } => Ok(Typ::Signal {
                     signal_token,
                     ty: Box::new(ty.hir_from_ast(location, symbol_table, errors)?),
@@ -416,11 +409,7 @@ mod typ {
                     event_token,
                     ty: Box::new(ty.hir_from_ast(location, symbol_table, errors)?),
                 }),
-                Typ::Timeout { timeout_token, ty } => Ok(Typ::Timeout {
-                    timeout_token,
-                    ty: Box::new(ty.hir_from_ast(location, symbol_table, errors)?),
-                }),
-                Typ::Integer(_) | Typ::Float(_) | Typ::Boolean(_) | Typ::Unit(_) | Typ::Time => Ok(self),
+                Typ::Integer(_) | Typ::Float(_) | Typ::Boolean(_) | Typ::Unit(_) => Ok(self),
                 Typ::Enumeration { .. }    // no enumeration at this time: they are `NotDefinedYet`
                 | Typ::Structure { .. }    // no structure at this time: they are `NotDefinedYet`
                 | Typ::Any                 // users can not write `Any` type

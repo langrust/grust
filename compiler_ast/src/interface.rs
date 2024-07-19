@@ -659,8 +659,9 @@ mod parse_service {
     fn should_parse_service() {
         let _: Service = syn::parse_quote! {
             service aeb {
-                let event pedestrian: timeout(float) = timeout(merge(pedestrian_l, pedestrian_r), 2000);
-                brakes = braking_state(pedestrian, speed_km_h);
+                let event pedestrian: float = merge(pedestrian_l, pedestrian_r);
+                let event timeout_pedestrian: unit = timeout(pedestrian, 2000);
+                brakes = braking_state(pedestrian, timeout_pedestrian, speed_km_h);
             }
         };
     }

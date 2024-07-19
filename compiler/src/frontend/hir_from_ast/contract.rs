@@ -41,11 +41,9 @@ impl HIRFromAST for Contract {
 
 mod term {
     prelude! {
-        ast::contract::{Binary, Implication, Term, Unary},
+        ast::contract::{Binary, Implication, Term, Unary, Enumeration, EventImplication, ForAll},
         operator::BinaryOperator,
     }
-
-    use ast::contract::{Enumeration, EventImplication, ForAll, TimeoutImplication};
 
     use super::HIRFromAST;
 
@@ -195,38 +193,6 @@ mod term {
                                 location.clone(),
                             ),
                         ),
-                        None,
-                        location,
-                    );
-                    Ok(term)
-                }
-                Term::TimeoutImplication(TimeoutImplication { event, term, .. }) => {
-                    // get the event identifier
-                    let event_id: usize =
-                        symbol_table.get_identifier_id(&event, false, location.clone(), errors)?;
-                    // transform term into HIR
-                    let right = term.hir_from_ast(symbol_table, errors)?;
-                    // construct right side of implication: `Event::ETimeout == event`
-                    let left = hir::contract::Term::new(
-                        hir::contract::term::Kind::binary(
-                            BinaryOperator::Eq,
-                            hir::contract::Term::new(
-                                hir::contract::term::Kind::timeout(event_id),
-                                None,
-                                location.clone(),
-                            ),
-                            hir::contract::Term::new(
-                                hir::contract::term::Kind::ident(event_id),
-                                None,
-                                location.clone(),
-                            ),
-                        ),
-                        None,
-                        location.clone(),
-                    );
-                    // construct result term: `timeout e? => t` becomes `Event::ETimeout == event => t`
-                    let term = hir::contract::Term::new(
-                        hir::contract::term::Kind::implication(left, right),
                         None,
                         location,
                     );

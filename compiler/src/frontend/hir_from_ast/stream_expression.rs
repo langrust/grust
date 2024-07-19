@@ -12,11 +12,7 @@ impl HIRFromAST for stream::When {
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> TRes<Self::HIR> {
-        let stream::When {
-            presence,
-            timeout,
-            absence,
-        } = self;
+        let stream::When { presence, absence } = self;
         let location = Location::default();
         let mut arms = vec![];
 
@@ -47,16 +43,6 @@ impl HIRFromAST for stream::When {
             };
             let expression = presence.expression.hir_from_ast(symbol_table, errors)?;
             symbol_table.global();
-            arms.push((pattern, None, vec![], expression))
-        }
-        // create timeout arm if present
-        if let Some(timeout) = timeout {
-            let pattern = hir::Pattern {
-                kind: hir::pattern::Kind::TimeoutEvent { event_id },
-                typing: None,
-                location: location.clone(),
-            };
-            let expression = timeout.expression.hir_from_ast(symbol_table, errors)?;
             arms.push((pattern, None, vec![], expression))
         }
         // create absence arm

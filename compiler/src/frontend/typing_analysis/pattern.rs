@@ -124,22 +124,8 @@ impl Pattern {
                 expected_type.eq_check(&typing, self.location.clone(), errors)?;
 
                 match &typing {
-                    Typ::SMEvent { ty, .. } | Typ::SMTimeout { ty, .. } => {
-                        pattern.typing(&ty, symbol_table, errors)?
-                    }
+                    Typ::SMEvent { ty, .. } => pattern.typing(&ty, symbol_table, errors)?,
                     _ => unreachable!(),
-                };
-
-                self.typing = Some(typing);
-                Ok(())
-            }
-            Kind::TimeoutEvent { event_id } => {
-                let typing = symbol_table.get_type(event_id).clone();
-                expected_type.eq_check(&typing, self.location.clone(), errors)?;
-
-                match &typing {
-                    Typ::SMTimeout { .. } => (),
-                    _ => panic!("error, should be 'event timeout'"),
                 };
 
                 self.typing = Some(typing);
@@ -166,7 +152,6 @@ impl Pattern {
             | Kind::Some { .. }
             | Kind::NoEvent { .. }
             | Kind::PresentEvent { .. }
-            | Kind::TimeoutEvent { .. }
             | Kind::None
             | Kind::Default => {
                 let error = Error::NotStatementPattern {

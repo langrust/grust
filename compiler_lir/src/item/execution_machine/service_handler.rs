@@ -113,15 +113,8 @@ pub enum Expression {
         /// The value expression inside.
         expression: Box<Expression>,
     },
-    /// Ok expression: `Ok(v)`.
-    Ok {
-        /// The value expression inside.
-        expression: Box<Expression>,
-    },
     /// None expression: `None`.
     None,
-    /// Err expression: `Err`.
-    Err,
 }
 mk_new! { impl Expression =>
     Literal: lit {
@@ -139,9 +132,5 @@ mk_new! { impl Expression =>
     Some: some {
         expression: Expression = expression.into()
     }
-    Ok: ok {
-        expression: Expression = expression.into()
-    }
     None: none {}
-    Err: err {}
 }

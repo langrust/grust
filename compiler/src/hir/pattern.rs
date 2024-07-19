@@ -43,11 +43,6 @@ pub enum Kind {
         /// The pattern matching the event.
         pattern: Box<Pattern>,
     },
-    /// TimeoutEvent pattern.
-    TimeoutEvent {
-        /// The event id.
-        event_id: usize,
-    },
     /// NoEvent pattern.
     NoEvent {
         /// The event id.
@@ -88,7 +83,6 @@ mk_new! { impl Kind =>
         event_id: usize,
         pattern: Pattern = pattern.into(),
     }
-    TimeoutEvent: timeout { event_id: usize }
     NoEvent: absent { event_id: usize }
     Tuple: tuple { elements: Vec<Pattern> }
     Some: some { pattern: Pattern = pattern.into() }
@@ -134,7 +128,6 @@ impl Pattern {
             Kind::Constant { .. }
             | Kind::Enumeration { .. }
             | Kind::NoEvent { .. }
-            | Kind::TimeoutEvent { .. }
             | Kind::None
             | Kind::Default => vec![],
             Kind::Structure { fields, .. } => fields
@@ -163,7 +156,6 @@ impl Pattern {
             Kind::Constant { .. }
             | Kind::Enumeration { .. }
             | Kind::NoEvent { .. }
-            | Kind::TimeoutEvent { .. }
             | Kind::None
             | Kind::Default => vec![],
             Kind::Structure { fields, .. } => fields

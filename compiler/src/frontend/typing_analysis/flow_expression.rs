@@ -65,20 +65,19 @@ impl TypeAnalysis for flow::Expr {
                 flow_expression.typing(symbol_table, errors)?;
                 // get expression type
                 match flow_expression.get_type().unwrap() {
-                    Typ::Event { ty: typing, .. } => {
-                        // set typing
-                        self.typing = Some(Typ::event(Typ::timeout((**typing).clone())));
-                        Ok(())
-                    }
+                    Typ::Event { .. } => (),
                     given_type => {
                         let error = Error::ExpectEvent {
                             given_type: given_type.clone(),
                             location: location,
                         };
                         errors.push(error);
-                        Err(TerminationError)
+                        return Err(TerminationError);
                     }
                 }
+                // set typing
+                self.typing = Some(Typ::event(Typ::unit()));
+                Ok(())
             }
             flow::Kind::Throttle {
                 flow_expression,
@@ -172,7 +171,6 @@ impl TypeAnalysis for flow::Expr {
                     .iter_mut()
                     .map(|(id, input)| {
                         input.typing(symbol_table, errors)?;
-
                         let input_type = input.get_type().unwrap().convert();
                         let expected_type = symbol_table.get_type(*id);
                         input_type.eq_check(expected_type, self.location.clone(), errors)
@@ -183,10 +181,9 @@ impl TypeAnalysis for flow::Expr {
                 let mut outputs_types = symbol_table
                     .get_node_outputs(*component_id)
                     .iter()
-                    .map(|(_, output_id)| match symbol_table.get_type(*output_id) {
-                        Typ::SMTimeout { ty, .. } => Typ::event(Typ::timeout((**ty).clone())),
-                        Typ::SMEvent { ty, .. } => Typ::event((**ty).clone()),
-                        ty => Typ::signal(ty.clone()),
+                    .map(|(_, output_id)| {
+                        let output_type = symbol_table.get_type(*output_id);
+                        output_type.rev_convert()
                     })
                     .collect::<Vec<_>>();
 
