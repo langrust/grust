@@ -1,6 +1,6 @@
 prelude! {
     syn::{
-        LitInt, LitFloat, LitBool, token::Paren, parse::Parse,
+        LitInt, LitFloat, LitBool, token::Paren, parse::Parse, spanned::Spanned
     },
 }
 
@@ -39,7 +39,9 @@ impl Constant {
             Constant::Integer(lit) => Typ::Integer(keyword::int { span: lit.span() }),
             Constant::Float(lit) => Typ::Float(keyword::float { span: lit.span() }),
             Constant::Boolean(lit) => Typ::Boolean(keyword::bool { span: lit.span() }),
-            Constant::Unit(paren) => Typ::Unit(paren.clone()),
+            Constant::Unit(paren) => Typ::Unit(keyword::unit {
+                span: paren.span.span(),
+            }),
         }
     }
 }
