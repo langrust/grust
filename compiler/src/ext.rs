@@ -708,3 +708,112 @@ mod stream_expr {
         }
     }
 }
+
+pub trait EventPatternExt {
+    fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()>;
+    fn place_events(
+        &self,
+        events_indices: &mut HashMap<usize, usize>,
+        idx: &mut usize,
+        symbol_table: &SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> TRes<()>;
+    fn create_tuple_pattern(
+        self,
+        tuple: &mut Vec<hir::Pattern>,
+        events_indices: &HashMap<usize, usize>,
+        symbol_table: &mut SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> TRes<()>;
+}
+
+mod event_pattern {
+    prelude! {
+        ast::equation::EventPattern
+    }
+
+    impl super::EventPatternExt for EventPattern {
+        fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+            match self {
+                EventPattern::Tuple(patterns) => patterns
+                    .patterns
+                    .iter()
+                    .map(|pattern| pattern.store(symbol_table, errors))
+                    .collect::<TRes<()>>(),
+                EventPattern::Let(pattern) => pattern
+                    .pattern
+                    .store(true, symbol_table, errors)
+                    .map(|_| ()),
+            }
+        }
+
+        /// Accumulates in `events_indices` the indices of events in the matched tuple.
+        fn place_events(
+            &self,
+            events_indices: &mut HashMap<usize, usize>,
+            idx: &mut usize,
+            symbol_table: &SymbolTable,
+            errors: &mut Vec<Error>,
+        ) -> TRes<()> {
+            match self {
+                EventPattern::Tuple(tuple) => tuple
+                    .patterns
+                    .iter()
+                    .map(|pattern| pattern.place_events(events_indices, idx, symbol_table, errors))
+                    .collect::<TRes<()>>(),
+                EventPattern::Let(pattern) => {
+                    let event_id = symbol_table.get_identifier_id(
+                        &pattern.event.to_string(),
+                        false,
+                        Location::default(),
+                        errors,
+                    )?;
+                    let _ = events_indices.entry(event_id).or_insert_with(|| {
+                        let v = *idx;
+                        *idx += 1;
+                        v
+                    });
+                    Ok(())
+                }
+            }
+        }
+
+        fn create_tuple_pattern(
+            self,
+            tuple: &mut Vec<hir::Pattern>,
+            events_indices: &HashMap<usize, usize>,
+            symbol_table: &mut SymbolTable,
+            errors: &mut Vec<Error>,
+        ) -> TRes<()> {
+            match self {
+                EventPattern::Tuple(patterns) => patterns
+                    .patterns
+                    .into_iter()
+                    .map(|pattern| {
+                        pattern.create_tuple_pattern(tuple, events_indices, symbol_table, errors)
+                    })
+                    .collect::<TRes<()>>(),
+                EventPattern::Let(pattern) => {
+                    // get the event identifier
+                    let event_id = symbol_table.get_identifier_id(
+                        &pattern.event.to_string(),
+                        false,
+                        Location::default(),
+                        errors,
+                    )?;
+
+                    // transform inner_pattern into HIR
+                    let inner_pattern = pattern.pattern.hir_from_ast(symbol_table, errors)?;
+                    let event_pattern =
+                        hir::pattern::init(hir::pattern::Kind::present(event_id, inner_pattern));
+
+                    // put event in tuple
+                    let idx = events_indices[&event_id];
+                    *tuple.get_mut(idx).unwrap() = event_pattern;
+
+                    Ok(())
+                }
+            }
+        }
+    }
+}

@@ -2,14 +2,12 @@ prelude! {
     ast::{
         equation::{
             Arm, ArmWhen, DefaultArmWhen, Equation, EventArmWhen,
-            Instantiation, Match, MatchWhen,
+            Instantiation, Match, MatchWhen, EventPattern
         },
         stmt::LetDecl,
     },
     hir::{ pattern, stream },
 }
-
-use std::collections::HashMap;
 
 use super::HIRFromAST;
 
@@ -148,24 +146,12 @@ impl HIRFromAST for Equation {
             }
             Equation::MatchWhen(MatchWhen { arms, .. }) => {
                 // create map from event_id to index in tuple pattern
-                let mut map = HashMap::with_capacity(arms.len());
+                let mut events_indices = HashMap::with_capacity(arms.len());
                 let mut idx = 0;
                 arms.iter()
                     .map(|arm| match arm {
-                        ArmWhen::EventArmWhen(EventArmWhen { event, .. }) => {
-                            let event_id = symbol_table.get_identifier_id(
-                                &event.to_string(),
-                                false,
-                                location.clone(),
-                                errors,
-                            )?;
-                            let _ = map.entry(event_id).or_insert_with(|| {
-                                let v = idx;
-                                idx += 1;
-                                v
-                            });
-                            Ok(())
-                        }
+                        ArmWhen::EventArmWhen(EventArmWhen { pattern, .. }) => pattern
+                            .place_events(&mut events_indices, &mut idx, symbol_table, errors),
                         ArmWhen::Default(_) => Ok(()),
                     })
                     .collect::<TRes<_>>()?;
@@ -181,7 +167,6 @@ impl HIRFromAST for Equation {
                     .map(|arm| match arm {
                         ArmWhen::EventArmWhen(EventArmWhen {
                             pattern,
-                            event,
                             guard,
                             equations,
                             ..
@@ -189,38 +174,18 @@ impl HIRFromAST for Equation {
                             symbol_table.local();
 
                             // set local context: pattern signals + equations' signals
-                            pattern.store(true, symbol_table, errors)?;
-                            let mut defined_signals = vec![];
-                            equations
-                                .iter()
-                                .map(|equation| {
-                                    // store equations' signals in the local context
-                                    let mut equation_signals =
-                                        equation.store_signals(symbol_table, errors)?;
-                                    defined_signals.append(&mut equation_signals);
-                                    Ok(())
-                                })
-                                .collect::<TRes<()>>()?;
-
-                            // get the event identifier
-                            let event_id = symbol_table.get_identifier_id(
-                                &event.to_string(),
-                                false,
-                                location.clone(),
-                                errors,
-                            )?;
-
-                            // transform inner_pattern into HIR
-                            let inner_pattern = pattern.hir_from_ast(symbol_table, errors)?;
-                            let event_pattern =
-                                pattern::init(pattern::Kind::present(event_id, inner_pattern));
-
+                            let defined_signals =
+                                local_context(&pattern, &equations, symbol_table, errors)?;
                             // create tuple pattern
                             let mut elements = tuple.clone();
-                            let idx = map[&event_id];
-                            *elements.get_mut(idx).unwrap() = event_pattern;
+                            pattern.create_tuple_pattern(
+                                &mut elements,
+                                &events_indices,
+                                symbol_table,
+                                errors,
+                            )?;
                             let pattern = pattern::init(pattern::Kind::tuple(elements));
-
+                            // transform guard and equations
                             let guard = guard
                                 .map(|(_, expression)| {
                                     expression.hir_from_ast(symbol_table, errors)
@@ -329,7 +294,7 @@ impl HIRFromAST for Equation {
                     std::iter::repeat(stream::expr(stream::Kind::expr(hir::expr::Kind::ident(0))))
                         .take(idx)
                         .collect::<Vec<_>>();
-                map.iter().for_each(|(event_id, idx)| {
+                events_indices.iter().for_each(|(event_id, idx)| {
                     let event_expr =
                         stream::expr(stream::Kind::expr(hir::expr::Kind::ident(*event_id)));
                     *elements.get_mut(*idx).unwrap() = event_expr;
@@ -348,4 +313,26 @@ impl HIRFromAST for Equation {
             }
         }
     }
+}
+
+fn local_context(
+    pattern: &EventPattern,
+    equations: &Vec<Equation>,
+    symbol_table: &mut SymbolTable,
+    errors: &mut Vec<Error>,
+) -> TRes<Vec<(String, usize)>> {
+    // set local context: pattern signals + equations' signals
+    pattern.store(symbol_table, errors)?;
+    let mut defined_signals = vec![];
+    equations
+        .iter()
+        .map(|equation| {
+            // store equations' signals in the local context
+            let mut equation_signals = equation.store_signals(symbol_table, errors)?;
+            defined_signals.append(&mut equation_signals);
+            Ok(())
+        })
+        .collect::<TRes<()>>()?;
+    // return locally defined signals
+    Ok(defined_signals)
 }
