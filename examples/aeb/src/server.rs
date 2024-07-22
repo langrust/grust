@@ -38,10 +38,10 @@ mod aeb {
             // ensures { pedest? => state != NoBrake } // safety
         {
             when {
-                d = pedest? => {
+                let d = pedest? => {
                     state = brakes(d, speed);
                 },
-                _ = timeout_pedest? => {
+                let _ = timeout_pedest? => {
                     state = Braking::NoBrake;
                 },
                 otherwise => {
