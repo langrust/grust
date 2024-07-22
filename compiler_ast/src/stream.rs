@@ -1,8 +1,8 @@
-use syn::Token;
-
 prelude! {
     syn::parse::Parse,
-    expr::*, operator::BinaryOperator,
+    equation::EventPattern,
+    expr::*,
+    operator::BinaryOperator,
 }
 
 /// Initialized buffer stream expression.
@@ -36,9 +36,7 @@ impl Fby {
 #[derive(Debug, PartialEq, Clone)]
 pub struct EventWhen {
     /// The pattern receiving the value of the event.
-    pub pattern: Pattern,
-    /// The event to match.
-    pub event: String,
+    pub pattern: EventPattern,
     /// The optional guard.
     pub then_token: keyword::then,
     /// The expression to do.
@@ -47,8 +45,7 @@ pub struct EventWhen {
 
 mk_new! { impl EventWhen =>
     new {
-        pattern: Pattern,
-        event: impl Into<String> = event.into(),
+        pattern: EventPattern,
         then_token: keyword::then,
         expression: Expr = expression.into(),
     }
@@ -56,22 +53,14 @@ mk_new! { impl EventWhen =>
 
 impl Parse for EventWhen {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let pattern: Pattern = input.parse()?;
-        let _: Token![=] = input.parse()?;
-        let event: syn::Ident = input.parse()?;
-        let _: Token![?] = input.parse()?;
+        let pattern: EventPattern = input.parse()?;
         let then_token: keyword::then = input.parse()?;
         let expression: Expr = input.parse()?;
-        Ok(EventWhen::new(
-            pattern,
-            event.to_string(),
-            then_token,
-            expression,
-        ))
+        Ok(EventWhen::new(pattern, then_token, expression))
     }
 }
 
-/// Matching absence of events.
+/// Matching default branch.
 #[derive(Debug, PartialEq, Clone)]
 pub struct DefaultWhen {
     pub otherwise_token: keyword::otherwise,
@@ -100,13 +89,13 @@ pub struct When {
     /// Matching event presence.
     pub presence: EventWhen,
     /// Matching event presence.
-    pub absence: DefaultWhen,
+    pub default: Option<DefaultWhen>,
 }
 
 mk_new! { impl When =>
     new {
         presence: EventWhen,
-        absence: DefaultWhen,
+        default: Option<DefaultWhen>,
     }
 }
 
@@ -119,8 +108,12 @@ impl Parse for When {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let _: keyword::when = input.parse()?;
         let presence = input.parse()?;
-        let absence = input.parse()?;
-        Ok(When::new(presence, absence))
+        let default = if input.peek(keyword::otherwise) {
+            Some(input.parse()?)
+        } else {
+            None
+        };
+        Ok(When::new(presence, default))
     }
 }
 
@@ -315,15 +308,15 @@ impl Parse for Expr {
 
 #[cfg(test)]
 mod parse_stream_expression {
-    use stream::{DefaultWhen, EventWhen, When};
-
     prelude! {
         expr::{
             Application, Arm, Array, Binop, Enumeration, FieldAccess, Fold, Map, Match, Sort,
             Structure, Tuple, TupleElementAccess, TypedAbstraction, Zip,
         },
-        stream::{Fby, Expr},
+        equation::{EventPattern, LetEventPattern},
+        stream::{Fby, Expr, DefaultWhen, EventWhen, When},
         operator::BinaryOperator,
+        quote::format_ident,
     }
 
     #[test]
@@ -536,15 +529,20 @@ mod parse_stream_expression {
 
     #[test]
     fn should_parse_when() {
-        let expression: Expr = syn::parse_quote! {when d = p? then x otherwise z};
+        let expression: Expr = syn::parse_quote! {when let d = p? then x otherwise z};
         let control = Expr::when_match(When::new(
             EventWhen::new(
-                Pattern::ident("d"),
-                "p",
+                EventPattern::Let(LetEventPattern::new(
+                    Default::default(),
+                    Pattern::ident("d"),
+                    Default::default(),
+                    format_ident!("p"),
+                    Default::default(),
+                )),
                 Default::default(),
                 Expr::ident("x"),
             ),
-            DefaultWhen::new(Default::default(), Expr::ident("z")),
+            Some(DefaultWhen::new(Default::default(), Expr::ident("z"))),
         ));
         assert_eq!(expression, control)
     }
