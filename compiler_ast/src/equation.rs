@@ -5,6 +5,8 @@ prelude! {
     Pattern, stmt::LetDecl,
 }
 
+use syn::parenthesized;
+
 use super::keyword;
 
 pub struct Instantiation {
@@ -114,14 +116,97 @@ impl Parse for Match {
     }
 }
 
-/// EventArmWhen for matching event.
-pub struct EventArmWhen {
+#[derive(PartialEq, Clone)]
+pub struct TupleEventPattern {
+    pub paren_token: token::Paren,
+    /// The activated patterns.
+    pub patterns: Punctuated<EventPattern, Token![,]>,
+}
+mk_new! { impl TupleEventPattern =>
+    new {
+        paren_token: token::Paren,
+        patterns: Punctuated<EventPattern, Token![,]>,
+    }
+}
+impl Parse for TupleEventPattern {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let content;
+        let paren_token = parenthesized!(content in input);
+        let patterns = Punctuated::parse_terminated(&content)?;
+        Ok(TupleEventPattern::new(paren_token, patterns))
+    }
+}
+
+#[derive(PartialEq, Clone)]
+pub struct LetEventPattern {
+    pub let_token: Token![let],
     /// The pattern receiving the value of the event.
     pub pattern: Pattern,
     pub eq_token: Token![=],
     /// The event to match.
     pub event: syn::Ident,
     pub question_token: Token![?],
+}
+mk_new! { impl LetEventPattern =>
+    new {
+        let_token: Token![let],
+        pattern: Pattern,
+        eq_token: Token![=],
+        event: syn::Ident,
+        question_token: Token![?],
+    }
+}
+impl Parse for LetEventPattern {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let let_token = input.parse()?;
+        let pattern = input.parse()?;
+        let eq_token = input.parse()?;
+        let event = input.parse()?;
+        let question_token = input.parse()?;
+        Ok(LetEventPattern::new(
+            let_token,
+            pattern,
+            eq_token,
+            event,
+            question_token,
+        ))
+    }
+}
+
+#[derive(PartialEq, Clone)]
+pub enum EventPattern {
+    Tuple(TupleEventPattern),
+    Let(LetEventPattern),
+}
+impl Parse for EventPattern {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        if input.peek(token::Paren) {
+            Ok(EventPattern::Tuple(input.parse()?))
+        } else if input.peek(Token![let]) {
+            Ok(EventPattern::Let(input.parse()?))
+        } else {
+            Err(input.error("event expected"))
+        }
+    }
+}
+impl std::fmt::Debug for EventPattern {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Tuple(arg0) => f
+                .debug_tuple("Tuple")
+                .field(&arg0.patterns.iter().collect::<Vec<_>>())
+                .finish(),
+            Self::Let(arg0) => f
+                .debug_tuple("Let")
+                .field(&(&arg0.pattern, &arg0.event))
+                .finish(),
+        }
+    }
+}
+
+/// EventArmWhen for matching event.
+pub struct EventArmWhen {
+    pub pattern: EventPattern,
     /// The optional guard.
     pub guard: Option<(Token![if], stream::Expr)>,
     pub arrow_token: Token![=>],
@@ -129,13 +214,9 @@ pub struct EventArmWhen {
     /// The equations.
     pub equations: Vec<Equation>,
 }
-
 mk_new! { impl EventArmWhen =>
     new {
-        pattern: Pattern,
-        eq_token: Token![=],
-        event: syn::Ident,
-        question_token: Token![?],
+        pattern: EventPattern,
         guard: Option<(Token![if], stream::Expr)>,
         arrow_token: Token![=>],
         brace_token: token::Brace,
@@ -146,9 +227,6 @@ mk_new! { impl EventArmWhen =>
 impl Parse for EventArmWhen {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let pat = input.parse()?;
-        let eq = input.parse()?;
-        let event = input.parse()?;
-        let question_token = input.parse()?;
         let guard = {
             if input.fork().peek(Token![if]) {
                 let token = input.parse()?;
@@ -168,16 +246,7 @@ impl Parse for EventArmWhen {
             }
             equations
         };
-        Ok(EventArmWhen::new(
-            pat,
-            eq,
-            event,
-            question_token,
-            guard,
-            arrow,
-            brace,
-            equations,
-        ))
+        Ok(EventArmWhen::new(pat, guard, arrow, brace, equations))
     }
 }
 
@@ -355,11 +424,7 @@ mod parse_equation {
                             .iter()
                             .map(|arm| match arm {
                                 super::ArmWhen::EventArmWhen(arm) => (
-                                    Some((
-                                        &arm.pattern,
-                                        &arm.event,
-                                        arm.guard.as_ref().map(|(_, expr)| expr),
-                                    )),
+                                    Some((&arm.pattern, arm.guard.as_ref().map(|(_, expr)| expr))),
                                     &arm.equations,
                                 ),
                                 super::ArmWhen::Default(arm) => (None, &arm.equations),
