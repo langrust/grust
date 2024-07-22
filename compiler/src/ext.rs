@@ -803,6 +803,7 @@ mod event_pattern {
                     )?;
 
                     // transform inner_pattern into HIR
+                    pattern.pattern.store(true, symbol_table, errors)?;
                     let inner_pattern = pattern.pattern.hir_from_ast(symbol_table, errors)?;
                     let event_pattern =
                         hir::pattern::init(hir::pattern::Kind::present(event_id, inner_pattern));
