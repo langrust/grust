@@ -10,10 +10,10 @@ impl MultipleEventsState {
     pub fn init() -> MultipleEventsState {
         MultipleEventsState { mem: 0i64 }
     }
-    pub fn step(&mut self, input: MultipleEventsInput) -> i64 {
+    pub fn step(&mut self, input: MultipleEventsInput) -> (i64, f64) {
         let z = match (input.a, input.b) {
-            (Some(a), Some(b)) => {
-                let z = if input.v > 50i64 { 1i64 } else { 0i64 };
+            (Some(a), Some(b)) if input.v > 50i64 => {
+                let z = 1i64;
                 z
             }
             (Some(a), _) => {
@@ -30,7 +30,11 @@ impl MultipleEventsState {
             }
         };
         let c = z;
+        let d = match (input.a, input.b) {
+            (Some(_), Some(_)) => 0.1,
+            _ => 0.2,
+        };
         self.mem = c;
-        c
+        (c, d)
     }
 }
