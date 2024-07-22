@@ -133,6 +133,7 @@ impl Pattern {
             }
             Kind::NoEvent { event_id } => {
                 let typing = symbol_table.get_type(event_id).clone();
+                expected_type.eq_check(&typing, self.location.clone(), errors)?;
                 self.typing = Some(typing);
                 Ok(())
             }
