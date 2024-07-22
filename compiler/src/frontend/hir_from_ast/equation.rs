@@ -2,7 +2,7 @@ prelude! {
     ast::{
         equation::{
             Arm, ArmWhen, DefaultArmWhen, Equation, EventArmWhen,
-            Instantiation, Match, MatchWhen, EventPattern
+            Instantiation, Match, MatchWhen,
         },
         stmt::LetDecl,
     },
@@ -173,9 +173,9 @@ impl HIRFromAST for Equation {
                         }) => {
                             symbol_table.local();
 
-                            // set local context: pattern signals + equations' signals
+                            // set local context: equations' signals
                             let defined_signals =
-                                local_context(&pattern, &equations, symbol_table, errors)?;
+                                defined_signals(&equations, symbol_table, errors)?;
                             // create tuple pattern
                             let mut elements = tuple.clone();
                             pattern.create_tuple_pattern(
@@ -315,21 +315,19 @@ impl HIRFromAST for Equation {
     }
 }
 
-fn local_context(
-    pattern: &EventPattern,
+fn defined_signals(
     equations: &Vec<Equation>,
     symbol_table: &mut SymbolTable,
     errors: &mut Vec<Error>,
 ) -> TRes<Vec<(String, usize)>> {
-    // set local context: pattern signals + equations' signals
-    pattern.store(symbol_table, errors)?;
     let mut defined_signals = vec![];
+    // set local context: equations' signals
     equations
         .iter()
         .map(|equation| {
             // store equations' signals in the local context
-            let mut equation_signals = equation.store_signals(symbol_table, errors)?;
-            defined_signals.append(&mut equation_signals);
+            let equation_signals = equation.store_signals(symbol_table, errors)?;
+            defined_signals.extend(equation_signals);
             Ok(())
         })
         .collect::<TRes<()>>()?;
