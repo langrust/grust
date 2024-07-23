@@ -1,32 +1,16 @@
 prelude! {}
 
-/// LanGRust [File](crate::hir::file::File) typing analysis module.
-pub mod file;
-
-/// LanGRust [Node](crate::hir::node::Node) typing analysis module.
-pub mod node;
-
-/// LanGRust [Function](crate::hir::function::Function) typing analysis module.
-pub mod function;
-
-/// LanGRust [StreamExpression](crate::hir::stream_expression::StreamExpression) typing analysis module.
-pub mod stream_expression;
-
-/// LanGRust [Expression](crate::hir::expression::Expression) typing analysis module.
-pub mod expression;
-
-/// LanGRust [Statement](crate::hir::statement::Statement) typing analysis module.
-pub mod statement;
-
-/// LanGRust [Pattern](crate::hir::pattern::Pattern) typing analysis module.
-pub mod pattern;
-
-/// LanGRust [Interface](crate::hir::interface::Interface) typing analysis module.
-pub mod flow_expression;
-
-pub mod interface;
-
-pub mod contract;
+// "Empty" modules, *i.e.* only define `impl`-s and need not be `pub`lic.
+mod contract;
+mod expression;
+mod file;
+mod flow_expression;
+mod function;
+mod interface;
+mod node;
+mod pattern;
+mod statement;
+mod stream_expression;
 
 /// Performs type analysis.
 pub trait TypeAnalysis {

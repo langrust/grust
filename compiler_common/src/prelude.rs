@@ -11,12 +11,26 @@ macro_rules! prelude {
     };
 }
 
-pub use crate::{
-    codespan_reporting, conf, constant::Constant, convert_case::to_camel_case, equiv, error::*,
-    graph, hash_map::*, itertools, keyword, lazy_static::lazy_static, location::Location, macro2,
-    mk_new, once_cell, operator, petgraph, quote, r#type::Typ, rustc_hash, safe_index,
-    scope::Scope, serde, strum, syn,
+pub use std::{
+    collections::{BTreeMap, BTreeSet},
+    fmt::Display,
 };
+
+pub use crate::{
+    codespan_reporting, conf, constant::Constant, convert_case::to_camel_case, error::*, graph,
+    hash_map::*, itertools, keyword, lazy_static::lazy_static, location::Location, macro2, mk_new,
+    once_cell, operator, petgraph, quote, r#type::Typ, rustc_hash, safe_index, scope::Scope, serde,
+    strum, syn, synced,
+};
+
+/// Provides context-dependent a *less than* (`lt`) relation.
+pub trait Lt {
+    /// Type of the context.
+    type Ctx;
+
+    /// Compares two `Self`-values.
+    fn lt(&self, other: &Self, ctx: &Self::Ctx) -> bool;
+}
 
 /// Extension over `Iterator`s.
 pub trait IteratorExt: Sized {
@@ -51,5 +65,25 @@ where
             }
         })
         .1
+    }
+}
+
+/// Extension over `Vec`tors.
+pub trait VecExt<T> {
+    /// If self has length `1`, extracts the only value and returns it.
+    fn pop_single(&mut self) -> Option<T>;
+}
+
+impl<T> VecExt<T> for Vec<T> {
+    fn pop_single(&mut self) -> Option<T> {
+        if self.len() == 1 {
+            let res = self
+                .pop()
+                .expect("popping a vector of length 1 is always legal");
+            debug_assert_eq!(self.len(), 0);
+            Some(res)
+        } else {
+            None
+        }
     }
 }

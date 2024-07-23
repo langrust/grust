@@ -1,3 +1,5 @@
+//! LanGRust [`File`] typing analysis module.
+
 prelude! {
     frontend::typing_analysis::TypeAnalysis,
     hir::File,

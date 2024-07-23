@@ -6,7 +6,7 @@ use std::{
 use petgraph::graphmap::{DiGraphMap, NodeTrait};
 use serde::Serialize;
 
-/// To use with serde's [serialize_with] attribute.
+/// To use with serde's `serialize_with` attribute.
 pub fn ordered_graph<S, K, V>(value: &DiGraphMap<K, V>, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: serde::Serializer,
@@ -20,7 +20,7 @@ where
         .serialize(serializer)
 }
 
-/// To use with serde's [serialize_with] attribute.
+/// To use with serde's `serialize_with` attribute.
 pub fn ordered_hashmap<S, K, V, HMS>(
     value: &HashMap<K, V, HMS>,
     serializer: S,

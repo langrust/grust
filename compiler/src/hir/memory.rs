@@ -1,4 +1,4 @@
-//! HIR [Memory](crate::hir::memory::Memory) module.
+//! HIR [Memory] module.
 
 prelude! {
     hir::stream

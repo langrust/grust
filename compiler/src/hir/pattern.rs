@@ -1,4 +1,4 @@
-//! HIR [Pattern](crate::hir::pattern::Pattern) module.
+//! HIR [Pattern] module.
 
 prelude! {}
 

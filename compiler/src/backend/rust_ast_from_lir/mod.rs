@@ -1,3 +1,5 @@
+//! Rust AST construction from [LIR types](mod@crate::lir).
+
 /// RustAST block construction from LIR block.
 pub mod block;
 /// RustAST expression construction from LIR expression.

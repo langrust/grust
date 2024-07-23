@@ -579,9 +579,9 @@ impl<'a> IsleBuilder<'a> {
 pub struct Accumulator {
     /// Current instructions block.
     current: Vec<FlowInstruction>,
-    /// Informations kept when in 'onchange' branch.
+    /// Information kept when in 'onchange' branch.
     onchange_block: Option<(usize, String, String, Box<Accumulator>)>,
-    /// Informations kept when in 'default' branch.
+    /// Information kept when in 'default' branch.
     default_block: Option<(String, String, Vec<FlowInstruction>, Box<Accumulator>)>,
 }
 impl Accumulator {
@@ -1458,7 +1458,7 @@ impl<'a> PropagationBuilder<'a> {
             .filter(|id| !self.symbol_table.is_service_timeout(self.service.id, *id))
     }
 
-    /// Switch to a onchange branch.
+    /// Switch to an onchange branch.
     fn onchange(&mut self, id_event: usize, id_source: usize) {
         let event_name = self.symbol_table.get_name(id_event);
         let source_name = self.get_signal_name(id_source);

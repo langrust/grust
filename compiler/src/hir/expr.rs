@@ -1,4 +1,4 @@
-//! HIR [Expression](crate::hir::expression::Expression) module.
+//! HIR [Expr] module.
 
 prelude! {
     graph::Label,

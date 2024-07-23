@@ -1,3 +1,5 @@
+//! LIR [Enumeration] module.
+
 prelude! {}
 
 /// An enumeration definition.

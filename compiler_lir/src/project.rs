@@ -1,3 +1,5 @@
+//! LIR [Project] module.
+
 use super::item::Item;
 
 /// A project structure.

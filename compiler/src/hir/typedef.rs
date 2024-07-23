@@ -1,4 +1,4 @@
-//! HIR [Typedef](crate::hir::typedef::Typedef) module.
+//! HIR [Typedef] module.
 
 prelude! {}
 

@@ -1,7 +1,7 @@
-//! HIR [Contract](crate::hir::contract::Contract) module.
+//! HIR [Contract] module.
 
 pub mod term {
-    //! HIR [Term](crate::hir::contract::term::Term) module.
+    //! HIR [Term] module.
     prelude! {
         operator::{BinaryOperator, UnaryOperator},
         graph::*,

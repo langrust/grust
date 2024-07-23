@@ -1,3 +1,5 @@
+//! LanGRust [FlowStatement] typing analysis module.
+
 prelude! {
     frontend::typing_analysis::TypeAnalysis,
     hir::interface::{ FlowDeclaration, FlowInstantiation, FlowStatement },

@@ -1,3 +1,5 @@
+//! LIR [Structure] module.
+
 prelude! {}
 
 /// A structure definition.

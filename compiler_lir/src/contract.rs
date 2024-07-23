@@ -1,3 +1,5 @@
+//! LIR [Contract] module.
+
 prelude! {
     operator::{BinaryOperator, UnaryOperator}
 }

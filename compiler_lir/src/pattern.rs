@@ -1,3 +1,5 @@
+//! LIR [Pattern] module.
+
 prelude! {}
 
 #[derive(Debug, PartialEq, Clone)]

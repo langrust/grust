@@ -1,3 +1,5 @@
+//! LanGRust [Pattern] typing analysis module.
+
 prelude! {
     hir::pattern::{Pattern, Kind},
 }
