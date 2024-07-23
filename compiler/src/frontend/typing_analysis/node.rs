@@ -1,3 +1,5 @@
+//! LanGRust [Node] typing analysis module.
+
 prelude! {
     frontend::TypeAnalysis,
     hir::Node,

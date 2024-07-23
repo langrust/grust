@@ -1,3 +1,5 @@
+//! LIR [Function] module.
+
 prelude! { Block }
 
 /// A function definition.

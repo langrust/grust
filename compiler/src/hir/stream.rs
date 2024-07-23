@@ -1,4 +1,4 @@
-//! HIR [StreamExpression](crate::hir::stream_expression::StreamExpression) module.
+//! HIR [`stream::Expr`][Expr] module.
 
 prelude! {
     graph::Label,

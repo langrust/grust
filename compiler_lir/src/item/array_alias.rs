@@ -1,3 +1,5 @@
+//! LIR [ArrayAlias] module.
+
 prelude! {}
 
 /// An array alias definition.

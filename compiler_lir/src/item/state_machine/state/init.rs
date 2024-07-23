@@ -1,3 +1,5 @@
+//! LIR [Init].
+
 prelude! {
     ast::contract::Term,
 }

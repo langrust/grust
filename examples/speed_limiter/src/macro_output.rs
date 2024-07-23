@@ -2700,6 +2700,20 @@ pub mod runtime {
                             self.context.kickdown = kickdown;
                         }
                         (
+                            None,
+                            Some((activation, activation_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                        ) => {
+                            self.context.set_speed = set_speed;
+                            self.context.activation = activation;
+                            self.context.vdc = vdc;
+                            self.context.kickdown = kickdown;
+                        }
+                        (
                             Some(((), period_speed_limiter_instant)),
                             None,
                             None,
@@ -2744,20 +2758,6 @@ pub mod runtime {
                         ) => {
                             self.context.set_speed = set_speed;
                             self.context.activation = activation;
-                            self.context.kickdown = kickdown;
-                        }
-                        (
-                            None,
-                            Some((activation, activation_instant)),
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                        ) => {
-                            self.context.set_speed = set_speed;
-                            self.context.activation = activation;
-                            self.context.vdc = vdc;
                             self.context.kickdown = kickdown;
                         }
                         (

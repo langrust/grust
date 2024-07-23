@@ -25121,6 +25121,38 @@ pub mod runtime {
                                 .await?;
                         }
                         (
+                            None,
+                            Some((speed, speed_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                            Some((activation, activation_instant)),
+                            Some(((), period_speed_limiter_1_instant)),
+                        ) => {
+                            self.context.speed = speed;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs(
+                                    Some(activation),
+                                    None,
+                                    None,
+                                ));
+                            self.context.state = state;
+                            self.context.on_state = on_state;
+                            self.context.in_regulation_aux = in_regulation_aux;
+                            self.context.state_update = state_update;
+                            let on_state = self.context.on_state;
+                            let sl_state = on_state;
+                            self.send_output(O::SlState(sl_state, instant)).await?;
+                            let in_regulation_aux = self.context.in_regulation_aux;
+                            let in_regulation = in_regulation_aux;
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.send_timer(T::PeriodSpeedLimiter1, period_speed_limiter_1_instant)
+                                .await?;
+                        }
+                        (
                             Some((failure, failure_instant)),
                             Some((speed, speed_instant)),
                             Some((kickdown, kickdown_instant)),
@@ -25253,38 +25285,6 @@ pub mod runtime {
                                 self.send_output(O::InRegulation(in_regulation, instant))
                                     .await?;
                             }
-                        }
-                        (
-                            None,
-                            Some((speed, speed_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some((activation, activation_instant)),
-                            Some(((), period_speed_limiter_1_instant)),
-                        ) => {
-                            self.context.speed = speed;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs(
-                                    Some(activation),
-                                    None,
-                                    None,
-                                ));
-                            self.context.state = state;
-                            self.context.on_state = on_state;
-                            self.context.in_regulation_aux = in_regulation_aux;
-                            self.context.state_update = state_update;
-                            let on_state = self.context.on_state;
-                            let sl_state = on_state;
-                            self.send_output(O::SlState(sl_state, instant)).await?;
-                            let in_regulation_aux = self.context.in_regulation_aux;
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter1, period_speed_limiter_1_instant)
-                                .await?;
                         }
                         (
                             None,

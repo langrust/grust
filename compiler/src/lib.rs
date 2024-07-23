@@ -1,8 +1,8 @@
-//! This crate provides the [handle_tokens] function used in the [`grust!`] macro.
-//! It transforms input GRust tokens into output Rust tokens, performing static analysis.
+//! This crate provides the [handle_tokens] function used in the [`grust!`] macro. It transforms
+//! input GRust tokens into output Rust tokens, performing static analysis.
 //!
-//! This crate also provides the [dump_ast] function used to see the generated code
-//! at a given filepath.
+//! This crate also provides the [dump_code] function used to see the generated code at a given
+//! filepath.
 //!
 //! [`grust!`]: ../grust/macro.grust.html
 

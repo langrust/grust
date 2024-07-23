@@ -1,3 +1,5 @@
+//! LIR [Input] module.
+
 prelude! {}
 
 /// A node input structure.

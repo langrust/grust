@@ -1,10 +1,10 @@
+//! LIR [State] module.
+
 prelude! {
     item::state_machine::state::{init::Init, step::Step},
 }
 
-/// LIR [Init](crate::lir::item::state_machine::state::init::Init) module.
 pub mod init;
-/// LIR [Step](crate::lir::item::state_machine::state::step::Step) module.
 pub mod step;
 
 /// A node state structure.

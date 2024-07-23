@@ -1,3 +1,5 @@
+//! LanGRust [Stmt] typing analysis module.
+
 prelude! {
     frontend::typing_analysis::TypeAnalysis,
     hir::Stmt,

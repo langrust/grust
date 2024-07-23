@@ -1,3 +1,5 @@
+//! LIR [Step] module.
+
 prelude! {}
 
 /// A step function.

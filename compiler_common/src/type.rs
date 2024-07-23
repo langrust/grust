@@ -12,7 +12,7 @@ prelude! {
 
 /// GRust type system.
 ///
-/// [Typ] enumeration is used when [typing](crate::ast::file::File) a GRust program.
+/// [Typ] enumeration used when typing a GRust program.
 ///
 /// It represents all possible types a GRust expression can take:
 ///

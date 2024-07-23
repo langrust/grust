@@ -1,3 +1,5 @@
+//! LIR [Expr] module.
+
 prelude! {
     operator::{BinaryOperator, UnaryOperator},
     Pattern, Block,
