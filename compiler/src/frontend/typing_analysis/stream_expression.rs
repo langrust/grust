@@ -64,6 +64,18 @@ impl TypeAnalysis for stream::Expr {
                 self.typing = Some(expression.typing(&self.location, symbol_table, errors)?);
                 Ok(())
             }
+
+            stream::Kind::SomeEvent { ref mut expression } => {
+                expression.typing(symbol_table, errors)?;
+                let expression_type = expression.get_type().unwrap().clone();
+                self.typing = Some(Typ::sm_event(expression_type));
+                Ok(())
+            }
+
+            stream::Kind::NoneEvent => {
+                self.typing = Some(Typ::sm_event(Typ::Any));
+                Ok(())
+            }
         }
     }
 

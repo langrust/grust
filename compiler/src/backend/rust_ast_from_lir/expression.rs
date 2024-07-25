@@ -74,6 +74,11 @@ pub fn rust_ast_from_lir(expression: lir::Expr, crates: &mut BTreeSet<String>) -
             let identifier = Ident::new(&identifier, Span::call_site());
             parse_quote! { #identifier }
         }
+        lir::Expr::Some { expression } => {
+            let syn_expr = rust_ast_from_lir(*expression, crates);
+            parse_quote! { Some(#syn_expr) }
+        }
+        lir::Expr::None => parse_quote! { None },
         lir::Expr::MemoryAccess { identifier } => {
             let identifier = Ident::new(&identifier, Span::call_site());
             parse_quote!( self . #identifier )
