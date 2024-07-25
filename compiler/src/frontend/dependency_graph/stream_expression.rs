@@ -9,7 +9,9 @@ impl stream::Expr {
     pub fn get_called_nodes(&self) -> Vec<usize> {
         match &self.kind {
             stream::Kind::Expression { expression } => expression.get_called_nodes(),
-            stream::Kind::FollowedBy { expression, .. } => expression.get_called_nodes(),
+            stream::Kind::FollowedBy { expression, .. }
+            | stream::Kind::SomeEvent { expression } => expression.get_called_nodes(),
+            stream::Kind::NoneEvent => vec![],
             stream::Kind::NodeApplication {
                 called_node_id,
                 inputs,
@@ -113,6 +115,17 @@ impl stream::Expr {
             }
             stream::Kind::Expression { expression } => {
                 self.dependencies.set(expression.compute_dependencies(ctx)?);
+                Ok(())
+            }
+            stream::Kind::SomeEvent { expression } => {
+                // propagate dependencies computation in expression
+                expression.compute_dependencies(ctx)?;
+                self.dependencies.set(expression.get_dependencies().clone());
+                Ok(())
+            }
+            stream::Kind::NoneEvent => {
+                // no dependencies
+                self.dependencies.set(vec![]);
                 Ok(())
             }
         }

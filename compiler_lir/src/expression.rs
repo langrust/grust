@@ -18,6 +18,13 @@ pub enum Expr {
         /// The identifier.
         identifier: String,
     },
+    /// Some expression: `Some(x`.
+    Some {
+        /// The expression.
+        expression: Box<Self>,
+    },
+    /// None value: `None`.
+    None,
     /// An unitary operation: `!x`.
     Unop {
         /// The operator.
@@ -161,6 +168,10 @@ impl Expr {
         Literal: literal { literal: Constant }
         Literal: lit { literal: Constant }
         Identifier: ident { identifier: impl Into<String> = identifier.into() }
+        Some: some {
+            expression: Self = Box::new(expression),
+        }
+        None: none ()
         Unop: unop {
             op: UnaryOperator,
             expression: Self = Box::new(expression),
@@ -236,6 +247,8 @@ impl Expr {
         match self {
             Literal { .. }
             | Identifier { .. }
+            | Some { .. }
+            | None { .. }
             | MemoryAccess { .. }
             | InputAccess { .. }
             | Enumeration { .. }

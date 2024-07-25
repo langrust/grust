@@ -32,6 +32,10 @@ impl LIRFromHIR for stream::Expr {
             stream::Kind::FollowedBy { .. } => {
                 unreachable!()
             }
+            stream::Kind::SomeEvent { expression } => {
+                lir::Expr::some(expression.lir_from_hir(symbol_table))
+            }
+            stream::Kind::NoneEvent => lir::Expr::none(),
         }
     }
 

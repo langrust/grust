@@ -60,6 +60,13 @@ impl stream::Expr {
                         .collect(),
                 );
             }
+            stream::Kind::SomeEvent { ref mut expression } => {
+                expression.replace_by_context(context_map);
+
+                // change dependencies to be the sum of inputs dependencies
+                self.dependencies = Dependencies::from(expression.get_dependencies().clone());
+            }
+            stream::Kind::NoneEvent => (),
             stream::Kind::FollowedBy { .. } => unreachable!(),
         }
     }

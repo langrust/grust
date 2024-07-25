@@ -80,6 +80,11 @@ impl stream::Expr {
                         .collect(),
                 );
             }
+            stream::Kind::SomeEvent { expression } => {
+                expression.memorize(identifier_creator, memory, contract, symbol_table);
+                self.dependencies = Dependencies::from(expression.get_dependencies().clone());
+            }
+            stream::Kind::NoneEvent => (),
         }
     }
 }

@@ -29,6 +29,13 @@ pub enum Kind {
         /// The inputs to the expression.
         inputs: Vec<(usize, Expr)>,
     },
+    /// Present event expression.
+    SomeEvent {
+        /// The expression of the event.
+        expression: Box<Expr>,
+    },
+    /// Absent event expression.
+    NoneEvent,
 }
 
 mk_new! { impl Kind =>
@@ -42,6 +49,10 @@ mk_new! { impl Kind =>
         called_node_id: usize,
         inputs: Vec<(usize, Expr)>,
     }
+    SomeEvent: some_event {
+        expression: Expr = expression.into(),
+    }
+    NoneEvent: none_event ()
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -94,6 +105,8 @@ impl Expr {
             Kind::NodeApplication { inputs, .. } => {
                 inputs.iter().all(|(_, expression)| expression.no_fby())
             }
+            Kind::SomeEvent { expression } => expression.no_fby(),
+            Kind::NoneEvent => true,
         }
     }
     /// Tell if it is in normal form.
@@ -107,6 +120,8 @@ impl Expr {
             Kind::NodeApplication { inputs, .. } => inputs
                 .iter()
                 .all(|(_, expression)| expression.no_node_application()),
+            Kind::SomeEvent { expression } => expression.no_node_application(),
+            Kind::NoneEvent => true,
         }
     }
     /// Tell if there is no node application.
@@ -118,6 +133,8 @@ impl Expr {
                 }),
             Kind::FollowedBy { expression, .. } => expression.no_node_application(),
             Kind::NodeApplication { .. } => false,
+            Kind::SomeEvent { expression } => expression.no_node_application(),
+            Kind::NoneEvent => true,
         }
     }
 }

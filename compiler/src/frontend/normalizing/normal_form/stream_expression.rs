@@ -130,6 +130,13 @@ impl stream::Expr {
                 identifier_creator,
                 symbol_table,
             ),
+            stream::Kind::SomeEvent { ref mut expression } => {
+                let new_statements =
+                    expression.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
+                self.dependencies = Dependencies::from(expression.get_dependencies().clone());
+                new_statements
+            }
+            stream::Kind::NoneEvent => vec![],
         }
     }
 
