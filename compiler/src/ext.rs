@@ -88,14 +88,7 @@ mod component {
             let locals = {
                 let mut map = HashMap::with_capacity(25);
                 for equation in self.equations.iter() {
-                    if let Some(res) = equation.store_local_declarations(symbol_table, errors) {
-                        for (key, n) in res? {
-                            let prev = map.insert(key, n);
-                            if prev.is_some() {
-                                panic!("fatal: name-clashes detected in local declaration handler");
-                            }
-                        }
-                    }
+                    equation.store_signals(false, &mut map, symbol_table, errors)?;
                 }
                 map.shrink_to_fit();
                 map
@@ -113,147 +106,160 @@ mod component {
 }
 
 pub trait EquationExt {
-    fn get_pattern(&self) -> ast::Pattern;
-
-    fn store_local_declarations(
-        &self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> Option<TRes<Vec<(String, usize)>>>;
-
+    /// Creates identifiers for the equation (depending on the config `even_outputs`)
+    ///
+    /// # Example
+    ///
+    /// ```grust
+    /// match e {
+    ///     pat1 => { let a: int = e_a; let b: float = e_b; },
+    ///     pat2 => { let (a: int, b: float) = e_ab; },
+    /// }
+    /// ```
+    ///
+    /// With the above equations, the algorithm insert in the `signals` map
+    /// [ a -> id_a ] and [ b -> id_b ].
     fn store_signals(
         &self,
+        even_outputs: bool,
+        signals: &mut HashMap<String, usize>,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> TRes<Vec<(String, usize)>>;
+    ) -> TRes<()>;
+
+    /// Collects the identifiers of the equation from the symbol table.
+    ///
+    /// # Example
+    ///
+    /// ```grust
+    /// match e {
+    ///     pat1 => { let a: int = e_a; let b: float = e_b; },
+    ///     pat2 => { let (a: int, b: float) = e_ab; },
+    /// }
+    /// ```
+    ///
+    /// If the symbol table contains [ a -> id_a ] and [ b -> id_b ], with the above equations,
+    /// the algorithm insert in the `signals` map [ a -> id_a ] and [ b -> id_b ].
+    fn get_signals(
+        &self,
+        signals: &mut HashMap<String, ast::Pattern>,
+        symbol_table: &SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> TRes<()>;
 }
 
 mod equation {
-    prelude! {
-        ast::{
-            equation::*,
-            pattern::Tuple,
-        },
-    }
+    prelude! { ast::equation::* }
 
     impl super::EquationExt for Equation {
-        fn get_pattern(&self) -> ast::Pattern {
-            match self {
-                Equation::LocalDef(declaration) => declaration.typed_pattern.clone(),
-                Equation::OutputDef(instantiation) => instantiation.pattern.clone(),
-                Equation::Match(Match { arms, .. }) => {
-                    let Arm { equations, .. } = arms.first().unwrap();
-                    let mut elements = equations
-                        .iter()
-                        .flat_map(|equation| equation.get_pattern().get_simple_patterns())
-                        .collect::<Vec<_>>();
-                    if elements.len() == 1 {
-                        elements.pop().unwrap()
-                    } else {
-                        ast::Pattern::Tuple(Tuple { elements })
-                    }
-                }
-                Equation::MatchWhen(MatchWhen { arms, .. }) => match arms.first().unwrap() {
-                    ArmWhen::EventArmWhen(EventArmWhen { equations, .. })
-                    | ArmWhen::Default(DefaultArmWhen { equations, .. }) => {
-                        let mut elements = equations
-                            .iter()
-                            .flat_map(|equation| equation.get_pattern().get_simple_patterns())
-                            .collect::<Vec<_>>();
-                        if elements.len() == 1 {
-                            elements.pop().unwrap()
-                        } else {
-                            ast::Pattern::Tuple(Tuple { elements })
-                        }
-                    }
-                },
-            }
-        }
-
-        fn store_local_declarations(
-            &self,
-            symbol_table: &mut SymbolTable,
-            errors: &mut Vec<Error>,
-        ) -> Option<TRes<Vec<(String, usize)>>> {
-            match self {
-                Equation::LocalDef(declaration) => {
-                    Some(declaration.typed_pattern.store(true, symbol_table, errors))
-                }
-                Equation::OutputDef(_) => None,
-                Equation::Match(Match { arms, .. }) => {
-                    arms.first().map(|Arm { equations, .. }| {
-                        let local_declarations = {
-                            let mut vec = Vec::with_capacity(25);
-                            for eq in equations.iter() {
-                                if let Some(res) = eq.store_local_declarations(symbol_table, errors)
-                                {
-                                    for pair in res? {
-                                        vec.push(pair);
-                                    }
-                                }
-                            }
-                            vec.shrink_to_fit();
-                            vec
-                        };
-                        Ok(local_declarations)
-                    })
-                }
-                Equation::MatchWhen(MatchWhen { arms, .. }) => arms.first().map(|arm| match arm {
-                    ArmWhen::EventArmWhen(EventArmWhen { equations, .. })
-                    | ArmWhen::Default(DefaultArmWhen { equations, .. }) => {
-                        let local_declarations = {
-                            let mut vec = Vec::with_capacity(25);
-                            for eq in equations {
-                                if let Some(res) = eq.store_local_declarations(symbol_table, errors)
-                                {
-                                    for pair in res? {
-                                        vec.push(pair);
-                                    }
-                                }
-                            }
-                            vec.shrink_to_fit();
-                            vec
-                        };
-                        Ok(local_declarations)
-                    }
-                }),
-            }
-        }
-
         fn store_signals(
             &self,
+            even_outputs: bool,
+            signals: &mut HashMap<String, usize>,
             symbol_table: &mut SymbolTable,
             errors: &mut Vec<Error>,
-        ) -> TRes<Vec<(String, usize)>> {
+        ) -> TRes<()> {
             match self {
-                Equation::LocalDef(declaration) => {
-                    declaration.typed_pattern.store(true, symbol_table, errors)
-                }
-                Equation::OutputDef(instantiation) => {
-                    instantiation.pattern.store(false, symbol_table, errors)
-                }
+                // output defintions should be stored
+                Equation::OutputDef(instantiation) if even_outputs => instantiation
+                    .pattern
+                    .store(false, symbol_table, errors)
+                    .map(|idents| signals.extend(idents)),
+                // when output defintions are already stored (as component's outputs)
+                Equation::OutputDef(_) => Ok(()),
+                Equation::LocalDef(declaration) => declaration
+                    .typed_pattern
+                    .store(true, symbol_table, errors)
+                    .map(|idents| signals.extend(idents)),
                 Equation::Match(Match { arms, .. }) => {
-                    arms.first().map_or(Ok(vec![]), |Arm { equations, .. }| {
-                        Ok(equations
-                            .iter()
-                            .map(|equation| equation.store_signals(symbol_table, errors))
-                            .collect::<TRes<Vec<_>>>()?
-                            .into_iter()
-                            .flatten()
-                            .collect())
-                    })
+                    let Arm { equations, .. } = arms.first().unwrap();
+                    for eq in equations.iter() {
+                        eq.store_signals(even_outputs, signals, symbol_table, errors)?;
+                    }
+                    Ok(())
                 }
-                Equation::MatchWhen(MatchWhen { arms, .. }) => {
-                    arms.first().map_or(Ok(vec![]), |arm| match arm {
-                        ArmWhen::EventArmWhen(EventArmWhen { equations, .. })
-                        | ArmWhen::Default(DefaultArmWhen { equations, .. }) => Ok(equations
-                            .iter()
-                            .map(|equation| equation.store_signals(symbol_table, errors))
-                            .collect::<TRes<Vec<_>>>()?
-                            .into_iter()
-                            .flatten()
-                            .collect()),
-                    })
+                Equation::MatchWhen(MatchWhen { arms, default, .. }) => {
+                    // we want to collect every identifier, but events might be declared in only one branch
+                    // then, it is needed to explore all branches
+                    let mut when_signals = HashMap::new();
+                    let mut add_signals = |equations: &Vec<Equation>| {
+                        // non-events are defined in all branches so we don't want them to trigger
+                        // the 'duplicated definiiton' error.
+                        symbol_table.local();
+                        for eq in equations {
+                            eq.store_signals(
+                                even_outputs,
+                                &mut when_signals,
+                                symbol_table,
+                                errors,
+                            )?;
+                        }
+                        symbol_table.global();
+                        Ok(())
+                    };
+                    if let Some(DefaultArmWhen { equations, .. }) = default {
+                        add_signals(equations)?
+                    }
+                    for EventArmWhen { equations, .. } in arms {
+                        add_signals(equations)?
+                    }
+                    // put the identifiers back in context
+                    for (k, v) in when_signals.into_iter() {
+                        if signals.contains_key(&k) {
+                            // todo: delete the symbol
+                        } else {
+                            signals.insert(k, v);
+                            symbol_table.put_back_in_context(
+                                v,
+                                false,
+                                Location::default(),
+                                errors,
+                            )?;
+                        }
+                    }
+                    Ok(())
+                }
+            }
+        }
+
+        fn get_signals(
+            &self,
+            signals: &mut HashMap<String, ast::Pattern>,
+            symbol_table: &SymbolTable,
+            errors: &mut Vec<Error>,
+        ) -> TRes<()> {
+            match self {
+                Equation::OutputDef(instantiation) => instantiation
+                    .pattern
+                    .get_signals(symbol_table, errors)
+                    .map(|idents| signals.extend(idents)),
+                Equation::LocalDef(declaration) => declaration
+                    .typed_pattern
+                    .get_signals(symbol_table, errors)
+                    .map(|idents| signals.extend(idents)),
+                Equation::Match(Match { arms, .. }) => {
+                    let Arm { equations, .. } = arms.first().unwrap();
+                    for eq in equations {
+                        eq.get_signals(signals, symbol_table, errors)?;
+                    }
+                    Ok(())
+                }
+                Equation::MatchWhen(MatchWhen { arms, default, .. }) => {
+                    let mut add_signals = |equations: &Vec<Equation>| {
+                        // we want to collect every identifier, but events might be declared in only one branch
+                        // then, it is needed to explore all branches
+                        for eq in equations {
+                            eq.get_signals(signals, symbol_table, errors)?;
+                        }
+                        Ok(())
+                    };
+                    if let Some(DefaultArmWhen { equations, .. }) = default {
+                        add_signals(equations)?
+                    }
+                    for EventArmWhen { equations, .. } in arms {
+                        add_signals(equations)?
+                    }
+                    Ok(())
                 }
             }
         }
@@ -420,7 +426,7 @@ mod typ {
     }
 }
 
-pub trait PatternExt {
+pub trait PatternExt: Sized {
     fn store(
         &self,
         is_declaration: bool,
@@ -428,7 +434,11 @@ pub trait PatternExt {
         errors: &mut Vec<Error>,
     ) -> TRes<Vec<(String, usize)>>;
 
-    fn get_simple_patterns(self) -> Vec<ast::Pattern>;
+    fn get_signals(
+        &self,
+        symbol_table: &SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> TRes<Vec<(String, Self)>>;
 }
 
 mod pattern {
@@ -463,8 +473,8 @@ mod pattern {
                             location.clone(),
                             errors,
                         )?;
+                        // outputs should be already typed
                         let typing = symbol_table.get_type(id).clone();
-
                         let id = symbol_table.insert_identifier(
                             name.clone(),
                             Some(typing),
@@ -509,14 +519,38 @@ mod pattern {
             }
         }
 
-        fn get_simple_patterns(self) -> Vec<Pattern> {
+        fn get_signals(
+            &self,
+            symbol_table: &SymbolTable,
+            errors: &mut Vec<Error>,
+        ) -> TRes<Vec<(String, Pattern)>> {
             match self {
-                Pattern::Identifier(_) | Pattern::Typed(_) => vec![self],
-                Pattern::Tuple(Tuple { elements }) => elements
+                Pattern::Identifier(name) => Ok(vec![(name.clone(), self.clone())]),
+                Pattern::Typed(Typed { pattern, .. }) => match pattern.as_ref() {
+                    Pattern::Identifier(name) => Ok(vec![(name.clone(), self.clone())]),
+                    _ => todo!("not supported"),
+                },
+                Pattern::Tuple(Tuple { elements }) => Ok(elements
+                    .iter()
+                    .map(|pattern| pattern.get_signals(symbol_table, errors))
+                    .collect::<TRes<Vec<_>>>()?
                     .into_iter()
-                    .flat_map(|pattern| pattern.get_simple_patterns())
-                    .collect(),
-                _ => todo!(),
+                    .flatten()
+                    .collect()),
+                Pattern::Structure(Structure { fields, .. }) => Ok(fields
+                    .iter()
+                    .map(|(field, optional_pattern)| {
+                        if let Some(pattern) = optional_pattern {
+                            pattern.get_signals(symbol_table, errors)
+                        } else {
+                            Ok(vec![(field.clone(), Pattern::ident(field))])
+                        }
+                    })
+                    .collect::<TRes<Vec<_>>>()?
+                    .into_iter()
+                    .flatten()
+                    .collect()),
+                Pattern::Constant(_) | Pattern::Enumeration(_) | Pattern::Default => Ok(vec![]),
             }
         }
     }
@@ -710,7 +744,7 @@ mod stream_expr {
 }
 
 pub trait EventPatternExt {
-    fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()>;
+    /// Accumulates in `events_indices` the indices of events in the matched tuple.
     fn place_events(
         &self,
         events_indices: &mut HashMap<usize, usize>,
@@ -718,6 +752,7 @@ pub trait EventPatternExt {
         symbol_table: &SymbolTable,
         errors: &mut Vec<Error>,
     ) -> TRes<()>;
+    /// Creates event tuple and stores the events.
     fn create_tuple_pattern(
         self,
         tuple: &mut Vec<hir::Pattern>,
@@ -733,20 +768,6 @@ mod event_pattern {
     }
 
     impl super::EventPatternExt for EventPattern {
-        fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
-            match self {
-                EventPattern::Tuple(patterns) => patterns
-                    .patterns
-                    .iter()
-                    .map(|pattern| pattern.store(symbol_table, errors))
-                    .collect::<TRes<()>>(),
-                EventPattern::Let(pattern) => pattern
-                    .pattern
-                    .store(true, symbol_table, errors)
-                    .map(|_| ()),
-            }
-        }
-
         /// Accumulates in `events_indices` the indices of events in the matched tuple.
         fn place_events(
             &self,
@@ -778,6 +799,7 @@ mod event_pattern {
             }
         }
 
+        /// Creates event tuple and stores the events.
         fn create_tuple_pattern(
             self,
             tuple: &mut Vec<hir::Pattern>,
