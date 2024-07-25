@@ -48,13 +48,13 @@ impl Constant {
 }
 impl Parse for Constant {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        if input.fork().call(syn::LitInt::parse).is_ok() {
+        if input.peek(syn::LitInt) {
             let i: syn::LitInt = input.parse()?;
             Ok(Constant::Integer(i))
-        } else if input.fork().call(syn::LitFloat::parse).is_ok() {
+        } else if input.peek(syn::LitFloat) {
             let f: syn::LitFloat = input.parse()?;
             Ok(Constant::Float(f))
-        } else if input.fork().call(syn::LitBool::parse).is_ok() {
+        } else if input.peek(syn::LitBool) {
             let b: syn::LitBool = input.parse()?;
             Ok(Constant::Boolean(b))
         } else {
