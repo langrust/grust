@@ -41,7 +41,7 @@ impl HIRFromAST for stream::When {
 
             // set local context + create tuple of event's pattern
             let mut elements = no_event_tuple;
-            presence.pattern.create_tuple_pattern(
+            let opt_guard = presence.pattern.create_tuple_pattern(
                 &mut elements,
                 &events_indices,
                 symbol_table,
@@ -59,8 +59,12 @@ impl HIRFromAST for stream::When {
                 expression
             };
 
+            let guard = opt_guard
+                .map(|expr| expr.hir_from_ast(symbol_table, errors))
+                .transpose()?;
+
             symbol_table.global();
-            arms.push((pattern, None, vec![], expression))
+            arms.push((pattern, guard, vec![], expression))
         }
 
         // create default arm

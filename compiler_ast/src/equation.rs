@@ -177,6 +177,7 @@ impl Parse for LetEventPattern {
 pub enum EventPattern {
     Tuple(TupleEventPattern),
     Let(LetEventPattern),
+    RisingEdge(Box<stream::Expr>),
 }
 impl Parse for EventPattern {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
@@ -185,14 +186,22 @@ impl Parse for EventPattern {
         } else if input.peek(Token![let]) {
             Ok(EventPattern::Let(input.parse()?))
         } else {
-            let event: syn::Ident = input.parse()?;
-            let question_token: token::Question = input.parse()?;
-            let span = event.span();
-            let let_token = token::Let { span };
-            let pattern = Pattern::ident(event.to_string());
-            let eq_token = token::Eq { spans: [span] };
-            let pat = LetEventPattern::new(let_token, pattern, eq_token, event, question_token);
-            Ok(EventPattern::Let(pat))
+            let forked = input.fork();
+            let is_event = forked
+                .parse::<syn::Ident>()
+                .is_ok_and(|_| forked.parse::<token::Question>().is_ok());
+            if is_event {
+                let event: syn::Ident = input.parse()?;
+                let question_token: token::Question = input.parse()?;
+                let span = event.span();
+                let let_token = token::Let { span };
+                let pattern = Pattern::ident(event.to_string());
+                let eq_token = token::Eq { spans: [span] };
+                let pat = LetEventPattern::new(let_token, pattern, eq_token, event, question_token);
+                Ok(EventPattern::Let(pat))
+            } else {
+                Ok(EventPattern::RisingEdge(input.parse()?))
+            }
         }
     }
 }
@@ -207,6 +216,7 @@ impl std::fmt::Debug for EventPattern {
                 .debug_tuple("Let")
                 .field(&(&arg0.pattern, &arg0.event))
                 .finish(),
+            Self::RisingEdge(arg0) => f.debug_tuple("RisingEdge").field(&arg0).finish(),
         }
     }
 }
