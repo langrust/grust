@@ -99,16 +99,16 @@ impl ProcessSetSpeedState {
     }
     pub fn step(&mut self, input: ProcessSetSpeedInput) -> (f64, bool) {
         let prev_v_set = self.mem;
-        let (v_set, v_update) = match (input.set_speed) {
+        let (v_update, v_set) = match (input.set_speed) {
             (Some(v)) => {
                 let v_set = threshold_set_speed(v);
                 let v_update = prev_v_set != v_set;
-                (v_set, v_update)
+                (v_update, v_set)
             }
             (_) => {
                 let v_set = prev_v_set;
                 let v_update = false;
-                (v_set, v_update)
+                (v_update, v_set)
             }
         };
         self.mem = v_set;
@@ -133,28 +133,28 @@ impl SpeedLimiterOnState {
     }
     pub fn step(&mut self, input: SpeedLimiterOnInput) -> (SpeedLimiterOn, bool, bool) {
         let prev_hysterisis = self.mem;
-        let (on_state, hysterisis, state_update) = match (input.kickdown) {
+        let (hysterisis, on_state, state_update) = match (input.kickdown) {
             (Some(_)) if input.prev_on_state == SpeedLimiterOn::Actif => {
                 let state_update = true;
-                let hysterisis = prev_hysterisis;
                 let on_state = SpeedLimiterOn::OverrideVoluntary;
-                (on_state, hysterisis, state_update)
+                let hysterisis = prev_hysterisis;
+                (hysterisis, on_state, state_update)
             }
             (_) => {
-                let (on_state, hysterisis, state_update) = match input.prev_on_state {
+                let (hysterisis, on_state, state_update) = match input.prev_on_state {
                     SpeedLimiterOn::StandBy
                         if activation_condition(input.vacuum_brake_state, input.v_set) =>
                     {
                         let on_state = SpeedLimiterOn::Actif;
                         let hysterisis = new_hysterisis(0.0);
                         let state_update = true;
-                        (on_state, hysterisis, state_update)
+                        (hysterisis, on_state, state_update)
                     }
                     SpeedLimiterOn::OverrideVoluntary if input.speed <= input.v_set => {
                         let on_state = SpeedLimiterOn::Actif;
                         let hysterisis = new_hysterisis(0.0);
                         let state_update = true;
-                        (on_state, hysterisis, state_update)
+                        (hysterisis, on_state, state_update)
                     }
                     SpeedLimiterOn::Actif
                         if standby_condition(input.vacuum_brake_state, input.v_set) =>
@@ -162,23 +162,23 @@ impl SpeedLimiterOnState {
                         let on_state = SpeedLimiterOn::StandBy;
                         let hysterisis = prev_hysterisis;
                         let state_update = true;
-                        (on_state, hysterisis, state_update)
+                        (hysterisis, on_state, state_update)
                     }
                     SpeedLimiterOn::Actif => {
                         let on_state = input.prev_on_state;
                         let hysterisis =
                             update_hysterisis(prev_hysterisis, input.speed, input.v_set);
                         let state_update = false;
-                        (on_state, hysterisis, state_update)
+                        (hysterisis, on_state, state_update)
                     }
                     _ => {
                         let on_state = input.prev_on_state;
                         let hysterisis = prev_hysterisis;
                         let state_update = false;
-                        (on_state, hysterisis, state_update)
+                        (hysterisis, on_state, state_update)
                     }
                 };
-                (on_state, hysterisis, state_update)
+                (hysterisis, on_state, state_update)
             }
         };
         let in_reg = in_regulation(hysterisis);
@@ -214,38 +214,38 @@ impl SpeedLimiterState {
         let prev_state = self.mem;
         let prev_on_state = self.mem_1;
         let prev_in_regulation = self.mem_2;
-        let (state, on_state, in_regulation, state_update) =
+        let (state_update, in_regulation, on_state, state) =
             match (input.activation_req, input.failure) {
                 (Some(ActivationRequest::Off), _) => {
                     let state = SpeedLimiter::Off;
                     let on_state = SpeedLimiterOn::StandBy;
                     let in_regulation = false;
                     let state_update = prev_state != SpeedLimiter::Off;
-                    (state, on_state, in_regulation, state_update)
+                    (state_update, in_regulation, on_state, state)
                 }
                 (Some(ActivationRequest::On), _) if prev_state == SpeedLimiter::Off => {
                     let state = SpeedLimiter::On;
                     let on_state = SpeedLimiterOn::StandBy;
                     let in_regulation = true;
                     let state_update = true;
-                    (state, on_state, in_regulation, state_update)
+                    (state_update, in_regulation, on_state, state)
                 }
                 (_, Some(Failure::Entering)) => {
                     let state = SpeedLimiter::Fail;
                     let on_state = SpeedLimiterOn::StandBy;
                     let in_regulation = false;
                     let state_update = prev_state != SpeedLimiter::Fail;
-                    (state, on_state, in_regulation, state_update)
+                    (state_update, in_regulation, on_state, state)
                 }
                 (_, Some(Failure::Recovered)) if prev_state == SpeedLimiter::Fail => {
                     let state = SpeedLimiter::On;
                     let on_state = SpeedLimiterOn::StandBy;
                     let in_regulation = true;
                     let state_update = true;
-                    (state, on_state, in_regulation, state_update)
+                    (state_update, in_regulation, on_state, state)
                 }
                 (_, _) => {
-                    let (state, on_state, in_regulation, state_update) = match prev_state {
+                    let (state_update, in_regulation, on_state, state) = match prev_state {
                         SpeedLimiter::On => {
                             let state = prev_state;
                             let (on_state, in_regulation, state_update) =
@@ -256,17 +256,17 @@ impl SpeedLimiterState {
                                     speed: input.speed,
                                     v_set: input.v_set,
                                 });
-                            (state, on_state, in_regulation, state_update)
+                            (state_update, in_regulation, on_state, state)
                         }
                         _ => {
                             let state = prev_state;
                             let on_state = prev_on_state;
                             let in_regulation = prev_in_regulation;
                             let state_update = false;
-                            (state, on_state, in_regulation, state_update)
+                            (state_update, in_regulation, on_state, state)
                         }
                     };
-                    (state, on_state, in_regulation, state_update)
+                    (state_update, in_regulation, on_state, state)
                 }
             };
         self.mem = state;

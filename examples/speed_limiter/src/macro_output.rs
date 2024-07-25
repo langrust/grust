@@ -162,7 +162,7 @@ impl SpeedLimiterOnState {
     }
     pub fn step(&mut self, input: SpeedLimiterOnInput) -> (SpeedLimiterOn, bool) {
         let prev_hysterisis = self.mem;
-        let (on_state, hysterisis) = match input.prev_on_state {
+        let (hysterisis, on_state) = match input.prev_on_state {
             SpeedLimiterOn::StandBy
                 if activation_condition(
                     input.activation_req,
@@ -170,9 +170,9 @@ impl SpeedLimiterOnState {
                     input.v_set,
                 ) =>
             {
-                let hysterisis = new_hysterisis(0.0);
                 let on_state = SpeedLimiterOn::Actif;
-                (on_state, hysterisis)
+                let hysterisis = new_hysterisis(0.0);
+                (hysterisis, on_state)
             }
             SpeedLimiterOn::OverrideVoluntary
                 if exit_override_condition(
@@ -182,9 +182,9 @@ impl SpeedLimiterOnState {
                     input.speed,
                 ) =>
             {
-                let hysterisis = new_hysterisis(0.0);
                 let on_state = SpeedLimiterOn::Actif;
-                (on_state, hysterisis)
+                let hysterisis = new_hysterisis(0.0);
+                (hysterisis, on_state)
             }
             SpeedLimiterOn::OverrideInvoluntary
                 if exit_override_condition(
@@ -194,9 +194,9 @@ impl SpeedLimiterOnState {
                     input.speed,
                 ) =>
             {
-                let hysterisis = new_hysterisis(0.0);
                 let on_state = SpeedLimiterOn::Actif;
-                (on_state, hysterisis)
+                let hysterisis = new_hysterisis(0.0);
+                (hysterisis, on_state)
             }
             SpeedLimiterOn::OverrideVoluntary
                 if involuntary_override_condition(
@@ -206,16 +206,16 @@ impl SpeedLimiterOnState {
                     input.speed,
                 ) =>
             {
-                let hysterisis = prev_hysterisis;
                 let on_state = SpeedLimiterOn::OverrideInvoluntary;
-                (on_state, hysterisis)
+                let hysterisis = prev_hysterisis;
+                (hysterisis, on_state)
             }
             SpeedLimiterOn::Actif
                 if voluntary_override_condition(input.activation_req, input.kickdown) =>
             {
-                let hysterisis = prev_hysterisis;
                 let on_state = SpeedLimiterOn::OverrideVoluntary;
-                (on_state, hysterisis)
+                let hysterisis = prev_hysterisis;
+                (hysterisis, on_state)
             }
             SpeedLimiterOn::Actif
                 if standby_condition(
@@ -224,19 +224,19 @@ impl SpeedLimiterOnState {
                     input.v_set,
                 ) =>
             {
-                let hysterisis = prev_hysterisis;
                 let on_state = SpeedLimiterOn::StandBy;
-                (on_state, hysterisis)
+                let hysterisis = prev_hysterisis;
+                (hysterisis, on_state)
             }
             SpeedLimiterOn::Actif => {
-                let hysterisis = update_hysterisis(prev_hysterisis, input.speed, input.v_set);
                 let on_state = input.prev_on_state;
-                (on_state, hysterisis)
+                let hysterisis = update_hysterisis(prev_hysterisis, input.speed, input.v_set);
+                (hysterisis, on_state)
             }
             _ => {
-                let hysterisis = prev_hysterisis;
                 let on_state = input.prev_on_state;
-                (on_state, hysterisis)
+                let hysterisis = prev_hysterisis;
+                (hysterisis, on_state)
             }
         };
         let in_reg = in_regulation(hysterisis);
@@ -271,41 +271,41 @@ impl SpeedLimiterState {
         let failure = false;
         let prev_state = self.mem;
         let prev_on_state = self.mem_1;
-        let (state, on_state, in_regulation) = match prev_state {
+        let (in_regulation, on_state, state) = match prev_state {
             _ if off_condition(input.activation_req, input.vdc_disabled) => {
                 let state = SpeedLimiter::Off;
                 let on_state = prev_on_state;
                 let in_regulation = false;
-                (state, on_state, in_regulation)
+                (in_regulation, on_state, state)
             }
             SpeedLimiter::Off if on_condition(input.activation_req) => {
-                let (state, on_state, in_regulation) = match failure {
+                let (in_regulation, on_state, state) = match failure {
                     true => {
                         let state = SpeedLimiter::Fail;
                         let on_state = prev_on_state;
                         let in_regulation = false;
-                        (state, on_state, in_regulation)
+                        (in_regulation, on_state, state)
                     }
                     false => {
                         let state = SpeedLimiter::On;
                         let on_state = SpeedLimiterOn::StandBy;
                         let in_regulation = true;
-                        (state, on_state, in_regulation)
+                        (in_regulation, on_state, state)
                     }
                 };
-                (state, on_state, in_regulation)
+                (in_regulation, on_state, state)
             }
             SpeedLimiter::On if failure => {
                 let state = SpeedLimiter::Fail;
                 let on_state = prev_on_state;
                 let in_regulation = false;
-                (state, on_state, in_regulation)
+                (in_regulation, on_state, state)
             }
             SpeedLimiter::Fail if !failure => {
                 let state = SpeedLimiter::On;
                 let on_state = SpeedLimiterOn::StandBy;
                 let in_regulation = true;
-                (state, on_state, in_regulation)
+                (in_regulation, on_state, state)
             }
             SpeedLimiter::On => {
                 let state = prev_state;
@@ -317,13 +317,13 @@ impl SpeedLimiterState {
                     speed: input.speed,
                     v_set: input.v_set,
                 });
-                (state, on_state, in_regulation)
+                (in_regulation, on_state, state)
             }
             _ => {
                 let state = prev_state;
                 let on_state = prev_on_state;
                 let in_regulation = self.mem_2;
-                (state, on_state, in_regulation)
+                (in_regulation, on_state, state)
             }
         };
         let state_update = state != prev_state || on_state != prev_on_state;
@@ -343,21 +343,21 @@ pub mod runtime {
     pub enum RuntimeTimer {
         PeriodSpeedLimiter,
         DelaySpeedLimiter,
-        SpeedLimiter,
+        TimeoutSpeedLimiter,
     }
     impl timer_stream::Timing for RuntimeTimer {
         fn get_duration(&self) -> std::time::Duration {
             match self {
                 T::PeriodSpeedLimiter => std::time::Duration::from_millis(10u64),
                 T::DelaySpeedLimiter => std::time::Duration::from_millis(10u64),
-                T::SpeedLimiter => std::time::Duration::from_millis(500u64),
+                T::TimeoutSpeedLimiter => std::time::Duration::from_millis(500u64),
             }
         }
         fn do_reset(&self) -> bool {
             match self {
                 T::PeriodSpeedLimiter => false,
                 T::DelaySpeedLimiter => true,
-                T::SpeedLimiter => true,
+                T::TimeoutSpeedLimiter => true,
             }
         }
     }
@@ -444,9 +444,11 @@ pub mod runtime {
         ) -> Result<(), futures::channel::mpsc::SendError> {
             futures::pin_mut!(input);
             let mut runtime = self;
-            runtime.send_timer(T::SpeedLimiter, init_instant).await?;
             runtime
                 .send_timer(T::PeriodSpeedLimiter, init_instant)
+                .await?;
+            runtime
+                .send_timer(T::TimeoutSpeedLimiter, init_instant)
                 .await?;
             while let Some(input) = input.next().await {
                 match input {
@@ -462,8 +464,11 @@ pub mod runtime {
                     I::Speed(speed, instant) => {
                         runtime.speed_limiter.handle_speed(instant, speed).await?;
                     }
-                    I::Timer(T::SpeedLimiter, instant) => {
-                        runtime.speed_limiter.handle_speed_limiter(instant).await?;
+                    I::SetSpeed(set_speed, instant) => {
+                        runtime
+                            .speed_limiter
+                            .handle_set_speed(instant, set_speed)
+                            .await?;
                     }
                     I::Timer(T::PeriodSpeedLimiter, instant) => {
                         runtime
@@ -471,16 +476,16 @@ pub mod runtime {
                             .handle_period_speed_limiter(instant)
                             .await?;
                     }
-                    I::SetSpeed(set_speed, instant) => {
-                        runtime
-                            .speed_limiter
-                            .handle_set_speed(instant, set_speed)
-                            .await?;
-                    }
                     I::Kickdown(kickdown, instant) => {
                         runtime
                             .speed_limiter
                             .handle_kickdown(instant, kickdown)
+                            .await?;
+                    }
+                    I::Timer(T::TimeoutSpeedLimiter, instant) => {
+                        runtime
+                            .speed_limiter
+                            .handle_timeout_speed_limiter(instant)
                             .await?;
                     }
                     I::VacuumBrake(vacuum_brake, instant) => {
@@ -662,11 +667,12 @@ pub mod runtime {
                 }
                 Ok(())
             }
-            pub async fn handle_speed_limiter(
+            pub async fn handle_timeout_speed_limiter(
                 &mut self,
-                speed_limiter_instant: std::time::Instant,
+                timeout_speed_limiter_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.reset_time_constrains(speed_limiter_instant).await?;
+                self.reset_time_constrains(timeout_speed_limiter_instant)
+                    .await?;
                 let (v_set_aux, v_update) = self
                     .process_set_speed
                     .step(self.context.get_process_set_speed_inputs());
@@ -675,7 +681,7 @@ pub mod runtime {
                 let v_set_aux = self.context.v_set_aux;
                 let v_set = v_set_aux;
                 self.context.v_set = v_set;
-                self.send_output(O::VSet(v_set, speed_limiter_instant))
+                self.send_output(O::VSet(v_set, timeout_speed_limiter_instant))
                     .await?;
                 let (state, on_state, in_regulation_aux, state_update) = self
                     .speed_limiter
@@ -686,8 +692,11 @@ pub mod runtime {
                 self.context.state_update = state_update;
                 let in_regulation_aux = self.context.in_regulation_aux;
                 let in_regulation = in_regulation_aux;
-                self.send_output(O::InRegulation(in_regulation, speed_limiter_instant))
-                    .await?;
+                self.send_output(O::InRegulation(
+                    in_regulation,
+                    timeout_speed_limiter_instant,
+                ))
+                .await?;
                 Ok(())
             }
             #[inline]
@@ -695,7 +704,7 @@ pub mod runtime {
                 &mut self,
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.timer.send((T::SpeedLimiter, instant)).await?;
+                self.timer.send((T::TimeoutSpeedLimiter, instant)).await?;
                 Ok(())
             }
             pub async fn handle_speed(
