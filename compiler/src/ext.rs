@@ -759,7 +759,7 @@ pub trait EventPatternExt {
         events_indices: &HashMap<usize, usize>,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> TRes<()>;
+    ) -> TRes<Option<ast::stream::Expr>>;
 }
 
 mod event_pattern {
@@ -796,6 +796,7 @@ mod event_pattern {
                     });
                     Ok(())
                 }
+                EventPattern::RisingEdge(_) => Ok(()),
             }
         }
 
@@ -806,15 +807,42 @@ mod event_pattern {
             events_indices: &HashMap<usize, usize>,
             symbol_table: &mut SymbolTable,
             errors: &mut Vec<Error>,
-        ) -> TRes<()> {
+        ) -> TRes<Option<ast::stream::Expr>> {
             match self {
-                EventPattern::Tuple(patterns) => patterns
+                EventPattern::Tuple(patterns) => {
+                    let mut guard = None;
+                    let mut combine_guard = |opt_guard: Option<ast::stream::Expr>| {
+                        if let Some(add_guard) = opt_guard {
+                            if let Some(old_guard) = guard.take() {
+                                guard = Some(ast::stream::Expr::binop(ast::expr::Binop::new(
+                                    operator::BinaryOperator::And,
+                                    old_guard,
+                                    add_guard,
+                                )));
+                            } else {
+                                guard = Some(add_guard);
+                            }
+                        }
+                    };
+
+                    patterns
                     .patterns
                     .into_iter()
                     .map(|pattern| {
-                        pattern.create_tuple_pattern(tuple, events_indices, symbol_table, errors)
+                            let opt_guard = pattern.create_tuple_pattern(
+                                tuple,
+                                events_indices,
+                                symbol_table,
+                                errors,
+                            )?;
+                            // combine all rising edge detections
+                            combine_guard(opt_guard);
+                            Ok(())
                     })
-                    .collect::<TRes<()>>(),
+                        .collect::<TRes<()>>()?;
+
+                    Ok(guard)
+                }
                 EventPattern::Let(pattern) => {
                     // get the event identifier
                     let event_id = symbol_table.get_identifier_id(
@@ -834,7 +862,24 @@ mod event_pattern {
                     let idx = events_indices[&event_id];
                     *tuple.get_mut(idx).unwrap() = event_pattern;
 
-                    Ok(())
+                    Ok(None)
+                }
+                EventPattern::RisingEdge(expr) => {
+                    let guard = ast::stream::Expr::binop(ast::expr::Binop::new(
+                        operator::BinaryOperator::And,
+                        expr.clone(),
+                        ast::stream::Expr::unop(ast::expr::Unop::new(
+                            operator::UnaryOperator::Not,
+                            ast::stream::Expr::fby(ast::stream::Fby::new(
+                                ast::stream::Expr::cst(Constant::Boolean(syn::LitBool::new(
+                                    false,
+                                    macro2::Span::call_site(),
+                                ))),
+                                expr,
+                            )),
+                        )),
+                    ));
+                    Ok(Some(guard))
                 }
             }
         }

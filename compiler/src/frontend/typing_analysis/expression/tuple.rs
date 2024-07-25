@@ -16,7 +16,8 @@ where
             // an tuple is composed of `n` elements of the different type `t_k` and
             // its type is `(t_1, ..., t_n)`
             hir::expr::Kind::Tuple { ref mut elements } => {
-                debug_assert!(elements.len() >= 1);
+                // debug_assert!(elements.len() >= 1);
+                // the `when` item might create empty tuples in case there are only rising edges
 
                 let elements_types = elements
                     .iter_mut()

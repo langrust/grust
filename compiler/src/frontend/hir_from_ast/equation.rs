@@ -267,7 +267,7 @@ impl HIRFromAST for Equation {
                     .map(
                         |EventArmWhen {
                              pattern: event_pattern,
-                             guard,
+                             mut guard,
                              equations,
                              ..
                          }| {
@@ -278,7 +278,7 @@ impl HIRFromAST for Equation {
                                 // set local context: events + equations' signals
                                 // create tuple pattern: it stores events identifiers
                                 let mut elements = no_event_tuple.clone();
-                                event_pattern.create_tuple_pattern(
+                                let opt_guard = event_pattern.create_tuple_pattern(
                                     &mut elements,
                                     &events_indices,
                                     symbol_table,
@@ -298,6 +298,22 @@ impl HIRFromAST for Equation {
                                         )
                                     })
                                     .collect::<TRes<()>>()?;
+
+                                // add rising edge detection to the guard
+                                if let Some(add_guard) = opt_guard {
+                                    if let Some((token_if, old_guard)) = guard.take() {
+                                        guard = Some((
+                                            token_if,
+                                            ast::stream::Expr::binop(ast::expr::Binop::new(
+                                                operator::BinaryOperator::And,
+                                                old_guard,
+                                                add_guard,
+                                            )),
+                                        ))
+                                    } else {
+                                        guard = Some((Default::default(), add_guard))
+                                    }
+                                };
 
                                 // transform guard and equations into HIR with local context
                                 let guard = guard
