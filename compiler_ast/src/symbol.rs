@@ -189,7 +189,8 @@ impl Context {
         }
     }
     fn add_symbol(&mut self, key: SymbolKey, id: usize) {
-        self.current.insert(key, id);
+        let _unique = self.current.insert(key, id);
+        debug_assert!(_unique.is_none());
     }
     fn contains(&self, key: &SymbolKey, local: bool) -> bool {
         let contains = self.current.contains_key(key);
@@ -700,7 +701,32 @@ impl SymbolTable {
         self.known_symbols.add_symbol(key, id);
     }
 
-    /// Restore node or function body context.
+    /// Put identifier back in context.
+    pub fn put_back_in_context(
+        &mut self,
+        id: usize,
+        local: bool,
+        location: Location,
+        errors: &mut Vec<Error>,
+    ) -> TRes<()> {
+        let key = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"))
+            .hash();
+        if self.known_symbols.contains(&key, local) {
+            let error = Error::AlreadyDefinedElement {
+                name: self.get_name(id).clone(),
+                location,
+            };
+            errors.push(error);
+            Err(TerminationError)
+        } else {
+            self.known_symbols.add_symbol(key, id);
+            Ok(())
+        }
+    }
+
+    /// Restore node body or function inputs in context.
     pub fn restore_context(&mut self, id: usize) {
         let symbol = self
             .get_symbol(id)
