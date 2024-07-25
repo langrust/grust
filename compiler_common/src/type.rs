@@ -96,13 +96,14 @@ pub enum Typ {
 impl PartialEq for Typ {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
+            (Self::Any, _) => true,
+            (_, Self::Any) => true,
             (Self::Integer(_), Self::Integer(_))
             | (Self::Float(_), Self::Float(_))
             | (Self::Boolean(_), Self::Boolean(_))
             | (Self::Unit(_), Self::Unit(_))
             | (Self::NotDefinedYet(_), Self::NotDefinedYet(_))
-            | (Self::Polymorphism(_), Self::Polymorphism(_))
-            | (Self::Any, Self::Any) => true,
+            | (Self::Polymorphism(_), Self::Polymorphism(_)) => true,
             (
                 Self::Array {
                     ty: l_ty,
