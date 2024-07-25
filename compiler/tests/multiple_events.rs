@@ -13,13 +13,13 @@ fn should_compile_multiple_events() {
             when {
                 (let a = a?, let b = b?) if v > 50 => {
                     let z: int = 1;
-                },
+                }
                 let a = a? => {
                     let z: int = 2;
-                },
+                }
                 let b = b? => {
                     let z: int = if v > 50 then 3 else 4;
-                },
+                }
                 otherwise => {
                     let z: int = 0 fby c;
                 }

@@ -45,10 +45,10 @@ fn should_compile_aeb() {
             when {
                 let d = pedest? => {
                     state = brakes(d, speed);
-                },
+                }
                 let _ = timeout_pedest? => {
                     state = Braking::NoBrake;
-                },
+                }
                 otherwise => {
                     state = Braking::NoBrake fby state;
                 }

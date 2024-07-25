@@ -112,7 +112,7 @@ fn should_compile_speed_limiter_events() {
                 let v = set_speed? => {
                     v_set = threshold_set_speed(v);
                     v_update = prev_v_set != v_set;
-                },
+                }
                 otherwise => {
                     v_set = prev_v_set;
                     v_update = false;
@@ -144,25 +144,25 @@ fn should_compile_speed_limiter_events() {
                     on_state = SpeedLimiterOn::StandBy;
                     in_regulation = false;
                     state_update = prev_state != SpeedLimiter::Off;
-                },
+                }
                 let ActivationRequest::On = activation_req? if prev_state == SpeedLimiter::Off => {
                     state = SpeedLimiter::On;
                     on_state = SpeedLimiterOn::StandBy;
                     in_regulation = true;
                     state_update = true;
-                },
+                }
                 let Failure::Entering = failure? => {
                     state = SpeedLimiter::Fail;
                     on_state = SpeedLimiterOn::StandBy;
                     in_regulation = false;
                     state_update = prev_state != SpeedLimiter::Fail;
-                },
+                }
                 let Failure::Recovered = failure? if prev_state == SpeedLimiter::Fail => {
                     state = SpeedLimiter::On;
                     on_state = SpeedLimiterOn::StandBy;
                     in_regulation = true;
                     state_update = true;
-                },
+                }
                 otherwise => {
                     match prev_state {
                         SpeedLimiter::On => {
@@ -203,7 +203,7 @@ fn should_compile_speed_limiter_events() {
                     on_state = SpeedLimiterOn::OverrideVoluntary;
                     let hysterisis: Hysterisis = prev_hysterisis;
                     state_update = true;
-                },
+                }
                 otherwise => {
                     match prev_on_state {
                         SpeedLimiterOn::StandBy if activation_condition(vacuum_brake_state, v_set) => {
