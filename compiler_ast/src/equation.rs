@@ -185,7 +185,14 @@ impl Parse for EventPattern {
         } else if input.peek(Token![let]) {
             Ok(EventPattern::Let(input.parse()?))
         } else {
-            Err(input.error("event expected"))
+            let event: syn::Ident = input.parse()?;
+            let question_token: token::Question = input.parse()?;
+            let span = event.span();
+            let let_token = token::Let { span };
+            let pattern = Pattern::ident(event.to_string());
+            let eq_token = token::Eq { spans: [span] };
+            let pat = LetEventPattern::new(let_token, pattern, eq_token, event, question_token);
+            Ok(EventPattern::Let(pat))
         }
     }
 }
