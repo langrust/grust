@@ -285,38 +285,20 @@ impl Parse for DefaultArmWhen {
     }
 }
 
-/// ArmWhen for matching expression.
-pub enum ArmWhen {
-    EventArmWhen(EventArmWhen),
-    Default(DefaultArmWhen),
-}
-
-mk_new! { impl ArmWhen =>
-    EventArmWhen: event (e : EventArmWhen = e)
-    Default: default (e : DefaultArmWhen = e)
-}
-
-impl Parse for ArmWhen {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        if input.peek(keyword::otherwise) {
-            Ok(ArmWhen::default(input.parse()?))
-        } else {
-            Ok(ArmWhen::event(input.parse()?))
-        }
-    }
-}
-
 pub struct MatchWhen {
     pub when_token: keyword::when,
     pub brace_token: token::Brace,
     /// The different matching cases.
-    pub arms: Punctuated<ArmWhen, Token![,]>,
+    pub arms: Vec<EventArmWhen>,
+    /// The optional default arm
+    pub default: Option<DefaultArmWhen>,
 }
 mk_new! { impl MatchWhen =>
     new {
         when_token: keyword::when,
         brace_token: token::Brace,
-        arms: Punctuated<ArmWhen, Token![,]>,
+        arms: Vec<EventArmWhen>,
+        default: Option<DefaultArmWhen>
     }
 }
 impl Parse for MatchWhen {
@@ -324,9 +306,21 @@ impl Parse for MatchWhen {
         let when_token = input.parse()?;
         let content;
         let brace = braced!(content in input);
-        let arms: Punctuated<ArmWhen, Token![,]> = Punctuated::parse_terminated(&content)?;
+        let mut arms: Vec<EventArmWhen> = vec![];
+        while !content.is_empty() && !content.peek(keyword::otherwise) {
+            arms.push(content.parse()?);
+        }
+        let default = if content.peek(keyword::otherwise) {
+            let default = content.parse()?;
+            if !content.is_empty() {
+                return Err(content.error("'otherwise' branch should be at the end of 'when'"));
+            }
+            Some(default)
+        } else {
+            None
+        };
 
-        Ok(MatchWhen::new(when_token, brace, arms))
+        Ok(MatchWhen::new(when_token, brace, arms, default))
     }
 }
 
@@ -422,15 +416,15 @@ mod parse_equation {
                         &arg0
                             .arms
                             .iter()
-                            .map(|arm| match arm {
-                                super::ArmWhen::EventArmWhen(arm) => (
+                            .map(|arm| {
+                                (
                                     Some((&arm.pattern, arm.guard.as_ref().map(|(_, expr)| expr))),
                                     &arm.equations,
-                                ),
-                                super::ArmWhen::Default(arm) => (None, &arm.equations),
+                                )
                             })
                             .collect::<Vec<_>>(),
                     )
+                    .field(&(&arg0.default).as_ref().map(|arm| &arm.equations))
                     .finish(),
             }
         }
