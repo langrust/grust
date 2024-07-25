@@ -329,17 +329,20 @@ impl HIRFromAST for Equation {
                                             .get_signals(&mut def_signals, symbol_table, errors)
                                             .expect("internal bug");
 
-                                        let mut stmt =
-                                            equation.hir_from_ast(symbol_table, errors)?;
-
-                                        if def_signals
+                                        let stmt = if def_signals
                                             .keys()
                                             .any(|name| !always_defined.contains_key(name))
+                                            && !equation.is_event()
                                         {
+                                            let mut stmt =
+                                                equation.hir_from_ast(symbol_table, errors)?;
                                             stmt.expression = stream::expr(
                                                 stream::Kind::some_event(stmt.expression),
                                             );
-                                        }
+                                            stmt
+                                        } else {
+                                            equation.hir_from_ast(symbol_table, errors)?
+                                        };
 
                                         Ok(stmt)
                                     })

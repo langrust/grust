@@ -146,10 +146,13 @@ pub trait EquationExt {
         symbol_table: &SymbolTable,
         errors: &mut Vec<Error>,
     ) -> TRes<()>;
+
+    /// Tells if the equation defines an event.
+    fn is_event(&self) -> bool;
 }
 
 mod equation {
-    prelude! { ast::equation::* }
+    prelude! { ast::{ equation::*, stmt::LetDecl } }
 
     impl super::EquationExt for Equation {
         fn store_signals(
@@ -261,6 +264,18 @@ mod equation {
                     }
                     Ok(())
                 }
+            }
+        }
+
+        fn is_event(&self) -> bool {
+            match self {
+                Equation::LocalDef(LetDecl { expression, .. })
+                | Equation::OutputDef(Instantiation { expression, .. }) => match expression {
+                    ast::stream::Expr::When(when) => when.default.is_none(),
+                    _ => false,
+                },
+                Equation::MatchWhen(_) => false, //when.default.is_none(),
+                Equation::Match(_) => false,
             }
         }
     }
@@ -826,9 +841,9 @@ mod event_pattern {
                     };
 
                     patterns
-                    .patterns
-                    .into_iter()
-                    .map(|pattern| {
+                        .patterns
+                        .into_iter()
+                        .map(|pattern| {
                             let opt_guard = pattern.create_tuple_pattern(
                                 tuple,
                                 events_indices,
@@ -838,7 +853,7 @@ mod event_pattern {
                             // combine all rising edge detections
                             combine_guard(opt_guard);
                             Ok(())
-                    })
+                        })
                         .collect::<TRes<()>>()?;
 
                     Ok(guard)
