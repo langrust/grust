@@ -1,5 +1,6 @@
 prelude! {
-    ast::{ expr::Application, symbol::SymbolKind, stream, equation::EventPattern },
+    ast::{ expr::Application, symbol::SymbolKind, stream },
+    itertools::Itertools,
 }
 
 use super::HIRFromAST;
@@ -19,48 +20,84 @@ impl HIRFromAST for stream::When {
         // precondition: identifiers are stored in symbol table
         // postcondition: construct HIR expression kind and check identifiers good use
 
-        let mut events_indices = HashMap::with_capacity(arms.len());
-        let mut idx = 0;
-        presence
-            .pattern
-            .place_events(&mut events_indices, &mut idx, symbol_table, errors)?;
+        // create map from event_id to index in tuple pattern
+        let (events_indices, events_nb, no_event_tuple) = {
+            let mut events_indices = HashMap::with_capacity(arms.len());
+            let mut idx = 0;
+            presence
+                .pattern
+                .place_events(&mut events_indices, &mut idx, symbol_table, errors)?;
+            // default event_pattern tuple
+            let no_event_tuple: Vec<_> =
+                std::iter::repeat(hir::pattern::init(hir::pattern::Kind::default()))
+                    .take(idx)
+                    .collect();
+            (events_indices, idx, no_event_tuple)
+        };
+
         // create presence arm
         {
             symbol_table.local();
-            // set pattern signals in local context
-            presence.pattern.store(symbol_table, errors)?;
+
+            // set local context + create tuple of event's pattern
+            let mut elements = no_event_tuple;
+            presence.pattern.create_tuple_pattern(
+                &mut elements,
+                &events_indices,
+                symbol_table,
+                errors,
+            )?;
+            let pattern = hir::pattern::init(hir::pattern::Kind::tuple(elements));
+
             // transform into HIR
-            let event_pattern = create_event_pattern(presence.pattern, symbol_table, errors)?;
             let expression = presence.expression.hir_from_ast(symbol_table, errors)?;
+
+            // if no default then event
+            let expression = if default.is_none() {
+                hir::stream::expr(hir::stream::Kind::some_event(expression))
+            } else {
+                expression
+            };
+
             symbol_table.global();
-            arms.push((event_pattern, None, vec![], expression))
+            arms.push((pattern, None, vec![], expression))
         }
+
         // create default arm
-        if let Some(default) = default {
+        {
             let pattern = hir::Pattern {
                 kind: hir::pattern::Kind::Default,
                 typing: None,
                 location: location.clone(),
             };
-            let expression = default.expression.hir_from_ast(symbol_table, errors)?;
-            arms.push((pattern, None, vec![], expression))
+            if let Some(default) = default {
+                let expression = default.expression.hir_from_ast(symbol_table, errors)?;
+                arms.push((pattern, None, vec![], expression))
+            } else {
+                let expression = hir::stream::expr(hir::stream::Kind::none_event());
+                arms.push((pattern, None, vec![], expression))
+            }
         }
 
-        // create tuple expression to match
-        let mut elements = std::iter::repeat(hir::stream::expr(hir::stream::Kind::expr(
-            hir::expr::Kind::ident(0),
-        )))
-        .take(idx)
-        .collect::<Vec<_>>();
-        events_indices.iter().for_each(|(event_id, idx)| {
-            let event_expr =
-                hir::stream::expr(hir::stream::Kind::expr(hir::expr::Kind::ident(*event_id)));
-            *elements.get_mut(*idx).unwrap() = event_expr;
-        });
-        let expr = hir::stream::expr(hir::stream::Kind::expr(hir::expr::Kind::tuple(elements)));
-
         // construct the match expression
-        let match_expr = hir::stream::Kind::expr(hir::expr::Kind::match_expr(expr, arms));
+        let match_expr = {
+            // create tuple expression to match
+            let expr = {
+                let elements = events_indices
+                    .iter()
+                    .sorted_by_key(|(_, idx)| **idx)
+                    .map(|(event_id, _)| {
+                        hir::stream::expr(hir::stream::Kind::expr(hir::expr::Kind::ident(
+                            *event_id,
+                        )))
+                    })
+                    .collect::<Vec<_>>();
+                debug_assert!(elements.len() == events_nb);
+                hir::stream::expr(hir::stream::Kind::expr(hir::expr::Kind::tuple(elements)))
+            };
+            // construct the match expression
+            hir::stream::Kind::expr(hir::expr::Kind::match_expr(expr, arms))
+        };
 
         Ok(match_expr)
     }
@@ -208,40 +245,5 @@ impl HIRFromAST for stream::Expr {
             location,
             dependencies: hir::Dependencies::new(),
         })
-    }
-}
-
-fn create_event_pattern(
-    pattern: EventPattern,
-    symbol_table: &mut SymbolTable,
-    errors: &mut Vec<Error>,
-) -> TRes<hir::Pattern> {
-    match pattern {
-        EventPattern::Tuple(patterns) => {
-            let elements = patterns
-                .patterns
-                .into_iter()
-                .map(|pattern| create_event_pattern(pattern, symbol_table, errors))
-                .collect::<TRes<Vec<hir::Pattern>>>()?;
-            let event_pattern = hir::pattern::init(hir::pattern::Kind::tuple(elements));
-
-            Ok(event_pattern)
-        }
-        EventPattern::Let(pattern) => {
-            // get the event identifier
-            let event_id = symbol_table.get_identifier_id(
-                &pattern.event.to_string(),
-                false,
-                Location::default(),
-                errors,
-            )?;
-
-            // transform inner_pattern into HIR
-            let inner_pattern = pattern.pattern.hir_from_ast(symbol_table, errors)?;
-            let event_pattern =
-                hir::pattern::init(hir::pattern::Kind::present(event_id, inner_pattern));
-
-            Ok(event_pattern)
-        }
     }
 }
