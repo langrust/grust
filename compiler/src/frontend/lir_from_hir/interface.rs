@@ -1346,7 +1346,8 @@ impl<'a> PropagationBuilder<'a> {
 
         let max_timeout = service.constrains.1;
         // add new timing event into the identifier creator
-        let fresh_name = identifier_creator.fresh_identifier("", symbol_table.get_name(service.id));
+        let fresh_name =
+            identifier_creator.fresh_identifier("timeout", symbol_table.get_name(service.id));
         let typing = Typ::event(Typ::unit());
         let fresh_id =
             symbol_table.insert_service_timeout(fresh_name.clone(), service.id, max_timeout);
