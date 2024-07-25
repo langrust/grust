@@ -32,7 +32,7 @@ grust! {
         c = z;
         d = when let a = y? then 0.1 otherwise 0.2;
         when {
-            (let a = a?, let e = b?) => {
+            (a?, let e = b?) => {
                 let z: int =  if v > 50 then e else a;
                 let y: unit? = ();
             }
