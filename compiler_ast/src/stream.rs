@@ -16,8 +16,8 @@ pub struct Fby {
 
 mk_new! { impl Fby =>
     new {
-        constant: Expr = constant.into(),
-        expression: Expr = expression.into(),
+        constant: impl Into<Box<Expr >> = constant.into(),
+        expression: impl Into<Box<Expr >> = expression.into(),
     }
 }
 
@@ -27,7 +27,7 @@ impl Fby {
     }
     pub fn parse(constant: Expr, input: syn::parse::ParseStream) -> syn::Result<Self> {
         let _: keyword::fby = input.parse()?;
-        let expression = input.parse()?;
+        let expression: Expr = input.parse()?;
         Ok(Fby::new(constant, expression))
     }
 }
@@ -47,7 +47,7 @@ mk_new! { impl EventWhen =>
     new {
         pattern: EventPattern,
         then_token: keyword::then,
-        expression: Expr = expression.into(),
+        expression: impl Into<Box<Expr >> = expression.into(),
     }
 }
 
@@ -71,7 +71,7 @@ pub struct DefaultWhen {
 mk_new! { impl DefaultWhen =>
     new {
         otherwise_token: keyword::otherwise,
-        expression: Expr = expression.into(),
+        expression: impl Into<Box<Expr >> = expression.into(),
     }
 }
 

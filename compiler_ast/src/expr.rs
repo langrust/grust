@@ -32,7 +32,7 @@ pub struct Unop<E> {
 mk_new! { impl{E} Unop<E> =>
     new {
         op : UnaryOperator,
-        expression: E = expression.into(),
+        expression: impl Into<Box<E>> = expression.into(),
     }
 
 }
@@ -72,8 +72,8 @@ pub struct Binop<E> {
 mk_new! { impl{E} Binop<E> =>
     new {
         op : BinaryOperator,
-        left_expression: E = left_expression.into(),
-        right_expression: E = right_expression.into(),
+        left_expression: impl Into<Box<E>> = left_expression.into(),
+        right_expression: impl Into<Box<E>> = right_expression.into(),
     }
 
 }
@@ -120,9 +120,9 @@ pub struct IfThenElse<E> {
 
 mk_new! { impl{E} IfThenElse<E> =>
     new {
-        expression: E = expression.into(),
-        true_expression: E = true_expression.into(),
-        false_expression: E = false_expression.into()
+        expression: impl Into<Box<E>> = expression.into(),
+        true_expression: impl Into<Box<E>> = true_expression.into(),
+        false_expression: impl Into<Box<E>> = false_expression.into()
     }
 }
 
@@ -164,7 +164,7 @@ pub struct Application<E> {
 
 mk_new! { impl{E} Application<E> =>
     new {
-        function_expression: E = function_expression.into(),
+        function_expression: impl Into<Box<E>> = function_expression.into(),
         inputs: Vec<E>,
     }
 }
@@ -189,7 +189,7 @@ where
     E: Parse,
 {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let function = input.parse()?;
+        let function: E = input.parse()?;
         let content;
         let _ = syn::parenthesized!(content in input);
         let inputs: Punctuated<E, Token![,]> = Punctuated::parse_terminated(&content)?;
@@ -209,7 +209,7 @@ pub struct TypedAbstraction<E> {
 mk_new! { impl{E} TypedAbstraction<E> =>
     new {
         inputs: Vec<(String, Typ)>,
-        expression: E = expression.into(),
+        expression: impl Into<Box<E>> = expression.into(),
     }
 }
 
@@ -462,7 +462,7 @@ pub struct Match<E> {
 
 mk_new! { impl{E} Match<E> =>
     new {
-        expression: E = expression.into(),
+        expression: impl Into<Box<E>> = expression.into(),
         arms: Vec<Arm<E>>,
     }
 }
@@ -481,7 +481,7 @@ where
 {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let _: Token![match] = input.parse()?;
-        let expression = input.parse()?;
+        let expression: E = input.parse()?;
         let content;
         let _ = braced!(content in input);
         let arms: Punctuated<Arm<E>, Token![,]> = Punctuated::parse_terminated(&content)?;
@@ -500,7 +500,7 @@ pub struct FieldAccess<E> {
 
 mk_new! { impl{E} FieldAccess<E> =>
     new {
-        expression: E = expression.into(),
+        expression: impl Into<Box<E>> = expression.into(),
         field: impl Into<String> = field.into(),
     }
 }
@@ -528,7 +528,7 @@ where
     E: Parse,
 {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let expression = input.parse()?;
+        let expression: E = input.parse()?;
         let _: Token![.] = input.parse()?;
         let field: syn::Ident = input.parse()?;
         Ok(FieldAccess::new(expression, field.to_string()))
@@ -546,7 +546,7 @@ pub struct TupleElementAccess<E> {
 
 mk_new! { impl{E} TupleElementAccess<E> =>
     new {
-        expression: E = expression.into(),
+        expression: impl Into<Box<E>> = expression.into(),
         element_number: usize,
     }
 }
@@ -577,7 +577,7 @@ where
     E: Parse,
 {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let expression = input.parse()?;
+        let expression: E = input.parse()?;
         let _: Token![.] = input.parse()?;
         let element_number: syn::LitInt = input.parse()?;
         Ok(TupleElementAccess::new(
@@ -598,8 +598,8 @@ pub struct Map<E> {
 
 mk_new! { impl{E} Map<E> =>
     new {
-        expression: E = expression.into(),
-        function_expression: E = function_expression.into(),
+        expression: impl Into<Box<E>> = expression.into(),
+        function_expression: impl Into<Box<E>> = function_expression.into(),
     }
 }
 
@@ -620,7 +620,7 @@ where
         let _: keyword::map = input.parse()?;
         let content;
         let _ = parenthesized!(content in input);
-        let function_expression = content.parse()?;
+        let function_expression: E = content.parse()?;
         if content.is_empty() {
             Ok(Self::new(expression, function_expression))
         } else {
@@ -633,12 +633,12 @@ where
     E: Parse,
 {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let expression = input.parse()?;
+        let expression: E = input.parse()?;
         let _: Token![.] = input.parse()?;
         let _: keyword::map = input.parse()?;
         let content;
         let _ = parenthesized!(content in input);
-        let function_expression = content.parse()?;
+        let function_expression: E = content.parse()?;
         if content.is_empty() {
             Ok(Self::new(expression, function_expression))
         } else {
@@ -660,9 +660,9 @@ pub struct Fold<E> {
 
 mk_new! { impl{E} Fold<E> =>
     new {
-        expression: E = expression.into(),
-        initialization_expression: E = initialization_expression.into(),
-        function_expression: E = function_expression.into(),
+        expression: impl Into<Box<E>> = expression.into(),
+        initialization_expression: impl Into<Box<E>> = initialization_expression.into(),
+        function_expression: impl Into<Box<E>> = function_expression.into(),
     }
 }
 
@@ -683,9 +683,9 @@ where
         let _: keyword::fold = input.parse()?;
         let content;
         let _ = parenthesized!(content in input);
-        let init = content.parse()?;
+        let init: E = content.parse()?;
         let _: Token![,] = content.parse()?;
-        let function = content.parse()?;
+        let function: E = content.parse()?;
         if content.is_empty() {
             Ok(Self::new(expression, init, function))
         } else {
@@ -698,14 +698,14 @@ where
     E: Parse,
 {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let expression = input.parse()?;
+        let expression: E = input.parse()?;
         let _: Token![.] = input.parse()?;
         let _: keyword::fold = input.parse()?;
         let content;
         let _ = parenthesized!(content in input);
-        let init = content.parse()?;
+        let init: E = content.parse()?;
         let _: Token![,] = content.parse()?;
-        let function = content.parse()?;
+        let function: E = content.parse()?;
         if content.is_empty() {
             Ok(Self::new(expression, init, function))
         } else {
@@ -725,8 +725,8 @@ pub struct Sort<E> {
 
 mk_new! { impl{E} Sort<E> =>
     new {
-        expression: E = expression.into(),
-        function_expression: E = function_expression.into(),
+        expression: impl Into<Box<E>> = expression.into(),
+        function_expression: impl Into<Box<E>> = function_expression.into(),
     }
 }
 
@@ -747,7 +747,7 @@ where
         let _: keyword::sort = input.parse()?;
         let content;
         let _ = parenthesized!(content in input);
-        let function_expression = content.parse()?;
+        let function_expression: E = content.parse()?;
         if content.is_empty() {
             Ok(Self::new(expression, function_expression))
         } else {
@@ -760,12 +760,12 @@ where
     E: Parse,
 {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let expression = input.parse()?;
+        let expression: E = input.parse()?;
         let _: Token![.] = input.parse()?;
         let _: keyword::sort = input.parse()?;
         let content;
         let _ = parenthesized!(content in input);
-        let function_expression = content.parse()?;
+        let function_expression: E = content.parse()?;
         if content.is_empty() {
             Ok(Self::new(expression, function_expression))
         } else {
