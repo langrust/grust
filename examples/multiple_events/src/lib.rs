@@ -50,31 +50,31 @@ grust! {
         }
     }
 
-    // component final_test(a: int?, b: int?, v: int) -> (
-    //     u: int,
-    //     t: int?,
-    //     x: int?,
-    // ) {
-    //     t = when a? then a + z;
-    //     u = when (y?, w?) then w + 3 otherwise z + v;
+    component final_test(a: int?, b: int?, v: int) -> (
+        u: int,
+        t: int?,
+        x: int?,
+    ) {
+        t = when a? then a + z;
+        u = when (y?, w?) then w + 3 otherwise z + v;
 
-    //     when {
-    //         (a?, let b = b?) => {
-    //             let z: int = if v > 50 then 1 else 0;
-    //             let y: unit? = ();
-    //         },
-    //         let a = a? => {
-    //             let z: int = 2;
-    //             x = 2;
-    //         },
-    //         b? => {
-    //             let z: int = if v > 50 then 3 else 4;
-    //             x = 2;
-    //         },
-    //         otherwise => {
-    //             let z: int = 5;
-    //             let w: int? = when v > 50 then v + 0 fby u;
-    //         }
-    //     }
-    // }
+        when {
+            (a?, let _ = b?) => {
+                let z: int = if v > 50 then 1 else 0;
+                let y: unit? = ();
+            }
+            let a = a? => {
+                let z: int = 2;
+                x = 2;
+            }
+            b? => {
+                let z: int = if v > 50 then 3 else 4;
+                let w: int? = when v > 50 then v + (0 fby u);
+                x = 2;
+            }
+            otherwise => {
+                let z: int = 5;
+            }
+        }
+    }
 }
