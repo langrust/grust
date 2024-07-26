@@ -74,20 +74,21 @@ impl DefineEventsState {
         (c, d, x)
     }
 }
+use grust::grust_std::rising_edge::{RisingEdgeInput, RisingEdgeState};
 pub struct FinalTestInput {
     pub a: Option<i64>,
     pub b: Option<i64>,
     pub v: i64,
 }
 pub struct FinalTestState {
-    mem: bool,
-    mem_1: i64,
+    mem: i64,
+    rising_edge: RisingEdgeState,
 }
 impl FinalTestState {
     pub fn init() -> FinalTestState {
         FinalTestState {
-            mem: false,
-            mem_1: 0i64,
+            mem: 0i64,
+            rising_edge: RisingEdgeState::init(),
         }
     }
     pub fn step(&mut self, input: FinalTestInput) -> (i64, Option<i64>, Option<i64>) {
@@ -103,8 +104,10 @@ impl FinalTestState {
                 (z, None, x, None)
             }
             (_, Some(b)) => {
+                let x_1 = input.v > 50i64;
+                let comp_app_rising_edge = self.rising_edge.step(RisingEdgeInput { test: x_1 });
                 let w = match () {
-                    () if input.v > 50i64 && !self.mem => Some(input.v + self.mem_1),
+                    () if comp_app_rising_edge => Some(input.v + self.mem),
                     _ => None,
                 };
                 let x = Some(2i64);
@@ -124,8 +127,7 @@ impl FinalTestState {
             (Some(y), Some(w)) => w + 3i64,
             _ => z + input.v,
         };
-        self.mem = input.v > 50i64;
-        self.mem_1 = u;
+        self.mem = u;
         (u, t, x)
     }
 }

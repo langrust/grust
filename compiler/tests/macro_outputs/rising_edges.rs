@@ -1,4 +1,4 @@
-use grust::std::rising_edge::{RisingEdgeInput, RisingEdgeState};
+use grust::grust_std::rising_edge::{RisingEdgeInput, RisingEdgeState};
 pub struct RisingEdgesInput {
     pub a: Option<i64>,
     pub b: Option<i64>,

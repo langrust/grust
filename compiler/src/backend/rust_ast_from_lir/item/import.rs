@@ -24,11 +24,11 @@ mod rust_ast_from_lir {
     fn should_create_rust_ast_use_from_lir_import() {
         let import = Import {
             name: "rising_edge".to_string(),
-            path: parse_quote! { grust::std::rising_edge },
+            path: parse_quote! { grust::grust_std::rising_edge },
         };
 
         let control =
-            parse_quote! { use grust::std::rising_edge::{ RisingEdgeInput, RisingEdgeState }; };
+            parse_quote! { use grust::grust_std::rising_edge::{ RisingEdgeInput, RisingEdgeState }; };
         assert_eq!(rust_ast_from_lir(import), control)
     }
 }

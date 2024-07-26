@@ -43,3 +43,4 @@ impl TestState {
         y
     }
 }
+use grust::grust_std::rising_edge::{RisingEdgeInput, RisingEdgeState};

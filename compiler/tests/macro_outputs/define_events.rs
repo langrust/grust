@@ -41,3 +41,4 @@ impl DefineEventsState {
         (c, d, x)
     }
 }
+use grust::grust_std::rising_edge::{RisingEdgeInput, RisingEdgeState};

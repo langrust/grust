@@ -7,8 +7,6 @@ fn should_compile_rising_edges() {
     let ast: Ast = syn::parse_quote! {
         #![dump = "tests/macro_outputs/rising_edges.rs"]
 
-        import component grust::std::rising_edge: (test: bool) -> (res: bool);
-
         component rising_edges(a: int?, b: int?, v: int) -> (
             c: int,
             d: float,
