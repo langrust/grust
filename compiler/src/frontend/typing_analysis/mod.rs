@@ -1,13 +1,13 @@
 prelude! {}
 
 // "Empty" modules, *i.e.* only define `impl`-s and need not be `pub`lic.
+mod component;
 mod contract;
 mod expression;
 mod file;
 mod flow_expression;
 mod function;
 mod interface;
-mod node;
 mod pattern;
 mod statement;
 mod stream_expression;

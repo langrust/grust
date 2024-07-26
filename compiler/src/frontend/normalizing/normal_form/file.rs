@@ -61,13 +61,13 @@ impl File {
     pub fn normal_form(&mut self, symbol_table: &mut SymbolTable) {
         let mut nodes_reduced_graphs = HashMap::new();
         // get every nodes' graphs
-        self.nodes.iter().for_each(|node| {
+        self.components.iter().for_each(|node| {
             let test_first_insert =
-                nodes_reduced_graphs.insert(node.id.clone(), node.graph.clone());
+                nodes_reduced_graphs.insert(node.get_id().clone(), node.get_graph().clone());
             debug_assert!(test_first_insert.is_none())
         });
         // normalize nodes
-        self.nodes
+        self.components
             .iter_mut()
             .for_each(|node| node.normal_form(&nodes_reduced_graphs, symbol_table));
 

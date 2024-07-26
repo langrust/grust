@@ -9,15 +9,15 @@ impl TypeAnalysis for File {
     fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         let File {
             functions,
-            nodes,
+            components,
             interface,
             ..
         } = self;
 
-        // typing nodes
-        nodes
+        // typing components
+        components
             .iter_mut()
-            .map(|node| node.typing(symbol_table, errors))
+            .map(|component| component.typing(symbol_table, errors))
             .collect::<TRes<()>>()?;
 
         // typing functions

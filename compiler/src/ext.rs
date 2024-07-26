@@ -9,7 +9,7 @@ pub trait ComponentExt {
 
 mod component {
     prelude! {
-        ast::{Component, Colon}
+        ast::{Component, ComponentImport, Colon}
     }
 
     impl super::ComponentExt for Component {
@@ -94,6 +94,96 @@ mod component {
                 map.shrink_to_fit();
                 map
             };
+
+            symbol_table.global();
+
+            let _ = symbol_table.insert_node(
+                name, false, inputs, eventful, outputs, locals, period, location, errors,
+            )?;
+
+            Ok(())
+        }
+    }
+
+    impl super::ComponentExt for ComponentImport {
+        /// Store node's signals in symbol table.
+        fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+            symbol_table.local();
+
+            let last = self.path.clone().segments.pop().unwrap().into_value();
+            let name = last.ident.to_string();
+            assert!(last.arguments.is_none());
+
+            let period = self
+                .period
+                .as_ref()
+                .map(|(_, literal, _)| literal.base10_parse().unwrap());
+
+            let eventful = period.is_some()
+                || self
+                    .args
+                    .iter()
+                    .any(|Colon { right: typing, .. }| typing.is_event());
+
+            let location = Location::default();
+
+            // store input signals and get their ids
+            let inputs = self
+                .args
+                .iter()
+                .map(
+                    |Colon {
+                         left: ident,
+                         right: typing,
+                         ..
+                     }| {
+                        let name = ident.to_string();
+                        let typing =
+                            typing
+                                .clone()
+                                .hir_from_ast(&location, symbol_table, errors)?;
+                        let id = symbol_table.insert_signal(
+                            name,
+                            Scope::Input,
+                            Some(typing),
+                            true,
+                            location.clone(),
+                            errors,
+                        )?;
+                        Ok(id)
+                    },
+                )
+                .collect::<TRes<Vec<_>>>()?;
+
+            // store outputs and get their ids
+            let outputs = self
+                .outs
+                .iter()
+                .map(
+                    |Colon {
+                         left: ident,
+                         right: typing,
+                         ..
+                     }| {
+                        let name = ident.to_string();
+                        let typing =
+                            typing
+                                .clone()
+                                .hir_from_ast(&location, symbol_table, errors)?;
+                        let id = symbol_table.insert_signal(
+                            name.clone(),
+                            Scope::Output,
+                            Some(typing),
+                            true,
+                            location.clone(),
+                            errors,
+                        )?;
+                        Ok((name, id))
+                    },
+                )
+                .collect::<TRes<Vec<_>>>()?;
+
+            let locals = Default::default();
 
             symbol_table.global();
 
@@ -292,6 +382,9 @@ impl AstExt for Ast {
             .iter()
             .map(|item| match item {
                 crate::ast::Item::Component(component) => component.store(symbol_table, errors),
+                crate::ast::Item::ComponentImport(component) => {
+                    component.store(symbol_table, errors)
+                }
                 crate::ast::Item::Function(function) => function.store(symbol_table, errors),
                 crate::ast::Item::Typedef(typedef) => typedef.store(symbol_table, errors),
                 crate::ast::Item::Service(_)

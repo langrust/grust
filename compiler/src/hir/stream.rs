@@ -113,27 +113,27 @@ impl Expr {
     pub fn is_normal_form(&self) -> bool {
         match &self.kind {
             Kind::Expression { expression } => expression
-                .propagate_predicate(Self::no_node_application, |statement| {
+                .propagate_predicate(Self::no_component_application, |statement| {
                     statement.expression.is_normal_form()
                 }),
-            Kind::FollowedBy { expression, .. } => expression.no_node_application(),
+            Kind::FollowedBy { expression, .. } => expression.no_component_application(),
             Kind::NodeApplication { inputs, .. } => inputs
                 .iter()
-                .all(|(_, expression)| expression.no_node_application()),
-            Kind::SomeEvent { expression } => expression.no_node_application(),
+                .all(|(_, expression)| expression.no_component_application()),
+            Kind::SomeEvent { expression } => expression.no_component_application(),
             Kind::NoneEvent => true,
         }
     }
     /// Tell if there is no node application.
-    pub fn no_node_application(&self) -> bool {
+    pub fn no_component_application(&self) -> bool {
         match &self.kind {
             Kind::Expression { expression } => expression
-                .propagate_predicate(Self::no_node_application, |statement| {
-                    statement.expression.no_node_application()
+                .propagate_predicate(Self::no_component_application, |statement| {
+                    statement.expression.no_component_application()
                 }),
-            Kind::FollowedBy { expression, .. } => expression.no_node_application(),
+            Kind::FollowedBy { expression, .. } => expression.no_component_application(),
             Kind::NodeApplication { .. } => false,
-            Kind::SomeEvent { expression } => expression.no_node_application(),
+            Kind::SomeEvent { expression } => expression.no_component_application(),
             Kind::NoneEvent => true,
         }
     }

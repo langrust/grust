@@ -1,7 +1,7 @@
 prelude! {
     petgraph::{algo::all_simple_paths},
     graph::*,
-    hir::{ IdentifierCreator, Memory, Node, Stmt, stream },
+    hir::{ IdentifierCreator, Memory, Component, Stmt, stream },
 }
 
 use super::Union;
@@ -102,7 +102,7 @@ impl Stmt<stream::Expr> {
         identifier_creator: &mut IdentifierCreator,
         graph: &mut DiGraphMap<usize, Label>,
         symbol_table: &mut SymbolTable,
-        nodes: &HashMap<usize, Node>,
+        nodes: &HashMap<usize, Component>,
     ) -> Vec<Stmt<stream::Expr>> {
         let mut current_statements = vec![self.clone()];
         let mut new_statements =
@@ -132,7 +132,7 @@ impl Stmt<stream::Expr> {
         identifier_creator: &mut IdentifierCreator,
         graph: &DiGraphMap<usize, Label>,
         symbol_table: &mut SymbolTable,
-        nodes: &HashMap<usize, Node>,
+        nodes: &HashMap<usize, Component>,
     ) -> Vec<Stmt<stream::Expr>> {
         match &self.expression.kind {
             stream::Kind::NodeApplication {

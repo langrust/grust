@@ -13,34 +13,34 @@ impl File {
         symbol_table: &SymbolTable,
         errors: &mut Vec<Error>,
     ) -> TRes<()> {
-        let File { nodes, .. } = self;
+        let File { components, .. } = self;
 
         // initialize dictionariy for reduced graphs
         let mut nodes_reduced_graphs = HashMap::new();
 
         // create graph of nodes
         let mut nodes_graph = DiGraphMap::new();
-        nodes
+        components
             .iter()
-            .for_each(|node| node.add_node_dependencies(&mut nodes_graph));
+            .for_each(|component| component.add_node_dependencies(&mut nodes_graph));
 
         // sort nodes according to their dependencies
-        let sorted_nodes = toposort(&nodes_graph, None).map_err(|node| {
+        let sorted_nodes = toposort(&nodes_graph, None).map_err(|component| {
             let error = Error::NotCausalNode {
-                node: symbol_table.get_name(node.node_id()).clone(),
+                node: symbol_table.get_name(component.node_id()).clone(),
                 location: self.location.clone(),
             };
             errors.push(error);
             TerminationError
         })?;
-        nodes.sort_by(|n1, n2| {
+        components.sort_by(|c1, c2| {
             let index1 = sorted_nodes
                 .iter()
-                .position(|id| *id == n1.id)
+                .position(|id| *id == c1.get_id())
                 .expect("should be in sorted list");
             let index2 = sorted_nodes
                 .iter()
-                .position(|id| *id == n2.id)
+                .position(|id| *id == c2.get_id())
                 .expect("should be in sorted list");
 
             Ord::cmp(&index2, &index1)
@@ -48,9 +48,9 @@ impl File {
 
         // ordered nodes complete their dependency graphs
         let mut ctx = Ctx::new(symbol_table, &mut nodes_reduced_graphs, errors);
-        nodes
+        components
             .iter_mut()
-            .map(|node| node.compute_dependencies(&mut ctx))
+            .map(|component| component.compute_dependencies(&mut ctx))
             .collect::<TRes<()>>()?;
 
         Ok(())

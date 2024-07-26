@@ -21,13 +21,20 @@ impl HIRFromAST for Ast {
 
         let Ast { items } = self;
 
-        let (typedefs, functions, nodes, imports, exports, services) = items.into_iter().fold(
+        let (typedefs, functions, components, imports, exports, services) = items.into_iter().fold(
             (vec![], vec![], vec![], vec![], vec![], vec![]),
-            |(mut typedefs, mut functions, mut nodes, mut imports, mut exports, mut services),
+            |(
+                mut typedefs,
+                mut functions,
+                mut components,
+                mut imports,
+                mut exports,
+                mut services,
+            ),
              item| {
                 match item {
                     ast::Item::Component(component) => {
-                        nodes.push(component.hir_from_ast(symbol_table, errors))
+                        components.push(component.hir_from_ast(symbol_table, errors))
                     }
                     ast::Item::Function(function) => {
                         functions.push(function.hir_from_ast(symbol_table, errors))
@@ -48,8 +55,11 @@ impl HIRFromAST for Ast {
                             .hir_from_ast(symbol_table, errors)
                             .map(|res| (symbol_table.get_fresh_id(), res)),
                     ),
+                    ast::Item::ComponentImport(component) => {
+                        components.push(component.hir_from_ast(symbol_table, errors))
+                    }
                 }
-                (typedefs, functions, nodes, imports, exports, services)
+                (typedefs, functions, components, imports, exports, services)
             },
         );
 
@@ -62,7 +72,7 @@ impl HIRFromAST for Ast {
         Ok(hir::File {
             typedefs: typedefs.into_iter().collect::<TRes<Vec<_>>>()?,
             functions: functions.into_iter().collect::<TRes<Vec<_>>>()?,
-            nodes: nodes.into_iter().collect::<TRes<Vec<_>>>()?,
+            components: components.into_iter().collect::<TRes<Vec<_>>>()?,
             interface,
             location: Location::default(),
         })

@@ -1,5 +1,7 @@
 prelude! {}
 
+/// HIR Component construction from AST Component
+pub mod component;
 /// HIR Contract construction from AST Contract
 pub mod contract;
 /// HIR Equation construction from AST Equation
@@ -32,49 +34,4 @@ pub trait HIRFromAST {
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> TRes<Self::HIR>;
-}
-
-impl HIRFromAST for ast::Component {
-    type HIR = hir::Node;
-
-    // precondition: node and its signals are already stored in symbol table
-    // postcondition: construct HIR node and check identifiers good use
-    fn hir_from_ast(
-        self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> TRes<Self::HIR> {
-        let ast::Component {
-            ident,
-            contract,
-            equations,
-            ..
-        } = self;
-        let name = ident.to_string();
-        let location = Location::default();
-        let id = symbol_table.get_node_id(&name, false, location.clone(), errors)?;
-
-        // create local context with all signals
-        symbol_table.local();
-        symbol_table.restore_context(id);
-        symbol_table.enter_in_node(id);
-
-        let statements = equations
-            .into_iter()
-            .map(|equation| equation.hir_from_ast(symbol_table, errors))
-            .collect::<TRes<Vec<_>>>()?;
-        let contract = contract.hir_from_ast(symbol_table, errors)?;
-
-        symbol_table.leave_node();
-        symbol_table.global();
-
-        Ok(hir::Node {
-            id,
-            statements,
-            contract,
-            location,
-            graph: graph::DiGraphMap::new(),
-            memory: hir::Memory::new(),
-        })
-    }
 }

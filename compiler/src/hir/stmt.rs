@@ -25,7 +25,7 @@ impl Stmt<stream::Expr> {
         self.expression.is_normal_form()
     }
     /// Tell if there is no node application.
-    pub fn no_node_application(&self) -> bool {
-        self.expression.no_node_application()
+    pub fn no_component_application(&self) -> bool {
+        self.expression.no_component_application()
     }
 }

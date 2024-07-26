@@ -23,11 +23,11 @@ impl File {
     /// which can not be computed by a function call.
     pub fn inline_when_needed(&mut self, symbol_table: &mut SymbolTable) {
         let nodes = self
-            .nodes
+            .components
             .iter()
-            .map(|node| (node.id.clone(), node.clone()))
+            .map(|node| (node.get_id().clone(), node.clone()))
             .collect::<HashMap<_, _>>();
-        self.nodes
+        self.components
             .iter_mut()
             .for_each(|node| node.inline_when_needed(&nodes, symbol_table))
     }

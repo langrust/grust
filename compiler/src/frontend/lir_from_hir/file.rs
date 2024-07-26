@@ -9,7 +9,7 @@ impl File {
         let File {
             typedefs,
             functions,
-            nodes,
+            components,
             interface,
             ..
         } = self;
@@ -27,10 +27,9 @@ impl File {
             .map(Item::Function);
         items.extend(functions);
 
-        let state_machines = nodes
+        let state_machines = components
             .into_iter()
-            .map(|node| node.lir_from_hir(&symbol_table))
-            .map(Item::StateMachine);
+            .map(|component| component.lir_from_hir(&symbol_table));
         items.extend(state_machines);
 
         let execution_machines = interface.lir_from_hir(&mut symbol_table);
