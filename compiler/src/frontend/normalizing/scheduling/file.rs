@@ -27,6 +27,6 @@ impl File {
     /// }
     /// ```
     pub fn schedule(&mut self) {
-        self.nodes.iter_mut().for_each(|node| node.schedule())
+        self.components.iter_mut().for_each(|node| node.schedule())
     }
 }

@@ -1,10 +1,81 @@
 prelude! {
     graph::*,
-    hir::Node,
+    hir::{Component, ComponentDefinition, ComponentImport},
     frontend::ctx::*,
 }
 
-impl Node {
+impl Component {
+    /// Store nodes applications as dependencies.
+    pub fn add_node_dependencies(&self, graph: &mut DiGraphMap<usize, ()>) {
+        match self {
+            Component::Definition(comp_def) => comp_def.add_node_dependencies(graph),
+            Component::Import(comp_import) => comp_import.add_node_dependencies(graph),
+        }
+    }
+
+    /// Compute the dependency graph of the node.
+    ///
+    /// # Example
+    ///
+    /// ```GR
+    /// node test(i: int, j: int)
+    /// requires { j < i }  // i and j depend on each other
+    /// ensures  { j < o }  // o and j depend on each other
+    /// { // i depends on nothing
+    ///     out o: int = x; // depends on x
+    ///     x: int = i;     // depends on i
+    /// }
+    /// ```
+    pub fn compute_dependencies(&mut self, ctx: &mut Ctx) -> TRes<()> {
+        match self {
+            Component::Definition(comp_def) => comp_def.compute_dependencies(ctx),
+            Component::Import(comp_import) => Ok(comp_import.compute_dependencies(ctx)),
+        }
+    }
+}
+
+impl ComponentImport {
+    /// Store nodes applications as dependencies.
+    pub fn add_node_dependencies(&self, graph: &mut DiGraphMap<usize, ()>) {
+        // add [self] as node in graph
+        graph.add_node(self.id);
+    }
+
+    /// Compute the dependency graph of the node.
+    ///
+    /// # Example
+    ///
+    /// ```GR
+    /// node test(i: int, j: int)
+    /// requires { j < i }  // i and j depend on each other
+    /// ensures  { j < o }  // o and j depend on each other
+    /// { // i depends on nothing
+    ///     out o: int = x; // depends on x
+    ///     x: int = i;     // depends on i
+    /// }
+    /// ```
+    pub fn compute_dependencies(&mut self, ctx: &mut Ctx) {
+        // initiate graph
+        let mut graph = self.create_initialized_graph(ctx.symbol_table);
+
+        // add output dependencies over inputs in graph
+        ctx.symbol_table
+            .get_node_outputs(self.id)
+            .iter()
+            .for_each(|(_, output)| {
+                ctx.symbol_table
+                    .get_node_inputs(self.id)
+                    .into_iter()
+                    .for_each(|input| {
+                        add_edge(&mut graph, *output, *input, Label::Weight(0));
+                    });
+            });
+
+        // set node's graph and reduced graph
+        self.graph = graph.clone();
+        ctx.reduced_graphs.insert(self.id, graph);
+    }
+
     /// Create an initialized graph from a node.
     ///
     /// The created graph has every node's signals as vertices.
@@ -17,7 +88,29 @@ impl Node {
         symbol_table
             .get_node_inputs(self.id)
             .into_iter()
-            .filter(|id| !symbol_table.get_type(**id).is_event())
+            .for_each(|input| {
+                graph.add_node(*input);
+            });
+
+        // return graph
+        graph
+    }
+}
+
+impl ComponentDefinition {
+    /// Create an initialized graph from a node.
+    ///
+    /// The created graph has every node's signals as vertices.
+    /// But no edges are added.
+    fn create_initialized_graph(&self, symbol_table: &SymbolTable) -> Graph {
+        // create an empty graph
+        let mut graph = DiGraphMap::new();
+
+        // add input signals as vertices
+        symbol_table
+            .get_node_inputs(self.id)
+            .into_iter()
+            .filter(|id| !symbol_table.get_type(**id).is_event()) // todo: is this important
             .for_each(|input| {
                 graph.add_node(*input);
             });
@@ -188,7 +281,7 @@ impl Node {
         ctx: &mut Ctx,
         processus_manager: &mut HashMap<usize, Color>,
     ) {
-        let Node { id: node, .. } = self;
+        let ComponentDefinition { id: node, .. } = self;
 
         // get signal's color
         let color = processus_manager.get_mut(&signal).expect(&format!(

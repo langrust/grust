@@ -38,7 +38,7 @@ impl File {
     ///
     /// This example is tested in source.
     pub fn memorize(&mut self, symbol_table: &mut SymbolTable) {
-        self.nodes
+        self.components
             .iter_mut()
             .for_each(|node| node.memorize(symbol_table));
 

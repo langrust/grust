@@ -1,8 +1,8 @@
+mod component;
 mod dependencies;
 mod file;
 mod function;
 mod identifier_creator;
-mod node;
 mod once_cell;
 mod stmt;
 
@@ -18,7 +18,17 @@ pub mod flow;
 pub mod interface;
 
 pub use self::{
-    contract::Contract, dependencies::Dependencies, expr::Expr, file::File, function::Function,
-    identifier_creator::IdentifierCreator, interface::Service, memory::Memory, node::Node,
-    once_cell::OnceCell, pattern::Pattern, stmt::Stmt, typedef::Typedef,
+    component::{Component, ComponentDefinition, ComponentImport},
+    contract::Contract,
+    dependencies::Dependencies,
+    expr::Expr,
+    file::File,
+    function::Function,
+    identifier_creator::IdentifierCreator,
+    interface::Service,
+    memory::Memory,
+    once_cell::OnceCell,
+    pattern::Pattern,
+    stmt::Stmt,
+    typedef::Typedef,
 };

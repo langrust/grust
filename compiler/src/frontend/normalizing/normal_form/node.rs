@@ -1,10 +1,64 @@
 prelude! {
     petgraph::graphmap::GraphMap,
     graph::*,
-    hir::{IdentifierCreator, Node},
+    hir::{IdentifierCreator, Component, ComponentDefinition},
 }
 
-impl Node {
+impl Component {
+    /// Change HIR node into a normal form.
+    ///
+    /// The normal form of a node is as follows:
+    /// - node application can only append at root expression
+    /// - node application inputs are signal calls
+    ///
+    /// # Example
+    ///
+    /// ```GR
+    /// node test(s: int, v: int, g: int) {
+    ///     out x: int = 1 + my_node(s, v*2).o;
+    ///     out y: int = other_node(g-1, v).o;
+    /// }
+    /// ```
+    ///
+    /// The above node contains the following unitary nodes:
+    ///
+    /// ```GR
+    /// node test_x(s: int, v: int) {
+    ///     out x: int = 1 + my_node(s, v*2).o;
+    /// }
+    /// node test_y(v: int, g: int) {
+    ///     out y: int = other_node(g-1, v).o;
+    /// }
+    /// ```
+    ///
+    /// Which are transformed into:
+    ///
+    /// ```GR
+    /// node test_x(s: int, v: int) {
+    ///     x_1: int = v*2;
+    ///     x_2: int = my_node(s, x_1).o;
+    ///     out x: int = 1 + x_2;
+    /// }
+    /// node test_y(v: int, g: int) {
+    ///     x: int = g-1;
+    ///     out y: int = other_node(x_1, v).o;
+    /// }
+    /// ```
+    pub fn normal_form(
+        &mut self,
+        nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
+        symbol_table: &mut SymbolTable,
+    ) {
+        match self {
+            Component::Definition(comp_def) => {
+                comp_def.normal_form(nodes_reduced_graphs, symbol_table)
+            }
+            Component::Import(_) => (),
+        }
+    }
+}
+
+impl ComponentDefinition {
     /// Change HIR node into a normal form.
     ///
     /// The normal form of a node is as follows:
@@ -53,7 +107,7 @@ impl Node {
         let mut identifier_creator = IdentifierCreator::from(self.get_signals_names(symbol_table));
         symbol_table.local();
 
-        let Node { statements, .. } = self;
+        let ComponentDefinition { statements, .. } = self;
 
         *statements = statements
             .clone()

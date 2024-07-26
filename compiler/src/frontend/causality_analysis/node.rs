@@ -2,10 +2,10 @@ use petgraph::algo::toposort;
 
 prelude! {
     graph::Label,
-    hir::Node,
+    hir::Component,
 }
 
-impl Node {
+impl Component {
     /// Check the causality of the node.
     ///
     /// # Example
@@ -37,18 +37,21 @@ impl Node {
     /// ```
     pub fn causal(&self, symbol_table: &SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         // construct node's subgraph containing only 0-label weight
-        let graph = &self.graph;
+        let graph = self.get_graph();
         let mut subgraph = graph.clone();
         graph.all_edges().for_each(|(from, to, label)| match label {
             Label::Weight(0) => (),
-            _ => debug_assert_ne!(subgraph.remove_edge(from, to), Some(Label::Weight(0))),
+            _ => {
+                let _label = subgraph.remove_edge(from, to);
+                debug_assert_ne!(_label, Some(Label::Weight(0)))
+            }
         });
 
         // if a schedule exists, then the node is causal
         let _ = toposort(&subgraph, None).map_err(|signal| {
             let error = Error::NotCausalSignal {
                 signal: symbol_table.get_name(signal.node_id()).clone(),
-                location: self.location.clone(),
+                location: self.get_location().clone(),
             };
             errors.push(error);
             TerminationError

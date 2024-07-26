@@ -1,29 +1,12 @@
 use petgraph::graphmap::GraphMap;
 
 prelude! {
-    hir::{ IdentifierCreator, Memory, Node, Pattern, Stmt, stream },
+    hir::{ IdentifierCreator, Memory, Component, ComponentDefinition, Pattern, Stmt, stream },
 }
 
 use super::Union;
 
-impl Node {
-    /// Return vector of unitary node's signals id.
-    pub fn get_signals_id(&self) -> Vec<usize> {
-        self.statements
-            .iter()
-            .flat_map(|statement| statement.get_identifiers())
-            .collect()
-    }
-
-    /// Return vector of unitary node's signals name.
-    pub fn get_signals_names(&self, symbol_table: &SymbolTable) -> Vec<String> {
-        self.statements
-            .iter()
-            .flat_map(|statement| statement.get_identifiers())
-            .map(|id| symbol_table.get_name(id).clone())
-            .collect()
-    }
-
+impl Component {
     /// Inline node application when it is needed.
     ///
     /// Inlining needed for "shifted causality loop".
@@ -44,7 +27,83 @@ impl Node {
     /// not be computed by a function call.
     pub fn inline_when_needed(
         &mut self,
-        unitary_nodes: &HashMap<usize, Node>,
+        unitary_nodes: &HashMap<usize, Component>,
+        symbol_table: &mut SymbolTable,
+    ) {
+        match self {
+            Component::Definition(comp_def) => {
+                comp_def.inline_when_needed(unitary_nodes, symbol_table)
+            }
+            Component::Import(_) => (),
+        }
+    }
+
+    /// Instantiate unitary node's statements with inputs.
+    ///
+    /// It will return new statements where the input signals are instantiated by expressions. New
+    /// statements should have fresh id according to the calling node.
+    ///
+    /// # Example
+    ///
+    /// ```GR
+    /// node to_be_inlined(i: int) {
+    ///     o: int = 0 fby j;
+    ///     out j: int = i + 1;
+    /// }
+    ///
+    /// node calling_node(i: int) {
+    ///     out o: int = to_be_inlined(o);
+    ///     j: int = i * o;
+    /// }
+    /// ```
+    ///
+    /// The call to `to_be_inlined` will generate th following statements:
+    ///
+    /// ```GR
+    /// o: int = 0 fby j_1;
+    /// j_1: int = o + 1;
+    /// ```
+    pub fn instantiate_statements_and_memory(
+        &self,
+        identifier_creator: &mut IdentifierCreator,
+        inputs: &[(usize, stream::Expr)],
+        new_output_pattern: Option<Pattern>,
+        symbol_table: &mut SymbolTable,
+    ) -> (Vec<Stmt<stream::Expr>>, Memory) {
+        match self {
+            Component::Definition(comp_def) => comp_def.instantiate_statements_and_memory(
+                identifier_creator,
+                inputs,
+                new_output_pattern,
+                symbol_table,
+            ),
+            Component::Import(_) => (vec![], Memory::new()),
+        }
+    }
+}
+
+impl ComponentDefinition {
+    /// Inline node application when it is needed.
+    ///
+    /// Inlining needed for "shifted causality loop".
+    ///
+    /// # Example:
+    /// ```GR
+    /// node semi_fib(i: int) {
+    ///     out o: int = 0 fby (i + 1 fby i);
+    /// }
+    /// node fib_call() {
+    ///    out fib: int = semi_fib(fib).o;
+    /// }
+    /// ```
+    /// In this example, `fib_call` calls `semi_fib` with the same input and output signal. There is
+    /// no causality loop, `o` depends on the memory of `i`.
+    ///
+    /// We need to inline the code, the output `fib` is defined before the input `fib`, which can
+    /// not be computed by a function call.
+    pub fn inline_when_needed(
+        &mut self,
+        unitary_nodes: &HashMap<usize, Component>,
         symbol_table: &mut SymbolTable,
     ) {
         // create identifier creator containing the signals
@@ -141,7 +200,7 @@ impl Node {
     }
 
     /// Update unitary node statements and add the corresponding dependency graph.
-    pub fn update_statements(&mut self, new_statements: &[Stmt<stream::Expr>]) {
+    fn update_statements(&mut self, new_statements: &[Stmt<stream::Expr>]) {
         // put new statements in unitary node
         self.statements = new_statements.to_vec();
         // add a dependency graph to the unitary node

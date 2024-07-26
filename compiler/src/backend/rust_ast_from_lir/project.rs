@@ -6,6 +6,7 @@ use syn::parse_quote;
 prelude! {
     backend::rust_ast_from_lir::item::{
         array_alias::rust_ast_from_lir as array_alias_rust_ast_from_lir,
+        import::rust_ast_from_lir as import_rust_ast_from_lir,
         enumeration::rust_ast_from_lir as enumeration_rust_ast_from_lir,
         execution_machine::rust_ast_from_lir as execution_machine_rust_ast_from_lir,
         function::rust_ast_from_lir as function_rust_ast_from_lir,
@@ -52,6 +53,10 @@ pub fn rust_ast_from_lir(project: Project) -> Vec<syn::Item> {
         Item::ArrayAlias(array_alias) => {
             let rust_ast_array_alias = array_alias_rust_ast_from_lir(array_alias);
             rust_items.push(syn::Item::Type(rust_ast_array_alias))
+        }
+        Item::Import(import) => {
+            let rust_ast_import = import_rust_ast_from_lir(import);
+            rust_items.push(syn::Item::Use(rust_ast_import))
         }
     });
 

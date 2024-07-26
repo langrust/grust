@@ -1,17 +1,35 @@
 prelude! {
-    hir::Node,
+    hir::{Component, ComponentDefinition, ComponentImport},
     lir::{
-        item::state_machine::{
-            input::{Input, InputElement},
-            state::{init::Init, step::Step, State},
-            StateMachine,
+        item::{
+            Item, Import,
+            state_machine::{
+                input::{Input, InputElement},
+                state::{init::Init, step::Step, State},
+                StateMachine,
+            }
         },
     },
 }
 
 use super::LIRFromHIR;
 
-impl LIRFromHIR for Node {
+impl LIRFromHIR for Component {
+    type LIR = Item;
+
+    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
+        match self {
+            hir::Component::Definition(comp_def) => {
+                Item::StateMachine(comp_def.lir_from_hir(&symbol_table))
+            }
+            hir::Component::Import(comp_import) => {
+                Item::Import(comp_import.lir_from_hir(&symbol_table))
+            }
+        }
+    }
+}
+
+impl LIRFromHIR for ComponentDefinition {
     type LIR = StateMachine;
 
     fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
@@ -100,5 +118,17 @@ impl LIRFromHIR for Node {
                 },
             },
         }
+    }
+}
+
+impl LIRFromHIR for ComponentImport {
+    type LIR = Import;
+
+    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
+        // get node name
+        let name = symbol_table.get_name(self.id).clone();
+        let path = self.path;
+
+        Import { name, path }
     }
 }

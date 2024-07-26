@@ -40,7 +40,7 @@ impl File {
         errors: &mut Vec<Error>,
     ) -> TRes<()> {
         // check causality for each node
-        self.nodes
+        self.components
             .iter()
             .map(|node| node.causal(symbol_table, errors))
             .collect::<Vec<_>>()

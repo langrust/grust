@@ -1,13 +1,23 @@
-//! LanGRust [Node] typing analysis module.
+//! LanGRust [Component] typing analysis module.
 
 prelude! {
     frontend::TypeAnalysis,
-    hir::Node,
+    hir::{Component, ComponentDefinition},
 }
 
-impl TypeAnalysis for Node {
+impl TypeAnalysis for Component {
     fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
-        let Node {
+        if let Component::Definition(comp_def) = self {
+            comp_def.typing(symbol_table, errors)
+        } else {
+            Ok(())
+        }
+    }
+}
+
+impl TypeAnalysis for ComponentDefinition {
+    fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+        let ComponentDefinition {
             statements,
             contract,
             ..
