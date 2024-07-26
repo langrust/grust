@@ -3,6 +3,7 @@ prelude! {}
 pub mod hir_ext;
 
 pub trait ComponentExt {
+    /// Store node in symbol table.
     fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()>;
 }
 
@@ -880,19 +881,9 @@ mod event_pattern {
                     Ok(None)
                 }
                 EventPattern::RisingEdge(expr) => {
-                    let guard = ast::stream::Expr::binop(ast::expr::Binop::new(
-                        operator::BinaryOperator::And,
-                        expr.clone(),
-                        ast::stream::Expr::unop(ast::expr::Unop::new(
-                            operator::UnaryOperator::Not,
-                            ast::stream::Expr::fby(ast::stream::Fby::new(
-                                ast::stream::Expr::cst(Constant::Boolean(syn::LitBool::new(
-                                    false,
-                                    macro2::Span::call_site(),
-                                ))),
-                                expr,
-                            )),
-                        )),
+                    let guard = ast::stream::Expr::app(ast::expr::Application::new(
+                        ast::stream::Expr::ident("rising_edge"),
+                        vec![*expr],
                     ));
                     Ok(Some(guard))
                 }
