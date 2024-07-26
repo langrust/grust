@@ -275,3 +275,4 @@ impl SpeedLimiterState {
         (state, on_state, in_regulation, state_update)
     }
 }
+use grust::grust_std::rising_edge::{RisingEdgeInput, RisingEdgeState};

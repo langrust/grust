@@ -169,7 +169,7 @@ mod parse_component_import {
     #[test]
     fn should_parse_component() {
         let _: ComponentImport = syn::parse_quote! {
-            import component std::rising_edge : (test: bool) -> (res: bool);
+            import component grust::grust_std::rising_edge: (test: bool) -> (res: bool);
         };
     }
 }

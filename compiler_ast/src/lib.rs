@@ -68,7 +68,7 @@ pub struct Ast {
 impl Parse for Ast {
     fn parse(input: ParseStream) -> Result<Self> {
         let _: config::Config = input.parse()?;
-        let items: Vec<Item> = {
+        let mut items: Vec<Item> = {
             let mut items = Vec::with_capacity(100);
             while !input.is_empty() {
                 items.push(input.parse()?);
@@ -76,6 +76,12 @@ impl Parse for Ast {
             items.shrink_to_fit();
             items
         };
+        if true {
+            let rising_edge: ComponentImport = syn::parse_quote! {
+                import component grust::grust_std::rising_edge: (test: bool) -> (res: bool);
+            };
+            items.push(Item::ComponentImport(rising_edge))
+        }
         Ok(Self { items })
     }
 }

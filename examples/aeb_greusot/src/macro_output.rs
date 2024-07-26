@@ -61,3 +61,4 @@ impl BrakingStateState {
         state
     }
 }
+use grust::grust_std::rising_edge::{RisingEdgeInput, RisingEdgeState};
