@@ -200,6 +200,7 @@ impl Parse for EventPattern {
                 let pat = LetEventPattern::new(let_token, pattern, eq_token, event, question_token);
                 Ok(EventPattern::Let(pat))
             } else {
+                conf::import_rising_edge(true);
                 // todo: add "import component grust::grust_std::rising_edge: (test: bool) -> (res: bool);"
                 Ok(EventPattern::RisingEdge(input.parse()?))
             }
