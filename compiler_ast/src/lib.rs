@@ -24,6 +24,7 @@ pub mod typedef;
 
 /// Things that can appear in a GRust program.
 pub enum Item {
+    ComponentImport(ComponentImport),
     /// GRust synchronous component.
     Component(Component),
     /// GRust function.
@@ -37,7 +38,9 @@ pub enum Item {
 }
 impl Parse for Item {
     fn parse(input: ParseStream) -> Result<Self> {
-        if Component::peek(input) {
+        if ComponentImport::peek(input) {
+            Ok(Item::ComponentImport(input.parse()?))
+        } else if Component::peek(input) {
             Ok(Item::Component(input.parse()?))
         } else if Function::peek(input) {
             Ok(Item::Function(input.parse()?))
@@ -51,7 +54,7 @@ impl Parse for Item {
             Ok(Item::Export(input.parse()?))
         } else {
             Err(input.error(
-                "expected flow import or export, type, component, function or service definition",
+                "expected flow import or export, type, component definition or import, function or service definition",
             ))
         }
     }
