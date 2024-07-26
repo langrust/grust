@@ -27,8 +27,7 @@ mod rust_ast_from_lir {
             path: parse_quote! { grust::grust_std::rising_edge },
         };
 
-        let control =
-            parse_quote! { use grust::grust_std::rising_edge::{ RisingEdgeInput, RisingEdgeState }; };
+        let control = parse_quote! { use grust::grust_std::rising_edge::{ RisingEdgeInput, RisingEdgeState }; };
         assert_eq!(rust_ast_from_lir(import), control)
     }
 }

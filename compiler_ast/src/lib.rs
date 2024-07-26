@@ -76,7 +76,7 @@ impl Parse for Ast {
             items.shrink_to_fit();
             items
         };
-        if true {
+        if conf::rising_edge() {
             let rising_edge: ComponentImport = syn::parse_quote! {
                 import component grust::grust_std::rising_edge: (test: bool) -> (res: bool);
             };

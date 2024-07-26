@@ -67,4 +67,3 @@ impl AutomatonState {
         o
     }
 }
-use grust::grust_std::rising_edge::{RisingEdgeInput, RisingEdgeState};

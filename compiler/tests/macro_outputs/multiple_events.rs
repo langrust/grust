@@ -38,4 +38,3 @@ impl MultipleEventsState {
         (c, d)
     }
 }
-use grust::grust_std::rising_edge::{RisingEdgeInput, RisingEdgeState};
