@@ -504,7 +504,11 @@ pub struct FlowImport {
 }
 impl FlowImport {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
-        input.peek(keyword::import)
+        let forked = input.fork();
+        forked
+            .parse::<keyword::import>()
+            .and_then(|_| forked.parse::<FlowKind>())
+            .is_ok()
     }
 }
 impl Parse for FlowImport {

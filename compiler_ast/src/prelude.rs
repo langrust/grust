@@ -15,7 +15,7 @@ pub use compiler_common::prelude::{mk_new, *};
 
 pub use crate::{
     colon::Colon,
-    component::Component,
+    component::{Component, ComponentImport},
     contract,
     equation::{self, Equation},
     expr::{self, Expr},
