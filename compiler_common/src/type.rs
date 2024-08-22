@@ -390,7 +390,7 @@ impl Typ {
                         .map(|(given_type, expected_type)| {
                             given_type.eq_check(expected_type, location.clone(), errors)
                         })
-                        .collect::<TRes<_>>()?;
+                        .collect::<TRes<()>>()?;
                     Ok((**output).clone())
                 } else {
                     let error = Error::IncompatibleInputsNumber {
