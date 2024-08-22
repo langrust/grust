@@ -647,6 +647,26 @@ mod triggered {
             isles.chain(dependencies).unique()
         }
     }
+
+    /// Statements triggered by all changes.
+    pub struct OnChangeGraph<'a> {
+        graph: &'a DiGraphMap<usize, EdgeType>,
+    }
+    impl<'a> TriggersGraph<'a> for OnChangeGraph<'a> {
+        fn new(
+            _syms: &'a SymbolTable,
+            service: &'a Service,
+            _imports: &'a HashMap<usize, FlowImport>,
+        ) -> Self {
+            OnChangeGraph {
+                graph: &service.graph,
+            }
+        }
+        fn get_triggered(&self, parent: usize) -> impl Iterator<Item = usize> {
+            // get graph dependencies
+            self.graph.neighbors(parent)
+        }
+    }
 }
 
 mod propagation {
