@@ -13,7 +13,7 @@ prelude! {
     },
 }
 
-use triggered::EventIslesGraph;
+use triggered::{EventIslesGraph, OnChangeGraph};
 
 use super::LIRFromHIR;
 
@@ -156,17 +156,34 @@ impl Service {
         let mut flows_context = self.get_flows_context(symbol_table);
 
         // create flow propagations
-        let mut propag_builder = propagation::Builder::<'_, EventIslesGraph>::new(
-            &mut self,
-            symbol_table,
-            &mut flows_context,
-            imports,
-            exports,
-            timing_events,
-            &mut components,
-        );
-        propag_builder.propagate();
-        let propagations = propag_builder.into_propagations();
+        let propagations = match conf::propag() {
+            conf::PropagOption::EventIsles => {
+                let mut propag_builder = propagation::Builder::<'_, EventIslesGraph>::new(
+                    &mut self,
+                    symbol_table,
+                    &mut flows_context,
+                    imports,
+                    exports,
+                    timing_events,
+                    &mut components,
+                );
+                propag_builder.propagate();
+                propag_builder.into_propagations()
+            }
+            conf::PropagOption::OnChange => {
+                let mut propag_builder = propagation::Builder::<'_, OnChangeGraph>::new(
+                    &mut self,
+                    symbol_table,
+                    &mut flows_context,
+                    imports,
+                    exports,
+                    timing_events,
+                    &mut components,
+                );
+                propag_builder.propagate();
+                propag_builder.into_propagations()
+            }
+        };
 
         // create flow handlers according to propagations
         let flows_handling: Vec<_> = propagations.into_flow_handlers(symbol_table).collect();
