@@ -192,7 +192,7 @@ impl HIRFromAST for Equation {
                                 errors,
                             )
                         })
-                        .collect::<TRes<_>>()?;
+                        .collect::<TRes<()>>()?;
 
                     // default event_pattern tuple
                     let no_event_tuple: Vec<_> =

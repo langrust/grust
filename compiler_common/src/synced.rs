@@ -790,7 +790,7 @@ impl<'graph, Ctx: CtxSpec + ?Sized, W> Builder<'graph, Ctx, W> {
         }
 
         // update `self.todo`
-        for (head, tail) in &res {
+        if let Some((head, tail)) = res.as_ref() {
             let was_there = self.todo.remove(head);
             debug_assert!(was_there);
             for idx in tail {
