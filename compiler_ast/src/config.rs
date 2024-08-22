@@ -14,6 +14,21 @@ impl Parse for ConfigItem {
     fn parse(input: ParseStream) -> Result<Self> {
         let ident: syn::Ident = input.parse()?;
         match ident.to_string().as_str() {
+            "propag" => {
+                let _: Token![=] = input.parse()?;
+                let val: syn::LitStr = input.parse()?;
+                match val.value().as_str() {
+                    "onchange" => conf::set_propag(conf::PropagOption::OnChange),
+                    "onevent" => conf::set_propag(conf::PropagOption::EventIsles),
+                    _ => {
+                        return Err(syn::Error::new_spanned(
+                            val,
+                            "unexpected propagation configuration",
+                        ))
+                    }
+                }
+                return Ok(ConfigItem);
+            }
             "dump" => {
                 if let Some(prev) = conf::dump_code() {
                     let msg = format!("code-dump target already set to `{prev}`");

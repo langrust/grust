@@ -2,8 +2,18 @@ use std::sync::RwLock;
 
 prelude! {}
 
+/// Services configuration for the propagation of
+/// events and signals changes.
+#[derive(Clone, Default)]
+pub enum PropagOption {
+    #[default]
+    EventIsles,
+    OnChange,
+}
+
 /// Stores all possible compiler's configurations.
 pub struct Conf {
+    propag: PropagOption,
     pub_components: bool,
     dump_code: Option<String>,
     greusot: bool,
@@ -14,6 +24,7 @@ pub struct Conf {
 impl Default for Conf {
     fn default() -> Self {
         Self {
+            propag: PropagOption::default(),
             pub_components: false,
             dump_code: None,
             greusot: false,
@@ -67,6 +78,12 @@ macro_rules! def {
 }
 
 def! {
+    PropagOption {
+        #[doc = "Returns the propagation configuration."]
+        propag
+        #[doc = "Set the propagation configuration."]
+        set_propag
+    }
     bool {
         #[doc = "Tells if the components are public."]
         pub_components
