@@ -13,6 +13,8 @@ prelude! {
     },
 }
 
+use triggered::EventIslesGraph;
+
 use super::LIRFromHIR;
 
 impl Interface {
@@ -154,7 +156,7 @@ impl Service {
         let mut flows_context = self.get_flows_context(symbol_table);
 
         // create flow propagations
-        let mut propag_builder = propagation::Builder::new(
+        let mut propag_builder = propagation::Builder::<'_, EventIslesGraph>::new(
             &mut self,
             symbol_table,
             &mut flows_context,
@@ -176,12 +178,6 @@ impl Service {
             flows_handling,
             flows_context,
         }
-    }
-
-    fn is_comp_call(&self, id: usize) -> bool {
-        self.statements
-            .get(&id)
-            .map_or(false, FlowStatement::is_comp_call)
     }
 }
 
@@ -566,8 +562,94 @@ mod isles {
     }
 }
 
-mod propagation {
+mod triggered {
     use itertools::Itertools;
+
+    prelude! {
+        graph::DiGraphMap,
+        hir::{ Service, interface::{ EdgeType, FlowImport, FlowStatement } },
+    }
+
+    use super::isles;
+
+    /// Graph of triggers.
+    pub trait TriggersGraph<'a> {
+        fn new(
+            syms: &'a SymbolTable,
+            service: &'a Service,
+            imports: &'a HashMap<usize, FlowImport>,
+        ) -> Self;
+        fn get_triggered(&self, parent: usize) -> impl Iterator<Item = usize>;
+    }
+
+    /// Isles of statements triggered by events only.
+    pub struct EventIslesGraph<'a> {
+        graph: &'a DiGraphMap<usize, EdgeType>,
+        stmts: &'a HashMap<usize, FlowStatement>,
+        imports: &'a HashMap<usize, FlowImport>,
+        isles: isles::Isles,
+    }
+    impl<'a> EventIslesGraph<'a> {
+        /// Returns the identifiers of flows that are defined by the statement.
+        fn get_def_flows(&self, id: usize) -> Vec<usize> {
+            if let Some(stmt) = self.stmts.get(&id) {
+                stmt.get_identifiers()
+            } else if let Some(import) = self.imports.get(&id) {
+                vec![import.id]
+            } else {
+                vec![]
+            }
+        }
+        /// Tells if the statements is a component call.
+        fn is_comp_call(&self, id: usize) -> bool {
+            self.stmts
+                .get(&id)
+                .map_or(false, FlowStatement::is_comp_call)
+        }
+    }
+    impl<'a> TriggersGraph<'a> for EventIslesGraph<'a> {
+        fn new(
+            syms: &'a SymbolTable,
+            service: &'a Service,
+            imports: &'a HashMap<usize, FlowImport>,
+        ) -> Self {
+            // create events isles
+            let mut isle_builder = isles::IsleBuilder::new(syms, service, &imports);
+            isle_builder.trace_events(service.get_flows_ids(imports.values()));
+            let isles = isle_builder.into_isles();
+
+            EventIslesGraph {
+                graph: &service.graph,
+                stmts: &service.statements,
+                imports,
+                isles,
+            }
+        }
+        fn get_triggered(&self, parent: usize) -> impl Iterator<Item = usize> {
+            // get graph dependencies
+            let dependencies = self.graph.neighbors(parent).filter_map(|child| {
+                // filter component call because they will appear in isles
+                if self.is_comp_call(child) {
+                    return None;
+                }
+                Some(child)
+            });
+
+            // get isles dependencies
+            let isles = self
+                .get_def_flows(parent)
+                .into_iter()
+                .filter_map(|parent_flow| self.isles.get_isle_for(parent_flow))
+                .flatten()
+                .map(|to_insert| *to_insert);
+
+            // extend stack with union of event isle and dependencies
+            isles.chain(dependencies).unique()
+        }
+    }
+}
+
+mod propagation {
     use lir::item::execution_machine::service_handler::MatchArm;
     use petgraph::{algo::toposort, Direction};
     use std::collections::HashSet;
@@ -593,7 +675,7 @@ mod propagation {
         },
     }
 
-    use super::{isles, LIRFromHIR};
+    use super::{triggered::TriggersGraph, LIRFromHIR};
 
     /// Accumulator of instructions that can handle onchange_default branches.
     #[derive(Default)]
@@ -1045,7 +1127,7 @@ mod propagation {
     }
 
     /// A context to build [Propagations] of input flows.
-    pub struct Builder<'a> {
+    pub struct Builder<'a, G: TriggersGraph<'a>> {
         /// Result propagations, populated during traversals.
         propagations: Propagations,
         /// Context of the service.
@@ -1054,11 +1136,11 @@ mod propagation {
         imports: &'a HashMap<usize, FlowImport>,
         /// Map from id to export.
         exports: &'a HashMap<usize, FlowExport>,
-        /// Events' isles.
-        isles: isles::Isles,
+        /// Triggers graph.
+        triggers_graph: G,
         /// Symbol table.
         symbol_table: &'a SymbolTable,
-        /// Service to build isles for.
+        /// Service to build propagations for.
         service: &'a Service,
         /// Cached indices of incoming flows.
         incoming_flows: IncomingFlows,
@@ -1072,7 +1154,7 @@ mod propagation {
         stmts_timers: HashMap<usize, usize>,
     }
 
-    impl<'a> Builder<'a> {
+    impl<'a, G: TriggersGraph<'a>> Builder<'a, G> {
         /// Create a Builder.
         ///
         /// After creating the builder, you only need to [propagate](Self::propagate) the input flows.
@@ -1085,7 +1167,7 @@ mod propagation {
             exports: &'a HashMap<usize, FlowExport>,
             timing_events: &'a mut Vec<TimingEvent>,
             components: &'a mut Vec<String>,
-        ) -> Builder<'a> {
+        ) -> Builder<'a, G> {
             let mut identifier_creator = IdentifierCreator::from(
                 service.get_flows_names(symbol_table).chain(
                     imports
@@ -1112,10 +1194,8 @@ mod propagation {
                 timing_events,
             );
 
-            // create events isles
-            let mut isle_builder = isles::IsleBuilder::new(symbol_table, service, &imports);
-            isle_builder.trace_events(service.get_flows_ids(imports.values()));
-            let isles = isle_builder.into_isles();
+            // create triggered graph
+            let triggers_graph = G::new(symbol_table, service, imports);
 
             // sort statement in dependency order
             let mut ordered_statements = toposort(&service.graph, None).expect("should succeed");
@@ -1131,7 +1211,7 @@ mod propagation {
                 flows_context,
                 imports,
                 exports,
-                isles,
+                triggers_graph,
                 symbol_table,
                 service,
                 stack: Stack::new(),
@@ -1411,43 +1491,15 @@ mod propagation {
             self.propagations
         }
 
-        /// Returns the identifiers of flows that are defined by the statement.
-        fn get_def_flows(&self, id: usize) -> Vec<usize> {
-            if let Some(stmt) = self.service.statements.get(&id) {
-                stmt.get_identifiers()
-            } else if let Some(import) = self.imports.get(&id) {
-                vec![import.id]
-            } else {
-                vec![]
-            }
-        }
-
         /// Extend the stack with the next statements to compute.
         fn extend_with_next(&mut self, import_flow: usize, parent: usize) {
-            // get the flows defined by parent statement
-            let parent_flows = self.get_def_flows(parent);
-
-            let dependencies = self.service.graph.neighbors(parent).filter_map(|child| {
-                // filter component call because they will appear in isles
-                if self.service.is_comp_call(child) {
-                    return None;
-                }
-                Some(child)
-            });
-
-            let isles = parent_flows
-                .iter()
-                .filter_map(|parent_flow| self.isles.get_isle_for(*parent_flow))
-                .flatten()
-                .map(|to_insert| *to_insert);
-
-            // extend stack with union of event isle and dependencies
-            let to_insert = isles.chain(dependencies).unique();
+            // get statements triggered by parent
+            let triggered = self.triggers_graph.get_triggered(parent);
 
             // gives the order of statements indices
             let compare = |stmt_id| self.statements_order[&stmt_id];
             self.stack
-                .extend_ordered(to_insert.map(|stmt_id| (import_flow, stmt_id)), compare)
+                .extend_ordered(triggered.map(|stmt_id| (import_flow, stmt_id)), compare)
         }
 
         /// Extend the stack with given imports in no order.
