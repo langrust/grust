@@ -14,6 +14,7 @@ pub enum PropagOption {
 /// Stores all possible compiler's configurations.
 pub struct Conf {
     propag: PropagOption,
+    para: bool,
     pub_components: bool,
     dump_code: Option<String>,
     greusot: bool,
@@ -25,6 +26,7 @@ impl Default for Conf {
     fn default() -> Self {
         Self {
             propag: PropagOption::default(),
+            para: false,
             pub_components: false,
             dump_code: None,
             greusot: false,
@@ -83,6 +85,12 @@ def! {
         propag
         #[doc = "Set the propagation configuration."]
         set_propag
+    }
+    bool {
+        #[doc = "Tells if services' instrutions are parallelized."]
+        para
+        #[doc = "Set parallelization in configuration."]
+        set_para
     }
     bool {
         #[doc = "Tells if the components are public."]

@@ -39,6 +39,10 @@ impl Parse for ConfigItem {
                 conf::set_dump_code(Some(val.value()));
                 return Ok(ConfigItem);
             }
+            "para" => {
+                conf::set_para(true);
+                return Ok(ConfigItem);
+            }
             "pub" => {
                 conf::set_pub_components(true);
                 return Ok(ConfigItem);
