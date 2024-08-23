@@ -733,6 +733,39 @@ mod triggered {
     }
 }
 
+mod para {
+    prelude! {
+        graph::DiGraphMap,
+        hir::interface::EdgeType,
+        synced::{Builder, CtxSpec, Synced},
+    }
+
+    pub struct BuilderCtx;
+
+    impl CtxSpec for BuilderCtx {
+        type Instr = usize;
+        type Cost = usize;
+        fn instr_cost(&self, _i: Self::Instr) -> Self::Cost {
+            1 // todo: nb of expressions used in component
+        }
+        fn sync_seq_cost(&self, seq: &[Synced<Self>]) -> Self::Cost {
+            seq.iter().map(Synced::cost).sum()
+        }
+        fn sync_para_cost(&self, map: &BTreeMap<Self::Cost, Vec<Synced<Self>>>) -> Self::Cost {
+            let mut max = 0;
+            for c in map.keys() {
+                max = std::cmp::max(max, *c);
+            }
+            max + 1
+        }
+    }
+
+    pub fn get_synced(subgraph: &DiGraphMap<usize, EdgeType>) -> Synced<BuilderCtx> {
+        let builder = Builder::<BuilderCtx, EdgeType>::new(subgraph);
+        builder.run(&BuilderCtx).expect("oh no")
+    }
+}
+
 mod propagation {
     use lir::item::execution_machine::service_handler::MatchArm;
     use petgraph::{algo::toposort, Direction};
