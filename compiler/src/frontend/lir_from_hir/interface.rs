@@ -988,32 +988,34 @@ mod propagation {
                 instructions: vec![FlowInstruction::handle_delay(input_names, arms)],
             };
 
-            // for every propagation of incoming flows, create their handlers
-            input_flows
-                .map(|(flow_id, mut instructions)| {
-                    // determine weither this arriving flow is a timing event
-                    let flow_name = symbol_table.get_name(flow_id);
-                    let arriving_flow = if symbol_table.is_period(flow_id) {
-                        // add reset periodic timer
-                        instructions.push(FlowInstruction::reset(flow_name, flow_name));
-                        ArrivingFlow::Period(flow_name.clone())
-                    } else if symbol_table.is_deadline(flow_id) {
-                        ArrivingFlow::Deadline(flow_name.clone())
-                    } else if symbol_table.is_delay(flow_id) {
-                        panic!(); // this is handled by the `delay_handler`
-                    } else if symbol_table.is_timeout(flow_id) {
-                        ArrivingFlow::ServiceTimeout(flow_name.clone())
-                    } else {
-                        let flow_type = symbol_table.get_type(flow_id);
-                        let path = symbol_table.get_path(flow_id);
-                        ArrivingFlow::Channel(flow_name.clone(), flow_type.clone(), path.clone())
-                    };
-                    FlowHandler {
-                        arriving_flow,
-                        instructions,
-                    }
-                })
-                .chain(std::iter::once(delay_handler)) // chain the `delay_handler`
+            // Create the handler of every incoming flows.
+            // It propagates the change of the flow
+            let incoming_flows_handlers = input_flows.map(|(flow_id, mut instructions)| {
+                // determine weither this arriving flow is a timing event
+                let flow_name = symbol_table.get_name(flow_id);
+                let arriving_flow = if symbol_table.is_period(flow_id) {
+                    // add reset periodic timer
+                    instructions.push(FlowInstruction::reset(flow_name, flow_name));
+                    ArrivingFlow::Period(flow_name.clone())
+                } else if symbol_table.is_deadline(flow_id) {
+                    ArrivingFlow::Deadline(flow_name.clone())
+                } else if symbol_table.is_delay(flow_id) {
+                    panic!(); // this is handled by the `delay_handler`
+                } else if symbol_table.is_timeout(flow_id) {
+                    ArrivingFlow::ServiceTimeout(flow_name.clone())
+                } else {
+                    let flow_type = symbol_table.get_type(flow_id);
+                    let path = symbol_table.get_path(flow_id);
+                    ArrivingFlow::Channel(flow_name.clone(), flow_type.clone(), path.clone())
+                };
+                FlowHandler {
+                    arriving_flow,
+                    instructions,
+                }
+            });
+
+            // chain the `delay_handler`
+            incoming_flows_handlers.chain(std::iter::once(delay_handler))
         }
     }
 
