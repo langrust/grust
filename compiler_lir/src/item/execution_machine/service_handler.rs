@@ -1,4 +1,5 @@
 prelude! {
+    BTreeMap as Map,
     item::execution_machine::{flows_context::FlowsContext, ArrivingFlow}
 }
 
@@ -25,8 +26,9 @@ pub enum FlowInstruction {
     Let(String, Expression),
     UpdateContext(String, Expression),
     Send(String, Expression, Option<String>),
-    IfThrottle(String, String, Constant, Box<FlowInstruction>),
-    IfChange(String, String, Vec<FlowInstruction>, Vec<FlowInstruction>),
+    IfThrottle(String, String, Constant, Box<Self>),
+    IfChange(String, String, Vec<Self>, Vec<Self>),
+    Para(Map<ParaMethod, Vec<Self>>),
     ResetTimer(String, String),
     ComponentCall(Pattern, String, Vec<Option<String>>),
     HandleDelay(Vec<String>, Vec<MatchArm>),
@@ -73,6 +75,21 @@ mk_new! { impl FlowInstruction =>
         arms: impl Iterator<Item = MatchArm> = arms.collect(),
     )
 }
+
+#[derive(Debug, PartialEq)]
+pub enum ParaMethod {
+    Rayon,
+    Threads,
+    Tokio,
+    DoNotPara,
+}
+mk_new! { impl ParaMethod =>
+    Rayon: rayon ()
+    Threads: threads ()
+    Tokio: tokio ()
+    DoNotPara: dont_para ()
+}
+
 
 #[derive(Debug, PartialEq)]
 pub struct MatchArm {
