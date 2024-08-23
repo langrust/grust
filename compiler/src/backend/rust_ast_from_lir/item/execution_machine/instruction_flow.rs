@@ -117,6 +117,11 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
                 }
             }
         }
+        FlowInstruction::Para(method_map) => {
+            parse_quote! {
+                todo!()
+            }
+        }
     }
 }
 
