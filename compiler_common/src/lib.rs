@@ -38,7 +38,7 @@ pub mod synced;
 pub mod graph {
     pub use super::{
         new_graph,
-        petgraph::{graphmap::DiGraphMap, Direction},
+        petgraph::{graphmap::DiGraphMap, Direction, visit::DfsEvent},
         {color::Color, label::Label},
     };
 

@@ -583,7 +583,7 @@ mod triggered {
     use itertools::Itertools;
 
     prelude! {
-        graph::DiGraphMap,
+        graph::{DiGraphMap, DfsEvent::*}, HashSet,
         hir::{ Service, interface::{ EdgeType, FlowImport, FlowStatement } },
     }
 
@@ -597,6 +597,7 @@ mod triggered {
             imports: &'a HashMap<usize, FlowImport>,
         ) -> Self;
         fn get_triggered(&self, parent: usize) -> impl Iterator<Item = usize>;
+        fn subgraph(&self, start: usize) -> DiGraphMap<usize, EdgeType>;
     }
 
     /// Isles of statements triggered by events only.
@@ -642,6 +643,7 @@ mod triggered {
                 isles,
             }
         }
+
         fn get_triggered(&self, parent: usize) -> impl Iterator<Item = usize> {
             // get graph dependencies
             let dependencies = self.graph.neighbors(parent).filter_map(|child| {
@@ -663,6 +665,31 @@ mod triggered {
             // extend stack with union of event isle and dependencies
             isles.chain(dependencies).unique()
         }
+
+        fn subgraph(&self, start: usize) -> DiGraphMap<usize, EdgeType> {
+            let mut trig_graph = DiGraphMap::new();
+            // init stack and seen set
+            let mut stack = vec![start];
+            let mut seen = HashSet::new();
+            seen.insert(start);
+            // loop on stack
+            while let Some(parent) = stack.pop() {
+                let neighbors = self.get_triggered(parent);
+                for child in neighbors {
+                    let weight = *self
+                        .graph
+                        .edge_weight(parent, child)
+                        .expect("there should be a weight");
+                    // add in subgraph of triggers
+                    trig_graph.add_edge(parent, child, weight);
+                    // only insert in stack if not seen
+                    if seen.insert(child) {
+                        stack.push(child);
+                    }
+                }
+            }
+            trig_graph
+        }
     }
 
     /// Statements triggered by all changes.
@@ -679,9 +706,29 @@ mod triggered {
                 graph: &service.graph,
             }
         }
+
         fn get_triggered(&self, parent: usize) -> impl Iterator<Item = usize> {
             // get graph dependencies
             self.graph.neighbors(parent)
+        }
+
+        fn subgraph(&self, start: usize) -> DiGraphMap<usize, EdgeType> {
+            let mut trig_graph = DiGraphMap::new();
+            petgraph::visit::depth_first_search(&self.graph, std::iter::once(start), |event| {
+                match event {
+                    CrossForwardEdge(parent, child)
+                    | BackEdge(parent, child)
+                    | TreeEdge(parent, child) => {
+                        let weight = *self
+                            .graph
+                            .edge_weight(parent, child)
+                            .expect("there should be a weight");
+                        trig_graph.add_edge(parent, child, weight);
+                    }
+                    Discover(_, _) | Finish(_, _) => {}
+                }
+            });
+            trig_graph
         }
     }
 }
