@@ -144,9 +144,14 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
                     impl_items.push(parse_quote! {
                         pub async fn #function_name(&mut self, #instant: std::time::Instant, #ident: #ty) -> Result<(), futures::channel::mpsc::SendError> {
                             if self.delayed {
+                                // reset time constrains
                                 self.reset_time_constrains(#instant).await?;
+                                // reset all signals' update
+                                self.context.reset();
+                                // propagate changes
                                 #(#instructions)*
                             } else {
+                                // store in input_store
                                 let unique = self.input_store.#ident.replace((#ident, #instant));
                                 assert!(unique.is_none(), #message);
                             }
@@ -165,9 +170,14 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
                     impl_items.push(parse_quote! {
                         pub async fn #function_name(&mut self,  #instant: std::time::Instant) -> Result<(), futures::channel::mpsc::SendError> {
                             if self.delayed {
+                                // reset time constrains
                                 self.reset_time_constrains(#instant).await?;
+                                // reset all signals' update
+                                self.context.reset();
+                                // propagate changes
                                 #(#instructions)*
                             } else {
+                                // store in input_store
                                 let unique = self.input_store.#ident.replace(((), #instant));
                                 assert!(unique.is_none(), #message);
                             }
@@ -182,6 +192,9 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
                         .map(instruction_flow_rust_ast_from_lir);
                     impl_items.push(parse_quote! {
                         pub async fn #function_name(&mut self, instant: std::time::Instant) -> Result<(), futures::channel::mpsc::SendError> {
+                            // reset all signals' update
+                            self.context.reset();
+                            // propagate changes
                             #(#instructions)*
                             Ok(())
                         }
@@ -206,7 +219,11 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
                         .map(instruction_flow_rust_ast_from_lir);
                     impl_items.push(parse_quote! {
                         pub async fn #function_name(&mut self, #instant: std::time::Instant) -> Result<(), futures::channel::mpsc::SendError> {
+                            // reset time constrains
                             self.reset_time_constrains(#instant).await?;
+                            // reset all signals' update
+                            self.context.reset();
+                            // propagate changes
                             #(#instructions)*
                             Ok(())
                         }
