@@ -30,7 +30,7 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
         FlowInstruction::UpdateContext(ident, flow_expression) => {
             let ident = Ident::new(&ident, Span::call_site());
             let expression = flow_expression_rust_ast_from_lir(flow_expression);
-            parse_quote! { self.context.#ident = #expression; }
+            parse_quote! { self.context.#ident.set(#expression); }
         }
         FlowInstruction::Send(ident, flow_expression, instant) => {
             let enum_ident = Ident::new(to_camel_case(ident.as_str()).as_str(), Span::call_site());
@@ -49,7 +49,7 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
             let instruction = rust_ast_from_lir(*instruction);
 
             parse_quote! {
-                if (self.context.#receiver_ident - #source_ident).abs() >= #delta {
+                if (self.context.#receiver_ident.get() - #source_ident).abs() >= #delta {
                     #instruction
                 }
             }
@@ -68,7 +68,7 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
             not_onchange_tokens
                 .append_all(not_onchange_instructions.into_iter().map(rust_ast_from_lir));
             parse_quote! {
-                if self.context.#old_event_ident != #source_ident {
+                if self.context.#old_event_ident.get() != #source_ident {
                     #onchange_tokens
                 } else {
                     #not_onchange_tokens

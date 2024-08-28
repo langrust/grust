@@ -14,11 +14,11 @@ pub fn rust_ast_from_lir(expression: Expression) -> Expr {
         }
         Expression::InContext { flow } => {
             let flow = Ident::new(&flow, Span::call_site());
-            parse_quote! { self.context.#flow }
+            parse_quote! { self.context.#flow.get() }
         }
         Expression::TakeFromContext { flow } => {
             let flow = Ident::new(&flow, Span::call_site());
-            parse_quote! { std::mem::take(&mut self.context.#flow) }
+            parse_quote! { std::mem::take(&mut self.context.#flow.0) }
         }
         Expression::Some { expression } => {
             let expression = rust_ast_from_lir(*expression);
