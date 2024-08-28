@@ -837,6 +837,7 @@ pub mod runtime {
                 if self.delayed {
                     self.reset_time_constrains(period_speed_limiter_instant)
                         .await?;
+                    self.context.reset();
                     let (v_set_aux, v_update) = self
                         .process_set_speed
                         .step(self.context.get_process_set_speed_inputs());
@@ -879,6 +880,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constrains(activation_instant).await?;
+                    self.context.reset();
                     self.context.activation.set(activation);
                 } else {
                     let unique = self
@@ -896,6 +898,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constrains(vdc_instant).await?;
+                    self.context.reset();
                     self.context.vdc.set(vdc);
                 } else {
                     let unique = self.input_store.vdc.replace((vdc, vdc_instant));
@@ -909,6 +912,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.reset_time_constrains(timeout_speed_limiter_instant)
                     .await?;
+                self.context.reset();
                 let (v_set_aux, v_update) = self
                     .process_set_speed
                     .step(self.context.get_process_set_speed_inputs());
@@ -950,6 +954,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constrains(speed_instant).await?;
+                    self.context.reset();
                     self.context.speed.set(speed);
                 } else {
                     let unique = self.input_store.speed.replace((speed, speed_instant));
@@ -964,6 +969,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constrains(kickdown_instant).await?;
+                    self.context.reset();
                     self.context.kickdown.set(kickdown);
                 } else {
                     let unique = self
@@ -981,6 +987,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constrains(set_speed_instant).await?;
+                    self.context.reset();
                     self.context.set_speed.set(set_speed);
                 } else {
                     let unique = self
@@ -998,6 +1005,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constrains(vacuum_brake_instant).await?;
+                    self.context.reset();
                     self.context.vacuum_brake.set(vacuum_brake);
                 } else {
                     let unique = self
@@ -1012,6 +1020,7 @@ pub mod runtime {
                 &mut self,
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.context.reset();
                 if self.input_store.not_empty() {
                     self.reset_time_constrains(instant).await?;
                     match (

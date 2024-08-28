@@ -849,6 +849,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constrains(vacuum_brake_instant).await?;
+                    self.context.reset();
                     self.context.vacuum_brake.set(vacuum_brake);
                 } else {
                     let unique = self
@@ -866,6 +867,7 @@ pub mod runtime {
                 if self.delayed {
                     self.reset_time_constrains(period_speed_limiter_instant)
                         .await?;
+                    self.context.reset();
                     let (state, on_state, in_regulation_aux, state_update) = self
                         .speed_limiter
                         .step(self.context.get_speed_limiter_inputs(None, None, None));
@@ -902,6 +904,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constrains(activation_instant).await?;
+                    self.context.reset();
                     let (state, on_state, in_regulation_aux, state_update) = self
                         .speed_limiter
                         .step(
@@ -936,6 +939,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constrains(failure_instant).await?;
+                    self.context.reset();
                     let (state, on_state, in_regulation_aux, state_update) = self
                         .speed_limiter
                         .step(
@@ -966,6 +970,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.reset_time_constrains(timeout_speed_limiter_instant)
                     .await?;
+                self.context.reset();
                 let (state, on_state, in_regulation_aux, state_update) = self
                     .speed_limiter
                     .step(self.context.get_speed_limiter_inputs(None, None, None));
@@ -1001,6 +1006,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constrains(speed_instant).await?;
+                    self.context.reset();
                     self.context.speed.set(speed);
                 } else {
                     let unique = self.input_store.speed.replace((speed, speed_instant));
@@ -1015,6 +1021,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constrains(kickdown_instant).await?;
+                    self.context.reset();
                     let (state, on_state, in_regulation_aux, state_update) = self
                         .speed_limiter
                         .step(
@@ -1049,6 +1056,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constrains(set_speed_instant).await?;
+                    self.context.reset();
                     if (self.context.x.get() - set_speed).abs() >= 1.0 {
                         self.context.x.set(set_speed);
                     }
@@ -1084,6 +1092,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constrains(vdc_instant).await?;
+                    self.context.reset();
                     self.context.vdc.set(vdc);
                 } else {
                     let unique = self.input_store.vdc.replace((vdc, vdc_instant));
@@ -1095,6 +1104,7 @@ pub mod runtime {
                 &mut self,
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.context.reset();
                 if self.input_store.not_empty() {
                     self.reset_time_constrains(instant).await?;
                     match (
@@ -13727,6 +13737,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constrains(vacuum_brake_instant).await?;
+                    self.context.reset();
                     self.context.vacuum_brake.set(vacuum_brake);
                 } else {
                     let unique = self
@@ -13744,6 +13755,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constrains(activation_instant).await?;
+                    self.context.reset();
                     let (state, on_state, in_regulation_aux, state_update) = self
                         .speed_limiter
                         .step(
@@ -13778,6 +13790,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constrains(failure_instant).await?;
+                    self.context.reset();
                     let (state, on_state, in_regulation_aux, state_update) = self
                         .speed_limiter
                         .step(
@@ -13809,6 +13822,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constrains(speed_instant).await?;
+                    self.context.reset();
                     self.context.speed.set(speed);
                 } else {
                     let unique = self.input_store.speed.replace((speed, speed_instant));
@@ -13822,6 +13836,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.reset_time_constrains(timeout_another_speed_limiter_instant)
                     .await?;
+                self.context.reset();
                 let (v_set_aux, v_update) = self
                     .process_set_speed
                     .step(self.context.get_process_set_speed_inputs(None));
@@ -13869,6 +13884,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constrains(kickdown_instant).await?;
+                    self.context.reset();
                     let (state, on_state, in_regulation_aux, state_update) = self
                         .speed_limiter
                         .step(
@@ -13903,6 +13919,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constrains(set_speed_instant).await?;
+                    self.context.reset();
                     if (self.context.x.get() - set_speed).abs() >= 1.0 {
                         self.context.x.set(set_speed);
                     }
@@ -13938,6 +13955,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constrains(vdc_instant).await?;
+                    self.context.reset();
                     self.context.vdc.set(vdc);
                 } else {
                     let unique = self.input_store.vdc.replace((vdc, vdc_instant));
@@ -13952,6 +13970,7 @@ pub mod runtime {
                 if self.delayed {
                     self.reset_time_constrains(period_speed_limiter_1_instant)
                         .await?;
+                    self.context.reset();
                     let (state, on_state, in_regulation_aux, state_update) = self
                         .speed_limiter
                         .step(self.context.get_speed_limiter_inputs(None, None, None));
@@ -13988,6 +14007,7 @@ pub mod runtime {
                 &mut self,
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.context.reset();
                 if self.input_store.not_empty() {
                     self.reset_time_constrains(instant).await?;
                     match (

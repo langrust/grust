@@ -296,6 +296,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constrains(pedestrian_l_instant).await?;
+                    self.context.reset();
                     let pedestrian = pedestrian_l;
                     self.send_timer(T::TimeoutTimeoutPedest, pedestrian_l_instant)
                         .await?;
@@ -323,6 +324,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constrains(pedestrian_r_instant).await?;
+                    self.context.reset();
                     let pedestrian = pedestrian_r;
                     self.send_timer(T::TimeoutTimeoutPedest, pedestrian_r_instant)
                         .await?;
@@ -350,6 +352,7 @@ pub mod runtime {
                 if self.delayed {
                     self.reset_time_constrains(timeout_timeout_pedest_instant)
                         .await?;
+                    self.context.reset();
                     let timeout_pedest = ();
                     self.send_timer(T::TimeoutTimeoutPedest, timeout_timeout_pedest_instant)
                         .await?;
@@ -380,6 +383,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constrains(speed_km_h_instant).await?;
+                    self.context.reset();
                     self.context.speed_km_h.set(speed_km_h);
                 } else {
                     let unique = self
@@ -395,6 +399,7 @@ pub mod runtime {
                 timeout_aeb_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.reset_time_constrains(timeout_aeb_instant).await?;
+                self.context.reset();
                 let brakes = self
                     .braking_state
                     .step(self.context.get_braking_state_inputs(None, None));
@@ -416,6 +421,7 @@ pub mod runtime {
                 &mut self,
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.context.reset();
                 if self.input_store.not_empty() {
                     self.reset_time_constrains(instant).await?;
                     match (
