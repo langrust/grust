@@ -90,7 +90,6 @@ mk_new! { impl ParaMethod =>
     DoNotPara: dont_para ()
 }
 
-
 #[derive(Debug, PartialEq)]
 pub struct MatchArm {
     pub patterns: Vec<Pattern>,

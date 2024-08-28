@@ -22,7 +22,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
     } = run_loop;
 
     // result
-    let mut items = flows_context::rust_ast_from_lir(flows_context);
+    let mut items = flows_context::rust_ast_from_lir(flows_context).collect::<Vec<_>>();
 
     // store all inputs in a service_store
     let mut service_store_fields: Vec<Field> = vec![];
