@@ -2213,3 +2213,138 @@ mod propagation {
         assert_eq!(control, partitions)
     }
 }
+
+mod new_propagation {
+    prelude! { just
+        BTreeMap as Map,
+        lir::item::execution_machine::service_handler::ParaMethod,
+        synced::{ CtxSpec, Synced },
+    }
+
+    pub trait FromSynced<Ctx: CtxSpec + ?Sized>: Sized {
+        fn from_instr(instr: Ctx::Instr) -> Self;
+        fn from_seq(seq: Vec<Self>) -> Self;
+        fn from_para(para: Map<ParaMethod, Vec<Self>>) -> Self;
+    }
+
+    pub trait IntoParaMethod {
+        fn into_para_method(self) -> ParaMethod;
+    }
+
+    enum Frame<Ctx: CtxSpec + ?Sized, Instr: FromSynced<Ctx>>
+    where
+        Ctx::Cost: IntoParaMethod,
+    {
+        Seq {
+            done: Vec<Instr>,
+            todo: Vec<Synced<Ctx>>,
+        },
+        Para {
+            done: Map<ParaMethod, Vec<Instr>>,
+            method: ParaMethod,
+            todo: Map<Ctx::Cost, Vec<Synced<Ctx>>>,
+        },
+    }
+
+    struct Stack<Ctx: CtxSpec + ?Sized, Instr: FromSynced<Ctx>>
+    where
+        Ctx::Cost: IntoParaMethod,
+    {
+        stack: Vec<Frame<Ctx, Instr>>,
+    }
+
+    impl<Ctx: CtxSpec + ?Sized, Instr: FromSynced<Ctx>> Stack<Ctx, Instr>
+    where
+        Ctx::Cost: IntoParaMethod,
+    {
+        fn new() -> Self {
+            Self {
+                stack: Vec::with_capacity(11),
+            }
+        }
+
+        fn push(&mut self, frame: Frame<Ctx, Instr>) {
+            self.stack.push(frame)
+        }
+
+        fn pop(&mut self) -> Option<Frame<Ctx, Instr>> {
+            self.stack.pop()
+        }
+    }
+
+    fn stackless_rec<Ctx: CtxSpec + ?Sized, Instr: FromSynced<Ctx>>(synced: Synced<Ctx>) -> Instr
+    where
+        Ctx::Cost: IntoParaMethod,
+    {
+        let mut stack: Stack<Ctx, Instr> = Stack::new();
+        let mut acc = None;
+        let mut curr = synced;
+
+        'go_down: loop {
+            debug_assert!(acc.is_none());
+            match curr {
+                Synced::Instr(instr, _) => acc = Some(Instr::from_instr(instr)),
+                Synced::Seq(mut todo, _) => {
+                    curr = todo.pop().expect("there should be a synced");
+                    stack.push(Frame::Seq { done: vec![], todo });
+                    continue 'go_down;
+                }
+                Synced::Para(mut todo, _) => {
+                    let (cost, mut cost_todo) = todo.pop_first().expect("there should be synceds");
+                    curr = cost_todo.pop().expect("there should be a synced");
+                    if !cost_todo.is_empty() {
+                        todo.insert(cost.clone(), cost_todo);
+                    }
+                    stack.push(Frame::Para {
+                        done: Map::new(),
+                        todo,
+                        method: cost.into_para_method(),
+                    });
+                    continue 'go_down;
+                }
+            }
+
+            'go_up: loop {
+                debug_assert!(acc.is_some());
+                match stack.pop() {
+                    None => return acc.expect("there should be an instruction"),
+                    Some(Frame::Para {
+                        mut done,
+                        method,
+                        mut todo,
+                    }) => {
+                        let instr = std::mem::take(&mut acc).expect("there should be an instr");
+                        done.entry(method).or_insert_with(Vec::new).push(instr);
+                        if let Some((cost, mut cost_todo)) = todo.pop_first() {
+                            curr = cost_todo.pop().expect("there should be a synced");
+                            if !cost_todo.is_empty() {
+                                todo.insert(cost.clone(), cost_todo);
+                            }
+                            stack.push(Frame::Para {
+                                done,
+                                todo,
+                                method: cost.into_para_method(),
+                            });
+                            continue 'go_down;
+                        } else {
+                            acc = Some(Instr::from_para(done));
+                            continue 'go_up;
+                        }
+                    }
+                    Some(Frame::Seq { mut done, mut todo }) => {
+                        let instr = std::mem::take(&mut acc).expect("there should be an instr");
+                        done.push(instr);
+                        if let Some(curr_todo) = todo.pop() {
+                            curr = curr_todo;
+                            stack.push(Frame::Seq { done, todo });
+                            continue 'go_down;
+                        } else {
+                            acc = Some(Instr::from_seq(done));
+                            continue 'go_up;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

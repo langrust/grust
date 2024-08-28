@@ -76,7 +76,7 @@ mk_new! { impl FlowInstruction =>
     )
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ParaMethod {
     Rayon,
     Threads,
