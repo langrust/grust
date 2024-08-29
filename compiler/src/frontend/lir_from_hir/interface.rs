@@ -2232,9 +2232,9 @@ mod from_synced {
     }
 
     pub trait FromSynced<Ctx: CtxSpec + ?Sized>: Sized {
-        fn from_instr(instr: Ctx::Instr) -> Self;
-        fn from_seq(seq: Vec<Self>) -> Self;
-        fn from_para(para: Map<ParaMethod, Vec<Self>>) -> Self;
+        fn from_instr(ctxt: &Ctx, instr: Ctx::Instr) -> Self;
+        fn from_seq(ctxt: &Ctx, seq: Vec<Self>) -> Self;
+        fn from_para(ctxt: &Ctx, para: Map<ParaMethod, Vec<Self>>) -> Self;
     }
 
     pub trait IntoParaMethod {
@@ -2282,7 +2282,10 @@ mod from_synced {
         }
     }
 
-    fn run<Ctx: CtxSpec + ?Sized, Instr: FromSynced<Ctx>>(synced: Synced<Ctx>) -> Instr
+    pub fn run<Ctx: CtxSpec + ?Sized, Instr: FromSynced<Ctx>>(
+        ctxt: &Ctx,
+        synced: Synced<Ctx>,
+    ) -> Instr
     where
         Ctx::Cost: IntoParaMethod,
     {
@@ -2293,7 +2296,7 @@ mod from_synced {
         'go_down: loop {
             debug_assert!(acc.is_none());
             match curr {
-                Synced::Instr(instr, _) => acc = Some(Instr::from_instr(instr)),
+                Synced::Instr(instr, _) => acc = Some(Instr::from_instr(ctxt, instr)),
                 Synced::Seq(mut todo, _) => {
                     curr = todo.pop().expect("there should be a synced");
                     stack.push(Frame::Seq { done: vec![], todo });
@@ -2337,7 +2340,7 @@ mod from_synced {
                             });
                             continue 'go_down;
                         } else {
-                            acc = Some(Instr::from_para(done));
+                            acc = Some(Instr::from_para(ctxt, done));
                             continue 'go_up;
                         }
                     }
@@ -2349,7 +2352,7 @@ mod from_synced {
                             stack.push(Frame::Seq { done, todo });
                             continue 'go_down;
                         } else {
-                            acc = Some(Instr::from_seq(done));
+                            acc = Some(Instr::from_seq(ctxt, done));
                             continue 'go_up;
                         }
                     }
