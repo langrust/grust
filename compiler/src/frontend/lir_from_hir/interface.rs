@@ -738,11 +738,16 @@ mod para {
         graph::DiGraphMap,
         hir::interface::EdgeType,
         synced::{Builder, CtxSpec, Synced},
+        lir::item::execution_machine::service_handler::FlowInstruction,
     }
 
-    pub struct BuilderCtx;
+    use super::from_synced::{self, FromSynced, IntoParaMethod};
 
-    impl CtxSpec for BuilderCtx {
+    pub struct BuilderCtx<'a> {
+        syms: &'a SymbolTable,
+    }
+
+    impl<'a> CtxSpec for BuilderCtx<'a> {
         type Instr = usize;
         type Cost = usize;
         fn instr_cost(&self, _i: Self::Instr) -> Self::Cost {
@@ -760,9 +765,14 @@ mod para {
         }
     }
 
-    pub fn get_synced(subgraph: &DiGraphMap<usize, EdgeType>) -> Synced<BuilderCtx> {
+    pub fn get_synced<'a>(
+        subgraph: &DiGraphMap<usize, EdgeType>,
+        syms: &'a SymbolTable,
+    ) -> Synced<BuilderCtx<'a>> {
         let builder = Builder::<BuilderCtx, EdgeType>::new(subgraph);
-        builder.run(&BuilderCtx).expect("oh no")
+        builder.run(&BuilderCtx { syms }).expect("oh no")
+    }
+
     }
 }
 
