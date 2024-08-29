@@ -2214,7 +2214,7 @@ mod propagation {
     }
 }
 
-mod new_propagation {
+mod from_synced {
     prelude! { just
         BTreeMap as Map,
         lir::item::execution_machine::service_handler::ParaMethod,
@@ -2272,7 +2272,7 @@ mod new_propagation {
         }
     }
 
-    fn stackless_rec<Ctx: CtxSpec + ?Sized, Instr: FromSynced<Ctx>>(synced: Synced<Ctx>) -> Instr
+    fn run<Ctx: CtxSpec + ?Sized, Instr: FromSynced<Ctx>>(synced: Synced<Ctx>) -> Instr
     where
         Ctx::Cost: IntoParaMethod,
     {
