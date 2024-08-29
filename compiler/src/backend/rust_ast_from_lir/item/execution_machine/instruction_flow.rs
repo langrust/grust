@@ -1,12 +1,5 @@
-use quote::format_ident;
-
 prelude! {
-    macro2::Span,
-    quote::TokenStreamExt,
-    syn::*,
-}
-
-prelude! { just
+    macro2::Span, syn::*, quote::format_ident,
     backend::{
         rust_ast_from_lir::expression::constant_to_syn,
         rust_ast_from_lir::{
@@ -26,6 +19,11 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
             let ident = Ident::new(&ident, Span::call_site());
             let expression = flow_expression_rust_ast_from_lir(flow_expression);
             parse_quote! { let #ident = #expression; }
+        }
+        FlowInstruction::UpdateEvent(ident, expr) => {
+            let ident = format_ident!("{}_ref", ident);
+            let expression = flow_expression_rust_ast_from_lir(expr);
+            parse_quote! { *#ident = #expression; }
         }
         FlowInstruction::UpdateContext(ident, flow_expression) => {
             let ident = Ident::new(&ident, Span::call_site());
@@ -57,21 +55,18 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
         FlowInstruction::IfChange(
             old_event_name,
             source_name,
-            onchange_instructions,
-            not_onchange_instructions,
+            onchange_instr,
+            not_onchange_instr,
         ) => {
             let old_event_ident = Ident::new(&old_event_name, Span::call_site());
             let source_ident = Ident::new(&source_name, Span::call_site());
-            let mut onchange_tokens = macro2::TokenStream::new();
-            onchange_tokens.append_all(onchange_instructions.into_iter().map(rust_ast_from_lir));
-            let mut not_onchange_tokens = macro2::TokenStream::new();
-            not_onchange_tokens
-                .append_all(not_onchange_instructions.into_iter().map(rust_ast_from_lir));
+            let onchange = rust_ast_from_lir(*onchange_instr);
+            let not_onchange = rust_ast_from_lir(*not_onchange_instr);
             parse_quote! {
                 if self.context.#old_event_ident.get() != #source_ident {
-                    #onchange_tokens
+                    #onchange
                 } else {
-                    #not_onchange_tokens
+                    #not_onchange
                 }
             }
         }
@@ -117,7 +112,41 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
                 }
             }
         }
-        FlowInstruction::Para(method_map) => {
+        FlowInstruction::IfActivated(events, signals, then, els) => {
+            let actv_cond = events
+                .iter()
+                .map(|e| -> Expr {
+                    let ident = Ident::new(e, Span::call_site());
+                    parse_quote! { #ident.is_some() }
+                })
+                .chain(signals.iter().map(|s| -> Expr {
+                    let ident = Ident::new(s, Span::call_site());
+                    parse_quote! { self.context.#ident.is_new() }
+                }));
+            let then_instr = rust_ast_from_lir(*then);
+
+            if let Some(instr) = els {
+                let els_instr = rust_ast_from_lir(*instr);
+                parse_quote! {
+                    if #(#actv_cond)||* {
+                        #then_instr
+                    } else {
+                        #els_instr
+                    }
+                }
+            } else {
+                parse_quote! {
+                    if #(#actv_cond)||* {
+                        #then_instr
+                    }
+                }
+            }
+        }
+        FlowInstruction::Seq(instrs) => {
+            let instrs = instrs.into_iter().map(rust_ast_from_lir);
+            parse_quote! { #(#instrs)* }
+        }
+        FlowInstruction::Para(_method_map) => {
             parse_quote! {
                 todo!()
             }
