@@ -735,21 +735,9 @@ mod triggered {
 
 mod para {
     prelude! {
-        graph::DiGraphMap,
-        hir::{
-            flow,
-            interface::{
-                EdgeType, FlowStatement, FlowImport, FlowExport,
-                FlowDeclaration, FlowInstantiation,
-            },
-            Service,
-        },
+        hir::interface::{ EdgeType, FlowStatement, FlowDeclaration, FlowInstantiation },
         synced::{Builder, CtxSpec, Synced},
-        lir::item::execution_machine::{
-            flows_context::FlowsContext,
-            service_handler::{ParaMethod, FlowInstruction},
-            TimingEvent,
-        },
+        lir::item::execution_machine::service_handler::{ParaMethod, FlowInstruction},
     }
 
     use super::{
@@ -758,18 +746,7 @@ mod para {
         triggered::TriggersGraph,
     };
 
-    pub struct BuilderCtx<'a> {
-        /// Instructions builder.
-        instr_builder: flow_instr::Builder<'a>,
-        /// Service to build propagations for.
-        service: &'a Service,
-        /// Map from id to import.
-        imports: &'a HashMap<usize, FlowImport>,
-        /// Map from id to export.
-        exports: &'a HashMap<usize, FlowExport>,
-    }
-
-    impl<'a> CtxSpec for BuilderCtx<'a> {
+    impl<'a> CtxSpec for flow_instr::Builder<'a> {
         type Instr = usize;
         type Cost = usize;
         fn instr_cost(&self, _i: Self::Instr) -> Self::Cost {
@@ -787,16 +764,19 @@ mod para {
         }
     }
 
-    impl<'a> IntoParaMethod for <BuilderCtx<'a> as CtxSpec>::Cost {
+    impl<'a> IntoParaMethod for <flow_instr::Builder<'a> as CtxSpec>::Cost {
         fn into_para_method(self) -> ParaMethod {
             ParaMethod::Tokio // todo: depending on benchmarks
         }
     }
-    impl<'a> FromSynced<BuilderCtx<'a>> for FlowInstruction {
-        fn from_instr(ctxt: &mut BuilderCtx, instr: <BuilderCtx as CtxSpec>::Instr) -> Self {
+    impl<'a> FromSynced<flow_instr::Builder<'a>> for FlowInstruction {
+        fn from_instr(
+            ctxt: &mut flow_instr::Builder,
+            instr: <flow_instr::Builder as CtxSpec>::Instr,
+        ) -> Self {
             // get flow statement related to instr
-            if let Some(flow_statement) = ctxt.service.statements.get(&instr) {
-                match flow_statement {
+            if let Some(flow_statement) = ctxt.get_stmt(instr) {
+                match flow_statement.clone() {
                     FlowStatement::Declaration(FlowDeclaration {
                         pattern,
                         flow_expression,
@@ -806,54 +786,47 @@ mod para {
                         pattern,
                         flow_expression,
                         ..
-                    }) => ctxt
-                        .instr_builder
-                        .handle_expr(instr, pattern, flow_expression),
+                    }) => ctxt.handle_expr(instr, &pattern, &flow_expression),
                 }
             } else
             // get flow export related to instr
-            if let Some(export) = ctxt.exports.get(&instr) {
-                ctxt.instr_builder.send(export.id)
+            if let Some(export) = ctxt.get_export(instr) {
+                ctxt.send(export.id)
             } else
             // get flow import related to instr
-            if let Some(import) = ctxt.imports.get(&instr) {
-                ctxt.instr_builder.handle_import(import.id)
+            if let Some(import) = ctxt.get_import(instr) {
+                ctxt.handle_import(import.id)
             } else {
                 unreachable!()
             }
         }
 
-        fn from_seq(_ctxt: &mut BuilderCtx, seq: Vec<Self>) -> Self {
+        fn from_seq(_ctxt: &mut flow_instr::Builder, seq: Vec<Self>) -> Self {
             FlowInstruction::seq(seq)
         }
 
-        fn from_para(_ctxt: &mut BuilderCtx, para: BTreeMap<ParaMethod, Vec<Self>>) -> Self {
+        fn from_para(
+            _ctxt: &mut flow_instr::Builder,
+            para: BTreeMap<ParaMethod, Vec<Self>>,
+        ) -> Self {
             FlowInstruction::para(para)
         }
     }
 
     pub fn propagate_incomming_flows<'a, G>(
-        instr_builder: flow_instr::Builder<'a>,
+        ctxt: &mut flow_instr::Builder<'a>,
         graph: &G,
         incomming_flows: impl Iterator<Item = usize>,
-        service: &'a mut Service,
-        imports: &'a mut HashMap<usize, FlowImport>,
-        exports: &'a HashMap<usize, FlowExport>,
     ) -> FlowInstruction
     where
         G: TriggersGraph<'a>,
     {
-        debug_assert!(instr_builder.is_clear());
+        debug_assert!(ctxt.is_clear());
         let subgraph = graph.subgraph(incomming_flows);
-        let builder = Builder::<BuilderCtx, EdgeType>::new(&subgraph);
-        let mut ctxt = BuilderCtx {
-            imports,
-            exports,
-            service,
-            instr_builder,
-        };
-        let synced = builder.run(&ctxt).expect("oh no");
-        let instr = from_synced::run(&mut ctxt, synced);
+        let builder = Builder::<flow_instr::Builder, EdgeType>::new(&subgraph);
+        let synced = builder.run(ctxt).expect("oh no");
+        let instr = from_synced::run(ctxt, synced);
+        ctxt.clear();
 
         instr
     }
@@ -867,7 +840,7 @@ mod flow_instr {
             flow,
             interface::{
                 EdgeType, FlowDeclaration, FlowInstantiation,
-                FlowStatement, FlowImport,
+                FlowStatement, FlowImport, FlowExport,
             },
             IdentifierCreator, Service,
         },
@@ -897,6 +870,12 @@ mod flow_instr {
         multiple_inputs: bool,
         /// Maps statement to their related imports.
         stmts_imports: HashMap<usize, Vec<usize>>,
+        /// Service to build propagations for.
+        service: &'a Service,
+        /// Map from id to import.
+        imports: &'a HashMap<usize, FlowImport>,
+        /// Map from id to export.
+        exports: &'a HashMap<usize, FlowExport>,
     }
 
     impl<'a> Builder<'a> {
@@ -905,10 +884,11 @@ mod flow_instr {
         /// After creating the builder, you only need to [propagate](Self::propagate) the input flows.
         /// This will create the instructions to run when the input flow arrives.
         pub fn new(
-            service: &mut Service,
+            service: &'a mut Service,
             syms: &'a mut SymbolTable,
             flows_context: &'a mut FlowsContext,
-            imports: &mut HashMap<usize, FlowImport>,
+            imports: &'a mut HashMap<usize, FlowImport>,
+            exports: &'a HashMap<usize, FlowExport>,
             timing_events: &'a mut Vec<TimingEvent>,
             components: &'a mut Vec<String>,
             multiple_inputs: bool,
@@ -950,7 +930,20 @@ mod flow_instr {
                 signals: HashSet::new(),
                 multiple_inputs,
                 stmts_imports,
+                service,
+                imports,
+                exports,
             }
+        }
+
+        pub fn get_stmt(&self, stmt_id: usize) -> Option<&FlowStatement> {
+            self.service.statements.get(&stmt_id)
+        }
+        pub fn get_import(&self, import_id: usize) -> Option<&FlowImport> {
+            self.imports.get(&import_id)
+        }
+        pub fn get_export(&self, export_id: usize) -> Option<&FlowExport> {
+            self.exports.get(&export_id)
         }
 
         /// Clear the builder: events and signals sets
@@ -1257,7 +1250,7 @@ mod flow_instr {
         }
 
         /// Returns the import that have triggered the stmt.
-        fn get_import(&self, stmt_id: usize) -> usize {
+        fn get_stmt_import(&self, stmt_id: usize) -> usize {
             let imports = self
                 .stmts_imports
                 .get(&stmt_id)
@@ -1299,7 +1292,7 @@ mod flow_instr {
                 flow::Kind::Sample { .. } => self.handle_sample(stmt_id, pattern, dependencies),
                 flow::Kind::Scan { .. } => self.handle_scan(stmt_id, pattern, dependencies),
                 flow::Kind::Timeout { .. } => {
-                    let import_flow = self.get_import(stmt_id);
+                    let import_flow = self.get_stmt_import(stmt_id);
                     self.handle_timeout(import_flow, stmt_id, pattern, dependencies)
                 }
                 flow::Kind::Throttle { delta, .. } => {
@@ -1697,7 +1690,7 @@ mod flow_instr {
 
         /// Add flow send in current propagation branch.
         pub fn send(&mut self, flow_id: usize) -> FlowInstruction {
-            let import_flow = self.get_import(flow_id);
+            let import_flow = self.get_stmt_import(flow_id);
             // insert instruction only if source is a signal or an activated event
             if self.syms.get_flow_kind(flow_id).is_signal() {
                 let expr = self.get_signal(flow_id);
