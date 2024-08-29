@@ -1,3 +1,5 @@
+use compiler_lir::common::quote::format_ident;
+
 prelude! { just
     macro2::Span,
     syn::{parse_quote, Expr, Ident},
@@ -8,6 +10,10 @@ prelude! { just
 pub fn rust_ast_from_lir(expression: Expression) -> Expr {
     match expression {
         Expression::Literal { literal } => constant_to_syn(literal),
+        Expression::Event { identifier } => {
+            let identifier = format_ident!("{}_ref", identifier);
+            parse_quote! { #identifier }
+        }
         Expression::Identifier { identifier } => {
             let identifier = Ident::new(&identifier, Span::call_site());
             parse_quote! { #identifier }

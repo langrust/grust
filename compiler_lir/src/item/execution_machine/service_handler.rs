@@ -24,21 +24,31 @@ pub struct FlowHandler {
 #[derive(Debug, PartialEq)]
 pub enum FlowInstruction {
     Let(String, Expression),
+    UpdateEvent(String, Expression),
     UpdateContext(String, Expression),
     Send(String, Expression, Option<String>),
     IfThrottle(String, String, Constant, Box<Self>),
-    IfChange(String, String, Vec<Self>, Vec<Self>),
-    Para(Map<ParaMethod, Vec<Self>>),
+    IfChange(String, String, Box<Self>, Box<Self>),
+    IfActivated(Vec<String>, Vec<String>, Box<Self>, Option<Box<Self>>),
     ResetTimer(String, String),
     ComponentCall(Pattern, String, Vec<Option<String>>),
     HandleDelay(Vec<String>, Vec<MatchArm>),
+    Seq(Vec<Self>),
+    Para(Map<ParaMethod, Vec<Self>>),
 }
 mk_new! { impl FlowInstruction =>
     Let: def_let (
         name: impl Into<String> = name.into(),
         expr: Expression = expr.into(),
     )
-    UpdateContext: update_ctx (name: impl Into<String> = name.into(), expr: Expression = expr.into())
+    UpdateEvent: update_event (
+        name: impl Into<String> = name.into(),
+        expr: Expression = expr.into(),
+    )
+    UpdateContext: update_ctx (
+        name: impl Into<String> = name.into(),
+        expr: Expression = expr.into(),
+    )
     Send: send_from (
         name: impl Into<String> = name.into(),
         expr: Expression = expr.into(),
@@ -58,8 +68,14 @@ mk_new! { impl FlowInstruction =>
     IfChange: if_change (
         old_event_name: impl Into<String> = old_event_name.into(),
         source_name: impl Into<String> = source_name.into(),
-        then: Vec<FlowInstruction> = then,
-        els: Vec<FlowInstruction> = els,
+        then: FlowInstruction = then.into(),
+        els: FlowInstruction = els.into(),
+    )
+    IfActivated: if_activated (
+        events: impl Into<Vec<String>> = events.into(),
+        signals: impl Into<Vec<String>> = signals.into(),
+        then: FlowInstruction = then.into(),
+        els: Option<FlowInstruction> = els.map(Into::into),
     )
     ResetTimer: reset (
         name: impl Into<String> = name.into(),
@@ -73,6 +89,12 @@ mk_new! { impl FlowInstruction =>
     HandleDelay: handle_delay(
         input_names: impl Iterator<Item = String> = input_names.collect(),
         arms: impl Iterator<Item = MatchArm> = arms.collect(),
+    )
+    Seq: seq(
+        instrs: Vec<FlowInstruction> = instrs,
+    )
+    Para: para(
+        para_instr: Map<ParaMethod, Vec<Self>> = para_instr,
     )
 }
 
@@ -109,6 +131,11 @@ pub enum Expression {
         /// The literal.
         literal: Constant,
     },
+    /// An event call: `x`.
+    Event {
+        /// The identifier.
+        identifier: String,
+    },
     /// An identifier call: `x`.
     Identifier {
         /// The identifier.
@@ -135,6 +162,9 @@ pub enum Expression {
 mk_new! { impl Expression =>
     Literal: lit {
         literal: Constant = literal
+    }
+    Event: event {
+        identifier: impl Into<String> = identifier.into()
     }
     Identifier: ident {
         identifier: impl Into<String> = identifier.into()

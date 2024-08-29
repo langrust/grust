@@ -597,7 +597,7 @@ mod triggered {
             imports: &'a HashMap<usize, FlowImport>,
         ) -> Self;
         fn get_triggered(&self, parent: usize) -> impl Iterator<Item = usize>;
-        fn subgraph(&self, start: usize) -> DiGraphMap<usize, EdgeType>;
+        fn subgraph(&self, starts: impl Iterator<Item = usize>) -> DiGraphMap<usize, EdgeType>;
     }
 
     /// Isles of statements triggered by events only.
@@ -666,12 +666,14 @@ mod triggered {
             isles.chain(dependencies).unique()
         }
 
-        fn subgraph(&self, start: usize) -> DiGraphMap<usize, EdgeType> {
+        fn subgraph(&self, starts: impl Iterator<Item = usize>) -> DiGraphMap<usize, EdgeType> {
             let mut trig_graph = DiGraphMap::new();
             // init stack and seen set
-            let mut stack = vec![start];
-            let mut seen = HashSet::new();
-            seen.insert(start);
+            let (mut stack, mut seen) = (vec![], HashSet::new());
+            starts.for_each(|id| {
+                stack.push(id);
+                seen.insert(id);
+            });
             // loop on stack
             while let Some(parent) = stack.pop() {
                 let neighbors = self.get_triggered(parent);
@@ -712,21 +714,19 @@ mod triggered {
             self.graph.neighbors(parent)
         }
 
-        fn subgraph(&self, start: usize) -> DiGraphMap<usize, EdgeType> {
+        fn subgraph(&self, starts: impl Iterator<Item = usize>) -> DiGraphMap<usize, EdgeType> {
             let mut trig_graph = DiGraphMap::new();
-            petgraph::visit::depth_first_search(&self.graph, std::iter::once(start), |event| {
-                match event {
-                    CrossForwardEdge(parent, child)
-                    | BackEdge(parent, child)
-                    | TreeEdge(parent, child) => {
-                        let weight = *self
-                            .graph
-                            .edge_weight(parent, child)
-                            .expect("there should be a weight");
-                        trig_graph.add_edge(parent, child, weight);
-                    }
-                    Discover(_, _) | Finish(_, _) => {}
+            petgraph::visit::depth_first_search(&self.graph, starts, |event| match event {
+                CrossForwardEdge(parent, child)
+                | BackEdge(parent, child)
+                | TreeEdge(parent, child) => {
+                    let weight = *self
+                        .graph
+                        .edge_weight(parent, child)
+                        .expect("there should be a weight");
+                    trig_graph.add_edge(parent, child, weight);
                 }
+                Discover(_, _) | Finish(_, _) => {}
             });
             trig_graph
         }
@@ -736,15 +736,37 @@ mod triggered {
 mod para {
     prelude! {
         graph::DiGraphMap,
-        hir::interface::EdgeType,
+        hir::{
+            flow,
+            interface::{
+                EdgeType, FlowStatement, FlowImport, FlowExport,
+                FlowDeclaration, FlowInstantiation,
+            },
+            Service,
+        },
         synced::{Builder, CtxSpec, Synced},
-        lir::item::execution_machine::service_handler::FlowInstruction,
+        lir::item::execution_machine::{
+            flows_context::FlowsContext,
+            service_handler::{ParaMethod, FlowInstruction},
+            TimingEvent,
+        },
     }
 
-    use super::from_synced::{self, FromSynced, IntoParaMethod};
+    use super::{
+        flow_instr,
+        from_synced::{self, FromSynced, IntoParaMethod},
+        triggered::TriggersGraph,
+    };
 
     pub struct BuilderCtx<'a> {
-        syms: &'a SymbolTable,
+        /// Instructions builder.
+        instr_builder: flow_instr::Builder<'a>,
+        /// Service to build propagations for.
+        service: &'a Service,
+        /// Map from id to import.
+        imports: &'a HashMap<usize, FlowImport>,
+        /// Map from id to export.
+        exports: &'a HashMap<usize, FlowExport>,
     }
 
     impl<'a> CtxSpec for BuilderCtx<'a> {
@@ -765,14 +787,945 @@ mod para {
         }
     }
 
-    pub fn get_synced<'a>(
-        subgraph: &DiGraphMap<usize, EdgeType>,
-        syms: &'a SymbolTable,
-    ) -> Synced<BuilderCtx<'a>> {
-        let builder = Builder::<BuilderCtx, EdgeType>::new(subgraph);
-        builder.run(&BuilderCtx { syms }).expect("oh no")
+    impl<'a> IntoParaMethod for <BuilderCtx<'a> as CtxSpec>::Cost {
+        fn into_para_method(self) -> ParaMethod {
+            ParaMethod::Tokio // todo: depending on benchmarks
+        }
+    }
+    impl<'a> FromSynced<BuilderCtx<'a>> for FlowInstruction {
+        fn from_instr(ctxt: &mut BuilderCtx, instr: <BuilderCtx as CtxSpec>::Instr) -> Self {
+            // get flow statement related to instr
+            if let Some(flow_statement) = ctxt.service.statements.get(&instr) {
+                match flow_statement {
+                    FlowStatement::Declaration(FlowDeclaration {
+                        pattern,
+                        flow_expression,
+                        ..
+                    })
+                    | FlowStatement::Instantiation(FlowInstantiation {
+                        pattern,
+                        flow_expression,
+                        ..
+                    }) => ctxt
+                        .instr_builder
+                        .handle_expr(instr, pattern, flow_expression),
+                }
+            } else
+            // get flow export related to instr
+            if let Some(export) = ctxt.exports.get(&instr) {
+                ctxt.instr_builder.send(export.id)
+            } else
+            // get flow import related to instr
+            if let Some(import) = ctxt.imports.get(&instr) {
+                ctxt.instr_builder.handle_import(import.id)
+            } else {
+                unreachable!()
+            }
+        }
+
+        fn from_seq(_ctxt: &mut BuilderCtx, seq: Vec<Self>) -> Self {
+            FlowInstruction::seq(seq)
+        }
+
+        fn from_para(_ctxt: &mut BuilderCtx, para: BTreeMap<ParaMethod, Vec<Self>>) -> Self {
+            FlowInstruction::para(para)
+        }
     }
 
+    pub fn propagate_incomming_flows<'a, G>(
+        instr_builder: flow_instr::Builder<'a>,
+        graph: &G,
+        incomming_flows: impl Iterator<Item = usize>,
+        service: &'a mut Service,
+        imports: &'a mut HashMap<usize, FlowImport>,
+        exports: &'a HashMap<usize, FlowExport>,
+    ) -> FlowInstruction
+    where
+        G: TriggersGraph<'a>,
+    {
+        debug_assert!(instr_builder.is_clear());
+        let subgraph = graph.subgraph(incomming_flows);
+        let builder = Builder::<BuilderCtx, EdgeType>::new(&subgraph);
+        let mut ctxt = BuilderCtx {
+            imports,
+            exports,
+            service,
+            instr_builder,
+        };
+        let synced = builder.run(&ctxt).expect("oh no");
+        let instr = from_synced::run(&mut ctxt, synced);
+
+        instr
+    }
+}
+
+mod flow_instr {
+    prelude! {
+        quote::format_ident,
+        graph::{DfsEvent::*, Direction},
+        hir::{
+            flow,
+            interface::{
+                EdgeType, FlowDeclaration, FlowInstantiation,
+                FlowStatement, FlowImport,
+            },
+            IdentifierCreator, Service,
+        },
+        lir::item::execution_machine::{
+            flows_context::FlowsContext, service_handler::{Expression, FlowInstruction},
+            TimingEvent, TimingEventKind,
+        },
+    }
+
+    use super::LIRFromHIR;
+
+    /// A context to build [FlowInstruction]s.
+    pub struct Builder<'a> {
+        /// Context of the service.
+        flows_context: &'a FlowsContext,
+        /// Symbol table.
+        syms: &'a SymbolTable,
+        /// Events currently triggered during a traversal.
+        events: HashSet<usize>,
+        /// Signals currently defined during a traversal.
+        signals: HashSet<usize>,
+        /// Maps on_change event indices to the indices of signals containing their previous values.
+        on_change_events: HashMap<usize, usize>,
+        /// Maps statement indices to the indices and kinds of their timing_events.
+        stmts_timers: HashMap<usize, usize>,
+        /// Tells if we handle multiple incoming flows.
+        multiple_inputs: bool,
+        /// Maps statement to their related imports.
+        stmts_imports: HashMap<usize, Vec<usize>>,
+    }
+
+    impl<'a> Builder<'a> {
+        /// Create a Builder.
+        ///
+        /// After creating the builder, you only need to [propagate](Self::propagate) the input flows.
+        /// This will create the instructions to run when the input flow arrives.
+        pub fn new(
+            service: &mut Service,
+            syms: &'a mut SymbolTable,
+            flows_context: &'a mut FlowsContext,
+            imports: &mut HashMap<usize, FlowImport>,
+            timing_events: &'a mut Vec<TimingEvent>,
+            components: &'a mut Vec<String>,
+            multiple_inputs: bool,
+        ) -> Self {
+            let mut identifier_creator = IdentifierCreator::from(
+                service.get_flows_names(syms).chain(
+                    imports
+                        .values()
+                        .map(|import| syms.get_name(import.id).clone()),
+                ),
+            );
+            // retrieve timer and onchange events from service
+            let (stmts_timers, on_change_events) = Self::build_stmt_events(
+                &mut identifier_creator,
+                service,
+                syms,
+                flows_context,
+                imports,
+                timing_events,
+                components,
+            );
+            // add events related to service's constrains
+            Self::build_constrains_events(
+                &mut identifier_creator,
+                service,
+                syms,
+                imports,
+                timing_events,
+            );
+            // construct [stmt -> imports]
+            let stmts_imports = Self::build_stmts_imports(service, imports);
+
+            Builder {
+                flows_context,
+                syms,
+                on_change_events,
+                stmts_timers,
+                events: HashSet::new(),
+                signals: HashSet::new(),
+                multiple_inputs,
+                stmts_imports,
+            }
+        }
+
+        /// Clear the builder: events and signals sets
+        pub fn clear(&mut self) {
+            self.events.clear();
+            self.signals.clear();
+        }
+
+        /// Tells if the builder is cleared.
+        pub fn is_clear(&self) -> bool {
+            self.events.is_empty() && self.signals.is_empty()
+        }
+
+        /// Constructs the map from statement to related imports.
+        fn build_stmts_imports(
+            service: &Service,
+            imports: &HashMap<usize, FlowImport>,
+        ) -> HashMap<usize, Vec<usize>> {
+            let mut stmts_imports = HashMap::new();
+            for import in imports.values() {
+                petgraph::visit::depth_first_search(
+                    &service.graph,
+                    std::iter::once(import.id),
+                    |event| match event {
+                        CrossForwardEdge(parent, child)
+                        | BackEdge(parent, child)
+                        | TreeEdge(parent, child) => {
+                            let weight = *service
+                                .graph
+                                .edge_weight(parent, child)
+                                .expect("there should be a weight");
+                            match weight {
+                                EdgeType::Dependency => {
+                                    stmts_imports.entry(child).or_insert(vec![]).push(import.id)
+                                }
+                                EdgeType::Priority => (),
+                            }
+                        }
+                        Discover(_, _) | Finish(_, _) => {}
+                    },
+                );
+            }
+            stmts_imports
+        }
+
+        /// Adds events related to statements.
+        fn build_stmt_events(
+            identifier_creator: &mut IdentifierCreator,
+            service: &mut Service,
+            syms: &mut SymbolTable,
+            flows_context: &mut FlowsContext,
+            imports: &mut HashMap<usize, FlowImport>,
+            timing_events: &mut Vec<TimingEvent>,
+            components: &mut Vec<String>,
+        ) -> (HashMap<usize, usize>, HashMap<usize, usize>) {
+            // collects components, timing events, on_change_events that are present in the service
+            let mut stmts_timers = HashMap::new();
+            let mut on_change_events = HashMap::new();
+            service.statements.iter().for_each(|(stmt_id, statement)| {
+                let stmt_id = *stmt_id;
+                match statement {
+                    FlowStatement::Declaration(FlowDeclaration {
+                        pattern,
+                        flow_expression,
+                        ..
+                    })
+                    | FlowStatement::Instantiation(FlowInstantiation {
+                        pattern,
+                        flow_expression,
+                        ..
+                    }) => {
+                        match &flow_expression.kind {
+                            flow::Kind::Ident { .. }
+                            | flow::Kind::Throttle { .. }
+                            | flow::Kind::Merge { .. } => (),
+                            flow::Kind::OnChange { .. } => {
+                                // get the identifier of the created event
+                                let mut ids = pattern.identifiers();
+                                debug_assert!(ids.len() == 1);
+                                let flow_event_id = ids.pop().unwrap();
+                                let event_name = syms.get_name(flow_event_id).clone();
+
+                                // add new event into the identifier creator
+                                let fresh_name =
+                                    identifier_creator.new_identifier_with("", &event_name, "old");
+                                let typing = syms.get_type(flow_event_id).clone();
+                                let kind = syms.get_flow_kind(flow_event_id).clone();
+                                let fresh_id = syms.insert_fresh_flow(
+                                    fresh_name.clone(),
+                                    kind,
+                                    typing.clone(),
+                                );
+
+                                // add event_old in flows_context
+                                flows_context.add_element(fresh_name, &typing);
+
+                                // push in on_change_events
+                                on_change_events.insert(flow_event_id, fresh_id);
+                            }
+                            flow::Kind::Sample { period_ms, .. }
+                            | flow::Kind::Scan { period_ms, .. } => {
+                                // add new timing event into the identifier creator
+                                let flow_name = syms.get_name(pattern.identifiers().pop().unwrap());
+                                let fresh_name =
+                                    identifier_creator.fresh_identifier("period", flow_name);
+                                let typing = Typ::event(Typ::unit());
+                                let fresh_id =
+                                    syms.insert_fresh_period(fresh_name.clone(), *period_ms);
+
+                                // add timing_event in imports
+                                let fresh_statement_id = syms.get_fresh_id();
+                                imports.insert(
+                                    fresh_statement_id,
+                                    FlowImport {
+                                        import_token: Default::default(),
+                                        id: fresh_id,
+                                        path: format_ident!("{fresh_name}").into(),
+                                        colon_token: Default::default(),
+                                        flow_type: typing,
+                                        semi_token: Default::default(),
+                                    },
+                                );
+                                // add timing_event in graph
+                                service.graph.add_node(fresh_statement_id);
+                                service.graph.add_edge(
+                                    fresh_statement_id,
+                                    stmt_id,
+                                    EdgeType::Dependency,
+                                );
+
+                                // push timing_event
+                                stmts_timers.insert(stmt_id, fresh_id);
+                                timing_events.push(TimingEvent {
+                                    identifier: fresh_name,
+                                    kind: TimingEventKind::Period(period_ms.clone()),
+                                });
+                            }
+                            flow::Kind::Timeout { deadline, .. } => {
+                                // add new timing event into the identifier creator
+                                let flow_name = syms.get_name(pattern.identifiers().pop().unwrap());
+                                let fresh_name =
+                                    identifier_creator.fresh_identifier("timeout", flow_name);
+                                let typing = Typ::event(Typ::unit());
+                                let fresh_id =
+                                    syms.insert_fresh_deadline(fresh_name.clone(), *deadline);
+
+                                // add timing_event in imports
+                                let fresh_statement_id = syms.get_fresh_id();
+                                imports.insert(
+                                    fresh_statement_id,
+                                    FlowImport {
+                                        import_token: Default::default(),
+                                        id: fresh_id,
+                                        path: format_ident!("{fresh_name}").into(),
+                                        colon_token: Default::default(),
+                                        flow_type: typing,
+                                        semi_token: Default::default(),
+                                    },
+                                );
+
+                                // add timing_event in graph
+                                service.graph.add_node(fresh_statement_id);
+                                let dep_stmt = service
+                                    .graph
+                                    .neighbors_directed(stmt_id, Direction::Incoming)
+                                    .next()
+                                    .expect("timeout without dependence");
+                                service.graph.add_edge(
+                                    fresh_statement_id,
+                                    stmt_id,
+                                    EdgeType::Dependency,
+                                );
+                                service.graph.add_edge(
+                                    dep_stmt,
+                                    fresh_statement_id,
+                                    EdgeType::Priority,
+                                );
+
+                                // push timing_event
+                                stmts_timers.insert(stmt_id, fresh_id);
+                                timing_events.push(TimingEvent {
+                                    identifier: fresh_name,
+                                    kind: TimingEventKind::Timeout(deadline.clone()),
+                                })
+                            }
+                            flow::Kind::ComponentCall { component_id, .. } => {
+                                let comp_name = syms.get_name(*component_id).clone();
+                                // add potential period constrains
+                                if let Some(period) = syms.get_node_period(*component_id) {
+                                    // add new timing event into the identifier creator
+                                    let fresh_name =
+                                        identifier_creator.fresh_identifier("period", &comp_name);
+                                    let typing = Typ::event(Typ::unit());
+                                    let fresh_id =
+                                        syms.insert_fresh_period(fresh_name.clone(), period);
+                                    syms.set_node_period_id(*component_id, fresh_id);
+
+                                    // add timing_event in imports
+                                    let fresh_statement_id = syms.get_fresh_id();
+                                    imports.insert(
+                                        fresh_statement_id,
+                                        FlowImport {
+                                            import_token: Default::default(),
+                                            id: fresh_id,
+                                            path: format_ident!("{fresh_name}").into(),
+                                            colon_token: Default::default(),
+                                            flow_type: typing,
+                                            semi_token: Default::default(),
+                                        },
+                                    );
+                                    // add timing_event in graph
+                                    service.graph.add_node(fresh_statement_id);
+                                    service.graph.add_edge(
+                                        fresh_statement_id,
+                                        stmt_id,
+                                        EdgeType::Dependency,
+                                    );
+
+                                    // push timing_event
+                                    stmts_timers.insert(stmt_id, fresh_id);
+                                    timing_events.push(TimingEvent {
+                                        identifier: fresh_name,
+                                        kind: TimingEventKind::Period(period.clone()),
+                                    })
+                                }
+                                components.push(comp_name)
+                            }
+                        }
+                    }
+                };
+            });
+
+            (stmts_timers, on_change_events)
+        }
+
+        /// Adds events related to service's constrains.
+        fn build_constrains_events(
+            identifier_creator: &mut IdentifierCreator,
+            service: &mut Service,
+            syms: &mut SymbolTable,
+            imports: &mut HashMap<usize, FlowImport>,
+            timing_events: &mut Vec<TimingEvent>,
+        ) {
+            let min_delay = service.constrains.0;
+            // add new timing event into the identifier creator
+            let fresh_name =
+                identifier_creator.fresh_identifier("delay", syms.get_name(service.id));
+            let typing = Typ::event(Typ::unit());
+            let fresh_id = syms.insert_service_delay(fresh_name.clone(), service.id, min_delay);
+            // add timing_event in imports
+            let fresh_statement_id = syms.get_fresh_id();
+            imports.insert(
+                fresh_statement_id,
+                FlowImport {
+                    import_token: Default::default(),
+                    id: fresh_id,
+                    path: format_ident!("{fresh_name}").into(),
+                    colon_token: Default::default(),
+                    flow_type: typing,
+                    semi_token: Default::default(),
+                },
+            );
+            // add timing_event in graph
+            service.graph.add_node(fresh_statement_id);
+            // push timing_event
+            timing_events.push(TimingEvent {
+                identifier: fresh_name,
+                kind: TimingEventKind::ServiceDelay(min_delay),
+            });
+
+            let max_timeout = service.constrains.1;
+            // add new timing event into the identifier creator
+            let fresh_name =
+                identifier_creator.fresh_identifier("timeout", syms.get_name(service.id));
+            let typing = Typ::event(Typ::unit());
+            let fresh_id = syms.insert_service_timeout(fresh_name.clone(), service.id, max_timeout);
+            // add timing_event in imports
+            let fresh_statement_id = syms.get_fresh_id();
+            imports.insert(
+                fresh_statement_id,
+                FlowImport {
+                    import_token: Default::default(),
+                    id: fresh_id,
+                    path: format_ident!("{fresh_name}").into(),
+                    colon_token: Default::default(),
+                    flow_type: typing,
+                    semi_token: Default::default(),
+                },
+            );
+            // add timing_event in graph
+            service.graph.add_node(fresh_statement_id);
+            service.statements.keys().for_each(|stmt_id| {
+                if service.statements[stmt_id].is_comp_call() {
+                    service
+                        .graph
+                        .add_edge(fresh_statement_id, *stmt_id, EdgeType::Dependency);
+                }
+            });
+            // push timing_event
+            timing_events.push(TimingEvent {
+                identifier: fresh_name,
+                kind: TimingEventKind::ServiceTimeout(max_timeout),
+            });
+        }
+
+        /// Returns the import that have triggered the stmt.
+        fn get_import(&self, stmt_id: usize) -> usize {
+            let imports = self
+                .stmts_imports
+                .get(&stmt_id)
+                .expect("there should be imports");
+            debug_assert!(!imports.is_empty());
+
+            *imports
+                .iter()
+                .filter(|import_id| {
+                    self.events.contains(*import_id) || self.signals.contains(*import_id)
+                })
+                .next()
+                .unwrap()
+        }
+
+        /// Compute the instruction from an import.
+        pub fn handle_import(&mut self, import_id: usize) -> FlowInstruction {
+            if self.syms.get_flow_kind(import_id).is_event() {
+                let event_name = self.syms.get_name(import_id);
+                let expr = Expression::event(event_name);
+                self.define_event(import_id, expr)
+            } else if let Some(update) = self.update_ctx(import_id) {
+                update
+            } else {
+                FlowInstruction::seq(vec![])
+            }
+        }
+
+        /// Compute the instruction from an expression flow.
+        pub fn handle_expr(
+            &mut self,
+            stmt_id: usize,
+            pattern: &hir::Pattern,
+            flow_expression: &flow::Expr,
+        ) -> FlowInstruction {
+            let dependencies = flow_expression.get_dependencies();
+            match &flow_expression.kind {
+                flow::Kind::Ident { id } => self.handle_ident(pattern, *id),
+                flow::Kind::Sample { .. } => self.handle_sample(stmt_id, pattern, dependencies),
+                flow::Kind::Scan { .. } => self.handle_scan(stmt_id, pattern, dependencies),
+                flow::Kind::Timeout { .. } => {
+                    let import_flow = self.get_import(stmt_id);
+                    self.handle_timeout(import_flow, stmt_id, pattern, dependencies)
+                }
+                flow::Kind::Throttle { delta, .. } => {
+                    self.handle_throttle(pattern, dependencies, delta.clone())
+                }
+                flow::Kind::OnChange { .. } => self.handle_on_change(pattern, dependencies),
+                flow::Kind::Merge { .. } => self.handle_merge(pattern, dependencies),
+                flow::Kind::ComponentCall {
+                    component_id,
+                    inputs,
+                } => self.handle_component_call(pattern, *component_id, inputs),
+            }
+        }
+
+        /// Compute the instruction from an identifier expression.
+        fn handle_ident(&mut self, pattern: &hir::Pattern, id_source: usize) -> FlowInstruction {
+            // get the id of pattern's flow, debug-check there is only one flow
+            let mut ids = pattern.identifiers();
+            debug_assert!(ids.len() == 1);
+            let id_pattern = ids.pop().unwrap();
+
+            // insert instruction only if source is a signal or an activated event
+            let def = if self.syms.get_flow_kind(id_source).is_signal() {
+                let expr = self.get_signal(id_source);
+                self.define_signal(id_pattern, expr)
+            } else {
+                let expr = self.get_event(id_source);
+                self.define_event(id_pattern, expr)
+            };
+
+            if let Some(update) = self.update_ctx(id_pattern) {
+                FlowInstruction::seq(vec![def, update])
+            } else {
+                def
+            }
+        }
+
+        /// Compute the instruction from a sample expression.
+        fn handle_sample(
+            &mut self,
+            stmt_id: usize,
+            pattern: &hir::Pattern,
+            mut dependencies: Vec<usize>,
+        ) -> FlowInstruction {
+            // get the id of pattern's flow, debug-check there is only one flow
+            let mut ids = pattern.identifiers();
+            debug_assert!(ids.len() == 1);
+            let id_pattern = ids.pop().unwrap();
+            let flow_name = self.syms.get_name(id_pattern);
+
+            // get the source id, debug-check there is only one flow
+            debug_assert!(dependencies.len() == 1);
+            let id_source = dependencies.pop().unwrap();
+            let source_name = self.syms.get_name(id_source);
+
+            let timer_id = self.stmts_timers[&stmt_id];
+
+            let mut instrs = vec![];
+            // source is an event, look if it is defined
+            if self.events.contains(&id_source) {
+                // if activated, store event value in context
+                let update =
+                    FlowInstruction::update_ctx(source_name, Expression::event(source_name));
+                instrs.push(FlowInstruction::if_activated(
+                    vec![source_name.clone()],
+                    [],
+                    update,
+                    None,
+                ))
+            } else
+            // if timing event is activated
+            if self.events.contains(&timer_id) {
+                // if activated, update signal by taking from stored event value
+                instrs.push(FlowInstruction::update_ctx(
+                    flow_name,
+                    Expression::take_from_ctx(source_name),
+                ))
+            } else {
+                unreachable!("'sample' should be activated by either its source or its timer")
+            }
+
+            FlowInstruction::seq(instrs)
+        }
+
+        /// Compute the instruction from a scan expression.
+        fn handle_scan(
+            &mut self,
+            stmt_id: usize,
+            pattern: &hir::Pattern,
+            mut dependencies: Vec<usize>,
+        ) -> FlowInstruction {
+            // get the id of pattern's flow, debug-check there is only one flow
+            let mut ids = pattern.identifiers();
+            debug_assert!(ids.len() == 1);
+            let id_pattern = ids.pop().unwrap();
+
+            // get the source id, debug-check there is only one flow
+            debug_assert!(dependencies.len() == 1);
+            let id_source = dependencies.pop().unwrap();
+
+            let timer_id = self.stmts_timers[&stmt_id];
+
+            // timer is an event, look if it is activated
+            if self.events.contains(&timer_id) {
+                // if activated, create event
+                let expr = self.get_signal(id_source);
+                let def = self.define_event(id_pattern, expr);
+                def
+            } else {
+                // 'scan' can be activated by the source signal, but it won't do anything
+                FlowInstruction::seq(vec![])
+            }
+        }
+
+        /// Compute the instruction from a timeout expression.
+        fn handle_timeout(
+            &mut self,
+            import_flow: usize,
+            stmt_id: usize,
+            pattern: &hir::Pattern,
+            mut dependencies: Vec<usize>,
+        ) -> FlowInstruction {
+            // get the id of pattern's flow, debug-check there is only one flow
+            let mut ids = pattern.identifiers();
+            debug_assert!(ids.len() == 1);
+            let id_pattern = ids.pop().unwrap();
+
+            // get the source id, debug-check there is only one flow
+            debug_assert!(dependencies.len() == 1);
+            let id_source = dependencies.pop().unwrap();
+
+            let timer_id = self.stmts_timers[&stmt_id].clone();
+
+            if self.events.contains(&id_source) {
+                // if activated, reset timer
+                let reset = FlowInstruction::if_activated(
+                    vec![self.syms.get_name(id_source).clone()],
+                    [],
+                    self.reset_timer(timer_id, import_flow),
+                    None,
+                );
+                reset
+            } else if self.events.contains(&timer_id) {
+                let unit_expr = Expression::lit(Constant::unit_default());
+                let def = self.define_event(id_pattern, unit_expr);
+                let reset = self.reset_timer(timer_id, import_flow);
+                FlowInstruction::seq(vec![def, reset])
+            } else {
+                unreachable!("'timeout' should be activated by either its source or its timer")
+            }
+        }
+
+        /// Compute the instruction from a throttle expression.
+        fn handle_throttle(
+            &mut self,
+            pattern: &hir::Pattern,
+            mut dependencies: Vec<usize>,
+            delta: Constant,
+        ) -> FlowInstruction {
+            // get the id of pattern's flow, debug-check there is only one flow
+            let mut ids = pattern.identifiers();
+            debug_assert!(ids.len() == 1);
+            let id_pattern = ids.pop().unwrap();
+            let flow_name = self.syms.get_name(id_pattern);
+
+            // get the source id, debug-check there is only one flow
+            debug_assert!(dependencies.len() == 1);
+            let id_source = dependencies.pop().unwrap();
+            let source_name = self.syms.get_name(id_source);
+
+            // update created signal
+            let expr = self.get_signal(id_source);
+            FlowInstruction::if_throttle(
+                flow_name,
+                source_name,
+                delta,
+                FlowInstruction::update_ctx(flow_name, expr),
+            )
+        }
+
+        /// Compute the instruction from an on_change expression.
+        fn handle_on_change(
+            &mut self,
+            pattern: &hir::Pattern,
+            mut dependencies: Vec<usize>,
+        ) -> FlowInstruction {
+            // get the id of pattern's flow, debug-check there is only one flow
+            let mut ids = pattern.identifiers();
+            debug_assert!(ids.len() == 1);
+            let id_pattern = ids.pop().unwrap();
+
+            // get the source id, debug-check there is only one flow
+            debug_assert!(dependencies.len() == 1);
+            let id_source = dependencies.pop().unwrap();
+            let source_name = self.syms.get_name(id_source);
+
+            let id_old_event = self.on_change_events[&id_pattern];
+            let old_event_name = self.syms.get_name(id_old_event);
+
+            // detect changes on signal
+            let expr = self.get_signal(id_source);
+            let event_def = self.define_event(id_pattern, expr);
+            let then = vec![
+                FlowInstruction::update_ctx(old_event_name.clone(), self.get_signal(id_source)),
+                event_def,
+            ];
+            FlowInstruction::if_change(
+                old_event_name,
+                source_name,
+                FlowInstruction::seq(then),
+                FlowInstruction::seq(vec![]),
+            )
+        }
+
+        /// Compute the instruction from a merge expression.
+        fn handle_merge(
+            &mut self,
+            pattern: &hir::Pattern,
+            mut dependencies: Vec<usize>,
+        ) -> FlowInstruction {
+            // get the id of pattern's flow, debug-check there is only one flow
+            let mut ids = pattern.identifiers();
+            debug_assert!(ids.len() == 1);
+            let id_pattern = ids.pop().unwrap();
+
+            // get the source id, debug-check there is only one flow
+            debug_assert!(dependencies.len() == 2);
+            let id_source_1 = dependencies.pop().unwrap();
+            let event_1 = self.syms.get_name(id_source_1).clone();
+            let id_source_2 = dependencies.pop().unwrap();
+            let event_2 = self.syms.get_name(id_source_2).clone();
+
+            let expr_1 = self.get_event(id_source_1);
+            let instr_1 = self.define_event(id_pattern, expr_1);
+            let expr_2 = self.get_event(id_source_2);
+            let instr_2 = self.define_event(id_pattern, expr_2);
+
+            let if_event_1 = |els| FlowInstruction::if_activated(vec![event_1], [], instr_1, els);
+            let if_event_2 = FlowInstruction::if_activated(vec![event_2], [], instr_2, None);
+
+            match (
+                self.events.contains(&id_source_1),
+                self.events.contains(&id_source_2),
+            ) {
+                (true, true) => {
+                    // check if first activated, otherwise check if second activated
+                    if_event_1(Some(if_event_2))
+                }
+                (true, false) => {
+                    // check if first activated
+                    if_event_1(None)
+                }
+                (false, true) => {
+                    // check if second activated
+                    if_event_2
+                }
+                (false, false) => unreachable!("'merge' should be activated by one of its sources"),
+            }
+        }
+
+        /// Compute the instruction from a component call.
+        fn handle_component_call(
+            &mut self,
+            pattern: &hir::Pattern,
+            component_id: usize,
+            inputs: &Vec<(usize, flow::Expr)>,
+        ) -> FlowInstruction {
+            // get events that might call the component
+            let (mut signals, mut events) = (vec![], vec![]);
+            inputs.iter().for_each(|(_, flow_expr)| {
+                match flow_expr.kind {
+                    flow::Kind::Ident { id } => {
+                        if self.syms.get_flow_kind(id).is_event() {
+                            if self.events.contains(&id) {
+                                let event_name = self.syms.get_name(id).clone();
+                                events.push(Some(event_name));
+                            } else {
+                                events.push(None);
+                            }
+                        } else {
+                            let signal_name = self.syms.get_name(id).clone();
+                            signals.push(signal_name);
+                        }
+                    }
+                    _ => unreachable!(), // normalized
+                }
+            });
+
+            // call component with the events and update output signals
+            self.call_component(component_id, pattern.clone(), signals, events)
+        }
+
+        /// Add signal definition in current propagation branch.
+        fn define_signal(&mut self, signal_id: usize, expr: Expression) -> FlowInstruction {
+            let signal_name = self.syms.get_name(signal_id);
+            self.signals.insert(signal_id);
+            FlowInstruction::def_let(signal_name, expr)
+        }
+
+        /// Get signal call expression.
+        fn get_signal(&mut self, signal_id: usize) -> Expression {
+            let signal_name = self.syms.get_name(signal_id);
+            // if signal not already defined, get from context value
+            if !self.signals.contains(&signal_id) {
+                Expression::in_ctx(signal_name)
+            } else {
+                Expression::ident(signal_name)
+            }
+        }
+
+        /// Add event definition in current propagation branch.
+        fn define_event(&mut self, event_id: usize, expr: Expression) -> FlowInstruction {
+            let event_name = self.syms.get_name(event_id);
+            self.events.insert(event_id);
+            FlowInstruction::update_event(event_name, expr)
+        }
+
+        /// Add reset timer in current propagation branch.
+        fn reset_timer(&mut self, timer_id: usize, import_flow: usize) -> FlowInstruction {
+            let timer_name = self.syms.get_name(timer_id);
+            let import_name = self.syms.get_name(import_flow);
+            FlowInstruction::reset(timer_name, import_name)
+        }
+
+        /// Get event call expression.
+        fn get_event(&mut self, event_id: usize) -> Expression {
+            let event_name = self.syms.get_name(event_id);
+            Expression::event(event_name)
+        }
+
+        /// Add component call in current propagation branch with outputs update.
+        fn call_component(
+            &mut self,
+            component_id: usize,
+            output_pattern: hir::Pattern,
+            signals: Vec<String>,
+            events: Vec<Option<String>>,
+        ) -> FlowInstruction {
+            let component_name = self.syms.get_name(component_id);
+            let outputs_ids = output_pattern.identifiers();
+
+            // call component
+            let mut then = vec![FlowInstruction::comp_call(
+                output_pattern.lir_from_hir(self.syms),
+                component_name,
+                events.clone(),
+            )];
+            // update outputs: context signals and all events
+            let updates = outputs_ids.into_iter().filter_map(|output_id| {
+                if self.syms.get_flow_kind(output_id).is_event() {
+                    let expr = self.get_event(output_id);
+                    Some(self.define_event(output_id, expr))
+                } else {
+                    self.update_ctx(output_id)
+                }
+            });
+
+            // call component when activated
+            then.extend(updates);
+            let events: Vec<String> = events.into_iter().filter_map(|x| x).collect();
+            FlowInstruction::if_activated(events, signals, FlowInstruction::seq(then), None)
+        }
+
+        /// Add signal send in current propagation branch.
+        fn send_signal(
+            &mut self,
+            signal_id: usize,
+            expr: Expression,
+            import_flow: usize,
+        ) -> FlowInstruction {
+            let signal_name = self.syms.get_name(signal_id);
+            if self.multiple_inputs {
+                FlowInstruction::send(signal_name, expr)
+            } else {
+                let import_name = self.syms.get_name(import_flow);
+                FlowInstruction::send_from(signal_name, expr, import_name)
+            }
+        }
+
+        /// Add event send in current propagation branch.
+        fn send_event(
+            &mut self,
+            event_id: usize,
+            expr: Expression,
+            import_flow: usize,
+        ) -> FlowInstruction {
+            let event_name = self.syms.get_name(event_id);
+            if self.multiple_inputs {
+                FlowInstruction::send(event_name, expr)
+            } else {
+                let import_name = self.syms.get_name(import_flow);
+                FlowInstruction::send_from(event_name, expr, import_name)
+            }
+        }
+
+        /// Add flow send in current propagation branch.
+        pub fn send(&mut self, flow_id: usize) -> FlowInstruction {
+            let import_flow = self.get_import(flow_id);
+            // insert instruction only if source is a signal or an activated event
+            if self.syms.get_flow_kind(flow_id).is_signal() {
+                let expr = self.get_signal(flow_id);
+                self.send_signal(flow_id, expr, import_flow)
+            } else {
+                let expr = self.get_event(flow_id);
+                self.send_event(flow_id, expr, import_flow)
+            }
+        }
+
+        /// Add context update in current propagation branch.
+        fn update_ctx(&mut self, flow_id: usize) -> Option<FlowInstruction> {
+            // if flow is in context, add context_update instruction
+            if self
+                .flows_context
+                .contains_element(self.syms.get_name(flow_id))
+            {
+                let expr: Expression = if self.syms.get_flow_kind(flow_id).is_event() {
+                    self.get_event(flow_id)
+                } else {
+                    self.get_signal(flow_id)
+                };
+                let flow_name = self.syms.get_name(flow_id);
+                Some(FlowInstruction::update_ctx(flow_name, expr))
+            } else {
+                None
+            }
+        }
     }
 }
 
@@ -886,7 +1839,12 @@ mod propagation {
             debug_assert!(self.default_block.is_some());
             let els = self.current;
             let (old_event_name, source_name, then, original_acc) = self.default_block.unwrap();
-            let instruction = FlowInstruction::if_change(old_event_name, source_name, then, els);
+            let instruction = FlowInstruction::if_change(
+                old_event_name,
+                source_name,
+                FlowInstruction::seq(then),
+                FlowInstruction::seq(els),
+            );
             let mut accumulator = *original_acc;
             accumulator.push(instruction);
             accumulator
@@ -2232,18 +3190,20 @@ mod from_synced {
     }
 
     pub trait FromSynced<Ctx: CtxSpec + ?Sized>: Sized {
-        fn from_instr(ctxt: &Ctx, instr: Ctx::Instr) -> Self;
-        fn from_seq(ctxt: &Ctx, seq: Vec<Self>) -> Self;
-        fn from_para(ctxt: &Ctx, para: Map<ParaMethod, Vec<Self>>) -> Self;
+        fn from_instr(ctxt: &mut Ctx, instr: Ctx::Instr) -> Self;
+        fn from_seq(ctxt: &mut Ctx, seq: Vec<Self>) -> Self;
+        fn from_para(ctxt: &mut Ctx, para: Map<ParaMethod, Vec<Self>>) -> Self;
     }
 
     pub trait IntoParaMethod {
         fn into_para_method(self) -> ParaMethod;
     }
 
-    enum Frame<Ctx: CtxSpec + ?Sized, Instr: FromSynced<Ctx>>
+    enum Frame<Ctx, Instr>
     where
+        Ctx: CtxSpec + ?Sized,
         Ctx::Cost: IntoParaMethod,
+        Instr: FromSynced<Ctx>,
     {
         Seq {
             done: Vec<Instr>,
@@ -2256,16 +3216,20 @@ mod from_synced {
         },
     }
 
-    struct Stack<Ctx: CtxSpec + ?Sized, Instr: FromSynced<Ctx>>
+    struct Stack<Ctx, Instr>
     where
+        Ctx: CtxSpec + ?Sized,
         Ctx::Cost: IntoParaMethod,
+        Instr: FromSynced<Ctx>,
     {
         stack: Vec<Frame<Ctx, Instr>>,
     }
 
-    impl<Ctx: CtxSpec + ?Sized, Instr: FromSynced<Ctx>> Stack<Ctx, Instr>
+    impl<Ctx, Instr> Stack<Ctx, Instr>
     where
+        Ctx: CtxSpec + ?Sized,
         Ctx::Cost: IntoParaMethod,
+        Instr: FromSynced<Ctx>,
     {
         fn new() -> Self {
             Self {
@@ -2282,12 +3246,11 @@ mod from_synced {
         }
     }
 
-    pub fn run<Ctx: CtxSpec + ?Sized, Instr: FromSynced<Ctx>>(
-        ctxt: &Ctx,
-        synced: Synced<Ctx>,
-    ) -> Instr
+    pub fn run<Ctx, Instr>(ctxt: &mut Ctx, synced: Synced<Ctx>) -> Instr
     where
+        Ctx: CtxSpec + ?Sized,
         Ctx::Cost: IntoParaMethod,
+        Instr: FromSynced<Ctx>,
     {
         let mut stack: Stack<Ctx, Instr> = Stack::new();
         let mut acc = None;
