@@ -115,12 +115,12 @@ mk_new! { impl ParaMethod =>
 #[derive(Debug, PartialEq)]
 pub struct MatchArm {
     pub patterns: Vec<Pattern>,
-    pub block: Vec<FlowInstruction>,
+    pub instr: FlowInstruction,
 }
 mk_new! { impl MatchArm =>
     new {
         patterns: Vec<Pattern> = patterns,
-        block: Vec<FlowInstruction> = block,
+        instr: FlowInstruction = instr,
     }
 }
 

@@ -155,12 +155,12 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
 }
 
 fn match_arm_to_syn(match_arm: MatchArm) -> syn::Arm {
-    let MatchArm { patterns, block } = match_arm;
+    let MatchArm { patterns, instr } = match_arm;
     let syn_pats = patterns.into_iter().map(pattern_rust_ast_from_lir);
-    let syn_block = block.into_iter().map(rust_ast_from_lir);
+    let stmt = rust_ast_from_lir(instr);
     parse_quote! {
         (#(#syn_pats),*) => {
-            #(#syn_block)*
+            #stmt
         }
     }
 }
