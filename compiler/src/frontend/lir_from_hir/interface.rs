@@ -734,84 +734,13 @@ mod triggered {
 }
 
 mod para {
-    prelude! {
-        hir::interface::{ EdgeType, FlowStatement, FlowDeclaration, FlowInstantiation },
-        synced::{Builder, CtxSpec, Synced},
-        lir::item::execution_machine::service_handler::{ParaMethod, FlowInstruction},
+    prelude! { just
+        hir::interface::EdgeType,
+        synced::Builder,
+        lir::item::execution_machine::service_handler::FlowInstruction,
     }
 
-    use super::{
-        flow_instr,
-        from_synced::{self, FromSynced, IntoParaMethod},
-        triggered::TriggersGraph,
-    };
-
-    impl<'a> CtxSpec for flow_instr::Builder<'a> {
-        type Instr = usize;
-        type Cost = usize;
-        fn instr_cost(&self, _i: Self::Instr) -> Self::Cost {
-            1 // todo: nb of expressions used in component
-        }
-        fn sync_seq_cost(&self, seq: &[Synced<Self>]) -> Self::Cost {
-            seq.iter().map(Synced::cost).sum()
-        }
-        fn sync_para_cost(&self, map: &BTreeMap<Self::Cost, Vec<Synced<Self>>>) -> Self::Cost {
-            let mut max = 0;
-            for c in map.keys() {
-                max = std::cmp::max(max, *c);
-            }
-            max + 1
-        }
-    }
-
-    impl<'a> IntoParaMethod for <flow_instr::Builder<'a> as CtxSpec>::Cost {
-        fn into_para_method(self) -> ParaMethod {
-            ParaMethod::Tokio // todo: depending on benchmarks
-        }
-    }
-    impl<'a> FromSynced<flow_instr::Builder<'a>> for FlowInstruction {
-        fn from_instr(
-            ctxt: &mut flow_instr::Builder,
-            instr: <flow_instr::Builder as CtxSpec>::Instr,
-        ) -> Self {
-            // get flow statement related to instr
-            if let Some(flow_statement) = ctxt.get_stmt(instr) {
-                match flow_statement.clone() {
-                    FlowStatement::Declaration(FlowDeclaration {
-                        pattern,
-                        flow_expression,
-                        ..
-                    })
-                    | FlowStatement::Instantiation(FlowInstantiation {
-                        pattern,
-                        flow_expression,
-                        ..
-                    }) => ctxt.handle_expr(instr, &pattern, &flow_expression),
-                }
-            } else
-            // get flow export related to instr
-            if let Some(export) = ctxt.get_export(instr) {
-                ctxt.send(export.id)
-            } else
-            // get flow import related to instr
-            if let Some(import) = ctxt.get_import(instr) {
-                ctxt.handle_import(import.id)
-            } else {
-                unreachable!()
-            }
-        }
-
-        fn from_seq(_ctxt: &mut flow_instr::Builder, seq: Vec<Self>) -> Self {
-            FlowInstruction::seq(seq)
-        }
-
-        fn from_para(
-            _ctxt: &mut flow_instr::Builder,
-            para: BTreeMap<ParaMethod, Vec<Self>>,
-        ) -> Self {
-            FlowInstruction::para(para)
-        }
-    }
+    use super::{flow_instr, from_synced, triggered::TriggersGraph};
 
     pub fn propagate_incomming_flows<'a, G>(
         ctxt: &mut flow_instr::Builder<'a>,
@@ -3178,9 +3107,12 @@ mod propagation {
 mod from_synced {
     prelude! { just
         BTreeMap as Map,
-        lir::item::execution_machine::service_handler::ParaMethod,
+        hir::interface::{ FlowStatement, FlowDeclaration, FlowInstantiation },
+        lir::item::execution_machine::service_handler::{ParaMethod, FlowInstruction},
         synced::{ CtxSpec, Synced },
     }
+
+    use super::flow_instr;
 
     pub trait FromSynced<Ctx: CtxSpec + ?Sized>: Sized {
         fn from_instr(ctxt: &mut Ctx, instr: Ctx::Instr) -> Self;
@@ -3314,6 +3246,69 @@ mod from_synced {
                     }
                 }
             }
+        }
+    }
+
+    impl<'a> CtxSpec for flow_instr::Builder<'a> {
+        type Instr = usize;
+        type Cost = usize;
+        fn instr_cost(&self, _i: Self::Instr) -> Self::Cost {
+            1 // todo: nb of expressions used in component
+        }
+        fn sync_seq_cost(&self, seq: &[Synced<Self>]) -> Self::Cost {
+            seq.iter().map(Synced::cost).sum()
+        }
+        fn sync_para_cost(&self, map: &Map<Self::Cost, Vec<Synced<Self>>>) -> Self::Cost {
+            let mut max = 0;
+            for c in map.keys() {
+                max = std::cmp::max(max, *c);
+            }
+            max + 1
+        }
+    }
+    impl<'a> IntoParaMethod for <flow_instr::Builder<'a> as CtxSpec>::Cost {
+        fn into_para_method(self) -> ParaMethod {
+            ParaMethod::Tokio // todo: depending on benchmarks
+        }
+    }
+    impl<'a> FromSynced<flow_instr::Builder<'a>> for FlowInstruction {
+        fn from_instr(
+            ctxt: &mut flow_instr::Builder,
+            instr: <flow_instr::Builder as CtxSpec>::Instr,
+        ) -> Self {
+            // get flow statement related to instr
+            if let Some(flow_statement) = ctxt.get_stmt(instr) {
+                match flow_statement.clone() {
+                    FlowStatement::Declaration(FlowDeclaration {
+                        pattern,
+                        flow_expression,
+                        ..
+                    })
+                    | FlowStatement::Instantiation(FlowInstantiation {
+                        pattern,
+                        flow_expression,
+                        ..
+                    }) => ctxt.handle_expr(instr, &pattern, &flow_expression),
+                }
+            } else
+            // get flow export related to instr
+            if let Some(export) = ctxt.get_export(instr) {
+                ctxt.send(export.id)
+            } else
+            // get flow import related to instr
+            if let Some(import) = ctxt.get_import(instr) {
+                ctxt.handle_import(import.id)
+            } else {
+                unreachable!()
+            }
+        }
+
+        fn from_seq(_ctxt: &mut flow_instr::Builder, seq: Vec<Self>) -> Self {
+            FlowInstruction::seq(seq)
+        }
+
+        fn from_para(_ctxt: &mut flow_instr::Builder, para: Map<ParaMethod, Vec<Self>>) -> Self {
+            FlowInstruction::para(para)
         }
     }
 }
