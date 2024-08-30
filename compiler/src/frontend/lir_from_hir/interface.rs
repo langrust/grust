@@ -785,19 +785,23 @@ mod triggered {
     }
 }
 
-mod para {
+mod service_handler {
     prelude! {
         hir::interface::EdgeType,
-        synced::{ Builder, Synced },
         lir::{
-            Pattern,
             item::execution_machine::{
-                ArrivingFlow, service_handler::{FlowHandler, FlowInstruction, MatchArm}
-            }
+                service_handler::{FlowHandler, FlowInstruction, MatchArm, ServiceHandler},
+                ArrivingFlow,
+            },
+            Pattern,
         },
+        synced::{Builder, Synced},
     }
 
-    use super::{flow_instr, from_synced, triggered::TriggersGraph};
+    use super::{
+        flow_instr, from_synced,
+        triggered::{Graph, TriggersGraph},
+    };
 
     /// Compute the instruction propagating the changes of the input flow.
     fn propagate<'a, G>(
@@ -907,7 +911,7 @@ mod para {
     }
 
     /// Compute the input flow's handler.
-    pub fn flow_handler<'a, G>(
+    fn flow_handler<'a, G>(
         ctxt: &mut flow_instr::Builder<'a>,
         graph: &G,
         flow_id: usize,
@@ -939,6 +943,28 @@ mod para {
             instruction,
         }
     }
+
+    /// Compute the service handler.
+    pub fn build<'a>(mut ctxt: flow_instr::Builder<'a>) -> ServiceHandler {
+        // get service's name
+        let service = ctxt.service_name();
+        // create triggered graph
+        let graph = Graph::new(ctxt.syms(), ctxt.service(), ctxt.imports());
+        // create flow handlers according to propagations of every incomming flows
+        let flows_handling: Vec<_> = ctxt
+            .imports_id()
+            .map(|flow_id| flow_handler(&mut ctxt, &graph, flow_id))
+            .collect();
+        // destroy 'ctxt'
+        let (flows_context, components) = ctxt.destroy();
+
+        ServiceHandler {
+            service,
+            components,
+            flows_handling,
+            flows_context,
+        }
+    }
 }
 
 mod flow_instr {
@@ -964,7 +990,7 @@ mod flow_instr {
     /// A context to build [FlowInstruction]s.
     pub struct Builder<'a> {
         /// Context of the service.
-        flows_context: &'a FlowsContext,
+        flows_context: FlowsContext,
         /// Symbol table.
         syms: &'a SymbolTable,
         /// Events currently triggered during a traversal.
@@ -985,6 +1011,8 @@ mod flow_instr {
         imports: &'a HashMap<usize, FlowImport>,
         /// Map from id to export.
         exports: &'a HashMap<usize, FlowExport>,
+        /// Called components.
+        components: Vec<String>,
     }
 
     impl<'a> Builder<'a> {
@@ -995,11 +1023,10 @@ mod flow_instr {
         pub fn new(
             service: &'a mut Service,
             syms: &'a mut SymbolTable,
-            flows_context: &'a mut FlowsContext,
+            mut flows_context: FlowsContext,
             imports: &'a mut HashMap<usize, FlowImport>,
             exports: &'a HashMap<usize, FlowExport>,
             timing_events: &'a mut Vec<TimingEvent>,
-            components: &'a mut Vec<String>,
             multiple_inputs: bool,
         ) -> Self {
             let mut identifier_creator = IdentifierCreator::from(
@@ -1009,15 +1036,16 @@ mod flow_instr {
                         .map(|import| syms.get_name(import.id).clone()),
                 ),
             );
+            let mut components = vec![];
             // retrieve timer and onchange events from service
             let (stmts_timers, on_change_events) = Self::build_stmt_events(
                 &mut identifier_creator,
                 service,
                 syms,
-                flows_context,
+                &mut flows_context,
                 imports,
                 timing_events,
-                components,
+                &mut components,
             );
             // add events related to service's constrains
             Self::build_constrains_events(
@@ -1042,6 +1070,7 @@ mod flow_instr {
                 service,
                 imports,
                 exports,
+                components,
             }
         }
 
@@ -1057,6 +1086,18 @@ mod flow_instr {
         pub fn syms(&self) -> &'a SymbolTable {
             self.syms
         }
+        pub fn service(&self) -> &'a Service {
+            self.service
+        }
+        pub fn imports(&self) -> &'a HashMap<usize, FlowImport> {
+            self.imports
+        }
+        pub fn service_name(&self) -> String {
+            self.syms.get_name(self.service.id).to_string()
+        }
+        pub fn imports_id(&self) -> impl Iterator<Item = usize> + 'a {
+            self.imports.values().map(|import| import.id)
+        }
         pub fn inputs(&self) -> impl Iterator<Item = usize> + 'a {
             self.imports
                 .values()
@@ -1065,6 +1106,9 @@ mod flow_instr {
                     !(self.syms.is_service_delay(self.service.id, *import_id)
                         || self.syms.is_service_timeout(self.service.id, *import_id))
                 })
+        }
+        pub fn destroy(self) -> (FlowsContext, Vec<String>) {
+            (self.flows_context, self.components)
         }
 
         /// Clear the builder: events and signals sets
