@@ -126,7 +126,7 @@ impl Service {
         timing_events: &mut Vec<TimingEvent>,
         symbol_table: &mut SymbolTable,
     ) -> ServiceHandler {
-        self.get_service_handler(imports, exports, timing_events, symbol_table)
+        self.into(imports, exports, timing_events, symbol_table)
     }
 
     fn get_flows_context(&self, symbol_table: &SymbolTable) -> FlowsContext {
@@ -138,6 +138,25 @@ impl Service {
             .values()
             .for_each(|statement| statement.add_flows_context(&mut flows_context, symbol_table));
         flows_context
+    }
+
+    fn into(
+        mut self,
+        imports: &mut HashMap<usize, FlowImport>,
+        exports: &HashMap<usize, FlowExport>,
+        timing_events: &mut Vec<TimingEvent>,
+        symbol_table: &mut SymbolTable,
+    ) -> ServiceHandler {
+        let flows_context = self.get_flows_context(symbol_table);
+        let ctxt: flow_instr::Builder<'_> = flow_instr::Builder::new(
+            &mut self,
+            symbol_table,
+            flows_context,
+            imports,
+            exports,
+            timing_events,
+        );
+        service_handler::build(ctxt)
     }
 
     fn get_service_handler(
