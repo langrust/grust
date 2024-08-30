@@ -745,7 +745,7 @@ mod triggered {
 mod para {
     prelude! {
         hir::interface::EdgeType,
-        synced::Builder,
+        synced::{ Builder, Synced },
         lir::{
             Pattern,
             item::execution_machine::{
@@ -842,10 +842,23 @@ mod para {
         G: TriggersGraph<'a>,
     {
         debug_assert!(ctxt.is_clear());
+        // construct subgraph representing the propagation of 'flows'
         let subgraph = &graph.subgraph(flows);
-        let builder = Builder::<flow_instr::Builder, EdgeType>::new(subgraph);
-        let synced = builder.run(ctxt).expect("oh no");
+
+        let synced = if conf::para() {
+            // if config is 'para' then build 'synced' with //-algo
+            let builder = Builder::<flow_instr::Builder, EdgeType>::new(subgraph);
+            builder.run(ctxt).expect("oh no")
+        } else {
+            // else, construct an ordered sequence of the instrs
+            let ord_instrs = petgraph::algo::toposort(&subgraph, None).expect("no cycle expected");
+            let seq = ord_instrs.into_iter().map(|i| Synced::instr(i, ctxt));
+            Synced::seq(seq.collect(), ctxt)
+        };
+
+        // produce the corresponding LIR instruction
         let instr = from_synced::run(ctxt, synced);
+
         ctxt.clear();
         instr
     }
