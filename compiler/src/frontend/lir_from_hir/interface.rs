@@ -1198,10 +1198,24 @@ mod flow_instr {
         /// Compute the instruction from an import.
         pub fn handle_import(&mut self, import_id: usize) -> FlowInstruction {
             if self.syms.get_flow_kind(import_id).is_event() {
+                // store the event in the local reference
                 let event_name = self.syms.get_name(import_id);
                 let expr = Expression::event(event_name);
-                self.define_event(import_id, expr)
+                let def = self.define_event(import_id, expr);
+                if self.syms.is_period(import_id) {
+                    // reset periodic timer
+                    let reset = FlowInstruction::if_activated(
+                        vec![self.syms.get_name(import_id).clone()],
+                        [],
+                        self.reset_timer(import_id, import_id),
+                        None,
+                    );
+                    FlowInstruction::seq(vec![def, reset])
+                } else {
+                    def
+                }
             } else if let Some(update) = self.update_ctx(import_id) {
+                // update the context if necessary
                 update
             } else {
                 FlowInstruction::seq(vec![])
@@ -1220,10 +1234,7 @@ mod flow_instr {
                 flow::Kind::Ident { id } => self.handle_ident(pattern, *id),
                 flow::Kind::Sample { .. } => self.handle_sample(stmt_id, pattern, dependencies),
                 flow::Kind::Scan { .. } => self.handle_scan(stmt_id, pattern, dependencies),
-                flow::Kind::Timeout { .. } => {
-                    let import_flow = self.get_stmt_import(stmt_id);
-                    self.handle_timeout(import_flow, stmt_id, pattern, dependencies)
-                }
+                flow::Kind::Timeout { .. } => self.handle_timeout(stmt_id, pattern, dependencies),
                 flow::Kind::Throttle { delta, .. } => {
                     self.handle_throttle(pattern, dependencies, delta.clone())
                 }
@@ -1278,6 +1289,7 @@ mod flow_instr {
             let source_name = self.syms.get_name(id_source);
 
             let timer_id = self.stmts_timers[&stmt_id];
+            let timer_name = self.syms.get_name(timer_id);
 
             let mut instrs = vec![];
             // source is an event, look if it is defined
@@ -1291,16 +1303,18 @@ mod flow_instr {
                     update,
                     None,
                 ))
-            } else
-            // if timing event is activated
+            }
+            // if timing event is defined
             if self.events.contains(&timer_id) {
                 // if activated, update signal by taking from stored event value
-                instrs.push(FlowInstruction::update_ctx(
-                    flow_name,
-                    Expression::take_from_ctx(source_name),
+                let take_update =
+                    FlowInstruction::update_ctx(flow_name, Expression::take_from_ctx(source_name));
+                instrs.push(FlowInstruction::if_activated(
+                    vec![timer_name.clone()],
+                    [],
+                    take_update,
+                    None,
                 ))
-            } else {
-                unreachable!("'sample' should be activated by either its source or its timer")
             }
 
             FlowInstruction::seq(instrs)
@@ -1323,13 +1337,14 @@ mod flow_instr {
             let id_source = dependencies.pop().unwrap();
 
             let timer_id = self.stmts_timers[&stmt_id];
+            let timer_name = self.syms.get_name(timer_id);
 
-            // timer is an event, look if it is activated
+            // timer is an event, look if it is defined
             if self.events.contains(&timer_id) {
                 // if activated, create event
-                let expr = self.get_signal(id_source);
+                let expr = Expression::some(self.get_signal(id_source));
                 let def = self.define_event(id_pattern, expr);
-                def
+                FlowInstruction::if_activated(vec![timer_name.clone()], [], def, None)
             } else {
                 // 'scan' can be activated by the source signal, but it won't do anything
                 FlowInstruction::seq(vec![])
@@ -1339,7 +1354,6 @@ mod flow_instr {
         /// Compute the instruction from a timeout expression.
         fn handle_timeout(
             &mut self,
-            import_flow: usize,
             stmt_id: usize,
             pattern: &hir::Pattern,
             mut dependencies: Vec<usize>,
@@ -1352,31 +1366,46 @@ mod flow_instr {
             // get the source id, debug-check there is only one flow
             debug_assert!(dependencies.len() == 1);
             let id_source = dependencies.pop().unwrap();
+            let source_name = self.syms.get_name(id_source);
 
             let timer_id = self.stmts_timers[&stmt_id].clone();
+            let timer_name = self.syms.get_name(timer_id);
 
-            if self.events.contains(&id_source) {
+            let occurences = (
+                self.events.contains(&id_source),
+                self.events.contains(&timer_id),
+            );
+            let import_flow = self.get_stmt_import(stmt_id);
+            let reset = self.reset_timer(timer_id, import_flow);
+            let source_instr = |els| {
                 // if activated, reset timer
+                FlowInstruction::if_activated(vec![source_name.clone()], [], reset, els)
+            };
+            let mut timer_instr = || {
+                // if activated, define timeout event and reset timer
+                let unit_expr = Expression::lit(Constant::unit_default());
+                let def = self.define_event(id_pattern, unit_expr);
                 let reset = FlowInstruction::if_activated(
-                    vec![self.syms.get_name(id_source).clone()],
+                    vec![timer_name.clone()],
                     [],
                     self.reset_timer(timer_id, import_flow),
                     None,
                 );
-                reset
-            } else if self.events.contains(&timer_id) {
-                let unit_expr = Expression::lit(Constant::unit_default());
-                let def = self.define_event(id_pattern, unit_expr);
-                let reset = self.reset_timer(timer_id, import_flow);
                 FlowInstruction::seq(vec![def, reset])
-            } else {
+            };
+            match occurences {
+                (true, true) => source_instr(Some(timer_instr())),
+                (true, false) => source_instr(None),
+                (false, true) => timer_instr(),
+                (false, false) => {
                 unreachable!("'timeout' should be activated by either its source or its timer")
+                }
             }
         }
 
         /// Compute the instruction from a throttle expression.
         fn handle_throttle(
-            &mut self,
+            &self,
             pattern: &hir::Pattern,
             mut dependencies: Vec<usize>,
             delta: Constant,
@@ -1522,7 +1551,7 @@ mod flow_instr {
         }
 
         /// Get signal call expression.
-        fn get_signal(&mut self, signal_id: usize) -> Expression {
+        fn get_signal(&self, signal_id: usize) -> Expression {
             let signal_name = self.syms.get_name(signal_id);
             // if signal not already defined, get from context value
             if !self.signals.contains(&signal_id) {
@@ -1540,14 +1569,14 @@ mod flow_instr {
         }
 
         /// Add reset timer in current propagation branch.
-        fn reset_timer(&mut self, timer_id: usize, import_flow: usize) -> FlowInstruction {
+        fn reset_timer(&self, timer_id: usize, import_flow: usize) -> FlowInstruction {
             let timer_name = self.syms.get_name(timer_id);
             let import_name = self.syms.get_name(import_flow);
             FlowInstruction::reset(timer_name, import_name)
         }
 
         /// Get event call expression.
-        fn get_event(&mut self, event_id: usize) -> Expression {
+        fn get_event(&self, event_id: usize) -> Expression {
             let event_name = self.syms.get_name(event_id);
             Expression::event(event_name)
         }
@@ -1587,7 +1616,7 @@ mod flow_instr {
 
         /// Add signal send in current propagation branch.
         fn send_signal(
-            &mut self,
+            &self,
             signal_id: usize,
             expr: Expression,
             import_flow: usize,
@@ -1603,7 +1632,7 @@ mod flow_instr {
 
         /// Add event send in current propagation branch.
         fn send_event(
-            &mut self,
+            &self,
             event_id: usize,
             expr: Expression,
             import_flow: usize,
@@ -1618,7 +1647,7 @@ mod flow_instr {
         }
 
         /// Add flow send in current propagation branch.
-        pub fn send(&mut self, flow_id: usize) -> FlowInstruction {
+        pub fn send(&self, flow_id: usize) -> FlowInstruction {
             let import_flow = self.get_stmt_import(flow_id);
             // insert instruction only if source is a signal or an activated event
             if self.syms.get_flow_kind(flow_id).is_signal() {
@@ -1631,7 +1660,7 @@ mod flow_instr {
         }
 
         /// Add context update in current propagation branch.
-        fn update_ctx(&mut self, flow_id: usize) -> Option<FlowInstruction> {
+        fn update_ctx(&self, flow_id: usize) -> Option<FlowInstruction> {
             // if flow is in context, add context_update instruction
             if self
                 .flows_context
