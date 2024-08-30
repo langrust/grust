@@ -20,6 +20,10 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
             let expression = flow_expression_rust_ast_from_lir(flow_expression);
             parse_quote! { let #ident = #expression; }
         }
+        FlowInstruction::InitEvent(ident) => {
+            let ident = format_ident!("{}_ref", ident);
+            parse_quote! { let #ident = &mut None; }
+        }
         FlowInstruction::UpdateEvent(ident, expr) => {
             let ident = format_ident!("{}_ref", ident);
             let expression = flow_expression_rust_ast_from_lir(expr);
