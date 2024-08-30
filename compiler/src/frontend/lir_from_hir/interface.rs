@@ -746,11 +746,17 @@ mod para {
     prelude! {
         hir::interface::EdgeType,
         synced::Builder,
-        lir::item::execution_machine::{ArrivingFlow, service_handler::{FlowHandler, FlowInstruction}},
+        lir::{
+            Pattern,
+            item::execution_machine::{
+                ArrivingFlow, service_handler::{FlowHandler, FlowInstruction, MatchArm}
+            }
+        },
     }
 
     use super::{flow_instr, from_synced, triggered::TriggersGraph};
 
+    /// Compute the instruction propagating the changes of the input flow.
     fn propagate<'a, G>(
         ctxt: &mut flow_instr::Builder<'a>,
         graph: &G,
@@ -760,12 +766,73 @@ mod para {
         G: TriggersGraph<'a>,
     {
         if ctxt.syms().is_delay(flow_id) {
-            todo!()
+            propagate_input_store(ctxt, graph, flow_id)
         } else {
             flow_instruction(ctxt, graph, std::iter::once(flow_id))
         }
     }
 
+    /// Compute the instruction propagating the changes of the input store.
+    fn propagate_input_store<'a, G>(
+        ctxt: &mut flow_instr::Builder<'a>,
+        graph: &G,
+        delay_id: usize,
+    ) -> FlowInstruction
+    where
+        G: TriggersGraph<'a>,
+    {
+        debug_assert!(ctxt.is_clear());
+        debug_assert!(ctxt.syms().is_delay(delay_id));
+        let syms = ctxt.syms();
+
+        // this is an ORDERED list of the input flows
+        let input_flows = ctxt.inputs().collect::<Vec<_>>();
+        let flows_names = input_flows.iter().map(|id| syms.get_name(*id).clone());
+
+        // Create the handler of the delay timer.
+        // It propagates all changes stored in the service_store by matching
+        // each one of its elements (that are of type Option<(Value, Instant)>).
+        let rng = 0..(2i64.pow(input_flows.len() as u32));
+        let arms = rng.map(|mut i| {
+            // gather the flows that have been modified
+            let flows = input_flows
+                .iter()
+                .filter_map(|input| {
+                    let res = if i & 1 == 1 { Some(*input) } else { None };
+                    i = i >> 1;
+                    res
+                })
+                .collect::<Vec<_>>();
+            let patterns = input_flows
+                .iter()
+                .map(|id| {
+                    if flows.contains(id) {
+                        let flow_name = syms.get_name(*id);
+                        if syms.is_timer(*id) {
+                            Pattern::some(Pattern::tuple(vec![
+                                Pattern::literal(Constant::unit(Default::default())),
+                                Pattern::ident(format!("{}_instant", flow_name)),
+                            ]))
+                        } else {
+                            Pattern::some(Pattern::tuple(vec![
+                                Pattern::ident(flow_name),
+                                Pattern::ident(format!("{}_instant", flow_name)),
+                            ]))
+                        }
+                    } else {
+                        Pattern::none()
+                    }
+                })
+                .collect();
+            // compute the instruction that will propagate changes
+            let instr = flow_instruction(ctxt, graph, flows.into_iter());
+            MatchArm::new(patterns, instr)
+        });
+
+        FlowInstruction::handle_delay(flows_names, arms)
+    }
+
+    /// Compute the instruction propagating the changes of the input flows.
     fn flow_instruction<'a, G>(
         ctxt: &mut flow_instr::Builder<'a>,
         graph: &G,
@@ -781,11 +848,13 @@ mod para {
         let instr = from_synced::run(ctxt, synced);
 
         // todo: get the events that should be declared as &mut.
+        todo!();
 
         ctxt.clear();
         instr
     }
 
+    /// Compute the input flow's handler.
     pub fn flow_handler<'a, G>(
         ctxt: &mut flow_instr::Builder<'a>,
         graph: &G,
@@ -933,8 +1002,17 @@ mod flow_instr {
         pub fn get_export(&self, export_id: usize) -> Option<&FlowExport> {
             self.exports.get(&export_id)
         }
-        pub fn syms(&self) -> &SymbolTable {
-            &self.syms
+        pub fn syms(&self) -> &'a SymbolTable {
+            self.syms
+        }
+        pub fn inputs(&self) -> impl Iterator<Item = usize> + 'a {
+            self.imports
+                .values()
+                .map(|import| import.id)
+                .filter(|import_id| {
+                    !(self.syms.is_service_delay(self.service.id, *import_id)
+                        || self.syms.is_service_timeout(self.service.id, *import_id))
+                })
         }
 
         /// Clear the builder: events and signals sets
@@ -2024,7 +2102,7 @@ mod propagation {
                         }
                     })
                     .collect();
-                MatchArm::new(patterns, block)
+                MatchArm::new(patterns, FlowInstruction::seq(block))
             });
             let delay_handler = FlowHandler {
                 arriving_flow: ArrivingFlow::ServiceDelay(symbol_table.get_name(delay).clone()),
