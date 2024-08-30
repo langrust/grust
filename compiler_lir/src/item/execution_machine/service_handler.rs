@@ -24,6 +24,7 @@ pub struct FlowHandler {
 #[derive(Debug, PartialEq)]
 pub enum FlowInstruction {
     Let(String, Expression),
+    InitEvent(String),
     UpdateEvent(String, Expression),
     UpdateContext(String, Expression),
     Send(String, Expression, Option<String>),
@@ -40,6 +41,9 @@ mk_new! { impl FlowInstruction =>
     Let: def_let (
         name: impl Into<String> = name.into(),
         expr: Expression = expr.into(),
+    )
+    InitEvent: init_event (
+        name: impl Into<String> = name.into(),
     )
     UpdateEvent: update_event (
         name: impl Into<String> = name.into(),

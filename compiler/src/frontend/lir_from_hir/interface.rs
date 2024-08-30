@@ -846,10 +846,6 @@ mod para {
         let builder = Builder::<flow_instr::Builder, EdgeType>::new(subgraph);
         let synced = builder.run(ctxt).expect("oh no");
         let instr = from_synced::run(ctxt, synced);
-
-        // todo: get the events that should be declared as &mut.
-        todo!();
-
         ctxt.clear();
         instr
     }
@@ -1335,6 +1331,13 @@ mod flow_instr {
                 .unwrap()
         }
 
+        /// Compute the instruction that will init the events.
+        pub fn init_events<'b>(&'b self) -> impl Iterator<Item = FlowInstruction> + 'b {
+            self.events
+                .iter()
+                .map(|event_id| FlowInstruction::init_event(self.syms.get_name(*event_id)))
+        }
+
         /// Compute the instruction from an import.
         pub fn handle_import(&mut self, flow_id: usize) -> FlowInstruction {
             if self.syms.get_flow_kind(flow_id).is_event() {
@@ -1354,10 +1357,10 @@ mod flow_instr {
                 // add to signals set
                 self.signals.insert(flow_id);
                 if let Some(update) = self.update_ctx(flow_id) {
-                // update the context if necessary
-                update
-            } else {
-                FlowInstruction::seq(vec![])
+                    // update the context if necessary
+                    update
+                } else {
+                    FlowInstruction::seq(vec![])
                 }
             }
         }
@@ -3270,6 +3273,8 @@ mod from_synced {
     use super::flow_instr;
 
     pub trait FromSynced<Ctx: CtxSpec + ?Sized>: Sized {
+        fn prefix(ctxt: &mut Ctx) -> Self;
+        fn suffix(ctxt: &mut Ctx) -> Self;
         fn from_instr(ctxt: &mut Ctx, instr: Ctx::Instr) -> Self;
         fn from_seq(ctxt: &mut Ctx, seq: Vec<Self>) -> Self;
         fn from_para(ctxt: &mut Ctx, para: Map<ParaMethod, Vec<Self>>) -> Self;
@@ -3363,7 +3368,13 @@ mod from_synced {
             'go_up: loop {
                 debug_assert!(acc.is_some());
                 match stack.pop() {
-                    None => return acc.expect("there should be an instruction"),
+                    None => {
+                        // prefix ; acc ; suffix
+                        let prefix = Instr::prefix(ctxt);
+                        let instr = acc.expect("there should be an instruction");
+                        let suffix = Instr::suffix(ctxt);
+                        return Instr::from_seq(ctxt, vec![prefix, instr, suffix]);
+                    }
                     Some(Frame::Para {
                         mut done,
                         method,
@@ -3464,6 +3475,16 @@ mod from_synced {
 
         fn from_para(_ctxt: &mut flow_instr::Builder, para: Map<ParaMethod, Vec<Self>>) -> Self {
             FlowInstruction::para(para)
+        }
+
+        fn prefix(ctxt: &mut flow_instr::Builder<'a>) -> Self {
+            // init events that should be declared as &mut.
+            let init_events = ctxt.init_events().collect::<Vec<_>>();
+            FlowInstruction::seq(init_events)
+        }
+
+        fn suffix(_ctxt: &mut flow_instr::Builder<'a>) -> Self {
+            FlowInstruction::seq(vec![])
         }
     }
 }
