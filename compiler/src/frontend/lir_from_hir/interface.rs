@@ -751,7 +751,7 @@ mod para {
 
     use super::{flow_instr, from_synced, triggered::TriggersGraph};
 
-    fn flow_instruction<'a, G>(
+    fn propagate<'a, G>(
         ctxt: &mut flow_instr::Builder<'a>,
         graph: &G,
         flow_id: usize,
@@ -759,17 +759,31 @@ mod para {
     where
         G: TriggersGraph<'a>,
     {
-        debug_assert!(ctxt.is_clear());
-        let subgraph = if ctxt.syms().is_delay(flow_id) {
-            // if flow_id is delay then it is the entire graph is propagated
-            graph.graph()
+        if ctxt.syms().is_delay(flow_id) {
+            todo!()
         } else {
-            // else only a subgraph graph is propagated
-            &graph.subgraph(std::iter::once(flow_id))
-        };
+            flow_instruction(ctxt, graph, std::iter::once(flow_id))
+        }
+    }
+
+    fn flow_instruction<'a, G>(
+        ctxt: &mut flow_instr::Builder<'a>,
+        graph: &G,
+        flows: impl Iterator<Item = usize>,
+    ) -> FlowInstruction
+    where
+        G: TriggersGraph<'a>,
+    {
+        debug_assert!(ctxt.is_clear());
+        let subgraph = &graph.subgraph(flows);
         let builder = Builder::<flow_instr::Builder, EdgeType>::new(subgraph);
         let synced = builder.run(ctxt).expect("oh no");
-        from_synced::run(ctxt, synced)
+        let instr = from_synced::run(ctxt, synced);
+
+        // todo: get the events that should be declared as &mut.
+
+        ctxt.clear();
+        instr
     }
 
     pub fn flow_handler<'a, G>(
@@ -781,7 +795,7 @@ mod para {
         G: TriggersGraph<'a>,
     {
         // construct the instruction to perform
-        let instruction = flow_instruction(ctxt, graph, flow_id);
+        let instruction = propagate(ctxt, graph, flow_id);
 
         let flow_name = ctxt.syms().get_name(flow_id).clone();
         // determine weither this arriving flow is a timing event
@@ -798,10 +812,6 @@ mod para {
             let path = ctxt.syms().get_path(flow_id).clone();
             ArrivingFlow::Channel(flow_name, flow_type, path)
         };
-
-        // todo: get the events that should be declared as &mut.
-
-        ctxt.clear();
 
         FlowHandler {
             arriving_flow,
@@ -1248,25 +1258,21 @@ mod flow_instr {
         }
 
         /// Compute the instruction from an import.
-        pub fn handle_import(&mut self, import_id: usize) -> FlowInstruction {
-            if self.syms.get_flow_kind(import_id).is_event() {
-                // store the event in the local reference
-                let event_name = self.syms.get_name(import_id);
-                let expr = Expression::event(event_name);
-                let def = self.define_event(import_id, expr);
-                if self.syms.is_period(import_id) {
+        pub fn handle_import(&mut self, flow_id: usize) -> FlowInstruction {
+            if self.syms.get_flow_kind(flow_id).is_event() {
+                if !self.syms.is_timer(flow_id) {
+                    // store the event in the local reference
+                    let event_name = self.syms.get_name(flow_id);
+                    let expr = Expression::some(Expression::ident(event_name));
+                    self.define_event(flow_id, expr)
+                } else if self.syms.is_period(flow_id) {
                     // reset periodic timer
-                    let reset = FlowInstruction::if_activated(
-                        vec![self.syms.get_name(import_id).clone()],
-                        [],
-                        self.reset_timer(import_id, import_id),
-                        None,
-                    );
-                    FlowInstruction::seq(vec![def, reset])
+                    self.reset_timer(flow_id, flow_id)
                 } else {
-                    def
+                    // if timer other than period, then do nothing
+                    FlowInstruction::seq(vec![])
                 }
-            } else if let Some(update) = self.update_ctx(import_id) {
+            } else if let Some(update) = self.update_ctx(flow_id) {
                 // update the context if necessary
                 update
             } else {
@@ -1341,7 +1347,6 @@ mod flow_instr {
             let source_name = self.syms.get_name(id_source);
 
             let timer_id = self.stmts_timers[&stmt_id];
-            let timer_name = self.syms.get_name(timer_id);
 
             let mut instrs = vec![];
             // source is an event, look if it is defined
@@ -1356,17 +1361,12 @@ mod flow_instr {
                     None,
                 ))
             }
-            // if timing event is defined
+            // if timing event is activated
             if self.events.contains(&timer_id) {
-                // if activated, update signal by taking from stored event value
+                // update signal by taking from stored event value
                 let take_update =
                     FlowInstruction::update_ctx(flow_name, Expression::take_from_ctx(source_name));
-                instrs.push(FlowInstruction::if_activated(
-                    vec![timer_name.clone()],
-                    [],
-                    take_update,
-                    None,
-                ))
+                instrs.push(take_update)
             }
 
             FlowInstruction::seq(instrs)
@@ -1389,14 +1389,12 @@ mod flow_instr {
             let id_source = dependencies.pop().unwrap();
 
             let timer_id = self.stmts_timers[&stmt_id];
-            let timer_name = self.syms.get_name(timer_id);
 
             // timer is an event, look if it is defined
             if self.events.contains(&timer_id) {
                 // if activated, create event
                 let expr = Expression::some(self.get_signal(id_source));
-                let def = self.define_event(id_pattern, expr);
-                FlowInstruction::if_activated(vec![timer_name.clone()], [], def, None)
+                self.define_event(id_pattern, expr)
             } else {
                 // 'scan' can be activated by the source signal, but it won't do anything
                 FlowInstruction::seq(vec![])
@@ -1421,7 +1419,6 @@ mod flow_instr {
             let source_name = self.syms.get_name(id_source);
 
             let timer_id = self.stmts_timers[&stmt_id].clone();
-            let timer_name = self.syms.get_name(timer_id);
 
             let occurences = (
                 self.events.contains(&id_source),
@@ -1437,12 +1434,7 @@ mod flow_instr {
                 // if activated, define timeout event and reset timer
                 let unit_expr = Expression::lit(Constant::unit_default());
                 let def = self.define_event(id_pattern, unit_expr);
-                let reset = FlowInstruction::if_activated(
-                    vec![timer_name.clone()],
-                    [],
-                    self.reset_timer(timer_id, import_flow),
-                    None,
-                );
+                let reset = self.reset_timer(timer_id, import_flow);
                 FlowInstruction::seq(vec![def, reset])
             };
             match occurences {
