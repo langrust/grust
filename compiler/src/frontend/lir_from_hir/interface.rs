@@ -1350,11 +1350,15 @@ mod flow_instr {
                     // if timer other than period, then do nothing
                     FlowInstruction::seq(vec![])
                 }
-            } else if let Some(update) = self.update_ctx(flow_id) {
+            } else {
+                // add to signals set
+                self.signals.insert(flow_id);
+                if let Some(update) = self.update_ctx(flow_id) {
                 // update the context if necessary
                 update
             } else {
                 FlowInstruction::seq(vec![])
+                }
             }
         }
 
