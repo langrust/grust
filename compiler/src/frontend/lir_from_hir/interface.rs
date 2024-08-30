@@ -596,9 +596,52 @@ mod triggered {
             service: &'a Service,
             imports: &'a HashMap<usize, FlowImport>,
         ) -> Self;
-        fn get_triggered(&self, parent: usize) -> impl Iterator<Item = usize>;
+        fn get_triggered(&self, parent: usize) -> Vec<usize>;
         fn subgraph(&self, starts: impl Iterator<Item = usize>) -> DiGraphMap<usize, EdgeType>;
         fn graph(&self) -> &DiGraphMap<usize, EdgeType>;
+    }
+
+    /// Enumerate all the implementations of TriggersGraph.
+    pub enum Graph<'a> {
+        EventIsles(EventIslesGraph<'a>),
+        OnChange(OnChangeGraph<'a>),
+    }
+    impl<'a> TriggersGraph<'a> for Graph<'a> {
+        fn new(
+            syms: &'a SymbolTable,
+            service: &'a Service,
+            imports: &'a HashMap<usize, FlowImport>,
+        ) -> Self {
+            match conf::propag() {
+                conf::PropagOption::EventIsles => {
+                    Graph::EventIsles(EventIslesGraph::new(syms, service, imports))
+                }
+                conf::PropagOption::OnChange => {
+                    Graph::OnChange(OnChangeGraph::new(syms, service, imports))
+                }
+            }
+        }
+
+        fn get_triggered(&self, parent: usize) -> Vec<usize> {
+            match self {
+                Graph::EventIsles(graph) => graph.get_triggered(parent),
+                Graph::OnChange(graph) => graph.get_triggered(parent),
+            }
+        }
+
+        fn subgraph(&self, starts: impl Iterator<Item = usize>) -> DiGraphMap<usize, EdgeType> {
+            match self {
+                Graph::EventIsles(graph) => graph.subgraph(starts),
+                Graph::OnChange(graph) => graph.subgraph(starts),
+            }
+        }
+
+        fn graph(&self) -> &DiGraphMap<usize, EdgeType> {
+            match self {
+                Graph::EventIsles(graph) => graph.graph(),
+                Graph::OnChange(graph) => graph.graph(),
+            }
+        }
     }
 
     /// Isles of statements triggered by events only.
@@ -645,7 +688,7 @@ mod triggered {
             }
         }
 
-        fn get_triggered(&self, parent: usize) -> impl Iterator<Item = usize> {
+        fn get_triggered(&self, parent: usize) -> Vec<usize> {
             // get graph dependencies
             let dependencies = self.graph.neighbors(parent).filter_map(|child| {
                 // filter component call because they will appear in isles
@@ -664,7 +707,7 @@ mod triggered {
                 .map(|to_insert| *to_insert);
 
             // extend stack with union of event isle and dependencies
-            isles.chain(dependencies).unique()
+            isles.chain(dependencies).unique().collect()
         }
 
         fn subgraph(&self, starts: impl Iterator<Item = usize>) -> DiGraphMap<usize, EdgeType> {
@@ -714,9 +757,9 @@ mod triggered {
             }
         }
 
-        fn get_triggered(&self, parent: usize) -> impl Iterator<Item = usize> {
+        fn get_triggered(&self, parent: usize) -> Vec<usize> {
             // get graph dependencies
-            self.graph.neighbors(parent)
+            self.graph.neighbors(parent).collect()
         }
 
         fn subgraph(&self, starts: impl Iterator<Item = usize>) -> DiGraphMap<usize, EdgeType> {
@@ -2674,7 +2717,7 @@ mod propagation {
         /// Extend the stack with the next statements to compute.
         fn extend_with_next(&mut self, import_flow: usize, parent: usize) {
             // get statements triggered by parent
-            let triggered = self.triggers_graph.get_triggered(parent);
+            let triggered = self.triggers_graph.get_triggered(parent).into_iter();
 
             // gives the order of statements indices
             let compare = |stmt_id| self.statements_order[&stmt_id];
