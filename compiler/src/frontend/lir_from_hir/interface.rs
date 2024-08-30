@@ -826,6 +826,7 @@ mod service_handler {
     fn propagate<'a, G>(
         ctxt: &mut flow_instr::Builder<'a>,
         graph: &G,
+        stmt_id: usize,
         flow_id: usize,
     ) -> FlowInstruction
     where
@@ -834,7 +835,8 @@ mod service_handler {
         if ctxt.syms().is_delay(flow_id) {
             propagate_input_store(ctxt, graph, flow_id)
         } else {
-            flow_instruction(ctxt, graph, std::iter::once(flow_id))
+            ctxt.set_multiple_inputs(false);
+            flow_instruction(ctxt, graph, std::iter::once(stmt_id))
         }
     }
 
@@ -852,29 +854,31 @@ mod service_handler {
         let syms = ctxt.syms();
 
         // this is an ORDERED list of the input flows
-        let input_flows = ctxt.inputs().collect::<Vec<_>>();
-        let flows_names = input_flows.iter().map(|id| syms.get_name(*id).clone());
+        let inputs = ctxt.inputs().collect::<Vec<_>>();
+        let flows_names = inputs
+            .iter()
+            .map(|(_, import)| syms.get_name(import.id).clone());
 
         // Create the handler of the delay timer.
         // It propagates all changes stored in the service_store by matching
         // each one of its elements (that are of type Option<(Value, Instant)>).
-        let rng = 0..(2i64.pow(input_flows.len() as u32));
+        let rng = 0..(2i64.pow(inputs.len() as u32));
         let arms = rng.map(|mut i| {
             // gather the flows that have been modified
-            let flows = input_flows
+            let imports = inputs
                 .iter()
-                .filter_map(|input| {
-                    let res = if i & 1 == 1 { Some(*input) } else { None };
+                .filter_map(|(stmt_id, _)| {
+                    let res = if i & 1 == 1 { Some(**stmt_id) } else { None };
                     i = i >> 1;
                     res
                 })
                 .collect::<Vec<_>>();
-            let patterns = input_flows
+            let patterns = inputs
                 .iter()
-                .map(|id| {
-                    if flows.contains(id) {
-                        let flow_name = syms.get_name(*id);
-                        if syms.is_timer(*id) {
+                .map(|(stmt_id, import)| {
+                    if imports.contains(*stmt_id) {
+                        let flow_name = syms.get_name(import.id);
+                        if syms.is_timer(import.id) {
                             Pattern::some(Pattern::tuple(vec![
                                 Pattern::literal(Constant::unit(Default::default())),
                                 Pattern::ident(format!("{}_instant", flow_name)),
@@ -891,7 +895,8 @@ mod service_handler {
                 })
                 .collect();
             // compute the instruction that will propagate changes
-            let instr = flow_instruction(ctxt, graph, flows.into_iter());
+            ctxt.set_multiple_inputs(true);
+            let instr = flow_instruction(ctxt, graph, imports.into_iter());
             MatchArm::new(patterns, instr)
         });
 
@@ -902,14 +907,14 @@ mod service_handler {
     fn flow_instruction<'a, G>(
         ctxt: &mut flow_instr::Builder<'a>,
         graph: &G,
-        flows: impl Iterator<Item = usize>,
+        imports: impl Iterator<Item = usize>,
     ) -> FlowInstruction
     where
         G: TriggersGraph<'a>,
     {
         debug_assert!(ctxt.is_clear());
-        // construct subgraph representing the propagation of 'flows'
-        let subgraph = &graph.subgraph(flows);
+        // construct subgraph representing the propagation of 'imports'
+        let subgraph = &graph.subgraph(imports);
 
         let synced = if conf::para() {
             // if config is 'para' then build 'synced' with //-algo
@@ -918,8 +923,14 @@ mod service_handler {
         } else {
             // else, construct an ordered sequence of the instrs
             let ord_instrs = petgraph::algo::toposort(&subgraph, None).expect("no cycle expected");
-            let seq = ord_instrs.into_iter().map(|i| Synced::instr(i, ctxt));
-            Synced::seq(seq.collect(), ctxt)
+            let seq: Vec<_> = ord_instrs
+                .into_iter()
+                .map(|i| Synced::instr(i, ctxt))
+                .collect();
+            if seq.is_empty() {
+                return FlowInstruction::seq(vec![]);
+            }
+            Synced::seq(seq, ctxt)
         };
 
         // produce the corresponding LIR instruction
@@ -933,13 +944,14 @@ mod service_handler {
     fn flow_handler<'a, G>(
         ctxt: &mut flow_instr::Builder<'a>,
         graph: &G,
+        stmt_id: usize,
         flow_id: usize,
     ) -> FlowHandler
     where
         G: TriggersGraph<'a>,
     {
         // construct the instruction to perform
-        let instruction = propagate(ctxt, graph, flow_id);
+        let instruction = propagate(ctxt, graph, stmt_id, flow_id);
 
         let flow_name = ctxt.syms().get_name(flow_id).clone();
         // determine weither this arriving flow is a timing event
@@ -971,8 +983,9 @@ mod service_handler {
         let graph = Graph::new(ctxt.syms(), ctxt.service(), ctxt.imports());
         // create flow handlers according to propagations of every incomming flows
         let flows_handling: Vec<_> = ctxt
-            .imports_id()
-            .map(|flow_id| flow_handler(&mut ctxt, &graph, flow_id))
+            .imports()
+            .iter()
+            .map(|(stmt_id, import)| flow_handler(&mut ctxt, &graph, *stmt_id, import.id))
             .collect();
         // destroy 'ctxt'
         let (flows_context, components) = ctxt.destroy();
@@ -1023,7 +1036,7 @@ mod flow_instr {
         /// Tells if we handle multiple incoming flows.
         multiple_inputs: bool,
         /// Maps statement to their related imports.
-        stmts_imports: HashMap<usize, Vec<usize>>,
+        stmts_imports: HashMap<usize, Vec<(usize, usize)>>,
         /// Service to build propagations for.
         service: &'a Service,
         /// Map from id to import.
@@ -1046,7 +1059,6 @@ mod flow_instr {
             imports: &'a mut HashMap<usize, FlowImport>,
             exports: &'a HashMap<usize, FlowExport>,
             timing_events: &'a mut Vec<TimingEvent>,
-            multiple_inputs: bool,
         ) -> Self {
             let mut identifier_creator = IdentifierCreator::from(
                 service.get_flows_names(syms).chain(
@@ -1084,7 +1096,7 @@ mod flow_instr {
                 stmts_timers,
                 events: HashSet::new(),
                 signals: HashSet::new(),
-                multiple_inputs,
+                multiple_inputs: false,
                 stmts_imports,
                 service,
                 imports,
@@ -1114,17 +1126,14 @@ mod flow_instr {
         pub fn service_name(&self) -> String {
             self.syms.get_name(self.service.id).to_string()
         }
-        pub fn imports_id(&self) -> impl Iterator<Item = usize> + 'a {
-            self.imports.values().map(|import| import.id)
+        pub fn inputs(&self) -> impl Iterator<Item = (&'a usize, &'a FlowImport)> + 'a {
+            self.imports.iter().filter(|(_, import)| {
+                !(self.syms.is_service_delay(self.service.id, import.id)
+                    || self.syms.is_service_timeout(self.service.id, import.id))
+            })
         }
-        pub fn inputs(&self) -> impl Iterator<Item = usize> + 'a {
-            self.imports
-                .values()
-                .map(|import| import.id)
-                .filter(|import_id| {
-                    !(self.syms.is_service_delay(self.service.id, *import_id)
-                        || self.syms.is_service_timeout(self.service.id, *import_id))
-                })
+        pub fn set_multiple_inputs(&mut self, multiple_inputs: bool) {
+            self.multiple_inputs = multiple_inputs
         }
         pub fn destroy(self) -> (FlowsContext, Vec<String>) {
             (self.flows_context, self.components)
@@ -1145,12 +1154,12 @@ mod flow_instr {
         fn build_stmts_imports(
             service: &Service,
             imports: &HashMap<usize, FlowImport>,
-        ) -> HashMap<usize, Vec<usize>> {
+        ) -> HashMap<usize, Vec<(usize, usize)>> {
             let mut stmts_imports = HashMap::new();
-            for import in imports.values() {
+            for (stmt_id, import) in imports.iter() {
                 petgraph::visit::depth_first_search(
                     &service.graph,
-                    std::iter::once(import.id),
+                    std::iter::once(*stmt_id),
                     |event| match event {
                         CrossForwardEdge(parent, child)
                         | BackEdge(parent, child)
@@ -1160,9 +1169,10 @@ mod flow_instr {
                                 .edge_weight(parent, child)
                                 .expect("there should be a weight");
                             match weight {
-                                EdgeType::Dependency => {
-                                    stmts_imports.entry(child).or_insert(vec![]).push(import.id)
-                                }
+                                EdgeType::Dependency => stmts_imports
+                                    .entry(child)
+                                    .or_insert(vec![])
+                                    .push((*stmt_id, import.id)),
                                 EdgeType::Priority => (),
                             }
                         }
@@ -1441,13 +1451,14 @@ mod flow_instr {
                 .expect("there should be imports");
             debug_assert!(!imports.is_empty());
 
-            *imports
+            imports
                 .iter()
-                .filter(|import_id| {
-                    self.events.contains(*import_id) || self.signals.contains(*import_id)
+                .filter(|(_, import_id)| {
+                    self.events.contains(import_id) || self.signals.contains(import_id)
                 })
                 .next()
                 .unwrap()
+                .1
         }
 
         /// Compute the instruction that will init the events.
@@ -1460,6 +1471,8 @@ mod flow_instr {
         /// Compute the instruction from an import.
         pub fn handle_import(&mut self, flow_id: usize) -> FlowInstruction {
             if self.syms.get_flow_kind(flow_id).is_event() {
+                // add to events set
+                self.events.insert(flow_id);
                 if !self.syms.is_timer(flow_id) {
                     // store the event in the local reference
                     let event_name = self.syms.get_name(flow_id);
@@ -1895,8 +1908,8 @@ mod flow_instr {
         }
 
         /// Add flow send in current propagation branch.
-        pub fn send(&self, flow_id: usize) -> FlowInstruction {
-            let import_flow = self.get_stmt_import(flow_id);
+        pub fn send(&self, stmt_id: usize, flow_id: usize) -> FlowInstruction {
+            let import_flow = self.get_stmt_import(stmt_id);
             // insert instruction only if source is a signal or an activated event
             if self.syms.get_flow_kind(flow_id).is_signal() {
                 let expr = self.get_signal(flow_id);
@@ -3465,13 +3478,20 @@ mod from_synced {
             match curr {
                 Synced::Instr(instr, _) => acc = Some(Instr::from_instr(ctxt, instr)),
                 Synced::Seq(mut todo, _) => {
-                    curr = todo.pop().expect("there should be a synced");
+                    todo.reverse();
+                    curr = todo
+                        .pop()
+                        .expect("there should be a synced in this sequence");
                     stack.push(Frame::Seq { done: vec![], todo });
                     continue 'go_down;
                 }
                 Synced::Para(mut todo, _) => {
-                    let (cost, mut cost_todo) = todo.pop_first().expect("there should be synceds");
-                    curr = cost_todo.pop().expect("there should be a synced");
+                    let (cost, mut cost_todo) = todo
+                        .pop_first()
+                        .expect("there should be synceds in this parallel execution");
+                    curr = cost_todo
+                        .pop()
+                        .expect("there should be a synced in this parallel execution");
                     if !cost_todo.is_empty() {
                         todo.insert(cost.clone(), cost_todo);
                     }
@@ -3490,7 +3510,7 @@ mod from_synced {
                     None => {
                         // prefix ; acc ; suffix
                         let prefix = Instr::prefix(ctxt);
-                        let instr = acc.expect("there should be an instruction");
+                        let instr = acc.expect("there should be an instruction to return");
                         let suffix = Instr::suffix(ctxt);
                         return Instr::from_seq(ctxt, vec![prefix, instr, suffix]);
                     }
@@ -3499,10 +3519,13 @@ mod from_synced {
                         method,
                         mut todo,
                     }) => {
-                        let instr = std::mem::take(&mut acc).expect("there should be an instr");
+                        let instr = std::mem::take(&mut acc)
+                            .expect("there should be an instruction to parallelize");
                         done.entry(method).or_insert_with(Vec::new).push(instr);
                         if let Some((cost, mut cost_todo)) = todo.pop_first() {
-                            curr = cost_todo.pop().expect("there should be a synced");
+                            curr = cost_todo
+                                .pop()
+                                .expect("impossible: `if !cost_todo.is_empty() {`");
                             if !cost_todo.is_empty() {
                                 todo.insert(cost.clone(), cost_todo);
                             }
@@ -3518,7 +3541,8 @@ mod from_synced {
                         }
                     }
                     Some(Frame::Seq { mut done, mut todo }) => {
-                        let instr = std::mem::take(&mut acc).expect("there should be an instr");
+                        let instr = std::mem::take(&mut acc)
+                            .expect("there should be an instruction to sequence");
                         done.push(instr);
                         if let Some(curr_todo) = todo.pop() {
                             curr = curr_todo;
@@ -3578,7 +3602,7 @@ mod from_synced {
             } else
             // get flow export related to instr
             if let Some(export) = ctxt.get_export(instr) {
-                ctxt.send(export.id)
+                ctxt.send(instr, export.id)
             } else
             // get flow import related to instr
             if let Some(import) = ctxt.get_import(instr) {

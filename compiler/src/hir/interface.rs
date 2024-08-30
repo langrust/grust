@@ -6,7 +6,7 @@ prelude! {
 }
 
 /// The type of edge present in interface graph.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum EdgeType {
     /// # Real dependency
     ///
