@@ -13,8 +13,8 @@ prelude! {
 }
 
 /// Transform LIR instruction on flows into statement.
-pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
-    match instruction_flow {
+pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> Vec<syn::Stmt> {
+    let stmt = match instruction_flow {
         FlowInstruction::Let(ident, flow_expression) => {
             let ident = Ident::new(&ident, Span::call_site());
             let expression = flow_expression_rust_ast_from_lir(flow_expression);
@@ -48,11 +48,11 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
             let receiver_ident = Ident::new(&receiver_name, Span::call_site());
             let source_ident = Ident::new(&source_name, Span::call_site());
             let delta = constant_to_syn(delta);
-            let instruction = rust_ast_from_lir(*instruction);
+            let instructions = rust_ast_from_lir(*instruction);
 
             parse_quote! {
                 if (self.context.#receiver_ident.get() - #source_ident).abs() >= #delta {
-                    #instruction
+                    #(#instructions)*
                 }
             }
         }
@@ -68,9 +68,9 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
             let not_onchange = rust_ast_from_lir(*not_onchange_instr);
             parse_quote! {
                 if self.context.#old_event_ident.get() != #source_ident {
-                    #onchange
+                    #(#onchange)*
                 } else {
-                    #not_onchange
+                    #(#not_onchange)*
                 }
             }
         }
@@ -127,44 +127,44 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> syn::Stmt {
                     let ident = Ident::new(s, Span::call_site());
                     parse_quote! { self.context.#ident.is_new() }
                 }));
-            let then_instr = rust_ast_from_lir(*then);
+            let then_instrs = rust_ast_from_lir(*then);
 
             if let Some(instr) = els {
-                let els_instr = rust_ast_from_lir(*instr);
+                let els_instrs = rust_ast_from_lir(*instr);
                 parse_quote! {
                     if #(#actv_cond)||* {
-                        #then_instr
+                        #(#then_instrs)*
                     } else {
-                        #els_instr
+                        #(#els_instrs)*
                     }
                 }
             } else {
                 parse_quote! {
                     if #(#actv_cond)||* {
-                        #then_instr
+                        #(#then_instrs)*
                     }
                 }
             }
         }
         FlowInstruction::Seq(instrs) => {
-            let instrs = instrs.into_iter().map(rust_ast_from_lir);
-            parse_quote! { #(#instrs)* }
+            return instrs.into_iter().flat_map(rust_ast_from_lir).collect()
         }
         FlowInstruction::Para(_method_map) => {
             parse_quote! {
-                todo!()
+                todo!();
             }
         }
-    }
+    };
+    vec![stmt]
 }
 
 fn match_arm_to_syn(match_arm: MatchArm) -> syn::Arm {
     let MatchArm { patterns, instr } = match_arm;
     let syn_pats = patterns.into_iter().map(pattern_rust_ast_from_lir);
-    let stmt = rust_ast_from_lir(instr);
+    let stmts = rust_ast_from_lir(instr);
     parse_quote! {
         (#(#syn_pats),*) => {
-            #stmt
+            #(#stmts)*
         }
     }
 }
