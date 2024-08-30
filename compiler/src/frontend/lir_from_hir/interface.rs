@@ -598,6 +598,7 @@ mod triggered {
         ) -> Self;
         fn get_triggered(&self, parent: usize) -> impl Iterator<Item = usize>;
         fn subgraph(&self, starts: impl Iterator<Item = usize>) -> DiGraphMap<usize, EdgeType>;
+        fn graph(&self) -> &DiGraphMap<usize, EdgeType>;
     }
 
     /// Isles of statements triggered by events only.
@@ -692,6 +693,10 @@ mod triggered {
             }
             trig_graph
         }
+
+        fn graph(&self) -> &DiGraphMap<usize, EdgeType> {
+            &self.graph
+        }
     }
 
     /// Statements triggered by all changes.
@@ -730,6 +735,10 @@ mod triggered {
             });
             trig_graph
         }
+
+        fn graph(&self) -> &DiGraphMap<usize, EdgeType> {
+            &self.graph
+        }
     }
 }
 
@@ -751,12 +760,16 @@ mod para {
         G: TriggersGraph<'a>,
     {
         debug_assert!(ctxt.is_clear());
-        let subgraph = graph.subgraph(std::iter::once(flow_id)); // todo: if flow_id is delay then it is the entire graph
-        let builder = Builder::<flow_instr::Builder, EdgeType>::new(&subgraph);
+        let subgraph = if ctxt.syms().is_delay(flow_id) {
+            // if flow_id is delay then it is the entire graph is propagated
+            graph.graph()
+        } else {
+            // else only a subgraph graph is propagated
+            &graph.subgraph(std::iter::once(flow_id))
+        };
+        let builder = Builder::<flow_instr::Builder, EdgeType>::new(subgraph);
         let synced = builder.run(ctxt).expect("oh no");
-        let instr = from_synced::run(ctxt, synced);
-
-        instr
+        from_synced::run(ctxt, synced)
     }
 
     pub fn flow_handler<'a, G>(
