@@ -18,7 +18,7 @@ pub struct ServiceHandler {
 #[derive(Debug, PartialEq)]
 pub struct FlowHandler {
     pub arriving_flow: ArrivingFlow,
-    pub instructions: Vec<FlowInstruction>,
+    pub instruction: FlowInstruction,
 }
 
 #[derive(Debug, PartialEq)]

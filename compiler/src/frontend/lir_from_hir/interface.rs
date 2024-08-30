@@ -734,30 +734,66 @@ mod triggered {
 }
 
 mod para {
-    prelude! { just
+    prelude! {
         hir::interface::EdgeType,
         synced::Builder,
-        lir::item::execution_machine::service_handler::FlowInstruction,
+        lir::item::execution_machine::{ArrivingFlow, service_handler::{FlowHandler, FlowInstruction}},
     }
 
     use super::{flow_instr, from_synced, triggered::TriggersGraph};
 
-    pub fn propagate_incomming_flows<'a, G>(
+    fn flow_instruction<'a, G>(
         ctxt: &mut flow_instr::Builder<'a>,
         graph: &G,
-        incomming_flows: impl Iterator<Item = usize>,
+        flow_id: usize,
     ) -> FlowInstruction
     where
         G: TriggersGraph<'a>,
     {
         debug_assert!(ctxt.is_clear());
-        let subgraph = graph.subgraph(incomming_flows);
+        let subgraph = graph.subgraph(std::iter::once(flow_id)); // todo: if flow_id is delay then it is the entire graph
         let builder = Builder::<flow_instr::Builder, EdgeType>::new(&subgraph);
         let synced = builder.run(ctxt).expect("oh no");
         let instr = from_synced::run(ctxt, synced);
-        ctxt.clear();
 
         instr
+    }
+
+    pub fn flow_handler<'a, G>(
+        ctxt: &mut flow_instr::Builder<'a>,
+        graph: &G,
+        flow_id: usize,
+    ) -> FlowHandler
+    where
+        G: TriggersGraph<'a>,
+    {
+        // construct the instruction to perform
+        let instruction = flow_instruction(ctxt, graph, flow_id);
+
+        let flow_name = ctxt.syms().get_name(flow_id).clone();
+        // determine weither this arriving flow is a timing event
+        let arriving_flow = if ctxt.syms().is_delay(flow_id) {
+            ArrivingFlow::ServiceDelay(flow_name)
+        } else if ctxt.syms().is_period(flow_id) {
+            ArrivingFlow::Period(flow_name)
+        } else if ctxt.syms().is_deadline(flow_id) {
+            ArrivingFlow::Deadline(flow_name)
+        } else if ctxt.syms().is_timeout(flow_id) {
+            ArrivingFlow::ServiceTimeout(flow_name)
+        } else {
+            let flow_type = ctxt.syms().get_type(flow_id).clone();
+            let path = ctxt.syms().get_path(flow_id).clone();
+            ArrivingFlow::Channel(flow_name, flow_type, path)
+        };
+
+        // todo: get the events that should be declared as &mut.
+
+        ctxt.clear();
+
+        FlowHandler {
+            arriving_flow,
+            instruction,
+        }
     }
 }
 
@@ -873,6 +909,9 @@ mod flow_instr {
         }
         pub fn get_export(&self, export_id: usize) -> Option<&FlowExport> {
             self.exports.get(&export_id)
+        }
+        pub fn syms(&self) -> &SymbolTable {
+            &self.syms
         }
 
         /// Clear the builder: events and signals sets
@@ -1398,7 +1437,7 @@ mod flow_instr {
                 (true, false) => source_instr(None),
                 (false, true) => timer_instr(),
                 (false, false) => {
-                unreachable!("'timeout' should be activated by either its source or its timer")
+                    unreachable!("'timeout' should be activated by either its source or its timer")
                 }
             }
         }
@@ -1984,7 +2023,7 @@ mod propagation {
             });
             let delay_handler = FlowHandler {
                 arriving_flow: ArrivingFlow::ServiceDelay(symbol_table.get_name(delay).clone()),
-                instructions: vec![FlowInstruction::handle_delay(input_names, arms)],
+                instruction: FlowInstruction::handle_delay(input_names, arms),
             };
 
             // Create the handler of every incoming flows.
@@ -2009,7 +2048,7 @@ mod propagation {
                 };
                 FlowHandler {
                     arriving_flow,
-                    instructions,
+                    instruction: FlowInstruction::seq(instructions),
                 }
             });
 
