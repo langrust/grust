@@ -8,7 +8,7 @@ fn should_compile_para() {
     let ast: Ast = syn::parse_quote! {
         #![dump = "tests/macro_outputs/para.rs", propag = "onchange", para, test]
         import event e0: int;
-        export signal o: int;
+        export signal o1: int;
 
         component C1(e0: int?) -> (s2: int, e1: int?) {
             when {
@@ -70,7 +70,7 @@ fn should_compile_para() {
             let (signal s3: int, event e3: int) = C2(e1);
             let (event e2: int) = C3(s2);
             let (signal s4: int) = C4(e2);
-            o = C5(s4, s3, e3);
+            o1 = C5(s4, s3, e3);
         }
     };
     let tokens = compiler::into_token_stream(ast);

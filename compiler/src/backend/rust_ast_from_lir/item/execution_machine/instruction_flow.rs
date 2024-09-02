@@ -145,9 +145,15 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> Vec<syn::Stmt> {
         FlowInstruction::Seq(instrs) => {
             return instrs.into_iter().flat_map(rust_ast_from_lir).collect()
         }
-        FlowInstruction::Para(_method_map) => {
+        FlowInstruction::Para(method_map) => {
+            let para_futures = method_map.into_iter().flat_map(|(_method, para_instrs)| {
+                para_instrs.into_iter().map(|instr| -> Expr {
+                    let stmts = rust_ast_from_lir(instr);
+                    parse_quote! {async { #(#stmts)* }}
+                })
+            });
             parse_quote! {
-                todo!();
+                tokio::join!(#(#para_futures),*);
             }
         }
     };

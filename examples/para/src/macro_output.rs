@@ -217,7 +217,7 @@ pub mod runtime {
         }
     }
     pub enum RuntimeOutput {
-        O(i64, std::time::Instant),
+        O1(i64, std::time::Instant),
     }
     pub struct Runtime {
         para_mess: para_mess_service::ParaMessService,
@@ -285,10 +285,10 @@ pub mod runtime {
             }
         }
         #[derive(Clone, Copy, PartialEq, Default)]
-        pub struct O(i64, bool);
-        impl O {
-            fn set(&mut self, o: i64) {
-                self.0 = o;
+        pub struct E3(i64, bool);
+        impl E3 {
+            fn set(&mut self, e3: i64) {
+                self.0 = e3;
                 self.1 = true;
             }
             fn get(&self) -> i64 {
@@ -353,6 +353,23 @@ pub mod runtime {
             }
         }
         #[derive(Clone, Copy, PartialEq, Default)]
+        pub struct O1(i64, bool);
+        impl O1 {
+            fn set(&mut self, o1: i64) {
+                self.0 = o1;
+                self.1 = true;
+            }
+            fn get(&self) -> i64 {
+                self.0
+            }
+            fn is_new(&self) -> bool {
+                self.1
+            }
+            fn reset(&mut self) {
+                self.1 = false;
+            }
+        }
+        #[derive(Clone, Copy, PartialEq, Default)]
         pub struct S3(i64, bool);
         impl S3 {
             fn set(&mut self, s3: i64) {
@@ -370,31 +387,14 @@ pub mod runtime {
             }
         }
         #[derive(Clone, Copy, PartialEq, Default)]
-        pub struct E3(i64, bool);
-        impl E3 {
-            fn set(&mut self, e3: i64) {
-                self.0 = e3;
-                self.1 = true;
-            }
-            fn get(&self) -> i64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default)]
         pub struct Context {
             pub s2: S2,
-            pub o: O,
+            pub e3: E3,
             pub e2: E2,
             pub e1: E1,
             pub s4: S4,
+            pub o1: O1,
             pub s3: S3,
-            pub e3: E3,
         }
         impl Context {
             fn init() -> Context {
@@ -402,12 +402,12 @@ pub mod runtime {
             }
             fn reset(&mut self) {
                 self.s2.reset();
-                self.o.reset();
+                self.e3.reset();
                 self.e2.reset();
                 self.e1.reset();
                 self.s4.reset();
+                self.o1.reset();
                 self.s3.reset();
-                self.e3.reset();
             }
             fn get_C3_inputs(&self) -> C3Input {
                 C3Input { s2: self.s2.get() }
@@ -496,15 +496,35 @@ pub mod runtime {
                                 self.context.s2.set(s2);
                                 *e1_ref = *e1_ref;
                             }
-                            todo!();
+                            tokio::join!(
+                                async {
+                                    if e1_ref.is_some() {
+                                        let (s3, e3) =
+                                            self.C2.step(self.context.get_C2_inputs(*e1_ref));
+                                        self.context.s3.set(s3);
+                                        *e3_ref = *e3_ref;
+                                    }
+                                },
+                                async {
+                                    if self.context.s2.is_new() {
+                                        let (e2) = self.C3.step(self.context.get_C3_inputs());
+                                        *e2_ref = *e2_ref;
+                                    }
+                                    if e2_ref.is_some() {
+                                        let (s4) =
+                                            self.C4.step(self.context.get_C4_inputs(*e2_ref));
+                                        self.context.s4.set(s4);
+                                    }
+                                }
+                            );
                             if e3_ref.is_some()
                                 || self.context.s4.is_new()
                                 || self.context.s3.is_new()
                             {
-                                let o = self.C5.step(self.context.get_C5_inputs(*e3_ref));
-                                self.context.o.set(o);
+                                let o1 = self.C5.step(self.context.get_C5_inputs(*e3_ref));
+                                self.context.o1.set(o1);
                             }
-                            self.send_output(O::O(self.context.o.get(), instant))
+                            self.send_output(O::O1(self.context.o1.get(), instant))
                                 .await?;
                         }
                     }
@@ -539,12 +559,30 @@ pub mod runtime {
                         self.context.s2.set(s2);
                         *e1_ref = *e1_ref;
                     }
-                    todo!();
+                    tokio::join!(
+                        async {
+                            if e1_ref.is_some() {
+                                let (s3, e3) = self.C2.step(self.context.get_C2_inputs(*e1_ref));
+                                self.context.s3.set(s3);
+                                *e3_ref = *e3_ref;
+                            }
+                        },
+                        async {
+                            if self.context.s2.is_new() {
+                                let (e2) = self.C3.step(self.context.get_C3_inputs());
+                                *e2_ref = *e2_ref;
+                            }
+                            if e2_ref.is_some() {
+                                let (s4) = self.C4.step(self.context.get_C4_inputs(*e2_ref));
+                                self.context.s4.set(s4);
+                            }
+                        }
+                    );
                     if e3_ref.is_some() || self.context.s4.is_new() || self.context.s3.is_new() {
-                        let o = self.C5.step(self.context.get_C5_inputs(*e3_ref));
-                        self.context.o.set(o);
+                        let o1 = self.C5.step(self.context.get_C5_inputs(*e3_ref));
+                        self.context.o1.set(o1);
                     }
-                    self.send_output(O::O(self.context.o.get(), e0_instant))
+                    self.send_output(O::O1(self.context.o1.get(), e0_instant))
                         .await?;
                 } else {
                     let unique = self.input_store.e0.replace((e0, e0_instant));
@@ -562,12 +600,30 @@ pub mod runtime {
                 let e3_ref = &mut None;
                 let e1_ref = &mut None;
                 let e2_ref = &mut None;
-                todo!();
+                tokio::join!(
+                    async {
+                        if e1_ref.is_some() {
+                            let (s3, e3) = self.C2.step(self.context.get_C2_inputs(*e1_ref));
+                            self.context.s3.set(s3);
+                            *e3_ref = *e3_ref;
+                        }
+                    },
+                    async {
+                        if self.context.s2.is_new() {
+                            let (e2) = self.C3.step(self.context.get_C3_inputs());
+                            *e2_ref = *e2_ref;
+                        }
+                        if e2_ref.is_some() {
+                            let (s4) = self.C4.step(self.context.get_C4_inputs(*e2_ref));
+                            self.context.s4.set(s4);
+                        }
+                    }
+                );
                 if e3_ref.is_some() || self.context.s4.is_new() || self.context.s3.is_new() {
-                    let o = self.C5.step(self.context.get_C5_inputs(*e3_ref));
-                    self.context.o.set(o);
+                    let o1 = self.C5.step(self.context.get_C5_inputs(*e3_ref));
+                    self.context.o1.set(o1);
                 }
-                self.send_output(O::O(self.context.o.get(), timeout_para_mess_instant))
+                self.send_output(O::O1(self.context.o1.get(), timeout_para_mess_instant))
                     .await?;
                 Ok(())
             }
