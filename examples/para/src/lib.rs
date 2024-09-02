@@ -4,6 +4,8 @@ use grust::grust;
 
 #[cfg(test)]
 mod macro_output;
+#[cfg(test)]
+mod todo;
 
 ///
 ///        |    |--s2-->| C3 |--e2-->| C4 |--s4-->|    |
