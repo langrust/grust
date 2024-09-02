@@ -29,7 +29,7 @@ pub enum FlowInstruction {
     UpdateContext(String, Expression),
     Send(String, Expression, Option<String>),
     IfThrottle(String, String, Constant, Box<Self>),
-    IfChange(String, String, Box<Self>, Box<Self>),
+    IfChange(String, Expression, Box<Self>),
     IfActivated(Vec<String>, Vec<String>, Box<Self>, Option<Box<Self>>),
     ResetTimer(String, String),
     ComponentCall(Pattern, String, Vec<Option<String>>),
@@ -71,9 +71,8 @@ mk_new! { impl FlowInstruction =>
     )
     IfChange: if_change (
         old_event_name: impl Into<String> = old_event_name.into(),
-        source_name: impl Into<String> = source_name.into(),
+        signal: Expression = signal,
         then: FlowInstruction = then.into(),
-        els: FlowInstruction = els.into(),
     )
     IfActivated: if_activated (
         events: impl Into<Vec<String>> = events.into(),
