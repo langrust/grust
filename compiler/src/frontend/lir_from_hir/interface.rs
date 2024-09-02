@@ -860,6 +860,9 @@ mod service_handler {
 
         let synced = if conf::para() {
             // if config is 'para' then build 'synced' with //-algo
+            if subgraph.node_count() == 0 {
+                return FlowInstruction::seq(vec![]);
+            }
             let builder = Builder::<flow_instr::Builder, EdgeType>::new(subgraph);
             builder.run(ctxt).expect("oh no")
         } else {

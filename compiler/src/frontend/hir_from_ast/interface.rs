@@ -272,13 +272,18 @@ impl HIRFromAST for FlowPattern {
                     .map(|pattern| pattern.hir_from_ast(symbol_table, errors))
                     .collect::<TRes<Vec<_>>>()?;
 
-                let types = elements
+                let mut types = elements
                     .iter()
                     .map(|pattern| pattern.typing.as_ref().unwrap().clone())
-                    .collect();
+                    .collect::<Vec<_>>();
+                let ty = if types.len() == 1 {
+                    types.pop().unwrap()
+                } else {
+                    Typ::tuple(types)
+                };
                 Ok(Pattern {
                     kind: hir::pattern::Kind::Tuple { elements },
-                    typing: Some(Typ::tuple(types)),
+                    typing: Some(ty),
                     location,
                 })
             }
