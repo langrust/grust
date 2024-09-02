@@ -452,15 +452,6 @@ pub mod runtime {
                 .await?;
             while let Some(input) = input.next().await {
                 match input {
-                    I::Activation(activation, instant) => {
-                        runtime
-                            .speed_limiter
-                            .handle_activation(instant, activation)
-                            .await?;
-                    }
-                    I::Vdc(vdc, instant) => {
-                        runtime.speed_limiter.handle_vdc(instant, vdc).await?;
-                    }
                     I::Speed(speed, instant) => {
                         runtime.speed_limiter.handle_speed(instant, speed).await?;
                     }
@@ -469,6 +460,15 @@ pub mod runtime {
                             .speed_limiter
                             .handle_set_speed(instant, set_speed)
                             .await?;
+                    }
+                    I::Activation(activation, instant) => {
+                        runtime
+                            .speed_limiter
+                            .handle_activation(instant, activation)
+                            .await?;
+                    }
+                    I::Vdc(vdc, instant) => {
+                        runtime.speed_limiter.handle_vdc(instant, vdc).await?;
                     }
                     I::Timer(T::PeriodSpeedLimiter, instant) => {
                         runtime
@@ -482,16 +482,16 @@ pub mod runtime {
                             .handle_kickdown(instant, kickdown)
                             .await?;
                     }
-                    I::Timer(T::TimeoutSpeedLimiter, instant) => {
-                        runtime
-                            .speed_limiter
-                            .handle_timeout_speed_limiter(instant)
-                            .await?;
-                    }
                     I::VacuumBrake(vacuum_brake, instant) => {
                         runtime
                             .speed_limiter
                             .handle_vacuum_brake(instant, vacuum_brake)
+                            .await?;
+                    }
+                    I::Timer(T::TimeoutSpeedLimiter, instant) => {
+                        runtime
+                            .speed_limiter
+                            .handle_timeout_speed_limiter(instant)
                             .await?;
                     }
                     I::Timer(T::DelaySpeedLimiter, instant) => {
@@ -782,23 +782,23 @@ pub mod runtime {
         }
         #[derive(Default)]
         pub struct SpeedLimiterServiceStore {
+            set_speed: Option<(f64, std::time::Instant)>,
+            vacuum_brake: Option<(VacuumBrakeState, std::time::Instant)>,
             period_speed_limiter: Option<((), std::time::Instant)>,
             activation: Option<(ActivationRequest, std::time::Instant)>,
             vdc: Option<(VdcState, std::time::Instant)>,
             speed: Option<(f64, std::time::Instant)>,
             kickdown: Option<(KickdownState, std::time::Instant)>,
-            set_speed: Option<(f64, std::time::Instant)>,
-            vacuum_brake: Option<(VacuumBrakeState, std::time::Instant)>,
         }
         impl SpeedLimiterServiceStore {
             pub fn not_empty(&self) -> bool {
-                self.period_speed_limiter.is_some()
+                self.set_speed.is_some()
+                    || self.vacuum_brake.is_some()
+                    || self.period_speed_limiter.is_some()
                     || self.activation.is_some()
                     || self.vdc.is_some()
                     || self.speed.is_some()
                     || self.kickdown.is_some()
-                    || self.set_speed.is_some()
-                    || self.vacuum_brake.is_some()
             }
         }
         pub struct SpeedLimiterService {
@@ -830,6 +830,42 @@ pub mod runtime {
                     timer,
                 }
             }
+            pub async fn handle_set_speed(
+                &mut self,
+                set_speed_instant: std::time::Instant,
+                set_speed: f64,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                if self.delayed {
+                    self.reset_time_constrains(set_speed_instant).await?;
+                    self.context.reset();
+                    self.context.set_speed.set(set_speed);
+                } else {
+                    let unique = self
+                        .input_store
+                        .set_speed
+                        .replace((set_speed, set_speed_instant));
+                    assert!(unique.is_none(), "set_speed changes too frequently");
+                }
+                Ok(())
+            }
+            pub async fn handle_vacuum_brake(
+                &mut self,
+                vacuum_brake_instant: std::time::Instant,
+                vacuum_brake: VacuumBrakeState,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                if self.delayed {
+                    self.reset_time_constrains(vacuum_brake_instant).await?;
+                    self.context.reset();
+                    self.context.vacuum_brake.set(vacuum_brake);
+                } else {
+                    let unique = self
+                        .input_store
+                        .vacuum_brake
+                        .replace((vacuum_brake, vacuum_brake_instant));
+                    assert!(unique.is_none(), "vacuum_brake changes too frequently");
+                }
+                Ok(())
+            }
             pub async fn handle_period_speed_limiter(
                 &mut self,
                 period_speed_limiter_instant: std::time::Instant,
@@ -838,13 +874,9 @@ pub mod runtime {
                     self.reset_time_constrains(period_speed_limiter_instant)
                         .await?;
                     self.context.reset();
-                    let (v_set_aux, v_update) = self
-                        .process_set_speed
-                        .step(self.context.get_process_set_speed_inputs());
-                    self.context.v_set_aux.set(v_set_aux);
-                    self.context.v_update.set(v_update);
-                    let v_set_aux = self.context.v_set_aux.get();
-                    let v_set = v_set_aux;
+                    self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                        .await?;
+                    let v_set = self.context.v_set_aux.get();
                     self.context.v_set.set(v_set);
                     self.send_output(O::VSet(v_set, period_speed_limiter_instant))
                         .await?;
@@ -855,11 +887,8 @@ pub mod runtime {
                     self.context.on_state.set(on_state);
                     self.context.in_regulation_aux.set(in_regulation_aux);
                     self.context.state_update.set(state_update);
-                    let in_regulation_aux = self.context.in_regulation_aux.get();
-                    let in_regulation = in_regulation_aux;
+                    let in_regulation = self.context.in_regulation_aux.get();
                     self.send_output(O::InRegulation(in_regulation, period_speed_limiter_instant))
-                        .await?;
-                    self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                         .await?;
                 } else {
                     let unique = self
@@ -913,25 +942,11 @@ pub mod runtime {
                 self.reset_time_constrains(timeout_speed_limiter_instant)
                     .await?;
                 self.context.reset();
-                let (v_set_aux, v_update) = self
-                    .process_set_speed
-                    .step(self.context.get_process_set_speed_inputs());
-                self.context.v_set_aux.set(v_set_aux);
-                self.context.v_update.set(v_update);
-                let v_set_aux = self.context.v_set_aux.get();
-                let v_set = v_set_aux;
+                let v_set = self.context.v_set_aux.get();
                 self.context.v_set.set(v_set);
                 self.send_output(O::VSet(v_set, timeout_speed_limiter_instant))
                     .await?;
-                let (state, on_state, in_regulation_aux, state_update) = self
-                    .speed_limiter
-                    .step(self.context.get_speed_limiter_inputs());
-                self.context.state.set(state);
-                self.context.on_state.set(on_state);
-                self.context.in_regulation_aux.set(in_regulation_aux);
-                self.context.state_update.set(state_update);
-                let in_regulation_aux = self.context.in_regulation_aux.get();
-                let in_regulation = in_regulation_aux;
+                let in_regulation = self.context.in_regulation_aux.get();
                 self.send_output(O::InRegulation(
                     in_regulation,
                     timeout_speed_limiter_instant,
@@ -980,42 +995,6 @@ pub mod runtime {
                 }
                 Ok(())
             }
-            pub async fn handle_set_speed(
-                &mut self,
-                set_speed_instant: std::time::Instant,
-                set_speed: f64,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                if self.delayed {
-                    self.reset_time_constrains(set_speed_instant).await?;
-                    self.context.reset();
-                    self.context.set_speed.set(set_speed);
-                } else {
-                    let unique = self
-                        .input_store
-                        .set_speed
-                        .replace((set_speed, set_speed_instant));
-                    assert!(unique.is_none(), "set_speed changes too frequently");
-                }
-                Ok(())
-            }
-            pub async fn handle_vacuum_brake(
-                &mut self,
-                vacuum_brake_instant: std::time::Instant,
-                vacuum_brake: VacuumBrakeState,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                if self.delayed {
-                    self.reset_time_constrains(vacuum_brake_instant).await?;
-                    self.context.reset();
-                    self.context.vacuum_brake.set(vacuum_brake);
-                } else {
-                    let unique = self
-                        .input_store
-                        .vacuum_brake
-                        .replace((vacuum_brake, vacuum_brake_instant));
-                    assert!(unique.is_none(), "vacuum_brake changes too frequently");
-                }
-                Ok(())
-            }
             pub async fn handle_delay_speed_limiter(
                 &mut self,
                 instant: std::time::Instant,
@@ -1024,623 +1003,61 @@ pub mod runtime {
                 if self.input_store.not_empty() {
                     self.reset_time_constrains(instant).await?;
                     match (
+                        self.input_store.set_speed.take(),
+                        self.input_store.vacuum_brake.take(),
                         self.input_store.period_speed_limiter.take(),
                         self.input_store.activation.take(),
                         self.input_store.vdc.take(),
                         self.input_store.speed.take(),
                         self.input_store.kickdown.take(),
-                        self.input_store.set_speed.take(),
-                        self.input_store.vacuum_brake.take(),
                     ) {
                         (None, None, None, None, None, None, None) => {}
                         (
-                            None,
-                            None,
-                            None,
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
-                            None,
-                            None,
-                            Some((vdc, vdc_instant)),
-                            Some((speed, speed_instant)),
-                            None,
                             Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.vdc.set(vdc);
-                            self.context.speed.set(speed);
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                            None,
-                            Some((speed, speed_instant)),
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.speed.set(speed);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            None,
-                            Some((activation, activation_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((speed, speed_instant)),
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
-                            self.context.speed.set(speed);
-                        }
-                        (
-                            None,
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.vdc.set(vdc);
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                            Some((vdc, vdc_instant)),
-                            Some((speed, speed_instant)),
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.vdc.set(vdc);
-                            self.context.speed.set(speed);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((speed, speed_instant)),
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            self.context.vdc.set(vdc);
-                            self.context.speed.set(speed);
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            None,
-                            None,
-                            Some((set_speed, set_speed_instant)),
                             None,
                         ) => {
                             self.context.set_speed.set(set_speed);
-                            self.context.activation.set(activation);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
                         }
                         (
-                            None,
-                            Some((activation, activation_instant)),
-                            None,
-                            Some((speed, speed_instant)),
-                            None,
                             None,
                             Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
                         ) => {
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                            self.context.speed.set(speed);
                         }
                         (
-                            Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
-                            Some((vdc, vdc_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            None,
-                            None,
-                            None,
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            None,
-                        ) => {
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            None,
-                        ) => {
-                            self.context.activation.set(activation);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            None,
-                        ) => {
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            None,
-                        ) => {
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                            None,
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
                             Some((set_speed, set_speed_instant)),
                             Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.vdc.set(vdc);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
-                            self.context.speed.set(speed);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((speed, speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
                         ) => {
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.vdc.set(vdc);
-                            self.context.speed.set(speed);
-                        }
-                        (
-                            None,
-                            None,
-                            Some((vdc, vdc_instant)),
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                        ) => {
                             self.context.set_speed.set(set_speed);
-                            self.context.vdc.set(vdc);
-                            self.context.speed.set(speed);
                         }
                         (
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                            Some((vdc, vdc_instant)),
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
                             None,
                             None,
-                        ) => {
-                            self.context.vdc.set(vdc);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
                             Some(((), period_speed_limiter_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
                         ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             self.send_output(O::VSet(v_set, instant)).await?;
                             let (state, on_state, in_regulation_aux, state_update) = self
@@ -1650,263 +1067,298 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
+                            let in_regulation = self.context.in_regulation_aux.get();
                             self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            None,
                             None,
                             Some((activation, activation_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            None,
                             None,
                         ) => {
-                            self.context.set_speed.set(set_speed);
                             self.context.activation.set(activation);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
                         }
                         (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
+                            Some((activation, activation_instant)),
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            self.context.activation.set(activation);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((activation, activation_instant)),
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            self.context.activation.set(activation);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((activation, activation_instant)),
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            self.context.activation.set(activation);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (None, None, None, None, Some((vdc, vdc_instant)), None, None) => {
+                            self.context.vdc.set(vdc);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
                             None,
                             None,
                             Some((vdc, vdc_instant)),
                             None,
                             None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
                         ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
+                            self.context.set_speed.set(set_speed);
                         }
                         (
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
                             None,
                             None,
                             Some((vdc, vdc_instant)),
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
                         ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.activation.set(activation);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            None,
-                            Some((activation, activation_instant)),
-                            None,
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
-                            None,
-                            Some((activation, activation_instant)),
-                            None,
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            None,
-                        ) => {
-                            self.context.activation.set(activation);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                            Some((vdc, vdc_instant)),
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.vdc.set(vdc);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            Some((speed, speed_instant)),
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            self.context.activation.set(activation);
-                            self.context.speed.set(speed);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            None,
-                            None,
-                            None,
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
-                            None,
-                            None,
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
-                            Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
                             Some((vdc, vdc_instant)),
                             None,
                             None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
                         ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
                             self.context.vdc.set(vdc);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            None,
+                        ) => {
+                            self.context.vdc.set(vdc);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             self.send_output(O::VSet(v_set, instant)).await?;
                             let (state, on_state, in_regulation_aux, state_update) = self
@@ -1916,1165 +1368,309 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
+                            let in_regulation = self.context.in_regulation_aux.get();
                             self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            None,
+                        ) => {
+                            self.context.vdc.set(vdc);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            None,
+                        ) => {
+                            self.context.vdc.set(vdc);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            None,
+                        ) => {
+                            self.context.vdc.set(vdc);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            None,
                             None,
                             Some((activation, activation_instant)),
                             Some((vdc, vdc_instant)),
                             None,
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
                         ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
                             self.context.vdc.set(vdc);
-                            self.context.kickdown.set(kickdown);
+                            self.context.activation.set(activation);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
+                            Some((activation, activation_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            None,
+                        ) => {
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                            self.context.set_speed.set(set_speed);
                         }
                         (
                             None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
                             Some((activation, activation_instant)),
-                            None,
-                            Some((speed, speed_instant)),
-                            None,
+                            Some((vdc, vdc_instant)),
                             None,
                             None,
                         ) => {
+                            self.context.vdc.set(vdc);
                             self.context.activation.set(activation);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((activation, activation_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            None,
+                        ) => {
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            None,
+                        ) => {
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            None,
+                        ) => {
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            None,
+                        ) => {
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            None,
+                        ) => {
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (None, None, None, None, None, Some((speed, speed_instant)), None) => {
                             self.context.speed.set(speed);
                         }
                         (
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            self.context.vdc.set(vdc);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            None,
                             Some((set_speed, set_speed_instant)),
                             None,
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vdc.set(vdc);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                            None,
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.speed.set(speed);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            None,
-                            Some((activation, activation_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
-                            self.context.speed.set(speed);
-                        }
-                        (
-                            None,
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vdc.set(vdc);
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                            Some((vdc, vdc_instant)),
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vdc.set(vdc);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.vdc.set(vdc);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            None,
-                            Some((activation, activation_instant)),
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            None,
-                        ) => {
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.activation.set(activation);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            None,
-                            Some((activation, activation_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                            None,
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            None,
-                            Some((activation, activation_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
-                            None,
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            None,
-                        ) => {
-                            self.context.vdc.set(vdc);
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                            self.context.speed.set(speed);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            None,
-                            Some((activation, activation_instant)),
-                            Some((vdc, vdc_instant)),
-                            None,
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                            Some((vdc, vdc_instant)),
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.vdc.set(vdc);
-                            self.context.speed.set(speed);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (None, None, None, Some((speed, speed_instant)), None, None, None) => {
-                            self.context.speed.set(speed);
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vdc.set(vdc);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                            None,
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((speed, speed_instant)),
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
-                            self.context.speed.set(speed);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            None,
-                            Some((activation, activation_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                            None,
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            None,
-                        ) => {
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            None,
-                            Some((activation, activation_instant)),
-                            Some((vdc, vdc_instant)),
-                            None,
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
-                        }
-                        (
-                            None,
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.vdc.set(vdc);
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                            Some((vdc, vdc_instant)),
-                            Some((speed, speed_instant)),
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            self.context.vdc.set(vdc);
-                            self.context.speed.set(speed);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                            None,
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            None,
-                        ) => {
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            None,
-                            Some((activation, activation_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            None,
-                        ) => {
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            self.context.activation.set(activation);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            None,
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vdc.set(vdc);
-                        }
-                        (
-                            None,
-                            None,
-                            Some((vdc, vdc_instant)),
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vdc.set(vdc);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
-                            None,
-                            Some((activation, activation_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                            None,
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            None,
-                            Some((activation, activation_instant)),
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                            None,
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            None,
-                            Some((activation, activation_instant)),
-                            None,
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.activation.set(activation);
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
-                            None,
-                            Some((activation, activation_instant)),
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (None, None, Some((vdc, vdc_instant)), None, None, None, None) => {
-                            self.context.vdc.set(vdc);
-                        }
-                        (
                             None,
                             None,
                             None,
                             Some((speed, speed_instant)),
                             None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
                         ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
                             self.context.speed.set(speed);
+                            self.context.set_speed.set(set_speed);
                         }
                         (
-                            Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
                             None,
                             Some((speed, speed_instant)),
                             None,
+                        ) => {
+                            self.context.speed.set(speed);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
                             Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            None,
+                            Some((speed, speed_instant)),
                             None,
                         ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.activation.set(activation);
                             self.context.speed.set(speed);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                            None,
+                            Some((speed, speed_instant)),
+                            None,
+                        ) => {
+                            self.context.speed.set(speed);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             self.send_output(O::VSet(v_set, instant)).await?;
                             let (state, on_state, in_regulation_aux, state_update) = self
@@ -3084,32 +1680,23 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
+                            let in_regulation = self.context.in_regulation_aux.get();
                             self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
-                            Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
-                            Some((vdc, vdc_instant)),
-                            None,
-                            None,
                             Some((set_speed, set_speed_instant)),
                             None,
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                            None,
+                            Some((speed, speed_instant)),
+                            None,
                         ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
+                            self.context.speed.set(speed);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             self.send_output(O::VSet(v_set, instant)).await?;
                             let (state, on_state, in_regulation_aux, state_update) = self
@@ -3119,33 +1706,24 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
+                            let in_regulation = self.context.in_regulation_aux.get();
                             self.send_output(O::InRegulation(in_regulation, instant))
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
+                            self.context.set_speed.set(set_speed);
                         }
                         (
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
                             Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
-                            Some((vdc, vdc_instant)),
+                            None,
+                            None,
                             Some((speed, speed_instant)),
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            None,
                         ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
                             self.context.speed.set(speed);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             self.send_output(O::VSet(v_set, instant)).await?;
                             let (state, on_state, in_regulation_aux, state_update) = self
@@ -3155,44 +1733,24 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
+                            let in_regulation = self.context.in_regulation_aux.get();
                             self.send_output(O::InRegulation(in_regulation, instant))
                                 .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                            None,
+                            Some((speed, speed_instant)),
+                            None,
+                        ) => {
+                            self.context.speed.set(speed);
                             self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
-                        }
-                        (
-                            None,
-                            None,
-                            None,
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.speed.set(speed);
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            Some((speed, speed_instant)),
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                            self.context.speed.set(speed);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
+                            let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             self.send_output(O::VSet(v_set, instant)).await?;
                             let (state, on_state, in_regulation_aux, state_update) = self
@@ -3202,56 +1760,78 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
+                            let in_regulation = self.context.in_regulation_aux.get();
                             self.send_output(O::InRegulation(in_regulation, instant))
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            None,
-                            Some((activation, activation_instant)),
-                            None,
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            None,
-                        ) => {
-                            self.context.activation.set(activation);
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
-                            None,
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                        ) => {
+                            self.context.vacuum_brake.set(vacuum_brake);
                             self.context.set_speed.set(set_speed);
                         }
                         (
-                            Some(((), period_speed_limiter_instant)),
+                            None,
+                            None,
+                            None,
                             Some((activation, activation_instant)),
-                            Some((vdc, vdc_instant)),
+                            None,
                             Some((speed, speed_instant)),
                             None,
+                        ) => {
+                            self.context.speed.set(speed);
+                            self.context.activation.set(activation);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
+                            Some((activation, activation_instant)),
+                            None,
+                            Some((speed, speed_instant)),
+                            None,
+                        ) => {
+                            self.context.speed.set(speed);
+                            self.context.activation.set(activation);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
                             None,
                             Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((activation, activation_instant)),
+                            None,
+                            Some((speed, speed_instant)),
+                            None,
                         ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
                             self.context.speed.set(speed);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
+                            self.context.activation.set(activation);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((activation, activation_instant)),
+                            None,
+                            Some((speed, speed_instant)),
+                            None,
+                        ) => {
+                            self.context.speed.set(speed);
+                            self.context.activation.set(activation);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            Some((speed, speed_instant)),
+                            None,
+                        ) => {
+                            self.context.speed.set(speed);
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             self.send_output(O::VSet(v_set, instant)).await?;
                             let (state, on_state, in_regulation_aux, state_update) = self
@@ -3261,30 +1841,24 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
+                            let in_regulation = self.context.in_regulation_aux.get();
                             self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
+                            Some((set_speed, set_speed_instant)),
+                            None,
                             Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
                             None,
+                            Some((speed, speed_instant)),
                             None,
-                            None,
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
                         ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
+                            self.context.speed.set(speed);
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             self.send_output(O::VSet(v_set, instant)).await?;
                             let (state, on_state, in_regulation_aux, state_update) = self
@@ -3294,63 +1868,25 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
+                            let in_regulation = self.context.in_regulation_aux.get();
                             self.send_output(O::InRegulation(in_regulation, instant))
                                 .await?;
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            Some((speed, speed_instant)),
+                            None,
+                        ) => {
+                            self.context.speed.set(speed);
+                            self.context.activation.set(activation);
                             self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
-                        }
-                        (
-                            None,
-                            Some((activation, activation_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
-                            self.context.speed.set(speed);
-                        }
-                        (
-                            None,
-                            Some((activation, activation_instant)),
-                            None,
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                            Some((vdc, vdc_instant)),
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.vdc.set(vdc);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
+                            let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             self.send_output(O::VSet(v_set, instant)).await?;
                             let (state, on_state, in_regulation_aux, state_update) = self
@@ -3360,103 +1896,106 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
+                            let in_regulation = self.context.in_regulation_aux.get();
                             self.send_output(O::InRegulation(in_regulation, instant))
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            Some((speed, speed_instant)),
+                            None,
+                        ) => {
+                            self.context.speed.set(speed);
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            None,
                             None,
                             None,
                             Some((vdc, vdc_instant)),
                             Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            None,
                             None,
                         ) => {
-                            self.context.vdc.set(vdc);
                             self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
+                            self.context.vdc.set(vdc);
                         }
                         (
-                            None,
-                            Some((activation, activation_instant)),
-                            None,
-                            None,
-                            None,
                             Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
                             None,
                             None,
                             None,
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            None,
-                            Some((activation, activation_instant)),
                             Some((vdc, vdc_instant)),
                             Some((speed, speed_instant)),
                             None,
-                            None,
-                            None,
                         ) => {
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
                             self.context.speed.set(speed);
+                            self.context.vdc.set(vdc);
+                            self.context.set_speed.set(set_speed);
                         }
                         (
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            Some((vdc, vdc_instant)),
+                            Some((speed, speed_instant)),
+                            None,
+                        ) => {
+                            self.context.speed.set(speed);
+                            self.context.vdc.set(vdc);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            Some((vdc, vdc_instant)),
+                            Some((speed, speed_instant)),
+                            None,
+                        ) => {
+                            self.context.speed.set(speed);
+                            self.context.vdc.set(vdc);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            None,
                             Some(((), period_speed_limiter_instant)),
                             None,
                             Some((vdc, vdc_instant)),
                             Some((speed, speed_instant)),
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            None,
                         ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vdc.set(vdc);
                             self.context.speed.set(speed);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
+                            self.context.vdc.set(vdc);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             self.send_output(O::VSet(v_set, instant)).await?;
                             let (state, on_state, in_regulation_aux, state_update) = self
@@ -3466,229 +2005,166 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
+                            let in_regulation = self.context.in_regulation_aux.get();
                             self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
                         }
                         (
+                            Some((set_speed, set_speed_instant)),
+                            None,
                             Some(((), period_speed_limiter_instant)),
+                            None,
+                            Some((vdc, vdc_instant)),
+                            Some((speed, speed_instant)),
+                            None,
+                        ) => {
+                            self.context.speed.set(speed);
+                            self.context.vdc.set(vdc);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                            Some((vdc, vdc_instant)),
+                            Some((speed, speed_instant)),
+                            None,
+                        ) => {
+                            self.context.speed.set(speed);
+                            self.context.vdc.set(vdc);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                            Some((vdc, vdc_instant)),
+                            Some((speed, speed_instant)),
+                            None,
+                        ) => {
+                            self.context.speed.set(speed);
+                            self.context.vdc.set(vdc);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            None,
+                            None,
                             Some((activation, activation_instant)),
                             Some((vdc, vdc_instant)),
+                            Some((speed, speed_instant)),
                             None,
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
                         ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
+                            self.context.speed.set(speed);
                             self.context.vdc.set(vdc);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            None,
-                            Some((activation, activation_instant)),
-                            None,
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.activation.set(activation);
-                            self.context.speed.set(speed);
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            None,
-                        ) => {
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
-                            None,
-                            Some((activation, activation_instant)),
-                            None,
-                            None,
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                        ) => {
-                            self.context.set_speed.set(set_speed);
                             self.context.activation.set(activation);
                         }
                         (
-                            Some(((), period_speed_limiter_instant)),
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
                             Some((activation, activation_instant)),
                             Some((vdc, vdc_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            None,
-                            None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            None,
-                            Some((activation, activation_instant)),
-                            None,
                             Some((speed, speed_instant)),
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
                         ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
                             self.context.speed.set(speed);
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                            self.context.set_speed.set(set_speed);
                         }
                         (
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((activation, activation_instant)),
+                            Some((vdc, vdc_instant)),
+                            Some((speed, speed_instant)),
+                            None,
+                        ) => {
+                            self.context.speed.set(speed);
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((activation, activation_instant)),
+                            Some((vdc, vdc_instant)),
+                            Some((speed, speed_instant)),
+                            None,
+                        ) => {
+                            self.context.speed.set(speed);
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            None,
                             Some(((), period_speed_limiter_instant)),
                             Some((activation, activation_instant)),
                             Some((vdc, vdc_instant)),
                             Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
                         ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
                             self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             self.send_output(O::VSet(v_set, instant)).await?;
                             let (state, on_state, in_regulation_aux, state_update) = self
@@ -3698,88 +2174,54 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
+                            let in_regulation = self.context.in_regulation_aux.get();
                             self.send_output(O::InRegulation(in_regulation, instant))
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
                         }
                         (
+                            Some((set_speed, set_speed_instant)),
                             None,
-                            Some((activation, activation_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            self.context.activation.set(activation);
-                        }
-                        (
-                            None,
+                            Some(((), period_speed_limiter_instant)),
                             Some((activation, activation_instant)),
                             Some((vdc, vdc_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.vdc.set(vdc);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                            let (state, on_state, in_regulation_aux, state_update) = self
-                                .speed_limiter
-                                .step(self.context.get_speed_limiter_inputs());
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
-                            self.send_output(O::InRegulation(in_regulation, instant))
-                                .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            None,
-                            None,
                             Some((speed, speed_instant)),
                             None,
+                        ) => {
+                            self.context.speed.set(speed);
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
                             None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            Some((vdc, vdc_instant)),
+                            Some((speed, speed_instant)),
                             None,
                         ) => {
                             self.context.speed.set(speed);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             self.send_output(O::VSet(v_set, instant)).await?;
                             let (state, on_state, in_regulation_aux, state_update) = self
@@ -3789,31 +2231,26 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
+                            let in_regulation = self.context.in_regulation_aux.get();
                             self.send_output(O::InRegulation(in_regulation, instant))
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
                             Some(((), period_speed_limiter_instant)),
-                            None,
+                            Some((activation, activation_instant)),
                             Some((vdc, vdc_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            None,
+                            Some((speed, speed_instant)),
                             None,
                         ) => {
+                            self.context.speed.set(speed);
                             self.context.vdc.set(vdc);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             self.send_output(O::VSet(v_set, instant)).await?;
                             let (state, on_state, in_regulation_aux, state_update) = self
@@ -3823,84 +2260,73 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
+                            let in_regulation = self.context.in_regulation_aux.get();
                             self.send_output(O::InRegulation(in_regulation, instant))
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
                         }
                         (
+                            None,
+                            None,
                             None,
                             None,
                             None,
                             None,
                             Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
                         ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
                             self.context.kickdown.set(kickdown);
                         }
                         (
-                            None,
-                            Some((activation, activation_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((set_speed, set_speed_instant)),
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
-                        }
-                        (
                             None,
-                            Some((activation, activation_instant)),
                             None,
-                            Some((speed, speed_instant)),
                             Some((kickdown, kickdown_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
                         ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                            self.context.speed.set(speed);
                             self.context.kickdown.set(kickdown);
+                            self.context.set_speed.set(set_speed);
                         }
                         (
                             None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
                             None,
                             None,
                             None,
                             None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
                             Some((set_speed, set_speed_instant)),
                             Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                            Some((kickdown, kickdown_instant)),
                         ) => {
-                            self.context.set_speed.set(set_speed);
+                            self.context.kickdown.set(kickdown);
                             self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
                         }
                         (
+                            None,
+                            None,
                             Some(((), period_speed_limiter_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((kickdown, kickdown_instant)),
                         ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.speed.set(speed);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
+                            self.context.kickdown.set(kickdown);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             self.send_output(O::VSet(v_set, instant)).await?;
                             let (state, on_state, in_regulation_aux, state_update) = self
@@ -3910,47 +2336,23 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
+                            let in_regulation = self.context.in_regulation_aux.get();
                             self.send_output(O::InRegulation(in_regulation, instant))
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
                         }
                         (
-                            None,
-                            None,
-                            Some((vdc, vdc_instant)),
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
                             Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.vdc.set(vdc);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
+                            None,
                             Some(((), period_speed_limiter_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
                             None,
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((kickdown, kickdown_instant)),
                         ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.vdc.set(vdc);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
+                            self.context.kickdown.set(kickdown);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             self.send_output(O::VSet(v_set, instant)).await?;
                             let (state, on_state, in_regulation_aux, state_update) = self
@@ -3960,62 +2362,24 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
+                            let in_regulation = self.context.in_regulation_aux.get();
                             self.send_output(O::InRegulation(in_regulation, instant))
                                 .await?;
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                            None,
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
                             self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
                                 .await?;
-                        }
-                        (
-                            None,
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.vdc.set(vdc);
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
-                            None,
-                            Some((activation, activation_instant)),
-                            None,
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.set_speed.set(set_speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                            self.context.kickdown.set(kickdown);
-                        }
-                        (
-                            Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((speed, speed_instant)),
-                            Some((kickdown, kickdown_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                        ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.activation.set(activation);
-                            self.context.vdc.set(vdc);
-                            self.context.speed.set(speed);
-                            self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
+                            let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             self.send_output(O::VSet(v_set, instant)).await?;
                             let (state, on_state, in_regulation_aux, state_update) = self
@@ -4025,31 +2389,24 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
+                            let in_regulation = self.context.in_regulation_aux.get();
                             self.send_output(O::InRegulation(in_regulation, instant))
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
                             Some(((), period_speed_limiter_instant)),
-                            Some((activation, activation_instant)),
+                            None,
                             None,
                             None,
                             Some((kickdown, kickdown_instant)),
-                            None,
-                            None,
                         ) => {
-                            self.context.activation.set(activation);
                             self.context.kickdown.set(kickdown);
-                            let (v_set_aux, v_update) = self
-                                .process_set_speed
-                                .step(self.context.get_process_set_speed_inputs());
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set_aux = self.context.v_set_aux.get();
-                            let v_set = v_set_aux;
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             self.send_output(O::VSet(v_set, instant)).await?;
                             let (state, on_state, in_regulation_aux, state_update) = self
@@ -4059,25 +2416,1199 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            let in_regulation_aux = self.context.in_regulation_aux.get();
-                            let in_regulation = in_regulation_aux;
+                            let in_regulation = self.context.in_regulation_aux.get();
                             self.send_output(O::InRegulation(in_regulation, instant))
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
-                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
                         }
                         (
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((activation, activation_instant)),
                             None,
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.activation.set(activation);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
+                            Some((activation, activation_instant)),
+                            None,
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.activation.set(activation);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((activation, activation_instant)),
+                            None,
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.activation.set(activation);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
                             Some((set_speed, set_speed_instant)),
                             Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((activation, activation_instant)),
+                            None,
+                            None,
+                            Some((kickdown, kickdown_instant)),
                         ) => {
-                            self.context.set_speed.set(set_speed);
+                            self.context.kickdown.set(kickdown);
+                            self.context.activation.set(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            None,
+                            None,
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.vdc.set(vdc);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.vdc.set(vdc);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.vdc.set(vdc);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.vdc.set(vdc);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.vdc.set(vdc);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.vdc.set(vdc);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.vdc.set(vdc);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.vdc.set(vdc);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            None,
+                            None,
+                            Some((activation, activation_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
+                            Some((activation, activation_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((activation, activation_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((activation, activation_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
                             self.context.speed.set(speed);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            None,
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            None,
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                            None,
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                            None,
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                            None,
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                            None,
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            None,
+                            None,
+                            Some((activation, activation_instant)),
+                            None,
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.activation.set(activation);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
+                            Some((activation, activation_instant)),
+                            None,
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.activation.set(activation);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((activation, activation_instant)),
+                            None,
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.activation.set(activation);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((activation, activation_instant)),
+                            None,
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.activation.set(activation);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            None,
+                            None,
+                            None,
+                            Some((vdc, vdc_instant)),
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.vdc.set(vdc);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
+                            None,
+                            Some((vdc, vdc_instant)),
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.vdc.set(vdc);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            Some((vdc, vdc_instant)),
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.vdc.set(vdc);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            Some((vdc, vdc_instant)),
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.vdc.set(vdc);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                            Some((vdc, vdc_instant)),
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.vdc.set(vdc);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                            Some((vdc, vdc_instant)),
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.vdc.set(vdc);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                            Some((vdc, vdc_instant)),
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.vdc.set(vdc);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            None,
+                            Some((vdc, vdc_instant)),
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.vdc.set(vdc);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            None,
+                            None,
+                            Some((activation, activation_instant)),
+                            Some((vdc, vdc_instant)),
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
+                            Some((activation, activation_instant)),
+                            Some((vdc, vdc_instant)),
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((activation, activation_instant)),
+                            Some((vdc, vdc_instant)),
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((activation, activation_instant)),
+                            Some((vdc, vdc_instant)),
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            Some((vdc, vdc_instant)),
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            Some((vdc, vdc_instant)),
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.set_speed.set(set_speed);
+                        }
+                        (
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            Some((vdc, vdc_instant)),
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), period_speed_limiter_instant)),
+                            Some((activation, activation_instant)),
+                            Some((vdc, vdc_instant)),
+                            Some((speed, speed_instant)),
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            self.context.kickdown.set(kickdown);
+                            self.context.speed.set(speed);
+                            self.context.vdc.set(vdc);
+                            self.context.activation.set(activation);
+                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                                .await?;
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                            let (state, on_state, in_regulation_aux, state_update) = self
+                                .speed_limiter
+                                .step(self.context.get_speed_limiter_inputs());
+                            self.context.state.set(state);
+                            self.context.on_state.set(on_state);
+                            self.context.in_regulation_aux.set(in_regulation_aux);
+                            self.context.state_update.set(state_update);
+                            let in_regulation = self.context.in_regulation_aux.get();
+                            self.send_output(O::InRegulation(in_regulation, instant))
+                                .await?;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.set_speed.set(set_speed);
                         }
                     }
                 } else {
