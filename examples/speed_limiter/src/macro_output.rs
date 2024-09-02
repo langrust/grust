@@ -1,4 +1,5 @@
-#[derive(Clone, Copy, PartialEq, Default)]
+
+derive(Clone, Copy, PartialEq, Default)]
 pub struct Hysterisis {
     pub value: f64,
     pub flag: bool,
