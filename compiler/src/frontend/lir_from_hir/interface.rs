@@ -561,7 +561,7 @@ mod triggered {
         ) -> Self;
         fn get_triggered(&self, parent: usize) -> Vec<usize>;
         fn subgraph(&self, starts: impl Iterator<Item = usize>) -> DiGraphMap<usize, EdgeType>;
-        fn graph(&self) -> &DiGraphMap<usize, EdgeType>;
+        fn graph(&self) -> DiGraphMap<usize, EdgeType>;
     }
 
     /// Enumerate all the implementations of TriggersGraph.
@@ -599,7 +599,7 @@ mod triggered {
             }
         }
 
-        fn graph(&self) -> &DiGraphMap<usize, EdgeType> {
+        fn graph(&self) -> DiGraphMap<usize, EdgeType> {
             match self {
                 Graph::EventIsles(graph) => graph.graph(),
                 Graph::OnChange(graph) => graph.graph(),
@@ -678,6 +678,7 @@ mod triggered {
             // init stack and seen set
             let (mut stack, mut seen) = (vec![], HashSet::new());
             starts.for_each(|id| {
+                trig_graph.add_node(id);
                 stack.push(id);
                 seen.insert(id);
             });
@@ -685,23 +686,25 @@ mod triggered {
             while let Some(parent) = stack.pop() {
                 let neighbors = self.get_triggered(parent);
                 for child in neighbors {
-                    let weight = *self
-                        .graph
-                        .edge_weight(parent, child)
-                        .expect("there should be a weight");
-                    // add in subgraph of triggers
-                    trig_graph.add_edge(parent, child, weight);
-                    // only insert in stack if not seen
-                    if seen.insert(child) {
-                        stack.push(child);
+                    let weight = self.graph.edge_weight(parent, child);
+                    match weight {
+                        None | Some(EdgeType::Dependency) => {
+                            // add in subgraph of triggers
+                            trig_graph.add_edge(parent, child, EdgeType::Dependency);
+                            // only insert in stack if not seen
+                            if seen.insert(child) {
+                                stack.push(child);
+                            }
+                        }
+                        Some(EdgeType::Priority) => (),
                     }
                 }
             }
             trig_graph
         }
 
-        fn graph(&self) -> &DiGraphMap<usize, EdgeType> {
-            &self.graph
+        fn graph(&self) -> DiGraphMap<usize, EdgeType> {
+            self.subgraph(self.graph.nodes())
         }
     }
 
@@ -727,6 +730,10 @@ mod triggered {
 
         fn subgraph(&self, starts: impl Iterator<Item = usize>) -> DiGraphMap<usize, EdgeType> {
             let mut trig_graph = DiGraphMap::new();
+            let starts = starts.collect::<Vec<_>>();
+            starts.iter().for_each(|id| {
+                trig_graph.add_node(*id);
+            });
             petgraph::visit::depth_first_search(&self.graph, starts, |event| match event {
                 CrossForwardEdge(parent, child)
                 | BackEdge(parent, child)
@@ -735,15 +742,21 @@ mod triggered {
                         .graph
                         .edge_weight(parent, child)
                         .expect("there should be a weight");
-                    trig_graph.add_edge(parent, child, weight);
+                    match weight {
+                        EdgeType::Dependency => {
+                            // add in subgraph of triggers
+                            trig_graph.add_edge(parent, child, weight);
+                        }
+                        EdgeType::Priority => (),
+                    }
                 }
                 Discover(_, _) | Finish(_, _) => {}
             });
             trig_graph
         }
 
-        fn graph(&self) -> &DiGraphMap<usize, EdgeType> {
-            &self.graph
+        fn graph(&self) -> DiGraphMap<usize, EdgeType> {
+            self.graph.clone()
         }
     }
 }
@@ -761,38 +774,27 @@ mod service_handler {
         synced::{Builder, Synced},
     }
 
-    use super::{
-        flow_instr, from_synced,
-        triggered::{Graph, TriggersGraph},
-    };
+    use super::{flow_instr, from_synced, triggered::TriggersGraph};
 
     /// Compute the instruction propagating the changes of the input flow.
-    fn propagate<'a, G>(
+    fn propagate<'a>(
         ctxt: &mut flow_instr::Builder<'a>,
-        graph: &G,
         stmt_id: usize,
         flow_id: usize,
-    ) -> FlowInstruction
-    where
-        G: TriggersGraph<'a>,
-    {
+    ) -> FlowInstruction {
         if ctxt.syms().is_delay(flow_id) {
-            propagate_input_store(ctxt, graph, flow_id)
+            propagate_input_store(ctxt, flow_id)
         } else {
             ctxt.set_multiple_inputs(false);
-            flow_instruction(ctxt, graph, std::iter::once(stmt_id))
+            flow_instruction(ctxt, std::iter::once(stmt_id))
         }
     }
 
     /// Compute the instruction propagating the changes of the input store.
-    fn propagate_input_store<'a, G>(
+    fn propagate_input_store<'a>(
         ctxt: &mut flow_instr::Builder<'a>,
-        graph: &G,
         delay_id: usize,
-    ) -> FlowInstruction
-    where
-        G: TriggersGraph<'a>,
-    {
+    ) -> FlowInstruction {
         debug_assert!(ctxt.is_clear());
         debug_assert!(ctxt.syms().is_delay(delay_id));
         let syms = ctxt.syms();
@@ -801,7 +803,7 @@ mod service_handler {
         let inputs = ctxt.inputs().collect::<Vec<_>>();
         let flows_names = inputs
             .iter()
-            .map(|(_, import)| syms.get_name(import.id).clone());
+            .map(|(_, import_id)| syms.get_name(*import_id).clone());
 
         // Create the handler of the delay timer.
         // It propagates all changes stored in the service_store by matching
@@ -812,17 +814,17 @@ mod service_handler {
             let imports = inputs
                 .iter()
                 .filter_map(|(stmt_id, _)| {
-                    let res = if i & 1 == 1 { Some(**stmt_id) } else { None };
+                    let res = if i & 1 == 1 { Some(*stmt_id) } else { None };
                     i = i >> 1;
                     res
                 })
                 .collect::<Vec<_>>();
             let patterns = inputs
                 .iter()
-                .map(|(stmt_id, import)| {
-                    if imports.contains(*stmt_id) {
-                        let flow_name = syms.get_name(import.id);
-                        if syms.is_timer(import.id) {
+                .map(|(stmt_id, import_id)| {
+                    if imports.contains(stmt_id) {
+                        let flow_name = syms.get_name(*import_id);
+                        if syms.is_timer(*import_id) {
                             Pattern::some(Pattern::tuple(vec![
                                 Pattern::literal(Constant::unit(Default::default())),
                                 Pattern::ident(format!("{}_instant", flow_name)),
@@ -840,7 +842,7 @@ mod service_handler {
                 .collect();
             // compute the instruction that will propagate changes
             ctxt.set_multiple_inputs(true);
-            let instr = flow_instruction(ctxt, graph, imports.into_iter());
+            let instr = flow_instruction(ctxt, imports.into_iter());
             MatchArm::new(patterns, instr)
         });
 
@@ -848,17 +850,13 @@ mod service_handler {
     }
 
     /// Compute the instruction propagating the changes of the input flows.
-    fn flow_instruction<'a, G>(
+    fn flow_instruction<'a>(
         ctxt: &mut flow_instr::Builder<'a>,
-        graph: &G,
         imports: impl Iterator<Item = usize>,
-    ) -> FlowInstruction
-    where
-        G: TriggersGraph<'a>,
-    {
+    ) -> FlowInstruction {
         debug_assert!(ctxt.is_clear());
         // construct subgraph representing the propagation of 'imports'
-        let subgraph = &graph.subgraph(imports);
+        let subgraph = &ctxt.graph().subgraph(imports);
 
         let synced = if conf::para() {
             // if config is 'para' then build 'synced' with //-algo
@@ -885,17 +883,13 @@ mod service_handler {
     }
 
     /// Compute the input flow's handler.
-    fn flow_handler<'a, G>(
+    fn flow_handler<'a>(
         ctxt: &mut flow_instr::Builder<'a>,
-        graph: &G,
         stmt_id: usize,
         flow_id: usize,
-    ) -> FlowHandler
-    where
-        G: TriggersGraph<'a>,
-    {
+    ) -> FlowHandler {
         // construct the instruction to perform
-        let instruction = propagate(ctxt, graph, stmt_id, flow_id);
+        let instruction = propagate(ctxt, stmt_id, flow_id);
 
         let flow_name = ctxt.syms().get_name(flow_id).clone();
         // determine weither this arriving flow is a timing event
@@ -923,13 +917,10 @@ mod service_handler {
     pub fn build<'a>(mut ctxt: flow_instr::Builder<'a>) -> ServiceHandler {
         // get service's name
         let service = ctxt.service_name();
-        // create triggered graph
-        let graph = Graph::new(ctxt.syms(), ctxt.service(), ctxt.imports());
         // create flow handlers according to propagations of every incomming flows
         let flows_handling: Vec<_> = ctxt
-            .imports()
-            .iter()
-            .map(|(stmt_id, import)| flow_handler(&mut ctxt, &graph, *stmt_id, import.id))
+            .service_imports()
+            .map(|(stmt_id, import_id)| flow_handler(&mut ctxt, stmt_id, import_id))
             .collect();
         // destroy 'ctxt'
         let (flows_context, components) = ctxt.destroy();
@@ -946,7 +937,7 @@ mod service_handler {
 mod flow_instr {
     prelude! {
         quote::format_ident,
-        graph::{DfsEvent::*, Direction},
+        graph::{DfsEvent::*, Direction, DiGraphMap},
         hir::{
             flow,
             interface::{
@@ -961,7 +952,10 @@ mod flow_instr {
         },
     }
 
-    use super::LIRFromHIR;
+    use super::{
+        triggered::{self, TriggersGraph},
+        LIRFromHIR,
+    };
 
     /// A context to build [FlowInstruction]s.
     pub struct Builder<'a> {
@@ -989,6 +983,8 @@ mod flow_instr {
         exports: &'a HashMap<usize, FlowExport>,
         /// Called components.
         components: Vec<String>,
+        /// Triggers graph,
+        graph: triggered::Graph<'a>,
     }
 
     impl<'a> Builder<'a> {
@@ -1030,8 +1026,11 @@ mod flow_instr {
                 imports,
                 timing_events,
             );
+
+            // create triggered graph
+            let graph = triggered::Graph::new(syms, service, imports);
             // construct [stmt -> imports]
-            let stmts_imports = Self::build_stmts_imports(service, imports);
+            let stmts_imports = Self::build_stmts_imports(&graph.graph(), imports);
 
             Builder {
                 flows_context,
@@ -1046,6 +1045,7 @@ mod flow_instr {
                 imports,
                 exports,
                 components,
+                graph,
             }
         }
 
@@ -1061,19 +1061,26 @@ mod flow_instr {
         pub fn syms(&self) -> &'a SymbolTable {
             self.syms
         }
-        pub fn service(&self) -> &'a Service {
-            self.service
+        pub fn graph(&self) -> &triggered::Graph<'a> {
+            &self.graph
         }
-        pub fn imports(&self) -> &'a HashMap<usize, FlowImport> {
+        pub fn service_imports(&self) -> impl Iterator<Item = (usize, usize)> + 'a {
             self.imports
+                .iter()
+                .filter(|(stmt_id, import)| {
+                    // 'service_delay' is not in the graph
+                    // (it does not trigger instructions but the propagation of the 'input_store')
+                    self.syms.is_service_delay(self.service.id, import.id)
+                        || self.service.graph.edges(**stmt_id).next().is_some()
+                })
+                .map(|(stmt_id, import)| (*stmt_id, import.id))
         }
         pub fn service_name(&self) -> String {
             self.syms.get_name(self.service.id).to_string()
         }
-        pub fn inputs(&self) -> impl Iterator<Item = (&'a usize, &'a FlowImport)> + 'a {
-            self.imports.iter().filter(|(_, import)| {
-                !(self.syms.is_service_delay(self.service.id, import.id)
-                    || self.syms.is_service_timeout(self.service.id, import.id))
+        pub fn inputs(&self) -> impl Iterator<Item = (usize, usize)> + 'a {
+            self.service_imports().filter(|(_, import_id)| {
+                !(self.syms.is_delay(*import_id) || self.syms.is_timeout(*import_id))
             })
         }
         pub fn set_multiple_inputs(&mut self, multiple_inputs: bool) {
@@ -1096,20 +1103,17 @@ mod flow_instr {
 
         /// Constructs the map from statement to related imports.
         fn build_stmts_imports(
-            service: &Service,
+            graph: &DiGraphMap<usize, EdgeType>,
             imports: &HashMap<usize, FlowImport>,
         ) -> HashMap<usize, Vec<(usize, usize)>> {
             let mut stmts_imports = HashMap::new();
             for (stmt_id, import) in imports.iter() {
-                petgraph::visit::depth_first_search(
-                    &service.graph,
-                    std::iter::once(*stmt_id),
-                    |event| match event {
+                petgraph::visit::depth_first_search(graph, std::iter::once(*stmt_id), |event| {
+                    match event {
                         CrossForwardEdge(parent, child)
                         | BackEdge(parent, child)
                         | TreeEdge(parent, child) => {
-                            let weight = *service
-                                .graph
+                            let weight = *graph
                                 .edge_weight(parent, child)
                                 .expect("there should be a weight");
                             match weight {
@@ -1121,8 +1125,8 @@ mod flow_instr {
                             }
                         }
                         Discover(_, _) | Finish(_, _) => {}
-                    },
-                );
+                    }
+                });
             }
             stmts_imports
         }
@@ -1387,7 +1391,7 @@ mod flow_instr {
             });
         }
 
-        /// Returns the import that have triggered the stmt.
+        /// Returns the import flow that have triggered the stmt.
         fn get_stmt_import(&self, stmt_id: usize) -> usize {
             let imports = self
                 .stmts_imports
@@ -1409,6 +1413,7 @@ mod flow_instr {
         pub fn init_events<'b>(&'b self) -> impl Iterator<Item = FlowInstruction> + 'b {
             self.events
                 .iter()
+                .filter(|event_id| !self.syms.is_timer(**event_id))
                 .map(|event_id| FlowInstruction::init_event(self.syms.get_name(*event_id)))
         }
 
@@ -1593,7 +1598,7 @@ mod flow_instr {
             };
             let mut timer_instr = || {
                 // if activated, define timeout event and reset timer
-                let unit_expr = Expression::lit(Constant::unit_default());
+                let unit_expr = Expression::some(Expression::lit(Constant::unit_default()));
                 let def = self.define_event(id_pattern, unit_expr);
                 let reset = self.reset_timer(timer_id, import_flow);
                 FlowInstruction::seq(vec![def, reset])
@@ -1650,13 +1655,12 @@ mod flow_instr {
             // get the source id, debug-check there is only one flow
             debug_assert!(dependencies.len() == 1);
             let id_source = dependencies.pop().unwrap();
-            let source_name = self.syms.get_name(id_source);
 
             let id_old_event = self.on_change_events[&id_pattern];
             let old_event_name = self.syms.get_name(id_old_event);
 
             // detect changes on signal
-            let expr = self.get_signal(id_source);
+            let expr = Expression::some(self.get_signal(id_source));
             let event_def = self.define_event(id_pattern, expr);
             let then = vec![
                 FlowInstruction::update_ctx(old_event_name.clone(), self.get_signal(id_source)),
@@ -1664,9 +1668,8 @@ mod flow_instr {
             ];
             FlowInstruction::if_change(
                 old_event_name,
-                source_name,
+                self.get_signal(id_source),
                 FlowInstruction::seq(then),
-                FlowInstruction::seq(vec![]),
             )
         }
 
@@ -1798,7 +1801,7 @@ mod flow_instr {
             let outputs_ids = output_pattern.identifiers();
 
             // call component
-            let mut then = vec![FlowInstruction::comp_call(
+            let mut instrs = vec![FlowInstruction::comp_call(
                 output_pattern.lir_from_hir(self.syms),
                 component_name,
                 events.clone(),
@@ -1809,14 +1812,28 @@ mod flow_instr {
                     let expr = self.get_event(output_id);
                     Some(self.define_event(output_id, expr))
                 } else {
-                    self.update_ctx(output_id)
+                    self.signals.insert(output_id);
+                    let expr = self.update_ctx(output_id);
+                    self.signals.remove(&output_id);
+                    expr
                 }
             });
+            instrs.extend(updates);
+            let comp_call = FlowInstruction::seq(instrs);
 
-            // call component when activated
-            then.extend(updates);
+            // call component when activated by its period
+            if let Some(period_id) = self.syms.get_node_period_id(component_id) {
+                if self.events.contains(&period_id) {
+                    return comp_call;
+                }
+            }
+            // call component when activated by inputs
             let events: Vec<String> = events.into_iter().filter_map(|x| x).collect();
-            FlowInstruction::if_activated(events, signals, FlowInstruction::seq(then), None)
+            let signals = match conf::propag() {
+                conf::PropagOption::EventIsles => vec![], // isles activated on events
+                conf::PropagOption::OnChange => signals,
+            };
+            FlowInstruction::if_activated(events, signals, comp_call, None)
         }
 
         /// Add signal send in current propagation branch.

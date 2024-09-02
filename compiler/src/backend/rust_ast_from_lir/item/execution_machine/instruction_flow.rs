@@ -56,21 +56,13 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> Vec<syn::Stmt> {
                 }
             }
         }
-        FlowInstruction::IfChange(
-            old_event_name,
-            source_name,
-            onchange_instr,
-            not_onchange_instr,
-        ) => {
+        FlowInstruction::IfChange(old_event_name, signal, then) => {
             let old_event_ident = Ident::new(&old_event_name, Span::call_site());
-            let source_ident = Ident::new(&source_name, Span::call_site());
-            let onchange = rust_ast_from_lir(*onchange_instr);
-            let not_onchange = rust_ast_from_lir(*not_onchange_instr);
+            let expr = flow_expression_rust_ast_from_lir(signal);
+            let then = rust_ast_from_lir(*then);
             parse_quote! {
-                if self.context.#old_event_ident.get() != #source_ident {
-                    #(#onchange)*
-                } else {
-                    #(#not_onchange)*
+                if self.context.#old_event_ident.get() != #expr {
+                    #(#then)*
                 }
             }
         }
@@ -89,8 +81,8 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> Vec<syn::Stmt> {
                 Ident::new(&format!("get_{component_name}_inputs"), Span::call_site());
             let args = events.into_iter().map(|opt_event| -> syn::Expr {
                 if let Some(event_name) = opt_event {
-                    let event_ident = Ident::new(&event_name, Span::call_site());
-                    parse_quote! { Some(#event_ident) }
+                    let event_ident = format_ident!("{event_name}_ref");
+                    parse_quote! { *#event_ident }
                 } else {
                     parse_quote! { None }
                 }
@@ -120,7 +112,7 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> Vec<syn::Stmt> {
             let actv_cond = events
                 .iter()
                 .map(|e| -> Expr {
-                    let ident = Ident::new(e, Span::call_site());
+                    let ident = format_ident!("{e}_ref");
                     parse_quote! { #ident.is_some() }
                 })
                 .chain(signals.iter().map(|s| -> Expr {
@@ -129,19 +121,23 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> Vec<syn::Stmt> {
                 }));
             let then_instrs = rust_ast_from_lir(*then);
 
-            if let Some(instr) = els {
-                let els_instrs = rust_ast_from_lir(*instr);
-                parse_quote! {
-                    if #(#actv_cond)||* {
-                        #(#then_instrs)*
-                    } else {
-                        #(#els_instrs)*
-                    }
-                }
+            if events.is_empty() && signals.is_empty() {
+                return els.map_or(vec![], |instr| rust_ast_from_lir(*instr));
             } else {
-                parse_quote! {
-                    if #(#actv_cond)||* {
-                        #(#then_instrs)*
+                if let Some(instr) = els {
+                    let els_instrs = rust_ast_from_lir(*instr);
+                    parse_quote! {
+                        if #(#actv_cond)||* {
+                            #(#then_instrs)*
+                        } else {
+                            #(#els_instrs)*
+                        }
+                    }
+                } else {
+                    parse_quote! {
+                        if #(#actv_cond)||* {
+                            #(#then_instrs)*
+                        }
                     }
                 }
             }
