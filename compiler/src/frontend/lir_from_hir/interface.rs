@@ -130,7 +130,6 @@ impl Service {
     fn get_flows_context(&self, symbol_table: &SymbolTable) -> FlowsContext {
         let mut flows_context = FlowsContext {
             elements: Default::default(),
-            components: Default::default(),
         };
         self.statements
             .values()
@@ -219,10 +218,7 @@ impl FlowStatement {
                     let ty = symbol_table.get_type(id);
                     flows_context.add_element(source_name, ty);
                 }
-                flow::Kind::ComponentCall {
-                    component_id,
-                    inputs,
-                } => {
+                flow::Kind::ComponentCall { inputs, .. } => {
                     // get outputs' ids
                     let outputs_ids = pattern.identifiers();
 
@@ -233,21 +229,13 @@ impl FlowStatement {
                         flows_context.add_element(output_name.clone(), output_type)
                     }
 
-                    let mut events_fields = vec![];
-                    let mut signals_fields = vec![];
-                    inputs.iter().for_each(|(input_id, flow_expression)| {
+                    inputs.iter().for_each(|(_, flow_expression)| {
                         match &flow_expression.kind {
                             // get the id of flow_expression (and check it is an idnetifier, from normalization)
                             flow::Kind::Ident { id: flow_id } => {
-                                let input_field_name = symbol_table.get_name(*input_id).clone();
                                 let flow_name = symbol_table.get_name(*flow_id).clone();
                                 let ty = symbol_table.get_type(*flow_id);
-                                if ty.is_event() {
-                                    // push in events_fields if event
-                                    events_fields.push((input_field_name, flow_name, ty.clone()));
-                                } else {
-                                    // push in signals_fields if signal
-                                    signals_fields.push((input_field_name, flow_name.clone()));
+                                if !ty.is_event() {
                                     // push in context
                                     flows_context.add_element(flow_name, ty);
                                 }
@@ -255,12 +243,6 @@ impl FlowStatement {
                             _ => unreachable!(),
                         }
                     });
-
-                    flows_context.add_component(
-                        symbol_table.get_name(*component_id).clone(),
-                        events_fields,
-                        signals_fields,
-                    )
                 }
                 flow::Kind::Ident { .. }
                 | flow::Kind::OnChange { .. }
@@ -1731,19 +1713,20 @@ mod flow_instr {
         ) -> FlowInstruction {
             // get events that might call the component
             let (mut signals, mut events) = (vec![], vec![]);
-            inputs.iter().for_each(|(_, flow_expr)| {
+            inputs.iter().for_each(|(input_id, flow_expr)| {
                 match flow_expr.kind {
                     flow::Kind::Ident { id } => {
+                        let input_name = self.syms.get_name(*input_id).clone();
                         if self.syms.get_flow_kind(id).is_event() {
                             if self.events.contains(&id) {
                                 let event_name = self.syms.get_name(id).clone();
-                                events.push(Some(event_name));
+                                events.push((input_name, Some(event_name)));
                             } else {
-                                events.push(None);
+                                events.push((input_name, None));
                             }
                         } else {
                             let signal_name = self.syms.get_name(id).clone();
-                            signals.push(signal_name);
+                            signals.push((input_name, signal_name));
                         }
                     }
                     _ => unreachable!(), // normalized
@@ -1797,8 +1780,8 @@ mod flow_instr {
             &mut self,
             component_id: usize,
             output_pattern: hir::Pattern,
-            signals: Vec<String>,
-            events: Vec<Option<String>>,
+            signals: Vec<(String, String)>,
+            events: Vec<(String, Option<String>)>,
         ) -> FlowInstruction {
             let component_name = self.syms.get_name(component_id);
             let outputs_ids = output_pattern.identifiers();
@@ -1807,6 +1790,7 @@ mod flow_instr {
             let mut instrs = vec![FlowInstruction::comp_call(
                 output_pattern.lir_from_hir(self.syms),
                 component_name,
+                signals.clone(),
                 events.clone(),
             )];
             // update outputs: context signals and all events
@@ -1831,10 +1815,15 @@ mod flow_instr {
                 }
             }
             // call component when activated by inputs
-            let events: Vec<String> = events.into_iter().filter_map(|x| x).collect();
+            let events: Vec<String> = events
+                .into_iter()
+                .filter_map(|(_, opt_event)| opt_event)
+                .collect();
             let signals = match conf::propag() {
                 conf::PropagOption::EventIsles => vec![], // isles activated on events
-                conf::PropagOption::OnChange => signals,
+                conf::PropagOption::OnChange => {
+                    signals.into_iter().map(|(_, signal)| signal).collect()
+                }
             };
             FlowInstruction::if_activated(events, signals, comp_call, None)
         }

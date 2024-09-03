@@ -74,21 +74,36 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> Vec<syn::Stmt> {
             let instant = format_ident!("{import_name}_instant");
             parse_quote! { self.send_timer(T::#enum_ident, #instant).await?; }
         }
-        FlowInstruction::ComponentCall(pattern, component_name, events) => {
+        FlowInstruction::ComponentCall(pattern, component_name, signals_fields, events_fields) => {
             let outputs = pattern_rust_ast_from_lir(pattern);
             let component_ident = Ident::new(&component_name, Span::call_site());
-            let input_getter =
-                Ident::new(&format!("get_{component_name}_inputs"), Span::call_site());
-            let args = events.into_iter().map(|opt_event| -> syn::Expr {
-                if let Some(event_name) = opt_event {
-                    let event_ident = format_ident!("{event_name}_ref");
-                    parse_quote! { *#event_ident }
-                } else {
-                    parse_quote! { None }
-                }
-            });
+            let component_input_name =
+                format_ident!("{}", to_camel_case(&format!("{component_name}Input")));
+
+            let input_fields = signals_fields
+                .into_iter()
+                .map(|(field_name, in_context)| -> FieldValue {
+                    let field_id = Ident::new(&field_name, Span::call_site());
+                    let in_context_id = Ident::new(&in_context, Span::call_site());
+                    let expr: Expr = parse_quote!(self.context.#in_context_id.get());
+                    parse_quote! { #field_id : #expr }
+                })
+                .chain(events_fields.into_iter().map(|(field_name, opt_event)| {
+                    let field_id = Ident::new(&field_name, Span::call_site());
+                    if let Some(event_name) = opt_event {
+                        let event_id = format_ident!("{event_name}_ref");
+                        parse_quote! { #field_id : *#event_id }
+                    } else {
+                        parse_quote! { #field_id : None }
+                    }
+                }));
+
             parse_quote! {
-                let #outputs = self.#component_ident.step(self.context.#input_getter(#(#args),*));
+                let #outputs = self.#component_ident.step(
+                    #component_input_name {
+                        #(#input_fields),*
+                    }
+                );
             }
         }
         FlowInstruction::HandleDelay(input_flows, match_arms) => {

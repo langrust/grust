@@ -32,7 +32,12 @@ pub enum FlowInstruction {
     IfChange(String, Expression, Box<Self>),
     IfActivated(Vec<String>, Vec<String>, Box<Self>, Option<Box<Self>>),
     ResetTimer(String, String),
-    ComponentCall(Pattern, String, Vec<Option<String>>),
+    ComponentCall(
+        Pattern,
+        String,
+        Vec<(String, String)>,
+        Vec<(String, Option<String>)>,
+    ),
     HandleDelay(Vec<String>, Vec<MatchArm>),
     Seq(Vec<Self>),
     Para(Map<ParaMethod, Vec<Self>>),
@@ -87,7 +92,8 @@ mk_new! { impl FlowInstruction =>
     ComponentCall: comp_call (
         pat: Pattern = pat,
         name: impl Into<String> = name.into(),
-        events: impl Into<Vec<Option<String>>> = events.into(),
+        signals: impl Into<Vec<(String, String)>> = signals.into(),
+        events: impl Into<Vec<(String, Option<String>)>> = events.into(),
     )
     HandleDelay: handle_delay(
         input_names: impl Iterator<Item = String> = input_names.collect(),
