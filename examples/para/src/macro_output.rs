@@ -132,7 +132,7 @@ impl C5State {
         }
     }
     pub fn step(&mut self, input: C5Input) -> i64 {
-        let x = input.s4 <= 0i64;
+        let x = input.s4 > 0i64;
         let comp_app_rising_edge = self.rising_edge.step(RisingEdgeInput { test: x });
         let x_1 = input.s3 >= 0i64;
         let comp_app_rising_edge_1 = self.rising_edge.step(RisingEdgeInput { test: x_1 });
@@ -143,7 +143,7 @@ impl C5State {
                 o
             }
             (_) if comp_app_rising_edge => {
-                let o = prev_o * 2i64;
+                let o = input.s4 * 2i64;
                 o
             }
             (_) if comp_app_rising_edge_1 => {
@@ -174,7 +174,7 @@ pub mod runtime {
         fn get_duration(&self) -> std::time::Duration {
             match self {
                 T::DelayParaMess => std::time::Duration::from_millis(10u64),
-                T::TimeoutParaMess => std::time::Duration::from_millis(500u64),
+                T::TimeoutParaMess => std::time::Duration::from_millis(3000u64),
             }
         }
         fn do_reset(&self) -> bool {
@@ -217,7 +217,13 @@ pub mod runtime {
         }
     }
     pub enum RuntimeOutput {
+        S3(i64, std::time::Instant),
+        E2(i64, std::time::Instant),
+        S4(i64, std::time::Instant),
+        E3(i64, std::time::Instant),
         O1(i64, std::time::Instant),
+        S2(i64, std::time::Instant),
+        E1(i64, std::time::Instant),
     }
     pub struct Runtime {
         para_mess: para_mess_service::ParaMessService,
@@ -250,14 +256,14 @@ pub mod runtime {
             runtime.send_timer(T::TimeoutParaMess, init_instant).await?;
             while let Some(input) = input.next().await {
                 match input {
-                    I::E0(e0, instant) => {
-                        runtime.para_mess.handle_e0(instant, e0).await?;
+                    I::Timer(T::DelayParaMess, instant) => {
+                        runtime.para_mess.handle_delay_para_mess(instant).await?;
                     }
                     I::Timer(T::TimeoutParaMess, instant) => {
                         runtime.para_mess.handle_timeout_para_mess(instant).await?;
                     }
-                    I::Timer(T::DelayParaMess, instant) => {
-                        runtime.para_mess.handle_delay_para_mess(instant).await?;
+                    I::E0(e0, instant) => {
+                        runtime.para_mess.handle_e0(instant, e0).await?;
                     }
                 }
             }
@@ -272,57 +278,6 @@ pub mod runtime {
         impl S2 {
             fn set(&mut self, s2: i64) {
                 self.0 = s2;
-                self.1 = true;
-            }
-            fn get(&self) -> i64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default)]
-        pub struct E3(i64, bool);
-        impl E3 {
-            fn set(&mut self, e3: i64) {
-                self.0 = e3;
-                self.1 = true;
-            }
-            fn get(&self) -> i64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default)]
-        pub struct E2(i64, bool);
-        impl E2 {
-            fn set(&mut self, e2: i64) {
-                self.0 = e2;
-                self.1 = true;
-            }
-            fn get(&self) -> i64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default)]
-        pub struct E1(i64, bool);
-        impl E1 {
-            fn set(&mut self, e1: i64) {
-                self.0 = e1;
                 self.1 = true;
             }
             fn get(&self) -> i64 {
@@ -353,23 +308,6 @@ pub mod runtime {
             }
         }
         #[derive(Clone, Copy, PartialEq, Default)]
-        pub struct O1(i64, bool);
-        impl O1 {
-            fn set(&mut self, o1: i64) {
-                self.0 = o1;
-                self.1 = true;
-            }
-            fn get(&self) -> i64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default)]
         pub struct S3(i64, bool);
         impl S3 {
             fn set(&mut self, s3: i64) {
@@ -387,14 +325,82 @@ pub mod runtime {
             }
         }
         #[derive(Clone, Copy, PartialEq, Default)]
+        pub struct E2(i64, bool);
+        impl E2 {
+            fn set(&mut self, e2: i64) {
+                self.0 = e2;
+                self.1 = true;
+            }
+            fn get(&self) -> i64 {
+                self.0
+            }
+            fn is_new(&self) -> bool {
+                self.1
+            }
+            fn reset(&mut self) {
+                self.1 = false;
+            }
+        }
+        #[derive(Clone, Copy, PartialEq, Default)]
+        pub struct E3(i64, bool);
+        impl E3 {
+            fn set(&mut self, e3: i64) {
+                self.0 = e3;
+                self.1 = true;
+            }
+            fn get(&self) -> i64 {
+                self.0
+            }
+            fn is_new(&self) -> bool {
+                self.1
+            }
+            fn reset(&mut self) {
+                self.1 = false;
+            }
+        }
+        #[derive(Clone, Copy, PartialEq, Default)]
+        pub struct E1(i64, bool);
+        impl E1 {
+            fn set(&mut self, e1: i64) {
+                self.0 = e1;
+                self.1 = true;
+            }
+            fn get(&self) -> i64 {
+                self.0
+            }
+            fn is_new(&self) -> bool {
+                self.1
+            }
+            fn reset(&mut self) {
+                self.1 = false;
+            }
+        }
+        #[derive(Clone, Copy, PartialEq, Default)]
+        pub struct O1(i64, bool);
+        impl O1 {
+            fn set(&mut self, o1: i64) {
+                self.0 = o1;
+                self.1 = true;
+            }
+            fn get(&self) -> i64 {
+                self.0
+            }
+            fn is_new(&self) -> bool {
+                self.1
+            }
+            fn reset(&mut self) {
+                self.1 = false;
+            }
+        }
+        #[derive(Clone, Copy, PartialEq, Default)]
         pub struct Context {
             pub s2: S2,
-            pub e3: E3,
-            pub e2: E2,
-            pub e1: E1,
             pub s4: S4,
-            pub o1: O1,
             pub s3: S3,
+            pub e2: E2,
+            pub e3: E3,
+            pub e1: E1,
+            pub o1: O1,
         }
         impl Context {
             fn init() -> Context {
@@ -402,12 +408,12 @@ pub mod runtime {
             }
             fn reset(&mut self) {
                 self.s2.reset();
-                self.e3.reset();
-                self.e2.reset();
-                self.e1.reset();
                 self.s4.reset();
-                self.o1.reset();
                 self.s3.reset();
+                self.e2.reset();
+                self.e3.reset();
+                self.e1.reset();
+                self.o1.reset();
             }
         }
         #[derive(Default)]
@@ -424,10 +430,10 @@ pub mod runtime {
             delayed: bool,
             input_store: ParaMessServiceStore,
             C3: C3State,
-            C4: C4State,
+            C2: C2State,
             C1: C1State,
             C5: C5State,
-            C2: C2State,
+            C4: C4State,
             output: futures::channel::mpsc::Sender<O>,
             timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
         }
@@ -440,22 +446,187 @@ pub mod runtime {
                 let delayed = true;
                 let input_store = Default::default();
                 let C3 = C3State::init();
-                let C4 = C4State::init();
+                let C2 = C2State::init();
                 let C1 = C1State::init();
                 let C5 = C5State::init();
-                let C2 = C2State::init();
+                let C4 = C4State::init();
                 ParaMessService {
                     context,
                     delayed,
                     input_store,
                     C3,
-                    C4,
+                    C2,
                     C1,
                     C5,
-                    C2,
+                    C4,
                     output,
                     timer,
                 }
+            }
+            pub async fn handle_timeout_para_mess(
+                &mut self,
+                timeout_para_mess_instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.reset_time_constrains(timeout_para_mess_instant)
+                    .await?;
+                self.context.reset();
+                let e1_ref = &mut None;
+                let e2_ref = &mut None;
+                let e3_ref = &mut None;
+                tokio::join!(
+                    async {
+                        self.send_output(O::S2(self.context.s2.get(), timeout_para_mess_instant))
+                            .await?;
+                    },
+                    async {
+                        self.send_output(O::E1(*e1_ref, timeout_para_mess_instant))
+                            .await?;
+                    },
+                    async {
+                        if e1_ref.is_some() {
+                            let (s3, e3) = self.C2.step(C2Input { e1: *e1_ref });
+                            self.context.s3.set(s3);
+                            *e3_ref = *e3_ref;
+                        }
+                        tokio::join!(
+                            async {
+                                self.send_output(O::S3(
+                                    self.context.s3.get(),
+                                    timeout_para_mess_instant,
+                                ))
+                                .await?;
+                            },
+                            async {
+                                self.send_output(O::E3(*e3_ref, timeout_para_mess_instant))
+                                    .await?;
+                            }
+                        );
+                    },
+                    async {
+                        if self.context.s2.is_new() {
+                            let e2 = self.C3.step(C3Input {
+                                s2: self.context.s2.get(),
+                            });
+                            *e2_ref = *e2_ref;
+                        }
+                        tokio::join!(
+                            async {
+                                self.send_output(O::E2(*e2_ref, timeout_para_mess_instant))
+                                    .await?;
+                            },
+                            async {
+                                if e2_ref.is_some() {
+                                    let s4 = self.C4.step(C4Input { e2: *e2_ref });
+                                    self.context.s4.set(s4);
+                                }
+                                self.send_output(O::S4(
+                                    self.context.s4.get(),
+                                    timeout_para_mess_instant,
+                                ))
+                                .await?;
+                            }
+                        );
+                    }
+                );
+                if e3_ref.is_some() || self.context.s4.is_new() || self.context.s3.is_new() {
+                    let o1 = self.C5.step(C5Input {
+                        s4: self.context.s4.get(),
+                        s3: self.context.s3.get(),
+                        e3: *e3_ref,
+                    });
+                    self.context.o1.set(o1);
+                }
+                self.send_output(O::O1(self.context.o1.get(), timeout_para_mess_instant))
+                    .await?;
+                Ok(())
+            }
+            #[inline]
+            pub async fn reset_service_timeout(
+                &mut self,
+                instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.timer.send((T::TimeoutParaMess, instant)).await?;
+                Ok(())
+            }
+            pub async fn handle_e0(
+                &mut self,
+                e0_instant: std::time::Instant,
+                e0: i64,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                if self.delayed {
+                    self.reset_time_constrains(e0_instant).await?;
+                    self.context.reset();
+                    let e0_ref = &mut None;
+                    let e1_ref = &mut None;
+                    let e2_ref = &mut None;
+                    let e3_ref = &mut None;
+                    *e0_ref = Some(e0);
+                    if e0_ref.is_some() {
+                        let (s2, e1) = self.C1.step(C1Input { e0: *e0_ref });
+                        self.context.s2.set(s2);
+                        *e1_ref = *e1_ref;
+                    }
+                    tokio::join!(
+                        async {
+                            self.send_output(O::S2(self.context.s2.get(), e0_instant))
+                                .await?;
+                        },
+                        async {
+                            self.send_output(O::E1(*e1_ref, e0_instant)).await?;
+                        },
+                        async {
+                            if e1_ref.is_some() {
+                                let (s3, e3) = self.C2.step(C2Input { e1: *e1_ref });
+                                self.context.s3.set(s3);
+                                *e3_ref = *e3_ref;
+                            }
+                            tokio::join!(
+                                async {
+                                    self.send_output(O::S3(self.context.s3.get(), e0_instant))
+                                        .await?;
+                                },
+                                async {
+                                    self.send_output(O::E3(*e3_ref, e0_instant)).await?;
+                                }
+                            );
+                        },
+                        async {
+                            if self.context.s2.is_new() {
+                                let e2 = self.C3.step(C3Input {
+                                    s2: self.context.s2.get(),
+                                });
+                                *e2_ref = *e2_ref;
+                            }
+                            tokio::join!(
+                                async {
+                                    self.send_output(O::E2(*e2_ref, e0_instant)).await?;
+                                },
+                                async {
+                                    if e2_ref.is_some() {
+                                        let s4 = self.C4.step(C4Input { e2: *e2_ref });
+                                        self.context.s4.set(s4);
+                                    }
+                                    self.send_output(O::S4(self.context.s4.get(), e0_instant))
+                                        .await?;
+                                }
+                            );
+                        }
+                    );
+                    if e3_ref.is_some() || self.context.s4.is_new() || self.context.s3.is_new() {
+                        let o1 = self.C5.step(C5Input {
+                            s4: self.context.s4.get(),
+                            s3: self.context.s3.get(),
+                            e3: *e3_ref,
+                        });
+                        self.context.o1.set(o1);
+                    }
+                    self.send_output(O::O1(self.context.o1.get(), e0_instant))
+                        .await?;
+                } else {
+                    let unique = self.input_store.e0.replace((e0, e0_instant));
+                    assert!(unique.is_none(), "e0 changes too frequently");
+                }
+                Ok(())
             }
             pub async fn handle_delay_para_mess(
                 &mut self,
@@ -469,8 +640,8 @@ pub mod runtime {
                         (Some((e0, e0_instant))) => {
                             let e0_ref = &mut None;
                             let e1_ref = &mut None;
-                            let e3_ref = &mut None;
                             let e2_ref = &mut None;
+                            let e3_ref = &mut None;
                             *e0_ref = Some(e0);
                             if e0_ref.is_some() {
                                 let (s2, e1) = self.C1.step(C1Input { e0: *e0_ref });
@@ -479,23 +650,48 @@ pub mod runtime {
                             }
                             tokio::join!(
                                 async {
+                                    self.send_output(O::S2(self.context.s2.get(), instant))
+                                        .await?;
+                                },
+                                async {
+                                    self.send_output(O::E1(*e1_ref, instant)).await?;
+                                },
+                                async {
                                     if e1_ref.is_some() {
                                         let (s3, e3) = self.C2.step(C2Input { e1: *e1_ref });
                                         self.context.s3.set(s3);
                                         *e3_ref = *e3_ref;
                                     }
+                                    tokio::join!(
+                                        async {
+                                            self.send_output(O::S3(self.context.s3.get(), instant))
+                                                .await?;
+                                        },
+                                        async {
+                                            self.send_output(O::E3(*e3_ref, instant)).await?;
+                                        }
+                                    );
                                 },
                                 async {
                                     if self.context.s2.is_new() {
-                                        let (e2) = self.C3.step(C3Input {
+                                        let e2 = self.C3.step(C3Input {
                                             s2: self.context.s2.get(),
                                         });
                                         *e2_ref = *e2_ref;
                                     }
-                                    if e2_ref.is_some() {
-                                        let (s4) = self.C4.step(C4Input { e2: *e2_ref });
-                                        self.context.s4.set(s4);
-                                    }
+                                    tokio::join!(
+                                        async {
+                                            self.send_output(O::E2(*e2_ref, instant)).await?;
+                                        },
+                                        async {
+                                            if e2_ref.is_some() {
+                                                let s4 = self.C4.step(C4Input { e2: *e2_ref });
+                                                self.context.s4.set(s4);
+                                            }
+                                            self.send_output(O::S4(self.context.s4.get(), instant))
+                                                .await?;
+                                        }
+                                    );
                                 }
                             );
                             if e3_ref.is_some()
@@ -524,112 +720,6 @@ pub mod runtime {
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.timer.send((T::DelayParaMess, instant)).await?;
-                Ok(())
-            }
-            pub async fn handle_e0(
-                &mut self,
-                e0_instant: std::time::Instant,
-                e0: i64,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                if self.delayed {
-                    self.reset_time_constrains(e0_instant).await?;
-                    self.context.reset();
-                    let e0_ref = &mut None;
-                    let e1_ref = &mut None;
-                    let e3_ref = &mut None;
-                    let e2_ref = &mut None;
-                    *e0_ref = Some(e0);
-                    if e0_ref.is_some() {
-                        let (s2, e1) = self.C1.step(C1Input { e0: *e0_ref });
-                        self.context.s2.set(s2);
-                        *e1_ref = *e1_ref;
-                    }
-                    tokio::join!(
-                        async {
-                            if e1_ref.is_some() {
-                                let (s3, e3) = self.C2.step(C2Input { e1: *e1_ref });
-                                self.context.s3.set(s3);
-                                *e3_ref = *e3_ref;
-                            }
-                        },
-                        async {
-                            if self.context.s2.is_new() {
-                                let (e2) = self.C3.step(C3Input {
-                                    s2: self.context.s2.get(),
-                                });
-                                *e2_ref = *e2_ref;
-                            }
-                            if e2_ref.is_some() {
-                                let (s4) = self.C4.step(C4Input { e2: *e2_ref });
-                                self.context.s4.set(s4);
-                            }
-                        }
-                    );
-                    if e3_ref.is_some() || self.context.s4.is_new() || self.context.s3.is_new() {
-                        let o1 = self.C5.step(C5Input {
-                            s4: self.context.s4.get(),
-                            s3: self.context.s3.get(),
-                            e3: *e3_ref,
-                        });
-                        self.context.o1.set(o1);
-                    }
-                    self.send_output(O::O1(self.context.o1.get(), e0_instant))
-                        .await?;
-                } else {
-                    let unique = self.input_store.e0.replace((e0, e0_instant));
-                    assert!(unique.is_none(), "e0 changes too frequently");
-                }
-                Ok(())
-            }
-            pub async fn handle_timeout_para_mess(
-                &mut self,
-                timeout_para_mess_instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.reset_time_constrains(timeout_para_mess_instant)
-                    .await?;
-                self.context.reset();
-                let e3_ref = &mut None;
-                let e1_ref = &mut None;
-                let e2_ref = &mut None;
-                tokio::join!(
-                    async {
-                        if e1_ref.is_some() {
-                            let (s3, e3) = self.C2.step(C2Input { e1: *e1_ref });
-                            self.context.s3.set(s3);
-                            *e3_ref = *e3_ref;
-                        }
-                    },
-                    async {
-                        if self.context.s2.is_new() {
-                            let (e2) = self.C3.step(C3Input {
-                                s2: self.context.s2.get(),
-                            });
-                            *e2_ref = *e2_ref;
-                        }
-                        if e2_ref.is_some() {
-                            let (s4) = self.C4.step(C4Input { e2: *e2_ref });
-                            self.context.s4.set(s4);
-                        }
-                    }
-                );
-                if e3_ref.is_some() || self.context.s4.is_new() || self.context.s3.is_new() {
-                    let o1 = self.C5.step(C5Input {
-                        s4: self.context.s4.get(),
-                        s3: self.context.s3.get(),
-                        e3: *e3_ref,
-                    });
-                    self.context.o1.set(o1);
-                }
-                self.send_output(O::O1(self.context.o1.get(), timeout_para_mess_instant))
-                    .await?;
-                Ok(())
-            }
-            #[inline]
-            pub async fn reset_service_timeout(
-                &mut self,
-                instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.timer.send((T::TimeoutParaMess, instant)).await?;
                 Ok(())
             }
             #[inline]

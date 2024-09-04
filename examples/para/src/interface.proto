@@ -10,7 +10,15 @@ message Input {
 // the output part of the interface
 message Output {
     int64 timestamp = 1;
-    int64 o1 = 2;
+    oneof message {
+        int64 e1 = 2;
+        int64 e2 = 3;
+        int64 e3 = 4;
+        int64 s2 = 5;
+        int64 s3 = 6;
+        int64 s4 = 7;
+        int64 o1 = 8;
+    }
 }
 
 // the service interface

@@ -1,15 +1,21 @@
+
+///        |    |--s2-->| C3 |--e2-->| C4 |--s4-->|    |
+/// --e0-->| C1 |                                 |    |
+///        |    |--e1-->|    |--------s3--------->| C5 |--o-->
+///                     | C2 |                    |    |
+///                     |    |--------e3--------->|    |
 mod para {
     use grust::grust;
 
-    ///
-    ///        |    |--s2-->| C3 |--e2-->| C4 |--s4-->|    |
-    /// --e0-->| C1 |                                 |    |
-    ///        |    |--e1-->|    |--------s3--------->| C5 |--o-->
-    ///                     | C2 |                    |    |
-    ///                     |    |--------e3--------->|    |
     grust! {
         #![dump = "examples/para/src/macro_output.rs", propag = "onchange", para, test]
         import event e0: int;
+        export event e1: int;
+        export event e2: int;
+        export event e3: int;
+        export signal s2: int;
+        export signal s3: int;
+        export signal s4: int;
         export signal o1: int;
 
         component C1(e0: int?) -> (s2: int, e1: int?) {
@@ -54,8 +60,8 @@ mod para {
                 e3? => {
                     o = e3;
                 }
-                s4 <= 0 => {
-                    o = prev_o*2;
+                s4 > 0 => {
+                    o = s4*2;
                 }
                 s3 >= 0 => {
                     o = s3;
@@ -67,11 +73,11 @@ mod para {
             let prev_o: int = 0 fby o;
         }
 
-        service para_mess {
-            let (signal s2: int, event e1: int) = C1(e0);
-            let (signal s3: int, event e3: int) = C2(e1);
-            let (event e2: int) = C3(s2);
-            let (signal s4: int) = C4(e2);
+        service para_mess @ [10, 3000] {
+            (s2, e1) = C1(e0);
+            (s3, e3) = C2(e1);
+            e2 = C3(s2);
+            s4 = C4(e2);
             o1 = C5(s4, s3, e3);
         }
     }
