@@ -1,3 +1,4 @@
+/// The system implements the following graph:
 ///        |    |--s2-->| C3 |--e2-->| C4 |--s4-->|    |
 /// --e0-->| C1 |                                 |    |
 ///        |    |--e1-->|    |--------s3--------->| C5 |--o-->
