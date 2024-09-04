@@ -475,14 +475,14 @@ pub mod runtime {
                             if e0_ref.is_some() {
                                 let (s2, e1) = self.C1.step(C1Input { e0: *e0_ref });
                                 self.context.s2.set(s2);
-                                *e1_ref = *e1_ref;
+                                *e1_ref = e1;
                             }
                             tokio::join!(
                                 async {
                                     if e1_ref.is_some() {
                                         let (s3, e3) = self.C2.step(C2Input { e1: *e1_ref });
                                         self.context.s3.set(s3);
-                                        *e3_ref = *e3_ref;
+                                        *e3_ref = e3;
                                     }
                                 },
                                 async {
@@ -490,7 +490,7 @@ pub mod runtime {
                                         let (e2) = self.C3.step(C3Input {
                                             s2: self.context.s2.get(),
                                         });
-                                        *e2_ref = *e2_ref;
+                                        *e2_ref = e2;
                                     }
                                     if e2_ref.is_some() {
                                         let (s4) = self.C4.step(C4Input { e2: *e2_ref });
@@ -542,14 +542,14 @@ pub mod runtime {
                     if e0_ref.is_some() {
                         let (s2, e1) = self.C1.step(C1Input { e0: *e0_ref });
                         self.context.s2.set(s2);
-                        *e1_ref = *e1_ref;
+                        *e1_ref = e1;
                     }
                     tokio::join!(
                         async {
                             if e1_ref.is_some() {
                                 let (s3, e3) = self.C2.step(C2Input { e1: *e1_ref });
                                 self.context.s3.set(s3);
-                                *e3_ref = *e3_ref;
+                                *e3_ref = e3;
                             }
                         },
                         async {
@@ -557,7 +557,7 @@ pub mod runtime {
                                 let (e2) = self.C3.step(C3Input {
                                     s2: self.context.s2.get(),
                                 });
-                                *e2_ref = *e2_ref;
+                                *e2_ref = e2;
                             }
                             if e2_ref.is_some() {
                                 let (s4) = self.C4.step(C4Input { e2: *e2_ref });
@@ -596,7 +596,7 @@ pub mod runtime {
                         if e1_ref.is_some() {
                             let (s3, e3) = self.C2.step(C2Input { e1: *e1_ref });
                             self.context.s3.set(s3);
-                            *e3_ref = *e3_ref;
+                            *e3_ref = e3;
                         }
                     },
                     async {
@@ -604,7 +604,7 @@ pub mod runtime {
                             let (e2) = self.C3.step(C3Input {
                                 s2: self.context.s2.get(),
                             });
-                            *e2_ref = *e2_ref;
+                            *e2_ref = e2;
                         }
                         if e2_ref.is_some() {
                             let (s4) = self.C4.step(C4Input { e2: *e2_ref });
