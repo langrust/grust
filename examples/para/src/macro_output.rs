@@ -18,10 +18,10 @@ impl C1State {
         let (s2, e1) = match (input.e0) {
             (Some(e0)) => {
                 let s2 = e0;
-                let x = e0 > s2;
+                let x = e0 > prev_s2;
                 let comp_app_rising_edge = self.rising_edge.step(RisingEdgeInput { test: x });
                 let e1 = match () {
-                    () if comp_app_rising_edge => Some(e0 / e0 - s2),
+                    () if comp_app_rising_edge => Some(e0 / (e0 - prev_s2)),
                     _ => None,
                 };
                 (s2, e1)
