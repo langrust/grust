@@ -34,15 +34,31 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> Vec<syn::Stmt> {
             let expression = flow_expression_rust_ast_from_lir(flow_expression);
             parse_quote! { self.context.#ident.set(#expression); }
         }
-        FlowInstruction::Send(ident, flow_expression, instant) => {
-            let enum_ident = Ident::new(to_camel_case(ident.as_str()).as_str(), Span::call_site());
-            let expression = flow_expression_rust_ast_from_lir(flow_expression);
+        FlowInstruction::SendSignal(name, send_expr, instant) => {
+            let enum_ident = Ident::new(to_camel_case(name.as_str()).as_str(), Span::call_site());
+            let send_expr = flow_expression_rust_ast_from_lir(send_expr);
             let instant = if let Some(instant) = instant {
                 format_ident!("{instant}_instant")
             } else {
                 Ident::new("instant", Span::call_site())
             };
-            parse_quote! { self.send_output(O::#enum_ident(#expression, #instant)).await?; }
+            parse_quote! { self.send_output(O::#enum_ident(#send_expr, #instant)).await?; }
+        }
+        FlowInstruction::SendEvent(name, event_expr, send_expr, instant) => {
+            let ident = Ident::new(name.as_str(), Span::call_site());
+            let enum_ident = Ident::new(to_camel_case(name.as_str()).as_str(), Span::call_site());
+            let event_expr = flow_expression_rust_ast_from_lir(event_expr);
+            let send_expr = flow_expression_rust_ast_from_lir(send_expr);
+            let instant = if let Some(instant) = instant {
+                format_ident!("{instant}_instant")
+            } else {
+                Ident::new("instant", Span::call_site())
+            };
+            parse_quote! {
+                if let Some(#ident) = #event_expr {
+                    self.send_output(O::#enum_ident(#send_expr, #instant)).await?;
+                }
+            }
         }
         FlowInstruction::IfThrottle(receiver_name, source_name, delta, instruction) => {
             let receiver_ident = Ident::new(&receiver_name, Span::call_site());

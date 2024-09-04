@@ -479,8 +479,10 @@ pub mod runtime {
                             .await?;
                     },
                     async {
-                        self.send_output(O::E1(*e1_ref, timeout_para_mess_instant))
-                            .await?;
+                        if let Some(e1) = *e1_ref {
+                            self.send_output(O::E1(e1, timeout_para_mess_instant))
+                                .await?;
+                        }
                     },
                     async {
                         if e1_ref.is_some() {
@@ -497,8 +499,10 @@ pub mod runtime {
                                 .await?;
                             },
                             async {
-                                self.send_output(O::E3(*e3_ref, timeout_para_mess_instant))
-                                    .await?;
+                                if let Some(e3) = *e3_ref {
+                                    self.send_output(O::E3(e3, timeout_para_mess_instant))
+                                        .await?;
+                                }
                             }
                         );
                     },
@@ -511,8 +515,10 @@ pub mod runtime {
                         }
                         tokio::join!(
                             async {
-                                self.send_output(O::E2(*e2_ref, timeout_para_mess_instant))
-                                    .await?;
+                                if let Some(e2) = *e2_ref {
+                                    self.send_output(O::E2(e2, timeout_para_mess_instant))
+                                        .await?;
+                                }
                             },
                             async {
                                 if e2_ref.is_some() {
@@ -572,7 +578,9 @@ pub mod runtime {
                                 .await?;
                         },
                         async {
-                            self.send_output(O::E1(*e1_ref, e0_instant)).await?;
+                            if let Some(e1) = *e1_ref {
+                                self.send_output(O::E1(e1, e0_instant)).await?;
+                            }
                         },
                         async {
                             if e1_ref.is_some() {
@@ -586,7 +594,9 @@ pub mod runtime {
                                         .await?;
                                 },
                                 async {
-                                    self.send_output(O::E3(*e3_ref, e0_instant)).await?;
+                                    if let Some(e3) = *e3_ref {
+                                        self.send_output(O::E3(e3, e0_instant)).await?;
+                                    }
                                 }
                             );
                         },
@@ -599,7 +609,9 @@ pub mod runtime {
                             }
                             tokio::join!(
                                 async {
-                                    self.send_output(O::E2(*e2_ref, e0_instant)).await?;
+                                    if let Some(e2) = *e2_ref {
+                                        self.send_output(O::E2(e2, e0_instant)).await?;
+                                    }
                                 },
                                 async {
                                     if e2_ref.is_some() {
@@ -654,7 +666,9 @@ pub mod runtime {
                                         .await?;
                                 },
                                 async {
-                                    self.send_output(O::E1(*e1_ref, instant)).await?;
+                                    if let Some(e1) = *e1_ref {
+                                        self.send_output(O::E1(e1, instant)).await?;
+                                    }
                                 },
                                 async {
                                     if e1_ref.is_some() {
@@ -668,7 +682,9 @@ pub mod runtime {
                                                 .await?;
                                         },
                                         async {
-                                            self.send_output(O::E3(*e3_ref, instant)).await?;
+                                            if let Some(e3) = *e3_ref {
+                                                self.send_output(O::E3(e3, instant)).await?;
+                                            }
                                         }
                                     );
                                 },
@@ -681,7 +697,9 @@ pub mod runtime {
                                     }
                                     tokio::join!(
                                         async {
-                                            self.send_output(O::E2(*e2_ref, instant)).await?;
+                                            if let Some(e2) = *e2_ref {
+                                                self.send_output(O::E2(e2, instant)).await?;
+                                            }
                                         },
                                         async {
                                             if e2_ref.is_some() {
