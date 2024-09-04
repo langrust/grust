@@ -144,8 +144,18 @@ pub fn rust_ast_from_lir(expression: lir::Expr, crates: &mut BTreeSet<String>) -
             left_expression,
             right_expression,
         } => {
-            let left = rust_ast_from_lir(*left_expression, crates);
-            let right = rust_ast_from_lir(*right_expression, crates);
+            let left = if left_expression.as_op_arg_requires_parens() {
+                let expr = rust_ast_from_lir(*left_expression, crates);
+                parse_quote! { (#expr) }
+            } else {
+                rust_ast_from_lir(*left_expression, crates)
+            };
+            let right = if right_expression.as_op_arg_requires_parens() {
+                let expr = rust_ast_from_lir(*right_expression, crates);
+                parse_quote! { (#expr) }
+            } else {
+                rust_ast_from_lir(*right_expression, crates)
+            };
             let binary = binary_to_syn(op);
             Expr::Binary(parse_quote! { #left #binary #right })
         }
@@ -342,11 +352,6 @@ pub fn rust_ast_from_lir(expression: lir::Expr, crates: &mut BTreeSet<String>) -
                 let mut iter = #izip;
                 std::array::from_fn(|_| iter.next().unwrap())
             })
-        }
-        lir::Expr::IntoMethod { expression } => {
-            let receiver = rust_ast_from_lir(*expression, crates);
-            let method_call = parse_quote! { #receiver.into() };
-            syn::Expr::MethodCall(method_call)
         }
     }
 }

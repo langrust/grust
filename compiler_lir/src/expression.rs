@@ -156,11 +156,6 @@ pub enum Expr {
         /// The arrays expression.
         arrays: Vec<Self>,
     },
-    /// Into method.
-    IntoMethod {
-        /// The expression.
-        expression: Box<Self>,
-    },
 }
 
 impl Expr {
@@ -235,7 +230,6 @@ impl Expr {
             function: Self = function.into()
         }
         Zip: zip { arrays: Vec<Self> }
-        IntoMethod: into_call { expression: Self = expression.into() }
     }
 
     /// True on expressions that require parens to be used as a function in a function call.
@@ -267,8 +261,35 @@ impl Expr {
             | Map { .. }
             | Fold { .. }
             | Sort { .. }
-            | Zip { .. }
-            | IntoMethod { .. } => true,
+            | Zip { .. } => true,
+        }
+    }
+
+    /// True on expressions that require parens to be used as a argument to unary or binary operations.
+    pub fn as_op_arg_requires_parens(&self) -> bool {
+        use Expr::*;
+        match self {
+            Binop { .. } | IfThenElse { .. } | Lambda { .. } => true,
+            Literal { .. }
+            | Identifier { .. }
+            | Unop { .. }
+            | Some { .. }
+            | None { .. }
+            | FunctionCall { .. }
+            | NodeCall { .. }
+            | MemoryAccess { .. }
+            | InputAccess { .. }
+            | FieldAccess { .. }
+            | Enumeration { .. }
+            | Structure { .. }
+            | Array { .. }
+            | Tuple { .. }
+            | Block { .. }
+            | Match { .. }
+            | Map { .. }
+            | Fold { .. }
+            | Sort { .. }
+            | Zip { .. } => false,
         }
     }
 }
