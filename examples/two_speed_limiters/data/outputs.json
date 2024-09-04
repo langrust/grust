@@ -131,25 +131,25 @@
   }
 }
 ,{
-  "timestamp": 70,
+  "timestamp": 60,
   "message": {
     "SlState": 2
   }
 }
 ,{
-  "timestamp": 70,
+  "timestamp": 60,
   "message": {
     "InRegulation": false
   }
 }
 ,{
-  "timestamp": 70,
+  "timestamp": 60,
   "message": {
     "SlState": 2
   }
 }
 ,{
-  "timestamp": 70,
+  "timestamp": 60,
   "message": {
     "InRegulation": false
   }
@@ -1434,59 +1434,59 @@
 }
 ,{
   "timestamp": 610,
+  "message": {
+    "InRegulation": false
+  }
+}
+,{
+  "timestamp": 610,
+  "message": {
+    "SlState": 2
+  }
+}
+,{
+  "timestamp": 610,
+  "message": {
+    "InRegulation": false
+  }
+}
+,{
+  "timestamp": 620,
+  "message": {
+    "SlState": 2
+  }
+}
+,{
+  "timestamp": 620,
   "message": {
     "InRegulation": true
   }
 }
 ,{
-  "timestamp": 610,
+  "timestamp": 620,
   "message": {
     "VSet": 125.9
   }
 }
 ,{
-  "timestamp": 610,
+  "timestamp": 620,
   "message": {
     "SlState": 2
   }
 }
 ,{
-  "timestamp": 610,
+  "timestamp": 620,
   "message": {
     "InRegulation": true
   }
 }
 ,{
-  "timestamp": 610,
+  "timestamp": 620,
   "message": {
     "VSet": 125.9
   }
 }
 ,{
-  "timestamp": 620,
-  "message": {
-    "SlState": 3
-  }
-}
-,{
-  "timestamp": 620,
-  "message": {
-    "InRegulation": true
-  }
-}
-,{
-  "timestamp": 620,
-  "message": {
-    "SlState": 3
-  }
-}
-,{
-  "timestamp": 620,
-  "message": {
-    "InRegulation": true
-  }
-}
-,{
   "timestamp": 630,
   "message": {
     "SlState": 3
@@ -2047,7 +2047,7 @@
 ,{
   "timestamp": 860,
   "message": {
-    "InRegulation": false
+    "InRegulation": true
   }
 }
 ,{
@@ -2059,7 +2059,7 @@
 ,{
   "timestamp": 860,
   "message": {
-    "InRegulation": false
+    "InRegulation": true
   }
 }
 ,{
@@ -3456,74 +3456,74 @@
 }
 ,{
   "timestamp": 1450,
+  "message": {
+    "SlState": 3
+  }
+}
+,{
+  "timestamp": 1450,
+  "message": {
+    "InRegulation": false
+  }
+}
+,{
+  "timestamp": 1450,
+  "message": {
+    "SlState": 3
+  }
+}
+,{
+  "timestamp": 1450,
+  "message": {
+    "InRegulation": false
+  }
+}
+,{
+  "timestamp": 1460,
+  "message": {
+    "SlState": 3
+  }
+}
+,{
+  "timestamp": 1460,
+  "message": {
+    "InRegulation": false
+  }
+}
+,{
+  "timestamp": 1460,
+  "message": {
+    "SlState": 3
+  }
+}
+,{
+  "timestamp": 1460,
+  "message": {
+    "InRegulation": false
+  }
+}
+,{
+  "timestamp": 1470,
   "message": {
     "SlState": 4
   }
 }
 ,{
-  "timestamp": 1450,
+  "timestamp": 1470,
   "message": {
     "InRegulation": false
   }
 }
 ,{
-  "timestamp": 1450,
+  "timestamp": 1470,
   "message": {
     "SlState": 4
   }
 }
 ,{
-  "timestamp": 1450,
+  "timestamp": 1470,
   "message": {
     "InRegulation": false
-  }
-}
-,{
-  "timestamp": 1460,
-  "message": {
-    "SlState": 3
-  }
-}
-,{
-  "timestamp": 1460,
-  "message": {
-    "InRegulation": true
-  }
-}
-,{
-  "timestamp": 1460,
-  "message": {
-    "SlState": 3
-  }
-}
-,{
-  "timestamp": 1460,
-  "message": {
-    "InRegulation": true
-  }
-}
-,{
-  "timestamp": 1470,
-  "message": {
-    "SlState": 3
-  }
-}
-,{
-  "timestamp": 1470,
-  "message": {
-    "InRegulation": true
-  }
-}
-,{
-  "timestamp": 1470,
-  "message": {
-    "SlState": 3
-  }
-}
-,{
-  "timestamp": 1470,
-  "message": {
-    "InRegulation": true
   }
 }
 ,{
@@ -4057,7 +4057,7 @@
 ,{
   "timestamp": 1700,
   "message": {
-    "SlState": 4
+    "SlState": 3
   }
 }
 ,{
@@ -4069,7 +4069,7 @@
 ,{
   "timestamp": 1700,
   "message": {
-    "SlState": 4
+    "SlState": 3
   }
 }
 ,{
@@ -4081,7 +4081,7 @@
 ,{
   "timestamp": 1710,
   "message": {
-    "SlState": 4
+    "SlState": 3
   }
 }
 ,{
@@ -4093,7 +4093,7 @@
 ,{
   "timestamp": 1710,
   "message": {
-    "SlState": 4
+    "SlState": 3
   }
 }
 ,{
@@ -4417,7 +4417,7 @@
 ,{
   "timestamp": 1850,
   "message": {
-    "SlState": 3
+    "SlState": 4
   }
 }
 ,{
@@ -4429,7 +4429,7 @@
 ,{
   "timestamp": 1850,
   "message": {
-    "SlState": 3
+    "SlState": 4
   }
 }
 ,{
@@ -4441,7 +4441,7 @@
 ,{
   "timestamp": 1860,
   "message": {
-    "SlState": 3
+    "SlState": 4
   }
 }
 ,{
@@ -4453,7 +4453,7 @@
 ,{
   "timestamp": 1860,
   "message": {
-    "SlState": 3
+    "SlState": 4
   }
 }
 ,{
@@ -4584,36 +4584,42 @@
 }
 ,{
   "timestamp": 1920,
+  "message": {
+    "SlState": 3
+  }
+}
+,{
+  "timestamp": 1920,
+  "message": {
+    "InRegulation": true
+  }
+}
+,{
+  "timestamp": 1920,
+  "message": {
+    "SlState": 3
+  }
+}
+,{
+  "timestamp": 1920,
+  "message": {
+    "InRegulation": true
+  }
+}
+,{
+  "timestamp": 1930,
   "message": {
     "SlState": 2
   }
 }
 ,{
-  "timestamp": 1920,
+  "timestamp": 1930,
   "message": {
     "InRegulation": false
   }
 }
 ,{
-  "timestamp": 1920,
-  "message": {
-    "VSet": 10.0
-  }
-}
-,{
-  "timestamp": 1920,
-  "message": {
-    "SlState": 2
-  }
-}
-,{
-  "timestamp": 1920,
-  "message": {
-    "InRegulation": false
-  }
-}
-,{
-  "timestamp": 1920,
+  "timestamp": 1930,
   "message": {
     "VSet": 10.0
   }
@@ -4633,13 +4639,7 @@
 ,{
   "timestamp": 1930,
   "message": {
-    "SlState": 2
-  }
-}
-,{
-  "timestamp": 1930,
-  "message": {
-    "InRegulation": false
+    "VSet": 10.0
   }
 }
 ,{
