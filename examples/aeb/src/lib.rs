@@ -9,6 +9,3 @@ grust! {
 
 #[cfg(test)]
 mod macro_output;
-
-#[cfg(test)]
-mod output;

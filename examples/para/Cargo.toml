@@ -7,7 +7,25 @@ edition = "2021"
 
 [dependencies]
 grust = { path = "../../grust" }
-tokio = { version = "1.38.0", features = ["macros"] }
+json = { path = "../../json" }
 priority_stream = { path = "../../priority_stream" }
 timer_stream = { path = "../../timer_stream" }
+tokio = { version = "1.38.0", features = ["full"] }
 futures = "0.3.30"
+prost = "0.12"
+prost-types = "0.12"
+tonic = "0.11.0"
+serde = { version = "1.0.139", features = ["derive"] }
+lazy_static = "1.4.0"
+pin-project = "1.1.5"
+
+[build-dependencies]
+tonic-build = "0.11.0"
+
+[[bin]]
+name = "para-server"
+path = "src/server.rs"
+
+[[bin]]
+name = "para-client"
+path = "src/client.rs"
