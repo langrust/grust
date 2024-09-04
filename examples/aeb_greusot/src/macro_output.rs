@@ -8,7 +8,7 @@ pub enum Braking {
 #[requires(0i64 <= speed && speed < 50i64)]
 #[ensures(result == speed * speed / 100i64)]
 pub fn compute_soft_braking_distance(speed: i64) -> i64 {
-    speed * speed / 100i64
+    (speed * speed) / 100i64
 }
 #[requires(0i64 <= speed && speed < 50i64)]
 #[ensures(result != Braking :: NoBrake)]

@@ -6,7 +6,7 @@ pub enum Braking {
     UrgentBrake,
 }
 pub fn compute_soft_braking_distance(speed: f64) -> f64 {
-    speed * speed / 100.0
+    (speed * speed) / 100.0
 }
 pub fn brakes(distance: f64, speed: f64) -> Braking {
     let braking_distance = compute_soft_braking_distance(speed);
