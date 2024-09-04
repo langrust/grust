@@ -27,7 +27,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     while let Some(received) = resp_stream.next().await {
         counter += 1;
         let received = received.unwrap();
-        println!("\treceived message: `{}`", received.o1);
+        println!("\treceived message: `{:?}`", received.message);
         append_json(OUTPATH, received);
         if counter > 10 {
             break;

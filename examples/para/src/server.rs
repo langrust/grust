@@ -1,4 +1,3 @@
-
 ///        |    |--s2-->| C3 |--e2-->| C4 |--s4-->|    |
 /// --e0-->| C1 |                                 |    |
 ///        |    |--e1-->|    |--------s3--------->| C5 |--o-->
@@ -85,6 +84,7 @@ mod para {
 
 use futures::StreamExt;
 use interface::{
+    output::Message,
     para_server::{Para, ParaServer},
     Input, Output,
 };
@@ -114,9 +114,33 @@ fn into_para_service_input(input: Input) -> Option<RuntimeInput> {
 
 fn from_para_service_output(output: RuntimeOutput) -> Result<Output, Status> {
     match output {
+        RuntimeOutput::S3(s3, instant) => Ok(Output {
+            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
+            message: Some(Message::S3(s3)),
+        }),
+        RuntimeOutput::E2(e2, instant) => Ok(Output {
+            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
+            message: Some(Message::E2(e2)),
+        }),
+        RuntimeOutput::S4(s4, instant) => Ok(Output {
+            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
+            message: Some(Message::S4(s4)),
+        }),
+        RuntimeOutput::E3(e3, instant) => Ok(Output {
+            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
+            message: Some(Message::E3(e3)),
+        }),
         RuntimeOutput::O1(o1, instant) => Ok(Output {
             timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
-            o1,
+            message: Some(Message::O1(o1)),
+        }),
+        RuntimeOutput::S2(s2, instant) => Ok(Output {
+            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
+            message: Some(Message::S2(s2)),
+        }),
+        RuntimeOutput::E1(e1, instant) => Ok(Output {
+            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
+            message: Some(Message::E1(e1)),
         }),
     }
 }

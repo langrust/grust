@@ -475,36 +475,11 @@ pub mod runtime {
                 let e3_ref = &mut None;
                 tokio::join!(
                     async {
-                        self.send_output(O::S2(self.context.s2.get(), timeout_para_mess_instant))
-                            .await?;
-                    },
-                    async {
-                        if let Some(e1) = *e1_ref {
-                            self.send_output(O::E1(e1, timeout_para_mess_instant))
-                                .await?;
-                        }
-                    },
-                    async {
                         if e1_ref.is_some() {
                             let (s3, e3) = self.C2.step(C2Input { e1: *e1_ref });
                             self.context.s3.set(s3);
                             *e3_ref = *e3_ref;
                         }
-                        tokio::join!(
-                            async {
-                                self.send_output(O::S3(
-                                    self.context.s3.get(),
-                                    timeout_para_mess_instant,
-                                ))
-                                .await?;
-                            },
-                            async {
-                                if let Some(e3) = *e3_ref {
-                                    self.send_output(O::E3(e3, timeout_para_mess_instant))
-                                        .await?;
-                                }
-                            }
-                        );
                     },
                     async {
                         if self.context.s2.is_new() {
@@ -513,27 +488,30 @@ pub mod runtime {
                             });
                             *e2_ref = *e2_ref;
                         }
-                        tokio::join!(
-                            async {
-                                if let Some(e2) = *e2_ref {
-                                    self.send_output(O::E2(e2, timeout_para_mess_instant))
-                                        .await?;
-                                }
-                            },
-                            async {
-                                if e2_ref.is_some() {
-                                    let s4 = self.C4.step(C4Input { e2: *e2_ref });
-                                    self.context.s4.set(s4);
-                                }
-                                self.send_output(O::S4(
-                                    self.context.s4.get(),
-                                    timeout_para_mess_instant,
-                                ))
-                                .await?;
-                            }
-                        );
+                        if e2_ref.is_some() {
+                            let s4 = self.C4.step(C4Input { e2: *e2_ref });
+                            self.context.s4.set(s4);
+                        }
                     }
                 );
+                self.send_output(O::S2(self.context.s2.get(), timeout_para_mess_instant))
+                    .await?;
+                if let Some(e1) = *e1_ref {
+                    self.send_output(O::E1(e1, timeout_para_mess_instant))
+                        .await?;
+                }
+                self.send_output(O::S3(self.context.s3.get(), timeout_para_mess_instant))
+                    .await?;
+                if let Some(e3) = *e3_ref {
+                    self.send_output(O::E3(e3, timeout_para_mess_instant))
+                        .await?;
+                }
+                if let Some(e2) = *e2_ref {
+                    self.send_output(O::E2(e2, timeout_para_mess_instant))
+                        .await?;
+                }
+                self.send_output(O::S4(self.context.s4.get(), timeout_para_mess_instant))
+                    .await?;
                 if e3_ref.is_some() || self.context.s4.is_new() || self.context.s3.is_new() {
                     let o1 = self.C5.step(C5Input {
                         s4: self.context.s4.get(),
@@ -574,31 +552,11 @@ pub mod runtime {
                     }
                     tokio::join!(
                         async {
-                            self.send_output(O::S2(self.context.s2.get(), e0_instant))
-                                .await?;
-                        },
-                        async {
-                            if let Some(e1) = *e1_ref {
-                                self.send_output(O::E1(e1, e0_instant)).await?;
-                            }
-                        },
-                        async {
                             if e1_ref.is_some() {
                                 let (s3, e3) = self.C2.step(C2Input { e1: *e1_ref });
                                 self.context.s3.set(s3);
                                 *e3_ref = *e3_ref;
                             }
-                            tokio::join!(
-                                async {
-                                    self.send_output(O::S3(self.context.s3.get(), e0_instant))
-                                        .await?;
-                                },
-                                async {
-                                    if let Some(e3) = *e3_ref {
-                                        self.send_output(O::E3(e3, e0_instant)).await?;
-                                    }
-                                }
-                            );
                         },
                         async {
                             if self.context.s2.is_new() {
@@ -607,23 +565,27 @@ pub mod runtime {
                                 });
                                 *e2_ref = *e2_ref;
                             }
-                            tokio::join!(
-                                async {
-                                    if let Some(e2) = *e2_ref {
-                                        self.send_output(O::E2(e2, e0_instant)).await?;
-                                    }
-                                },
-                                async {
-                                    if e2_ref.is_some() {
-                                        let s4 = self.C4.step(C4Input { e2: *e2_ref });
-                                        self.context.s4.set(s4);
-                                    }
-                                    self.send_output(O::S4(self.context.s4.get(), e0_instant))
-                                        .await?;
-                                }
-                            );
+                            if e2_ref.is_some() {
+                                let s4 = self.C4.step(C4Input { e2: *e2_ref });
+                                self.context.s4.set(s4);
+                            }
                         }
                     );
+                    self.send_output(O::S2(self.context.s2.get(), e0_instant))
+                        .await?;
+                    if let Some(e1) = *e1_ref {
+                        self.send_output(O::E1(e1, e0_instant)).await?;
+                    }
+                    self.send_output(O::S3(self.context.s3.get(), e0_instant))
+                        .await?;
+                    if let Some(e3) = *e3_ref {
+                        self.send_output(O::E3(e3, e0_instant)).await?;
+                    }
+                    if let Some(e2) = *e2_ref {
+                        self.send_output(O::E2(e2, e0_instant)).await?;
+                    }
+                    self.send_output(O::S4(self.context.s4.get(), e0_instant))
+                        .await?;
                     if e3_ref.is_some() || self.context.s4.is_new() || self.context.s3.is_new() {
                         let o1 = self.C5.step(C5Input {
                             s4: self.context.s4.get(),
@@ -662,31 +624,11 @@ pub mod runtime {
                             }
                             tokio::join!(
                                 async {
-                                    self.send_output(O::S2(self.context.s2.get(), instant))
-                                        .await?;
-                                },
-                                async {
-                                    if let Some(e1) = *e1_ref {
-                                        self.send_output(O::E1(e1, instant)).await?;
-                                    }
-                                },
-                                async {
                                     if e1_ref.is_some() {
                                         let (s3, e3) = self.C2.step(C2Input { e1: *e1_ref });
                                         self.context.s3.set(s3);
                                         *e3_ref = *e3_ref;
                                     }
-                                    tokio::join!(
-                                        async {
-                                            self.send_output(O::S3(self.context.s3.get(), instant))
-                                                .await?;
-                                        },
-                                        async {
-                                            if let Some(e3) = *e3_ref {
-                                                self.send_output(O::E3(e3, instant)).await?;
-                                            }
-                                        }
-                                    );
                                 },
                                 async {
                                     if self.context.s2.is_new() {
@@ -695,23 +637,27 @@ pub mod runtime {
                                         });
                                         *e2_ref = *e2_ref;
                                     }
-                                    tokio::join!(
-                                        async {
-                                            if let Some(e2) = *e2_ref {
-                                                self.send_output(O::E2(e2, instant)).await?;
-                                            }
-                                        },
-                                        async {
-                                            if e2_ref.is_some() {
-                                                let s4 = self.C4.step(C4Input { e2: *e2_ref });
-                                                self.context.s4.set(s4);
-                                            }
-                                            self.send_output(O::S4(self.context.s4.get(), instant))
-                                                .await?;
-                                        }
-                                    );
+                                    if e2_ref.is_some() {
+                                        let s4 = self.C4.step(C4Input { e2: *e2_ref });
+                                        self.context.s4.set(s4);
+                                    }
                                 }
                             );
+                            self.send_output(O::S2(self.context.s2.get(), instant))
+                                .await?;
+                            if let Some(e1) = *e1_ref {
+                                self.send_output(O::E1(e1, instant)).await?;
+                            }
+                            self.send_output(O::S3(self.context.s3.get(), instant))
+                                .await?;
+                            if let Some(e3) = *e3_ref {
+                                self.send_output(O::E3(e3, instant)).await?;
+                            }
+                            if let Some(e2) = *e2_ref {
+                                self.send_output(O::E2(e2, instant)).await?;
+                            }
+                            self.send_output(O::S4(self.context.s4.get(), instant))
+                                .await?;
                             if e3_ref.is_some()
                                 || self.context.s4.is_new()
                                 || self.context.s3.is_new()
