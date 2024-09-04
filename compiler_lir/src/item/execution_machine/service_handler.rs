@@ -27,7 +27,8 @@ pub enum FlowInstruction {
     InitEvent(String),
     UpdateEvent(String, Expression),
     UpdateContext(String, Expression),
-    Send(String, Expression, Option<String>),
+    SendSignal(String, Expression, Option<String>),
+    SendEvent(String, Expression, Expression, Option<String>),
     IfThrottle(String, String, Constant, Box<Self>),
     IfChange(String, Expression, Box<Self>),
     IfActivated(Vec<String>, Vec<String>, Box<Self>, Option<Box<Self>>),
@@ -41,6 +42,37 @@ pub enum FlowInstruction {
     HandleDelay(Vec<String>, Vec<MatchArm>),
     Seq(Vec<Self>),
     Para(Map<ParaMethod, Vec<Self>>),
+}
+impl FlowInstruction {
+    pub fn send(name: impl Into<String> + Copy, expr: Expression, is_event: bool) -> Self {
+        if is_event {
+            FlowInstruction::SendEvent(
+                name.into(),
+                Expression::event(name.into()).into(),
+                expr.into(),
+                None,
+            )
+        } else {
+            FlowInstruction::SendSignal(name.into(), expr.into(), None)
+        }
+    }
+    pub fn send_from(
+        name: impl Into<String> + Copy,
+        expr: Expression,
+        instant: impl Into<String>,
+        is_event: bool,
+    ) -> Self {
+        if is_event {
+            FlowInstruction::SendEvent(
+                name.into(),
+                Expression::event(name.into()).into(),
+                expr.into(),
+                Some(instant.into()),
+            )
+        } else {
+            FlowInstruction::SendSignal(name.into(), expr.into(), Some(instant.into()))
+        }
+    }
 }
 mk_new! { impl FlowInstruction =>
     Let: def_let (
@@ -57,16 +89,6 @@ mk_new! { impl FlowInstruction =>
     UpdateContext: update_ctx (
         name: impl Into<String> = name.into(),
         expr: Expression = expr.into(),
-    )
-    Send: send_from (
-        name: impl Into<String> = name.into(),
-        expr: Expression = expr.into(),
-        instant: impl Into<String> = Some(instant.into()),
-    )
-    Send: send (
-        name: impl Into<String> = name.into(),
-        expr: Expression = expr.into(),
-        instant = None,
     )
     IfThrottle: if_throttle (
         flow_name: impl Into<String> = flow_name.into(),

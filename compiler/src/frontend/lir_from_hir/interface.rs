@@ -1829,34 +1829,26 @@ mod flow_instr {
         }
 
         /// Add signal send in current propagation branch.
-        fn send_signal(
-            &self,
-            signal_id: usize,
-            expr: Expression,
-            import_flow: usize,
-        ) -> FlowInstruction {
+        fn send_signal(&self, signal_id: usize, import_flow: usize) -> FlowInstruction {
             let signal_name = self.syms.get_name(signal_id);
+            let expr = self.get_signal(signal_id);
             if self.multiple_inputs {
-                FlowInstruction::send(signal_name, expr)
+                FlowInstruction::send(signal_name, expr, false)
             } else {
                 let import_name = self.syms.get_name(import_flow);
-                FlowInstruction::send_from(signal_name, expr, import_name)
+                FlowInstruction::send_from(signal_name, expr, import_name, false)
             }
         }
 
         /// Add event send in current propagation branch.
-        fn send_event(
-            &self,
-            event_id: usize,
-            expr: Expression,
-            import_flow: usize,
-        ) -> FlowInstruction {
+        fn send_event(&self, event_id: usize, import_flow: usize) -> FlowInstruction {
             let event_name = self.syms.get_name(event_id);
+            let expr = Expression::ident(event_name);
             if self.multiple_inputs {
-                FlowInstruction::send(event_name, expr)
+                FlowInstruction::send(event_name, expr, true)
             } else {
                 let import_name = self.syms.get_name(import_flow);
-                FlowInstruction::send_from(event_name, expr, import_name)
+                FlowInstruction::send_from(event_name, expr, import_name, true)
             }
         }
 
@@ -1865,11 +1857,9 @@ mod flow_instr {
             let import_flow = self.get_stmt_import(stmt_id);
             // insert instruction only if source is a signal or an activated event
             if self.syms.get_flow_kind(flow_id).is_signal() {
-                let expr = self.get_signal(flow_id);
-                self.send_signal(flow_id, expr, import_flow)
+                self.send_signal(flow_id, import_flow)
             } else {
-                let expr = self.get_event(flow_id);
-                self.send_event(flow_id, expr, import_flow)
+                self.send_event(flow_id, import_flow)
             }
         }
 
