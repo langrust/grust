@@ -32,7 +32,7 @@ impl RisingEdgesState {
                 let z = if input.v > 80i64 { e } else { a };
                 (z, y, None)
             }
-            (Some(a), _) if a != 0i64 && comp_app_rising_edge_1 => {
+            (Some(a), _) if (a != 0i64) && comp_app_rising_edge_1 => {
                 let x = Some(2i64);
                 let z = 2i64;
                 (z, None, x)

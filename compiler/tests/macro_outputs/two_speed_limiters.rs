@@ -53,10 +53,10 @@ pub fn new_hysterisis(value: f64) -> Hysterisis {
 pub fn update_hysterisis(prev_hyst: Hysterisis, speed: f64, v_set: f64) -> Hysterisis {
     let activation_threshold = v_set * 0.99;
     let deactivation_threshold = v_set * 0.98;
-    let flag = if prev_hyst.flag && speed <= deactivation_threshold {
+    let flag = if prev_hyst.flag && (speed <= deactivation_threshold) {
         false
     } else {
-        if !prev_hyst.flag && speed >= activation_threshold {
+        if !prev_hyst.flag && (speed >= activation_threshold) {
             true
         } else {
             prev_hyst.flag
@@ -80,19 +80,20 @@ pub fn threshold_set_speed(set_speed: f64) -> f64 {
     grounded_speed
 }
 pub fn off_condition(activation_req: ActivationRequest, vdc_disabled: VdcState) -> bool {
-    activation_req == ActivationRequest::Off || vdc_disabled == VdcState::Off
+    (activation_req == ActivationRequest::Off) || (vdc_disabled == VdcState::Off)
 }
 pub fn on_condition(activation_req: ActivationRequest) -> bool {
-    activation_req == ActivationRequest::On || activation_req == ActivationRequest::Initialization
+    (activation_req == ActivationRequest::On)
+        || (activation_req == ActivationRequest::Initialization)
 }
 pub fn activation_condition(
     activation_req: ActivationRequest,
     vacuum_brake_state: VacuumBrakeState,
     v_set: f64,
 ) -> bool {
-    activation_req == ActivationRequest::On
-        && vacuum_brake_state != VacuumBrakeState::BelowMinLevel
-        && v_set > 0.0
+    ((activation_req == ActivationRequest::On)
+        && (vacuum_brake_state != VacuumBrakeState::BelowMinLevel))
+        && (v_set > 0.0)
 }
 pub fn exit_override_condition(
     activation_req: ActivationRequest,
@@ -100,7 +101,7 @@ pub fn exit_override_condition(
     v_set: f64,
     speed: f64,
 ) -> bool {
-    on_condition(activation_req) && kickdown != KickdownState::Activated && speed <= v_set
+    (on_condition(activation_req) && (kickdown != KickdownState::Activated)) && (speed <= v_set)
 }
 pub fn involuntary_override_condition(
     activation_req: ActivationRequest,
@@ -108,22 +109,22 @@ pub fn involuntary_override_condition(
     v_set: f64,
     speed: f64,
 ) -> bool {
-    on_condition(activation_req) && kickdown != KickdownState::Activated && speed > v_set
+    (on_condition(activation_req) && (kickdown != KickdownState::Activated)) && (speed > v_set)
 }
 pub fn voluntary_override_condition(
     activation_req: ActivationRequest,
     kickdown: KickdownState,
 ) -> bool {
-    on_condition(activation_req) && kickdown == KickdownState::Activated
+    on_condition(activation_req) && (kickdown == KickdownState::Activated)
 }
 pub fn standby_condition(
     activation_req: ActivationRequest,
     vacuum_brake_state: VacuumBrakeState,
     v_set: f64,
 ) -> bool {
-    activation_req == ActivationRequest::StandBy
-        || vacuum_brake_state == VacuumBrakeState::BelowMinLevel
-        || v_set <= 0.0
+    ((activation_req == ActivationRequest::StandBy)
+        || (vacuum_brake_state == VacuumBrakeState::BelowMinLevel))
+        || (v_set <= 0.0)
 }
 pub struct ProcessSetSpeedInput {
     pub set_speed: f64,
@@ -326,7 +327,7 @@ impl SpeedLimiterState {
                 (in_regulation, on_state, state)
             }
         };
-        let state_update = state != prev_state || on_state != prev_on_state;
+        let state_update = (state != prev_state) || (on_state != prev_on_state);
         self.mem = state;
         self.mem_1 = on_state;
         self.mem_2 = in_regulation;
