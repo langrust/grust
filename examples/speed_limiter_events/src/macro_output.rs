@@ -55,10 +55,10 @@ pub fn new_hysterisis(value: f64) -> Hysterisis {
 pub fn update_hysterisis(prev_hyst: Hysterisis, speed: f64, v_set: f64) -> Hysterisis {
     let activation_threshold = v_set * 0.99;
     let deactivation_threshold = v_set * 0.98;
-    let flag = if prev_hyst.flag && speed <= deactivation_threshold {
+    let flag = if prev_hyst.flag && (speed <= deactivation_threshold) {
         false
     } else {
-        if !prev_hyst.flag && speed >= activation_threshold {
+        if !prev_hyst.flag && (speed >= activation_threshold) {
             true
         } else {
             prev_hyst.flag
@@ -82,10 +82,10 @@ pub fn threshold_set_speed(set_speed: f64) -> f64 {
     grounded_speed
 }
 pub fn activation_condition(vacuum_brake_state: VacuumBrakeState, v_set: f64) -> bool {
-    vacuum_brake_state != VacuumBrakeState::BelowMinLevel && v_set > 0.0
+    (vacuum_brake_state != VacuumBrakeState::BelowMinLevel) && (v_set > 0.0)
 }
 pub fn standby_condition(vacuum_brake_state: VacuumBrakeState, v_set: f64) -> bool {
-    vacuum_brake_state == VacuumBrakeState::BelowMinLevel || v_set <= 0.0
+    (vacuum_brake_state == VacuumBrakeState::BelowMinLevel) || (v_set <= 0.0)
 }
 pub struct ProcessSetSpeedInput {
     pub set_speed: Option<f64>,
