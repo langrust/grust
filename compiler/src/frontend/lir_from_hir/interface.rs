@@ -529,7 +529,7 @@ mod triggered {
 
     prelude! {
         graph::{DiGraphMap, DfsEvent::*}, HashSet,
-        hir::{ Service, interface::{ EdgeType, FlowImport, FlowStatement } },
+        hir::{ Service, interface::{ FlowImport, FlowStatement } },
     }
 
     use super::isles;
@@ -542,8 +542,8 @@ mod triggered {
             imports: &'a HashMap<usize, FlowImport>,
         ) -> Self;
         fn get_triggered(&self, parent: usize) -> Vec<usize>;
-        fn subgraph(&self, starts: impl Iterator<Item = usize>) -> DiGraphMap<usize, EdgeType>;
-        fn graph(&self) -> DiGraphMap<usize, EdgeType>;
+        fn subgraph(&self, starts: impl Iterator<Item = usize>) -> DiGraphMap<usize, ()>;
+        fn graph(&self) -> DiGraphMap<usize, ()>;
     }
 
     /// Enumerate all the implementations of TriggersGraph.
@@ -574,14 +574,14 @@ mod triggered {
             }
         }
 
-        fn subgraph(&self, starts: impl Iterator<Item = usize>) -> DiGraphMap<usize, EdgeType> {
+        fn subgraph(&self, starts: impl Iterator<Item = usize>) -> DiGraphMap<usize, ()> {
             match self {
                 Graph::EventIsles(graph) => graph.subgraph(starts),
                 Graph::OnChange(graph) => graph.subgraph(starts),
             }
         }
 
-        fn graph(&self) -> DiGraphMap<usize, EdgeType> {
+        fn graph(&self) -> DiGraphMap<usize, ()> {
             match self {
                 Graph::EventIsles(graph) => graph.graph(),
                 Graph::OnChange(graph) => graph.graph(),
@@ -591,7 +591,7 @@ mod triggered {
 
     /// Isles of statements triggered by events only.
     pub struct EventIslesGraph<'a> {
-        graph: &'a DiGraphMap<usize, EdgeType>,
+        graph: &'a DiGraphMap<usize, ()>,
         stmts: &'a HashMap<usize, FlowStatement>,
         imports: &'a HashMap<usize, FlowImport>,
         isles: isles::Isles,
@@ -655,7 +655,7 @@ mod triggered {
             isles.chain(dependencies).unique().collect()
         }
 
-        fn subgraph(&self, starts: impl Iterator<Item = usize>) -> DiGraphMap<usize, EdgeType> {
+        fn subgraph(&self, starts: impl Iterator<Item = usize>) -> DiGraphMap<usize, ()> {
             let mut trig_graph = DiGraphMap::new();
             // init stack and seen set
             let (mut stack, mut seen) = (vec![], HashSet::new());
@@ -668,31 +668,25 @@ mod triggered {
             while let Some(parent) = stack.pop() {
                 let neighbors = self.get_triggered(parent);
                 for child in neighbors {
-                    let weight = self.graph.edge_weight(parent, child);
-                    match weight {
-                        None | Some(EdgeType::Dependency) => {
-                            // add in subgraph of triggers
-                            trig_graph.add_edge(parent, child, EdgeType::Dependency);
-                            // only insert in stack if not seen
-                            if seen.insert(child) {
-                                stack.push(child);
-                            }
-                        }
-                        Some(EdgeType::Priority) => (),
+                    // add in subgraph of triggers
+                    trig_graph.add_edge(parent, child, ());
+                    // only insert in stack if not seen
+                    if seen.insert(child) {
+                        stack.push(child);
                     }
                 }
             }
             trig_graph
         }
 
-        fn graph(&self) -> DiGraphMap<usize, EdgeType> {
+        fn graph(&self) -> DiGraphMap<usize, ()> {
             self.subgraph(self.graph.nodes())
         }
     }
 
     /// Statements triggered by all changes.
     pub struct OnChangeGraph<'a> {
-        graph: &'a DiGraphMap<usize, EdgeType>,
+        graph: &'a DiGraphMap<usize, ()>,
     }
     impl<'a> TriggersGraph<'a> for OnChangeGraph<'a> {
         fn new(
@@ -710,7 +704,7 @@ mod triggered {
             self.graph.neighbors(parent).collect()
         }
 
-        fn subgraph(&self, starts: impl Iterator<Item = usize>) -> DiGraphMap<usize, EdgeType> {
+        fn subgraph(&self, starts: impl Iterator<Item = usize>) -> DiGraphMap<usize, ()> {
             let mut trig_graph = DiGraphMap::new();
             let starts = starts.collect::<Vec<_>>();
             starts.iter().for_each(|id| {
@@ -720,24 +714,15 @@ mod triggered {
                 CrossForwardEdge(parent, child)
                 | BackEdge(parent, child)
                 | TreeEdge(parent, child) => {
-                    let weight = *self
-                        .graph
-                        .edge_weight(parent, child)
-                        .expect("there should be a weight");
-                    match weight {
-                        EdgeType::Dependency => {
-                            // add in subgraph of triggers
-                            trig_graph.add_edge(parent, child, weight);
-                        }
-                        EdgeType::Priority => (),
-                    }
+                    // add in subgraph of triggers
+                    trig_graph.add_edge(parent, child, ());
                 }
                 Discover(_, _) | Finish(_, _) => {}
             });
             trig_graph
         }
 
-        fn graph(&self) -> DiGraphMap<usize, EdgeType> {
+        fn graph(&self) -> DiGraphMap<usize, ()> {
             self.graph.clone()
         }
     }
@@ -745,7 +730,6 @@ mod triggered {
 
 mod service_handler {
     prelude! {
-        hir::interface::EdgeType,
         lir::{
             item::execution_machine::{
                 service_handler::{FlowHandler, FlowInstruction, MatchArm, ServiceHandler},
@@ -845,7 +829,7 @@ mod service_handler {
             if subgraph.node_count() == 0 {
                 return FlowInstruction::seq(vec![]);
             }
-            let builder = Builder::<flow_instr::Builder, EdgeType>::new(subgraph);
+            let builder = Builder::<flow_instr::Builder, ()>::new(subgraph);
             builder.run(ctxt).expect("oh no")
         } else {
             // else, construct an ordered sequence of the instrs
@@ -922,11 +906,11 @@ mod service_handler {
 mod flow_instr {
     prelude! {
         quote::format_ident,
-        graph::{DfsEvent::*, Direction, DiGraphMap},
+        graph::{DfsEvent::*, DiGraphMap},
         hir::{
             flow,
             interface::{
-                EdgeType, FlowDeclaration, FlowInstantiation,
+                FlowDeclaration, FlowInstantiation,
                 FlowStatement, FlowImport, FlowExport,
             },
             IdentifierCreator, Service,
@@ -1088,26 +1072,18 @@ mod flow_instr {
 
         /// Constructs the map from statement to related imports.
         fn build_stmts_imports(
-            graph: &DiGraphMap<usize, EdgeType>,
+            graph: &DiGraphMap<usize, ()>,
             imports: &HashMap<usize, FlowImport>,
         ) -> HashMap<usize, Vec<(usize, usize)>> {
             let mut stmts_imports = HashMap::new();
             for (stmt_id, import) in imports.iter() {
                 petgraph::visit::depth_first_search(graph, std::iter::once(*stmt_id), |event| {
                     match event {
-                        CrossForwardEdge(parent, child)
-                        | BackEdge(parent, child)
-                        | TreeEdge(parent, child) => {
-                            let weight = *graph
-                                .edge_weight(parent, child)
-                                .expect("there should be a weight");
-                            match weight {
-                                EdgeType::Dependency => stmts_imports
-                                    .entry(child)
-                                    .or_insert(vec![])
-                                    .push((*stmt_id, import.id)),
-                                EdgeType::Priority => (),
-                            }
+                        CrossForwardEdge(_, child) | BackEdge(_, child) | TreeEdge(_, child) => {
+                            stmts_imports
+                                .entry(child)
+                                .or_insert(vec![])
+                                .push((*stmt_id, import.id))
                         }
                         Discover(_, _) | Finish(_, _) => {}
                     }
@@ -1195,11 +1171,7 @@ mod flow_instr {
                                 );
                                 // add timing_event in graph
                                 service.graph.add_node(fresh_statement_id);
-                                service.graph.add_edge(
-                                    fresh_statement_id,
-                                    stmt_id,
-                                    EdgeType::Dependency,
-                                );
+                                service.graph.add_edge(fresh_statement_id, stmt_id, ());
 
                                 // push timing_event
                                 stmts_timers.insert(stmt_id, fresh_id);
@@ -1233,21 +1205,7 @@ mod flow_instr {
 
                                 // add timing_event in graph
                                 service.graph.add_node(fresh_statement_id);
-                                let dep_stmt = service
-                                    .graph
-                                    .neighbors_directed(stmt_id, Direction::Incoming)
-                                    .next()
-                                    .expect("timeout without dependence");
-                                service.graph.add_edge(
-                                    fresh_statement_id,
-                                    stmt_id,
-                                    EdgeType::Dependency,
-                                );
-                                service.graph.add_edge(
-                                    dep_stmt,
-                                    fresh_statement_id,
-                                    EdgeType::Priority,
-                                );
+                                service.graph.add_edge(fresh_statement_id, stmt_id, ());
 
                                 // push timing_event
                                 stmts_timers.insert(stmt_id, fresh_id);
@@ -1283,11 +1241,7 @@ mod flow_instr {
                                     );
                                     // add timing_event in graph
                                     service.graph.add_node(fresh_statement_id);
-                                    service.graph.add_edge(
-                                        fresh_statement_id,
-                                        stmt_id,
-                                        EdgeType::Dependency,
-                                    );
+                                    service.graph.add_edge(fresh_statement_id, stmt_id, ());
 
                                     // push timing_event
                                     stmts_timers.insert(stmt_id, fresh_id);
@@ -1364,9 +1318,7 @@ mod flow_instr {
             service.graph.add_node(fresh_statement_id);
             service.statements.keys().for_each(|stmt_id| {
                 if service.statements[stmt_id].is_comp_call() {
-                    service
-                        .graph
-                        .add_edge(fresh_statement_id, *stmt_id, EdgeType::Dependency);
+                    service.graph.add_edge(fresh_statement_id, *stmt_id, ());
                 }
             });
             // push timing_event
