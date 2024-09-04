@@ -1752,7 +1752,8 @@ mod flow_instr {
             // update outputs: context signals and all events
             let updates = outputs_ids.into_iter().filter_map(|output_id| {
                 if self.syms.get_flow_kind(output_id).is_event() {
-                    let expr = self.get_event(output_id);
+                    let event_name = self.syms.get_name(output_id);
+                    let expr = Expression::ident(event_name);
                     Some(self.define_event(output_id, expr))
                 } else {
                     self.signals.insert(output_id);
