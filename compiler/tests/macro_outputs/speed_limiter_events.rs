@@ -55,10 +55,10 @@ pub fn new_hysterisis(value: f64) -> Hysterisis {
 pub fn update_hysterisis(prev_hyst: Hysterisis, speed: f64, v_set: f64) -> Hysterisis {
     let activation_threshold = v_set * 0.99;
     let deactivation_threshold = v_set * 0.98;
-    let flag = if prev_hyst.flag && speed <= deactivation_threshold {
+    let flag = if prev_hyst.flag && (speed <= deactivation_threshold) {
         false
     } else {
-        if !prev_hyst.flag && speed >= activation_threshold {
+        if !prev_hyst.flag && (speed >= activation_threshold) {
             true
         } else {
             prev_hyst.flag
@@ -82,10 +82,10 @@ pub fn threshold_set_speed(set_speed: f64) -> f64 {
     grounded_speed
 }
 pub fn activation_condition(vacuum_brake_state: VacuumBrakeState, v_set: f64) -> bool {
-    vacuum_brake_state != VacuumBrakeState::BelowMinLevel && v_set > 0.0
+    (vacuum_brake_state != VacuumBrakeState::BelowMinLevel) && (v_set > 0.0)
 }
 pub fn standby_condition(vacuum_brake_state: VacuumBrakeState, v_set: f64) -> bool {
-    vacuum_brake_state == VacuumBrakeState::BelowMinLevel || v_set <= 0.0
+    (vacuum_brake_state == VacuumBrakeState::BelowMinLevel) || (v_set <= 0.0)
 }
 pub struct ProcessSetSpeedInput {
     pub set_speed: Option<f64>,
@@ -807,11 +807,13 @@ pub mod runtime {
                 self.reset_time_constrains(timeout_speed_limiter_instant)
                     .await?;
                 self.context.reset();
-                self.send_output(O::InRegulation(
-                    *in_regulation_ref,
-                    timeout_speed_limiter_instant,
-                ))
-                .await?;
+                if let Some(in_regulation) = *in_regulation_ref {
+                    self.send_output(O::InRegulation(
+                        in_regulation,
+                        timeout_speed_limiter_instant,
+                    ))
+                    .await?;
+                }
                 Ok(())
             }
             #[inline]
@@ -849,11 +851,13 @@ pub mod runtime {
                     self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                         .await?;
                     *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                    self.send_output(O::InRegulation(
-                        *in_regulation_ref,
-                        period_in_regulation_instant,
-                    ))
-                    .await?;
+                    if let Some(in_regulation) = *in_regulation_ref {
+                        self.send_output(O::InRegulation(
+                            in_regulation,
+                            period_in_regulation_instant,
+                        ))
+                        .await?;
+                    }
                 } else {
                     let unique = self
                         .input_store
@@ -910,8 +914,10 @@ pub mod runtime {
                         self.context.in_regulation_aux.set(in_regulation_aux);
                         self.context.state_update.set(state_update);
                     }
-                    self.send_output(O::InRegulation(*in_regulation_ref, activation_instant))
-                        .await?;
+                    if let Some(in_regulation) = *in_regulation_ref {
+                        self.send_output(O::InRegulation(in_regulation, activation_instant))
+                            .await?;
+                    }
                 } else {
                     let unique = self
                         .input_store
@@ -1031,8 +1037,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -1050,8 +1058,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -1086,8 +1096,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -1106,100 +1118,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vdc.set(vdc);
-                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
-                                self.context.x.set(set_speed);
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
                             }
-                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
-                                self.context.changed_set_speed_old.set(self.context.x.get());
-                                *changed_set_speed_ref = Some(self.context.x.get());
-                            }
-                            if changed_set_speed_ref.is_some() {
-                                let (v_set_aux, v_update) =
-                                    self.process_set_speed.step(ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    });
-                                self.context.v_set_aux.set(v_set_aux);
-                                self.context.v_update.set(v_update);
-                            }
-                            let v_set = self.context.v_set_aux.get();
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                        }
-                        (
-                            None,
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                        }
-                        (
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            let changed_set_speed_ref = &mut None;
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
-                                self.context.x.set(set_speed);
-                            }
-                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
-                                self.context.changed_set_speed_old.set(self.context.x.get());
-                                *changed_set_speed_ref = Some(self.context.x.get());
-                            }
-                            if changed_set_speed_ref.is_some() {
-                                let (v_set_aux, v_update) =
-                                    self.process_set_speed.step(ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    });
-                                self.context.v_set_aux.set(v_set_aux);
-                                self.context.v_update.set(v_update);
-                            }
-                            let v_set = self.context.v_set_aux.get();
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                        }
-                        (
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.vdc.set(vdc);
-                        }
-                        (
-                            Some((set_speed, set_speed_instant)),
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            let changed_set_speed_ref = &mut None;
-                            self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -1223,6 +1145,98 @@ pub mod runtime {
                         (
                             None,
                             None,
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            let changed_set_speed_ref = &mut None;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
+                                self.context.x.set(set_speed);
+                            }
+                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
+                                self.context.changed_set_speed_old.set(self.context.x.get());
+                                *changed_set_speed_ref = Some(self.context.x.get());
+                            }
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    self.process_set_speed.step(ProcessSetSpeedInput {
+                                        set_speed: *changed_set_speed_ref,
+                                    });
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                        }
+                        (
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.vdc.set(vdc);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            let changed_set_speed_ref = &mut None;
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.vdc.set(vdc);
+                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
+                                self.context.x.set(set_speed);
+                            }
+                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
+                                self.context.changed_set_speed_old.set(self.context.x.get());
+                                *changed_set_speed_ref = Some(self.context.x.get());
+                            }
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    self.process_set_speed.step(ProcessSetSpeedInput {
+                                        set_speed: *changed_set_speed_ref,
+                                    });
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                        }
+                        (
+                            None,
+                            None,
                             Some(((), period_in_regulation_instant)),
                             Some((vacuum_brake, vacuum_brake_instant)),
                             None,
@@ -1236,8 +1250,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -1256,8 +1272,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -1293,8 +1311,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -1314,8 +1334,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -1365,8 +1387,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -1398,8 +1422,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -1448,8 +1474,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -1482,8 +1510,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -1537,8 +1567,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -1574,8 +1606,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -1628,8 +1662,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -1666,8 +1702,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -1717,8 +1755,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
@@ -1751,8 +1791,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -1802,8 +1844,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                         }
@@ -1837,8 +1881,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -1894,8 +1940,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -1932,8 +1980,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -1987,8 +2037,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -2026,8 +2078,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -2077,8 +2131,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -2110,8 +2166,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -2160,8 +2218,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -2194,8 +2254,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -2249,8 +2311,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -2286,8 +2350,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -2340,8 +2406,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -2378,180 +2446,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vdc.set(vdc);
-                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
-                                self.context.x.set(set_speed);
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
                             }
-                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
-                                self.context.changed_set_speed_old.set(self.context.x.get());
-                                *changed_set_speed_ref = Some(self.context.x.get());
-                            }
-                            if changed_set_speed_ref.is_some() {
-                                let (v_set_aux, v_update) =
-                                    self.process_set_speed.step(ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    });
-                                self.context.v_set_aux.set(v_set_aux);
-                                self.context.v_update.set(v_update);
-                            }
-                            let v_set = self.context.v_set_aux.get();
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                        }
-                        (
-                            None,
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            Some((failure, failure_instant)),
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            let failure_ref = &mut None;
-                            *failure_ref = Some(failure);
-                            if failure_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vacuum_brake.set(vacuum_brake);
-                        }
-                        (
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            Some((failure, failure_instant)),
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            let failure_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
-                            *failure_ref = Some(failure);
-                            if failure_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
-                                self.context.x.set(set_speed);
-                            }
-                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
-                                self.context.changed_set_speed_old.set(self.context.x.get());
-                                *changed_set_speed_ref = Some(self.context.x.get());
-                            }
-                            if changed_set_speed_ref.is_some() {
-                                let (v_set_aux, v_update) =
-                                    self.process_set_speed.step(ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    });
-                                self.context.v_set_aux.set(v_set_aux);
-                                self.context.v_update.set(v_update);
-                            }
-                            let v_set = self.context.v_set_aux.get();
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                        }
-                        (
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            Some((failure, failure_instant)),
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            let failure_ref = &mut None;
-                            *failure_ref = Some(failure);
-                            if failure_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.vdc.set(vdc);
-                        }
-                        (
-                            Some((set_speed, set_speed_instant)),
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            Some((failure, failure_instant)),
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            let failure_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
-                            *failure_ref = Some(failure);
-                            if failure_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -2575,6 +2473,186 @@ pub mod runtime {
                         (
                             None,
                             None,
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((failure, failure_instant)),
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            let failure_ref = &mut None;
+                            *failure_ref = Some(failure);
+                            if failure_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: None,
+                                        failure: *failure_ref,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((failure, failure_instant)),
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            let failure_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
+                            *failure_ref = Some(failure);
+                            if failure_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: None,
+                                        failure: *failure_ref,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
+                                self.context.x.set(set_speed);
+                            }
+                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
+                                self.context.changed_set_speed_old.set(self.context.x.get());
+                                *changed_set_speed_ref = Some(self.context.x.get());
+                            }
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    self.process_set_speed.step(ProcessSetSpeedInput {
+                                        set_speed: *changed_set_speed_ref,
+                                    });
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                        }
+                        (
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((failure, failure_instant)),
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            let failure_ref = &mut None;
+                            *failure_ref = Some(failure);
+                            if failure_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: None,
+                                        failure: *failure_ref,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.vdc.set(vdc);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((failure, failure_instant)),
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            let failure_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
+                            *failure_ref = Some(failure);
+                            if failure_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: None,
+                                        failure: *failure_ref,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.vdc.set(vdc);
+                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
+                                self.context.x.set(set_speed);
+                            }
+                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
+                                self.context.changed_set_speed_old.set(self.context.x.get());
+                                *changed_set_speed_ref = Some(self.context.x.get());
+                            }
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    self.process_set_speed.step(ProcessSetSpeedInput {
+                                        set_speed: *changed_set_speed_ref,
+                                    });
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                        }
+                        (
+                            None,
+                            None,
                             Some(((), period_in_regulation_instant)),
                             Some((vacuum_brake, vacuum_brake_instant)),
                             None,
@@ -2606,8 +2684,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -2644,8 +2724,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -2699,8 +2781,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -2738,8 +2822,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -2791,8 +2877,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -2826,8 +2914,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -2878,8 +2968,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -2914,8 +3006,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -2971,8 +3065,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -3010,8 +3106,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -3066,8 +3164,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -3106,8 +3206,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -3159,8 +3261,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
@@ -3195,8 +3299,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -3248,8 +3354,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                         }
@@ -3285,8 +3393,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -3344,8 +3454,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -3384,8 +3496,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -3441,8 +3555,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -3482,8 +3598,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -3612,8 +3730,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -3632,8 +3752,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -3669,8 +3791,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -3690,8 +3814,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -3825,8 +3951,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -3846,8 +3974,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -3884,8 +4014,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -3906,8 +4038,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -3958,8 +4092,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -3992,8 +4128,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -4043,8 +4181,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -4078,8 +4218,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -4134,8 +4276,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -4172,8 +4316,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -4227,8 +4373,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -4266,8 +4414,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -4318,8 +4468,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
@@ -4353,8 +4505,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -4405,8 +4559,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                         }
@@ -4441,8 +4597,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -4499,108 +4657,14 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            Some((speed, speed_instant)),
-                            None,
-                            None,
-                        ) => {
-                            let in_regulation_ref = &mut None;
-                            let activation_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
-                            self.context.speed.set(speed);
-                            *activation_ref = Some(activation);
-                            if activation_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: *activation_ref,
-                                        kickdown: None,
-                                        failure: None,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
-                                .await?;
-                            *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
-                                self.context.x.set(set_speed);
-                            }
-                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
-                                self.context.changed_set_speed_old.set(self.context.x.get());
-                                *changed_set_speed_ref = Some(self.context.x.get());
-                            }
-                            if changed_set_speed_ref.is_some() {
-                                let (v_set_aux, v_update) =
-                                    self.process_set_speed.step(ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    });
-                                self.context.v_set_aux.set(v_set_aux);
-                                self.context.v_update.set(v_update);
-                            }
-                            let v_set = self.context.v_set_aux.get();
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                        }
-                        (
-                            None,
-                            Some((vdc, vdc_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            Some((speed, speed_instant)),
-                            None,
-                            None,
-                        ) => {
-                            let in_regulation_ref = &mut None;
-                            let activation_ref = &mut None;
-                            self.context.speed.set(speed);
-                            *activation_ref = Some(activation);
-                            if activation_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: *activation_ref,
-                                        kickdown: None,
-                                        failure: None,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
-                                .await?;
-                            *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vdc.set(vdc);
-                        }
-                        (
-                            Some((set_speed, set_speed_instant)),
-                            Some((vdc, vdc_instant)),
                             Some(((), period_in_regulation_instant)),
                             Some((vacuum_brake, vacuum_brake_instant)),
                             Some((activation, activation_instant)),
@@ -4634,8 +4698,110 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
+                                self.context.x.set(set_speed);
+                            }
+                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
+                                self.context.changed_set_speed_old.set(self.context.x.get());
+                                *changed_set_speed_ref = Some(self.context.x.get());
+                            }
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    self.process_set_speed.step(ProcessSetSpeedInput {
+                                        set_speed: *changed_set_speed_ref,
+                                    });
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                        }
+                        (
+                            None,
+                            Some((vdc, vdc_instant)),
+                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            Some((speed, speed_instant)),
+                            None,
+                            None,
+                        ) => {
+                            let in_regulation_ref = &mut None;
+                            let activation_ref = &mut None;
+                            self.context.speed.set(speed);
+                            *activation_ref = Some(activation);
+                            if activation_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: *activation_ref,
+                                        kickdown: None,
+                                        failure: None,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
+                            *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.vdc.set(vdc);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vdc, vdc_instant)),
+                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            Some((speed, speed_instant)),
+                            None,
+                            None,
+                        ) => {
+                            let in_regulation_ref = &mut None;
+                            let activation_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
+                            self.context.speed.set(speed);
+                            *activation_ref = Some(activation);
+                            if activation_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: *activation_ref,
+                                        kickdown: None,
+                                        failure: None,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                                .await?;
+                            *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -4686,8 +4852,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -4720,8 +4888,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -4771,8 +4941,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -4806,8 +4978,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -4862,8 +5036,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -4900,8 +5076,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -4955,8 +5133,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -4994,184 +5174,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vdc.set(vdc);
-                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
-                                self.context.x.set(set_speed);
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
                             }
-                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
-                                self.context.changed_set_speed_old.set(self.context.x.get());
-                                *changed_set_speed_ref = Some(self.context.x.get());
-                            }
-                            if changed_set_speed_ref.is_some() {
-                                let (v_set_aux, v_update) =
-                                    self.process_set_speed.step(ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    });
-                                self.context.v_set_aux.set(v_set_aux);
-                                self.context.v_update.set(v_update);
-                            }
-                            let v_set = self.context.v_set_aux.get();
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                        }
-                        (
-                            None,
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            None,
-                            None,
-                        ) => {
-                            let failure_ref = &mut None;
-                            self.context.speed.set(speed);
-                            *failure_ref = Some(failure);
-                            if failure_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vacuum_brake.set(vacuum_brake);
-                        }
-                        (
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            None,
-                            None,
-                        ) => {
-                            let failure_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
-                            self.context.speed.set(speed);
-                            *failure_ref = Some(failure);
-                            if failure_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
-                                self.context.x.set(set_speed);
-                            }
-                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
-                                self.context.changed_set_speed_old.set(self.context.x.get());
-                                *changed_set_speed_ref = Some(self.context.x.get());
-                            }
-                            if changed_set_speed_ref.is_some() {
-                                let (v_set_aux, v_update) =
-                                    self.process_set_speed.step(ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    });
-                                self.context.v_set_aux.set(v_set_aux);
-                                self.context.v_update.set(v_update);
-                            }
-                            let v_set = self.context.v_set_aux.get();
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                        }
-                        (
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            None,
-                            None,
-                        ) => {
-                            let failure_ref = &mut None;
-                            self.context.speed.set(speed);
-                            *failure_ref = Some(failure);
-                            if failure_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.vdc.set(vdc);
-                        }
-                        (
-                            Some((set_speed, set_speed_instant)),
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            None,
-                            None,
-                        ) => {
-                            let failure_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
-                            self.context.speed.set(speed);
-                            *failure_ref = Some(failure);
-                            if failure_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -5195,6 +5201,190 @@ pub mod runtime {
                         (
                             None,
                             None,
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((failure, failure_instant)),
+                            Some((speed, speed_instant)),
+                            None,
+                            None,
+                        ) => {
+                            let failure_ref = &mut None;
+                            self.context.speed.set(speed);
+                            *failure_ref = Some(failure);
+                            if failure_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: None,
+                                        failure: *failure_ref,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((failure, failure_instant)),
+                            Some((speed, speed_instant)),
+                            None,
+                            None,
+                        ) => {
+                            let failure_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
+                            self.context.speed.set(speed);
+                            *failure_ref = Some(failure);
+                            if failure_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: None,
+                                        failure: *failure_ref,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
+                                self.context.x.set(set_speed);
+                            }
+                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
+                                self.context.changed_set_speed_old.set(self.context.x.get());
+                                *changed_set_speed_ref = Some(self.context.x.get());
+                            }
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    self.process_set_speed.step(ProcessSetSpeedInput {
+                                        set_speed: *changed_set_speed_ref,
+                                    });
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                        }
+                        (
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((failure, failure_instant)),
+                            Some((speed, speed_instant)),
+                            None,
+                            None,
+                        ) => {
+                            let failure_ref = &mut None;
+                            self.context.speed.set(speed);
+                            *failure_ref = Some(failure);
+                            if failure_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: None,
+                                        failure: *failure_ref,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.vdc.set(vdc);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((failure, failure_instant)),
+                            Some((speed, speed_instant)),
+                            None,
+                            None,
+                        ) => {
+                            let failure_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
+                            self.context.speed.set(speed);
+                            *failure_ref = Some(failure);
+                            if failure_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: None,
+                                        failure: *failure_ref,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.vdc.set(vdc);
+                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
+                                self.context.x.set(set_speed);
+                            }
+                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
+                                self.context.changed_set_speed_old.set(self.context.x.get());
+                                *changed_set_speed_ref = Some(self.context.x.get());
+                            }
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    self.process_set_speed.step(ProcessSetSpeedInput {
+                                        set_speed: *changed_set_speed_ref,
+                                    });
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                        }
+                        (
+                            None,
+                            None,
                             Some(((), period_in_regulation_instant)),
                             Some((vacuum_brake, vacuum_brake_instant)),
                             None,
@@ -5227,8 +5417,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -5266,8 +5458,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -5322,8 +5516,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -5362,8 +5558,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -5416,8 +5614,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -5452,8 +5652,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -5505,8 +5707,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -5542,8 +5746,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -5600,8 +5806,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -5640,8 +5848,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -5697,8 +5907,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -5738,8 +5950,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -5792,8 +6006,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
@@ -5829,8 +6045,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -5883,8 +6101,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                         }
@@ -5921,8 +6141,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -5981,112 +6203,14 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some((activation, activation_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            None,
-                            None,
-                        ) => {
-                            let in_regulation_ref = &mut None;
-                            let activation_ref = &mut None;
-                            let failure_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
-                            self.context.speed.set(speed);
-                            *failure_ref = Some(failure);
-                            *activation_ref = Some(activation);
-                            if activation_ref.is_some() || failure_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: *activation_ref,
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
-                                .await?;
-                            *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
-                                self.context.x.set(set_speed);
-                            }
-                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
-                                self.context.changed_set_speed_old.set(self.context.x.get());
-                                *changed_set_speed_ref = Some(self.context.x.get());
-                            }
-                            if changed_set_speed_ref.is_some() {
-                                let (v_set_aux, v_update) =
-                                    self.process_set_speed.step(ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    });
-                                self.context.v_set_aux.set(v_set_aux);
-                                self.context.v_update.set(v_update);
-                            }
-                            let v_set = self.context.v_set_aux.get();
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                        }
-                        (
-                            None,
-                            Some((vdc, vdc_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some((activation, activation_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            None,
-                            None,
-                        ) => {
-                            let in_regulation_ref = &mut None;
-                            let activation_ref = &mut None;
-                            let failure_ref = &mut None;
-                            self.context.speed.set(speed);
-                            *failure_ref = Some(failure);
-                            *activation_ref = Some(activation);
-                            if activation_ref.is_some() || failure_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: *activation_ref,
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
-                                .await?;
-                            *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vdc.set(vdc);
-                        }
-                        (
-                            Some((set_speed, set_speed_instant)),
-                            Some((vdc, vdc_instant)),
                             Some(((), period_in_regulation_instant)),
                             Some((vacuum_brake, vacuum_brake_instant)),
                             Some((activation, activation_instant)),
@@ -6122,8 +6246,114 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
+                                self.context.x.set(set_speed);
+                            }
+                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
+                                self.context.changed_set_speed_old.set(self.context.x.get());
+                                *changed_set_speed_ref = Some(self.context.x.get());
+                            }
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    self.process_set_speed.step(ProcessSetSpeedInput {
+                                        set_speed: *changed_set_speed_ref,
+                                    });
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                        }
+                        (
+                            None,
+                            Some((vdc, vdc_instant)),
+                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((activation, activation_instant)),
+                            Some((failure, failure_instant)),
+                            Some((speed, speed_instant)),
+                            None,
+                            None,
+                        ) => {
+                            let in_regulation_ref = &mut None;
+                            let activation_ref = &mut None;
+                            let failure_ref = &mut None;
+                            self.context.speed.set(speed);
+                            *failure_ref = Some(failure);
+                            *activation_ref = Some(activation);
+                            if activation_ref.is_some() || failure_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: *activation_ref,
+                                        kickdown: None,
+                                        failure: *failure_ref,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                                .await?;
+                            *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.vdc.set(vdc);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vdc, vdc_instant)),
+                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((activation, activation_instant)),
+                            Some((failure, failure_instant)),
+                            Some((speed, speed_instant)),
+                            None,
+                            None,
+                        ) => {
+                            let in_regulation_ref = &mut None;
+                            let activation_ref = &mut None;
+                            let failure_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
+                            self.context.speed.set(speed);
+                            *failure_ref = Some(failure);
+                            *activation_ref = Some(activation);
+                            if activation_ref.is_some() || failure_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: *activation_ref,
+                                        kickdown: None,
+                                        failure: *failure_ref,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
+                            *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -6171,8 +6401,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -6202,8 +6434,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -6250,8 +6484,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -6282,8 +6518,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -6335,8 +6573,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -6370,8 +6610,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -6422,8 +6664,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -6458,8 +6702,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -6507,8 +6753,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
@@ -6539,8 +6787,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -6588,8 +6838,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                         }
@@ -6621,8 +6873,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -6676,8 +6930,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -6712,8 +6968,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -6765,8 +7023,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -6802,8 +7062,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -6853,8 +7115,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -6886,8 +7150,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -6936,8 +7202,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -6970,8 +7238,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -7025,8 +7295,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -7062,8 +7334,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -7116,8 +7390,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -7154,8 +7430,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -7205,8 +7483,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
@@ -7239,8 +7519,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -7290,8 +7572,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                         }
@@ -7325,8 +7609,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -7382,8 +7668,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -7420,8 +7708,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -7475,8 +7765,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -7514,8 +7806,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -7565,8 +7859,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -7598,8 +7894,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -7648,8 +7946,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -7682,8 +7982,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -7737,8 +8039,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -7774,8 +8078,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -7828,8 +8134,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -7866,8 +8174,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -7917,8 +8227,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
@@ -7951,8 +8263,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -8002,8 +8316,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                         }
@@ -8037,8 +8353,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -8094,8 +8412,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -8132,8 +8452,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -8187,8 +8509,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -8226,8 +8550,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -8279,8 +8605,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -8314,8 +8642,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -8366,8 +8696,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -8402,8 +8734,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -8459,8 +8793,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -8498,8 +8834,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -8554,8 +8892,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -8594,8 +8934,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -8647,8 +8989,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
@@ -8683,8 +9027,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -8736,8 +9082,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                         }
@@ -8773,8 +9121,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -8832,8 +9182,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -8872,8 +9224,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -8929,8 +9283,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -8970,8 +9326,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -9019,8 +9377,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.speed.set(speed);
                         }
                         (
@@ -9051,8 +9411,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -9100,8 +9462,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.speed.set(speed);
                             self.context.vdc.set(vdc);
                         }
@@ -9133,8 +9497,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.speed.set(speed);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -9188,8 +9554,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -9224,8 +9592,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -9277,8 +9647,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -9314,8 +9686,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -9363,8 +9737,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.speed.set(speed);
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
@@ -9396,8 +9772,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.speed.set(speed);
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -9446,8 +9824,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.speed.set(speed);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -9480,8 +9860,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.speed.set(speed);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -9537,8 +9919,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -9574,8 +9958,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -9628,8 +10014,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -9666,8 +10054,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -9718,8 +10108,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -9752,8 +10144,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -9803,8 +10197,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -9838,8 +10234,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -9894,8 +10292,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -9932,8 +10332,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -9987,8 +10389,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -10026,8 +10430,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -10078,8 +10484,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
@@ -10113,8 +10521,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -10165,8 +10575,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                         }
@@ -10201,8 +10613,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -10259,8 +10673,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -10298,8 +10714,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -10354,8 +10772,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -10394,8 +10814,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -10446,8 +10868,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -10480,8 +10904,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -10531,8 +10957,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -10566,8 +10994,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -10622,8 +11052,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -10660,8 +11092,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -10715,8 +11149,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -10754,8 +11190,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -10806,8 +11244,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
@@ -10841,8 +11281,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -10893,8 +11335,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                         }
@@ -10929,8 +11373,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -10987,8 +11433,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -11026,8 +11474,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -11082,8 +11532,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -11122,8 +11574,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -11176,8 +11630,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -11212,8 +11668,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -11265,8 +11723,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -11302,8 +11762,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -11360,8 +11822,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -11400,8 +11864,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -11457,8 +11923,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -11498,8 +11966,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -11552,8 +12022,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
@@ -11589,8 +12061,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -11643,8 +12117,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                         }
@@ -11681,8 +12157,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -11741,8 +12219,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -11782,8 +12262,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -11840,8 +12322,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -11882,8 +12366,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -11933,8 +12419,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -11966,8 +12454,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -12016,8 +12506,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -12050,364 +12542,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vdc.set(vdc);
-                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
-                                self.context.x.set(set_speed);
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
                             }
-                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
-                                self.context.changed_set_speed_old.set(self.context.x.get());
-                                *changed_set_speed_ref = Some(self.context.x.get());
-                            }
-                            if changed_set_speed_ref.is_some() {
-                                let (v_set_aux, v_update) =
-                                    self.process_set_speed.step(ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    });
-                                self.context.v_set_aux.set(v_set_aux);
-                                self.context.v_update.set(v_update);
-                            }
-                            let v_set = self.context.v_set_aux.get();
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                        }
-                        (
-                            None,
-                            None,
-                            Some(((), period_in_regulation_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                        ) => {
-                            let in_regulation_ref = &mut None;
-                            let kickdown_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            if kickdown_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
-                                .await?;
-                            *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                        }
-                        (
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            Some(((), period_in_regulation_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                        ) => {
-                            let in_regulation_ref = &mut None;
-                            let kickdown_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            if kickdown_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
-                                .await?;
-                            *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
-                                self.context.x.set(set_speed);
-                            }
-                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
-                                self.context.changed_set_speed_old.set(self.context.x.get());
-                                *changed_set_speed_ref = Some(self.context.x.get());
-                            }
-                            if changed_set_speed_ref.is_some() {
-                                let (v_set_aux, v_update) =
-                                    self.process_set_speed.step(ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    });
-                                self.context.v_set_aux.set(v_set_aux);
-                                self.context.v_update.set(v_update);
-                            }
-                            let v_set = self.context.v_set_aux.get();
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                        }
-                        (
-                            None,
-                            Some((vdc, vdc_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                        ) => {
-                            let in_regulation_ref = &mut None;
-                            let kickdown_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            if kickdown_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
-                                .await?;
-                            *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vdc.set(vdc);
-                        }
-                        (
-                            Some((set_speed, set_speed_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                        ) => {
-                            let in_regulation_ref = &mut None;
-                            let kickdown_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            if kickdown_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
-                                .await?;
-                            *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vdc.set(vdc);
-                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
-                                self.context.x.set(set_speed);
-                            }
-                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
-                                self.context.changed_set_speed_old.set(self.context.x.get());
-                                *changed_set_speed_ref = Some(self.context.x.get());
-                            }
-                            if changed_set_speed_ref.is_some() {
-                                let (v_set_aux, v_update) =
-                                    self.process_set_speed.step(ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    });
-                                self.context.v_set_aux.set(v_set_aux);
-                                self.context.v_update.set(v_update);
-                            }
-                            let v_set = self.context.v_set_aux.get();
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                        }
-                        (
-                            None,
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                        ) => {
-                            let kickdown_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            if kickdown_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vacuum_brake.set(vacuum_brake);
-                        }
-                        (
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                        ) => {
-                            let kickdown_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            if kickdown_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
-                                self.context.x.set(set_speed);
-                            }
-                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
-                                self.context.changed_set_speed_old.set(self.context.x.get());
-                                *changed_set_speed_ref = Some(self.context.x.get());
-                            }
-                            if changed_set_speed_ref.is_some() {
-                                let (v_set_aux, v_update) =
-                                    self.process_set_speed.step(ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    });
-                                self.context.v_set_aux.set(v_set_aux);
-                                self.context.v_update.set(v_update);
-                            }
-                            let v_set = self.context.v_set_aux.get();
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                        }
-                        (
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                        ) => {
-                            let kickdown_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            if kickdown_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.vdc.set(vdc);
-                        }
-                        (
-                            Some((set_speed, set_speed_instant)),
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                        ) => {
-                            let kickdown_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            if kickdown_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -12432,6 +12570,378 @@ pub mod runtime {
                             None,
                             None,
                             Some(((), period_in_regulation_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            let in_regulation_ref = &mut None;
+                            let kickdown_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            if kickdown_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: *kickdown_ref,
+                                        failure: None,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                                .await?;
+                            *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            Some(((), period_in_regulation_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            let in_regulation_ref = &mut None;
+                            let kickdown_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            if kickdown_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: *kickdown_ref,
+                                        failure: None,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                                .await?;
+                            *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
+                                self.context.x.set(set_speed);
+                            }
+                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
+                                self.context.changed_set_speed_old.set(self.context.x.get());
+                                *changed_set_speed_ref = Some(self.context.x.get());
+                            }
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    self.process_set_speed.step(ProcessSetSpeedInput {
+                                        set_speed: *changed_set_speed_ref,
+                                    });
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                        }
+                        (
+                            None,
+                            Some((vdc, vdc_instant)),
+                            Some(((), period_in_regulation_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            let in_regulation_ref = &mut None;
+                            let kickdown_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            if kickdown_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: *kickdown_ref,
+                                        failure: None,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                                .await?;
+                            *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.vdc.set(vdc);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vdc, vdc_instant)),
+                            Some(((), period_in_regulation_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            let in_regulation_ref = &mut None;
+                            let kickdown_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            if kickdown_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: *kickdown_ref,
+                                        failure: None,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                                .await?;
+                            *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.vdc.set(vdc);
+                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
+                                self.context.x.set(set_speed);
+                            }
+                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
+                                self.context.changed_set_speed_old.set(self.context.x.get());
+                                *changed_set_speed_ref = Some(self.context.x.get());
+                            }
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    self.process_set_speed.step(ProcessSetSpeedInput {
+                                        set_speed: *changed_set_speed_ref,
+                                    });
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                        }
+                        (
+                            None,
+                            None,
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            let kickdown_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            if kickdown_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: *kickdown_ref,
+                                        failure: None,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            let kickdown_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            if kickdown_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: *kickdown_ref,
+                                        failure: None,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
+                                self.context.x.set(set_speed);
+                            }
+                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
+                                self.context.changed_set_speed_old.set(self.context.x.get());
+                                *changed_set_speed_ref = Some(self.context.x.get());
+                            }
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    self.process_set_speed.step(ProcessSetSpeedInput {
+                                        set_speed: *changed_set_speed_ref,
+                                    });
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                        }
+                        (
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            let kickdown_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            if kickdown_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: *kickdown_ref,
+                                        failure: None,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.vdc.set(vdc);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            let kickdown_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            if kickdown_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: *kickdown_ref,
+                                        failure: None,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.vdc.set(vdc);
+                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
+                                self.context.x.set(set_speed);
+                            }
+                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
+                                self.context.changed_set_speed_old.set(self.context.x.get());
+                                *changed_set_speed_ref = Some(self.context.x.get());
+                            }
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    self.process_set_speed.step(ProcessSetSpeedInput {
+                                        set_speed: *changed_set_speed_ref,
+                                    });
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                        }
+                        (
+                            None,
+                            None,
+                            Some(((), period_in_regulation_instant)),
                             Some((vacuum_brake, vacuum_brake_instant)),
                             None,
                             None,
@@ -12462,8 +12972,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -12500,8 +13012,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -12555,8 +13069,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -12594,8 +13110,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -12647,8 +13165,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -12682,8 +13202,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -12734,8 +13256,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -12770,8 +13294,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -12827,8 +13353,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -12866,8 +13394,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -12922,8 +13452,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -12962,8 +13494,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -13015,8 +13549,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
@@ -13051,8 +13587,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -13104,8 +13642,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                         }
@@ -13141,8 +13681,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -13200,8 +13742,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -13240,8 +13784,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -13297,8 +13843,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -13338,8 +13886,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -13391,8 +13941,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -13426,8 +13978,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -13478,8 +14032,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -13514,8 +14070,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -13571,8 +14129,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -13610,8 +14170,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -13666,8 +14228,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -13706,188 +14270,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vdc.set(vdc);
-                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
-                                self.context.x.set(set_speed);
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
                             }
-                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
-                                self.context.changed_set_speed_old.set(self.context.x.get());
-                                *changed_set_speed_ref = Some(self.context.x.get());
-                            }
-                            if changed_set_speed_ref.is_some() {
-                                let (v_set_aux, v_update) =
-                                    self.process_set_speed.step(ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    });
-                                self.context.v_set_aux.set(v_set_aux);
-                                self.context.v_update.set(v_update);
-                            }
-                            let v_set = self.context.v_set_aux.get();
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                        }
-                        (
-                            None,
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            Some((failure, failure_instant)),
-                            None,
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                        ) => {
-                            let kickdown_ref = &mut None;
-                            let failure_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            *failure_ref = Some(failure);
-                            if kickdown_ref.is_some() || failure_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vacuum_brake.set(vacuum_brake);
-                        }
-                        (
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            Some((failure, failure_instant)),
-                            None,
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                        ) => {
-                            let kickdown_ref = &mut None;
-                            let failure_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            *failure_ref = Some(failure);
-                            if kickdown_ref.is_some() || failure_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
-                                self.context.x.set(set_speed);
-                            }
-                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
-                                self.context.changed_set_speed_old.set(self.context.x.get());
-                                *changed_set_speed_ref = Some(self.context.x.get());
-                            }
-                            if changed_set_speed_ref.is_some() {
-                                let (v_set_aux, v_update) =
-                                    self.process_set_speed.step(ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    });
-                                self.context.v_set_aux.set(v_set_aux);
-                                self.context.v_update.set(v_update);
-                            }
-                            let v_set = self.context.v_set_aux.get();
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                        }
-                        (
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            Some((failure, failure_instant)),
-                            None,
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                        ) => {
-                            let kickdown_ref = &mut None;
-                            let failure_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            *failure_ref = Some(failure);
-                            if kickdown_ref.is_some() || failure_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.vdc.set(vdc);
-                        }
-                        (
-                            Some((set_speed, set_speed_instant)),
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            Some((failure, failure_instant)),
-                            None,
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                        ) => {
-                            let kickdown_ref = &mut None;
-                            let failure_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            *failure_ref = Some(failure);
-                            if kickdown_ref.is_some() || failure_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -13911,6 +14297,194 @@ pub mod runtime {
                         (
                             None,
                             None,
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((failure, failure_instant)),
+                            None,
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            let kickdown_ref = &mut None;
+                            let failure_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            *failure_ref = Some(failure);
+                            if kickdown_ref.is_some() || failure_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: *kickdown_ref,
+                                        failure: *failure_ref,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((failure, failure_instant)),
+                            None,
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            let kickdown_ref = &mut None;
+                            let failure_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            *failure_ref = Some(failure);
+                            if kickdown_ref.is_some() || failure_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: *kickdown_ref,
+                                        failure: *failure_ref,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
+                                self.context.x.set(set_speed);
+                            }
+                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
+                                self.context.changed_set_speed_old.set(self.context.x.get());
+                                *changed_set_speed_ref = Some(self.context.x.get());
+                            }
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    self.process_set_speed.step(ProcessSetSpeedInput {
+                                        set_speed: *changed_set_speed_ref,
+                                    });
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                        }
+                        (
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((failure, failure_instant)),
+                            None,
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            let kickdown_ref = &mut None;
+                            let failure_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            *failure_ref = Some(failure);
+                            if kickdown_ref.is_some() || failure_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: *kickdown_ref,
+                                        failure: *failure_ref,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.vdc.set(vdc);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((failure, failure_instant)),
+                            None,
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            let kickdown_ref = &mut None;
+                            let failure_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            *failure_ref = Some(failure);
+                            if kickdown_ref.is_some() || failure_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: *kickdown_ref,
+                                        failure: *failure_ref,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.vdc.set(vdc);
+                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
+                                self.context.x.set(set_speed);
+                            }
+                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
+                                self.context.changed_set_speed_old.set(self.context.x.get());
+                                *changed_set_speed_ref = Some(self.context.x.get());
+                            }
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    self.process_set_speed.step(ProcessSetSpeedInput {
+                                        set_speed: *changed_set_speed_ref,
+                                    });
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                        }
+                        (
+                            None,
+                            None,
                             Some(((), period_in_regulation_instant)),
                             Some((vacuum_brake, vacuum_brake_instant)),
                             None,
@@ -13944,8 +14518,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -13984,8 +14560,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -14041,8 +14619,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -14082,8 +14662,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -14140,8 +14722,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -14180,8 +14764,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -14237,8 +14823,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -14278,8 +14866,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -14340,8 +14930,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -14384,8 +14976,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -14445,8 +15039,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -14490,8 +15086,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -14548,8 +15146,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
@@ -14589,8 +15189,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -14647,8 +15249,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                         }
@@ -14689,8 +15293,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -14753,8 +15359,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -14798,8 +15406,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -14860,8 +15470,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -14906,8 +15518,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -14957,8 +15571,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.speed.set(speed);
                         }
                         (
@@ -14991,8 +15607,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -15042,8 +15660,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.speed.set(speed);
                             self.context.vdc.set(vdc);
                         }
@@ -15077,8 +15697,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.speed.set(speed);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -15134,8 +15756,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -15172,8 +15796,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -15227,8 +15853,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -15266,184 +15894,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vdc.set(vdc);
-                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
-                                self.context.x.set(set_speed);
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
                             }
-                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
-                                self.context.changed_set_speed_old.set(self.context.x.get());
-                                *changed_set_speed_ref = Some(self.context.x.get());
-                            }
-                            if changed_set_speed_ref.is_some() {
-                                let (v_set_aux, v_update) =
-                                    self.process_set_speed.step(ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    });
-                                self.context.v_set_aux.set(v_set_aux);
-                                self.context.v_update.set(v_update);
-                            }
-                            let v_set = self.context.v_set_aux.get();
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                        }
-                        (
-                            None,
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            None,
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                        ) => {
-                            let kickdown_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            if kickdown_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.speed.set(speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                        }
-                        (
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            None,
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                        ) => {
-                            let kickdown_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            if kickdown_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.speed.set(speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
-                                self.context.x.set(set_speed);
-                            }
-                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
-                                self.context.changed_set_speed_old.set(self.context.x.get());
-                                *changed_set_speed_ref = Some(self.context.x.get());
-                            }
-                            if changed_set_speed_ref.is_some() {
-                                let (v_set_aux, v_update) =
-                                    self.process_set_speed.step(ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    });
-                                self.context.v_set_aux.set(v_set_aux);
-                                self.context.v_update.set(v_update);
-                            }
-                            let v_set = self.context.v_set_aux.get();
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                        }
-                        (
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            None,
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                        ) => {
-                            let kickdown_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            if kickdown_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.speed.set(speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.vdc.set(vdc);
-                        }
-                        (
-                            Some((set_speed, set_speed_instant)),
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            None,
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                        ) => {
-                            let kickdown_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            if kickdown_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.speed.set(speed);
-                            self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -15467,6 +15921,190 @@ pub mod runtime {
                         (
                             None,
                             None,
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            Some((speed, speed_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            let kickdown_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            if kickdown_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: *kickdown_ref,
+                                        failure: None,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.speed.set(speed);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            Some((speed, speed_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            let kickdown_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            if kickdown_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: *kickdown_ref,
+                                        failure: None,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.speed.set(speed);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
+                                self.context.x.set(set_speed);
+                            }
+                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
+                                self.context.changed_set_speed_old.set(self.context.x.get());
+                                *changed_set_speed_ref = Some(self.context.x.get());
+                            }
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    self.process_set_speed.step(ProcessSetSpeedInput {
+                                        set_speed: *changed_set_speed_ref,
+                                    });
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                        }
+                        (
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            Some((speed, speed_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            let kickdown_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            if kickdown_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: *kickdown_ref,
+                                        failure: None,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.speed.set(speed);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.vdc.set(vdc);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            None,
+                            Some((speed, speed_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            let kickdown_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            if kickdown_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: *kickdown_ref,
+                                        failure: None,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.speed.set(speed);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.vdc.set(vdc);
+                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
+                                self.context.x.set(set_speed);
+                            }
+                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
+                                self.context.changed_set_speed_old.set(self.context.x.get());
+                                *changed_set_speed_ref = Some(self.context.x.get());
+                            }
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    self.process_set_speed.step(ProcessSetSpeedInput {
+                                        set_speed: *changed_set_speed_ref,
+                                    });
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                        }
+                        (
+                            None,
+                            None,
                             Some(((), period_in_regulation_instant)),
                             Some((vacuum_brake, vacuum_brake_instant)),
                             None,
@@ -15499,8 +16137,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -15538,8 +16178,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -15594,8 +16236,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -15634,8 +16278,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -15688,8 +16334,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -15724,8 +16372,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -15777,8 +16427,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -15814,8 +16466,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -15872,8 +16526,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -15912,8 +16568,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -15969,8 +16627,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -16010,8 +16670,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -16064,8 +16726,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
@@ -16101,8 +16765,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -16155,8 +16821,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                         }
@@ -16193,8 +16861,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -16253,112 +16923,14 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                        ) => {
-                            let in_regulation_ref = &mut None;
-                            let kickdown_ref = &mut None;
-                            let activation_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            self.context.speed.set(speed);
-                            *activation_ref = Some(activation);
-                            if activation_ref.is_some() || kickdown_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: *activation_ref,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
-                                .await?;
-                            *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
-                                self.context.x.set(set_speed);
-                            }
-                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
-                                self.context.changed_set_speed_old.set(self.context.x.get());
-                                *changed_set_speed_ref = Some(self.context.x.get());
-                            }
-                            if changed_set_speed_ref.is_some() {
-                                let (v_set_aux, v_update) =
-                                    self.process_set_speed.step(ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    });
-                                self.context.v_set_aux.set(v_set_aux);
-                                self.context.v_update.set(v_update);
-                            }
-                            let v_set = self.context.v_set_aux.get();
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                        }
-                        (
-                            None,
-                            Some((vdc, vdc_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some((activation, activation_instant)),
-                            None,
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                        ) => {
-                            let in_regulation_ref = &mut None;
-                            let kickdown_ref = &mut None;
-                            let activation_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            self.context.speed.set(speed);
-                            *activation_ref = Some(activation);
-                            if activation_ref.is_some() || kickdown_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: *activation_ref,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
-                                .await?;
-                            *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vdc.set(vdc);
-                        }
-                        (
-                            Some((set_speed, set_speed_instant)),
-                            Some((vdc, vdc_instant)),
                             Some(((), period_in_regulation_instant)),
                             Some((vacuum_brake, vacuum_brake_instant)),
                             Some((activation, activation_instant)),
@@ -16394,8 +16966,114 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
+                                self.context.x.set(set_speed);
+                            }
+                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
+                                self.context.changed_set_speed_old.set(self.context.x.get());
+                                *changed_set_speed_ref = Some(self.context.x.get());
+                            }
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    self.process_set_speed.step(ProcessSetSpeedInput {
+                                        set_speed: *changed_set_speed_ref,
+                                    });
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                        }
+                        (
+                            None,
+                            Some((vdc, vdc_instant)),
+                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            Some((speed, speed_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            let in_regulation_ref = &mut None;
+                            let kickdown_ref = &mut None;
+                            let activation_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            self.context.speed.set(speed);
+                            *activation_ref = Some(activation);
+                            if activation_ref.is_some() || kickdown_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: *activation_ref,
+                                        kickdown: *kickdown_ref,
+                                        failure: None,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
+                            *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.vdc.set(vdc);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vdc, vdc_instant)),
+                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((activation, activation_instant)),
+                            None,
+                            Some((speed, speed_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            let in_regulation_ref = &mut None;
+                            let kickdown_ref = &mut None;
+                            let activation_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            self.context.speed.set(speed);
+                            *activation_ref = Some(activation);
+                            if activation_ref.is_some() || kickdown_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: *activation_ref,
+                                        kickdown: *kickdown_ref,
+                                        failure: None,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                                .await?;
+                            *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -16448,8 +17126,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -16484,8 +17164,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -16537,8 +17219,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -16574,8 +17258,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -16632,8 +17318,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -16672,8 +17360,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -16729,8 +17419,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -16770,192 +17462,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vdc.set(vdc);
-                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
-                                self.context.x.set(set_speed);
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
                             }
-                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
-                                self.context.changed_set_speed_old.set(self.context.x.get());
-                                *changed_set_speed_ref = Some(self.context.x.get());
-                            }
-                            if changed_set_speed_ref.is_some() {
-                                let (v_set_aux, v_update) =
-                                    self.process_set_speed.step(ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    });
-                                self.context.v_set_aux.set(v_set_aux);
-                                self.context.v_update.set(v_update);
-                            }
-                            let v_set = self.context.v_set_aux.get();
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                        }
-                        (
-                            None,
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                        ) => {
-                            let kickdown_ref = &mut None;
-                            let failure_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            self.context.speed.set(speed);
-                            *failure_ref = Some(failure);
-                            if kickdown_ref.is_some() || failure_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vacuum_brake.set(vacuum_brake);
-                        }
-                        (
-                            Some((set_speed, set_speed_instant)),
-                            None,
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                        ) => {
-                            let kickdown_ref = &mut None;
-                            let failure_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            self.context.speed.set(speed);
-                            *failure_ref = Some(failure);
-                            if kickdown_ref.is_some() || failure_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
-                                self.context.x.set(set_speed);
-                            }
-                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
-                                self.context.changed_set_speed_old.set(self.context.x.get());
-                                *changed_set_speed_ref = Some(self.context.x.get());
-                            }
-                            if changed_set_speed_ref.is_some() {
-                                let (v_set_aux, v_update) =
-                                    self.process_set_speed.step(ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    });
-                                self.context.v_set_aux.set(v_set_aux);
-                                self.context.v_update.set(v_update);
-                            }
-                            let v_set = self.context.v_set_aux.get();
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                        }
-                        (
-                            None,
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                        ) => {
-                            let kickdown_ref = &mut None;
-                            let failure_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            self.context.speed.set(speed);
-                            *failure_ref = Some(failure);
-                            if kickdown_ref.is_some() || failure_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.vdc.set(vdc);
-                        }
-                        (
-                            Some((set_speed, set_speed_instant)),
-                            Some((vdc, vdc_instant)),
-                            None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                        ) => {
-                            let kickdown_ref = &mut None;
-                            let failure_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            self.context.speed.set(speed);
-                            *failure_ref = Some(failure);
-                            if kickdown_ref.is_some() || failure_ref.is_some() {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: None,
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -16979,6 +17489,198 @@ pub mod runtime {
                         (
                             None,
                             None,
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((failure, failure_instant)),
+                            Some((speed, speed_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            let kickdown_ref = &mut None;
+                            let failure_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            self.context.speed.set(speed);
+                            *failure_ref = Some(failure);
+                            if kickdown_ref.is_some() || failure_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: *kickdown_ref,
+                                        failure: *failure_ref,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            None,
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((failure, failure_instant)),
+                            Some((speed, speed_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            let kickdown_ref = &mut None;
+                            let failure_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            self.context.speed.set(speed);
+                            *failure_ref = Some(failure);
+                            if kickdown_ref.is_some() || failure_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: *kickdown_ref,
+                                        failure: *failure_ref,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
+                                self.context.x.set(set_speed);
+                            }
+                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
+                                self.context.changed_set_speed_old.set(self.context.x.get());
+                                *changed_set_speed_ref = Some(self.context.x.get());
+                            }
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    self.process_set_speed.step(ProcessSetSpeedInput {
+                                        set_speed: *changed_set_speed_ref,
+                                    });
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                        }
+                        (
+                            None,
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((failure, failure_instant)),
+                            Some((speed, speed_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            let kickdown_ref = &mut None;
+                            let failure_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            self.context.speed.set(speed);
+                            *failure_ref = Some(failure);
+                            if kickdown_ref.is_some() || failure_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: *kickdown_ref,
+                                        failure: *failure_ref,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.vdc.set(vdc);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vdc, vdc_instant)),
+                            None,
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            None,
+                            Some((failure, failure_instant)),
+                            Some((speed, speed_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            let kickdown_ref = &mut None;
+                            let failure_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            self.context.speed.set(speed);
+                            *failure_ref = Some(failure);
+                            if kickdown_ref.is_some() || failure_ref.is_some() {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: None,
+                                        kickdown: *kickdown_ref,
+                                        failure: *failure_ref,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.vdc.set(vdc);
+                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
+                                self.context.x.set(set_speed);
+                            }
+                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
+                                self.context.changed_set_speed_old.set(self.context.x.get());
+                                *changed_set_speed_ref = Some(self.context.x.get());
+                            }
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    self.process_set_speed.step(ProcessSetSpeedInput {
+                                        set_speed: *changed_set_speed_ref,
+                                    });
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                        }
+                        (
+                            None,
+                            None,
                             Some(((), period_in_regulation_instant)),
                             Some((vacuum_brake, vacuum_brake_instant)),
                             None,
@@ -17013,8 +17715,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -17054,8 +17758,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -17112,8 +17818,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -17154,8 +17862,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -17213,8 +17923,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -17254,8 +17966,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -17312,8 +18026,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -17354,8 +18070,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -17417,8 +18135,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -17462,8 +18182,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -17524,8 +18246,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -17570,8 +18294,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -17629,8 +18355,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
@@ -17671,8 +18399,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -17730,8 +18460,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                         }
@@ -17773,8 +18505,10 @@ pub mod runtime {
                                 self.context.in_regulation_aux.set(in_regulation_aux);
                                 self.context.state_update.set(state_update);
                             }
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -17838,122 +18572,14 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some((activation, activation_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                        ) => {
-                            let in_regulation_ref = &mut None;
-                            let kickdown_ref = &mut None;
-                            let activation_ref = &mut None;
-                            let failure_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            self.context.speed.set(speed);
-                            *failure_ref = Some(failure);
-                            *activation_ref = Some(activation);
-                            if activation_ref.is_some()
-                                || kickdown_ref.is_some()
-                                || failure_ref.is_some()
-                            {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: *activation_ref,
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
-                                .await?;
-                            *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
-                                self.context.x.set(set_speed);
-                            }
-                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
-                                self.context.changed_set_speed_old.set(self.context.x.get());
-                                *changed_set_speed_ref = Some(self.context.x.get());
-                            }
-                            if changed_set_speed_ref.is_some() {
-                                let (v_set_aux, v_update) =
-                                    self.process_set_speed.step(ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    });
-                                self.context.v_set_aux.set(v_set_aux);
-                                self.context.v_update.set(v_update);
-                            }
-                            let v_set = self.context.v_set_aux.get();
-                            self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, instant)).await?;
-                        }
-                        (
-                            None,
-                            Some((vdc, vdc_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some((activation, activation_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            None,
-                            Some((kickdown, kickdown_instant)),
-                        ) => {
-                            let in_regulation_ref = &mut None;
-                            let kickdown_ref = &mut None;
-                            let activation_ref = &mut None;
-                            let failure_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            self.context.speed.set(speed);
-                            *failure_ref = Some(failure);
-                            *activation_ref = Some(activation);
-                            if activation_ref.is_some()
-                                || kickdown_ref.is_some()
-                                || failure_ref.is_some()
-                            {
-                                let (state, on_state, in_regulation_aux, state_update) =
-                                    self.speed_limiter.step(SpeedLimiterInput {
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                        activation_req: *activation_ref,
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                    });
-                                self.context.state.set(state);
-                                self.context.on_state.set(on_state);
-                                self.context.in_regulation_aux.set(in_regulation_aux);
-                                self.context.state_update.set(state_update);
-                            }
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
-                                .await?;
-                            *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
-                            self.context.vdc.set(vdc);
-                        }
-                        (
-                            Some((set_speed, set_speed_instant)),
-                            Some((vdc, vdc_instant)),
                             Some(((), period_in_regulation_instant)),
                             Some((vacuum_brake, vacuum_brake_instant)),
                             Some((activation, activation_instant)),
@@ -17994,8 +18620,124 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            if (self.context.x.get() - set_speed).abs() >= 1.0 {
+                                self.context.x.set(set_speed);
+                            }
+                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
+                                self.context.changed_set_speed_old.set(self.context.x.get());
+                                *changed_set_speed_ref = Some(self.context.x.get());
+                            }
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    self.process_set_speed.step(ProcessSetSpeedInput {
+                                        set_speed: *changed_set_speed_ref,
+                                    });
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            self.send_output(O::VSet(v_set, instant)).await?;
+                        }
+                        (
+                            None,
+                            Some((vdc, vdc_instant)),
+                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((activation, activation_instant)),
+                            Some((failure, failure_instant)),
+                            Some((speed, speed_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            let in_regulation_ref = &mut None;
+                            let kickdown_ref = &mut None;
+                            let activation_ref = &mut None;
+                            let failure_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            self.context.speed.set(speed);
+                            *failure_ref = Some(failure);
+                            *activation_ref = Some(activation);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: *activation_ref,
+                                        kickdown: *kickdown_ref,
+                                        failure: *failure_ref,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                                .await?;
+                            *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
+                            self.context.vdc.set(vdc);
+                        }
+                        (
+                            Some((set_speed, set_speed_instant)),
+                            Some((vdc, vdc_instant)),
+                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((activation, activation_instant)),
+                            Some((failure, failure_instant)),
+                            Some((speed, speed_instant)),
+                            None,
+                            Some((kickdown, kickdown_instant)),
+                        ) => {
+                            let in_regulation_ref = &mut None;
+                            let kickdown_ref = &mut None;
+                            let activation_ref = &mut None;
+                            let failure_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            self.context.speed.set(speed);
+                            *failure_ref = Some(failure);
+                            *activation_ref = Some(activation);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    self.speed_limiter.step(SpeedLimiterInput {
+                                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                                        vdc_disabled: self.context.vdc.get(),
+                                        speed: self.context.speed.get(),
+                                        v_set: self.context.v_set.get(),
+                                        activation_req: *activation_ref,
+                                        kickdown: *kickdown_ref,
+                                        failure: *failure_ref,
+                                    });
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
+                            *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -18045,8 +18787,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -18078,8 +18822,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -18128,8 +18874,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -18162,8 +18910,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -18217,8 +18967,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -18254,8 +19006,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -18308,8 +19062,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -18346,8 +19102,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -18397,8 +19155,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
@@ -18431,8 +19191,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -18482,8 +19244,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                         }
@@ -18517,8 +19281,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -18574,8 +19340,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -18612,8 +19380,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -18667,8 +19437,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -18706,8 +19478,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -18759,8 +19533,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -18794,8 +19570,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -18846,8 +19624,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -18882,8 +19662,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -18939,8 +19721,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -18978,8 +19762,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -19034,8 +19820,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -19074,8 +19862,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -19127,8 +19917,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
@@ -19163,8 +19955,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -19216,8 +20010,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                         }
@@ -19253,8 +20049,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -19312,8 +20110,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -19352,8 +20152,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -19409,8 +20211,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -19450,8 +20254,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -19503,8 +20309,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -19538,8 +20346,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -19590,8 +20400,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -19626,8 +20438,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -19683,8 +20497,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -19722,8 +20538,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -19778,8 +20596,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -19818,8 +20638,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -19871,8 +20693,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
@@ -19907,8 +20731,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -19960,8 +20786,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                         }
@@ -19997,8 +20825,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -20056,8 +20886,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -20096,8 +20928,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -20153,8 +20987,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -20194,8 +21030,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -20249,8 +21087,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -20286,8 +21126,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -20340,8 +21182,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -20378,8 +21222,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -20437,8 +21283,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -20478,8 +21326,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -20536,8 +21386,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -20578,8 +21430,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -20633,8 +21487,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
@@ -20671,8 +21527,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -20726,8 +21584,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                         }
@@ -20765,8 +21625,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -20826,8 +21688,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -20868,8 +21732,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -20927,8 +21793,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -20970,8 +21838,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -21021,8 +21891,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.speed.set(speed);
                         }
                         (
@@ -21055,8 +21927,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -21106,8 +21980,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.speed.set(speed);
                             self.context.vdc.set(vdc);
                         }
@@ -21141,8 +22017,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.speed.set(speed);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -21198,8 +22076,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -21236,8 +22116,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -21291,8 +22173,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -21330,8 +22214,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -21381,8 +22267,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.speed.set(speed);
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
@@ -21416,8 +22304,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.speed.set(speed);
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -21468,8 +22358,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.speed.set(speed);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -21504,8 +22396,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.speed.set(speed);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -21563,8 +22457,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -21602,8 +22498,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -21658,8 +22556,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -21698,8 +22598,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -21752,8 +22654,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -21788,8 +22692,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -21841,8 +22747,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -21878,8 +22786,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -21936,8 +22846,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -21976,8 +22888,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -22033,8 +22947,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -22074,8 +22990,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -22128,8 +23046,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
@@ -22165,8 +23085,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -22219,8 +23141,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                         }
@@ -22257,8 +23181,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -22317,8 +23243,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -22358,8 +23286,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -22416,8 +23346,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -22458,8 +23390,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -22512,8 +23446,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -22548,8 +23484,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -22601,8 +23539,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -22638,8 +23578,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -22696,8 +23638,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -22736,8 +23680,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -22793,8 +23739,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -22834,8 +23782,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -22888,8 +23838,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
@@ -22925,8 +23877,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -22979,8 +23933,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                         }
@@ -23017,8 +23973,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -23077,8 +24035,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -23118,8 +24078,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -23176,8 +24138,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -23218,8 +24182,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -23274,8 +24240,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -23312,8 +24280,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -23367,8 +24337,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -23406,8 +24378,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -23466,8 +24440,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -23508,8 +24484,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -23567,8 +24545,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -23610,8 +24590,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -23666,8 +24648,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
@@ -23705,8 +24689,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -23761,8 +24747,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                         }
@@ -23801,8 +24789,10 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
@@ -23863,8 +24853,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                         }
                         (
                             Some((set_speed, set_speed_instant)),
@@ -23906,8 +24898,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
                             }
@@ -23966,8 +24960,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                         }
                         (
@@ -24010,8 +25006,10 @@ pub mod runtime {
                             self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            self.send_output(O::InRegulation(*in_regulation_ref, instant))
-                                .await?;
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(O::InRegulation(in_regulation, instant))
+                                    .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0 {
                                 self.context.x.set(set_speed);
@@ -24072,8 +25070,10 @@ pub mod runtime {
                         self.context.in_regulation_aux.set(in_regulation_aux);
                         self.context.state_update.set(state_update);
                     }
-                    self.send_output(O::InRegulation(*in_regulation_ref, failure_instant))
-                        .await?;
+                    if let Some(in_regulation) = *in_regulation_ref {
+                        self.send_output(O::InRegulation(in_regulation, failure_instant))
+                            .await?;
+                    }
                 } else {
                     let unique = self.input_store.failure.replace((failure, failure_instant));
                     assert!(unique.is_none(), "failure changes too frequently");
@@ -24119,11 +25119,13 @@ pub mod runtime {
                     self.context.on_state.set(on_state);
                     self.context.in_regulation_aux.set(in_regulation_aux);
                     self.context.state_update.set(state_update);
-                    self.send_output(O::InRegulation(
-                        *in_regulation_ref,
-                        period_speed_limiter_instant,
-                    ))
-                    .await?;
+                    if let Some(in_regulation) = *in_regulation_ref {
+                        self.send_output(O::InRegulation(
+                            in_regulation,
+                            period_speed_limiter_instant,
+                        ))
+                        .await?;
+                    }
                 } else {
                     let unique = self
                         .input_store
@@ -24162,8 +25164,10 @@ pub mod runtime {
                         self.context.in_regulation_aux.set(in_regulation_aux);
                         self.context.state_update.set(state_update);
                     }
-                    self.send_output(O::InRegulation(*in_regulation_ref, kickdown_instant))
-                        .await?;
+                    if let Some(in_regulation) = *in_regulation_ref {
+                        self.send_output(O::InRegulation(in_regulation, kickdown_instant))
+                            .await?;
+                    }
                 } else {
                     let unique = self
                         .input_store
