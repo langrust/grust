@@ -2149,8 +2149,7 @@ mod clean_synced {
                     continue 'go_down;
                 }
                 Synced::Para(_, _) => {
-                    let (para, exports) = extract_exports(ctxt, curr);
-                    acc = Some(Synced::seq(vec![para, exports], ctxt));
+                    acc = Some(extract_exports(ctxt, curr));
                 }
             }
 
@@ -2223,7 +2222,7 @@ mod clean_synced {
     ///
     /// Returns a tuple `(new_synced, exports)` where `new_synced` is a copy
     /// of input `synced` without exports, which are in `exports`.
-    fn extract_exports<Ctx>(ctxt: &Ctx, synced: Synced<Ctx>) -> (Synced<Ctx>, Synced<Ctx>)
+    fn extract_exports<Ctx>(ctxt: &Ctx, synced: Synced<Ctx>) -> Synced<Ctx>
     where
         Ctx: CtxSpec + IsExport + ?Sized,
     {
@@ -2272,9 +2271,20 @@ mod clean_synced {
             'go_up: loop {
                 match stack.pop() {
                     None => {
-                        let synced = acc.expect("there should be a synced to return");
-                        let exports = Synced::seq(exports, ctxt);
-                        return (synced, exports);
+                        if let Some(para) = acc {
+                            if exports.is_empty() {
+                                return para;
+                            } else {
+                                let exports = Synced::seq(exports, ctxt);
+                                return Synced::seq(vec![para, exports], ctxt);
+                            }
+                        } else {
+                            debug_assert!(
+                                !exports.is_empty(),
+                                "otherwise, the input 'synced' is empty"
+                            );
+                            return Synced::seq(exports, ctxt);
+                        }
                     }
                     Some(ExtractFrame::Para {
                         mut done,
