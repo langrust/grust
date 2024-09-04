@@ -740,6 +740,8 @@ mod service_handler {
         synced::{Builder, Synced},
     }
 
+    use frontend::lir_from_hir::interface::clean_synced;
+
     use super::{flow_instr, from_synced, triggered::TriggersGraph};
 
     /// Compute the instruction propagating the changes of the input flow.
@@ -844,6 +846,8 @@ mod service_handler {
             Synced::seq(seq, ctxt)
         };
 
+        // puts the exports out of parallel instructions
+        let synced = clean_synced::run(ctxt, synced);
         // produce the corresponding LIR instruction
         let instr = from_synced::run(ctxt, synced);
 
@@ -2070,6 +2074,254 @@ mod from_synced {
 
         fn suffix(_ctxt: &mut flow_instr::Builder<'a>) -> Self {
             FlowInstruction::seq(vec![])
+        }
+    }
+}
+
+mod clean_synced {
+    use super::flow_instr;
+
+    prelude! { just
+        BTreeMap as Map,
+        synced::{ CtxSpec, Synced },
+    }
+
+    pub trait IsExport: CtxSpec {
+        fn is_export(ctxt: &Self, instr: Self::Instr) -> bool;
+    }
+
+    enum Frame<Ctx>
+    where
+        Ctx: CtxSpec + ?Sized,
+    {
+        Seq {
+            done: Vec<Synced<Ctx>>,
+            todo: Vec<Synced<Ctx>>,
+        },
+    }
+
+    struct Stack<Ctx>
+    where
+        Ctx: CtxSpec + ?Sized,
+    {
+        stack: Vec<Frame<Ctx>>,
+    }
+
+    impl<Ctx> Stack<Ctx>
+    where
+        Ctx: CtxSpec + ?Sized,
+    {
+        fn new() -> Self {
+            Self {
+                stack: Vec::with_capacity(11),
+            }
+        }
+
+        fn push(&mut self, frame: Frame<Ctx>) {
+            self.stack.push(frame)
+        }
+
+        fn pop(&mut self) -> Option<Frame<Ctx>> {
+            self.stack.pop()
+        }
+    }
+
+    /// Puts the exports out of parallel instructions.
+    pub fn run<Ctx>(ctxt: &Ctx, synced: Synced<Ctx>) -> Synced<Ctx>
+    where
+        Ctx: CtxSpec + IsExport + ?Sized,
+    {
+        let mut stack: Stack<Ctx> = Stack::new();
+        let mut acc = None;
+        let mut curr = synced;
+
+        'go_down: loop {
+            debug_assert!(acc.is_none());
+            match curr {
+                Synced::Instr(_, _) => acc = Some(curr),
+                Synced::Seq(mut todo, _) => {
+                    todo.reverse();
+                    curr = todo
+                        .pop()
+                        .expect("there should be a synced in this sequence");
+                    stack.push(Frame::Seq { done: vec![], todo });
+                    continue 'go_down;
+                }
+                Synced::Para(_, _) => {
+                    let (para, exports) = extract_exports(ctxt, curr);
+                    acc = Some(Synced::seq(vec![para, exports], ctxt));
+                }
+            }
+
+            'go_up: loop {
+                debug_assert!(acc.is_some());
+                match stack.pop() {
+                    None => {
+                        let synced = acc.expect("there should be a synced to return");
+                        return synced;
+                    }
+                    Some(Frame::Seq { mut done, mut todo }) => {
+                        let instr = std::mem::take(&mut acc)
+                            .expect("there should be an instruction to sequence");
+                        done.push(instr);
+                        if let Some(curr_todo) = todo.pop() {
+                            curr = curr_todo;
+                            stack.push(Frame::Seq { done, todo });
+                            continue 'go_down;
+                        } else {
+                            acc = Some(Synced::seq(done, ctxt));
+                            continue 'go_up;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    enum ExtractFrame<Ctx>
+    where
+        Ctx: CtxSpec + ?Sized,
+    {
+        Seq {
+            done: Vec<Synced<Ctx>>,
+            todo: Vec<Synced<Ctx>>,
+        },
+        Para {
+            done: Map<Ctx::Cost, Vec<Synced<Ctx>>>,
+            cost: Ctx::Cost,
+            todo: Map<Ctx::Cost, Vec<Synced<Ctx>>>,
+        },
+    }
+
+    struct ExtractStack<Ctx>
+    where
+        Ctx: CtxSpec + ?Sized,
+    {
+        stack: Vec<ExtractFrame<Ctx>>,
+    }
+    impl<Ctx> ExtractStack<Ctx>
+    where
+        Ctx: CtxSpec + ?Sized,
+    {
+        fn new() -> Self {
+            Self {
+                stack: Vec::with_capacity(11),
+            }
+        }
+
+        fn push(&mut self, frame: ExtractFrame<Ctx>) {
+            self.stack.push(frame)
+        }
+
+        fn pop(&mut self) -> Option<ExtractFrame<Ctx>> {
+            self.stack.pop()
+        }
+    }
+
+    /// Extracts exports from synced.
+    ///
+    /// Returns a tuple `(new_synced, exports)` where `new_synced` is a copy
+    /// of input `synced` without exports, which are in `exports`.
+    fn extract_exports<Ctx>(ctxt: &Ctx, synced: Synced<Ctx>) -> (Synced<Ctx>, Synced<Ctx>)
+    where
+        Ctx: CtxSpec + IsExport + ?Sized,
+    {
+        let mut stack: ExtractStack<Ctx> = ExtractStack::new();
+        let mut acc = None;
+        let mut exports = vec![];
+        let mut curr = synced;
+
+        'go_down: loop {
+            debug_assert!(acc.is_none());
+            match curr {
+                Synced::Instr(instr, _) => {
+                    if IsExport::is_export(ctxt, instr) {
+                        exports.push(curr)
+                    } else {
+                        acc = Some(curr)
+                    }
+                }
+                Synced::Seq(mut todo, _) => {
+                    todo.reverse();
+                    curr = todo
+                        .pop()
+                        .expect("there should be a synced in this sequence");
+                    stack.push(ExtractFrame::Seq { done: vec![], todo });
+                    continue 'go_down;
+                }
+                Synced::Para(mut todo, _) => {
+                    let (cost, mut cost_todo) = todo
+                        .pop_first()
+                        .expect("there should be synceds in this parallel execution");
+                    curr = cost_todo
+                        .pop()
+                        .expect("there should be a synced in this parallel execution");
+                    if !cost_todo.is_empty() {
+                        todo.insert(cost.clone(), cost_todo);
+                    }
+                    stack.push(ExtractFrame::Para {
+                        done: Map::new(),
+                        todo,
+                        cost,
+                    });
+                    continue 'go_down;
+                }
+            }
+
+            'go_up: loop {
+                match stack.pop() {
+                    None => {
+                        let synced = acc.expect("there should be a synced to return");
+                        let exports = Synced::seq(exports, ctxt);
+                        return (synced, exports);
+                    }
+                    Some(ExtractFrame::Para {
+                        mut done,
+                        cost,
+                        mut todo,
+                    }) => {
+                        if let Some(instr) = std::mem::take(&mut acc) {
+                            done.entry(cost).or_insert_with(Vec::new).push(instr);
+                        }
+                        if let Some((cost, mut cost_todo)) = todo.pop_first() {
+                            curr = cost_todo
+                                .pop()
+                                .expect("impossible: `if !cost_todo.is_empty() {`");
+                            if !cost_todo.is_empty() {
+                                todo.insert(cost.clone(), cost_todo);
+                            }
+                            stack.push(ExtractFrame::Para { done, todo, cost });
+                            continue 'go_down;
+                        } else if done.is_empty() {
+                            continue 'go_up;
+                        } else {
+                            acc = Some(Synced::para(done, ctxt));
+                            continue 'go_up;
+                        }
+                    }
+                    Some(ExtractFrame::Seq { mut done, mut todo }) => {
+                        if let Some(instr) = std::mem::take(&mut acc) {
+                            done.push(instr);
+                        }
+                        if let Some(curr_todo) = todo.pop() {
+                            curr = curr_todo;
+                            stack.push(ExtractFrame::Seq { done, todo });
+                            continue 'go_down;
+                        } else if done.is_empty() {
+                            continue 'go_up;
+                        } else {
+                            acc = Some(Synced::seq(done, ctxt));
+                            continue 'go_up;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    impl<'a> IsExport for flow_instr::Builder<'a> {
+        fn is_export(ctxt: &Self, instr: Self::Instr) -> bool {
+            ctxt.get_export(instr).is_some()
         }
     }
 }
