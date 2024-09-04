@@ -185,13 +185,13 @@
   }
 }
 ,{
-  "timestamp": 155,
+  "timestamp": 150,
   "message": {
     "SlState": 2
   }
 }
 ,{
-  "timestamp": 155,
+  "timestamp": 150,
   "message": {
     "InRegulation": false
   }
@@ -485,13 +485,13 @@
   }
 }
 ,{
-  "timestamp": 400,
+  "timestamp": 405,
   "message": {
     "SlState": 2
   }
 }
 ,{
-  "timestamp": 400,
+  "timestamp": 405,
   "message": {
     "InRegulation": false
   }
@@ -720,6 +720,18 @@
 }
 ,{
   "timestamp": 590,
+  "message": {
+    "InRegulation": false
+  }
+}
+,{
+  "timestamp": 600,
+  "message": {
+    "SlState": 2
+  }
+}
+,{
+  "timestamp": 600,
   "message": {
     "InRegulation": false
   }
@@ -851,13 +863,13 @@
   }
 }
 ,{
-  "timestamp": 700,
+  "timestamp": 705,
   "message": {
     "SlState": 3
   }
 }
 ,{
-  "timestamp": 700,
+  "timestamp": 705,
   "message": {
     "InRegulation": true
   }
@@ -1015,7 +1027,7 @@
 ,{
   "timestamp": 830,
   "message": {
-    "InRegulation": false
+    "InRegulation": true
   }
 }
 ,{
@@ -1027,17 +1039,17 @@
 ,{
   "timestamp": 840,
   "message": {
-    "InRegulation": false
+    "InRegulation": true
   }
 }
 ,{
-  "timestamp": 850,
+  "timestamp": 855,
   "message": {
     "SlState": 3
   }
 }
 ,{
-  "timestamp": 850,
+  "timestamp": 855,
   "message": {
     "InRegulation": false
   }
@@ -1091,13 +1103,13 @@
   }
 }
 ,{
-  "timestamp": 905,
+  "timestamp": 900,
   "message": {
     "SlState": 3
   }
 }
 ,{
-  "timestamp": 905,
+  "timestamp": 900,
   "message": {
     "InRegulation": false
   }
@@ -1271,13 +1283,13 @@
   }
 }
 ,{
-  "timestamp": 1055,
+  "timestamp": 1050,
   "message": {
     "SlState": 3
   }
 }
 ,{
-  "timestamp": 1055,
+  "timestamp": 1050,
   "message": {
     "InRegulation": false
   }
@@ -1331,13 +1343,13 @@
   }
 }
 ,{
-  "timestamp": 1100,
+  "timestamp": 1105,
   "message": {
     "SlState": 3
   }
 }
 ,{
-  "timestamp": 1100,
+  "timestamp": 1105,
   "message": {
     "InRegulation": false
   }
@@ -1571,13 +1583,13 @@
   }
 }
 ,{
-  "timestamp": 1300,
+  "timestamp": 1305,
   "message": {
     "SlState": 3
   }
 }
 ,{
-  "timestamp": 1300,
+  "timestamp": 1305,
   "message": {
     "InRegulation": false
   }
@@ -1631,13 +1643,13 @@
   }
 }
 ,{
-  "timestamp": 1350,
+  "timestamp": 1355,
   "message": {
     "SlState": 3
   }
 }
 ,{
-  "timestamp": 1350,
+  "timestamp": 1355,
   "message": {
     "InRegulation": false
   }
@@ -1763,27 +1775,27 @@
   }
 }
 ,{
-  "timestamp": 1455,
+  "timestamp": 1460,
+  "message": {
+    "SlState": 3
+  }
+}
+,{
+  "timestamp": 1460,
+  "message": {
+    "InRegulation": false
+  }
+}
+,{
+  "timestamp": 1465,
   "message": {
     "SlState": 4
   }
 }
 ,{
-  "timestamp": 1455,
+  "timestamp": 1465,
   "message": {
     "InRegulation": false
-  }
-}
-,{
-  "timestamp": 1460,
-  "message": {
-    "SlState": 3
-  }
-}
-,{
-  "timestamp": 1460,
-  "message": {
-    "InRegulation": true
   }
 }
 ,{
@@ -2063,6 +2075,18 @@
   }
 }
 ,{
+  "timestamp": 1700,
+  "message": {
+    "SlState": 3
+  }
+}
+,{
+  "timestamp": 1700,
+  "message": {
+    "InRegulation": true
+  }
+}
+,{
   "timestamp": 1705,
   "message": {
     "SlState": 4
@@ -2123,13 +2147,13 @@
   }
 }
 ,{
-  "timestamp": 1755,
+  "timestamp": 1750,
   "message": {
     "SlState": 4
   }
 }
 ,{
-  "timestamp": 1755,
+  "timestamp": 1750,
   "message": {
     "InRegulation": true
   }
@@ -2245,7 +2269,7 @@
 ,{
   "timestamp": 1850,
   "message": {
-    "SlState": 3
+    "SlState": 4
   }
 }
 ,{
@@ -2257,7 +2281,7 @@
 ,{
   "timestamp": 1860,
   "message": {
-    "SlState": 3
+    "SlState": 4
   }
 }
 ,{
@@ -2329,43 +2353,43 @@
 ,{
   "timestamp": 1920,
   "message": {
-    "SlState": 2
+    "SlState": 3
   }
 }
 ,{
   "timestamp": 1920,
   "message": {
-    "InRegulation": false
+    "InRegulation": true
   }
 }
 ,{
-  "timestamp": 1925,
+  "timestamp": 1930,
+  "message": {
+    "SlState": 3
+  }
+}
+,{
+  "timestamp": 1930,
+  "message": {
+    "InRegulation": true
+  }
+}
+,{
+  "timestamp": 1935,
   "message": {
     "SlState": 2
   }
 }
 ,{
-  "timestamp": 1925,
+  "timestamp": 1935,
   "message": {
     "InRegulation": false
   }
 }
 ,{
-  "timestamp": 1925,
+  "timestamp": 1935,
   "message": {
     "VSet": 10.0
-  }
-}
-,{
-  "timestamp": 1930,
-  "message": {
-    "SlState": 2
-  }
-}
-,{
-  "timestamp": 1930,
-  "message": {
-    "InRegulation": false
   }
 }
 ,{
