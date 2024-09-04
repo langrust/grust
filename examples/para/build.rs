@@ -19,19 +19,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "#[derive(serde::Serialize, serde::Deserialize)]",
         )
         .type_attribute(
-            "interface.Speed",
-            "#[derive(serde::Serialize, serde::Deserialize)]",
-        )
-        .type_attribute(
-            "interface.Pedestrian",
-            "#[derive(serde::Serialize, serde::Deserialize)]",
-        )
-        .type_attribute(
-            "interface.Braking",
-            "#[derive(serde::Serialize, serde::Deserialize)]",
-        )
-        .type_attribute(
-            "interface.Input.message",
+            "interface.Output.message",
             "#[derive(serde::Serialize, serde::Deserialize)]",
         )
         .compile(&[proto_path], &[proto_dir])?;
