@@ -245,6 +245,7 @@ mod rust_ast_from_lir {
                     pattern: Pattern::ident("y"),
                     expression: lir::Expr::node_call(
                         "called_node_state",
+                        "called_node",
                         "CalledNodeInput",
                         vec![],
                     ),

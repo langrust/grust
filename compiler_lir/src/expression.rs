@@ -98,6 +98,8 @@ pub enum Expr {
     },
     /// A node call: `self.called_node.step(inputs)`.
     NodeCall {
+        /// Node's identifier in memory.
+        memory_ident: String,
         /// The identifier to the node.
         node_identifier: String,
         /// The name of the input structure of the called node.
@@ -199,6 +201,7 @@ impl Expr {
             arguments: Vec<Self>,
         }
         NodeCall: node_call {
+            memory_ident: impl Into<String> = memory_ident.into(),
             node_identifier: impl Into<String> = node_identifier.into(),
             input_name: impl Into<String> = input_name.into(),
             input_fields: Vec<(String, Self)>,

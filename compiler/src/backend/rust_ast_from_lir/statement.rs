@@ -62,6 +62,7 @@ mod rust_ast_from_lir {
             Pattern::ident("o"),
             lir::Expr::node_call(
                 "node_state",
+                "node",
                 "NodeInput",
                 vec![(
                     "i".into(),

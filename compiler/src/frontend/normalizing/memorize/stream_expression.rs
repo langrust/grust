@@ -55,8 +55,11 @@ impl stream::Expr {
             stream::Kind::NodeApplication {
                 called_node_id,
                 inputs,
+                memory_id: node_memory_id,
                 ..
             } => {
+                debug_assert!(node_memory_id.is_none());
+
                 // create fresh identifier for the new memory buffer
                 let node_name = symbol_table.get_name(*called_node_id);
                 let memory_name = identifier_creator.new_identifier(&node_name);
@@ -73,6 +76,8 @@ impl stream::Expr {
                     .collect::<Vec<_>>();
                 memory.add_called_node(memory_id, *called_node_id, inputs_map);
 
+                // put the 'memory_id' of the called node
+                *node_memory_id = Some(memory_id);
                 self.dependencies = Dependencies::from(
                     inputs
                         .iter()

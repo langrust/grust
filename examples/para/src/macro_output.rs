@@ -135,7 +135,7 @@ impl C5State {
         let x = input.s4 > 0i64;
         let comp_app_rising_edge = self.rising_edge.step(RisingEdgeInput { test: x });
         let x_1 = input.s3 >= 0i64;
-        let comp_app_rising_edge_1 = self.rising_edge.step(RisingEdgeInput { test: x_1 });
+        let comp_app_rising_edge_1 = self.rising_edge_1.step(RisingEdgeInput { test: x_1 });
         let prev_o = self.mem;
         let o = match (input.e3) {
             (Some(e3)) => {
