@@ -144,17 +144,17 @@ impl HIRFromAST for stream::Expr {
                                 return Err(TerminationError);
                             }
 
-                            hir::stream::Kind::NodeApplication {
-                                calling_node_id: symbol_table.get_current_node_id(),
+                            hir::stream::Kind::call(
+                                symbol_table.get_current_node_id(),
                                 called_node_id,
-                                inputs: inputs_stream_expressions
+                                inputs_stream_expressions
                                     .into_iter()
                                     .zip(inputs)
                                     .map(|(input, id)| {
                                         Ok((*id, input.clone().hir_from_ast(symbol_table, errors)?))
                                     })
                                     .collect::<TRes<Vec<_>>>()?,
-                            }
+                            )
                         }
                         _ => unreachable!(),
                     }

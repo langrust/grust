@@ -160,12 +160,13 @@ pub fn rust_ast_from_lir(expression: lir::Expr, crates: &mut BTreeSet<String>) -
             Expr::Binary(parse_quote! { #left #binary #right })
         }
         lir::Expr::NodeCall {
-            node_identifier,
+            memory_ident,
             input_name,
             input_fields,
+            ..
         } => {
-            let id = Ident::new(&node_identifier, Span::call_site());
-            let receiver: ExprField = parse_quote! { self . #id};
+            let ident = Ident::new(&memory_ident, Span::call_site());
+            let receiver: ExprField = parse_quote! { self . #ident};
             let input_fields: Vec<FieldValue> = input_fields
                 .into_iter()
                 .map(|(name, expression)| {
@@ -492,6 +493,7 @@ mod rust_ast_from_lir {
     fn should_create_rust_ast_method_call_from_lir_node_call() {
         let expression = lir::Expr::node_call(
             "node_state",
+            "node",
             "NodeInput",
             vec![(
                 "i".into(),

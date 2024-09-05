@@ -86,38 +86,47 @@ impl LIRFromHIR for ComponentDefinition {
 
         // transform contract
         let contract = self.contract.lir_from_hir(symbol_table);
+        let invariant_initialisation = vec![]; // TODO
 
-        StateMachine {
-            name: name.clone(),
-            input: Input {
-                node_name: name.clone(),
-                elements: inputs
-                    .into_iter()
-                    .map(|(identifier, r#type)| InputElement { identifier, r#type })
-                    .collect(),
-            },
-            state: State {
-                node_name: name.clone(),
-                elements,
-                step: Step {
-                    contract,
-                    node_name: name.clone(),
-                    output_type,
-                    body: self
-                        .statements
-                        .into_iter()
-                        .map(|equation| equation.lir_from_hir(symbol_table))
-                        .collect(),
-                    state_elements_step,
-                    output_expression,
-                },
-                init: Init {
-                    node_name: name,
-                    state_elements_init,
-                    invariant_initialisation: vec![], // TODO
-                },
-            },
-        }
+        // 'init' method
+        let init = Init {
+            node_name: name.clone(),
+            state_elements_init,
+            invariant_initialisation,
+        };
+
+        // 'step' method
+        let step = Step {
+            contract,
+            node_name: name.clone(),
+            output_type,
+            body: self
+                .statements
+                .into_iter()
+                .map(|equation| equation.lir_from_hir(symbol_table))
+                .collect(),
+            state_elements_step,
+            output_expression,
+        };
+
+        // 'input' structure
+        let input = Input {
+            node_name: name.clone(),
+            elements: inputs
+                .into_iter()
+                .map(|(identifier, r#type)| InputElement { identifier, r#type })
+                .collect(),
+        };
+
+        // 'state' structure
+        let state = State {
+            node_name: name.clone(),
+            elements,
+            step,
+            init,
+        };
+
+        StateMachine { name, input, state }
     }
 }
 
