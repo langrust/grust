@@ -1,9 +1,6 @@
 prelude! {
     ast::{
-        equation::{
-            Arm, DefaultArmWhen, Equation, EventArmWhen,
-            Instantiation, Match, MatchWhen,
-        },
+        equation::{ Arm, Equation, EventArmWhen, Instantiation, Match, MatchWhen },
         stmt::LetDecl,
     },
     hir::{ pattern, stream },
@@ -164,7 +161,7 @@ impl HIRFromAST for Equation {
                     location,
                 })
             }
-            Equation::MatchWhen(MatchWhen { arms, default, .. }) => {
+            Equation::MatchWhen(MatchWhen { arms, .. }) => {
                 // create the receiving pattern for the equation
                 let pattern = {
                     let mut elements = defined_signals
@@ -178,8 +175,12 @@ impl HIRFromAST for Equation {
                     }
                 };
 
-                // create map from event_id to index in tuple pattern and default tuple pattern
-                let (events_indices, events_nb, no_event_tuple) = {
+                let (
+                    // map from event_id to index in tuple pattern
+                    events_indices,
+                    // default tuple pattern
+                    default_pattern,
+                ) = {
                     // create map from event_id to index in tuple pattern
                     let mut events_indices = HashMap::with_capacity(arms.len());
                     let mut idx = 0;
@@ -195,12 +196,12 @@ impl HIRFromAST for Equation {
                         .collect::<TRes<()>>()?;
 
                     // default event_pattern tuple
-                    let no_event_tuple: Vec<_> =
+                    let default_pattern: Vec<_> =
                         std::iter::repeat(pattern::init(pattern::Kind::default()))
                             .take(idx)
                             .collect();
 
-                    (events_indices, idx, no_event_tuple)
+                    (events_indices, default_pattern)
                 };
 
                 // get the default arm if present
@@ -223,7 +224,7 @@ impl HIRFromAST for Equation {
                             .collect::<TRes<()>>()?;
 
                         // create tuple pattern
-                        let elements = no_event_tuple.clone();
+                        let elements = default_pattern.clone();
                         let pattern = pattern::init(pattern::Kind::tuple(elements));
                         // transform guard and equations into HIR with local context
                         let guard = None;
@@ -277,7 +278,7 @@ impl HIRFromAST for Equation {
 
                                 // set local context: events + equations' signals
                                 // create tuple pattern: it stores events identifiers
-                                let mut elements = no_event_tuple.clone();
+                                let mut elements = default_pattern.clone();
                                 let opt_guard = event_pattern.create_tuple_pattern(
                                     &mut elements,
                                     &events_indices,
@@ -393,7 +394,6 @@ impl HIRFromAST for Equation {
                                 stream::expr(stream::Kind::expr(hir::expr::Kind::ident(*event_id)))
                             })
                             .collect::<Vec<_>>();
-                        debug_assert!(elements.len() == events_nb);
                         stream::expr(stream::Kind::expr(hir::expr::Kind::tuple(elements)))
                     };
                     stream::expr(stream::Kind::expr(hir::expr::Kind::match_expr(
