@@ -17,6 +17,7 @@ pub fn rust_ast_from_lir(pattern: Pattern) -> Pat {
                 paren_token,
                 elems: Default::default(),
             }),
+            Constant::Default => parse_quote! { default::Default() },
         },
         Pattern::Identifier { name } => Pat::Ident(PatIdent {
             attrs: vec![],

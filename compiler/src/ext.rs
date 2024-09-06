@@ -237,13 +237,10 @@ pub trait EquationExt {
         symbol_table: &SymbolTable,
         errors: &mut Vec<Error>,
     ) -> TRes<()>;
-
-    /// Tells if the equation defines an event.
-    fn is_event(&self) -> bool;
 }
 
 mod equation {
-    prelude! { ast::{ equation::*, stmt::LetDecl } }
+    prelude! { ast::equation::* }
 
     impl super::EquationExt for Equation {
         fn store_signals(
@@ -272,7 +269,7 @@ mod equation {
                     }
                     Ok(())
                 }
-                Equation::MatchWhen(MatchWhen { arms, default, .. }) => {
+                Equation::MatchWhen(MatchWhen { arms, .. }) => {
                     // we want to collect every identifier, but events might be declared in only one branch
                     // then, it is needed to explore all branches
                     let mut when_signals = HashMap::new();
@@ -291,9 +288,6 @@ mod equation {
                         symbol_table.global();
                         Ok(())
                     };
-                    if let Some(DefaultArmWhen { equations, .. }) = default {
-                        add_signals(equations)?
-                    }
                     for EventArmWhen { equations, .. } in arms {
                         add_signals(equations)?
                     }
@@ -338,7 +332,7 @@ mod equation {
                     }
                     Ok(())
                 }
-                Equation::MatchWhen(MatchWhen { arms, default, .. }) => {
+                Equation::MatchWhen(MatchWhen { arms, .. }) => {
                     let mut add_signals = |equations: &Vec<Equation>| {
                         // we want to collect every identifier, but events might be declared in only one branch
                         // then, it is needed to explore all branches
@@ -347,26 +341,11 @@ mod equation {
                         }
                         Ok(())
                     };
-                    if let Some(DefaultArmWhen { equations, .. }) = default {
-                        add_signals(equations)?
-                    }
                     for EventArmWhen { equations, .. } in arms {
                         add_signals(equations)?
                     }
                     Ok(())
                 }
-            }
-        }
-
-        fn is_event(&self) -> bool {
-            match self {
-                Equation::LocalDef(LetDecl { expression, .. })
-                | Equation::OutputDef(Instantiation { expression, .. }) => match expression {
-                    ast::stream::Expr::When(when) => when.default.is_none(),
-                    _ => false,
-                },
-                Equation::MatchWhen(_) => false, //when.default.is_none(),
-                Equation::Match(_) => false,
             }
         }
     }
@@ -909,7 +888,7 @@ mod event_pattern {
             }
         }
 
-        /// Creates event tuple and stores the events.
+        /// Creates event tuple, stores the events and return rising_edges combined as a guard.
         fn create_tuple_pattern(
             self,
             tuple: &mut Vec<hir::Pattern>,

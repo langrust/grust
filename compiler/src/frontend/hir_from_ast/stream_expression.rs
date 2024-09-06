@@ -13,20 +13,24 @@ impl HIRFromAST for stream::When {
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> TRes<Self::HIR> {
-        let stream::When { presence, default } = self;
+        let stream::When {
+            pattern,
+            expression,
+            ..
+        } = self;
         let location = Location::default();
         let mut arms = vec![];
 
         // precondition: identifiers are stored in symbol table
         // postcondition: construct HIR expression kind and check identifiers good use
+        let ident: String = todo!();
+        let is_event = todo!();
 
         // create map from event_id to index in tuple pattern
         let (events_indices, events_nb, no_event_tuple) = {
             let mut events_indices = HashMap::with_capacity(arms.len());
             let mut idx = 0;
-            presence
-                .pattern
-                .place_events(&mut events_indices, &mut idx, symbol_table, errors)?;
+            pattern.place_events(&mut events_indices, &mut idx, symbol_table, errors)?;
             // default event_pattern tuple
             let no_event_tuple: Vec<_> =
                 std::iter::repeat(hir::pattern::init(hir::pattern::Kind::default()))
@@ -41,7 +45,7 @@ impl HIRFromAST for stream::When {
 
             // set local context + create tuple of event's pattern
             let mut elements = no_event_tuple;
-            let opt_guard = presence.pattern.create_tuple_pattern(
+            let opt_guard = pattern.create_tuple_pattern(
                 &mut elements,
                 &events_indices,
                 symbol_table,
@@ -50,10 +54,8 @@ impl HIRFromAST for stream::When {
             let pattern = hir::pattern::init(hir::pattern::Kind::tuple(elements));
 
             // transform into HIR
-            let expression = presence.expression.hir_from_ast(symbol_table, errors)?;
-
-            // if no default then event
-            let expression = if default.is_none() {
+            let expression = expression.hir_from_ast(symbol_table, errors)?;
+            let expression = if is_event {
                 hir::stream::expr(hir::stream::Kind::some_event(expression))
             } else {
                 expression
@@ -74,11 +76,15 @@ impl HIRFromAST for stream::When {
                 typing: None,
                 location: location.clone(),
             };
-            if let Some(default) = default {
-                let expression = default.expression.hir_from_ast(symbol_table, errors)?;
+            if is_event {
+                let expression = hir::stream::expr(hir::stream::Kind::none_event());
                 arms.push((pattern, None, vec![], expression))
             } else {
-                let expression = hir::stream::expr(hir::stream::Kind::none_event());
+                let expression = stream::Expr::fby(stream::Fby::new(
+                    stream::Expr::cst(Constant::default()),
+                    stream::Expr::ident(ident),
+                ))
+                .hir_from_ast(symbol_table, errors)?;
                 arms.push((pattern, None, vec![], expression))
             }
         }

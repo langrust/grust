@@ -63,6 +63,7 @@ pub fn constant_to_syn(literal: Constant) -> Expr {
             paren_token,
             elems: Default::default(),
         }),
+        Constant::Default => parse_quote! { default::Default() },
     }
 }
 

@@ -24,6 +24,8 @@ pub enum Constant {
     Boolean(LitBool),
     /// Unit constant
     Unit(Paren),
+    /// Default constant
+    Default,
 }
 mk_new! { impl Constant =>
     Integer: int(l: LitInt = l)
@@ -31,6 +33,7 @@ mk_new! { impl Constant =>
     Boolean: bool(l: LitBool = l)
     Unit: unit(l: Paren = l)
     Unit: unit_default(l = Default::default())
+    Default: default()
 }
 
 impl Constant {
@@ -43,6 +46,7 @@ impl Constant {
             Constant::Unit(paren) => Typ::Unit(keyword::unit {
                 span: paren.span.span(),
             }),
+            Constant::Default => Typ::Any,
         }
     }
 }
