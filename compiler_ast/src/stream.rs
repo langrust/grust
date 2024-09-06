@@ -32,43 +32,22 @@ impl Fby {
     }
 }
 
-/// Matching event presence.
+/// Pattern matching for event expression.
 #[derive(Debug, PartialEq, Clone)]
-pub struct EventWhen {
+pub struct When {
     /// The pattern receiving the value of the event.
     pub pattern: EventPattern,
-    /// The optional guard.
     pub then_token: keyword::then,
-    /// The expression to do.
+    /// Action triggered by event.
     pub expression: Box<Expr>,
 }
 
-mk_new! { impl EventWhen =>
+mk_new! { impl When =>
     new {
         pattern: EventPattern,
         then_token: keyword::then,
         expression: impl Into<Box<Expr >> = expression.into(),
     }
-}
-
-impl Parse for EventWhen {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let pattern: EventPattern = input.parse()?;
-        let then_token: keyword::then = input.parse()?;
-        let expression: Expr = input.parse()?;
-        Ok(EventWhen::new(pattern, then_token, expression))
-    }
-}
-
-/// Pattern matching for event expression.
-#[derive(Debug, PartialEq, Clone)]
-pub struct When {
-    /// Matching event presence.
-    pub presence: EventWhen,
-}
-
-mk_new! { impl When =>
-    new { presence: EventWhen }
 }
 
 impl When {
@@ -79,8 +58,10 @@ impl When {
 impl Parse for When {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let _: keyword::when = input.parse()?;
-        let presence = input.parse()?;
-        Ok(When::new(presence))
+        let pattern: EventPattern = input.parse()?;
+        let then_token: keyword::then = input.parse()?;
+        let expression: Expr = input.parse()?;
+        Ok(When::new(pattern, then_token, expression))
     }
 }
 
@@ -281,7 +262,7 @@ mod parse_stream_expression {
             Structure, Tuple, TupleElementAccess, TypedAbstraction, Zip,
         },
         equation::{EventPattern, LetEventPattern},
-        stream::{Fby, Expr, EventWhen, When},
+        stream::{Fby, Expr, When},
         operator::BinaryOperator,
         quote::format_ident,
     }
@@ -497,7 +478,7 @@ mod parse_stream_expression {
     #[test]
     fn should_parse_when() {
         let expression: Expr = syn::parse_quote! {when let d = p? then x};
-        let control = Expr::when_match(When::new(EventWhen::new(
+        let control = Expr::when_match(When::new(
             EventPattern::Let(LetEventPattern::new(
                 Default::default(),
                 Pattern::ident("d"),
@@ -507,7 +488,7 @@ mod parse_stream_expression {
             )),
             Default::default(),
             Expr::ident("x"),
-        )));
+        ));
         assert_eq!(expression, control)
     }
 }
