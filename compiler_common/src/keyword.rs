@@ -39,7 +39,6 @@ syn::custom_keyword!(unit);
 
 // Operators and constructs.
 syn::custom_keyword!(when);
-syn::custom_keyword!(otherwise);
 syn::custom_keyword!(then);
 syn::custom_keyword!(fby);
 syn::custom_keyword!(some);

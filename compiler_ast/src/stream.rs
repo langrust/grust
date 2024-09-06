@@ -60,43 +60,15 @@ impl Parse for EventWhen {
     }
 }
 
-/// Matching default branch.
-#[derive(Debug, PartialEq, Clone)]
-pub struct DefaultWhen {
-    pub otherwise_token: keyword::otherwise,
-    /// The expression to do.
-    pub expression: Box<Expr>,
-}
-
-mk_new! { impl DefaultWhen =>
-    new {
-        otherwise_token: keyword::otherwise,
-        expression: impl Into<Box<Expr >> = expression.into(),
-    }
-}
-
-impl Parse for DefaultWhen {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let otherwise_token: keyword::otherwise = input.parse()?;
-        let expression: Expr = input.parse()?;
-        Ok(DefaultWhen::new(otherwise_token, expression))
-    }
-}
-
 /// Pattern matching for event expression.
 #[derive(Debug, PartialEq, Clone)]
 pub struct When {
     /// Matching event presence.
     pub presence: EventWhen,
-    /// Matching event presence.
-    pub default: Option<DefaultWhen>,
 }
 
 mk_new! { impl When =>
-    new {
-        presence: EventWhen,
-        default: Option<DefaultWhen>,
-    }
+    new { presence: EventWhen }
 }
 
 impl When {
@@ -108,12 +80,7 @@ impl Parse for When {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let _: keyword::when = input.parse()?;
         let presence = input.parse()?;
-        let default = if input.peek(keyword::otherwise) {
-            Some(input.parse()?)
-        } else {
-            None
-        };
-        Ok(When::new(presence, default))
+        Ok(When::new(presence))
     }
 }
 
@@ -314,7 +281,7 @@ mod parse_stream_expression {
             Structure, Tuple, TupleElementAccess, TypedAbstraction, Zip,
         },
         equation::{EventPattern, LetEventPattern},
-        stream::{Fby, Expr, DefaultWhen, EventWhen, When},
+        stream::{Fby, Expr, EventWhen, When},
         operator::BinaryOperator,
         quote::format_ident,
     }
@@ -529,21 +496,18 @@ mod parse_stream_expression {
 
     #[test]
     fn should_parse_when() {
-        let expression: Expr = syn::parse_quote! {when let d = p? then x otherwise z};
-        let control = Expr::when_match(When::new(
-            EventWhen::new(
-                EventPattern::Let(LetEventPattern::new(
-                    Default::default(),
-                    Pattern::ident("d"),
-                    Default::default(),
-                    format_ident!("p"),
-                    Default::default(),
-                )),
+        let expression: Expr = syn::parse_quote! {when let d = p? then x};
+        let control = Expr::when_match(When::new(EventWhen::new(
+            EventPattern::Let(LetEventPattern::new(
                 Default::default(),
-                Expr::ident("x"),
-            ),
-            Some(DefaultWhen::new(Default::default(), Expr::ident("z"))),
-        ));
+                Pattern::ident("d"),
+                Default::default(),
+                format_ident!("p"),
+                Default::default(),
+            )),
+            Default::default(),
+            Expr::ident("x"),
+        )));
         assert_eq!(expression, control)
     }
 }
