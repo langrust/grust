@@ -269,55 +269,17 @@ impl Parse for EventArmWhen {
     }
 }
 
-/// DefaultArmWhen for absence of events.
-pub struct DefaultArmWhen {
-    pub otherwise_token: keyword::otherwise,
-    pub arrow_token: Token![=>],
-    pub brace_token: token::Brace,
-    /// The equations.
-    pub equations: Vec<Equation>,
-}
-
-mk_new! { impl DefaultArmWhen =>
-    new {
-        otherwise_token: keyword::otherwise,
-        arrow_token: Token![=>],
-        brace_token: token::Brace,
-        equations: Vec<Equation>,
-    }
-}
-
-impl Parse for DefaultArmWhen {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let otherwise = input.parse()?;
-        let arrow = input.parse()?;
-        let content;
-        let brace = braced!(content in input);
-        let equations = {
-            let mut equations = Vec::new();
-            while !content.is_empty() {
-                equations.push(content.parse()?);
-            }
-            equations
-        };
-        Ok(DefaultArmWhen::new(otherwise, arrow, brace, equations))
-    }
-}
-
 pub struct MatchWhen {
     pub when_token: keyword::when,
     pub brace_token: token::Brace,
     /// The different matching cases.
     pub arms: Vec<EventArmWhen>,
-    /// The optional default arm
-    pub default: Option<DefaultArmWhen>,
 }
 mk_new! { impl MatchWhen =>
     new {
         when_token: keyword::when,
         brace_token: token::Brace,
         arms: Vec<EventArmWhen>,
-        default: Option<DefaultArmWhen>
     }
 }
 impl Parse for MatchWhen {
@@ -326,20 +288,11 @@ impl Parse for MatchWhen {
         let content;
         let brace = braced!(content in input);
         let mut arms: Vec<EventArmWhen> = vec![];
-        while !content.is_empty() && !content.peek(keyword::otherwise) {
+        while !content.is_empty() {
             arms.push(content.parse()?);
         }
-        let default = if content.peek(keyword::otherwise) {
-            let default = content.parse()?;
-            if !content.is_empty() {
-                return Err(content.error("'otherwise' branch should be at the end of 'when'"));
-            }
-            Some(default)
-        } else {
-            None
-        };
 
-        Ok(MatchWhen::new(when_token, brace, arms, default))
+        Ok(MatchWhen::new(when_token, brace, arms))
     }
 }
 
@@ -443,7 +396,6 @@ mod parse_equation {
                             })
                             .collect::<Vec<_>>(),
                     )
-                    .field(&(&arg0.default).as_ref().map(|arm| &arm.equations))
                     .finish(),
             }
         }
