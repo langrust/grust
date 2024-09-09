@@ -2,7 +2,7 @@ prelude! {
     syn::{
         punctuated::Punctuated, braced, Token, parse::Parse, token,
     },
-    Pattern, stmt::LetDecl,
+    stmt::Pattern, stmt::LetDecl,
 }
 
 use syn::parenthesized;
@@ -195,7 +195,7 @@ impl Parse for EventPattern {
                 let question_token: token::Question = input.parse()?;
                 let span = event.span();
                 let let_token = token::Let { span };
-                let pattern = Pattern::ident(event.to_string());
+                let pattern = Pattern::ident(event.clone());
                 let eq_token = token::Eq { spans: [span] };
                 let pat = LetEventPattern::new(let_token, pattern, eq_token, event, question_token);
                 Ok(EventPattern::Let(pat))
@@ -333,7 +333,6 @@ mod parse_equation {
 
     prelude! { just
         expr::{Binop, IfThenElse, Tuple},
-        pattern::{Pattern, Tuple as PatTuple, Typed},
         operator::BinaryOperator,
     }
 
@@ -430,7 +429,7 @@ mod parse_equation {
             (o1, o2) = if res then (0, 0) else ((0 fby o1) + inc1, (0 fby o2) + inc2);
         };
         let control = Equation::out_def(Instantiation {
-            pattern: Pattern::tuple(PatTuple::new(vec![
+            pattern: stmt::Pattern::tuple(stmt::Tuple::new(vec![
                 syn::parse_quote! {o1},
                 syn::parse_quote! {o2},
             ])),
@@ -471,8 +470,8 @@ mod parse_equation {
             syn::parse_quote! {let o: int = if res then 0 else (0 fby o) + inc;};
         let control = Equation::local_def(LetDecl::new(
             syn::parse_quote!(let),
-            Pattern::typed(Typed {
-                pattern: syn::parse_quote!(o),
+            stmt::Pattern::typed(stmt::Typed {
+                ident: syn::parse_quote!(o),
                 colon_token: syn::parse_quote!(:),
                 typing: Typ::int(),
             }),
@@ -501,14 +500,14 @@ mod parse_equation {
         };
         let control = Equation::local_def(LetDecl::new(
             syn::parse_quote!(let),
-            Pattern::tuple(PatTuple::new(vec![
-                Pattern::Typed(Typed {
-                    pattern: syn::parse_quote!(o1),
+            stmt::Pattern::tuple(stmt::Tuple::new(vec![
+                stmt::Pattern::Typed(stmt::Typed {
+                    ident: syn::parse_quote!(o1),
                     colon_token: syn::parse_quote!(:),
                     typing: Typ::int(),
                 }),
-                Pattern::Typed(Typed {
-                    pattern: syn::parse_quote!(o2),
+                stmt::Pattern::Typed(stmt::Typed {
+                    ident: syn::parse_quote!(o2),
                     colon_token: syn::parse_quote!(:),
                     typing: Typ::int(),
                 }),
