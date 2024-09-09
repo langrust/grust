@@ -259,7 +259,7 @@ mod parse_stream_expression {
     prelude! {
         expr::{
             Application, Arm, Array, Binop, Enumeration, FieldAccess, Fold, Map, Match, Sort,
-            Structure, Tuple, TupleElementAccess, TypedAbstraction, Zip,
+            Structure, Tuple, TupleElementAccess, TypedAbstraction, Zip, PatStructure, Pattern
         },
         equation::{EventPattern, LetEventPattern},
         stream::{Fby, Expr, When},
@@ -388,7 +388,7 @@ mod parse_stream_expression {
             Expr::ident("a"),
             vec![
                 Arm::new(
-                    Pattern::Structure(pattern::Structure::new(
+                    Pattern::Structure(PatStructure::new(
                         "Point",
                         vec![
                             (
@@ -402,7 +402,7 @@ mod parse_stream_expression {
                     Expr::cst(Constant::int(syn::parse_quote! {0})),
                 ),
                 Arm {
-                    pattern: Pattern::Structure(pattern::Structure::new(
+                    pattern: Pattern::Structure(PatStructure::new(
                         "Point",
                         vec![
                             ("x".into(), Some(Pattern::ident("x"))),
@@ -481,7 +481,7 @@ mod parse_stream_expression {
         let control = Expr::when_match(When::new(
             EventPattern::Let(LetEventPattern::new(
                 Default::default(),
-                Pattern::ident("d"),
+                stmt::Pattern::ident(syn::parse_quote! {d}),
                 Default::default(),
                 format_ident!("p"),
                 Default::default(),

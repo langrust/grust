@@ -16,7 +16,6 @@ pub mod contract;
 pub mod equation;
 pub mod expr;
 pub mod interface;
-pub mod pattern;
 pub mod stmt;
 pub mod stream;
 pub mod symbol;

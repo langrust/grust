@@ -1,5 +1,97 @@
 prelude! {
-    syn::{parse::Parse, Token},
+    syn::{ parenthesized, parse::Parse, punctuated::Punctuated, token, Token },
+}
+
+/// Typed pattern.
+#[derive(Debug, PartialEq, Clone)]
+pub struct Typed {
+    /// The ident.
+    pub ident: syn::Ident,
+    /// The colon token.
+    pub colon_token: Token![:],
+    /// The type.
+    pub typing: Typ,
+}
+mk_new! { impl Typed =>
+    new {
+        ident: syn::Ident = ident,
+        colon_token: Token![:],
+        typing: Typ,
+    }
+}
+impl Typed {
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        input.peek(Token![:])
+    }
+
+    pub fn parse(ident: syn::Ident, input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let colon_token: Token![:] = input.parse()?;
+        let typing = input.parse()?;
+        Ok(Typed {
+            ident,
+            colon_token,
+            typing,
+        })
+    }
+}
+
+/// Tuple pattern that matches tuples.
+#[derive(Debug, PartialEq, Clone)]
+pub struct Tuple {
+    /// The elements of the tuple.
+    pub elements: Vec<Pattern>,
+}
+mk_new! { impl Tuple =>
+    new { elements: Vec<Pattern> }
+}
+impl Tuple {
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        input.peek(token::Paren)
+    }
+}
+impl Parse for Tuple {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let content;
+        let _ = parenthesized!(content in input);
+        let elements: Punctuated<Pattern, Token![,]> = Punctuated::parse_terminated(&content)?;
+        Ok(Tuple {
+            elements: elements.into_iter().collect(),
+        })
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+/// GRust matching pattern AST.
+pub enum Pattern {
+    /// Identifier pattern.
+    Identifier(syn::Ident),
+    /// Typed pattern.
+    Typed(Typed),
+    /// Tuple pattern that matches tuples.
+    Tuple(Tuple),
+}
+impl Pattern {
+    mk_new! {
+        Identifier: ident(ident: syn::Ident = ident)
+        Typed: typed(t: Typed = t)
+        Tuple: tuple(t: Tuple = t)
+    }
+}
+impl Parse for Pattern {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let pattern = if Tuple::peek(input) {
+            Pattern::Tuple(input.parse()?)
+        } else {
+            let ident: syn::Ident = input.parse()?;
+            if Typed::peek(input) {
+                Pattern::Typed(Typed::parse(ident, input)?)
+            } else {
+                Pattern::ident(ident)
+            }
+        };
+
+        Ok(pattern)
+    }
 }
 
 /// GRust declaration AST.

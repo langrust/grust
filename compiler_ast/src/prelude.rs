@@ -21,7 +21,6 @@ pub use crate::{
     expr::{self, Expr},
     function::Function,
     interface::{self, Constrains, FlowExport, FlowImport, Service},
-    pattern::{self, Pattern},
     stmt::{self, Stmt},
     stream,
     symbol::{self, SymbolTable},
