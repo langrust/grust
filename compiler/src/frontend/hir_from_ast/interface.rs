@@ -4,7 +4,7 @@ prelude! {
         FlowInstantiation, FlowKind, FlowPattern, FlowStatement, Service,
     },
     hir::{
-        Pattern, flow,
+        flow,
         interface::{
             FlowDeclaration as HIRFlowDeclaration, FlowExport as HIRFlowExport,
             FlowImport as HIRFlowImport, FlowInstantiation as HIRFlowInstantiation,
@@ -210,7 +210,7 @@ impl HIRFromAST for FlowStatement {
 }
 
 impl HIRFromAST for FlowPattern {
-    type HIR = Pattern;
+    type HIR = hir::stmt::Pattern;
 
     fn hir_from_ast(
         self,
@@ -229,8 +229,8 @@ impl HIRFromAST for FlowPattern {
                 )?;
                 let typing = symbol_table.get_type(id);
 
-                Ok(Pattern {
-                    kind: hir::pattern::Kind::Identifier { id },
+                Ok(hir::stmt::Pattern {
+                    kind: hir::stmt::Kind::Identifier { id },
                     typing: Some(typing.clone()),
                     location,
                 })
@@ -253,13 +253,9 @@ impl HIRFromAST for FlowPattern {
                     errors,
                 )?;
 
-                Ok(Pattern {
-                    kind: hir::pattern::Kind::Typed {
-                        pattern: Box::new(Pattern {
-                            kind: hir::pattern::Kind::Identifier { id },
-                            typing: Some(flow_typing.clone()),
-                            location: location.clone(),
-                        }),
+                Ok(hir::stmt::Pattern {
+                    kind: hir::stmt::Kind::Typed {
+                        id,
                         typing: flow_typing.clone(),
                     },
                     typing: Some(flow_typing),
@@ -281,8 +277,8 @@ impl HIRFromAST for FlowPattern {
                 } else {
                     Typ::tuple(types)
                 };
-                Ok(Pattern {
-                    kind: hir::pattern::Kind::Tuple { elements },
+                Ok(hir::stmt::Pattern {
+                    kind: hir::stmt::Kind::Tuple { elements },
                     typing: Some(ty),
                     location,
                 })

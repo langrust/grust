@@ -1,7 +1,7 @@
 prelude! {
     ast::interface::FlowKind,
     hir::{
-        flow, IdentifierCreator, Pattern,
+        flow, IdentifierCreator,
         interface::{
             FlowDeclaration, FlowInstantiation, FlowStatement, Interface, Service,
         },
@@ -166,8 +166,8 @@ impl flow::Expr {
                 // create statement for the expression
                 let new_statement = FlowStatement::Declaration(FlowDeclaration {
                     let_token: Default::default(),
-                    pattern: Pattern {
-                        kind: hir::pattern::Kind::Identifier { id: fresh_id },
+                    pattern: hir::stmt::Pattern {
+                        kind: hir::stmt::Kind::Identifier { id: fresh_id },
                         typing: Some(typing.clone()),
                         location: self.location.clone(),
                     },

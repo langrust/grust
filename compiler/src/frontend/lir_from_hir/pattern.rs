@@ -11,10 +11,6 @@ impl LIRFromHIR for Pattern {
                 name: symbol_table.get_name(id).clone(),
             },
             pattern::Kind::Constant { constant } => lir::Pattern::Literal { literal: constant },
-            pattern::Kind::Typed { pattern, typing } => lir::Pattern::Typed {
-                pattern: Box::new(pattern.lir_from_hir(symbol_table)),
-                typing,
-            },
             pattern::Kind::Structure { id, fields } => lir::Pattern::Structure {
                 name: symbol_table.get_name(id).clone(),
                 fields: fields
@@ -57,6 +53,30 @@ impl LIRFromHIR for Pattern {
             pattern::Kind::NoEvent { event_id } => match symbol_table.get_type(event_id) {
                 Typ::SMEvent { .. } => lir::Pattern::none(),
                 _ => unreachable!(),
+            },
+        }
+    }
+}
+
+impl LIRFromHIR for hir::stmt::Pattern {
+    type LIR = lir::Pattern;
+
+    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
+        match self.kind {
+            hir::stmt::Kind::Identifier { id } => lir::Pattern::Identifier {
+                name: symbol_table.get_name(id).clone(),
+            },
+            hir::stmt::Kind::Typed { id, typing } => lir::Pattern::Typed {
+                pattern: Box::new(lir::Pattern::Identifier {
+                    name: symbol_table.get_name(id).clone(),
+                }),
+                typing,
+            },
+            hir::stmt::Kind::Tuple { elements } => lir::Pattern::Tuple {
+                elements: elements
+                    .into_iter()
+                    .map(|element| element.lir_from_hir(symbol_table))
+                    .collect(),
             },
         }
     }

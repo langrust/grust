@@ -1391,7 +1391,7 @@ mod flow_instr {
         pub fn handle_expr(
             &mut self,
             stmt_id: usize,
-            pattern: &hir::Pattern,
+            pattern: &hir::stmt::Pattern,
             flow_expression: &flow::Expr,
         ) -> FlowInstruction {
             let dependencies = flow_expression.get_dependencies();
@@ -1413,7 +1413,11 @@ mod flow_instr {
         }
 
         /// Compute the instruction from an identifier expression.
-        fn handle_ident(&mut self, pattern: &hir::Pattern, id_source: usize) -> FlowInstruction {
+        fn handle_ident(
+            &mut self,
+            pattern: &hir::stmt::Pattern,
+            id_source: usize,
+        ) -> FlowInstruction {
             // get the id of pattern's flow, debug-check there is only one flow
             let mut ids = pattern.identifiers();
             debug_assert!(ids.len() == 1);
@@ -1439,7 +1443,7 @@ mod flow_instr {
         fn handle_sample(
             &mut self,
             stmt_id: usize,
-            pattern: &hir::Pattern,
+            pattern: &hir::stmt::Pattern,
             mut dependencies: Vec<usize>,
         ) -> FlowInstruction {
             // get the id of pattern's flow, debug-check there is only one flow
@@ -1483,7 +1487,7 @@ mod flow_instr {
         fn handle_scan(
             &mut self,
             stmt_id: usize,
-            pattern: &hir::Pattern,
+            pattern: &hir::stmt::Pattern,
             mut dependencies: Vec<usize>,
         ) -> FlowInstruction {
             // get the id of pattern's flow, debug-check there is only one flow
@@ -1512,7 +1516,7 @@ mod flow_instr {
         fn handle_timeout(
             &mut self,
             stmt_id: usize,
-            pattern: &hir::Pattern,
+            pattern: &hir::stmt::Pattern,
             mut dependencies: Vec<usize>,
         ) -> FlowInstruction {
             // get the id of pattern's flow, debug-check there is only one flow
@@ -1557,7 +1561,7 @@ mod flow_instr {
         /// Compute the instruction from a throttle expression.
         fn handle_throttle(
             &self,
-            pattern: &hir::Pattern,
+            pattern: &hir::stmt::Pattern,
             mut dependencies: Vec<usize>,
             delta: Constant,
         ) -> FlowInstruction {
@@ -1585,7 +1589,7 @@ mod flow_instr {
         /// Compute the instruction from an on_change expression.
         fn handle_on_change(
             &mut self,
-            pattern: &hir::Pattern,
+            pattern: &hir::stmt::Pattern,
             mut dependencies: Vec<usize>,
         ) -> FlowInstruction {
             // get the id of pattern's flow, debug-check there is only one flow
@@ -1617,7 +1621,7 @@ mod flow_instr {
         /// Compute the instruction from a merge expression.
         fn handle_merge(
             &mut self,
-            pattern: &hir::Pattern,
+            pattern: &hir::stmt::Pattern,
             mut dependencies: Vec<usize>,
         ) -> FlowInstruction {
             // get the id of pattern's flow, debug-check there is only one flow
@@ -1663,7 +1667,7 @@ mod flow_instr {
         /// Compute the instruction from a component call.
         fn handle_component_call(
             &mut self,
-            pattern: &hir::Pattern,
+            pattern: &hir::stmt::Pattern,
             component_id: usize,
             inputs: &Vec<(usize, flow::Expr)>,
         ) -> FlowInstruction {
@@ -1735,7 +1739,7 @@ mod flow_instr {
         fn call_component(
             &mut self,
             component_id: usize,
-            output_pattern: hir::Pattern,
+            output_pattern: hir::stmt::Pattern,
             signals: Vec<(String, String)>,
             events: Vec<(String, Option<String>)>,
         ) -> FlowInstruction {

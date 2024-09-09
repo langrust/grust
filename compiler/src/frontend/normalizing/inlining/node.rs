@@ -1,7 +1,7 @@
 use petgraph::graphmap::GraphMap;
 
 prelude! {
-    hir::{ IdentifierCreator, Memory, Component, ComponentDefinition, Pattern, Stmt, stream },
+    hir::{ IdentifierCreator, Memory, Component, ComponentDefinition, stmt, Stmt, stream },
 }
 
 use super::Union;
@@ -67,7 +67,7 @@ impl Component {
         &self,
         identifier_creator: &mut IdentifierCreator,
         inputs: &[(usize, stream::Expr)],
-        new_output_pattern: Option<Pattern>,
+        new_output_pattern: Option<stmt::Pattern>,
         symbol_table: &mut SymbolTable,
     ) -> (Vec<Stmt<stream::Expr>>, Memory) {
         match self {
@@ -157,7 +157,7 @@ impl ComponentDefinition {
         &self,
         identifier_creator: &mut IdentifierCreator,
         inputs: &[(usize, stream::Expr)],
-        new_output_pattern: Option<Pattern>,
+        new_output_pattern: Option<stmt::Pattern>,
         symbol_table: &mut SymbolTable,
     ) -> (Vec<Stmt<stream::Expr>>, Memory) {
         // create the context with the given inputs

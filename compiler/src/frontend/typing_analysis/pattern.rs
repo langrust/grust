@@ -24,13 +24,6 @@ impl Pattern {
                 self.typing = Some(expected_type.clone());
                 Ok(())
             }
-            Kind::Typed {
-                ref mut pattern,
-                ref typing,
-            } => {
-                typing.eq_check(&expected_type, self.location.clone(), errors)?;
-                pattern.typing(expected_type, symbol_table, errors)
-            }
             Kind::Structure {
                 ref id,
                 ref mut fields,
@@ -139,46 +132,27 @@ impl Pattern {
             }
         }
     }
+}
 
+impl hir::stmt::Pattern {
     /// Tries to construct the type of the given construct.
-    pub fn construct_statement_type(
-        &mut self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> TRes<()> {
+    pub fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         match self.kind {
-            Kind::Constant { .. }
-            | Kind::Structure { .. }
-            | Kind::Enumeration { .. }
-            | Kind::Some { .. }
-            | Kind::NoEvent { .. }
-            | Kind::PresentEvent { .. }
-            | Kind::None
-            | Kind::Default => {
-                let error = Error::NotStatementPattern {
-                    location: self.location.clone(),
-                };
-                errors.push(error);
-                return Err(TerminationError);
-            }
-            Kind::Identifier { id } => {
+            hir::stmt::Kind::Identifier { id } => {
                 let typing = symbol_table.get_type(id);
                 self.typing = Some(typing.clone());
                 Ok(())
             }
-            Kind::Typed {
-                ref mut pattern,
-                ref typing,
-            } => {
-                pattern.typing(typing, symbol_table, errors)?;
+            hir::stmt::Kind::Typed { id, ref typing } => {
+                symbol_table.set_type(id, typing.clone());
                 self.typing = Some(typing.clone());
                 Ok(())
             }
-            Kind::Tuple { ref mut elements } => {
+            hir::stmt::Kind::Tuple { ref mut elements } => {
                 let types = elements
                     .iter_mut()
                     .map(|pattern| {
-                        pattern.construct_statement_type(symbol_table, errors)?;
+                        pattern.typing(symbol_table, errors)?;
                         Ok(pattern.typing.as_ref().unwrap().clone())
                     })
                     .collect::<Vec<TRes<_>>>()

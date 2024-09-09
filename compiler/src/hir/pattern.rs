@@ -15,13 +15,6 @@ pub enum Kind {
         /// The matching constant.
         constant: Constant,
     },
-    /// Typed pattern.
-    Typed {
-        /// The pattern.
-        pattern: Box<Pattern>,
-        /// The type.
-        typing: Typ,
-    },
     /// Structure pattern that matches the structure and its fields.
     Structure {
         /// The structure id.
@@ -67,10 +60,6 @@ pub enum Kind {
 mk_new! { impl Kind =>
     Constant: constant { constant: Constant }
     Identifier: ident { id: usize }
-    Typed: typed {
-        pattern: Pattern = pattern.into(),
-        typing: Typ,
-    }
     Structure: structure {
         id: usize,
         fields: Vec<(usize, Option<Pattern>)>,
@@ -144,9 +133,7 @@ impl Pattern {
                 .iter()
                 .flat_map(|pattern| pattern.identifiers())
                 .collect(),
-            Kind::Some { pattern }
-            | Kind::Typed { pattern, .. }
-            | Kind::PresentEvent { pattern, .. } => pattern.identifiers(),
+            Kind::Some { pattern } | Kind::PresentEvent { pattern, .. } => pattern.identifiers(),
         }
     }
     /// Get mutable references to pattern's identifiers.
@@ -172,9 +159,9 @@ impl Pattern {
                 .iter_mut()
                 .flat_map(|pattern| pattern.identifiers_mut())
                 .collect(),
-            Kind::Some { pattern }
-            | Kind::Typed { pattern, .. }
-            | Kind::PresentEvent { pattern, .. } => pattern.identifiers_mut(),
+            Kind::Some { pattern } | Kind::PresentEvent { pattern, .. } => {
+                pattern.identifiers_mut()
+            }
         }
     }
 }
