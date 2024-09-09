@@ -481,7 +481,7 @@ mod parse_stream_expression {
         let control = Expr::when_match(When::new(
             EventPattern::Let(LetEventPattern::new(
                 Default::default(),
-                stmt::Pattern::ident(syn::parse_quote! {d}),
+                expr::Pattern::ident("d"),
                 Default::default(),
                 format_ident!("p"),
                 Default::default(),

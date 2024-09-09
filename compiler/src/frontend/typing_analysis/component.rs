@@ -29,7 +29,7 @@ impl TypeAnalysis for ComponentDefinition {
             .map(|statement| {
                 statement
                     .pattern
-                    .construct_statement_type(symbol_table, errors)
+                    .typing(symbol_table, errors)
             })
             .collect::<TRes<()>>()?;
 

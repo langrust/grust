@@ -141,7 +141,7 @@ impl Parse for TupleEventPattern {
 pub struct LetEventPattern {
     pub let_token: Token![let],
     /// The pattern receiving the value of the event.
-    pub pattern: Pattern,
+    pub pattern: expr::Pattern,
     pub eq_token: Token![=],
     /// The event to match.
     pub event: syn::Ident,
@@ -150,7 +150,7 @@ pub struct LetEventPattern {
 mk_new! { impl LetEventPattern =>
     new {
         let_token: Token![let],
-        pattern: Pattern,
+        pattern: expr::Pattern,
         eq_token: Token![=],
         event: syn::Ident,
         question_token: Token![?],
@@ -195,7 +195,7 @@ impl Parse for EventPattern {
                 let question_token: token::Question = input.parse()?;
                 let span = event.span();
                 let let_token = token::Let { span };
-                let pattern = Pattern::ident(event.clone());
+                let pattern = expr::Pattern::ident(event.to_string());
                 let eq_token = token::Eq { spans: [span] };
                 let pat = LetEventPattern::new(let_token, pattern, eq_token, event, question_token);
                 Ok(EventPattern::Let(pat))

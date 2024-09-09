@@ -4,12 +4,12 @@ mod file;
 mod function;
 mod identifier_creator;
 mod once_cell;
-mod stmt;
 
 pub mod contract;
 pub mod expr;
 pub mod memory;
 pub mod pattern;
+pub mod stmt;
 pub mod stream;
 pub mod typedef;
 

@@ -656,37 +656,19 @@ impl SimpleHirExt<hir::flow::Kind> for ComponentCall {
     }
 }
 
-mod pattern {
+mod expr_pattern {
     prelude! {
-        ast::pattern::{Enumeration, PatSome, Structure, Tuple, Typed},
+        ast::expr::{PatEnumeration, PatStructure, PatTuple},
     }
 
-    impl SimpleHirExt<hir::pattern::Kind> for Typed {
+    impl SimpleHirExt<hir::pattern::Kind> for PatStructure {
         fn hir_from_ast(
             self,
             _location: &Location,
             symbol_table: &mut SymbolTable,
             errors: &mut Vec<Error>,
         ) -> TRes<hir::pattern::Kind> {
-            let Typed {
-                pattern, typing, ..
-            } = self;
-            let location = Location::default();
-
-            let pattern = Box::new(pattern.hir_from_ast(symbol_table, errors)?);
-            let typing = typing.hir_from_ast(&location, symbol_table, errors)?;
-            Ok(hir::pattern::Kind::Typed { pattern, typing })
-        }
-    }
-
-    impl SimpleHirExt<hir::pattern::Kind> for Structure {
-        fn hir_from_ast(
-            self,
-            _location: &Location,
-            symbol_table: &mut SymbolTable,
-            errors: &mut Vec<Error>,
-        ) -> TRes<hir::pattern::Kind> {
-            let Structure { name, fields, rest } = self;
+            let PatStructure { name, fields, rest } = self;
             let location = Location::default();
 
             let id = symbol_table.get_struct_id(&name, false, location.clone(), errors)?;
@@ -739,14 +721,14 @@ mod pattern {
         }
     }
 
-    impl SimpleHirExt<hir::pattern::Kind> for Enumeration {
+    impl SimpleHirExt<hir::pattern::Kind> for PatEnumeration {
         fn hir_from_ast(
             self,
             _location: &Location,
             symbol_table: &mut SymbolTable,
             errors: &mut Vec<Error>,
         ) -> TRes<hir::pattern::Kind> {
-            let Enumeration {
+            let PatEnumeration {
                 enum_name,
                 elem_name,
             } = self;
@@ -764,14 +746,14 @@ mod pattern {
         }
     }
 
-    impl SimpleHirExt<hir::pattern::Kind> for Tuple {
+    impl SimpleHirExt<hir::pattern::Kind> for PatTuple {
         fn hir_from_ast(
             self,
             _location: &Location,
             symbol_table: &mut SymbolTable,
             errors: &mut Vec<Error>,
         ) -> TRes<hir::pattern::Kind> {
-            let Tuple { elements } = self;
+            let PatTuple { elements } = self;
             Ok(hir::pattern::Kind::Tuple {
                 elements: elements
                     .into_iter()
@@ -780,18 +762,46 @@ mod pattern {
             })
         }
     }
+}
 
-    impl SimpleHirExt<hir::pattern::Kind> for PatSome {
-        // #TODO: why is this dead code?
+mod stmt_pattern {
+    prelude! {
+        ast::stmt::{Typed, Tuple},
+    }
+
+    impl SimpleHirExt<hir::stmt::Kind> for Typed {
+        fn hir_from_ast(
+            self,
+            location: &Location,
+            symbol_table: &mut SymbolTable,
+            errors: &mut Vec<Error>,
+        ) -> TRes<hir::stmt::Kind> {
+            let Typed { ident, typing, .. } = self;
+
+            let id = symbol_table.get_identifier_id(
+                &ident.to_string(),
+                false,
+                location.clone(),
+                errors,
+            )?;
+            let typing = typing.hir_from_ast(&location, symbol_table, errors)?;
+            Ok(hir::stmt::Kind::Typed { id, typing })
+        }
+    }
+
+    impl SimpleHirExt<hir::stmt::Kind> for Tuple {
         fn hir_from_ast(
             self,
             _location: &Location,
             symbol_table: &mut SymbolTable,
             errors: &mut Vec<Error>,
-        ) -> TRes<hir::pattern::Kind> {
-            let PatSome { pattern } = self;
-            Ok(hir::pattern::Kind::Some {
-                pattern: Box::new(pattern.hir_from_ast(symbol_table, errors)?),
+        ) -> TRes<hir::stmt::Kind> {
+            let Tuple { elements } = self;
+            Ok(hir::stmt::Kind::Tuple {
+                elements: elements
+                    .into_iter()
+                    .map(|pattern| pattern.hir_from_ast(symbol_table, errors))
+                    .collect::<TRes<Vec<_>>>()?,
             })
         }
     }

@@ -25,7 +25,7 @@ impl TypeAnalysis for FlowStatement {
                 flow_expression,
                 ..
             }) => {
-                pattern.construct_statement_type(symbol_table, errors)?;
+                pattern.typing(symbol_table, errors)?;
                 let expected_type = pattern.typing.as_ref().unwrap();
                 flow_expression.typing(symbol_table, errors)?;
                 let expression_type = flow_expression.get_type().unwrap();

@@ -1,10 +1,6 @@
 prelude! {
     graph::*,
-    hir::{
-        Dependencies, IdentifierCreator, Stmt,
-        Pattern,
-        stream,
-    },
+    hir::{ Dependencies, IdentifierCreator, Stmt, stream },
 }
 
 impl stream::Expr {
@@ -105,8 +101,8 @@ impl stream::Expr {
 
                 // create statement for node call
                 let node_application_statement = Stmt {
-                    pattern: Pattern {
-                        kind: hir::pattern::Kind::Identifier { id: fresh_id },
+                    pattern: hir::stmt::Pattern {
+                        kind: hir::stmt::Kind::Identifier { id: fresh_id },
                         typing,
                         location: self.location.clone(),
                     },
@@ -177,8 +173,8 @@ impl stream::Expr {
 
                 // create statement for the expression
                 let new_statement = Stmt {
-                    pattern: Pattern {
-                        kind: hir::pattern::Kind::Identifier { id: fresh_id },
+                    pattern: hir::stmt::Pattern {
+                        kind: hir::stmt::Kind::Identifier { id: fresh_id },
                         typing: typing.cloned(),
                         location: self.location.clone(),
                     },

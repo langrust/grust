@@ -1,7 +1,91 @@
 //! HIR [Statement](crate::hir::statement::Statement) module.
 
 prelude! {
-    hir::{Pattern, stream},
+    hir::stream,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+/// HIR pattern kind.
+pub enum Kind {
+    /// Identifier pattern, gives a name to the matching expression.
+    Identifier {
+        /// Identifier.
+        id: usize,
+    },
+    /// Typed pattern.
+    Typed {
+        /// Identifier.
+        id: usize,
+        /// The type.
+        typing: Typ,
+    },
+    /// Tuple pattern that matches tuples.
+    Tuple {
+        /// The elements of the tuple.
+        elements: Vec<Pattern>,
+    },
+}
+
+mk_new! { impl Kind =>
+    Identifier: ident { id: usize }
+    Typed: typed {
+        id: usize,
+        typing: Typ,
+    }
+    Tuple: tuple { elements: Vec<Pattern> }
+}
+
+/// HIR pattern.
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub struct Pattern {
+    /// Pattern kind.
+    pub kind: Kind,
+    /// Pattern type.
+    pub typing: Option<Typ>,
+    /// Pattern location.
+    pub location: Location,
+}
+
+/// Constructs pattern.
+///
+/// Typing and location are empty.
+pub fn init(kind: Kind) -> Pattern {
+    Pattern {
+        kind,
+        typing: None,
+        location: Location::default(),
+    }
+}
+
+impl Pattern {
+    /// Get pattern's type.
+    pub fn get_type(&self) -> Option<&Typ> {
+        self.typing.as_ref()
+    }
+    /// Get pattern's mutable type.
+    pub fn get_type_mut(&mut self) -> Option<&mut Typ> {
+        self.typing.as_mut()
+    }
+    /// Get pattern's identifiers.
+    pub fn identifiers(&self) -> Vec<usize> {
+        match &self.kind {
+            Kind::Identifier { id } | Kind::Typed { id, .. } => vec![*id],
+            Kind::Tuple { elements } => elements
+                .iter()
+                .flat_map(|pattern| pattern.identifiers())
+                .collect(),
+        }
+    }
+    /// Get mutable references to pattern's identifiers.
+    pub fn identifiers_mut(&mut self) -> Vec<&mut usize> {
+        match &mut self.kind {
+            Kind::Identifier { id } | Kind::Typed { id, .. } => vec![id],
+            Kind::Tuple { elements } => elements
+                .iter_mut()
+                .flat_map(|pattern| pattern.identifiers_mut())
+                .collect(),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]

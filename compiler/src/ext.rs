@@ -233,7 +233,7 @@ pub trait EquationExt {
     /// the algorithm insert in the `signals` map [ a -> id_a ] and [ b -> id_b ].
     fn get_signals(
         &self,
-        signals: &mut HashMap<String, ast::Pattern>,
+        signals: &mut HashMap<String, ast::stmt::Pattern>,
         symbol_table: &SymbolTable,
         errors: &mut Vec<Error>,
     ) -> TRes<()>;
@@ -312,7 +312,7 @@ mod equation {
 
         fn get_signals(
             &self,
-            signals: &mut HashMap<String, ast::Pattern>,
+            signals: &mut HashMap<String, ast::stmt::Pattern>,
             symbol_table: &SymbolTable,
             errors: &mut Vec<Error>,
         ) -> TRes<()> {
@@ -529,9 +529,9 @@ pub trait PatternExt: Sized {
     ) -> TRes<Vec<(String, Self)>>;
 }
 
-mod pattern {
+mod expr_pattern {
     prelude! {
-        ast::pattern::*,
+        ast::expr::{PatStructure, PatTuple, Pattern},
     }
 
     impl super::PatternExt for Pattern {
@@ -573,17 +573,14 @@ mod pattern {
                         Ok(vec![(name.clone(), id)])
                     }
                 }
-                Pattern::Typed(Typed { pattern, .. }) => {
-                    pattern.store(is_declaration, symbol_table, errors)
-                }
-                Pattern::Tuple(Tuple { elements }) => Ok(elements
+                Pattern::Tuple(PatTuple { elements }) => Ok(elements
                     .iter()
                     .map(|pattern| pattern.store(is_declaration, symbol_table, errors))
                     .collect::<TRes<Vec<_>>>()?
                     .into_iter()
                     .flatten()
                     .collect()),
-                Pattern::Structure(Structure { fields, .. }) => Ok(fields
+                Pattern::Structure(PatStructure { fields, .. }) => Ok(fields
                     .iter()
                     .map(|(field, optional_pattern)| {
                         if let Some(pattern) = optional_pattern {
@@ -614,18 +611,14 @@ mod pattern {
         ) -> TRes<Vec<(String, Pattern)>> {
             match self {
                 Pattern::Identifier(name) => Ok(vec![(name.clone(), self.clone())]),
-                Pattern::Typed(Typed { pattern, .. }) => match pattern.as_ref() {
-                    Pattern::Identifier(name) => Ok(vec![(name.clone(), self.clone())]),
-                    _ => todo!("not supported"),
-                },
-                Pattern::Tuple(Tuple { elements }) => Ok(elements
+                Pattern::Tuple(PatTuple { elements }) => Ok(elements
                     .iter()
                     .map(|pattern| pattern.get_signals(symbol_table, errors))
                     .collect::<TRes<Vec<_>>>()?
                     .into_iter()
                     .flatten()
                     .collect()),
-                Pattern::Structure(Structure { fields, .. }) => Ok(fields
+                Pattern::Structure(PatStructure { fields, .. }) => Ok(fields
                     .iter()
                     .map(|(field, optional_pattern)| {
                         if let Some(pattern) = optional_pattern {
@@ -639,6 +632,82 @@ mod pattern {
                     .flatten()
                     .collect()),
                 Pattern::Constant(_) | Pattern::Enumeration(_) | Pattern::Default => Ok(vec![]),
+            }
+        }
+    }
+}
+
+mod stmt_pattern {
+    prelude! {
+        ast::stmt::{Pattern, Tuple, Typed},
+    }
+
+    impl super::PatternExt for Pattern {
+        fn store(
+            &self,
+            is_declaration: bool,
+            symbol_table: &mut SymbolTable,
+            errors: &mut Vec<Error>,
+        ) -> TRes<Vec<(String, usize)>> {
+            let location = Location::default();
+
+            match self {
+                Pattern::Identifier(ident) | Pattern::Typed(Typed { ident, .. }) => {
+                    if is_declaration {
+                        let id = symbol_table.insert_identifier(
+                            ident.to_string(),
+                            None,
+                            true,
+                            location.clone(),
+                            errors,
+                        )?;
+                        Ok(vec![(ident.to_string(), id)])
+                    } else {
+                        let name = ident.to_string();
+                        let id = symbol_table.get_identifier_id(
+                            &name,
+                            false,
+                            location.clone(),
+                            errors,
+                        )?;
+                        // outputs should be already typed
+                        let typing = symbol_table.get_type(id).clone();
+                        let id = symbol_table.insert_identifier(
+                            name.clone(),
+                            Some(typing),
+                            true,
+                            location.clone(),
+                            errors,
+                        )?;
+                        Ok(vec![(name, id)])
+                    }
+                }
+                Pattern::Tuple(Tuple { elements }) => Ok(elements
+                    .iter()
+                    .map(|pattern| pattern.store(is_declaration, symbol_table, errors))
+                    .collect::<TRes<Vec<_>>>()?
+                    .into_iter()
+                    .flatten()
+                    .collect()),
+            }
+        }
+
+        fn get_signals(
+            &self,
+            symbol_table: &SymbolTable,
+            errors: &mut Vec<Error>,
+        ) -> TRes<Vec<(String, Pattern)>> {
+            match self {
+                Pattern::Identifier(ident) | Pattern::Typed(Typed { ident, .. }) => {
+                    Ok(vec![(ident.to_string(), self.clone())])
+                }
+                Pattern::Tuple(Tuple { elements }) => Ok(elements
+                    .iter()
+                    .map(|pattern| pattern.get_signals(symbol_table, errors))
+                    .collect::<TRes<Vec<_>>>()?
+                    .into_iter()
+                    .flatten()
+                    .collect()),
             }
         }
     }

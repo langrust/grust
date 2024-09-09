@@ -2,7 +2,7 @@ prelude! {
     syn::Token,
     graph::{DiGraphMap, Direction},
     ast::keyword,
-    hir::{flow, Pattern},
+    hir::{flow, stmt},
 }
 
 pub struct Service {
@@ -63,7 +63,7 @@ pub struct Interface {
 pub struct FlowDeclaration {
     pub let_token: Token![let],
     /// Pattern of flows and their types.
-    pub pattern: Pattern,
+    pub pattern: stmt::Pattern,
     pub eq_token: Token![=],
     /// The expression defining the flow.
     pub flow_expression: flow::Expr,
@@ -73,7 +73,7 @@ pub struct FlowDeclaration {
 #[derive(Clone)]
 pub struct FlowInstantiation {
     /// Pattern of flows and their types.
-    pub pattern: Pattern,
+    pub pattern: stmt::Pattern,
     pub eq_token: Token![=],
     /// The expression defining the flow.
     pub flow_expression: flow::Expr,

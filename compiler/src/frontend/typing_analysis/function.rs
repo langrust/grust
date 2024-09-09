@@ -21,7 +21,7 @@ impl TypeAnalysis for Function {
             .map(|statement| {
                 statement
                     .pattern
-                    .construct_statement_type(symbol_table, errors)?;
+                    .typing(symbol_table, errors)?;
                 statement.typing(symbol_table, errors)
             })
             .collect::<TRes<()>>()?;
