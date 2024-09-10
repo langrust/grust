@@ -27,11 +27,12 @@ pub mod typedef;
 pub trait HIRFromAST {
     /// Corresponding HIR construct.
     type HIR;
+    /// Context to construct the HIR.
+    type Ctxt;
 
     /// Transforms AST into HIR and check identifiers good use.
     fn hir_from_ast(
         self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
+        symbol_table: &mut Self::Ctxt,
     ) -> TRes<Self::HIR>;
 }
