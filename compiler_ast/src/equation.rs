@@ -41,7 +41,7 @@ impl Parse for Instantiation {
 /// Arm for matching expression.
 pub struct Arm {
     /// The pattern to match.
-    pub pattern: Pattern,
+    pub pattern: expr::Pattern,
     /// The optional guard.
     pub guard: Option<(Token![if], stream::Expr)>,
     pub arrow_token: Token![=>],
@@ -52,7 +52,7 @@ pub struct Arm {
 
 mk_new! { impl Arm =>
     new {
-        pattern: Pattern,
+        pattern: expr::Pattern,
         guard: Option<(Token![if], stream::Expr)>,
         arrow_token: Token![=>],
         brace_token: token::Brace,

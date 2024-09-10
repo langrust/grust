@@ -21,7 +21,7 @@ pub use compiler_lir::{
 
 pub use crate::{
     backend,
-    ext::{hir_ext::*, *},
+    ext::*,
     frontend::{self, hir_from_ast::HIRFromAST},
     hir,
 };

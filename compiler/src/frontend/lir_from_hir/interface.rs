@@ -835,7 +835,7 @@ mod service_handler {
             builder.run(ctxt).expect("oh no")
         } else {
             // else, construct an ordered sequence of the instrs
-            let ord_instrs = petgraph::algo::toposort(&subgraph, None).expect("no cycle expected");
+            let ord_instrs = petgraph::algo::toposort(subgraph, None).expect("no cycle expected");
             let seq: Vec<_> = ord_instrs
                 .into_iter()
                 .map(|i| Synced::instr(i, ctxt))

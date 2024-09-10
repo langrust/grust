@@ -3,16 +3,13 @@ prelude! {
     itertools::Itertools,
 }
 
-use super::HIRFromAST;
+use super::{HIRFromAST, PatLocCtxt};
 
-impl HIRFromAST for stream::When {
+impl<'a> HIRFromAST<PatLocCtxt<'a>> for stream::When {
     type HIR = hir::stream::Kind;
+
     /// Transforms AST into HIR and check identifiers good use.
-    fn hir_from_ast(
-        self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> TRes<Self::HIR> {
+    fn hir_from_ast(self, ctxt: &mut PatLocCtxt<'a>) -> TRes<Self::HIR> {
         let stream::When {
             pattern,
             expression,
@@ -30,7 +27,7 @@ impl HIRFromAST for stream::When {
         let (events_indices, events_nb, no_event_tuple) = {
             let mut events_indices = HashMap::with_capacity(arms.len());
             let mut idx = 0;
-            pattern.place_events(&mut events_indices, &mut idx, symbol_table, errors)?;
+            pattern.place_events(&mut events_indices, &mut idx, ctxt.syms, ctxt.errors)?;
             // default event_pattern tuple
             let no_event_tuple: Vec<_> =
                 std::iter::repeat(hir::pattern::init(hir::pattern::Kind::default()))
@@ -41,31 +38,29 @@ impl HIRFromAST for stream::When {
 
         // create presence arm
         {
-            symbol_table.local();
+            ctxt.syms.local();
 
             // set local context + create tuple of event's pattern
             let mut elements = no_event_tuple;
             let opt_guard = pattern.create_tuple_pattern(
                 &mut elements,
                 &events_indices,
-                symbol_table,
-                errors,
+                ctxt.syms,
+                ctxt.errors,
             )?;
             let pattern = hir::pattern::init(hir::pattern::Kind::tuple(elements));
 
             // transform into HIR
-            let expression = expression.hir_from_ast(symbol_table, errors)?;
+            let expression = expression.hir_from_ast(ctxt)?;
             let expression = if is_event {
                 hir::stream::expr(hir::stream::Kind::some_event(expression))
             } else {
                 expression
             };
 
-            let guard = opt_guard
-                .map(|expr| expr.hir_from_ast(symbol_table, errors))
-                .transpose()?;
+            let guard = opt_guard.map(|expr| expr.hir_from_ast(ctxt)).transpose()?;
 
-            symbol_table.global();
+            ctxt.syms.global();
             arms.push((pattern, guard, vec![], expression))
         }
 
@@ -84,7 +79,7 @@ impl HIRFromAST for stream::When {
                     stream::Expr::cst(Constant::default()),
                     stream::Expr::ident(ident),
                 ))
-                .hir_from_ast(symbol_table, errors)?;
+                .hir_from_ast(ctxt)?;
                 arms.push((pattern, None, vec![], expression))
             }
         }
@@ -113,16 +108,12 @@ impl HIRFromAST for stream::When {
     }
 }
 
-impl HIRFromAST for stream::Expr {
+impl<'a> HIRFromAST<PatLocCtxt<'a>> for stream::Expr {
     type HIR = hir::stream::Expr;
 
     // precondition: identifiers are stored in symbol table
     // postcondition: construct HIR stream expression and check identifiers good use
-    fn hir_from_ast(
-        self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> TRes<Self::HIR> {
+    fn hir_from_ast(self, ctxt: &mut PatLocCtxt<'a>) -> TRes<Self::HIR> {
         let location = Location::default();
         let loc = &location;
         let kind = match self {
@@ -130,10 +121,12 @@ impl HIRFromAST for stream::Expr {
                 function_expression,
                 inputs: inputs_stream_expressions,
             }) => match *function_expression {
-                stream::Expr::Identifier(node) if symbol_table.is_node(&node, false) => {
+                stream::Expr::Identifier(node) if ctxt.syms.is_node(&node, false) => {
                     let called_node_id =
-                        symbol_table.get_node_id(&node, false, location.clone(), errors)?;
-                    let node_symbol = symbol_table
+                        ctxt.syms
+                            .get_node_id(&node, false, location.clone(), ctxt.errors)?;
+                    let node_symbol = ctxt
+                        .syms
                         .get_symbol(called_node_id)
                         .expect("there should be a symbol")
                         .clone();
@@ -146,19 +139,17 @@ impl HIRFromAST for stream::Expr {
                                     expected_inputs_number: inputs.len(),
                                     location: location.clone(),
                                 };
-                                errors.push(error);
+                                ctxt.errors.push(error);
                                 return Err(TerminationError);
                             }
 
                             hir::stream::Kind::call(
-                                symbol_table.get_current_node_id(),
+                                ctxt.syms.get_current_node_id(),
                                 called_node_id,
                                 inputs_stream_expressions
                                     .into_iter()
                                     .zip(inputs)
-                                    .map(|(input, id)| {
-                                        Ok((*id, input.clone().hir_from_ast(symbol_table, errors)?))
-                                    })
+                                    .map(|(input, id)| Ok((*id, input.clone().hir_from_ast(ctxt)?)))
                                     .collect::<TRes<Vec<_>>>()?,
                             )
                         }
@@ -167,12 +158,10 @@ impl HIRFromAST for stream::Expr {
                 }
                 function_expression => hir::stream::Kind::Expression {
                     expression: hir::expr::Kind::Application {
-                        function_expression: Box::new(
-                            function_expression.hir_from_ast(symbol_table, errors)?,
-                        ),
+                        function_expression: Box::new(function_expression.hir_from_ast(ctxt)?),
                         inputs: inputs_stream_expressions
                             .into_iter()
-                            .map(|input| input.clone().hir_from_ast(symbol_table, errors))
+                            .map(|input| input.clone().hir_from_ast(ctxt))
                             .collect::<TRes<Vec<_>>>()?,
                     },
                 },
@@ -182,71 +171,73 @@ impl HIRFromAST for stream::Expr {
                 expression,
             }) => {
                 // check the constant expression is indeed constant
-                constant.check_is_constant(symbol_table, errors)?;
+                constant.check_is_constant(ctxt.syms, ctxt.errors)?;
 
                 hir::stream::Kind::FollowedBy {
-                    constant: Box::new(constant.hir_from_ast(symbol_table, errors)?),
-                    expression: Box::new(expression.hir_from_ast(symbol_table, errors)?),
+                    constant: Box::new(constant.hir_from_ast(ctxt)?),
+                    expression: Box::new(expression.hir_from_ast(ctxt)?),
                 }
             }
-            stream::Expr::When(expression) => expression.hir_from_ast(symbol_table, errors)?,
+            stream::Expr::When(expression) => expression.hir_from_ast(ctxt)?,
             stream::Expr::Constant(constant) => hir::stream::Kind::Expression {
                 expression: hir::expr::Kind::Constant { constant },
             },
             stream::Expr::Identifier(id) => {
-                let id = symbol_table
+                let id = ctxt
+                    .syms
                     .get_identifier_id(&id, false, location.clone(), &mut vec![])
                     .or_else(|_| {
-                        symbol_table.get_function_id(&id, false, location.clone(), errors)
+                        ctxt.syms
+                            .get_function_id(&id, false, location.clone(), ctxt.errors)
                     })?;
                 hir::stream::Kind::Expression {
                     expression: hir::expr::Kind::Identifier { id },
                 }
             }
             stream::Expr::Unop(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(loc, symbol_table, errors)?,
+                expression: expression.hir_from_ast(ctxt)?,
             },
             stream::Expr::Binop(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(loc, symbol_table, errors)?,
+                expression: expression.hir_from_ast(ctxt)?,
             },
             stream::Expr::IfThenElse(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(loc, symbol_table, errors)?,
+                expression: expression.hir_from_ast(ctxt)?,
             },
             stream::Expr::TypedAbstraction(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(&location, symbol_table, errors)?,
+                expression: expression.hir_from_ast(ctxt)?,
             },
             stream::Expr::Structure(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(&location, symbol_table, errors)?,
+                expression: expression.hir_from_ast(ctxt)?,
             },
             stream::Expr::Tuple(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(loc, symbol_table, errors)?,
+                expression: expression.hir_from_ast(ctxt)?,
             },
             stream::Expr::Enumeration(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(&location, symbol_table, errors)?,
+                expression: expression.hir_from_ast(ctxt)?,
             },
             stream::Expr::Array(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(loc, symbol_table, errors)?,
+                expression: expression.hir_from_ast(ctxt)?,
             },
             stream::Expr::Match(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(loc, symbol_table, errors)?,
+                expression: expression.hir_from_ast(ctxt)?,
             },
             stream::Expr::FieldAccess(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(loc, symbol_table, errors)?,
+                expression: expression.hir_from_ast(ctxt)?,
             },
             stream::Expr::TupleElementAccess(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(loc, symbol_table, errors)?,
+                expression: expression.hir_from_ast(ctxt)?,
             },
             stream::Expr::Map(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(loc, symbol_table, errors)?,
+                expression: expression.hir_from_ast(ctxt)?,
             },
             stream::Expr::Fold(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(loc, symbol_table, errors)?,
+                expression: expression.hir_from_ast(ctxt)?,
             },
             stream::Expr::Sort(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(loc, symbol_table, errors)?,
+                expression: expression.hir_from_ast(ctxt)?,
             },
             stream::Expr::Zip(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(loc, symbol_table, errors)?,
+                expression: expression.hir_from_ast(ctxt)?,
             },
         };
         Ok(hir::stream::Expr {

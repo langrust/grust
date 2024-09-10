@@ -1,17 +1,13 @@
 prelude! {}
 
-use super::HIRFromAST;
+use super::{HIRFromAST, SimpleCtxt};
 
-impl HIRFromAST for ast::Component {
+impl<'a> HIRFromAST<SimpleCtxt<'a>> for ast::Component {
     type HIR = hir::Component;
 
     // precondition: node and its signals are already stored in symbol table
     // postcondition: construct HIR node and check identifiers good use
-    fn hir_from_ast(
-        self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> TRes<Self::HIR> {
+    fn hir_from_ast(self, ctxt: &mut SimpleCtxt<'a>) -> TRes<Self::HIR> {
         let ast::Component {
             ident,
             contract,
@@ -20,21 +16,23 @@ impl HIRFromAST for ast::Component {
         } = self;
         let name = ident.to_string();
         let location = Location::default();
-        let id = symbol_table.get_node_id(&name, false, location.clone(), errors)?;
+        let id = ctxt
+            .syms
+            .get_node_id(&name, false, location.clone(), ctxt.errors)?;
 
         // create local context with all signals
-        symbol_table.local();
-        symbol_table.restore_context(id);
-        symbol_table.enter_in_node(id);
+        ctxt.syms.local();
+        ctxt.syms.restore_context(id);
+        ctxt.syms.enter_in_node(id);
 
         let statements = equations
             .into_iter()
-            .map(|equation| equation.hir_from_ast(symbol_table, errors))
+            .map(|equation| equation.hir_from_ast(ctxt))
             .collect::<TRes<Vec<_>>>()?;
-        let contract = contract.hir_from_ast(symbol_table, errors)?;
+        let contract = contract.hir_from_ast(ctxt)?;
 
-        symbol_table.leave_node();
-        symbol_table.global();
+        ctxt.syms.leave_node();
+        ctxt.syms.global();
 
         Ok(hir::Component::Definition(hir::ComponentDefinition {
             id,
@@ -47,16 +45,12 @@ impl HIRFromAST for ast::Component {
     }
 }
 
-impl HIRFromAST for ast::ComponentImport {
+impl<'a> HIRFromAST<SimpleCtxt<'a>> for ast::ComponentImport {
     type HIR = hir::Component;
 
     // precondition: node and its signals are already stored in symbol table
     // postcondition: construct HIR node
-    fn hir_from_ast(
-        self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> TRes<Self::HIR> {
+    fn hir_from_ast(self, ctxt: &mut SimpleCtxt<'a>) -> TRes<Self::HIR> {
         let ast::ComponentImport { path, .. } = self;
 
         let last = path.clone().segments.pop().unwrap().into_value();
@@ -64,7 +58,9 @@ impl HIRFromAST for ast::ComponentImport {
         assert!(last.arguments.is_none());
 
         let location = Location::default();
-        let id = symbol_table.get_node_id(&name, false, location.clone(), errors)?;
+        let id = ctxt
+            .syms
+            .get_node_id(&name, false, location.clone(), ctxt.errors)?;
 
         Ok(hir::Component::Import(hir::ComponentImport {
             id,
