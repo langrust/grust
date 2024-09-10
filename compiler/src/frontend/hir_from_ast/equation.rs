@@ -7,24 +7,20 @@ prelude! {
     itertools::Itertools,
 }
 
-use super::HIRFromAST;
+use super::{HIRFromAST, SimpleCtxt};
 
-impl HIRFromAST for Equation {
+impl<'a> HIRFromAST<SimpleCtxt<'a>> for Equation {
     type HIR = hir::Stmt<stream::Expr>;
 
     /// Pre-condition: equation's signal is already stored in symbol table.
     ///
     /// Post-condition: construct HIR equation and check identifiers good use.
-    fn hir_from_ast(
-        self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> TRes<Self::HIR> {
+    fn hir_from_ast(self, ctxt: &mut SimpleCtxt<'a>) -> TRes<Self::HIR> {
         let location = Location::default();
 
         // get signals defined by the equation
         let mut defined_signals = HashMap::new();
-        self.get_signals(&mut defined_signals, symbol_table, errors)?;
+        self.get_signals(&mut defined_signals, ctxt.syms, ctxt.errors)?;
 
         match self {
             Equation::LocalDef(LetDecl {
@@ -36,11 +32,16 @@ impl HIRFromAST for Equation {
                 expression,
                 pattern,
                 ..
-            }) => Ok(hir::Stmt {
-                pattern: pattern.hir_from_ast(symbol_table, errors)?,
-                expression: expression.hir_from_ast(symbol_table, errors)?,
-                location,
-            }),
+            }) => {
+                let expression =
+                    expression.hir_from_ast(&mut ctxt.add_pat_loc(Some(&pattern), &location))?;
+                let pattern = pattern.hir_from_ast(&mut ctxt.add_loc(&location))?;
+                Ok(hir::Stmt {
+                    pattern,
+                    expression,
+                    location,
+                })
+            }
             Equation::Match(Match {
                 expression, arms, ..
             }) => {
@@ -48,12 +49,12 @@ impl HIRFromAST for Equation {
                 let pattern = {
                     let mut elements = defined_signals
                         .values()
-                        .map(|pat| pat.clone().hir_from_ast(symbol_table, errors))
+                        .map(|pat| pat.clone().hir_from_ast(&mut ctxt.add_loc(&location)))
                         .collect::<TRes<Vec<_>>>()?;
                     if elements.len() == 1 {
                         elements.pop().unwrap()
                     } else {
-                        hir::pattern::init(hir::pattern::Kind::tuple(elements))
+                        hir::stmt::init(hir::stmt::Kind::tuple(elements))
                     }
                 };
 
@@ -69,10 +70,10 @@ impl HIRFromAST for Equation {
                          }| {
                             // transform pattern guard and equations into HIR
                             let (signals, pattern, guard, statements) = {
-                                symbol_table.local();
+                                ctxt.syms.local();
 
                                 // set local context: pattern signals + equations' signals
-                                pattern.store(true, symbol_table, errors)?;
+                                pattern.store(true, ctxt.syms, ctxt.errors)?;
                                 let mut signals = HashMap::new();
                                 equations
                                     .iter()
@@ -81,25 +82,25 @@ impl HIRFromAST for Equation {
                                         equation.store_signals(
                                             true,
                                             &mut signals,
-                                            symbol_table,
-                                            errors,
+                                            ctxt.syms,
+                                            ctxt.errors,
                                         )
                                     })
                                     .collect::<TRes<()>>()?;
 
                                 // transform pattern guard and equations into HIR with local context
-                                let pattern = pattern.hir_from_ast(symbol_table, errors)?;
+                                let pattern = pattern.hir_from_ast(&mut ctxt.add_loc(&location))?;
                                 let guard = guard
                                     .map(|(_, expression)| {
-                                        expression.hir_from_ast(symbol_table, errors)
+                                        expression.hir_from_ast(&mut ctxt.add_pat_loc(None, &location))
                                     })
                                     .transpose()?;
                                 let statements = equations
                                     .into_iter()
-                                    .map(|equation| equation.hir_from_ast(symbol_table, errors))
+                                    .map(|equation| equation.hir_from_ast(ctxt))
                                     .collect::<TRes<Vec<_>>>()?;
 
-                                symbol_table.global();
+                                ctxt.syms.global();
 
                                 (signals, pattern, guard, statements)
                             };
@@ -113,7 +114,7 @@ impl HIRFromAST for Equation {
                                         received: signals.len(),
                                         location: location.clone(),
                                     };
-                                    errors.push(error);
+                                    ctxt.errors.push(error);
                                     return Err(TerminationError);
                                 }
                                 let mut elements = defined_signals
@@ -128,7 +129,7 @@ impl HIRFromAST for Equation {
                                                 identifier: signal_name.clone(),
                                                 location: location.clone(),
                                             };
-                                            errors.push(error);
+                                            ctxt.errors.push(error);
                                             return Err(TerminationError);
                                         }
                                     })
@@ -151,7 +152,7 @@ impl HIRFromAST for Equation {
 
                 // construct the match expression
                 let expression = stream::expr(stream::Kind::expr(hir::expr::Kind::match_expr(
-                    expression.hir_from_ast(symbol_table, errors)?,
+                    expression.hir_from_ast(&mut ctxt.add_pat_loc(todo!(), &location))?,
                     arms,
                 )));
 
@@ -166,12 +167,12 @@ impl HIRFromAST for Equation {
                 let pattern = {
                     let mut elements = defined_signals
                         .values()
-                        .map(|pat| pat.clone().hir_from_ast(symbol_table, errors))
+                        .map(|pat| pat.clone().hir_from_ast(&mut ctxt.add_loc(&location)))
                         .collect::<TRes<Vec<_>>>()?;
                     if elements.len() == 1 {
                         elements.pop().unwrap()
                     } else {
-                        hir::pattern::init(hir::pattern::Kind::tuple(elements))
+                        hir::stmt::init(hir::stmt::Kind::tuple(elements))
                     }
                 };
 
@@ -189,8 +190,8 @@ impl HIRFromAST for Equation {
                             event_arm.pattern.place_events(
                                 &mut events_indices,
                                 &mut idx,
-                                symbol_table,
-                                errors,
+                                ctxt.syms,
+                                ctxt.errors,
                             )
                         })
                         .collect::<TRes<()>>()?;
@@ -211,7 +212,7 @@ impl HIRFromAST for Equation {
                 {
                     let (signals, pattern, guard, statements) = {
                         // transform event_pattern guard and equations into HIR
-                        symbol_table.local();
+                        ctxt.syms.local();
 
                         // set local context: no event + equations' signals
                         let mut signals = HashMap::new();
@@ -219,7 +220,7 @@ impl HIRFromAST for Equation {
                             .iter()
                             .map(|equation| {
                                 // store equations' signals in the local context
-                                equation.store_signals(true, &mut signals, symbol_table, errors)
+                                equation.store_signals(true, &mut signals, ctxt.syms, ctxt.errors)
                             })
                             .collect::<TRes<()>>()?;
 
@@ -230,10 +231,10 @@ impl HIRFromAST for Equation {
                         let guard = None;
                         let statements = equations
                             .into_iter()
-                            .map(|equation| equation.hir_from_ast(symbol_table, errors))
+                            .map(|equation| equation.hir_from_ast(ctxt))
                             .collect::<TRes<Vec<_>>>()?;
 
-                        symbol_table.global();
+                        ctxt.syms.global();
 
                         (signals, pattern, guard, statements)
                     };
@@ -274,7 +275,7 @@ impl HIRFromAST for Equation {
                          }| {
                             let (signals, pattern, guard, statements) = {
                                 // transform event_pattern guard and equations into HIR
-                                symbol_table.local();
+                                ctxt.syms.local();
 
                                 // set local context: events + equations' signals
                                 // create tuple pattern: it stores events identifiers
@@ -282,8 +283,8 @@ impl HIRFromAST for Equation {
                                 let opt_guard = event_pattern.create_tuple_pattern(
                                     &mut elements,
                                     &events_indices,
-                                    symbol_table,
-                                    errors,
+                                    ctxt.syms,
+                                    ctxt.errors,
                                 )?;
                                 let pattern = pattern::init(pattern::Kind::tuple(elements));
                                 let mut signals = HashMap::new();
@@ -294,8 +295,8 @@ impl HIRFromAST for Equation {
                                         equation.store_signals(
                                             true,
                                             &mut signals,
-                                            symbol_table,
-                                            errors,
+                                            ctxt.syms,
+                                            ctxt.errors,
                                         )
                                     })
                                     .collect::<TRes<()>>()?;
@@ -319,7 +320,7 @@ impl HIRFromAST for Equation {
                                 // transform guard and equations into HIR with local context
                                 let guard = guard
                                     .map(|(_, expression)| {
-                                        expression.hir_from_ast(symbol_table, errors)
+                                        expression.hir_from_ast(&mut ctxt.add_pat_loc(None, &location))
                                     })
                                     .transpose()?;
                                 let statements = equations
@@ -327,7 +328,7 @@ impl HIRFromAST for Equation {
                                     .map(|equation| {
                                         let mut def_signals = HashMap::new();
                                         equation
-                                            .get_signals(&mut def_signals, symbol_table, errors)
+                                            .get_signals(&mut def_signals, ctxt.syms, ctxt.errors)
                                             .expect("internal bug");
 
                                         let stmt = if def_signals
@@ -335,21 +336,20 @@ impl HIRFromAST for Equation {
                                             .any(|name| !always_defined.contains_key(name))
                                             && !equation.is_event()
                                         {
-                                            let mut stmt =
-                                                equation.hir_from_ast(symbol_table, errors)?;
+                                            let mut stmt = equation.hir_from_ast(ctxt)?;
                                             stmt.expression = stream::expr(
                                                 stream::Kind::some_event(stmt.expression),
                                             );
                                             stmt
                                         } else {
-                                            equation.hir_from_ast(symbol_table, errors)?
+                                            equation.hir_from_ast(ctxt)?
                                         };
 
                                         Ok(stmt)
                                     })
                                     .collect::<TRes<Vec<_>>>()?;
 
-                                symbol_table.global();
+                                ctxt.syms.global();
 
                                 (signals, pattern, guard, statements)
                             };

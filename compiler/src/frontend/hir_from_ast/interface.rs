@@ -1,10 +1,9 @@
 prelude! {
     ast::interface::{
-        Constrains, FlowDeclaration, FlowExport, FlowExpression, FlowImport,
+        Constrains, FlowDeclaration, FlowExport, FlowImport,
         FlowInstantiation, FlowKind, FlowPattern, FlowStatement, Service,
     },
     hir::{
-        flow,
         interface::{
             FlowDeclaration as HIRFlowDeclaration, FlowExport as HIRFlowExport,
             FlowImport as HIRFlowImport, FlowInstantiation as HIRFlowInstantiation,
@@ -13,16 +12,12 @@ prelude! {
     },
 }
 
-use super::HIRFromAST;
+use super::{HIRFromAST, SimpleCtxt};
 
-impl HIRFromAST for Service {
+impl<'a> HIRFromAST<SimpleCtxt<'a>> for Service {
     type HIR = hir::Service;
 
-    fn hir_from_ast(
-        self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> TRes<Self::HIR> {
+    fn hir_from_ast(self, ctxt: &mut SimpleCtxt<'a>) -> TRes<Self::HIR> {
         let Service {
             ident,
             constrains,
@@ -31,7 +26,8 @@ impl HIRFromAST for Service {
         } = self;
 
         let id =
-            symbol_table.insert_service(ident.to_string(), true, Location::default(), errors)?;
+            ctxt.syms
+                .insert_service(ident.to_string(), true, Location::default(), ctxt.errors)?;
 
         let constrains = if let Some(Constrains { min, max, .. }) = constrains {
             (min.base10_parse().unwrap(), max.base10_parse().unwrap())
@@ -39,17 +35,17 @@ impl HIRFromAST for Service {
             (10, 500)
         };
 
-        symbol_table.local();
+        ctxt.syms.local();
         let statements = flow_statements
             .into_iter()
             .map(|flow_statement| {
                 flow_statement
-                    .hir_from_ast(symbol_table, errors)
-                    .map(|res| (symbol_table.get_fresh_id(), res))
+                    .hir_from_ast(ctxt)
+                    .map(|res| (ctxt.syms.get_fresh_id(), res))
             })
             .collect::<TRes<HashMap<_, _>>>()?;
         let graph = Default::default();
-        symbol_table.global();
+        ctxt.syms.global();
 
         Ok(hir::Service {
             id,
@@ -60,14 +56,10 @@ impl HIRFromAST for Service {
     }
 }
 
-impl HIRFromAST for FlowImport {
+impl<'a> HIRFromAST<SimpleCtxt<'a>> for FlowImport {
     type HIR = HIRFlowImport;
 
-    fn hir_from_ast(
-        self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> TRes<Self::HIR> {
+    fn hir_from_ast(self, ctxt: &mut SimpleCtxt<'a>) -> TRes<Self::HIR> {
         let FlowImport {
             import_token,
             kind,
@@ -83,20 +75,20 @@ impl HIRFromAST for FlowImport {
         let flow_type = {
             let inner = typed_path
                 .right
-                .hir_from_ast(&location, symbol_table, errors)?;
+                .hir_from_ast(&mut ctxt.add_loc(&location))?;
             match kind {
                 FlowKind::Signal(_) => Typ::signal(inner),
                 FlowKind::Event(_) => Typ::event(inner),
             }
         };
-        let id = symbol_table.insert_flow(
+        let id = ctxt.syms.insert_flow(
             name,
             Some(path.clone()),
             kind,
             flow_type.clone(),
             true,
             location.clone(),
-            errors,
+            ctxt.errors,
         )?;
 
         Ok(HIRFlowImport {
@@ -110,14 +102,10 @@ impl HIRFromAST for FlowImport {
     }
 }
 
-impl HIRFromAST for FlowExport {
+impl<'a> HIRFromAST<SimpleCtxt<'a>> for FlowExport {
     type HIR = HIRFlowExport;
 
-    fn hir_from_ast(
-        self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> TRes<Self::HIR> {
+    fn hir_from_ast(self, ctxt: &mut SimpleCtxt<'a>) -> TRes<Self::HIR> {
         let FlowExport {
             export_token,
             kind,
@@ -133,20 +121,20 @@ impl HIRFromAST for FlowExport {
         let flow_type = {
             let inner = typed_path
                 .right
-                .hir_from_ast(&location, symbol_table, errors)?;
+                .hir_from_ast(&mut ctxt.add_loc(&location))?;
             match kind {
                 FlowKind::Signal(_) => Typ::signal(inner),
                 FlowKind::Event(_) => Typ::event(inner),
             }
         };
-        let id = symbol_table.insert_flow(
+        let id = ctxt.syms.insert_flow(
             name,
             Some(path.clone()),
             kind,
             flow_type.clone(),
             true,
             location.clone(),
-            errors,
+            ctxt.errors,
         )?;
 
         Ok(HIRFlowExport {
@@ -160,14 +148,10 @@ impl HIRFromAST for FlowExport {
     }
 }
 
-impl HIRFromAST for FlowStatement {
+impl<'a> HIRFromAST<SimpleCtxt<'a>> for FlowStatement {
     type HIR = HIRFlowStatement;
 
-    fn hir_from_ast(
-        self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> TRes<Self::HIR> {
+    fn hir_from_ast(self, ctxt: &mut SimpleCtxt<'a>) -> TRes<Self::HIR> {
         match self {
             FlowStatement::Declaration(FlowDeclaration {
                 let_token,
@@ -176,8 +160,9 @@ impl HIRFromAST for FlowStatement {
                 flow_expression,
                 semi_token,
             }) => {
-                let pattern = typed_pattern.hir_from_ast(symbol_table, errors)?;
-                let flow_expression = flow_expression.hir_from_ast(symbol_table, errors)?;
+                let pattern = typed_pattern.hir_from_ast(ctxt)?;
+                let flow_expression =
+                    flow_expression.hir_from_ast(&mut ctxt.add_loc(&Location::default()))?;
 
                 Ok(HIRFlowStatement::Declaration(HIRFlowDeclaration {
                     let_token,
@@ -194,9 +179,10 @@ impl HIRFromAST for FlowStatement {
                 semi_token,
             }) => {
                 // transform pattern and check its identifiers exist
-                let pattern = pattern.hir_from_ast(symbol_table, errors)?;
+                let pattern = pattern.hir_from_ast(ctxt)?;
                 // transform the expression
-                let flow_expression = flow_expression.hir_from_ast(symbol_table, errors)?;
+                let flow_expression =
+                    flow_expression.hir_from_ast(&mut ctxt.add_loc(&Location::default()))?;
 
                 Ok(HIRFlowStatement::Instantiation(HIRFlowInstantiation {
                     pattern,
@@ -209,25 +195,21 @@ impl HIRFromAST for FlowStatement {
     }
 }
 
-impl HIRFromAST for FlowPattern {
+impl<'a> HIRFromAST<SimpleCtxt<'a>> for FlowPattern {
     type HIR = hir::stmt::Pattern;
 
-    fn hir_from_ast(
-        self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> TRes<Self::HIR> {
+    fn hir_from_ast(self, ctxt: &mut SimpleCtxt<'a>) -> TRes<Self::HIR> {
         let location = Location::default();
 
         match self {
             FlowPattern::Single { ident } => {
-                let id = symbol_table.get_flow_id(
+                let id = ctxt.syms.get_flow_id(
                     &ident.to_string(),
                     false,
                     location.clone(),
-                    errors,
+                    ctxt.errors,
                 )?;
-                let typing = symbol_table.get_type(id);
+                let typing = ctxt.syms.get_type(id);
 
                 Ok(hir::stmt::Pattern {
                     kind: hir::stmt::Kind::Identifier { id },
@@ -238,19 +220,19 @@ impl HIRFromAST for FlowPattern {
             FlowPattern::SingleTyped {
                 kind, ident, ty, ..
             } => {
-                let inner = ty.hir_from_ast(&location, symbol_table, errors)?;
+                let inner = ty.hir_from_ast(&mut ctxt.add_loc(&location))?;
                 let flow_typing = match kind {
                     FlowKind::Signal(_) => Typ::signal(inner),
                     FlowKind::Event(_) => Typ::event(inner),
                 };
-                let id = symbol_table.insert_flow(
+                let id = ctxt.syms.insert_flow(
                     ident.to_string(),
                     None,
                     kind,
                     flow_typing.clone(),
                     true,
                     location.clone(),
-                    errors,
+                    ctxt.errors,
                 )?;
 
                 Ok(hir::stmt::Pattern {
@@ -265,7 +247,7 @@ impl HIRFromAST for FlowPattern {
             FlowPattern::Tuple { patterns, .. } => {
                 let elements = patterns
                     .into_iter()
-                    .map(|pattern| pattern.hir_from_ast(symbol_table, errors))
+                    .map(|pattern| pattern.hir_from_ast(ctxt))
                     .collect::<TRes<Vec<_>>>()?;
 
                 let mut types = elements
@@ -287,49 +269,188 @@ impl HIRFromAST for FlowPattern {
     }
 }
 
-impl HIRFromAST for FlowExpression {
-    type HIR = flow::Expr;
+mod flow_expr {
+    prelude! {
+        ast::interface::{
+            FlowExpression, ComponentCall, OnChange, Merge,
+            Sample, Scan, Throttle, Timeout,
+        },
+        frontend::hir_from_ast::{HIRFromAST, LocCtxt},
+        hir::flow,
+    }
 
-    // precondition: identifiers are stored in symbol table
-    // postcondition: construct HIR expression and check identifiers good use
-    fn hir_from_ast(
-        self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> TRes<Self::HIR> {
-        let location = Location::default();
-        let loc = &location;
-        let kind = match self {
-            FlowExpression::Ident(ident) => {
-                let id = symbol_table.get_flow_id(&ident, false, location.clone(), errors)?;
-                flow::Kind::Ident { id }
+    impl<'a> HIRFromAST<LocCtxt<'a>> for ast::interface::Sample {
+        type HIR = hir::flow::Kind;
+
+        /// Transforms AST into HIR and check identifiers good use.
+        fn hir_from_ast(self, ctxt: &mut LocCtxt<'a>) -> TRes<hir::flow::Kind> {
+            let Sample {
+                flow_expression,
+                period_ms,
+                ..
+            } = self;
+            Ok(hir::flow::Kind::Sample {
+                flow_expression: Box::new(flow_expression.hir_from_ast(ctxt)?),
+                period_ms: period_ms.base10_parse().unwrap(),
+            })
+        }
+    }
+
+    impl<'a> HIRFromAST<LocCtxt<'a>> for Scan {
+        type HIR = hir::flow::Kind;
+
+        /// Transforms AST into HIR and check identifiers good use.
+        fn hir_from_ast(self, ctxt: &mut LocCtxt<'a>) -> TRes<hir::flow::Kind> {
+            let Scan {
+                flow_expression,
+                period_ms,
+                ..
+            } = self;
+            Ok(hir::flow::Kind::Scan {
+                flow_expression: Box::new(flow_expression.hir_from_ast(ctxt)?),
+                period_ms: period_ms.base10_parse().unwrap(),
+            })
+        }
+    }
+
+    impl<'a> HIRFromAST<LocCtxt<'a>> for Timeout {
+        type HIR = hir::flow::Kind;
+
+        /// Transforms AST into HIR and check identifiers good use.
+        fn hir_from_ast(self, ctxt: &mut LocCtxt<'a>) -> TRes<hir::flow::Kind> {
+            let Timeout {
+                flow_expression,
+                deadline,
+                ..
+            } = self;
+            Ok(hir::flow::Kind::Timeout {
+                flow_expression: Box::new(flow_expression.hir_from_ast(ctxt)?),
+                deadline: deadline.base10_parse().unwrap(),
+            })
+        }
+    }
+
+    impl<'a> HIRFromAST<LocCtxt<'a>> for Throttle {
+        type HIR = hir::flow::Kind;
+
+        /// Transforms AST into HIR and check identifiers good use.
+        fn hir_from_ast(self, ctxt: &mut LocCtxt<'a>) -> TRes<hir::flow::Kind> {
+            let Throttle {
+                flow_expression,
+                delta,
+                ..
+            } = self;
+            Ok(hir::flow::Kind::Throttle {
+                flow_expression: Box::new(flow_expression.hir_from_ast(ctxt)?),
+                delta,
+            })
+        }
+    }
+
+    impl<'a> HIRFromAST<LocCtxt<'a>> for OnChange {
+        type HIR = hir::flow::Kind;
+
+        /// Transforms AST into HIR and check identifiers good use.
+        fn hir_from_ast(self, ctxt: &mut LocCtxt<'a>) -> TRes<hir::flow::Kind> {
+            let OnChange {
+                flow_expression, ..
+            } = self;
+            Ok(hir::flow::Kind::OnChange {
+                flow_expression: Box::new(flow_expression.hir_from_ast(ctxt)?),
+            })
+        }
+    }
+
+    impl<'a> HIRFromAST<LocCtxt<'a>> for Merge {
+        type HIR = hir::flow::Kind;
+
+        /// Transforms AST into HIR and check identifiers good use.
+        fn hir_from_ast(self, ctxt: &mut LocCtxt<'a>) -> TRes<hir::flow::Kind> {
+            let Merge {
+                flow_expression_1,
+                flow_expression_2,
+                ..
+            } = self;
+            Ok(hir::flow::Kind::Merge {
+                flow_expression_1: Box::new(flow_expression_1.hir_from_ast(ctxt)?),
+                flow_expression_2: Box::new(flow_expression_2.hir_from_ast(ctxt)?),
+            })
+        }
+    }
+
+    impl<'a> HIRFromAST<LocCtxt<'a>> for ComponentCall {
+        type HIR = hir::flow::Kind;
+
+        /// Transforms AST into HIR and check identifiers good use.
+        fn hir_from_ast(self, ctxt: &mut LocCtxt<'a>) -> TRes<hir::flow::Kind> {
+            let ComponentCall {
+                ident_component,
+                inputs,
+                ..
+            } = self;
+
+            let name = ident_component.to_string();
+
+            // get called component id
+            let component_id =
+                ctxt.syms
+                    .get_node_id(&name, false, ctxt.loc.clone(), ctxt.errors)?;
+
+            let component_inputs = ctxt.syms.get_node_inputs(component_id).clone();
+
+            // check inputs and node_inputs have the same length
+            if inputs.len() != component_inputs.len() {
+                let error = Error::IncompatibleInputsNumber {
+                    given_inputs_number: inputs.len(),
+                    expected_inputs_number: component_inputs.len(),
+                    location: ctxt.loc.clone(),
+                };
+                ctxt.errors.push(error);
+                return Err(TerminationError);
             }
-            FlowExpression::ComponentCall(flow_expression) => {
-                flow_expression.hir_from_ast(loc, symbol_table, errors)?
-            }
-            FlowExpression::Sample(flow_expression) => {
-                flow_expression.hir_from_ast(loc, symbol_table, errors)?
-            }
-            FlowExpression::Scan(flow_expression) => {
-                flow_expression.hir_from_ast(loc, symbol_table, errors)?
-            }
-            FlowExpression::Timeout(flow_expression) => {
-                flow_expression.hir_from_ast(loc, symbol_table, errors)?
-            }
-            FlowExpression::Throttle(flow_expression) => {
-                flow_expression.hir_from_ast(loc, symbol_table, errors)?
-            }
-            FlowExpression::OnChange(flow_expression) => {
-                flow_expression.hir_from_ast(loc, symbol_table, errors)?
-            }
-            FlowExpression::Merge(flow_expression) => {
-                flow_expression.hir_from_ast(loc, symbol_table, errors)?
-            }
-        };
-        Ok(flow::Expr {
-            kind,
-            typing: None,
-            location,
-        })
+
+            // transform inputs and map then to the identifiers of the component inputs
+            let inputs = inputs
+                .into_iter()
+                .zip(component_inputs)
+                .map(|(input, id)| Ok((id, input.hir_from_ast(ctxt)?)))
+                .collect::<TRes<Vec<_>>>()?;
+
+            Ok(hir::flow::Kind::ComponentCall {
+                component_id,
+                inputs,
+            })
+        }
+    }
+
+    impl<'a> HIRFromAST<LocCtxt<'a>> for FlowExpression {
+        type HIR = flow::Expr;
+
+        // precondition: identifiers are stored in symbol table
+        // postcondition: construct HIR expression and check identifiers good use
+        fn hir_from_ast(self, ctxt: &mut LocCtxt<'a>) -> TRes<Self::HIR> {
+            let kind = match self {
+                FlowExpression::Ident(ident) => {
+                    let id = ctxt
+                        .syms
+                        .get_flow_id(&ident, false, ctxt.loc.clone(), ctxt.errors)?;
+                    flow::Kind::Ident { id }
+                }
+                FlowExpression::ComponentCall(flow_expression) => {
+                    flow_expression.hir_from_ast(ctxt)?
+                }
+                FlowExpression::Sample(flow_expression) => flow_expression.hir_from_ast(ctxt)?,
+                FlowExpression::Scan(flow_expression) => flow_expression.hir_from_ast(ctxt)?,
+                FlowExpression::Timeout(flow_expression) => flow_expression.hir_from_ast(ctxt)?,
+                FlowExpression::Throttle(flow_expression) => flow_expression.hir_from_ast(ctxt)?,
+                FlowExpression::OnChange(flow_expression) => flow_expression.hir_from_ast(ctxt)?,
+                FlowExpression::Merge(flow_expression) => flow_expression.hir_from_ast(ctxt)?,
+            };
+            Ok(flow::Expr {
+                kind,
+                typing: None,
+                location: ctxt.loc.clone(),
+            })
+        }
     }
 }

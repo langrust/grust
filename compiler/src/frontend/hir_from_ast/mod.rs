@@ -20,19 +20,72 @@ pub mod pattern;
 pub mod statement;
 /// HIR StreamExpression construction from AST StreamExpression
 pub mod stream_expression;
+pub mod typ;
 /// HIR Typedef construction from AST Typedef.
 pub mod typedef;
 
 /// AST transformation into HIR.
-pub trait HIRFromAST {
+pub trait HIRFromAST<Ctxt> {
     /// Corresponding HIR construct.
     type HIR;
-    /// Context to construct the HIR.
-    type Ctxt;
 
     /// Transforms AST into HIR and check identifiers good use.
-    fn hir_from_ast(
-        self,
-        symbol_table: &mut Self::Ctxt,
-    ) -> TRes<Self::HIR>;
+    fn hir_from_ast(self, ctxt: &mut Ctxt) -> TRes<Self::HIR>;
+}
+
+pub struct SimpleCtxt<'a> {
+    pub syms: &'a mut SymbolTable,
+    pub errors: &'a mut Vec<Error>,
+}
+pub struct LocCtxt<'a> {
+    pub loc: &'a Location,
+    pub syms: &'a mut SymbolTable,
+    pub errors: &'a mut Vec<Error>,
+}
+pub struct PatLocCtxt<'a> {
+    pub pat: Option<&'a ast::stmt::Pattern>,
+    pub loc: &'a Location,
+    pub syms: &'a mut SymbolTable,
+    pub errors: &'a mut Vec<Error>,
+}
+impl<'a> SimpleCtxt<'a> {
+    pub fn new(syms: &'a mut SymbolTable, errors: &'a mut Vec<Error>) -> Self {
+        Self { syms, errors }
+    }
+    pub fn add_loc<'b>(&'b mut self, loc: &'b Location) -> LocCtxt<'b> {
+        LocCtxt::new(loc, self.syms, self.errors)
+    }
+    pub fn add_pat_loc<'b>(
+        &'b mut self,
+        pat: Option<&'b ast::stmt::Pattern>,
+        loc: &'b Location,
+    ) -> PatLocCtxt<'b> {
+        PatLocCtxt::new(pat, loc, self.syms, self.errors)
+    }
+}
+impl<'a> LocCtxt<'a> {
+    pub fn new(loc: &'a Location, syms: &'a mut SymbolTable, errors: &'a mut Vec<Error>) -> Self {
+        Self { loc, syms, errors }
+    }
+    pub fn add_pat<'b>(&'b mut self, pat: Option<&'b ast::stmt::Pattern>) -> PatLocCtxt<'b> {
+        PatLocCtxt::new(pat, self.loc, self.syms, self.errors)
+    }
+}
+impl<'a> PatLocCtxt<'a> {
+    pub fn new(
+        pat: Option<&'a ast::stmt::Pattern>,
+        loc: &'a Location,
+        syms: &'a mut SymbolTable,
+        errors: &'a mut Vec<Error>,
+    ) -> Self {
+        Self {
+            pat,
+            loc,
+            syms,
+            errors,
+        }
+    }
+    pub fn remove_pat<'b>(&'b mut self) -> LocCtxt<'b> {
+        LocCtxt::new(self.loc, self.syms, self.errors)
+    }
 }

@@ -1,6 +1,4 @@
-prelude! {}
-
-pub mod hir_ext;
+prelude! {frontend::hir_from_ast::LocCtxt}
 
 pub trait ComponentExt {
     /// Store node in symbol table.
@@ -9,13 +7,17 @@ pub trait ComponentExt {
 
 mod component {
     prelude! {
-        ast::{Component, ComponentImport, Colon}
+        ast::{Component, ComponentImport, Colon},
+        frontend::hir_from_ast::{LocCtxt},
     }
 
     impl super::ComponentExt for Component {
         /// Store node's signals in symbol table.
         fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
-            symbol_table.local();
+            let location = Location::default();
+            let ctxt = &mut LocCtxt::new(&location, symbol_table, errors);
+
+            ctxt.syms.local();
 
             let name = self.ident.to_string();
             let period = self
@@ -27,7 +29,6 @@ mod component {
                     .args
                     .iter()
                     .any(|Colon { right: typing, .. }| typing.is_event());
-            let location = Location::default();
 
             // store input signals and get their ids
             let inputs = self
@@ -40,17 +41,14 @@ mod component {
                          ..
                      }| {
                         let name = ident.to_string();
-                        let typing =
-                            typing
-                                .clone()
-                                .hir_from_ast(&location, symbol_table, errors)?;
-                        let id = symbol_table.insert_signal(
+                        let typing = typing.clone().hir_from_ast(ctxt)?;
+                        let id = ctxt.syms.insert_signal(
                             name,
                             Scope::Input,
                             Some(typing),
                             true,
                             location.clone(),
-                            errors,
+                            ctxt.errors,
                         )?;
                         Ok(id)
                     },
@@ -68,17 +66,14 @@ mod component {
                          ..
                      }| {
                         let name = ident.to_string();
-                        let typing =
-                            typing
-                                .clone()
-                                .hir_from_ast(&location, symbol_table, errors)?;
-                        let id = symbol_table.insert_signal(
+                        let typing = typing.clone().hir_from_ast(ctxt)?;
+                        let id = ctxt.syms.insert_signal(
                             name.clone(),
                             Scope::Output,
                             Some(typing),
                             true,
-                            location.clone(),
-                            errors,
+                            ctxt.loc.clone(),
+                            ctxt.errors,
                         )?;
                         Ok((name, id))
                     },
@@ -89,16 +84,24 @@ mod component {
             let locals = {
                 let mut map = HashMap::with_capacity(25);
                 for equation in self.equations.iter() {
-                    equation.store_signals(false, &mut map, symbol_table, errors)?;
+                    equation.store_signals(false, &mut map, ctxt.syms, ctxt.errors)?;
                 }
                 map.shrink_to_fit();
                 map
             };
 
-            symbol_table.global();
+            ctxt.syms.global();
 
-            let _ = symbol_table.insert_node(
-                name, false, inputs, eventful, outputs, locals, period, location, errors,
+            let _ = ctxt.syms.insert_node(
+                name,
+                false,
+                inputs,
+                eventful,
+                outputs,
+                locals,
+                period,
+                ctxt.loc.clone(),
+                ctxt.errors,
             )?;
 
             Ok(())
@@ -108,7 +111,9 @@ mod component {
     impl super::ComponentExt for ComponentImport {
         /// Store node's signals in symbol table.
         fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
-            symbol_table.local();
+            let location = Location::default();
+            let ctxt = &mut LocCtxt::new(&location, symbol_table, errors);
+            ctxt.syms.local();
 
             let last = self.path.clone().segments.pop().unwrap().into_value();
             let name = last.ident.to_string();
@@ -125,8 +130,6 @@ mod component {
                     .iter()
                     .any(|Colon { right: typing, .. }| typing.is_event());
 
-            let location = Location::default();
-
             // store input signals and get their ids
             let inputs = self
                 .args
@@ -138,17 +141,14 @@ mod component {
                          ..
                      }| {
                         let name = ident.to_string();
-                        let typing =
-                            typing
-                                .clone()
-                                .hir_from_ast(&location, symbol_table, errors)?;
-                        let id = symbol_table.insert_signal(
+                        let typing = typing.clone().hir_from_ast(ctxt)?;
+                        let id = ctxt.syms.insert_signal(
                             name,
                             Scope::Input,
                             Some(typing),
                             true,
                             location.clone(),
-                            errors,
+                            ctxt.errors,
                         )?;
                         Ok(id)
                     },
@@ -166,17 +166,14 @@ mod component {
                          ..
                      }| {
                         let name = ident.to_string();
-                        let typing =
-                            typing
-                                .clone()
-                                .hir_from_ast(&location, symbol_table, errors)?;
-                        let id = symbol_table.insert_signal(
+                        let typing = typing.clone().hir_from_ast(ctxt)?;
+                        let id = ctxt.syms.insert_signal(
                             name.clone(),
                             Scope::Output,
                             Some(typing),
                             true,
                             location.clone(),
-                            errors,
+                            ctxt.errors,
                         )?;
                         Ok((name, id))
                     },
@@ -382,9 +379,10 @@ pub trait FunctionExt {
 
 impl FunctionExt for ast::Function {
     fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
-        symbol_table.local();
-
         let location = Location::default();
+        let ctxt = &mut LocCtxt::new(&location, symbol_table, errors);
+        ctxt.syms.local();
+
         let inputs = self
             .args
             .iter()
@@ -395,122 +393,31 @@ impl FunctionExt for ast::Function {
                      ..
                  }| {
                     let name = ident.to_string();
-                    let typing = typing
-                        .clone()
-                        .hir_from_ast(&location, symbol_table, errors)?;
-                    let id = symbol_table.insert_identifier(
+                    let typing = typing.clone().hir_from_ast(ctxt)?;
+                    let id = ctxt.syms.insert_identifier(
                         name.clone(),
                         Some(typing),
                         true,
                         location.clone(),
-                        errors,
+                        ctxt.errors,
                     )?;
                     Ok(id)
                 },
             )
             .collect::<TRes<Vec<_>>>()?;
 
-        symbol_table.global();
+        ctxt.syms.global();
 
-        let _ = symbol_table.insert_function(
+        let _ = ctxt.syms.insert_function(
             self.ident.to_string(),
             inputs,
             None,
             false,
-            location,
-            errors,
+            ctxt.loc.clone(),
+            ctxt.errors,
         )?;
 
         Ok(())
-    }
-}
-
-pub trait TypExt {
-    /// Transforms AST into HIR and check identifiers good use.
-    fn hir_from_ast(
-        self,
-        location: &Location,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> TRes<Typ>;
-}
-
-mod typ {
-    use syn::{
-        punctuated::{Pair, Punctuated},
-        Token,
-    };
-
-    prelude! { ast::Typ }
-
-    impl TypExt for Typ {
-        /// Transforms AST into HIR and check identifiers good use.
-        fn hir_from_ast(
-            self,
-            location: &Location,
-            symbol_table: &mut SymbolTable,
-            errors: &mut Vec<Error>,
-        ) -> TRes<Typ> {
-            // precondition: Typedefs are stored in symbol table
-            // postcondition: construct a new Type without `Typ::NotDefinedYet`
-            match self {
-                Typ::Array { bracket_token, ty, semi_token, size } => Ok(Typ::Array {
-                    bracket_token,
-                    ty: Box::new(ty.hir_from_ast(location, symbol_table, errors)?),
-                    semi_token,
-                    size
-                }),
-                Typ::Tuple { paren_token, elements } => Ok(Typ::Tuple {
-                    paren_token,
-                    elements: elements.into_pairs()
-                    .map(|pair| {
-                        let (ty, comma) = pair.into_tuple();
-                        let ty = ty.hir_from_ast(location, symbol_table, errors)?;
-                        Ok(Pair::new(ty, comma))
-                    }).collect::<TRes<Punctuated<Typ, Token![,]>>>()?
-                }),
-                Typ::NotDefinedYet(name) => symbol_table
-                    .get_struct_id(&name.to_string(), false, location.clone(), &mut vec![])
-                    .map(|id| Typ::Structure { name: name.clone(), id })
-                    .or_else(|_| {
-                        symbol_table
-                            .get_enum_id(&name.to_string(), false, location.clone(), &mut vec![])
-                            .map(|id| Typ::Enumeration { name: name.clone(), id })
-                    })
-                    .or_else(|_| {
-                        let id = symbol_table.get_array_id(&name.to_string(), false, location.clone(), errors)?;
-                        Ok(symbol_table.get_array(id))
-                    }),
-                Typ::Abstract { paren_token, inputs, arrow_token, output } => {
-                    let inputs = inputs.into_pairs()
-                    .map(|pair| {
-                        let (ty, comma) = pair.into_tuple();
-                        let ty = ty.hir_from_ast(location, symbol_table, errors)?;
-                        Ok(Pair::new(ty, comma))
-                    }).collect::<TRes<Punctuated<Typ, Token![,]>>>()?;
-                    let output = output.hir_from_ast(location, symbol_table, errors)?;
-                    Ok(Typ::Abstract { paren_token, inputs, arrow_token, output: output.into() })
-                }
-                Typ::SMEvent { ty, question_token } => Ok(Typ::SMEvent {
-                    ty: Box::new(ty.hir_from_ast(location, symbol_table, errors)?),
-                    question_token
-                }),
-                Typ::Signal { signal_token, ty } => Ok(Typ::Signal {
-                    signal_token,
-                    ty: Box::new(ty.hir_from_ast(location, symbol_table, errors)?),
-                }),
-                Typ::Event { event_token, ty } => Ok(Typ::Event {
-                    event_token,
-                    ty: Box::new(ty.hir_from_ast(location, symbol_table, errors)?),
-                }),
-                Typ::Integer(_) | Typ::Float(_) | Typ::Boolean(_) | Typ::Unit(_) => Ok(self),
-                Typ::Enumeration { .. }    // no enumeration at this time: they are `NotDefinedYet`
-                | Typ::Structure { .. }    // no structure at this time: they are `NotDefinedYet`
-                | Typ::Any                 // users can not write `Any` type
-                | Typ::Polymorphism(_)     // users can not write `Polymorphism` type
-                 => unreachable!(),
-            }
-        }
     }
 }
 
@@ -921,7 +828,7 @@ pub trait EventPatternExt {
 
 mod event_pattern {
     prelude! {
-        ast::equation::EventPattern
+        ast::equation::EventPattern, frontend::hir_from_ast::LocCtxt
     }
 
     impl super::EventPatternExt for EventPattern {
@@ -1001,17 +908,20 @@ mod event_pattern {
                     Ok(guard)
                 }
                 EventPattern::Let(pattern) => {
+                    let location = Location::default();
+                    let ctxt = &mut LocCtxt::new(&location, symbol_table, errors);
+
                     // get the event identifier
-                    let event_id = symbol_table.get_identifier_id(
+                    let event_id = ctxt.syms.get_identifier_id(
                         &pattern.event.to_string(),
                         false,
-                        Location::default(),
-                        errors,
+                        ctxt.loc.clone(),
+                        ctxt.errors,
                     )?;
 
                     // transform inner_pattern into HIR
-                    pattern.pattern.store(true, symbol_table, errors)?;
-                    let inner_pattern = pattern.pattern.hir_from_ast(symbol_table, errors)?;
+                    pattern.pattern.store(true, ctxt.syms, ctxt.errors)?;
+                    let inner_pattern = pattern.pattern.hir_from_ast(ctxt)?;
                     let event_pattern =
                         hir::pattern::init(hir::pattern::Kind::present(event_id, inner_pattern));
 
