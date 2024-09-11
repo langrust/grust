@@ -7,9 +7,9 @@ fn should_compile_multiple_events() {
     let ast: Ast = syn::parse_quote! {
         #![dump = "tests/macro_outputs/multiple_events.rs"]
 
-        component multiple_events(a: int?, b: int?, v: int) -> (c: int, d: float) {
+        component multiple_events(a: int?, b: int?, v: int) -> (c: int, d: int) {
             c = z;
-            d = when (let _ = a?, let _ = b?) then 0.1;
+            d = when (a?, b?) then 10 * a + b;
             when {
                 (let a = a?, let b = b?) if v > 50 => {
                     let z: int = 1;
