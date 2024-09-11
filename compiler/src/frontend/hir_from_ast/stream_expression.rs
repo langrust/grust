@@ -11,7 +11,7 @@ impl<'a> HIRFromAST<PatLocCtxt<'a>> for stream::When {
     /// Transforms AST into HIR and check identifiers good use.
     fn hir_from_ast(self, ctxt: &mut PatLocCtxt<'a>) -> TRes<Self::HIR> {
         let stream::When {
-            pattern,
+            pattern: event_pattern,
             expression,
             ..
         } = self;
@@ -20,14 +20,12 @@ impl<'a> HIRFromAST<PatLocCtxt<'a>> for stream::When {
 
         // precondition: identifiers are stored in symbol table
         // postcondition: construct HIR expression kind and check identifiers good use
-        let ident: String = todo!();
-        let is_event = todo!();
 
         // create map from event_id to index in tuple pattern
         let (events_indices, events_nb, no_event_tuple) = {
             let mut events_indices = HashMap::with_capacity(arms.len());
             let mut idx = 0;
-            pattern.place_events(&mut events_indices, &mut idx, ctxt.syms, ctxt.errors)?;
+            event_pattern.place_events(&mut events_indices, &mut idx, ctxt.syms, ctxt.errors)?;
             // default event_pattern tuple
             let no_event_tuple: Vec<_> =
                 std::iter::repeat(hir::pattern::init(hir::pattern::Kind::default()))
@@ -36,52 +34,40 @@ impl<'a> HIRFromAST<PatLocCtxt<'a>> for stream::When {
             (events_indices, idx, no_event_tuple)
         };
 
-        // create presence arm
+        // create action arm
         {
             ctxt.syms.local();
 
-            // set local context + create tuple of event's pattern
-            let mut elements = no_event_tuple;
-            let opt_guard = pattern.create_tuple_pattern(
-                &mut elements,
-                &events_indices,
-                ctxt.syms,
-                ctxt.errors,
-            )?;
-            let pattern = hir::pattern::init(hir::pattern::Kind::tuple(elements));
-
+            // set local context + create matched pattern
+            let (match_pattern, guard) = {
+                let mut elements = no_event_tuple;
+                let opt_guard = event_pattern.create_tuple_pattern(
+                    &mut elements,
+                    &events_indices,
+                    ctxt.syms,
+                    ctxt.errors,
+                )?;
+                let guard = opt_guard.map(|expr| expr.hir_from_ast(ctxt)).transpose()?;
+                let matched = hir::pattern::init(hir::pattern::Kind::tuple(elements));
+                (matched, guard)
+            };
             // transform into HIR
             let expression = expression.hir_from_ast(ctxt)?;
-            let expression = if is_event {
-                hir::stream::expr(hir::stream::Kind::some_event(expression))
-            } else {
-                expression
-            };
-
-            let guard = opt_guard.map(|expr| expr.hir_from_ast(ctxt)).transpose()?;
-
             ctxt.syms.global();
-            arms.push((pattern, guard, vec![], expression))
+            arms.push((match_pattern, guard, vec![], expression));
         }
 
         // create default arm
         {
-            let pattern = hir::Pattern {
+            let match_pattern = hir::Pattern {
                 kind: hir::pattern::Kind::Default,
                 typing: None,
                 location: location.clone(),
             };
-            if is_event {
-                let expression = hir::stream::expr(hir::stream::Kind::none_event());
-                arms.push((pattern, None, vec![], expression))
-            } else {
-                let expression = stream::Expr::fby(stream::Fby::new(
-                    stream::Expr::cst(Constant::default()),
-                    stream::Expr::ident(ident),
-                ))
-                .hir_from_ast(ctxt)?;
-                arms.push((pattern, None, vec![], expression))
-            }
+            let pat = ctxt.pat.expect("there should be a pattern");
+            // wraps events in 'none' and signals in 'fby'
+            let expression = pat.into_default_expr(&HashMap::new(), ctxt.syms, ctxt.errors)?;
+            arms.push((match_pattern, None, vec![], expression))
         }
 
         // construct the match expression
@@ -114,8 +100,6 @@ impl<'a> HIRFromAST<PatLocCtxt<'a>> for stream::Expr {
     // precondition: identifiers are stored in symbol table
     // postcondition: construct HIR stream expression and check identifiers good use
     fn hir_from_ast(self, ctxt: &mut PatLocCtxt<'a>) -> TRes<Self::HIR> {
-        let location = Location::default();
-        let loc = &location;
         let kind = match self {
             stream::Expr::Application(Application {
                 function_expression,
@@ -124,7 +108,7 @@ impl<'a> HIRFromAST<PatLocCtxt<'a>> for stream::Expr {
                 stream::Expr::Identifier(node) if ctxt.syms.is_node(&node, false) => {
                     let called_node_id =
                         ctxt.syms
-                            .get_node_id(&node, false, location.clone(), ctxt.errors)?;
+                            .get_node_id(&node, false, ctxt.loc.clone(), ctxt.errors)?;
                     let node_symbol = ctxt
                         .syms
                         .get_symbol(called_node_id)
@@ -137,7 +121,7 @@ impl<'a> HIRFromAST<PatLocCtxt<'a>> for stream::Expr {
                                 let error = Error::IncompatibleInputsNumber {
                                     given_inputs_number: inputs_stream_expressions.len(),
                                     expected_inputs_number: inputs.len(),
-                                    location: location.clone(),
+                                    location: ctxt.loc.clone(),
                                 };
                                 ctxt.errors.push(error);
                                 return Err(TerminationError);
@@ -178,6 +162,9 @@ impl<'a> HIRFromAST<PatLocCtxt<'a>> for stream::Expr {
                     expression: Box::new(expression.hir_from_ast(ctxt)?),
                 }
             }
+            stream::Expr::Emit(stream::Emit { expr, .. }) => {
+                hir::stream::Kind::some_event(expr.hir_from_ast(ctxt)?)
+            }
             stream::Expr::When(expression) => expression.hir_from_ast(ctxt)?,
             stream::Expr::Constant(constant) => hir::stream::Kind::Expression {
                 expression: hir::expr::Kind::Constant { constant },
@@ -185,10 +172,10 @@ impl<'a> HIRFromAST<PatLocCtxt<'a>> for stream::Expr {
             stream::Expr::Identifier(id) => {
                 let id = ctxt
                     .syms
-                    .get_identifier_id(&id, false, location.clone(), &mut vec![])
+                    .get_identifier_id(&id, false, ctxt.loc.clone(), &mut vec![])
                     .or_else(|_| {
                         ctxt.syms
-                            .get_function_id(&id, false, location.clone(), ctxt.errors)
+                            .get_function_id(&id, false, ctxt.loc.clone(), ctxt.errors)
                     })?;
                 hir::stream::Kind::Expression {
                     expression: hir::expr::Kind::Identifier { id },
@@ -243,7 +230,7 @@ impl<'a> HIRFromAST<PatLocCtxt<'a>> for stream::Expr {
         Ok(hir::stream::Expr {
             kind,
             typing: None,
-            location,
+            location: ctxt.loc.clone(),
             dependencies: hir::Dependencies::new(),
         })
     }

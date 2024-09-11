@@ -92,7 +92,8 @@ impl<'a> HIRFromAST<SimpleCtxt<'a>> for Equation {
                                 let pattern = pattern.hir_from_ast(&mut ctxt.add_loc(&location))?;
                                 let guard = guard
                                     .map(|(_, expression)| {
-                                        expression.hir_from_ast(&mut ctxt.add_pat_loc(None, &location))
+                                        expression
+                                            .hir_from_ast(&mut ctxt.add_pat_loc(None, &location))
                                     })
                                     .transpose()?;
                                 let statements = equations
@@ -152,7 +153,7 @@ impl<'a> HIRFromAST<SimpleCtxt<'a>> for Equation {
 
                 // construct the match expression
                 let expression = stream::expr(stream::Kind::expr(hir::expr::Kind::match_expr(
-                    expression.hir_from_ast(&mut ctxt.add_pat_loc(todo!(), &location))?,
+                    expression.hir_from_ast(&mut ctxt.add_pat_loc(None, &location))?,
                     arms,
                 )));
 
@@ -205,62 +206,30 @@ impl<'a> HIRFromAST<SimpleCtxt<'a>> for Equation {
                     (events_indices, default_pattern)
                 };
 
-                // get the default arm if present
-                let (always_defined, opt_default) = if let Some(DefaultArmWhen {
-                    equations, ..
-                }) = default
-                {
-                    let (signals, pattern, guard, statements) = {
-                        // transform event_pattern guard and equations into HIR
-                        ctxt.syms.local();
+                let defined_pattern = {
+                    let mut elements = defined_signals.into_values().collect::<Vec<_>>();
+                    if elements.len() == 1 {
+                        elements.pop().unwrap()
+                    } else {
+                        ast::stmt::Pattern::tuple(ast::stmt::Tuple::new(elements))
+                    }
+                };
 
-                        // set local context: no event + equations' signals
-                        let mut signals = HashMap::new();
-                        equations
-                            .iter()
-                            .map(|equation| {
-                                // store equations' signals in the local context
-                                equation.store_signals(true, &mut signals, ctxt.syms, ctxt.errors)
-                            })
-                            .collect::<TRes<()>>()?;
-
-                        // create tuple pattern
-                        let elements = default_pattern.clone();
-                        let pattern = pattern::init(pattern::Kind::tuple(elements));
-                        // transform guard and equations into HIR with local context
-                        let guard = None;
-                        let statements = equations
-                            .into_iter()
-                            .map(|equation| equation.hir_from_ast(ctxt))
-                            .collect::<TRes<Vec<_>>>()?;
-
-                        ctxt.syms.global();
-
-                        (signals, pattern, guard, statements)
-                    };
-
+                // default arm
+                let default = {
+                    // create tuple pattern
+                    let elements = default_pattern.clone();
+                    let pattern = pattern::init(pattern::Kind::tuple(elements));
+                    // transform guard and equations into HIR with local context
+                    let guard = None;
                     // create the tuple expression
-                    let expression = {
-                        let mut elements = defined_signals
-                            .keys()
-                            .map(|signal_name| {
-                                if let Some(id) = signals.get(signal_name) {
-                                    stream::expr(stream::Kind::expr(hir::expr::Kind::ident(*id)))
-                                } else {
-                                    stream::expr(stream::Kind::none_event())
-                                }
-                            })
-                            .collect::<Vec<_>>();
-                        if elements.len() == 1 {
-                            elements.pop().unwrap()
-                        } else {
-                            stream::expr(stream::Kind::expr(hir::expr::Kind::tuple(elements)))
-                        }
-                    };
+                    let expression = defined_pattern.into_default_expr(
+                        &HashMap::new(),
+                        ctxt.syms,
+                        ctxt.errors,
+                    )?;
 
-                    (signals, Some((pattern, guard, statements, expression)))
-                } else {
-                    (Default::default(), None)
+                    (pattern, guard, vec![], expression)
                 };
 
                 // for each arm construct hir pattern, guard and statements
@@ -273,12 +242,11 @@ impl<'a> HIRFromAST<SimpleCtxt<'a>> for Equation {
                              equations,
                              ..
                          }| {
-                            let (signals, pattern, guard, statements) = {
-                                // transform event_pattern guard and equations into HIR
-                                ctxt.syms.local();
+                            // transform event_pattern guard and equations into HIR
+                            ctxt.syms.local();
 
-                                // set local context: events + equations' signals
-                                // create tuple pattern: it stores events identifiers
+                            // set local context + create matched pattern
+                            let (matched_pattern, guard) = {
                                 let mut elements = default_pattern.clone();
                                 let opt_guard = event_pattern.create_tuple_pattern(
                                     &mut elements,
@@ -286,20 +254,7 @@ impl<'a> HIRFromAST<SimpleCtxt<'a>> for Equation {
                                     ctxt.syms,
                                     ctxt.errors,
                                 )?;
-                                let pattern = pattern::init(pattern::Kind::tuple(elements));
-                                let mut signals = HashMap::new();
-                                equations
-                                    .iter()
-                                    .map(|equation| {
-                                        // store equations' signals in the local context
-                                        equation.store_signals(
-                                            true,
-                                            &mut signals,
-                                            ctxt.syms,
-                                            ctxt.errors,
-                                        )
-                                    })
-                                    .collect::<TRes<()>>()?;
+                                let matched = pattern::init(pattern::Kind::tuple(elements));
 
                                 // add rising edge detection to the guard
                                 if let Some(add_guard) = opt_guard {
@@ -316,72 +271,54 @@ impl<'a> HIRFromAST<SimpleCtxt<'a>> for Equation {
                                         guard = Some((Default::default(), add_guard))
                                     }
                                 };
-
-                                // transform guard and equations into HIR with local context
                                 let guard = guard
                                     .map(|(_, expression)| {
-                                        expression.hir_from_ast(&mut ctxt.add_pat_loc(None, &location))
+                                        expression
+                                            .hir_from_ast(&mut ctxt.add_pat_loc(None, &location))
                                     })
                                     .transpose()?;
-                                let statements = equations
-                                    .into_iter()
-                                    .map(|equation| {
-                                        let mut def_signals = HashMap::new();
-                                        equation
-                                            .get_signals(&mut def_signals, ctxt.syms, ctxt.errors)
-                                            .expect("internal bug");
 
-                                        let stmt = if def_signals
-                                            .keys()
-                                            .any(|name| !always_defined.contains_key(name))
-                                            && !equation.is_event()
-                                        {
-                                            let mut stmt = equation.hir_from_ast(ctxt)?;
-                                            stmt.expression = stream::expr(
-                                                stream::Kind::some_event(stmt.expression),
-                                            );
-                                            stmt
-                                        } else {
-                                            equation.hir_from_ast(ctxt)?
-                                        };
-
-                                        Ok(stmt)
-                                    })
-                                    .collect::<TRes<Vec<_>>>()?;
-
-                                ctxt.syms.global();
-
-                                (signals, pattern, guard, statements)
+                                (matched, guard)
                             };
+
+                            // set and get local context: equations' signals
+                            let signals = {
+                                let mut signals = HashMap::new();
+                                equations
+                                    .iter()
+                                    .map(|equation| {
+                                        // store equations' signals in the local context
+                                        equation.store_signals(
+                                            true,
+                                            &mut signals,
+                                            ctxt.syms,
+                                            ctxt.errors,
+                                        )
+                                    })
+                                    .collect::<TRes<()>>()?;
+                                signals
+                            };
+
+                            // transform equations into HIR with local context
+                            let statements = equations
+                                .into_iter()
+                                .map(|equation| equation.hir_from_ast(ctxt))
+                                .collect::<TRes<Vec<_>>>()?;
+
+                            ctxt.syms.global();
 
                             // create the tuple expression
-                            let expression = {
-                                let mut elements = defined_signals
-                                    .keys()
-                                    .map(|signal_name| {
-                                        if let Some(id) = signals.get(signal_name) {
-                                            stream::expr(stream::Kind::expr(
-                                                hir::expr::Kind::ident(*id),
-                                            ))
-                                        } else {
-                                            stream::expr(stream::Kind::none_event())
-                                        }
-                                    })
-                                    .collect::<Vec<_>>();
-                                if elements.len() == 1 {
-                                    elements.pop().unwrap()
-                                } else {
-                                    stream::expr(stream::Kind::expr(hir::expr::Kind::tuple(
-                                        elements,
-                                    )))
-                                }
-                            };
+                            let expression = defined_pattern.into_default_expr(
+                                &signals,
+                                ctxt.syms,
+                                ctxt.errors,
+                            )?;
 
-                            Ok((pattern, guard, statements, expression))
+                            Ok((matched_pattern, guard, statements, expression))
                         },
                     )
                     .collect::<TRes<Vec<_>>>()?;
-                opt_default.map(|default| match_arms.push(default));
+                match_arms.push(default);
 
                 // construct the match expression
                 let match_expr = {
