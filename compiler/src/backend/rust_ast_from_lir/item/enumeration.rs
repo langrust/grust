@@ -9,7 +9,7 @@ prelude! { just
 pub fn rust_ast_from_lir(enumeration: Enumeration) -> ItemEnum {
     let attribute: Attribute = if conf::greusot() {
         // todo: when v0.1.1 then parse_quote!(#[derive(prelude::Clone, Copy, prelude::PartialEq, prelude::Default, DeepModel)])
-        parse_quote!(#[derive(prelude::Clone, Copy, prelude::PartialEq, DeepModel)])
+        parse_quote!(#[derive(prelude::Clone, Copy, prelude::PartialEq, prelude::Default, DeepModel)])
     } else {
         parse_quote!(#[derive(Clone, Copy, PartialEq, Default)])
     };
@@ -25,8 +25,7 @@ pub fn rust_ast_from_lir(enumeration: Enumeration) -> ItemEnum {
             .iter()
             .enumerate()
             .map(|(index, element)| {
-                let attrs: Vec<Attribute> = if (!conf::greusot()) && (index == 0) {
-                    // todo: when v0.1.1 then remove !conf::greusot()
+                let attrs: Vec<Attribute> = if index == 0 {
                     vec![parse_quote!(#[default])]
                 } else {
                     vec![]
