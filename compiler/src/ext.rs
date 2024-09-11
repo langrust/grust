@@ -568,6 +568,7 @@ pub trait StmtPatternExt: Sized {
 mod stmt_pattern {
     prelude! {
         ast::stmt::{Pattern, Tuple, Typed},
+        frontend::hir_from_ast::LocCtxt,
     }
 
     impl super::StmtPatternExt for Pattern {
@@ -606,9 +607,14 @@ mod stmt_pattern {
                 }
                 Pattern::Typed(Typed { ident, typing, .. }) => {
                     if is_declaration {
+                        let typing = typing.clone().hir_from_ast(&mut LocCtxt::new(
+                            &location,
+                            symbol_table,
+                            errors,
+                        ))?;
                         let id = symbol_table.insert_identifier(
                             ident.to_string(),
-                            Some(typing.clone()),
+                            Some(typing),
                             true,
                             location.clone(),
                             errors,
