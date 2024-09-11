@@ -28,7 +28,7 @@ pub struct BrakingStateState {
 impl BrakingStateState {
     pub fn init() -> BrakingStateState {
         BrakingStateState {
-            mem: default::Default(),
+            mem: Default::default(),
         }
     }
     # [requires (0. <= input . speed && input . speed < 50.)]

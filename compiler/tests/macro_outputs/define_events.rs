@@ -9,7 +9,7 @@ pub struct DefineEventsState {
 impl DefineEventsState {
     pub fn init() -> DefineEventsState {
         DefineEventsState {
-            mem: default::Default(),
+            mem: Default::default(),
         }
     }
     pub fn step(&mut self, input: DefineEventsInput) -> (i64, Option<f64>, Option<i64>) {

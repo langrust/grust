@@ -3,10 +3,14 @@ pub struct MultipleEventsInput {
     pub b: Option<i64>,
     pub v: i64,
 }
-pub struct MultipleEventsState {}
+pub struct MultipleEventsState {
+    mem: i64,
+}
 impl MultipleEventsState {
     pub fn init() -> MultipleEventsState {
-        MultipleEventsState {}
+        MultipleEventsState {
+            mem: Default::default(),
+        }
     }
     pub fn step(&mut self, input: MultipleEventsInput) -> i64 {
         let z = match (input.a, input.b) {
@@ -22,12 +26,10 @@ impl MultipleEventsState {
                 let z = if input.v > 50i64 { 0i64 } else { b };
                 z
             }
-            (_, _) => {
-                let z = 5i64;
-                z
-            }
+            (_, _) => self.mem,
         };
         let c = z;
+        self.mem = z;
         c
     }
 }
@@ -37,11 +39,15 @@ pub struct DefineEventsInput {
     pub v: i64,
 }
 pub struct DefineEventsState {
-    mem: i64,
+    mem: f64,
+    mem_1: i64,
 }
 impl DefineEventsState {
     pub fn init() -> DefineEventsState {
-        DefineEventsState { mem: 0i64 }
+        DefineEventsState {
+            mem: Default::default(),
+            mem_1: Default::default(),
+        }
     }
     pub fn step(&mut self, input: DefineEventsInput) -> (i64, f64, Option<i64>) {
         let (z, y, x) = match (input.a, input.b) {
@@ -60,17 +66,15 @@ impl DefineEventsState {
                 let z = if input.v > 50i64 { 3i64 } else { 4i64 };
                 (z, None, x)
             }
-            (_, _) => {
-                let z = self.mem;
-                (z, None, None)
-            }
+            (_, _) => (self.mem_1, None, None),
         };
         let c = z;
         let d = match (y) {
             (Some(a)) => 0.1,
-            _ => 0.2,
+            _ => self.mem,
         };
-        self.mem = c;
+        self.mem = d;
+        self.mem_1 = z;
         (c, d, x)
     }
 }
@@ -82,12 +86,16 @@ pub struct FinalTestInput {
 }
 pub struct FinalTestState {
     mem: i64,
+    mem_1: i64,
+    mem_2: i64,
     rising_edge: RisingEdgeState,
 }
 impl FinalTestState {
     pub fn init() -> FinalTestState {
         FinalTestState {
-            mem: 0i64,
+            mem: Default::default(),
+            mem_1: 0i64,
+            mem_2: Default::default(),
             rising_edge: RisingEdgeState::init(),
         }
     }
@@ -107,17 +115,14 @@ impl FinalTestState {
                 let x_1 = input.v > 50i64;
                 let comp_app_rising_edge = self.rising_edge.step(RisingEdgeInput { test: x_1 });
                 let w = match () {
-                    () if comp_app_rising_edge => Some(input.v + self.mem),
+                    () if comp_app_rising_edge => Some(input.v + self.mem_1),
                     _ => None,
                 };
                 let x = Some(2i64);
                 let z = if input.v > 50i64 { 3i64 } else { 4i64 };
                 (z, None, x, w)
             }
-            (_, _) => {
-                let z = 5i64;
-                (z, None, None, None)
-            }
+            (_, _) => (self.mem_2, None, None, None),
         };
         let t = match (input.a) {
             (Some(a)) => Some(a + z),
@@ -125,9 +130,11 @@ impl FinalTestState {
         };
         let u = match (y, w) {
             (Some(y), Some(w)) => w + 3i64,
-            _ => z + input.v,
+            _ => self.mem,
         };
         self.mem = u;
+        self.mem_1 = u;
+        self.mem_2 = z;
         (u, t, x)
     }
 }

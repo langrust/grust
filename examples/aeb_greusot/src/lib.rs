@@ -50,10 +50,6 @@ grust! {
             let _ = timeout_pedest? => {
                 state = Braking::NoBrake;
             }
-            otherwise => {
-                state = Braking::NoBrake fby state;
-            }
         }
-        let previous_state: Braking = Braking::NoBrake fby state;
     }
 }

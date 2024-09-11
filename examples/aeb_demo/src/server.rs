@@ -44,11 +44,7 @@ mod aeb {
                 let _ = timeout_pedestrian? => {
                     state = Braking::NoBrake;
                 }
-                otherwise => {
-                    state = Braking::NoBrake fby state;
-                }
             }
-            let previous_state: Braking = Braking::NoBrake fby state;
         }
 
         service aeb @ [10, 3000] {

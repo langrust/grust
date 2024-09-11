@@ -18,6 +18,7 @@ enum VacuumBrakeState {
 
 enum Kickdown {
     Activated = 0;
+    Deactivated = 1;
 }
 
 enum Failure {

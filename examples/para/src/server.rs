@@ -22,10 +22,7 @@ mod para {
             when {
                 e0? => {
                     s2 = e0;
-                    e1 = when e0 > prev_s2 then e0 / (e0 - prev_s2);
-                }
-                otherwise => {
-                    s2 = prev_s2;
+                    e1 = when e0 > prev_s2 then emit e0 / (e0 - prev_s2);
                 }
             }
             let prev_s2: int = 0 fby s2;
@@ -38,21 +35,18 @@ mod para {
                 }
                 prev_s3 > 0 => {
                     s3 = prev_s3;
-                    e3 = prev_s3;
-                }
-                otherwise => {
-                    s3 = prev_s3;
+                    e3 = emit prev_s3;
                 }
             }
             let prev_s3: int = 0 fby s3;
         }
 
         component C3(s2: int) -> (e2: int?) {
-            e2 = when s2 > 1 then s2;
+            e2 = when s2 > 1 then emit s2;
         }
 
         component C4(e2: int?) -> (s4: int) {
-            s4 = when e2? then e2 otherwise 0 fby s4;
+            s4 = when e2? then e2;
         }
 
         component C5(s4: int, s3: int, e3: int?) -> (o: int) {
@@ -65,9 +59,6 @@ mod para {
                 }
                 s3 >= 0 => {
                     o = s3;
-                }
-                otherwise => {
-                    o = prev_o;
                 }
             }
             let prev_o: int = 0 fby o;
