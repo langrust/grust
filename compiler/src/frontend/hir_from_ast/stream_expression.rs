@@ -128,7 +128,6 @@ impl<'a> HIRFromAST<PatLocCtxt<'a>> for stream::Expr {
                             }
 
                             hir::stream::Kind::call(
-                                ctxt.syms.get_current_node_id(),
                                 called_node_id,
                                 inputs_stream_expressions
                                     .into_iter()
