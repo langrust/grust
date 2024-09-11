@@ -49,9 +49,6 @@ fn should_compile_aeb() {
                 let _ = timeout_pedest? => {
                     state = Braking::NoBrake;
                 }
-                otherwise => {
-                    state = Braking::NoBrake fby state;
-                }
             }
         }
 
