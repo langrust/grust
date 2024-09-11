@@ -18,6 +18,7 @@ where
             location,
         } = self;
 
+        pattern.typing(symbol_table, errors)?;
         let expected_type = pattern.typing.as_ref().unwrap();
 
         expression.typing(symbol_table, errors)?;

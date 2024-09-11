@@ -144,7 +144,9 @@ impl hir::stmt::Pattern {
                 Ok(())
             }
             hir::stmt::Kind::Typed { id, ref typing } => {
-                symbol_table.set_type(id, typing.clone());
+                let expected_type = symbol_table.get_type(id);
+                typing.eq_check(expected_type, Location::default(), errors)?;
+                // symbol_table.set_type(id, typing.clone());
                 self.typing = Some(typing.clone());
                 Ok(())
             }

@@ -194,7 +194,7 @@ mod component {
 }
 
 pub trait EquationExt {
-    /// Creates identifiers for the equation (depending on the config `even_outputs`)
+    /// Creates identifiers for the equation (depending on the config `store_outputs`)
     ///
     /// # Example
     ///
@@ -209,7 +209,7 @@ pub trait EquationExt {
     /// [ a -> id_a ] and [ b -> id_b ].
     fn store_signals(
         &self,
-        even_outputs: bool,
+        store_outputs: bool,
         signals: &mut HashMap<String, usize>,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
@@ -242,14 +242,14 @@ mod equation {
     impl super::EquationExt for Equation {
         fn store_signals(
             &self,
-            even_outputs: bool,
+            store_outputs: bool,
             signals: &mut HashMap<String, usize>,
             symbol_table: &mut SymbolTable,
             errors: &mut Vec<Error>,
         ) -> TRes<()> {
             match self {
                 // output defintions should be stored
-                Equation::OutputDef(instantiation) if even_outputs => instantiation
+                Equation::OutputDef(instantiation) if store_outputs => instantiation
                     .pattern
                     .store(false, symbol_table, errors)
                     .map(|idents| signals.extend(idents)),
@@ -262,7 +262,7 @@ mod equation {
                 Equation::Match(Match { arms, .. }) => {
                     let Arm { equations, .. } = arms.first().unwrap();
                     for eq in equations.iter() {
-                        eq.store_signals(even_outputs, signals, symbol_table, errors)?;
+                        eq.store_signals(store_outputs, signals, symbol_table, errors)?;
                     }
                     Ok(())
                 }
@@ -276,7 +276,7 @@ mod equation {
                         symbol_table.local();
                         for eq in equations {
                             eq.store_signals(
-                                even_outputs,
+                                store_outputs,
                                 &mut when_signals,
                                 symbol_table,
                                 errors,
@@ -421,7 +421,7 @@ impl FunctionExt for ast::Function {
     }
 }
 
-pub trait PatternExt: Sized {
+pub trait ExprPatternExt: Sized {
     fn store(
         &self,
         is_declaration: bool,
@@ -441,7 +441,7 @@ mod expr_pattern {
         ast::expr::{PatStructure, PatTuple, Pattern},
     }
 
-    impl super::PatternExt for Pattern {
+    impl super::ExprPatternExt for Pattern {
         fn store(
             &self,
             is_declaration: bool,
@@ -544,12 +544,26 @@ mod expr_pattern {
     }
 }
 
+pub trait StmtPatternExt: Sized {
+    fn store(
+        &self,
+        is_declaration: bool,
+        symbol_table: &mut SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> TRes<Vec<(String, usize)>>;
+
+    fn get_signals(
+        &self,
+        symbol_table: &SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> TRes<Vec<(String, Self)>>;
+}
 mod stmt_pattern {
     prelude! {
         ast::stmt::{Pattern, Tuple, Typed},
     }
 
-    impl super::PatternExt for Pattern {
+    impl super::StmtPatternExt for Pattern {
         fn store(
             &self,
             is_declaration: bool,
@@ -559,16 +573,10 @@ mod stmt_pattern {
             let location = Location::default();
 
             match self {
-                Pattern::Identifier(ident) | Pattern::Typed(Typed { ident, .. }) => {
+                Pattern::Identifier(ident) => {
                     if is_declaration {
-                        let id = symbol_table.insert_identifier(
-                            ident.to_string(),
-                            None,
-                            true,
-                            location.clone(),
-                            errors,
-                        )?;
-                        Ok(vec![(ident.to_string(), id)])
+                        debug_assert!(false, "error");
+                        Err(TerminationError)
                     } else {
                         let name = ident.to_string();
                         let id = symbol_table.get_identifier_id(
@@ -587,6 +595,21 @@ mod stmt_pattern {
                             errors,
                         )?;
                         Ok(vec![(name, id)])
+                    }
+                }
+                Pattern::Typed(Typed { ident, typing, .. }) => {
+                    if is_declaration {
+                        let id = symbol_table.insert_identifier(
+                            ident.to_string(),
+                            Some(typing.clone()),
+                            true,
+                            location.clone(),
+                            errors,
+                        )?;
+                        Ok(vec![(ident.to_string(), id)])
+                    } else {
+                        debug_assert!(false, "error");
+                        Err(TerminationError)
                     }
                 }
                 Pattern::Tuple(Tuple { elements }) => Ok(elements
@@ -730,6 +753,7 @@ mod stream_expr {
                 stream::Expr::TypedAbstraction { .. }
                 | stream::Expr::Match { .. }
                 | stream::Expr::When { .. }
+                | stream::Expr::Emit { .. }
                 | stream::Expr::FieldAccess { .. }
                 | stream::Expr::TupleElementAccess { .. }
                 | stream::Expr::Map { .. }

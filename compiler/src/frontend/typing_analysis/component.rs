@@ -23,16 +23,6 @@ impl TypeAnalysis for ComponentDefinition {
             ..
         } = self;
 
-        // set types for every pattern
-        statements
-            .iter_mut()
-            .map(|statement| {
-                statement
-                    .pattern
-                    .typing(symbol_table, errors)
-            })
-            .collect::<TRes<()>>()?;
-
         // type all equations
         statements
             .iter_mut()

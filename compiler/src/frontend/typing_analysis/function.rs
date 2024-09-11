@@ -19,9 +19,6 @@ impl TypeAnalysis for Function {
         statements
             .iter_mut()
             .map(|statement| {
-                statement
-                    .pattern
-                    .typing(symbol_table, errors)?;
                 statement.typing(symbol_table, errors)
             })
             .collect::<TRes<()>>()?;
