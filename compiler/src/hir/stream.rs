@@ -24,8 +24,6 @@ pub enum Kind {
     NodeApplication {
         /// Node's id in memory.
         memory_id: Option<usize>,
-        /// Calling node's id in Symbol Table.
-        calling_node_id: usize,
         /// Called node's id in Symbol Table.
         called_node_id: usize,
         /// The inputs to the expression.
@@ -48,7 +46,6 @@ mk_new! { impl Kind =>
     }
     NodeApplication: call {
         memory_id = None,
-        calling_node_id: usize,
         called_node_id: usize,
         inputs: Vec<(usize, Expr)>,
     }

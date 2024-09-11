@@ -23,7 +23,6 @@ impl<'a> HIRFromAST<SimpleCtxt<'a>> for ast::Component {
         // create local context with all signals
         ctxt.syms.local();
         ctxt.syms.restore_context(id);
-        ctxt.syms.enter_in_node(id);
 
         let statements = equations
             .into_iter()
@@ -31,7 +30,6 @@ impl<'a> HIRFromAST<SimpleCtxt<'a>> for ast::Component {
             .collect::<TRes<Vec<_>>>()?;
         let contract = contract.hir_from_ast(ctxt)?;
 
-        ctxt.syms.leave_node();
         ctxt.syms.global();
 
         Ok(hir::Component::Definition(hir::ComponentDefinition {

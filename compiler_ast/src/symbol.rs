@@ -235,8 +235,6 @@ pub struct SymbolTable {
     fresh_id: usize,
     /// Context of known symbols.
     known_symbols: Context,
-    /// Current node.
-    current_node: Option<usize>,
 }
 impl Default for SymbolTable {
     fn default() -> Self {
@@ -244,7 +242,6 @@ impl Default for SymbolTable {
             table: HashMap::new(),
             fresh_id: 0,
             known_symbols: Default::default(),
-            current_node: None,
         }
     }
 }
@@ -255,7 +252,6 @@ impl SymbolTable {
             table: HashMap::new(),
             fresh_id: 0,
             known_symbols: Context::new(),
-            current_node: None,
         }
     }
 
@@ -313,23 +309,6 @@ impl SymbolTable {
     pub fn global(&mut self) {
         let prev = std::mem::take(&mut self.known_symbols);
         self.known_symbols = prev.get_global_context();
-    }
-
-    /// Set the current node identifier, just to remember it.
-    pub fn enter_in_node(&mut self, node_id: usize) {
-        debug_assert!(self.current_node.is_none());
-        self.current_node = Some(node_id)
-    }
-
-    /// Erase the current node id.
-    pub fn leave_node(&mut self) {
-        self.current_node = None
-    }
-
-    /// Get the current node identifier.
-    pub fn get_current_node_id(&self) -> usize {
-        debug_assert!(self.current_node.is_some());
-        self.current_node.expect("current node should be set")
     }
 
     /// Insert raw symbol in symbol table.
