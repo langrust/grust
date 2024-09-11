@@ -557,6 +557,13 @@ pub trait StmtPatternExt: Sized {
         symbol_table: &SymbolTable,
         errors: &mut Vec<Error>,
     ) -> TRes<Vec<(String, Self)>>;
+
+    fn into_default_expr(
+        &self,
+        defined_signals: &HashMap<String, usize>,
+        symbol_table: &SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> TRes<hir::stream::Expr>;
 }
 mod stmt_pattern {
     prelude! {
@@ -639,6 +646,74 @@ mod stmt_pattern {
                     .flatten()
                     .collect()),
             }
+        }
+
+        fn into_default_expr(
+            &self,
+            defined_signals: &HashMap<String, usize>,
+            symbol_table: &SymbolTable,
+            errors: &mut Vec<Error>,
+        ) -> TRes<hir::stream::Expr> {
+            let kind = match self {
+                Pattern::Identifier(ident) => {
+                    let name = ident.to_string();
+                    if let Some(id) = defined_signals.get(&name) {
+                        hir::stream::Kind::expr(hir::expr::Kind::ident(*id))
+                    } else {
+                        let id = symbol_table.get_identifier_id(
+                            &name,
+                            false,
+                            Location::default(),
+                            errors,
+                        )?;
+                        if symbol_table.get_type(id).is_event() {
+                            hir::stream::Kind::none_event()
+                        } else {
+                            hir::stream::Kind::fby(
+                                hir::stream::expr(hir::stream::Kind::expr(
+                                    hir::expr::Kind::constant(Constant::default()),
+                                )),
+                                hir::stream::expr(hir::stream::Kind::expr(hir::expr::Kind::ident(
+                                    id,
+                                ))),
+                            )
+                        }
+                    }
+                }
+                Pattern::Typed(Typed { ident, typing, .. }) => {
+                    let name = ident.to_string();
+                    if let Some(id) = defined_signals.get(&name) {
+                        hir::stream::Kind::expr(hir::expr::Kind::ident(*id))
+                    } else {
+                        let id = symbol_table.get_identifier_id(
+                            &name,
+                            false,
+                            Location::default(),
+                            errors,
+                        )?;
+                        if typing.is_event() {
+                            hir::stream::Kind::none_event()
+                        } else {
+                            hir::stream::Kind::fby(
+                                hir::stream::expr(hir::stream::Kind::expr(
+                                    hir::expr::Kind::constant(Constant::default()),
+                                )),
+                                hir::stream::expr(hir::stream::Kind::expr(hir::expr::Kind::ident(
+                                    id,
+                                ))),
+                            )
+                        }
+                    }
+                }
+                Pattern::Tuple(Tuple { elements }) => {
+                    let elements = elements
+                        .iter()
+                        .map(|pat| pat.into_default_expr(defined_signals, symbol_table, errors))
+                        .collect::<TRes<_>>()?;
+                    hir::stream::Kind::expr(hir::expr::Kind::tuple(elements))
+                }
+            };
+            Ok(hir::stream::expr(kind))
         }
     }
 }

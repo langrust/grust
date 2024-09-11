@@ -88,4 +88,10 @@ impl<'a> PatLocCtxt<'a> {
     pub fn remove_pat<'b>(&'b mut self) -> LocCtxt<'b> {
         LocCtxt::new(self.loc, self.syms, self.errors)
     }
+    pub fn set_pat(
+        &mut self,
+        pat: Option<&'a ast::stmt::Pattern>,
+    ) -> Option<&'a ast::stmt::Pattern> {
+        std::mem::replace(&mut self.pat, pat)
+    }
 }
