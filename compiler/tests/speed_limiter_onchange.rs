@@ -8,15 +8,16 @@ fn should_compile_speed_limiter_onchange() {
         #![dump = "tests/macro_outputs/speed_limiter_onchange.rs", test, propag = "onchange"]
 
         // # Imports
-        import signal  car::hmi::speed_limiter::activation : ActivationRequest;
-        import signal  car::hmi::speed_limiter::set_speed : float;
-        import signal  car::adas::speed : float;
-        import signal  car::adas::vacuum_brake : VacuumBrakeState;
-        import signal  car::adas::kickdown: KickdownState;
-        import signal  car::adas::vdc: VdcState;
+        import event    car::hmi::speed_limiter::activation : ActivationRequest;
+        import signal   car::hmi::speed_limiter::set_speed  : float;
+        import signal   car::adas::speed                    : float;
+        import signal   car::adas::vacuum_brake             : VacuumBrakeState;
+        import event    car::adas::kickdown                 : Kickdown;
+        import event    car::adas::failure                  : Failure;
+        import signal   car::adas::vdc                      : VdcState;
 
-        export signal car::adas::speed_limiter::in_regulation : bool;
-        export signal car::adas::speed_limiter::v_set         : float;
+        export event    car::adas::speed_limiter::in_regulation : bool;
+        export signal   car::adas::speed_limiter::v_set         : float;
 
         // # Types
 
@@ -30,16 +31,18 @@ fn should_compile_speed_limiter_onchange() {
         }
 
         // Enumerates the kinds of activation resquests.
-        enum ActivationRequest { Off, On, Initialization, StandBy }
+        enum ActivationRequest { Off, On }
 
         // Vehicle dynamic control states.
         enum VdcState { On, Off }
 
-        // Vacuum brake state.
+        // Vacuum brake states.
         enum VacuumBrakeState { BelowMinLevel, AboveMinLevel }
 
         // Tells if the driver presses down hard on the accelerator or not.
-        enum KickdownState{ Deactivated, Activated }
+        enum Kickdown { Activated, Deactivated }
+
+        enum Failure { Entering, Recovered }
 
         // Speed limiter states.
         enum SpeedLimiter {
@@ -53,7 +56,6 @@ fn should_compile_speed_limiter_onchange() {
             StandBy,
             Actif,
             OverrideVoluntary,
-            OverrideInvoluntary,
         }
 
         // # Computation functions
@@ -91,59 +93,35 @@ fn should_compile_speed_limiter_onchange() {
 
         // # Transition tests functions
 
-        // Speed limiter 'Off' condition.
-        function off_condition(activation_req: ActivationRequest, vdc_disabled: VdcState) -> bool {
-            return activation_req == ActivationRequest::Off || vdc_disabled == VdcState::Off;
-        }
-
-        // Speed limiter 'On' condition.
-        function on_condition(activation_req: ActivationRequest) -> bool {
-            return activation_req == ActivationRequest::On || activation_req == ActivationRequest::Initialization;
-        }
-
         // Speed limiter 'Activation' condition.
-        function activation_condition(activation_req: ActivationRequest, vacuum_brake_state: VacuumBrakeState, v_set: float) -> bool {
-            return activation_req == ActivationRequest::On
-                && vacuum_brake_state != VacuumBrakeState::BelowMinLevel
-                && v_set > 0.0;
-        }
-
-        // Speed limiter 'Exit Override' condition.
-        function exit_override_condition(activation_req: ActivationRequest, kickdown: KickdownState, v_set: float, speed: float) -> bool {
-            return on_condition(activation_req) && kickdown != KickdownState::Activated && speed <= v_set;
-        }
-
-        // Speed limiter 'Involuntary Override' condition.
-        function involuntary_override_condition(activation_req: ActivationRequest, kickdown: KickdownState, v_set: float, speed: float) -> bool {
-            return on_condition(activation_req) && kickdown != KickdownState::Activated && speed > v_set;
-        }
-
-        // Speed limiter 'Voluntary Override' condition.
-        function voluntary_override_condition(activation_req: ActivationRequest, kickdown: KickdownState) -> bool {
-            return on_condition(activation_req) && kickdown == KickdownState::Activated;
+        function activation_condition(vacuum_brake_state: VacuumBrakeState, v_set: float) -> bool {
+            return vacuum_brake_state != VacuumBrakeState::BelowMinLevel && v_set > 0.0;
         }
 
         // Speed limiter 'StandBy' condition.
-        function standby_condition(activation_req: ActivationRequest, vacuum_brake_state: VacuumBrakeState, v_set: float) -> bool {
-            return activation_req == ActivationRequest::StandBy
-                || vacuum_brake_state == VacuumBrakeState::BelowMinLevel
-                || v_set <= 0.0;
+        function standby_condition(vacuum_brake_state: VacuumBrakeState, v_set: float) -> bool {
+            return vacuum_brake_state == VacuumBrakeState::BelowMinLevel || v_set <= 0.0;
         }
 
         // # Components
 
         // Processes the speed setted by the driver.
-        component process_set_speed(set_speed: float) -> (v_set: float, v_update: bool) {
-            v_set = threshold_set_speed(set_speed);
-            v_update = prev_v_set != v_set;
+        component process_set_speed(set_speed: float?) -> (v_set: float, v_update: bool) {
             let prev_v_set: float = 0.0 fby v_set;
+            v_update = prev_v_set != v_set;
+            when {
+                let v = set_speed? => {
+                    v_set = threshold_set_speed(v);
+                }
+            }
         }
 
         // Speed limiter state machine.
         component speed_limiter(
-            activation_req: ActivationRequest,
+            activation_req: ActivationRequest?,
             vacuum_brake_state: VacuumBrakeState,
-            kickdown: KickdownState,
+            kickdown: Kickdown?,
+            failure: Failure?,
             vdc_disabled: VdcState,
             speed: float,
             v_set: float,
@@ -151,94 +129,77 @@ fn should_compile_speed_limiter_onchange() {
             state: SpeedLimiter,
             on_state: SpeedLimiterOn,
             in_regulation: bool,
-            state_update: bool
+            state_update: bool,
         ) @ 10 ms {
-            let failure: bool = false;
             let prev_state: SpeedLimiter = SpeedLimiter::Off fby state;
             let prev_on_state: SpeedLimiterOn = SpeedLimiterOn::StandBy fby on_state;
-            match prev_state {
-                _ if off_condition(activation_req, vdc_disabled) => {
+            when {
+                let ActivationRequest::Off = activation_req? => {
                     state = SpeedLimiter::Off;
-                    on_state = prev_on_state;
-                    in_regulation = false;
-                },
-                SpeedLimiter::Off if on_condition(activation_req) => {
-                    match failure {
-                        true => {
-                            state = SpeedLimiter::Fail;
-                            on_state = prev_on_state;
-                            in_regulation = false;
-                        },
-                        false => {
-                            state = SpeedLimiter::On;
-                            on_state = SpeedLimiterOn::StandBy;
-                            in_regulation = true;
-                        },
-                    }
-                },
-                SpeedLimiter::On if failure => {
-                    state = SpeedLimiter::Fail;
-                    on_state = prev_on_state;
-                    in_regulation = false;
-                },
-                SpeedLimiter::Fail if !failure => {
+                }
+                let ActivationRequest::On = activation_req? if prev_state == SpeedLimiter::Off => {
                     state = SpeedLimiter::On;
-                    on_state = SpeedLimiterOn::StandBy;
-                    in_regulation = true;
-                },
+                }
+                let Failure::Entering = failure? => {
+                    state = SpeedLimiter::Fail;
+                }
+                let Failure::Recovered = failure? if prev_state == SpeedLimiter::Fail => {
+                    state = SpeedLimiter::On;
+                }
+            }
+            match prev_state {
                 SpeedLimiter::On => {
-                    state = prev_state;
-                    (on_state, in_regulation) = speed_limiter_on(
-                        prev_on_state, activation_req,
+                    (on_state, in_regulation, state_update) = speed_limiter_on(
+                        prev_on_state,
                         vacuum_brake_state,
                         kickdown, speed, v_set,
                     );
                 },
                 _ => {
-                    state = prev_state;
-                    on_state = prev_on_state;
-                    in_regulation = false fby in_regulation;
+                    on_state = SpeedLimiterOn::StandBy;
+                    in_regulation = false;
+                    state_update = prev_state != state;
                 },
             }
-            state_update = state != prev_state || on_state != prev_on_state;
         }
 
         // Speed limiter 'On' state machine.
         component speed_limiter_on(
             prev_on_state: SpeedLimiterOn,
-            activation_req: ActivationRequest,
             vacuum_brake_state: VacuumBrakeState,
-            kickdown: KickdownState,
+            kickdown: Kickdown?,
             speed: float,
             v_set: float,
         ) -> (
             on_state: SpeedLimiterOn,
-            in_reg: bool
+            in_reg: bool,
+            state_update: bool,
         ) {
+            state_update = prev_on_state != on_state;
             let prev_hysterisis: Hysterisis = new_hysterisis(0.0) fby hysterisis;
             in_reg = in_regulation(hysterisis);
+            when {
+                let Kickdown::Activated = kickdown? if prev_on_state == SpeedLimiterOn::Actif => {
+                    let kickdown_state: Kickdown = Kickdown::Activated;
+                }
+                let Kickdown::Deactivated = kickdown? => {
+                    let kickdown_state: Kickdown = Kickdown::Deactivated;
+                }
+            }
             match prev_on_state {
-                SpeedLimiterOn::StandBy if activation_condition(activation_req, vacuum_brake_state, v_set) => {
-                    on_state = SpeedLimiterOn::Actif;
-                    let hysterisis: Hysterisis = new_hysterisis(0.0);
-                },
-                SpeedLimiterOn::OverrideVoluntary if exit_override_condition(activation_req, kickdown, v_set, speed) => {
-                    on_state = SpeedLimiterOn::Actif;
-                    let hysterisis: Hysterisis = new_hysterisis(0.0);
-                },
-                SpeedLimiterOn::OverrideInvoluntary if exit_override_condition(activation_req, kickdown, v_set, speed) => {
-                    on_state = SpeedLimiterOn::Actif;
-                    let hysterisis: Hysterisis = new_hysterisis(0.0);
-                },
-                SpeedLimiterOn::OverrideVoluntary if involuntary_override_condition(activation_req, kickdown, v_set, speed) => {
-                    on_state = SpeedLimiterOn::OverrideInvoluntary;
-                    let hysterisis: Hysterisis = prev_hysterisis;
-                },
-                SpeedLimiterOn::Actif if voluntary_override_condition(activation_req, kickdown) => {
+                _ if kickdown_state == Kickdown::Activated => {
                     on_state = SpeedLimiterOn::OverrideVoluntary;
                     let hysterisis: Hysterisis = prev_hysterisis;
                 },
-                SpeedLimiterOn::Actif if standby_condition(activation_req, vacuum_brake_state, v_set) => {
+                SpeedLimiterOn::StandBy if activation_condition(vacuum_brake_state, v_set) => {
+                    on_state = SpeedLimiterOn::Actif;
+                    let hysterisis: Hysterisis = new_hysterisis(0.0);
+                },
+                SpeedLimiterOn::OverrideVoluntary if speed <= v_set => {
+                    on_state = SpeedLimiterOn::Actif;
+                    let hysterisis: Hysterisis = new_hysterisis(0.0);
+                },
+                SpeedLimiterOn::Actif if standby_condition(vacuum_brake_state, v_set) => {
                     on_state = SpeedLimiterOn::StandBy;
                     let hysterisis: Hysterisis = prev_hysterisis;
                 },
@@ -254,7 +215,9 @@ fn should_compile_speed_limiter_onchange() {
         }
 
         service speed_limiter {
-            let (signal v_set_aux: float, signal v_update: bool) = process_set_speed(set_speed);
+            let event changed_set_speed: float = on_change(throttle(set_speed, 1.0));
+
+            let (signal v_set_aux: float, signal v_update: bool) = process_set_speed(changed_set_speed);
             let (
                 signal state: SpeedLimiter,
                 signal on_state: SpeedLimiterOn,
@@ -264,12 +227,13 @@ fn should_compile_speed_limiter_onchange() {
                 activation,
                 vacuum_brake,
                 kickdown,
+                failure,
                 vdc,
                 speed,
                 v_set,
             );
             v_set = v_set_aux;
-            in_regulation = in_regulation_aux;
+            in_regulation = scan(in_regulation_aux, 10);
         }
     };
     let tokens = compiler::into_token_stream(ast);

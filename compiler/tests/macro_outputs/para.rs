@@ -10,7 +10,7 @@ pub struct C1State {
 impl C1State {
     pub fn init() -> C1State {
         C1State {
-            mem: default::Default(),
+            mem: Default::default(),
             mem_1: 0i64,
             rising_edge: RisingEdgeState::init(),
         }
@@ -46,7 +46,7 @@ pub struct C2State {
 impl C2State {
     pub fn init() -> C2State {
         C2State {
-            mem: default::Default(),
+            mem: Default::default(),
             mem_1: 0i64,
             rising_edge: RisingEdgeState::init(),
         }
@@ -103,7 +103,7 @@ pub struct C4State {
 impl C4State {
     pub fn init() -> C4State {
         C4State {
-            mem: default::Default(),
+            mem: Default::default(),
         }
     }
     pub fn step(&mut self, input: C4Input) -> i64 {
@@ -129,7 +129,7 @@ pub struct C5State {
 impl C5State {
     pub fn init() -> C5State {
         C5State {
-            mem: default::Default(),
+            mem: Default::default(),
             mem_1: 0i64,
             rising_edge: RisingEdgeState::init(),
             rising_edge_1: RisingEdgeState::init(),

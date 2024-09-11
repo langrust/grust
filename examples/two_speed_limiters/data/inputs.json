@@ -210,6 +210,12 @@
         }
     },
     {
+        "timestamp": 1500,
+        "message": {
+            "Kickdown": 1
+        }
+    },
+    {
         "timestamp": 1550,
         "message": {
             "Speed": 124.5
@@ -243,6 +249,12 @@
         "timestamp": 1750,
         "message": {
             "Speed": 127.5
+        }
+    },
+    {
+        "timestamp": 1775,
+        "message": {
+            "Kickdown": 1
         }
     },
     {

@@ -18,11 +18,11 @@ pub struct RisingEdgesState {
 impl RisingEdgesState {
     pub fn init() -> RisingEdgesState {
         RisingEdgesState {
-            mem: default::Default(),
-            mem_1: default::Default(),
+            mem: Default::default(),
+            mem_1: Default::default(),
             mem_2: 0i64,
-            mem_3: default::Default(),
-            mem_4: default::Default(),
+            mem_3: Default::default(),
+            mem_4: Default::default(),
             rising_edge: RisingEdgeState::init(),
             rising_edge_1: RisingEdgeState::init(),
             rising_edge_2: RisingEdgeState::init(),

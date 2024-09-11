@@ -10,8 +10,8 @@ pub struct MultipleEventsState {
 impl MultipleEventsState {
     pub fn init() -> MultipleEventsState {
         MultipleEventsState {
-            mem: default::Default(),
-            mem_1: default::Default(),
+            mem: Default::default(),
+            mem_1: Default::default(),
         }
     }
     pub fn step(&mut self, input: MultipleEventsInput) -> (i64, i64) {

@@ -1,6 +1,7 @@
 use creusot_contracts::{ensures, logic, open, prelude, requires, DeepModel};
-#[derive(prelude :: Clone, Copy, prelude :: PartialEq, DeepModel)]
+#[derive(prelude :: Clone, Copy, prelude :: PartialEq, prelude :: Default, DeepModel)]
 pub enum Braking {
+    #[default]
     UrgentBrake,
     SoftBrake,
     NoBrake,
@@ -28,13 +29,11 @@ pub struct BrakingStateInput {
 }
 pub struct BrakingStateState {
     mem: Braking,
-    mem_1: Braking,
 }
 impl BrakingStateState {
     pub fn init() -> BrakingStateState {
         BrakingStateState {
-            mem: Braking::NoBrake,
-            mem_1: Braking::NoBrake,
+            mem: Default::default(),
         }
     }
     #[requires(0i64 <= input.speed && input.speed < 50i64)]
@@ -50,14 +49,9 @@ impl BrakingStateState {
                 let state = Braking::NoBrake;
                 state
             }
-            (_, _) => {
-                let state = self.mem;
-                state
-            }
+            (_, _) => self.mem,
         };
-        let previous_state = self.mem_1;
         self.mem = state;
-        self.mem_1 = state;
         state
     }
 }
