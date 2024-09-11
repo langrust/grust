@@ -24,8 +24,8 @@ pub enum VacuumBrakeState {
 #[derive(Clone, Copy, PartialEq, Default)]
 pub enum Kickdown {
     #[default]
-    Activated,
     Deactivated,
+    Activated,
 }
 #[derive(Clone, Copy, PartialEq, Default)]
 pub enum Failure {
