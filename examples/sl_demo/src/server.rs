@@ -38,7 +38,7 @@ mod sl {
         enum VacuumBrakeState { BelowMinLevel, AboveMinLevel }
 
         // Tells if the driver presses down hard on the accelerator or not.
-        enum Kickdown { Activated, Deactivated }
+        enum Kickdown { Deactivated, Activated }
 
         enum Failure { Entering, Recovered }
 
@@ -363,7 +363,7 @@ impl Sl for SlRuntime {
         let request_stream = request.into_inner().filter_map(|input| async {
             input.map(into_speed_limiter_service_input).ok().flatten()
         });
-        let timers_stream = timer_stream::<_, _, 3>(timers_stream)
+        let timers_stream = timer_stream::<_, _, 4>(timers_stream)
             .map(|(timer, deadline): (RuntimeTimer, Instant)| RuntimeInput::Timer(timer, deadline));
         let input_stream = prio_stream::<_, _, 9>(
             futures::stream::select(request_stream, timers_stream),

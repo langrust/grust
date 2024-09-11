@@ -38,7 +38,7 @@ mod sl {
         enum VacuumBrakeState { BelowMinLevel, AboveMinLevel }
 
         // Tells if the driver presses down hard on the accelerator or not.
-        enum Kickdown { Activated, Deactivated }
+        enum Kickdown { Deactivated, Activated }
 
         enum Failure { Entering, Recovered }
 
