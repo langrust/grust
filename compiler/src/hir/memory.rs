@@ -64,7 +64,7 @@ impl Memory {
         initial_expression: stream::Expr,
         expression: stream::Expr,
     ) {
-        let typing = initial_expression.get_type().unwrap().clone();
+        let typing = expression.get_type().unwrap().clone();
         debug_assert!(self
             .buffers
             .insert(
