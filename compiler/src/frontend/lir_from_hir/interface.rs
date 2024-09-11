@@ -1803,13 +1803,19 @@ mod flow_instr {
 
         /// Add event send in current propagation branch.
         fn send_event(&self, event_id: usize, import_flow: usize) -> FlowInstruction {
-            let event_name = self.syms.get_name(event_id);
-            let expr = Expression::ident(event_name);
-            if self.multiple_inputs {
-                FlowInstruction::send(event_name, expr, true)
+            // timer is an event, look if it is defined
+            if self.events.contains(&event_id) {
+                // if activated, send event
+                let event_name = self.syms.get_name(event_id);
+                let expr = Expression::ident(event_name);
+                if self.multiple_inputs {
+                    FlowInstruction::send(event_name, expr, true)
+                } else {
+                    let import_name = self.syms.get_name(import_flow);
+                    FlowInstruction::send_from(event_name, expr, import_name, true)
+                }
             } else {
-                let import_name = self.syms.get_name(import_flow);
-                FlowInstruction::send_from(event_name, expr, import_name, true)
+                FlowInstruction::seq(vec![])
             }
         }
 
