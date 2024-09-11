@@ -165,15 +165,12 @@ impl<'a> HIRFromAST<SimpleCtxt<'a>> for Equation {
             }
             Equation::MatchWhen(MatchWhen { arms, .. }) => {
                 // create the receiving pattern for the equation
-                let pattern = {
-                    let mut elements = defined_signals
-                        .values()
-                        .map(|pat| pat.clone().hir_from_ast(&mut ctxt.add_loc(&location)))
-                        .collect::<TRes<Vec<_>>>()?;
+                let defined_pattern = {
+                    let mut elements = defined_signals.into_values().collect::<Vec<_>>();
                     if elements.len() == 1 {
                         elements.pop().unwrap()
                     } else {
-                        hir::stmt::init(hir::stmt::Kind::tuple(elements))
+                        ast::stmt::Pattern::tuple(ast::stmt::Tuple::new(elements))
                     }
                 };
 
@@ -204,15 +201,6 @@ impl<'a> HIRFromAST<SimpleCtxt<'a>> for Equation {
                             .collect();
 
                     (events_indices, default_pattern)
-                };
-
-                let defined_pattern = {
-                    let mut elements = defined_signals.into_values().collect::<Vec<_>>();
-                    if elements.len() == 1 {
-                        elements.pop().unwrap()
-                    } else {
-                        ast::stmt::Pattern::tuple(ast::stmt::Tuple::new(elements))
-                    }
                 };
 
                 // default arm
@@ -337,6 +325,8 @@ impl<'a> HIRFromAST<SimpleCtxt<'a>> for Equation {
                         tuple_expr, match_arms,
                     )))
                 };
+
+                let pattern = defined_pattern.hir_from_ast(&mut ctxt.add_loc(&location))?;
 
                 Ok(hir::Stmt {
                     pattern,
