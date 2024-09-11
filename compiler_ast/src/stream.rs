@@ -13,14 +13,12 @@ pub struct Fby {
     /// The buffered expression.
     pub expression: Box<Expr>,
 }
-
 mk_new! { impl Fby =>
     new {
         constant: impl Into<Box<Expr >> = constant.into(),
         expression: impl Into<Box<Expr >> = expression.into(),
     }
 }
-
 impl Fby {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
         input.peek(keyword::fby)
@@ -41,7 +39,6 @@ pub struct When {
     /// Action triggered by event.
     pub expression: Box<Expr>,
 }
-
 mk_new! { impl When =>
     new {
         pattern: EventPattern,
@@ -49,7 +46,6 @@ mk_new! { impl When =>
         expression: impl Into<Box<Expr >> = expression.into(),
     }
 }
-
 impl When {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
         input.peek(keyword::when)
@@ -62,6 +58,32 @@ impl Parse for When {
         let then_token: keyword::then = input.parse()?;
         let expression: Expr = input.parse()?;
         Ok(When::new(pattern, then_token, expression))
+    }
+}
+
+/// Emit event expression.
+#[derive(Debug, PartialEq, Clone)]
+pub struct Emit {
+    pub emit_token: keyword::emit,
+    /// The expression to emit.
+    pub expr: Box<Expr>,
+}
+mk_new! { impl Emit =>
+    new {
+        emit_token: keyword::emit,
+        expr: impl Into<Box<Expr >> = expr.into(),
+    }
+}
+impl Emit {
+    pub fn peek(input: syn::parse::ParseStream) -> bool {
+        input.peek(keyword::emit)
+    }
+}
+impl Parse for Emit {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let emit_token: keyword::emit = input.parse()?;
+        let expr: Expr = input.parse()?;
+        Ok(Emit::new(emit_token, expr))
     }
 }
 
@@ -108,6 +130,8 @@ pub enum Expr {
     Fby(Fby),
     /// Pattern matching event.
     When(When),
+    /// Emit event.
+    Emit(Emit),
 }
 
 mk_new! { impl Expr =>
@@ -131,6 +155,7 @@ mk_new! { impl Expr =>
     Zip: zip(arg: Zip<Self> = arg)
     Fby: fby(arg: Fby = arg)
     When: when_match(arg: When = arg)
+    Emit: emit(arg: Emit = arg)
 }
 
 impl ParsePrec for Expr {
@@ -240,6 +265,8 @@ impl Parse for Expr {
             Self::IfThenElse(input.parse()?)
         } else if When::peek(input) {
             Self::When(input.parse()?)
+        } else if Emit::peek(input) {
+            Self::Emit(input.parse()?)
         } else {
             Self::parse_prec4(input)?
         };
@@ -262,7 +289,7 @@ mod parse_stream_expression {
             Structure, Tuple, TupleElementAccess, TypedAbstraction, Zip, PatStructure, Pattern
         },
         equation::{EventPattern, LetEventPattern},
-        stream::{Fby, Expr, When},
+        stream::{Fby, Expr, Emit, When},
         operator::BinaryOperator,
         quote::format_ident,
     }
@@ -476,8 +503,18 @@ mod parse_stream_expression {
     }
 
     #[test]
+    fn should_parse_emit() {
+        let expression: Expr = syn::parse_quote! {emit 0};
+        let control = Expr::emit(Emit::new(
+            Default::default(),
+            Expr::cst(Constant::int(syn::parse_quote! {0})),
+        ));
+        assert_eq!(expression, control)
+    }
+
+    #[test]
     fn should_parse_when() {
-        let expression: Expr = syn::parse_quote! {when let d = p? then x};
+        let expression: Expr = syn::parse_quote! {when let d = p? then emit x};
         let control = Expr::when_match(When::new(
             EventPattern::Let(LetEventPattern::new(
                 Default::default(),
@@ -487,7 +524,7 @@ mod parse_stream_expression {
                 Default::default(),
             )),
             Default::default(),
-            Expr::ident("x"),
+            Expr::emit(Emit::new(Default::default(), Expr::ident("x"))),
         ));
         assert_eq!(expression, control)
     }
