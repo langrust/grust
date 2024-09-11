@@ -682,7 +682,7 @@ impl Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Error::UnknownElement { .. } => write!(f, "Unknown Element"),
+            Error::UnknownElement { name, .. } => write!(f, "Unknown Element: {name}"),
             Error::UnknownSignal { name, .. } => write!(f, "Unknown Signal: {name}"),
             Error::UnknownNode { .. } => write!(f, "Unknown Node"),
             Error::UnknownInterface { .. } => write!(f, "Unknown Interface"),
