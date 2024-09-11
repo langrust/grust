@@ -8,9 +8,11 @@ pub struct DefineEventsState {
 }
 impl DefineEventsState {
     pub fn init() -> DefineEventsState {
-        DefineEventsState { mem: 0i64 }
+        DefineEventsState {
+            mem: default::Default(),
+        }
     }
-    pub fn step(&mut self, input: DefineEventsInput) -> (i64, f64, Option<i64>) {
+    pub fn step(&mut self, input: DefineEventsInput) -> (i64, Option<f64>, Option<i64>) {
         let (z, y, x) = match (input.a, input.b) {
             (Some(a), Some(e)) => {
                 let y = Some(());
@@ -27,17 +29,14 @@ impl DefineEventsState {
                 let z = if input.v > 50i64 { 3i64 } else { 4i64 };
                 (z, None, x)
             }
-            (_, _) => {
-                let z = self.mem;
-                (z, None, None)
-            }
+            (_, _) => (self.mem, None, None),
         };
         let c = z;
         let d = match (y) {
-            (Some(_)) => 0.1,
-            _ => 0.2,
+            (Some(_)) => Some(0.1),
+            _ => None,
         };
-        self.mem = c;
+        self.mem = z;
         (c, d, x)
     }
 }
