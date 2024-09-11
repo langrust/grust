@@ -5,12 +5,16 @@ pub struct MultipleEventsInput {
 }
 pub struct MultipleEventsState {
     mem: i64,
+    mem_1: i64,
 }
 impl MultipleEventsState {
     pub fn init() -> MultipleEventsState {
-        MultipleEventsState { mem: 0i64 }
+        MultipleEventsState {
+            mem: default::Default(),
+            mem_1: default::Default(),
+        }
     }
-    pub fn step(&mut self, input: MultipleEventsInput) -> (i64, f64) {
+    pub fn step(&mut self, input: MultipleEventsInput) -> (i64, i64) {
         let z = match (input.a, input.b) {
             (Some(a), Some(b)) if input.v > 50i64 => {
                 let z = 1i64;
@@ -24,17 +28,15 @@ impl MultipleEventsState {
                 let z = if input.v > 50i64 { 3i64 } else { 4i64 };
                 z
             }
-            (_, _) => {
-                let z = self.mem;
-                z
-            }
+            (_, _) => self.mem_1,
         };
         let c = z;
         let d = match (input.a, input.b) {
-            (Some(_), Some(_)) => 0.1,
-            _ => 0.2,
+            (Some(a), Some(b)) => (10i64 * a) + b,
+            _ => self.mem,
         };
-        self.mem = c;
+        self.mem = d;
+        self.mem_1 = z;
         (c, d)
     }
 }
