@@ -9,11 +9,11 @@ fn should_compile_define_events() {
 
         component define_events(a: int?, b: int?, v: int) -> (
             c: int,
-            d: float,
+            d: float?,
             x: int?,
         ) {
             c = z;
-            d = when let _ = y? then 0.1;
+            d = when let _ = y? then emit 0.1;
             when {
                 (a?, let e = b?) => {
                     let z: int =  if v > 50 then e else a;
