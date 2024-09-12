@@ -90,7 +90,7 @@ mod parse_component {
     fn should_parse_component() {
         let _: Component = syn::parse_quote! {
             component counter(res: bool, tick: bool) -> (o: int) {
-                o = if res then 0 else (0 fby o) + inc;
+                o = if res then 0 else (last o init 0) + inc;
                 let inc: int = if tick then 1 else 0;
             }
         };

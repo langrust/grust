@@ -5,28 +5,37 @@ prelude! {
     operator::BinaryOperator,
 }
 
-/// Initialized buffer stream expression.
+/// Buffered signal.
 #[derive(Debug, PartialEq, Clone)]
-pub struct Fby {
+pub struct Last {
+    /// Signal identifier.
+    pub ident: syn::Ident,
     /// The initialization constant.
-    pub constant: Box<Expr>,
-    /// The buffered expression.
-    pub expression: Box<Expr>,
+    pub constant: Option<Box<Expr>>,
 }
-mk_new! { impl Fby =>
+mk_new! { impl Last =>
     new {
-        constant: impl Into<Box<Expr >> = constant.into(),
-        expression: impl Into<Box<Expr >> = expression.into(),
+        ident: syn::Ident,
+        constant: Option<Expr> = constant.map(Expr::into),
     }
 }
-impl Fby {
+impl Last {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
-        input.peek(keyword::fby)
+        input.peek(keyword::last)
     }
-    pub fn parse(constant: Expr, input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let _: keyword::fby = input.parse()?;
-        let expression: Expr = input.parse()?;
-        Ok(Fby::new(constant, expression))
+}
+impl Parse for Last {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let _: keyword::last = input.parse()?;
+        let ident = input.parse()?;
+        let constant = if input.peek(keyword::init) {
+            let _: keyword::init = input.parse()?;
+            let constant = input.parse()?;
+            Some(constant)
+        } else {
+            None
+        };
+        Ok(Last::new(ident, constant))
     }
 }
 
@@ -139,7 +148,7 @@ pub enum Expr {
     /// Arrays zip operator expression.
     Zip(Zip<Self>),
     /// Initialized buffer stream expression.
-    Fby(Fby),
+    Last(Last),
     /// Pattern matching event.
     When(When),
     /// Emit event.
@@ -165,7 +174,7 @@ mk_new! { impl Expr =>
     Fold: fold(arg: Fold<Self> = arg)
     Sort: sort(arg: Sort<Self> = arg)
     Zip: zip(arg: Zip<Self> = arg)
-    Fby: fby(arg: Fby = arg)
+    Last: last(arg: Last = arg)
     When: when_match(arg: When = arg)
     Emit: emit(arg: Emit = arg)
 }
@@ -174,6 +183,8 @@ impl ParsePrec for Expr {
     fn parse_term(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let mut expression = if input.fork().call(Constant::parse).is_ok() {
             Self::Constant(input.parse()?)
+        } else if Last::peek(input) {
+            Self::Last(input.parse()?)
         } else if Unop::<Self>::peek(input) {
             Self::Unop(input.parse()?)
         } else if Zip::<Self>::peek(input) {
@@ -271,7 +282,7 @@ impl ParsePrec for Expr {
 }
 impl Parse for Expr {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let mut expression = if TypedAbstraction::<Self>::peek(input) {
+        let expression = if TypedAbstraction::<Self>::peek(input) {
             Self::TypedAbstraction(input.parse()?)
         } else if IfThenElse::<Self>::peek(input) {
             Self::IfThenElse(input.parse()?)
@@ -282,13 +293,6 @@ impl Parse for Expr {
         } else {
             Self::parse_prec4(input)?
         };
-        loop {
-            if Fby::peek(input) {
-                expression = Self::Fby(Fby::parse(expression, input)?);
-            } else {
-                break;
-            }
-        }
         Ok(expression)
     }
 }
@@ -301,17 +305,24 @@ mod parse_stream_expression {
             Structure, Tuple, TupleElementAccess, TypedAbstraction, Zip, PatStructure, Pattern
         },
         equation::{EventPattern, LetEventPattern},
-        stream::{Fby, Expr, Emit, When},
+        stream::{Last, Expr, Emit, When},
         operator::BinaryOperator,
         quote::format_ident,
     }
 
     #[test]
-    fn should_parse_followed_by() {
-        let expression: Expr = syn::parse_quote! {0 fby p.x};
-        let control = Expr::fby(Fby::new(
-            Expr::cst(Constant::int(syn::parse_quote! {0})),
-            Expr::field_access(FieldAccess::new(Expr::ident("p"), "x")),
+    fn should_parse_last() {
+        let expression: Expr = syn::parse_quote! {last x};
+        let control = Expr::last(Last::new(syn::parse_quote! {x}, None));
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_initialized_last() {
+        let expression: Expr = syn::parse_quote! {last x init 0};
+        let control = Expr::last(Last::new(
+            syn::parse_quote! {x},
+            Some(Expr::cst(Constant::int(syn::parse_quote! {0}))),
         ));
         assert_eq!(expression, control)
     }
@@ -556,7 +567,7 @@ mod parse_stream_expression {
             Some(Expr::binop(Binop::new(
                 BinaryOperator::Grt,
                 Expr::ident("p"),
-                Expr::cst(Constant::Boolean(syn::parse_quote! {false})),
+                Expr::cst(Constant::Integer(syn::parse_quote! {0})),
             ))),
             Default::default(),
             Expr::emit(Emit::new(Default::default(), Expr::ident("x"))),

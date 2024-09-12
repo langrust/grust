@@ -400,7 +400,7 @@ mod parse_equation {
 
     #[test]
     fn should_parse_output_definition() {
-        let equation: Equation = syn::parse_quote! {o = if res then 0 else (0 fby o) + inc;};
+        let equation: Equation = syn::parse_quote! {o = if res then 0 else (last o init 0) + inc;};
         let control = Equation::out_def(Instantiation {
             pattern: syn::parse_quote! {o},
             eq_token: syn::parse_quote! {=},
@@ -409,9 +409,9 @@ mod parse_equation {
                 stream::Expr::cst(Constant::int(syn::parse_quote! {0})),
                 stream::Expr::binop(Binop::new(
                     BinaryOperator::Add,
-                    stream::Expr::fby(stream::Fby::new(
-                        stream::Expr::cst(Constant::int(syn::parse_quote! {0})),
-                        stream::Expr::ident("o"),
+                    stream::Expr::last(stream::Last::new(
+                        syn::parse_quote! {o},
+                        Some(stream::Expr::cst(Constant::int(syn::parse_quote! {0}))),
                     )),
                     stream::Expr::ident("inc"),
                 )),
@@ -424,7 +424,7 @@ mod parse_equation {
     #[test]
     fn should_parse_tuple_instantiation() {
         let equation: Equation = syn::parse_quote! {
-            (o1, o2) = if res then (0, 0) else ((0 fby o1) + inc1, (0 fby o2) + inc2);
+            (o1, o2) = if res then (0, 0) else ((last o1 init 0) + inc1, last o2 + inc2);
         };
         let control = Equation::out_def(Instantiation {
             pattern: stmt::Pattern::tuple(stmt::Tuple::new(vec![
@@ -441,18 +441,15 @@ mod parse_equation {
                 stream::Expr::tuple(Tuple::new(vec![
                     stream::Expr::binop(Binop::new(
                         BinaryOperator::Add,
-                        stream::Expr::fby(stream::Fby::new(
-                            stream::Expr::cst(Constant::int(syn::parse_quote! {0})),
-                            stream::Expr::ident("o1"),
+                        stream::Expr::last(stream::Last::new(
+                            syn::parse_quote! {o1},
+                            Some(stream::Expr::cst(Constant::int(syn::parse_quote! {0}))),
                         )),
                         stream::Expr::ident("inc1"),
                     )),
                     stream::Expr::binop(Binop::new(
                         BinaryOperator::Add,
-                        stream::Expr::fby(stream::Fby::new(
-                            stream::Expr::cst(Constant::int(syn::parse_quote! {0})),
-                            stream::Expr::ident("o2"),
-                        )),
+                        stream::Expr::last(stream::Last::new(syn::parse_quote! {o2}, None)),
                         stream::Expr::ident("inc2"),
                     )),
                 ])),
@@ -464,8 +461,7 @@ mod parse_equation {
 
     #[test]
     fn should_parse_local_definition() {
-        let equation: Equation =
-            syn::parse_quote! {let o: int = if res then 0 else (0 fby o) + inc;};
+        let equation: Equation = syn::parse_quote! {let o: int = if res then 0 else last o + inc;};
         let control = Equation::local_def(LetDecl::new(
             syn::parse_quote!(let),
             stmt::Pattern::typed(stmt::Typed {
@@ -479,10 +475,7 @@ mod parse_equation {
                 stream::Expr::cst(Constant::int(syn::parse_quote! {0})),
                 stream::Expr::binop(Binop::new(
                     BinaryOperator::Add,
-                    stream::Expr::fby(stream::Fby::new(
-                        stream::Expr::cst(Constant::int(syn::parse_quote! {0})),
-                        stream::Expr::ident("o"),
-                    )),
+                    stream::Expr::last(stream::Last::new(syn::parse_quote! {o}, None)),
                     stream::Expr::ident("inc"),
                 )),
             )),
@@ -494,7 +487,7 @@ mod parse_equation {
     #[test]
     fn should_parse_multiple_definitions() {
         let equation: Equation = syn::parse_quote! {
-            let (o1: int, o2: int) = if res then (0, 0) else ((0 fby o1) + inc1, (0 fby o2) + inc2);
+            let (o1: int, o2: int) = if res then (0, 0) else ((last o1 init 0) + inc1, last o2 + inc2);
         };
         let control = Equation::local_def(LetDecl::new(
             syn::parse_quote!(let),
@@ -520,18 +513,15 @@ mod parse_equation {
                 stream::Expr::tuple(Tuple::new(vec![
                     stream::Expr::binop(Binop::new(
                         BinaryOperator::Add,
-                        stream::Expr::fby(stream::Fby::new(
-                            stream::Expr::cst(Constant::int(syn::parse_quote! {0})),
-                            stream::Expr::ident("o1"),
+                        stream::Expr::last(stream::Last::new(
+                            syn::parse_quote! {o1},
+                            Some(stream::Expr::cst(Constant::int(syn::parse_quote! {0}))),
                         )),
                         stream::Expr::ident("inc1"),
                     )),
                     stream::Expr::binop(Binop::new(
                         BinaryOperator::Add,
-                        stream::Expr::fby(stream::Fby::new(
-                            stream::Expr::cst(Constant::int(syn::parse_quote! {0})),
-                            stream::Expr::ident("o2"),
-                        )),
+                        stream::Expr::last(stream::Last::new(syn::parse_quote! {o2}, None)),
                         stream::Expr::ident("inc2"),
                     )),
                 ])),
