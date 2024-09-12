@@ -20,7 +20,6 @@ pub struct Conf {
     greusot: bool,
     test: bool,
     demo: bool,
-    rising_edge: bool,
 }
 impl Default for Conf {
     fn default() -> Self {
@@ -32,7 +31,6 @@ impl Default for Conf {
             greusot: false,
             test: false,
             demo: false,
-            rising_edge: false,
         }
     }
 }
@@ -122,11 +120,5 @@ def! {
         demo
         #[doc = "Set demo mode."]
         set_demo
-    }
-    bool {
-        #[doc = "Tells if we import rising_edge."]
-        rising_edge
-        #[doc = "Import rising_edge."]
-        import_rising_edge
     }
 }
