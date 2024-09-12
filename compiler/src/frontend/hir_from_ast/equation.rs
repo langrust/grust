@@ -226,7 +226,7 @@ impl<'a> HIRFromAST<SimpleCtxt<'a>> for Equation {
                     .map(
                         |EventArmWhen {
                              pattern: event_pattern,
-                             mut guard,
+                             guard,
                              equations,
                              ..
                          }| {
@@ -236,7 +236,7 @@ impl<'a> HIRFromAST<SimpleCtxt<'a>> for Equation {
                             // set local context + create matched pattern
                             let (matched_pattern, guard) = {
                                 let mut elements = default_pattern.clone();
-                                let opt_guard = event_pattern.create_tuple_pattern(
+                                let opt_rising_edges = event_pattern.create_tuple_pattern(
                                     &mut elements,
                                     &events_indices,
                                     ctxt.syms,
@@ -244,27 +244,27 @@ impl<'a> HIRFromAST<SimpleCtxt<'a>> for Equation {
                                 )?;
                                 let matched = pattern::init(pattern::Kind::tuple(elements));
 
-                                // add rising edge detection to the guard
-                                if let Some(add_guard) = opt_guard {
-                                    if let Some((token_if, old_guard)) = guard.take() {
-                                        guard = Some((
-                                            token_if,
-                                            ast::stream::Expr::binop(ast::expr::Binop::new(
-                                                operator::BinaryOperator::And,
-                                                old_guard,
-                                                add_guard,
-                                            )),
-                                        ))
-                                    } else {
-                                        guard = Some((Default::default(), add_guard))
-                                    }
-                                };
-                                let guard = guard
+                                // transform AST guard into HIR
+                                let mut guard = guard
                                     .map(|(_, expression)| {
                                         expression
                                             .hir_from_ast(&mut ctxt.add_pat_loc(None, &location))
                                     })
                                     .transpose()?;
+                                // add rising edge detection to the guard
+                                if let Some(rising_edges) = opt_rising_edges {
+                                    if let Some(old_guard) = guard.take() {
+                                        guard = Some(hir::stream::expr(hir::stream::Kind::expr(
+                                            hir::expr::Kind::binop(
+                                                operator::BinaryOperator::And,
+                                                old_guard,
+                                                rising_edges,
+                                            ),
+                                        )));
+                                    } else {
+                                        guard = Some(rising_edges)
+                                    }
+                                };
 
                                 (matched, guard)
                             };
