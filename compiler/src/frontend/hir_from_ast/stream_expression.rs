@@ -12,6 +12,7 @@ impl<'a> HIRFromAST<PatLocCtxt<'a>> for stream::When {
     fn hir_from_ast(self, ctxt: &mut PatLocCtxt<'a>) -> TRes<Self::HIR> {
         let stream::When {
             pattern: event_pattern,
+            guard,
             expression,
             ..
         } = self;
@@ -48,7 +49,27 @@ impl<'a> HIRFromAST<PatLocCtxt<'a>> for stream::When {
                     ctxt.errors,
                 )?;
                 let matched = hir::pattern::init(hir::pattern::Kind::tuple(elements));
-                (matched, opt_rising_edges)
+
+                // transform AST guard into HIR
+                let mut guard = guard
+                    .map(|expression| expression.hir_from_ast(ctxt))
+                    .transpose()?;
+                // add rising edge detection to the guard
+                if let Some(rising_edges) = opt_rising_edges {
+                    if let Some(old_guard) = guard.take() {
+                        guard = Some(hir::stream::expr(hir::stream::Kind::expr(
+                            hir::expr::Kind::binop(
+                                operator::BinaryOperator::And,
+                                old_guard,
+                                rising_edges,
+                            ),
+                        )));
+                    } else {
+                        guard = Some(rising_edges)
+                    }
+                };
+
+                (matched, guard)
             };
             // transform into HIR
             let expression = expression.hir_from_ast(ctxt)?;
