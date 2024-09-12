@@ -90,6 +90,7 @@ impl stream::Expr {
                 self.dependencies = Dependencies::from(expression.get_dependencies().clone());
             }
             stream::Kind::NoneEvent => (),
+            stream::Kind::RisingEdge { .. } => unreachable!(),
         }
     }
 }

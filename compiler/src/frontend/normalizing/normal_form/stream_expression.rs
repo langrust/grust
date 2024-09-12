@@ -50,6 +50,56 @@ impl stream::Expr {
 
                 new_statements
             }
+            stream::Kind::RisingEdge { ref mut expression } => {
+                let new_statements = expression.into_signal_call(
+                    nodes_reduced_graphs,
+                    identifier_creator,
+                    symbol_table,
+                );
+                let expression = expression.as_ref();
+
+                let fby_dependencies = expression
+                    .get_dependencies()
+                    .iter()
+                    .map(|(id, label)| (*id, label.increment()))
+                    .collect::<Vec<_>>();
+
+                let constant = stream::Expr {
+                    kind: stream::Kind::expr(hir::expr::Kind::constant(Constant::bool(
+                        syn::LitBool::new(false, macro2::Span::call_site()),
+                    ))),
+                    typing: Some(Typ::Boolean(Default::default())),
+                    location: Default::default(),
+                    dependencies: Dependencies::from(vec![]),
+                };
+                let mem = stream::Expr {
+                    kind: stream::Kind::fby(constant, expression.clone()),
+                    typing: Some(Typ::Boolean(Default::default())),
+                    location: Default::default(),
+                    dependencies: Dependencies::from(fby_dependencies.clone()),
+                };
+                let not_mem = stream::Expr {
+                    kind: stream::Kind::expr(hir::expr::Kind::unop(
+                        operator::UnaryOperator::Not,
+                        mem,
+                    )),
+                    typing: Some(Typ::Boolean(Default::default())),
+                    location: Default::default(),
+                    dependencies: Dependencies::from(fby_dependencies.clone()),
+                };
+
+                let mut dependencies = expression.get_dependencies().clone();
+                dependencies.extend(fby_dependencies);
+                self.dependencies = Dependencies::from(dependencies);
+
+                self.kind = stream::Kind::expr(hir::expr::Kind::binop(
+                    operator::BinaryOperator::And,
+                    expression.clone(),
+                    not_mem,
+                ));
+
+                new_statements
+            }
             stream::Kind::NodeApplication {
                 called_node_id,
                 ref mut inputs,

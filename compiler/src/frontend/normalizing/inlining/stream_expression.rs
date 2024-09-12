@@ -68,6 +68,7 @@ impl stream::Expr {
             }
             stream::Kind::NoneEvent => (),
             stream::Kind::FollowedBy { .. } => unreachable!(),
+            stream::Kind::RisingEdge { .. } => unreachable!(),
         }
     }
 }
