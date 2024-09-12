@@ -26,7 +26,7 @@ mod color {
 }
 
 mod label {
-    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
     /// Edge label.
     pub enum Label {
         /// Contract label.
