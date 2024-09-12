@@ -1,5 +1,5 @@
 prelude! {
-    syn::parse::Parse,
+    syn::{parse::Parse, Token},
     equation::EventPattern,
     expr::*,
     operator::BinaryOperator,
@@ -35,6 +35,8 @@ impl Fby {
 pub struct When {
     /// The pattern receiving the value of the event.
     pub pattern: EventPattern,
+    /// The optional guard.
+    pub guard: Option<Box<Expr>>,
     pub then_token: keyword::then,
     /// Action triggered by event.
     pub expression: Box<Expr>,
@@ -42,6 +44,7 @@ pub struct When {
 mk_new! { impl When =>
     new {
         pattern: EventPattern,
+        guard: Option<Expr> = guard.map(Expr::into),
         then_token: keyword::then,
         expression: impl Into<Box<Expr >> = expression.into(),
     }
@@ -55,9 +58,18 @@ impl Parse for When {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let _: keyword::when = input.parse()?;
         let pattern: EventPattern = input.parse()?;
+        let guard = {
+            if input.fork().peek(Token![if]) {
+                let _: Token![if] = input.parse()?;
+                let guard = input.parse()?;
+                Some(guard)
+            } else {
+                None
+            }
+        };
         let then_token: keyword::then = input.parse()?;
         let expression: Expr = input.parse()?;
-        Ok(When::new(pattern, then_token, expression))
+        Ok(When::new(pattern, guard, then_token, expression))
     }
 }
 
@@ -523,6 +535,29 @@ mod parse_stream_expression {
                 format_ident!("p"),
                 Default::default(),
             )),
+            None,
+            Default::default(),
+            Expr::emit(Emit::new(Default::default(), Expr::ident("x"))),
+        ));
+        assert_eq!(expression, control)
+    }
+
+    #[test]
+    fn should_parse_when_with_guard() {
+        let expression: Expr = syn::parse_quote! {when p? if p > 0 then emit x};
+        let control = Expr::when_match(When::new(
+            EventPattern::Let(LetEventPattern::new(
+                Default::default(),
+                expr::Pattern::ident("p"),
+                Default::default(),
+                format_ident!("p"),
+                Default::default(),
+            )),
+            Some(Expr::binop(Binop::new(
+                BinaryOperator::Grt,
+                Expr::ident("p"),
+                Expr::cst(Constant::Boolean(syn::parse_quote! {false})),
+            ))),
             Default::default(),
             Expr::emit(Emit::new(Default::default(), Expr::ident("x"))),
         ));
