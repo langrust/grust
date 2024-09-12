@@ -31,6 +31,9 @@ impl File {
             .all(|component| component.no_fby())
     }
     /// Tell if it is in normal form.
+    ///
+    /// - component application as root expression
+    /// - no rising edge
     pub fn is_normal_form(&self) -> bool {
         self.components
             .iter()

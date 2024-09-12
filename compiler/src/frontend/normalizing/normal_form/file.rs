@@ -8,6 +8,7 @@ impl File {
     /// The normal form of a node is as follows:
     /// - node application can only append at root expression
     /// - node application inputs are signal calls
+    /// - no rising edges (replaced by |test| test && ! (false fby test))
     ///
     /// The normal form of a flow expression is as follows:
     /// - flow expressions others than identifiers are root expression
