@@ -10,7 +10,8 @@ impl stream::Expr {
         match &self.kind {
             stream::Kind::Expression { expression } => expression.get_called_nodes(),
             stream::Kind::FollowedBy { expression, .. }
-            | stream::Kind::SomeEvent { expression } => expression.get_called_nodes(),
+            | stream::Kind::SomeEvent { expression }
+            | stream::Kind::RisingEdge { expression } => expression.get_called_nodes(),
             stream::Kind::NoneEvent => vec![],
             stream::Kind::NodeApplication {
                 called_node_id,
@@ -63,6 +64,20 @@ impl stream::Expr {
                 constant.compute_dependencies(ctx)?;
                 debug_assert!({ constant.get_dependencies().is_empty() });
 
+                self.dependencies.set(dependencies);
+                Ok(())
+            }
+            stream::Kind::RisingEdge { ref expression } => {
+                // propagate dependencies computation in expression
+                expression.compute_dependencies(ctx)?;
+                // dependencies with the memory delay
+                let mut dependencies = expression
+                    .get_dependencies()
+                    .iter()
+                    .map(|(id, label)| (*id, label.increment()))
+                    .collect::<Vec<_>>();
+                // rising edge depends on current value and memory
+                dependencies.extend(expression.get_dependencies());
                 self.dependencies.set(dependencies);
                 Ok(())
             }

@@ -76,6 +76,16 @@ impl TypeAnalysis for stream::Expr {
                 self.typing = Some(Typ::sm_event(Typ::Any));
                 Ok(())
             }
+            stream::Kind::RisingEdge { ref mut expression } => {
+                expression.typing(symbol_table, errors)?;
+                // check expr is a boolean
+                let expr_type = expression.get_type().unwrap().clone();
+                let expected = Typ::bool();
+                expr_type.eq_check(&expected, self.location.clone(), errors)?;
+                // set the type
+                self.typing = Some(expected);
+                Ok(())
+            }
         }
     }
 
