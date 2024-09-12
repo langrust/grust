@@ -29,6 +29,11 @@ pub enum Kind {
         /// The inputs to the expression.
         inputs: Vec<(usize, Expr)>,
     },
+    /// Detect a rising edge of the expression.
+    RisingEdge {
+        /// The expression to detect the rising edge from.
+        expression: Box<Expr>,
+    },
     /// Present event expression.
     SomeEvent {
         /// The expression of the event.
@@ -48,6 +53,9 @@ mk_new! { impl Kind =>
         memory_id = None,
         called_node_id: usize,
         inputs: Vec<(usize, Expr)>,
+    }
+    RisingEdge: rising_edge {
+        expression: Expr = expression.into(),
     }
     SomeEvent: some_event {
         expression: Expr = expression.into(),
@@ -107,24 +115,33 @@ impl Expr {
             }
             Kind::SomeEvent { expression } => expression.no_fby(),
             Kind::NoneEvent => true,
+            Kind::RisingEdge { .. } => unreachable!(),
         }
     }
     /// Tell if it is in normal form.
+    ///
+    /// - component application as root expression
+    /// - no rising edge
     pub fn is_normal_form(&self) -> bool {
+        let predicate_expression = |expression: &Expr| {
+            expression.no_component_application() && expression.no_rising_edge()
+        };
+        let predicate_statement =
+            |statement: &hir::Stmt<Expr>| statement.expression.is_normal_form();
         match &self.kind {
-            Kind::Expression { expression } => expression
-                .propagate_predicate(Self::no_component_application, |statement| {
-                    statement.expression.is_normal_form()
-                }),
-            Kind::FollowedBy { expression, .. } => expression.no_component_application(),
+            Kind::Expression { expression } => {
+                expression.propagate_predicate(predicate_expression, predicate_statement)
+            }
+            Kind::FollowedBy { expression, .. } => predicate_expression(expression),
             Kind::NodeApplication { inputs, .. } => inputs
                 .iter()
-                .all(|(_, expression)| expression.no_component_application()),
-            Kind::SomeEvent { expression } => expression.no_component_application(),
+                .all(|(_, expression)| predicate_expression(expression)),
+            Kind::SomeEvent { expression } => predicate_expression(expression),
             Kind::NoneEvent => true,
+            Kind::RisingEdge { .. } => false,
         }
     }
-    /// Tell if there is no node application.
+    /// Tell if there is no component application.
     pub fn no_component_application(&self) -> bool {
         match &self.kind {
             Kind::Expression { expression } => expression
@@ -135,6 +152,23 @@ impl Expr {
             Kind::NodeApplication { .. } => false,
             Kind::SomeEvent { expression } => expression.no_component_application(),
             Kind::NoneEvent => true,
+            Kind::RisingEdge { expression } => expression.no_component_application(),
+        }
+    }
+    /// Tell if there is no rising edge.
+    pub fn no_rising_edge(&self) -> bool {
+        match &self.kind {
+            Kind::Expression { expression } => expression
+                .propagate_predicate(Self::no_rising_edge, |statement| {
+                    statement.expression.no_rising_edge()
+                }),
+            Kind::FollowedBy { expression, .. } => expression.no_rising_edge(),
+            Kind::NodeApplication { inputs, .. } => inputs
+                .iter()
+                .all(|(_, expression)| expression.no_rising_edge()),
+            Kind::SomeEvent { expression } => expression.no_rising_edge(),
+            Kind::NoneEvent => true,
+            Kind::RisingEdge { .. } => false,
         }
     }
 }

@@ -41,15 +41,14 @@ impl<'a> HIRFromAST<PatLocCtxt<'a>> for stream::When {
             // set local context + create matched pattern
             let (match_pattern, guard) = {
                 let mut elements = no_event_tuple;
-                let opt_guard = event_pattern.create_tuple_pattern(
+                let opt_rising_edges = event_pattern.create_tuple_pattern(
                     &mut elements,
                     &events_indices,
                     ctxt.syms,
                     ctxt.errors,
                 )?;
-                let guard = opt_guard.map(|expr| expr.hir_from_ast(ctxt)).transpose()?;
                 let matched = hir::pattern::init(hir::pattern::Kind::tuple(elements));
-                (matched, guard)
+                (matched, opt_rising_edges)
             };
             // transform into HIR
             let expression = expression.hir_from_ast(ctxt)?;

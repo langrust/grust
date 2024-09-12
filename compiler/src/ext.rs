@@ -928,12 +928,12 @@ pub trait EventPatternExt {
         events_indices: &HashMap<usize, usize>,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> TRes<Option<ast::stream::Expr>>;
+    ) -> TRes<Option<hir::stream::Expr>>;
 }
 
 mod event_pattern {
     prelude! {
-        ast::equation::EventPattern, frontend::hir_from_ast::LocCtxt
+        ast::equation::EventPattern, frontend::hir_from_ast::{LocCtxt, PatLocCtxt}
     }
 
     impl super::EventPatternExt for EventPattern {
@@ -974,19 +974,21 @@ mod event_pattern {
             self,
             tuple: &mut Vec<hir::Pattern>,
             events_indices: &HashMap<usize, usize>,
-            symbol_table: &mut SymbolTable,
+            syms: &mut SymbolTable,
             errors: &mut Vec<Error>,
-        ) -> TRes<Option<ast::stream::Expr>> {
+        ) -> TRes<Option<hir::stream::Expr>> {
             match self {
                 EventPattern::Tuple(patterns) => {
                     let mut guard = None;
-                    let mut combine_guard = |opt_guard: Option<ast::stream::Expr>| {
+                    let mut combine_guard = |opt_guard: Option<hir::stream::Expr>| {
                         if let Some(add_guard) = opt_guard {
                             if let Some(old_guard) = guard.take() {
-                                guard = Some(ast::stream::Expr::binop(ast::expr::Binop::new(
-                                    operator::BinaryOperator::And,
-                                    old_guard,
-                                    add_guard,
+                                guard = Some(hir::stream::expr(hir::stream::Kind::expr(
+                                    hir::expr::Kind::binop(
+                                        operator::BinaryOperator::And,
+                                        old_guard,
+                                        add_guard,
+                                    ),
                                 )));
                             } else {
                                 guard = Some(add_guard);
@@ -1001,7 +1003,7 @@ mod event_pattern {
                             let opt_guard = pattern.create_tuple_pattern(
                                 tuple,
                                 events_indices,
-                                symbol_table,
+                                syms,
                                 errors,
                             )?;
                             // combine all rising edge detections
@@ -1014,7 +1016,7 @@ mod event_pattern {
                 }
                 EventPattern::Let(pattern) => {
                     let location = Location::default();
-                    let ctxt = &mut LocCtxt::new(&location, symbol_table, errors);
+                    let ctxt = &mut LocCtxt::new(&location, syms, errors);
 
                     // get the event identifier
                     let event_id = ctxt.syms.get_identifier_id(
@@ -1037,11 +1039,10 @@ mod event_pattern {
                     Ok(None)
                 }
                 EventPattern::RisingEdge(expr) => {
-                    let guard = ast::stream::Expr::app(ast::expr::Application::new(
-                        ast::stream::Expr::ident("rising_edge"),
-                        vec![*expr],
-                    ));
-                    Ok(Some(guard))
+                    let location = Location::default();
+                    let ctxt = &mut PatLocCtxt::new(None, &location, syms, errors);
+                    let guard = hir::stream::Kind::rising_edge(expr.hir_from_ast(ctxt)?);
+                    Ok(Some(hir::stream::expr(guard)))
                 }
             }
         }
