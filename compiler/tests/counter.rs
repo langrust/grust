@@ -13,13 +13,15 @@ fn should_compile_counter() {
         }
 
         component counter(res: bool, tick: bool) -> (o: int) {
-            o = if res then 0 else add(0 fby o, inc);
+            o = if res then 0 else add(last o, inc);
             let inc: int = if tick then 1 else 0;
         }
 
         component test() -> (y: int) {
-            y = counter(false fby (y > 35), half);
-            let half: bool = true fby !half;
+            let stop: bool = y > 35;
+            y = counter(last stop, half);
+            let not_half: bool = !half;
+            let half: bool = last not_half;
         }
     };
     let tokens = compiler::into_token_stream(ast);

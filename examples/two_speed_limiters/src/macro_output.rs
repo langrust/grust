@@ -98,7 +98,7 @@ pub struct ProcessSetSpeedState {
 impl ProcessSetSpeedState {
     pub fn init() -> ProcessSetSpeedState {
         ProcessSetSpeedState {
-            mem: 0.0,
+            mem: Default::default(),
             mem_1: Default::default(),
         }
     }
@@ -207,8 +207,8 @@ pub struct SpeedLimiterState {
 impl SpeedLimiterState {
     pub fn init() -> SpeedLimiterState {
         SpeedLimiterState {
-            mem: SpeedLimiter::Off,
-            mem_1: SpeedLimiterOn::StandBy,
+            mem: Default::default(),
+            mem_1: Default::default(),
             mem_2: Default::default(),
             speed_limiter_on: SpeedLimiterOnState::init(),
         }

@@ -136,7 +136,7 @@ fn should_compile_speed_limiter() {
         component process_set_speed(set_speed: float) -> (v_set: float, v_update: bool) {
             v_set = threshold_set_speed(set_speed);
             v_update = prev_v_set != v_set;
-            let prev_v_set: float = 0.0 fby v_set;
+            let prev_v_set: float = last v_set;
         }
 
         // Speed limiter state machine.
@@ -154,8 +154,8 @@ fn should_compile_speed_limiter() {
             state_update: bool
         ) @ 10 ms {
             let failure: bool = false;
-            let prev_state: SpeedLimiter = SpeedLimiter::Off fby state;
-            let prev_on_state: SpeedLimiterOn = SpeedLimiterOn::StandBy fby on_state;
+            let prev_state: SpeedLimiter = last state;
+            let prev_on_state: SpeedLimiterOn = last on_state;
             match prev_state {
                 _ if off_condition(activation_req, vdc_disabled) => {
                     state = SpeedLimiter::Off;
@@ -197,7 +197,7 @@ fn should_compile_speed_limiter() {
                 _ => {
                     state = prev_state;
                     on_state = prev_on_state;
-                    in_regulation = false fby in_regulation;
+                    in_regulation = last in_regulation;
                 },
             }
             state_update = state != prev_state || on_state != prev_on_state;
@@ -215,7 +215,7 @@ fn should_compile_speed_limiter() {
             on_state: SpeedLimiterOn,
             in_reg: bool
         ) {
-            let prev_hysterisis: Hysterisis = new_hysterisis(0.0) fby hysterisis;
+            let prev_hysterisis: Hysterisis = last hysterisis init new_hysterisis(0.0);
             in_reg = in_regulation(hysterisis);
             match prev_on_state {
                 SpeedLimiterOn::StandBy if activation_condition(activation_req, vacuum_brake_state, v_set) => {

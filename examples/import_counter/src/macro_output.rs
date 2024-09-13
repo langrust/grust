@@ -12,17 +12,19 @@ pub struct TestState {
 impl TestState {
     pub fn init() -> TestState {
         TestState {
-            mem: false,
-            mem_1: true,
+            mem: Default::default(),
+            mem_1: Default::default(),
             counter: CounterState::init(),
         }
     }
     pub fn step(&mut self, input: TestInput) -> i64 {
-        let x = self.mem;
         let half = self.mem_1;
+        let x = self.mem;
         let y = self.counter.step(CounterInput { res: x, tick: half });
-        self.mem = y > 35i64;
-        self.mem_1 = !half;
+        let stop = y > 35i64;
+        let not_half = !half;
+        self.mem = stop;
+        self.mem_1 = not_half;
         y
     }
 }

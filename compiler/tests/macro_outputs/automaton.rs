@@ -1,8 +1,8 @@
 #[derive(Clone, Copy, PartialEq, Default)]
 pub enum State {
     #[default]
-    On,
     Off,
+    On,
 }
 pub fn add(x: i64, y: i64) -> i64 {
     let res = x + y;
@@ -17,7 +17,9 @@ pub struct SumState {
 }
 impl SumState {
     pub fn init() -> SumState {
-        SumState { mem: 0i64 }
+        SumState {
+            mem: Default::default(),
+        }
     }
     pub fn step(&mut self, input: SumInput) -> i64 {
         let x = add(self.mem, input.i);
@@ -38,8 +40,8 @@ pub struct AutomatonState {
 impl AutomatonState {
     pub fn init() -> AutomatonState {
         AutomatonState {
-            mem: State::Off,
-            mem_1: 0i64,
+            mem: Default::default(),
+            mem_1: Default::default(),
             sum: SumState::init(),
         }
     }

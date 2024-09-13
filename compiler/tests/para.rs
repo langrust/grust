@@ -17,7 +17,7 @@ fn should_compile_para() {
                     e1 = when e0 > s2 then emit e0 / (e0 - s2);
                 }
             }
-            let prev_s2: int = 0 fby s2;
+            let prev_s2: int = last s2;
         }
 
         component C2(e1: int?) -> (s3: int, e3: int?) {
@@ -30,7 +30,7 @@ fn should_compile_para() {
                     e3 = emit prev_s3;
                 }
             }
-            let prev_s3: int = 0 fby s3;
+            let prev_s3: int = last s3;
         }
 
         component C3(s2: int) -> (e2: int?) {
@@ -53,7 +53,7 @@ fn should_compile_para() {
                     o = s3;
                 }
             }
-            let prev_o: int = 0 fby o;
+            let prev_o: int = last o;
         }
 
         service para_mess {
