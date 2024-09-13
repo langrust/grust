@@ -262,7 +262,7 @@ mod simple_expr {
                              expression,
                          }| {
                             ctxt.syms.local();
-                            pattern.store(true, ctxt.syms, ctxt.errors)?;
+                            pattern.store(ctxt.syms, ctxt.errors)?;
                             let pattern = pattern.hir_from_ast(&mut ctxt.remove_pat())?;
                             let guard = guard
                                 .map(|expression| expression.hir_from_ast(ctxt))

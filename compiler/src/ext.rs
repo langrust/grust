@@ -424,7 +424,6 @@ impl FunctionExt for ast::Function {
 pub trait ExprPatternExt: Sized {
     fn store(
         &self,
-        is_declaration: bool,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> TRes<Vec<(String, usize)>>;
@@ -444,7 +443,6 @@ mod expr_pattern {
     impl super::ExprPatternExt for Pattern {
         fn store(
             &self,
-            is_declaration: bool,
             symbol_table: &mut SymbolTable,
             errors: &mut Vec<Error>,
         ) -> TRes<Vec<(String, usize)>> {
@@ -452,37 +450,18 @@ mod expr_pattern {
 
             match self {
                 Pattern::Identifier(name) => {
-                    if is_declaration {
-                        let id = symbol_table.insert_identifier(
-                            name.clone(),
-                            None,
-                            true,
-                            location.clone(),
-                            errors,
-                        )?;
-                        Ok(vec![(name.clone(), id)])
-                    } else {
-                        let id = symbol_table.get_identifier_id(
-                            name,
-                            false,
-                            location.clone(),
-                            errors,
-                        )?;
-                        // outputs should be already typed
-                        let typing = symbol_table.get_type(id).clone();
-                        let id = symbol_table.insert_identifier(
-                            name.clone(),
-                            Some(typing),
-                            true,
-                            location.clone(),
-                            errors,
-                        )?;
-                        Ok(vec![(name.clone(), id)])
-                    }
+                    let id = symbol_table.insert_identifier(
+                        name.clone(),
+                        None,
+                        true,
+                        location.clone(),
+                        errors,
+                    )?;
+                    Ok(vec![(name.clone(), id)])
                 }
                 Pattern::Tuple(PatTuple { elements }) => Ok(elements
                     .iter()
-                    .map(|pattern| pattern.store(is_declaration, symbol_table, errors))
+                    .map(|pattern| pattern.store(symbol_table, errors))
                     .collect::<TRes<Vec<_>>>()?
                     .into_iter()
                     .flatten()
@@ -491,7 +470,7 @@ mod expr_pattern {
                     .iter()
                     .map(|(field, optional_pattern)| {
                         if let Some(pattern) = optional_pattern {
-                            pattern.store(is_declaration, symbol_table, errors)
+                            pattern.store(symbol_table, errors)
                         } else {
                             let id = symbol_table.insert_identifier(
                                 field.clone(),
@@ -1027,7 +1006,7 @@ mod event_pattern {
                     )?;
 
                     // transform inner_pattern into HIR
-                    pattern.pattern.store(true, ctxt.syms, ctxt.errors)?;
+                    pattern.pattern.store(ctxt.syms, ctxt.errors)?;
                     let inner_pattern = pattern.pattern.hir_from_ast(ctxt)?;
                     let event_pattern =
                         hir::pattern::init(hir::pattern::Kind::present(event_id, inner_pattern));
