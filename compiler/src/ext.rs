@@ -841,7 +841,7 @@ mod stream_expr {
                 | stream::Expr::Fold { .. }
                 | stream::Expr::Sort { .. }
                 | stream::Expr::Zip { .. }
-                | stream::Expr::Fby { .. } => {
+                | stream::Expr::Last { .. } => {
                     let error = Error::ExpectConstant {
                         location: Location::default(),
                     };
