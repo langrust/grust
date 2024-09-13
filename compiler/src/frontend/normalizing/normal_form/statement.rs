@@ -106,15 +106,22 @@ impl Stmt<stream::Expr> {
             ..
         } = self;
         let signals = pattern.identifiers();
-        for from in signals {
+        for from in signals.iter() {
             for (to, label) in expression.get_dependencies() {
-                graph.add_edge(from, *to, label.clone());
+                graph.add_edge(*from, *to, label.clone());
             }
         }
         match &self.expression.kind {
             stream::Kind::Expression { expression } => match expression {
                 hir::expr::Kind::Match { arms, .. } => {
-                    arms.iter().for_each(|(_, _, statements, _)| {
+                    arms.iter().for_each(|(_, bound, statements, _)| {
+                        if let Some(bound) = bound {
+                            for from in signals.iter() {
+                                for (to, label) in bound.get_dependencies() {
+                                    graph.add_edge(*from, *to, label.clone());
+                                }
+                            }
+                        }
                         statements
                             .iter()
                             .for_each(|statement| statement.add_to_graph(graph))
