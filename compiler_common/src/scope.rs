@@ -61,6 +61,8 @@ pub enum Scope {
     Output,
     /// Signals that are only reachable in the node/component defining them.
     Local,
+    /// Only used during compilation to indicate that the value is not memorizable.
+    VeryLocal,
     /// Only used during compilation to indicate that the value is in the buffer.
     Memory,
 }
@@ -70,6 +72,7 @@ impl Scope {
         Input: input()
         Output: output()
         Local: local()
+        VeryLocal: very_local()
         Memory: memory()
     }
 }
