@@ -73,7 +73,7 @@ impl<'a> HIRFromAST<SimpleCtxt<'a>> for Equation {
                                 ctxt.syms.local();
 
                                 // set local context: pattern signals + equations' signals
-                                pattern.store(true, ctxt.syms, ctxt.errors)?;
+                                pattern.store(ctxt.syms, ctxt.errors)?;
                                 let mut signals = HashMap::new();
                                 equations
                                     .iter()
