@@ -169,16 +169,29 @@ impl<'a> HIRFromAST<PatLocCtxt<'a>> for stream::Expr {
                     },
                 },
             },
-            stream::Expr::Fby(stream::Fby {
-                constant,
-                expression,
-            }) => {
-                // check the constant expression is indeed constant
-                constant.check_is_constant(ctxt.syms, ctxt.errors)?;
+            stream::Expr::Last(stream::Last { ident, constant }) => {
+                let default = hir::stream::Kind::Expression {
+                    expression: hir::expr::Kind::constant(Constant::Default),
+                };
+                let constant = constant.map_or(Ok(hir::stream::expr(default)), |cst| {
+                    // check the constant expression is indeed constant
+                    cst.check_is_constant(ctxt.syms, ctxt.errors)?;
+                    cst.hir_from_ast(ctxt)
+                })?;
+
+                let id = ctxt.syms.get_identifier_id(
+                    &ident.to_string(),
+                    false,
+                    ctxt.loc.clone(),
+                    ctxt.errors,
+                )?;
+                let id_expr = hir::stream::Kind::Expression {
+                    expression: hir::expr::Kind::Identifier { id },
+                };
 
                 hir::stream::Kind::FollowedBy {
-                    constant: Box::new(constant.hir_from_ast(ctxt)?),
-                    expression: Box::new(expression.hir_from_ast(ctxt)?),
+                    constant: Box::new(constant),
+                    expression: Box::new(hir::stream::expr(id_expr)),
                 }
             }
             stream::Expr::Emit(stream::Emit { expr, .. }) => {
