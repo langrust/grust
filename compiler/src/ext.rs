@@ -450,8 +450,9 @@ mod expr_pattern {
 
             match self {
                 Pattern::Identifier(name) => {
-                    let id = symbol_table.insert_identifier(
+                    let id = symbol_table.insert_signal(
                         name.clone(),
+                        Scope::VeryLocal,
                         None,
                         true,
                         location.clone(),
