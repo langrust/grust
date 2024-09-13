@@ -1,18 +1,17 @@
-use grust::grust_std::rising_edge::{RisingEdgeInput, RisingEdgeState};
 pub struct C1Input {
     pub e0: Option<i64>,
 }
 pub struct C1State {
-    mem: i64,
+    mem: bool,
     mem_1: i64,
-    rising_edge: RisingEdgeState,
+    mem_2: i64,
 }
 impl C1State {
     pub fn init() -> C1State {
         C1State {
-            mem: Default::default(),
-            mem_1: 0i64,
-            rising_edge: RisingEdgeState::init(),
+            mem: false,
+            mem_1: Default::default(),
+            mem_2: Default::default(),
         }
     }
     pub fn step(&mut self, input: C1Input) -> (i64, Option<i64>) {
@@ -20,18 +19,18 @@ impl C1State {
             (Some(e0)) => {
                 let s2 = e0;
                 let x = e0 > s2;
-                let comp_app_rising_edge = self.rising_edge.step(RisingEdgeInput { test: x });
                 let e1 = match () {
-                    () if comp_app_rising_edge => Some(e0 / (e0 - s2)),
+                    () if x && !self.mem => Some(e0 / (e0 - s2)),
                     _ => None,
                 };
                 (s2, e1)
             }
-            (_) => (self.mem, None),
+            (_) => (self.mem_1, None),
         };
-        let prev_s2 = self.mem_1;
-        self.mem = s2;
+        let prev_s2 = self.mem_2;
+        self.mem = x;
         self.mem_1 = s2;
+        self.mem_2 = s2;
         (s2, e1)
     }
 }
@@ -39,36 +38,36 @@ pub struct C2Input {
     pub e1: Option<i64>,
 }
 pub struct C2State {
-    mem: i64,
+    mem: bool,
     mem_1: i64,
-    rising_edge: RisingEdgeState,
+    mem_2: i64,
 }
 impl C2State {
     pub fn init() -> C2State {
         C2State {
-            mem: Default::default(),
-            mem_1: 0i64,
-            rising_edge: RisingEdgeState::init(),
+            mem: false,
+            mem_1: Default::default(),
+            mem_2: Default::default(),
         }
     }
     pub fn step(&mut self, input: C2Input) -> (i64, Option<i64>) {
-        let prev_s3 = self.mem_1;
+        let prev_s3 = self.mem_2;
         let x = prev_s3 > 0i64;
-        let comp_app_rising_edge = self.rising_edge.step(RisingEdgeInput { test: x });
         let (s3, e3) = match (input.e1) {
             (Some(e1)) => {
                 let s3 = e1;
                 (s3, None)
             }
-            (_) if comp_app_rising_edge => {
+            (_) if x && !self.mem => {
                 let s3 = prev_s3;
                 let e3 = Some(prev_s3);
                 (s3, e3)
             }
-            (_) => (self.mem, None),
+            (_) => (self.mem_1, None),
         };
-        self.mem = s3;
+        self.mem = x;
         self.mem_1 = s3;
+        self.mem_2 = s3;
         (s3, e3)
     }
 }
@@ -76,21 +75,19 @@ pub struct C3Input {
     pub s2: i64,
 }
 pub struct C3State {
-    rising_edge: RisingEdgeState,
+    mem: bool,
 }
 impl C3State {
     pub fn init() -> C3State {
-        C3State {
-            rising_edge: RisingEdgeState::init(),
-        }
+        C3State { mem: false }
     }
     pub fn step(&mut self, input: C3Input) -> Option<i64> {
         let x = input.s2 > 1i64;
-        let comp_app_rising_edge = self.rising_edge.step(RisingEdgeInput { test: x });
         let e2 = match () {
-            () if comp_app_rising_edge => Some(input.s2),
+            () if x && !self.mem => Some(input.s2),
             _ => None,
         };
+        self.mem = x;
         e2
     }
 }
@@ -121,43 +118,43 @@ pub struct C5Input {
     pub e3: Option<i64>,
 }
 pub struct C5State {
-    mem: i64,
-    mem_1: i64,
-    rising_edge: RisingEdgeState,
-    rising_edge_1: RisingEdgeState,
+    mem: bool,
+    mem_1: bool,
+    mem_2: i64,
+    mem_3: i64,
 }
 impl C5State {
     pub fn init() -> C5State {
         C5State {
-            mem: Default::default(),
-            mem_1: 0i64,
-            rising_edge: RisingEdgeState::init(),
-            rising_edge_1: RisingEdgeState::init(),
+            mem: false,
+            mem_1: false,
+            mem_2: Default::default(),
+            mem_3: Default::default(),
         }
     }
     pub fn step(&mut self, input: C5Input) -> i64 {
         let x = input.s4 <= 0i64;
-        let comp_app_rising_edge = self.rising_edge.step(RisingEdgeInput { test: x });
         let x_1 = input.s3 >= 0i64;
-        let comp_app_rising_edge_1 = self.rising_edge_1.step(RisingEdgeInput { test: x_1 });
-        let prev_o = self.mem_1;
+        let prev_o = self.mem_3;
         let o = match (input.e3) {
             (Some(e3)) => {
                 let o = e3;
                 o
             }
-            (_) if comp_app_rising_edge => {
+            (_) if x && !self.mem => {
                 let o = prev_o * 2i64;
                 o
             }
-            (_) if comp_app_rising_edge_1 => {
+            (_) if x_1 && !self.mem_1 => {
                 let o = input.s3;
                 o
             }
-            (_) => self.mem,
+            (_) => self.mem_2,
         };
-        self.mem = o;
-        self.mem_1 = o;
+        self.mem = x;
+        self.mem_1 = x_1;
+        self.mem_2 = o;
+        self.mem_3 = o;
         o
     }
 }
@@ -287,57 +284,6 @@ pub mod runtime {
             }
         }
         #[derive(Clone, Copy, PartialEq, Default)]
-        pub struct S4(i64, bool);
-        impl S4 {
-            fn set(&mut self, s4: i64) {
-                self.0 = s4;
-                self.1 = true;
-            }
-            fn get(&self) -> i64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default)]
-        pub struct S3(i64, bool);
-        impl S3 {
-            fn set(&mut self, s3: i64) {
-                self.0 = s3;
-                self.1 = true;
-            }
-            fn get(&self) -> i64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default)]
-        pub struct E2(i64, bool);
-        impl E2 {
-            fn set(&mut self, e2: i64) {
-                self.0 = e2;
-                self.1 = true;
-            }
-            fn get(&self) -> i64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default)]
         pub struct E1(i64, bool);
         impl E1 {
             fn set(&mut self, e1: i64) {
@@ -372,6 +318,23 @@ pub mod runtime {
             }
         }
         #[derive(Clone, Copy, PartialEq, Default)]
+        pub struct E2(i64, bool);
+        impl E2 {
+            fn set(&mut self, e2: i64) {
+                self.0 = e2;
+                self.1 = true;
+            }
+            fn get(&self) -> i64 {
+                self.0
+            }
+            fn is_new(&self) -> bool {
+                self.1
+            }
+            fn reset(&mut self) {
+                self.1 = false;
+            }
+        }
+        #[derive(Clone, Copy, PartialEq, Default)]
         pub struct O1(i64, bool);
         impl O1 {
             fn set(&mut self, o1: i64) {
@@ -389,14 +352,48 @@ pub mod runtime {
             }
         }
         #[derive(Clone, Copy, PartialEq, Default)]
+        pub struct S4(i64, bool);
+        impl S4 {
+            fn set(&mut self, s4: i64) {
+                self.0 = s4;
+                self.1 = true;
+            }
+            fn get(&self) -> i64 {
+                self.0
+            }
+            fn is_new(&self) -> bool {
+                self.1
+            }
+            fn reset(&mut self) {
+                self.1 = false;
+            }
+        }
+        #[derive(Clone, Copy, PartialEq, Default)]
+        pub struct S3(i64, bool);
+        impl S3 {
+            fn set(&mut self, s3: i64) {
+                self.0 = s3;
+                self.1 = true;
+            }
+            fn get(&self) -> i64 {
+                self.0
+            }
+            fn is_new(&self) -> bool {
+                self.1
+            }
+            fn reset(&mut self) {
+                self.1 = false;
+            }
+        }
+        #[derive(Clone, Copy, PartialEq, Default)]
         pub struct Context {
             pub s2: S2,
-            pub s4: S4,
-            pub s3: S3,
-            pub e2: E2,
             pub e1: E1,
             pub e3: E3,
+            pub e2: E2,
             pub o1: O1,
+            pub s4: S4,
+            pub s3: S3,
         }
         impl Context {
             fn init() -> Context {
@@ -404,12 +401,12 @@ pub mod runtime {
             }
             fn reset(&mut self) {
                 self.s2.reset();
-                self.s4.reset();
-                self.s3.reset();
-                self.e2.reset();
                 self.e1.reset();
                 self.e3.reset();
+                self.e2.reset();
                 self.o1.reset();
+                self.s4.reset();
+                self.s3.reset();
             }
         }
         #[derive(Default)]
@@ -425,11 +422,11 @@ pub mod runtime {
             context: Context,
             delayed: bool,
             input_store: ParaMessServiceStore,
-            C4: C4State,
-            C1: C1State,
             C5: C5State,
             C2: C2State,
             C3: C3State,
+            C4: C4State,
+            C1: C1State,
             output: futures::channel::mpsc::Sender<O>,
             timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
         }
@@ -441,20 +438,20 @@ pub mod runtime {
                 let context = Context::init();
                 let delayed = true;
                 let input_store = Default::default();
-                let C4 = C4State::init();
-                let C1 = C1State::init();
                 let C5 = C5State::init();
                 let C2 = C2State::init();
                 let C3 = C3State::init();
+                let C4 = C4State::init();
+                let C1 = C1State::init();
                 ParaMessService {
                     context,
                     delayed,
                     input_store,
-                    C4,
-                    C1,
                     C5,
                     C2,
                     C3,
+                    C4,
+                    C1,
                     output,
                     timer,
                 }

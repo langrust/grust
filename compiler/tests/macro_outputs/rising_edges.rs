@@ -1,4 +1,3 @@
-use grust::grust_std::rising_edge::{RisingEdgeInput, RisingEdgeState};
 pub struct RisingEdgesInput {
     pub a: Option<i64>,
     pub b: Option<i64>,
@@ -7,26 +6,26 @@ pub struct RisingEdgesInput {
 pub struct RisingEdgesState {
     mem: i64,
     mem_1: f64,
-    mem_2: i64,
-    mem_3: i64,
-    mem_4: i64,
-    rising_edge: RisingEdgeState,
-    rising_edge_1: RisingEdgeState,
-    rising_edge_2: RisingEdgeState,
-    rising_edge_3: RisingEdgeState,
+    mem_2: bool,
+    mem_3: bool,
+    mem_4: bool,
+    mem_5: i64,
+    mem_6: i64,
+    mem_7: bool,
+    mem_8: i64,
 }
 impl RisingEdgesState {
     pub fn init() -> RisingEdgesState {
         RisingEdgesState {
             mem: Default::default(),
             mem_1: Default::default(),
-            mem_2: 0i64,
-            mem_3: Default::default(),
-            mem_4: Default::default(),
-            rising_edge: RisingEdgeState::init(),
-            rising_edge_1: RisingEdgeState::init(),
-            rising_edge_2: RisingEdgeState::init(),
-            rising_edge_3: RisingEdgeState::init(),
+            mem_2: false,
+            mem_3: false,
+            mem_4: false,
+            mem_5: Default::default(),
+            mem_6: Default::default(),
+            mem_7: false,
+            mem_8: Default::default(),
         }
     }
     pub fn step(&mut self, input: RisingEdgesInput) -> (i64, f64, Option<i64>) {
@@ -34,47 +33,47 @@ impl RisingEdgesState {
             (Some(a)) => a,
             _ => self.mem,
         };
-        let x_2 = input.v < 40i64;
-        let comp_app_rising_edge_1 = self.rising_edge_1.step(RisingEdgeInput { test: x_2 });
-        let x_1 = input.v > 50i64;
-        let comp_app_rising_edge = self.rising_edge.step(RisingEdgeInput { test: x_1 });
         let (z, y, x) = match (input.a, input.b) {
-            (Some(a), Some(e)) if comp_app_rising_edge => {
+            (Some(a), Some(e)) if x_1 && !self.mem_2 => {
                 let y = Some(());
                 let z = if input.v > 80i64 { e } else { a };
                 (z, y, None)
             }
-            (Some(a), _) if (a != 0i64) && comp_app_rising_edge_1 => {
+            (Some(a), _) if (a != 0i64) && (x_2 && !self.mem_3) => {
                 let x = Some(2i64);
                 let z = 2i64;
                 (z, None, x)
             }
             (_, Some(e)) => {
-                let x_4 = e < 20i64;
-                let comp_app_rising_edge_3 = self.rising_edge_3.step(RisingEdgeInput { test: x_4 });
                 let x = match () {
-                    () if comp_app_rising_edge_3 => Some(2i64),
+                    () if x_4 && !self.mem_7 => Some(2i64),
                     _ => None,
                 };
-                let x_3 = input.v > 50i64;
-                let comp_app_rising_edge_2 = self.rising_edge_2.step(RisingEdgeInput { test: x_3 });
                 let z = match () {
-                    () if comp_app_rising_edge_2 => input.v + self.mem_2,
-                    _ => self.mem_3,
+                    () if x_3 && !self.mem_4 => input.v + self.mem_5,
+                    _ => self.mem_6,
                 };
+                let x_3 = input.v > 50i64;
+                let x_4 = e < 20i64;
                 (z, None, x)
             }
-            (_, _) => (self.mem_4, None, None),
+            (_, _) => (self.mem_8, None, None),
         };
         let d = match (y) {
             (Some(_)) => 0.1,
             _ => self.mem_1,
         };
+        let x_1 = input.v > 50i64;
+        let x_2 = input.v < 40i64;
         self.mem = c;
         self.mem_1 = d;
-        self.mem_2 = c;
-        self.mem_3 = z;
-        self.mem_4 = z;
+        self.mem_2 = x_1;
+        self.mem_3 = x_2;
+        self.mem_4 = x_3;
+        self.mem_5 = c;
+        self.mem_6 = z;
+        self.mem_7 = x_4;
+        self.mem_8 = z;
         (c, d, x)
     }
 }

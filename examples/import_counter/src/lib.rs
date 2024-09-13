@@ -14,7 +14,9 @@ grust! {
     }
 
     component test() -> (y: int) {
-        y = counter(false fby (y > 35), half);
-        let half: bool = true fby !half;
+        let stop: bool = y > 35;
+        y = counter(last stop, half);
+        let not_half: bool = !half;
+        let half: bool = last not_half;
     }
 }

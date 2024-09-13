@@ -134,7 +134,9 @@ pub struct ProcessSetSpeedState {
 }
 impl ProcessSetSpeedState {
     pub fn init() -> ProcessSetSpeedState {
-        ProcessSetSpeedState { mem: 0.0 }
+        ProcessSetSpeedState {
+            mem: Default::default(),
+        }
     }
     pub fn step(&mut self, input: ProcessSetSpeedInput) -> (f64, bool) {
         let v_set = threshold_set_speed(input.set_speed);
@@ -262,9 +264,9 @@ pub struct SpeedLimiterState {
 impl SpeedLimiterState {
     pub fn init() -> SpeedLimiterState {
         SpeedLimiterState {
-            mem: SpeedLimiter::Off,
-            mem_1: SpeedLimiterOn::StandBy,
-            mem_2: false,
+            mem: Default::default(),
+            mem_1: Default::default(),
+            mem_2: Default::default(),
             speed_limiter_on: SpeedLimiterOnState::init(),
         }
     }

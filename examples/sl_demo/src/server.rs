@@ -105,7 +105,7 @@ mod sl {
 
         // Processes the speed setted by the driver.
         component process_set_speed(set_speed: float?) -> (v_set: float, v_update: bool) {
-            let prev_v_set: float = 0.0 fby v_set;
+            let prev_v_set: float = last v_set;
             v_update = prev_v_set != v_set;
             when {
                 let v = set_speed? => {
@@ -129,8 +129,8 @@ mod sl {
             in_regulation: bool,
             state_update: bool,
         ) @ 10 ms {
-            let prev_state: SpeedLimiter = SpeedLimiter::Off fby state;
-            let prev_on_state: SpeedLimiterOn = SpeedLimiterOn::StandBy fby on_state;
+            let prev_state: SpeedLimiter = last state;
+            let prev_on_state: SpeedLimiterOn = last on_state;
             when {
                 let ActivationRequest::Off = activation_req? => {
                     state = SpeedLimiter::Off;
@@ -174,7 +174,7 @@ mod sl {
             state_update: bool,
         ) {
             state_update = prev_on_state != on_state;
-            let prev_hysterisis: Hysterisis = new_hysterisis(0.0) fby hysterisis;
+            let prev_hysterisis: Hysterisis = last hysterisis init new_hysterisis(0.0);
             in_reg = in_regulation(hysterisis);
             when {
                 let Kickdown::Activated = kickdown? if prev_on_state == SpeedLimiterOn::Actif => {

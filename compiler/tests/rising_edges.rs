@@ -24,7 +24,7 @@ fn should_compile_rising_edges() {
                     x = emit 2;
                 }
                 let e = b? => {
-                    let z: int = when v > 50 then v + (0 fby c);
+                    let z: int = when v > 50 then v + (last c);
                     x = when e < 20 then emit 2;
                 }
             }

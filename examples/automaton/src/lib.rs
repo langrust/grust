@@ -7,8 +7,8 @@ grust! {
     #![dump = "examples/automaton/src/macro_output.rs"]
 
     enum State {
-        On,
         Off,
+        On,
     }
 
     function add(x: int, y: int) -> int {
@@ -18,15 +18,15 @@ grust! {
 
     component sum(reset: bool, i: int) -> (o: int) {
         o = if reset then 0 else x;
-        let x: int = add(0 fby o, i);
+        let x: int = add(last o, i);
     }
 
     component automaton(switch: bool, i: int) -> (o: int) {
-        let state: State = State::Off fby next_state;
+        let state: State = last next_state;
         match state {
             State::Off => {
                 let next_state: State = if switch then State::On else state;
-                let x: int = 0 fby x;
+                let x: int = last x;
                 o = 0;
             },
             State::On => {
