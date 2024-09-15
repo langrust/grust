@@ -1,6 +1,6 @@
 prelude! {
     operator::OtherOperator,
-    lir::{ Block, FieldIdentifier, Pattern, Stmt },
+    lir::{ Block, FieldIdentifier, Stmt },
 }
 
 use super::LIRFromHIR;
@@ -22,8 +22,9 @@ where
                     let scope = symbol_table.get_scope(id);
                     match scope {
                         Scope::Input => lir::Expr::InputAccess { identifier: name },
-                        Scope::Memory => lir::Expr::MemoryAccess { identifier: name },
-                        Scope::Output | Scope::Local => lir::Expr::Identifier { identifier: name },
+                        Scope::Output | Scope::Local | Scope::VeryLocal => {
+                            lir::Expr::Identifier { identifier: name }
+                        }
                     }
                 }
             }
@@ -163,27 +164,6 @@ where
                         )
                     })
                     .collect(),
-            },
-            Self::When {
-                id,
-                option,
-                present,
-                default,
-                ..
-            } => lir::Expr::Match {
-                matched: Box::new(option.lir_from_hir(symbol_table)),
-                arms: vec![
-                    (
-                        Pattern::Some {
-                            pattern: Box::new(Pattern::Identifier {
-                                name: symbol_table.get_name(id).clone(),
-                            }),
-                        },
-                        None,
-                        present.lir_from_hir(symbol_table),
-                    ),
-                    (Pattern::None, None, default.lir_from_hir(symbol_table)),
-                ],
             },
             Self::FieldAccess {
                 expression, field, ..
