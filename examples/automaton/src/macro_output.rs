@@ -13,18 +13,18 @@ pub struct SumInput {
     pub i: i64,
 }
 pub struct SumState {
-    mem: i64,
+    last_o: i64,
 }
 impl SumState {
     pub fn init() -> SumState {
         SumState {
-            mem: Default::default(),
+            last_o: Default::default(),
         }
     }
     pub fn step(&mut self, input: SumInput) -> i64 {
-        let x = add(self.mem, input.i);
+        let x = add(self.last_o, input.i);
         let o = if input.reset { 0i64 } else { x };
-        self.mem = o;
+        self.last_o = o;
         o
     }
 }
@@ -33,24 +33,24 @@ pub struct AutomatonInput {
     pub i: i64,
 }
 pub struct AutomatonState {
-    mem: State,
-    mem_1: i64,
+    last_next_state: State,
+    last_x: i64,
     sum: SumState,
 }
 impl AutomatonState {
     pub fn init() -> AutomatonState {
         AutomatonState {
-            mem: Default::default(),
-            mem_1: Default::default(),
+            last_next_state: Default::default(),
+            last_x: Default::default(),
             sum: SumState::init(),
         }
     }
     pub fn step(&mut self, input: AutomatonInput) -> i64 {
-        let state = self.mem;
+        let state = self.last_next_state;
         let (next_state, x, o) = match state {
             State::Off => {
                 let next_state = if input.switch { State::On } else { state };
-                let x = self.mem_1;
+                let x = self.last_x;
                 let o = 0i64;
                 (next_state, x, o)
             }
@@ -64,8 +64,8 @@ impl AutomatonState {
                 (next_state, x, o)
             }
         };
-        self.mem = next_state;
-        self.mem_1 = x;
+        self.last_next_state = next_state;
+        self.last_x = x;
         o
     }
 }

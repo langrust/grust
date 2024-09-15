@@ -28,12 +28,12 @@ pub struct BrakingStateInput {
     pub speed: i64,
 }
 pub struct BrakingStateState {
-    mem: Braking,
+    last_state: Braking,
 }
 impl BrakingStateState {
     pub fn init() -> BrakingStateState {
         BrakingStateState {
-            mem: Default::default(),
+            last_state: Default::default(),
         }
     }
     #[requires(0i64 <= input.speed && input.speed < 50i64)]
@@ -49,9 +49,9 @@ impl BrakingStateState {
                 let state = Braking::NoBrake;
                 state
             }
-            (_, _) => self.mem,
+            (_, _) => self.last_state,
         };
-        self.mem = state;
+        self.last_state = state;
         state
     }
 }

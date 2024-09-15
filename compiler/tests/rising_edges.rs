@@ -14,6 +14,10 @@ fn should_compile_rising_edges() {
         ) {
             c = when a? then a;
             d = when let _ = y? then 0.1;
+            let w2: bool? = when test then emit test;
+            let w3: bool? = when v > 50 then emit false;
+            let test: bool = v > 50;
+            let w: int? = when v > 50 then emit v + (last c);
             when {
                 (a?, let e = b?, v > 50) => {
                     let z: int =  if v > 80 then e else a;
@@ -24,7 +28,6 @@ fn should_compile_rising_edges() {
                     x = emit 2;
                 }
                 let e = b? => {
-                    let z: int = when v > 50 then v + (last c);
                     x = when e < 20 then emit 2;
                 }
             }
