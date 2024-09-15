@@ -117,7 +117,6 @@ impl ComponentDefinition {
                 let mut retrieved_statements = statement.inline_when_needed_recursive(
                     &mut self.memory,
                     &mut identifier_creator,
-                    &mut self.graph,
                     symbol_table,
                     unitary_nodes,
                 );

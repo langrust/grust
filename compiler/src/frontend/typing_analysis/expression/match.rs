@@ -42,11 +42,7 @@ where
 
                             // set types for every pattern
                             body.iter_mut()
-                                .map(|statement| {
-                                    statement
-                                        .pattern
-                                        .typing(symbol_table, errors)
-                                })
+                                .map(|statement| statement.pattern.typing(symbol_table, errors))
                                 .collect::<TRes<()>>()?;
 
                             // type all equations

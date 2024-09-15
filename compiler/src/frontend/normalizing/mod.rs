@@ -1,5 +1,5 @@
 prelude! {
-    hir::File,
+    hir::File
 }
 
 mod flow_dependency_graph;

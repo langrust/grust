@@ -18,16 +18,15 @@ impl Memory {
     ) {
         // buffered signals are renamed with their stmts
         // we just rename the called nodes
-        self.called_nodes.keys().for_each(|id| {
-            let name = symbol_table.get_name(*id);
+        self.called_nodes.keys().for_each(|memory_id| {
+            let name = symbol_table.get_name(*memory_id);
             let fresh_name = identifier_creator.new_identifier(name);
             if &fresh_name != name {
-                // TODO: should we just replace anyway?
-                let scope = symbol_table.get_scope(*id).clone(); // supposed to be Scope::Local
+                let scope = symbol_table.get_scope(*memory_id).clone(); // supposed to be Scope::Local
                 debug_assert_eq!(scope, Scope::Local);
-                let typing = Some(symbol_table.get_type(*id).clone());
+                let typing = Some(symbol_table.get_type(*memory_id).clone());
                 let fresh_id = symbol_table.insert_fresh_signal(fresh_name, scope, typing);
-                let _unique = context_map.insert(id.clone(), Union::I1(fresh_id));
+                let _unique = context_map.insert(*memory_id, Union::I1(fresh_id));
                 debug_assert!(_unique.is_none());
             }
         })
@@ -82,8 +81,8 @@ impl Memory {
         let called_nodes = self
             .called_nodes
             .iter()
-            .map(|(called_node_id, called_node)| {
-                if let Some(element) = context_map.get(called_node_id) {
+            .map(|(memory_id, called_node)| {
+                if let Some(element) = context_map.get(memory_id) {
                     match element {
                         Union::I1(new_id)
                         | Union::I2(stream::Expr {
@@ -96,7 +95,7 @@ impl Memory {
                         Union::I2(_) => unreachable!(),
                     }
                 } else {
-                    (called_node_id.clone(), called_node.clone())
+                    (memory_id.clone(), called_node.clone())
                 }
             })
             .collect();
@@ -108,8 +107,8 @@ impl Memory {
     }
 
     /// Remove called node from memory.
-    pub fn remove_called_node(&mut self, called_node_id: usize) {
-        self.called_nodes.remove(&called_node_id);
+    pub fn remove_called_node(&mut self, memory_id: usize) {
+        self.called_nodes.remove(&memory_id);
     }
 
     /// Combine two memories.

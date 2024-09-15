@@ -1,5 +1,5 @@
 prelude! {
-    petgraph::{algo::all_simple_paths},
+    petgraph::algo::toposort,
     graph::*,
     hir::{ IdentifierCreator, Memory, Component, Stmt, stream },
 }
@@ -22,14 +22,13 @@ impl Stmt<stream::Expr> {
         let local_signals = self.pattern.identifiers();
         for signal_id in local_signals {
             let name = symbol_table.get_name(signal_id);
+            let scope = symbol_table.get_scope(signal_id).clone();
             let fresh_name = identifier_creator.new_identifier(name);
-            if &fresh_name != name {
-                // TODO: should we just replace anyway?
-                let scope = symbol_table.get_scope(signal_id).clone();
+            if Scope::Output != scope && &fresh_name != name {
                 let typing = Some(symbol_table.get_type(signal_id).clone());
                 let fresh_id = symbol_table.insert_fresh_signal(fresh_name, scope, typing);
-                let test_first_insert = context_map.insert(signal_id, Union::I1(fresh_id));
-                debug_assert!(test_first_insert.is_none());
+                let _unique = context_map.insert(signal_id, Union::I1(fresh_id));
+                debug_assert!(_unique.is_none());
             }
         }
     }
@@ -100,26 +99,19 @@ impl Stmt<stream::Expr> {
         self,
         memory: &mut Memory,
         identifier_creator: &mut IdentifierCreator,
-        graph: &mut DiGraphMap<usize, Label>,
         symbol_table: &mut SymbolTable,
         nodes: &HashMap<usize, Component>,
     ) -> Vec<Stmt<stream::Expr>> {
         let mut current_statements = vec![self.clone()];
         let mut new_statements =
-            self.inline_when_needed(memory, identifier_creator, graph, symbol_table, nodes);
+            self.inline_when_needed(memory, identifier_creator, symbol_table, nodes);
         while current_statements != new_statements {
             current_statements = new_statements;
             new_statements = current_statements
                 .clone()
                 .into_iter()
                 .flat_map(|statement| {
-                    statement.inline_when_needed(
-                        memory,
-                        identifier_creator,
-                        graph,
-                        symbol_table,
-                        nodes,
-                    )
+                    statement.inline_when_needed(memory, identifier_creator, symbol_table, nodes)
                 })
                 .collect();
         }
@@ -130,7 +122,6 @@ impl Stmt<stream::Expr> {
         self,
         memory: &mut Memory,
         identifier_creator: &mut IdentifierCreator,
-        graph: &DiGraphMap<usize, Label>,
         symbol_table: &mut SymbolTable,
         nodes: &HashMap<usize, Component>,
     ) -> Vec<Stmt<stream::Expr>> {
@@ -138,17 +129,21 @@ impl Stmt<stream::Expr> {
             stream::Kind::NodeApplication {
                 called_node_id,
                 inputs,
+                memory_id,
                 ..
             } => {
                 // a loop in the graph induces that "node call" inputs depends on output
-                let signals = self.pattern.identifiers();
-                let is_loop = signals.iter().any(|signal1| {
-                    signals.iter().any(|signal2| {
-                        all_simple_paths::<Vec<_>, _>(graph, *signal1, *signal2, 0, None)
-                            .next()
-                            .is_some()
-                    })
-                });
+                let is_loop = {
+                    let mut graph = DiGraphMap::new();
+                    let outs = self.pattern.identifiers();
+                    let in_deps = inputs.iter().flat_map(|(_, expr)| expr.get_dependencies());
+                    for (to, label) in in_deps {
+                        for from in outs.iter() {
+                            graph.add_edge(*from, *to, label.clone());
+                        }
+                    }
+                    toposort(&graph, None).is_err()
+                };
 
                 // then node call must be inlined
                 if is_loop {
@@ -164,7 +159,7 @@ impl Stmt<stream::Expr> {
                         );
 
                     // remove called node from memory
-                    memory.remove_called_node(*called_node_id);
+                    memory.remove_called_node(memory_id.unwrap());
 
                     memory.combine(retrieved_memory);
                     retrieved_statements

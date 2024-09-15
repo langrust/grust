@@ -22,7 +22,7 @@ impl TypeAnalysis for stream::Expr {
 
                 // check the scope is not 'very_local'
                 if let Scope::VeryLocal = symbol_table.get_scope(id) {
-                    return Err(TerminationError);// todo generate error
+                    return Err(TerminationError); // todo generate error
                 }
 
                 self.typing = Some(constant_type.clone());
