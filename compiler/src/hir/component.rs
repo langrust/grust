@@ -20,6 +20,12 @@ impl Component {
             Component::Import(comp_import) => &comp_import.graph,
         }
     }
+    pub fn get_reduced_graph(&self) -> &DiGraphMap<usize, Label> {
+        match self {
+            Component::Definition(comp_def) => &comp_def.reduced_graph,
+            Component::Import(comp_import) => &comp_import.graph,
+        }
+    }
     pub fn get_id(&self) -> usize {
         match self {
             Component::Definition(comp_def) => comp_def.id,
@@ -47,6 +53,8 @@ pub struct ComponentDefinition {
     pub location: Location,
     /// Component dependency graph.
     pub graph: DiGraphMap<usize, Label>,
+    /// Component reduced dependency graph.
+    pub reduced_graph: DiGraphMap<usize, Label>,
     /// Unitary component's memory.
     pub memory: Memory,
 }
@@ -87,10 +95,6 @@ impl ComponentDefinition {
         graph_nodes.eq(other_nodes) && graph_edges.eq(other_edges)
     }
 
-    /// Tell if there is no FBY expression.
-    pub fn no_fby(&self) -> bool {
-        self.statements.iter().all(|statement| statement.no_fby())
-    }
     /// Tell if it is in normal form.
     pub fn is_normal_form(&self) -> bool {
         self.statements
