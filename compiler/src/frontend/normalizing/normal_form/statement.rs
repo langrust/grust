@@ -108,7 +108,7 @@ impl Stmt<stream::Expr> {
         let signals = pattern.identifiers();
         for from in signals.iter() {
             for (to, label) in expression.get_dependencies() {
-                graph.add_edge(*from, *to, label.clone());
+                add_edge(graph, *from, *to, label.clone());
             }
         }
         match &self.expression.kind {
@@ -118,7 +118,7 @@ impl Stmt<stream::Expr> {
                         if let Some(bound) = bound {
                             for from in signals.iter() {
                                 for (to, label) in bound.get_dependencies() {
-                                    graph.add_edge(*from, *to, label.clone());
+                                    add_edge(graph, *from, *to, label.clone());
                                 }
                             }
                         }

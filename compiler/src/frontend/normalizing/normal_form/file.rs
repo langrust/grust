@@ -63,9 +63,9 @@ impl File {
         let mut nodes_reduced_graphs = HashMap::new();
         // get every nodes' graphs
         self.components.iter().for_each(|node| {
-            let test_first_insert =
-                nodes_reduced_graphs.insert(node.get_id().clone(), node.get_graph().clone());
-            debug_assert!(test_first_insert.is_none())
+            let _unique = nodes_reduced_graphs
+                .insert(node.get_id().clone(), node.get_reduced_graph().clone());
+            debug_assert!(_unique.is_none())
         });
         // normalize nodes
         self.components

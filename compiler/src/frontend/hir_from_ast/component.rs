@@ -38,6 +38,7 @@ impl<'a> HIRFromAST<SimpleCtxt<'a>> for ast::Component {
             contract,
             location,
             graph: graph::DiGraphMap::new(),
+            reduced_graph: graph::DiGraphMap::new(),
             memory: hir::Memory::new(),
         }))
     }

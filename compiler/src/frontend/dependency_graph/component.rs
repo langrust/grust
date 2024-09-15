@@ -233,7 +233,7 @@ impl ComponentDefinition {
         ctx.symbol_table
             .get_node_inputs(self.id)
             .iter()
-            .filter(|id| !ctx.symbol_table.get_type(**id).is_event())
+            .filter(|id| !ctx.symbol_table.get_type(**id).is_event()) // why?
             .for_each(|signal| {
                 // get signal's color
                 let color = processus_manager
@@ -246,7 +246,7 @@ impl ComponentDefinition {
         Ok(())
     }
 
-    fn construct_reduced_graph(&self, ctx: &mut Ctx) {
+    fn construct_reduced_graph(&mut self, ctx: &mut Ctx) {
         ctx.reduced_graphs
             .insert(self.id, self.create_initialized_graph(ctx.symbol_table));
 
@@ -263,6 +263,9 @@ impl ComponentDefinition {
                     &mut processus_manager,
                 )
             });
+
+        // set node's reduced graph
+        self.reduced_graph = ctx.reduced_graphs.get(&self.id).unwrap().clone();
     }
 
     /// Add dependencies to node's inputs of a signal.

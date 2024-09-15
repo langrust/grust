@@ -68,7 +68,10 @@ impl ComponentDefinition {
             .all_edges()
             .for_each(|(from, to, label)| match label {
                 Label::Weight(0) => (),
-                _ => debug_assert_ne!(subgraph.remove_edge(from, to), Some(Label::Weight(0))),
+                _ => {
+                    let res = subgraph.remove_edge(from, to);
+                    debug_assert_ne!(res, Some(Label::Weight(0)))
+                }
             });
 
         // topological sorting
