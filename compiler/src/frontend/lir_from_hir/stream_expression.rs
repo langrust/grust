@@ -40,7 +40,10 @@ impl LIRFromHIR for stream::Expr {
                 lir::Expr::some(expression.lir_from_hir(symbol_table))
             }
             stream::Kind::NoneEvent => lir::Expr::none(),
-            stream::Kind::FollowedBy { .. } => unreachable!(),
+            stream::Kind::FollowedBy { id, .. } => {
+                let name = symbol_table.get_name(id).clone();
+                lir::Expr::MemoryAccess { identifier: name }
+            }
             stream::Kind::RisingEdge { .. } => unreachable!(),
         }
     }

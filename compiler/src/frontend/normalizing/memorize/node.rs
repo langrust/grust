@@ -101,9 +101,6 @@ impl ComponentDefinition {
         self.get_signals_id().iter().for_each(|signal_id| {
             graph.add_node(*signal_id);
         });
-        self.memory.buffers.keys().for_each(|signal_id| {
-            graph.add_node(*signal_id);
-        });
         self.statements
             .iter()
             .for_each(|statement| statement.add_to_graph(&mut graph));

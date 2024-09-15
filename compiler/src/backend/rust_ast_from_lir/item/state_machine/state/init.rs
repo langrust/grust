@@ -1,10 +1,8 @@
-use std::collections::BTreeSet;
 
 prelude! {
     backend::rust_ast_from_lir::expression::rust_ast_from_lir as expression_rust_ast_from_lir,
     lir::item::state_machine::state::init::{Init, StateElementInit},
-    macro2::Span,
-    syn::*,
+    macro2::Span, syn::*, quote::format_ident,
 }
 
 /// Transform LIR init into RustAST implementation method.
@@ -30,37 +28,26 @@ pub fn rust_ast_from_lir(init: Init, crates: &mut BTreeSet<String>) -> ImplItemF
     let fields = init
         .state_elements_init
         .into_iter()
-        .map(|element| match element {
-            StateElementInit::BufferInit {
-                identifier,
-                initial_expression,
-            } => {
-                let ident = Ident::new(&identifier, Span::call_site());
-                let initial_expression: Expr =
-                    expression_rust_ast_from_lir(initial_expression, crates);
-                FieldValue {
-                    attrs: vec![],
-                    member: parse_quote! { #ident },
-                    colon_token: Some(Default::default()),
-                    expr: initial_expression,
+        .map(|element| -> FieldValue {
+            match element {
+                StateElementInit::BufferInit {
+                    identifier,
+                    initial_expression,
+                } => {
+                    let id = format_ident!("{}", identifier);
+                    let expr: Expr = expression_rust_ast_from_lir(initial_expression, crates);
+                    parse_quote! { #id : #expr }
                 }
-            }
-            StateElementInit::CalledNodeInit {
-                identifier,
-                node_name,
-            } => {
-                let ident = Ident::new(&identifier, Span::call_site());
-
-                let called_state_ty = Ident::new(
-                    &to_camel_case(&format!("{}State", node_name)),
-                    Span::call_site(),
-                );
-                let expr = parse_quote! {#called_state_ty::init ()};
-                FieldValue {
-                    attrs: vec![],
-                    member: parse_quote! { #ident },
-                    colon_token: Some(Default::default()),
-                    expr,
+                StateElementInit::CalledNodeInit {
+                    identifier,
+                    node_name,
+                } => {
+                    let id = Ident::new(&identifier, Span::call_site());
+                    let called_state_ty = Ident::new(
+                        &to_camel_case(&format!("{}State", node_name)),
+                        Span::call_site(),
+                    );
+                    parse_quote! { #id : #called_state_ty::init () }
                 }
             }
         })

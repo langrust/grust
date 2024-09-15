@@ -1,6 +1,6 @@
 prelude! {
     graph::*,
-    hir::{ Dependencies, IdentifierCreator, Stmt, stream },
+    hir::{ Dependencies, IdentifierCreator, Stmt, expr, stream },
 }
 
 impl stream::Expr {
@@ -30,25 +30,10 @@ impl stream::Expr {
         symbol_table: &mut SymbolTable,
     ) -> Vec<Stmt<stream::Expr>> {
         match self.kind {
-            stream::Kind::FollowedBy {
-                ref mut expression,
-                ref constant,
-            } => {
+            stream::Kind::FollowedBy { ref constant, .. } => {
                 // constant should already be in normal form
                 debug_assert!(constant.is_normal_form());
-
-                let new_statements =
-                    expression.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
-
-                self.dependencies = Dependencies::from(
-                    expression
-                        .get_dependencies()
-                        .iter()
-                        .map(|(id, label)| (id.clone(), label.increment()))
-                        .collect(),
-                );
-
-                new_statements
+                vec![]
             }
             stream::Kind::RisingEdge { ref mut expression } => {
                 let new_statements = expression.into_signal_call(
@@ -56,49 +41,47 @@ impl stream::Expr {
                     identifier_creator,
                     symbol_table,
                 );
-                let expression = expression.as_ref();
+                if let stream::Kind::Expression {
+                    expression: expr::Kind::Identifier { id },
+                } = expression.kind
+                {
+                    let fby_dependencies = Dependencies::from(vec![(id, Label::weight(1))]);
+                    let constant = stream::Expr {
+                        kind: stream::Kind::expr(expr::Kind::constant(Constant::bool(
+                            syn::LitBool::new(false, macro2::Span::call_site()),
+                        ))),
+                        typing: Some(Typ::Boolean(Default::default())),
+                        location: Default::default(),
+                        dependencies: Dependencies::from(vec![]),
+                    };
+                    let mem = stream::Expr {
+                        kind: stream::Kind::fby(id, constant),
+                        typing: Some(Typ::Boolean(Default::default())),
+                        location: Default::default(),
+                        dependencies: fby_dependencies.clone(),
+                    };
+                    let not_mem = stream::Expr {
+                        kind: stream::Kind::expr(expr::Kind::unop(
+                            operator::UnaryOperator::Not,
+                            mem,
+                        )),
+                        typing: Some(Typ::Boolean(Default::default())),
+                        location: Default::default(),
+                        dependencies: fby_dependencies,
+                    };
 
-                let fby_dependencies = expression
-                    .get_dependencies()
-                    .iter()
-                    .map(|(id, label)| (*id, label.increment()))
-                    .collect::<Vec<_>>();
+                    self.dependencies =
+                        Dependencies::from(vec![(id, Label::weight(0)), (id, Label::weight(1))]);
+                    self.kind = stream::Kind::expr(expr::Kind::binop(
+                        operator::BinaryOperator::And,
+                        *expression.clone(),
+                        not_mem,
+                    ));
 
-                let constant = stream::Expr {
-                    kind: stream::Kind::expr(hir::expr::Kind::constant(Constant::bool(
-                        syn::LitBool::new(false, macro2::Span::call_site()),
-                    ))),
-                    typing: Some(Typ::Boolean(Default::default())),
-                    location: Default::default(),
-                    dependencies: Dependencies::from(vec![]),
-                };
-                let mem = stream::Expr {
-                    kind: stream::Kind::fby(constant, expression.clone()),
-                    typing: Some(Typ::Boolean(Default::default())),
-                    location: Default::default(),
-                    dependencies: Dependencies::from(fby_dependencies.clone()),
-                };
-                let not_mem = stream::Expr {
-                    kind: stream::Kind::expr(hir::expr::Kind::unop(
-                        operator::UnaryOperator::Not,
-                        mem,
-                    )),
-                    typing: Some(Typ::Boolean(Default::default())),
-                    location: Default::default(),
-                    dependencies: Dependencies::from(fby_dependencies.clone()),
-                };
-
-                let mut dependencies = expression.get_dependencies().clone();
-                dependencies.extend(fby_dependencies);
-                self.dependencies = Dependencies::from(dependencies);
-
-                self.kind = stream::Kind::expr(hir::expr::Kind::binop(
-                    operator::BinaryOperator::And,
-                    expression.clone(),
-                    not_mem,
-                ));
-
-                new_statements
+                    new_statements
+                } else {
+                    unreachable!()
+                }
             }
             stream::Kind::NodeApplication {
                 called_node_id,
@@ -163,7 +146,7 @@ impl stream::Expr {
 
                 // change current expression be an identifier to the statement of the node call
                 self.kind = stream::Kind::Expression {
-                    expression: hir::expr::Kind::Identifier { id: fresh_id },
+                    expression: expr::Kind::Identifier { id: fresh_id },
                 };
                 self.dependencies = Dependencies::from(vec![(fresh_id, Label::Weight(0))]);
 
@@ -209,7 +192,7 @@ impl stream::Expr {
     ) -> Vec<Stmt<stream::Expr>> {
         match self.kind {
             stream::Kind::Expression {
-                expression: hir::expr::Kind::Identifier { .. },
+                expression: expr::Kind::Identifier { .. },
             } => vec![],
             _ => {
                 let mut statements =
@@ -235,7 +218,7 @@ impl stream::Expr {
 
                 // change current expression be an identifier to the statement of the expression
                 self.kind = stream::Kind::Expression {
-                    expression: hir::expr::Kind::Identifier { id: fresh_id },
+                    expression: expr::Kind::Identifier { id: fresh_id },
                 };
                 self.dependencies = Dependencies::from(vec![(fresh_id, Label::Weight(0))]);
 

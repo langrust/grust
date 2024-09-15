@@ -15,10 +15,10 @@ pub enum Kind {
     },
     /// Initialized buffer stream expression.
     FollowedBy {
+        /// The buffered id.
+        id: usize,
         /// The initialization constant.
         constant: Box<Expr>,
-        /// The buffered expression.
-        expression: Box<Expr>,
     },
     /// Node application stream expression.
     NodeApplication {
@@ -46,8 +46,8 @@ pub enum Kind {
 mk_new! { impl Kind =>
     Expression: expr { expression: expr::Kind<Expr> }
     FollowedBy: fby {
+        id: usize,
         constant: Expr = constant.into(),
-        expression: Expr = expression.into(),
     }
     NodeApplication: call {
         memory_id = None,
@@ -104,20 +104,6 @@ impl Expr {
             .expect("there should be dependencies")
     }
 
-    /// Tell if there is no FBY expression.
-    pub fn no_fby(&self) -> bool {
-        match &self.kind {
-            Kind::Expression { expression } => expression
-                .propagate_predicate(Self::no_fby, |statement| statement.expression.no_fby()),
-            Kind::FollowedBy { .. } => false,
-            Kind::NodeApplication { inputs, .. } => {
-                inputs.iter().all(|(_, expression)| expression.no_fby())
-            }
-            Kind::SomeEvent { expression } => expression.no_fby(),
-            Kind::NoneEvent => true,
-            Kind::RisingEdge { .. } => unreachable!(),
-        }
-    }
     /// Tell if it is in normal form.
     ///
     /// - component application as root expression
@@ -132,7 +118,7 @@ impl Expr {
             Kind::Expression { expression } => {
                 expression.propagate_predicate(predicate_expression, predicate_statement)
             }
-            Kind::FollowedBy { expression, .. } => predicate_expression(expression),
+            Kind::FollowedBy { .. } => true,
             Kind::NodeApplication { inputs, .. } => inputs
                 .iter()
                 .all(|(_, expression)| predicate_expression(expression)),
@@ -148,7 +134,7 @@ impl Expr {
                 .propagate_predicate(Self::no_component_application, |statement| {
                     statement.expression.no_component_application()
                 }),
-            Kind::FollowedBy { expression, .. } => expression.no_component_application(),
+            Kind::FollowedBy { .. } => true,
             Kind::NodeApplication { .. } => false,
             Kind::SomeEvent { expression } => expression.no_component_application(),
             Kind::NoneEvent => true,
@@ -162,7 +148,7 @@ impl Expr {
                 .propagate_predicate(Self::no_rising_edge, |statement| {
                     statement.expression.no_rising_edge()
                 }),
-            Kind::FollowedBy { expression, .. } => expression.no_rising_edge(),
+            Kind::FollowedBy { .. } => true,
             Kind::NodeApplication { inputs, .. } => inputs
                 .iter()
                 .all(|(_, expression)| expression.no_rising_edge()),

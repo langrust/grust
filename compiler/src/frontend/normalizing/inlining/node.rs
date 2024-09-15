@@ -194,7 +194,7 @@ impl ComponentDefinition {
             .collect();
 
         // reduce memory according to the context
-        let memory = self.memory.replace_by_context(&context_map);
+        let memory = self.memory.replace_by_context(&context_map, &symbol_table);
 
         (statements, memory)
     }
@@ -206,9 +206,6 @@ impl ComponentDefinition {
         // add a dependency graph to the unitary node
         let mut graph = GraphMap::new();
         self.get_signals_id().iter().for_each(|signal_id| {
-            graph.add_node(*signal_id);
-        });
-        self.memory.buffers.keys().for_each(|signal_id| {
             graph.add_node(*signal_id);
         });
         self.statements

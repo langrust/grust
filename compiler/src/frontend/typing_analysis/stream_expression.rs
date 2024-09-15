@@ -9,17 +9,21 @@ impl TypeAnalysis for stream::Expr {
     fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         match self.kind {
             stream::Kind::FollowedBy {
+                id,
                 ref mut constant,
-                ref mut expression,
             } => {
                 // type expressions
                 constant.typing(symbol_table, errors)?;
-                expression.typing(symbol_table, errors)?;
 
                 // check it is equal to constant type
-                let expression_type = expression.get_type().unwrap();
+                let id_type = symbol_table.get_type(id);
                 let constant_type = constant.get_type().unwrap();
-                expression_type.eq_check(constant_type, self.location.clone(), errors)?;
+                id_type.eq_check(constant_type, self.location.clone(), errors)?;
+
+                // check the scope is not 'very_local'
+                if let Scope::VeryLocal = symbol_table.get_scope(id) {
+                    return Err(TerminationError);// todo generate error
+                }
 
                 self.typing = Some(constant_type.clone());
                 Ok(())

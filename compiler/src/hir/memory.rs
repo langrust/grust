@@ -11,7 +11,7 @@ prelude! {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Memory {
     /// Initialized buffers.
-    pub buffers: HashMap<usize, Buffer>,
+    pub buffers: HashMap<String, Buffer>,
     /// Called unitary nodes' names.
     pub called_nodes: HashMap<usize, CalledNode>,
 }
@@ -21,12 +21,14 @@ pub struct Memory {
 /// Buffer `initial_value`-ized by a constant.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Buffer {
+    /// Buffered id.
+    pub id: usize,
+    /// Buffered identifier.
+    pub identifier: String,
     /// Buffer type.
     pub typing: Typ,
     /// Buffer initial value.
     pub initial_expression: stream::Expr,
-    /// Buffer update expression.
-    pub expression: stream::Expr,
 }
 
 /// Called unitary node' name.
@@ -37,8 +39,6 @@ pub struct Buffer {
 pub struct CalledNode {
     /// Node name.
     pub node_id: usize,
-    /// Maps called node inputs with given input identifier.
-    pub inputs_map: Vec<(usize, usize)>,
 }
 
 impl Memory {
@@ -58,43 +58,36 @@ impl Memory {
     }
 
     /// Adds an initialized buffer to memory.
-    pub fn add_buffer(
-        &mut self,
-        memory_id: usize,
-        initial_expression: stream::Expr,
-        expression: stream::Expr,
-    ) {
-        let typing = expression.get_type().unwrap().clone();
-        debug_assert!(self
-            .buffers
-            .insert(
-                memory_id,
+    pub fn add_buffer(&mut self, id: usize, name: String, typing: Typ, constante: stream::Expr) {
+        if let Some(Buffer {
+            initial_expression: other_constante,
+            ..
+        }) = self.buffers.get_mut(&name)
+        {
+            let default_cst = hir::stream::Kind::expr(hir::expr::Kind::constant(Constant::Default));
+            if other_constante.kind.eq(&default_cst) {
+                *other_constante = constante
+            } else if constante.kind.ne(&default_cst) {
+                // todo: make it an error
+                assert!(other_constante == &constante, "different init values")
+            }
+        } else {
+            self.buffers.insert(
+                name.clone(),
                 Buffer {
+                    id,
+                    identifier: name,
                     typing,
-                    initial_expression,
-                    expression
-                }
-            )
-            .is_none())
+                    initial_expression: constante,
+                },
+            );
+        }
     }
 
     /// Adds called node to memory.
-    pub fn add_called_node(
-        &mut self,
-        memory_id: usize,
-        node_id: usize,
-        inputs_map: Vec<(usize, usize)>,
-    ) {
-        debug_assert!(self
-            .called_nodes
-            .insert(
-                memory_id,
-                CalledNode {
-                    node_id,
-                    inputs_map
-                }
-            )
-            .is_none())
+    pub fn add_called_node(&mut self, memory_id: usize, node_id: usize) {
+        let _unique = self.called_nodes.insert(memory_id, CalledNode { node_id });
+        debug_assert!(_unique.is_none());
     }
 }
 impl Default for Memory {

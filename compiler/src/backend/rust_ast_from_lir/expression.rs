@@ -81,12 +81,12 @@ pub fn rust_ast_from_lir(expression: lir::Expr, crates: &mut BTreeSet<String>) -
         }
         lir::Expr::None => parse_quote! { None },
         lir::Expr::MemoryAccess { identifier } => {
-            let identifier = Ident::new(&identifier, Span::call_site());
-            parse_quote!( self . #identifier )
+            let id = format_ident!("last_{}", identifier);
+            parse_quote!( self.#id )
         }
         lir::Expr::InputAccess { identifier } => {
             let identifier = format_ident!("{identifier}");
-            parse_quote!( input . #identifier )
+            parse_quote!( input.#identifier )
         }
         lir::Expr::Structure { name, fields } => {
             let fields: Vec<FieldValue> = fields
@@ -167,7 +167,7 @@ pub fn rust_ast_from_lir(expression: lir::Expr, crates: &mut BTreeSet<String>) -
             ..
         } => {
             let ident = Ident::new(&memory_ident, Span::call_site());
-            let receiver: ExprField = parse_quote! { self . #ident};
+            let receiver: ExprField = parse_quote! { self.#ident};
             let input_fields: Vec<FieldValue> = input_fields
                 .into_iter()
                 .map(|(name, expression)| {
@@ -180,18 +180,18 @@ pub fn rust_ast_from_lir(expression: lir::Expr, crates: &mut BTreeSet<String>) -
             let input_name = Ident::new(&input_name, Span::call_site());
             let argument: ExprStruct = parse_quote! { #input_name { #(#input_fields),* }};
 
-            Expr::MethodCall(parse_quote! { #receiver . step (#argument) })
+            Expr::MethodCall(parse_quote! { #receiver.step (#argument) })
         }
         lir::Expr::FieldAccess { expression, field } => {
             let expression = rust_ast_from_lir(*expression, crates);
             match field {
                 FieldIdentifier::Named(name) => {
                     let name = Ident::new(&name, Span::call_site());
-                    parse_quote!(#expression . #name)
+                    parse_quote!(#expression.#name)
                 }
                 FieldIdentifier::Unamed(number) => {
                     let number: TokenStream = format!("{number}").parse().unwrap();
-                    parse_quote!(#expression . #number)
+                    parse_quote!(#expression.#number)
                 }
             }
         }
@@ -388,8 +388,8 @@ mod rust_ast_from_lir {
 
     #[test]
     fn should_create_rust_ast_field_access_to_self_from_lir_memory_access() {
-        let expression = lir::Expr::memory_access("mem_x");
-        let control = parse_quote! { self . mem_x};
+        let expression = lir::Expr::memory_access("x");
+        let control = parse_quote! { self.last_x};
         assert_eq!(
             rust_ast_from_lir(expression, &mut Default::default()),
             control
@@ -399,7 +399,7 @@ mod rust_ast_from_lir {
     #[test]
     fn should_create_rust_ast_field_access_to_input_from_lir_input_access() {
         let expression = lir::Expr::input_access("i");
-        let control = parse_quote! { input . i};
+        let control = parse_quote! { input.i};
         assert_eq!(
             rust_ast_from_lir(expression, &mut Default::default()),
             control
@@ -504,7 +504,7 @@ mod rust_ast_from_lir {
             )],
         );
 
-        let control = parse_quote! { self . node_state . step ( NodeInput { i : 1i64 }) };
+        let control = parse_quote! { self.node_state.step ( NodeInput { i : 1i64 }) };
         assert_eq!(
             rust_ast_from_lir(expression, &mut Default::default()),
             control
@@ -518,7 +518,7 @@ mod rust_ast_from_lir {
             FieldIdentifier::Named("x".into()),
         );
 
-        let control = parse_quote! { my_point . x };
+        let control = parse_quote! { my_point.x };
         assert_eq!(
             rust_ast_from_lir(expression, &mut Default::default()),
             control
@@ -596,7 +596,7 @@ mod rust_ast_from_lir {
     fn should_create_rust_ast_map_operation_from_lir_map() {
         let expression = lir::Expr::map(lir::Expr::ident("a"), lir::Expr::ident("f"));
 
-        let control = parse_quote! { a . map (f) };
+        let control = parse_quote! { a.map (f) };
         assert_eq!(
             rust_ast_from_lir(expression, &mut Default::default()),
             control
@@ -611,7 +611,7 @@ mod rust_ast_from_lir {
             lir::Expr::ident("sum"),
         );
 
-        let control = parse_quote! { a . into_iter().fold(0i64, sum) };
+        let control = parse_quote! { a.into_iter().fold(0i64, sum) };
         assert_eq!(
             rust_ast_from_lir(expression, &mut Default::default()),
             control
