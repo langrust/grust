@@ -80,23 +80,6 @@ impl expr::Kind<stream::Expr> {
                 nodes.append(&mut other_nodes);
                 nodes
             }
-            Self::When {
-                option,
-                present,
-                present_body,
-                default,
-                default_body,
-                ..
-            } => {
-                debug_assert!(present_body.is_empty());
-                debug_assert!(default_body.is_empty());
-                let mut nodes = option.get_called_nodes();
-                let mut other_nodes = present.get_called_nodes();
-                nodes.append(&mut other_nodes);
-                let mut other_nodes = default.get_called_nodes();
-                nodes.append(&mut other_nodes);
-                nodes
-            }
             Self::FieldAccess { expression, .. } => expression.get_called_nodes(),
             Self::TupleElementAccess { expression, .. } => expression.get_called_nodes(),
             Self::Map {
@@ -179,13 +162,6 @@ impl expr::Kind<stream::Expr> {
             Array { elements } => Self::array_deps(ctx, elements),
             Tuple { elements } => Self::tuple_deps(ctx, elements),
             Match { expression, arms } => Self::match_deps(&self, ctx, expression, arms),
-            When {
-                id,
-                default,
-                option,
-                present,
-                ..
-            } => Self::when_deps(ctx, *id, option, present, default),
             FieldAccess { expression, .. } => Self::field_access_deps(&self, ctx, expression),
             TupleElementAccess { expression, .. } => Self::tuple_access_deps(ctx, expression),
             Map { expression, .. } => Self::map_deps(ctx, expression),
@@ -313,7 +289,7 @@ impl expr::Kind<stream::Expr> {
         t.compute_dependencies(ctx)?;
         e.compute_dependencies(ctx)?;
 
-        let mut deps = e.get_dependencies().clone();
+        let mut deps = c.get_dependencies().clone();
         deps.extend(t.get_dependencies().iter().cloned());
         deps.extend(e.get_dependencies().iter().cloned());
 
@@ -433,41 +409,6 @@ impl expr::Kind<stream::Expr> {
         // get expression dependencies
         expr.compute_dependencies(ctx)?;
         Ok(expr.get_dependencies().clone())
-    }
-
-    /// Compute dependencies of a when stream expression.
-    pub fn when_deps(
-        ctx: &mut GraphProcCtx,
-        local_signal: usize,
-        option: &stream::Expr,
-        present: &stream::Expr,
-        default: &stream::Expr,
-    ) -> TRes<Vec<(usize, Label)>> {
-        // get dependencies of optional expression
-        option.compute_dependencies(ctx)?;
-        let mut deps = option.get_dependencies().clone();
-
-        // get dependencies of present expression without local signal
-        present.compute_dependencies(ctx)?;
-        deps.extend(
-            present
-                .get_dependencies()
-                .iter()
-                .filter(|(signal, _)| *signal != local_signal)
-                .cloned(),
-        );
-
-        // get dependencies of default expression without local signal
-        default.compute_dependencies(ctx)?;
-        deps.extend(
-            default
-                .get_dependencies()
-                .iter()
-                .filter(|(signal, _)| *signal != local_signal)
-                .cloned(),
-        );
-
-        Ok(deps)
     }
 
     /// Compute dependencies of a zip stream expression.

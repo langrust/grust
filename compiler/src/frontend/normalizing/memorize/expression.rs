@@ -78,24 +78,6 @@ impl hir::expr::Kind<stream::Expr> {
                     expression.memorize(identifier_creator, memory, contract, symbol_table)
                 })
             }
-            Self::When {
-                option,
-                present,
-                present_body,
-                default,
-                default_body,
-                ..
-            } => {
-                option.memorize(identifier_creator, memory, contract, symbol_table);
-                present.memorize(identifier_creator, memory, contract, symbol_table);
-                present_body.iter_mut().for_each(|statement| {
-                    statement.memorize(identifier_creator, memory, contract, symbol_table)
-                });
-                default.memorize(identifier_creator, memory, contract, symbol_table);
-                default_body.iter_mut().for_each(|statement| {
-                    statement.memorize(identifier_creator, memory, contract, symbol_table)
-                });
-            }
             Self::FieldAccess { expression, .. } => {
                 expression.memorize(identifier_creator, memory, contract, symbol_table)
             }

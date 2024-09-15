@@ -163,38 +163,6 @@ impl hir::expr::Kind<stream::Expr> {
                 *dependencies = Dependencies::from(expression_dependencies);
                 None
             }
-            Self::When {
-                ref mut option,
-                ref mut present_body,
-                ref mut present,
-                ref mut default_body,
-                ref mut default,
-                ..
-            } => {
-                option.replace_by_context(context_map);
-                let mut option_dependencies = option.get_dependencies().clone();
-
-                debug_assert!(present_body.is_empty());
-                // present_body
-                //     .iter_mut()
-                //     .for_each(|statements| statements.expression.replace_by_context(context_map));
-
-                present.replace_by_context(context_map);
-                let mut present_dependencies = present.get_dependencies().clone();
-
-                debug_assert!(default_body.is_empty());
-                // default_body
-                //     .iter_mut()
-                //     .for_each(|statements| statements.expression.replace_by_context(context_map));
-
-                default.replace_by_context(context_map);
-                let mut default_dependencies = default.get_dependencies().clone();
-
-                option_dependencies.append(&mut present_dependencies);
-                option_dependencies.append(&mut default_dependencies);
-                *dependencies = Dependencies::from(option_dependencies);
-                None
-            }
             Self::FieldAccess {
                 ref mut expression, ..
             } => {

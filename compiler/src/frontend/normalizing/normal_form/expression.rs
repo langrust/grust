@@ -194,12 +194,13 @@ impl hir::expr::Kind<stream::Expr> {
                         // remove identifiers created by the pattern from the dependencies
                         let (mut bound_statements, mut bound_dependencies) =
                             bound.as_mut().map_or((vec![], vec![]), |expression| {
+                                let stmts = expression.normal_form(
+                                    nodes_reduced_graphs,
+                                    identifier_creator,
+                                    symbol_table,
+                                );
                                 (
-                                    expression.normal_form(
-                                        nodes_reduced_graphs,
-                                        identifier_creator,
-                                        symbol_table,
-                                    ),
+                                    stmts,
                                     expression
                                         .get_dependencies()
                                         .clone()
@@ -229,34 +230,6 @@ impl hir::expr::Kind<stream::Expr> {
                 *dependencies = Dependencies::from(expression_dependencies);
 
                 statements
-            }
-            Self::When {
-                option,
-                present_body,
-                present,
-                default_body,
-                default,
-                ..
-            } => {
-                let new_statements =
-                    option.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
-                let mut option_dependencies = option.get_dependencies().clone();
-
-                let mut present_statements =
-                    present.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
-                let mut present_dependencies = present.get_dependencies().clone();
-                present_body.append(&mut present_statements);
-                option_dependencies.append(&mut present_dependencies);
-
-                let mut default_statements =
-                    default.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
-                let mut default_dependencies = default.get_dependencies().clone();
-                default_body.append(&mut default_statements);
-                option_dependencies.append(&mut default_dependencies);
-
-                *dependencies = Dependencies::from(option_dependencies);
-
-                new_statements
             }
             Self::FieldAccess { expression, .. } => {
                 let new_statements =
