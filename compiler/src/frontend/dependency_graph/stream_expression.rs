@@ -9,10 +9,10 @@ impl stream::Expr {
     pub fn get_called_nodes(&self) -> Vec<usize> {
         match &self.kind {
             stream::Kind::Expression { expression } => expression.get_called_nodes(),
-            stream::Kind::FollowedBy { expression, .. }
-            | stream::Kind::SomeEvent { expression }
-            | stream::Kind::RisingEdge { expression } => expression.get_called_nodes(),
-            stream::Kind::NoneEvent => vec![],
+            stream::Kind::SomeEvent { expression } | stream::Kind::RisingEdge { expression } => {
+                expression.get_called_nodes()
+            }
+            stream::Kind::FollowedBy { .. } | stream::Kind::NoneEvent => vec![],
             stream::Kind::NodeApplication {
                 called_node_id,
                 inputs,
@@ -46,25 +46,13 @@ impl stream::Expr {
     /// of the memory of `x` (the signal is behind 2 fby operations).
     pub fn compute_dependencies(&self, ctx: &mut GraphProcCtx) -> TRes<()> {
         match &self.kind {
-            stream::Kind::FollowedBy {
-                ref constant,
-                ref expression,
-            } => {
-                // propagate dependencies computation in expression
-                expression.compute_dependencies(ctx)?;
-                // dependencies with the memory delay
-                let dependencies = expression
-                    .get_dependencies()
-                    .clone()
-                    .into_iter()
-                    .map(|(id, label)| (id, label.increment()))
-                    .collect();
-
+            stream::Kind::FollowedBy { ref constant, id } => {
                 // constant should not have dependencies
                 constant.compute_dependencies(ctx)?;
                 debug_assert!({ constant.get_dependencies().is_empty() });
 
-                self.dependencies.set(dependencies);
+                // dependencies with the memory delay
+                self.dependencies.set(vec![(*id, Label::Weight(1))]);
                 Ok(())
             }
             stream::Kind::RisingEdge { ref expression } => {

@@ -20,16 +20,6 @@ pub struct File {
 }
 
 impl File {
-    /// Tell if there is no FBY expression.
-    pub fn no_fby(&self) -> bool {
-        self.components
-            .iter()
-            .filter_map(|component| match component {
-                Component::Definition(comp_def) => Some(comp_def),
-                Component::Import(_) => None,
-            })
-            .all(|component| component.no_fby())
-    }
     /// Tell if it is in normal form.
     ///
     /// - component application as root expression

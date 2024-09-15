@@ -41,8 +41,5 @@ impl File {
         self.components
             .iter_mut()
             .for_each(|node| node.memorize(symbol_table));
-
-        // Debug: test there is no FollowedBy expressions
-        debug_assert!(self.no_fby());
     }
 }

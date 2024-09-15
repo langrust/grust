@@ -1,5 +1,6 @@
 prelude! {
     hir::{ Dependencies, stream },
+    graph::Label,
 }
 
 use super::Union;
@@ -67,7 +68,25 @@ impl stream::Expr {
                 self.dependencies = Dependencies::from(expression.get_dependencies().clone());
             }
             stream::Kind::NoneEvent => (),
-            stream::Kind::FollowedBy { .. } => unreachable!(),
+            stream::Kind::FollowedBy { ref mut id, .. } => {
+                if let Some(element) = context_map.get(id) {
+                    match element {
+                        Union::I1(new_id)
+                        | Union::I2(stream::Expr {
+                            kind:
+                                stream::Kind::Expression {
+                                    expression: hir::expr::Kind::Identifier { id: new_id },
+                                },
+                            ..
+                        }) => {
+                            *id = *new_id;
+                            self.dependencies =
+                                Dependencies::from(vec![(*new_id, Label::Weight(0))]);
+                        }
+                        Union::I2(_) => unreachable!(),
+                    }
+                }
+            }
             stream::Kind::RisingEdge { .. } => unreachable!(),
         }
     }

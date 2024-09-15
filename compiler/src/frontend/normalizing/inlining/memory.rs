@@ -16,32 +16,19 @@ impl Memory {
         context_map: &mut HashMap<usize, Union<usize, stream::Expr>>,
         symbol_table: &mut SymbolTable,
     ) {
-        self.buffers.keys().for_each(|id| {
-            let name = symbol_table.get_name(*id);
-            let fresh_name = identifier_creator.new_identifier(name);
-            if &fresh_name != name {
-                // TODO: should we just replace anyway?
-                let scope = symbol_table.get_scope(*id).clone(); // supposed to be Scope::Memory
-                debug_assert_eq!(scope, Scope::Memory);
-                let typing = Some(symbol_table.get_type(*id).clone());
-                let fresh_id = symbol_table.insert_fresh_signal(fresh_name, scope, typing);
-                debug_assert!(context_map
-                    .insert(id.clone(), Union::I1(fresh_id))
-                    .is_none());
-            }
-        });
+        // buffered signals are renamed with their stmts
+        // we just rename the called nodes
         self.called_nodes.keys().for_each(|id| {
             let name = symbol_table.get_name(*id);
             let fresh_name = identifier_creator.new_identifier(name);
             if &fresh_name != name {
                 // TODO: should we just replace anyway?
-                let scope = symbol_table.get_scope(*id).clone(); // supposed to be Scope::Memory
-                debug_assert_eq!(scope, Scope::Memory);
+                let scope = symbol_table.get_scope(*id).clone(); // supposed to be Scope::Local
+                debug_assert_eq!(scope, Scope::Local);
                 let typing = Some(symbol_table.get_type(*id).clone());
                 let fresh_id = symbol_table.insert_fresh_signal(fresh_name, scope, typing);
-                debug_assert!(context_map
-                    .insert(id.clone(), Union::I1(fresh_id))
-                    .is_none());
+                let _unique = context_map.insert(id.clone(), Union::I1(fresh_id));
+                debug_assert!(_unique.is_none());
             }
         })
     }
@@ -62,15 +49,14 @@ impl Memory {
     pub fn replace_by_context(
         &self,
         context_map: &HashMap<usize, Union<usize, stream::Expr>>,
+        symbol_table: &SymbolTable,
     ) -> Memory {
         let buffers = self
             .buffers
             .iter()
-            .map(|(buffer_id, buffer)| {
+            .map(|(name, buffer)| {
                 let mut new_buffer = buffer.clone();
-                new_buffer.expression.replace_by_context(context_map);
-
-                if let Some(element) = context_map.get(buffer_id) {
+                if let Some(element) = context_map.get(&buffer.id) {
                     match element {
                         Union::I1(new_id)
                         | Union::I2(stream::Expr {
@@ -79,11 +65,16 @@ impl Memory {
                                     expression: hir::expr::Kind::Identifier { id: new_id },
                                 },
                             ..
-                        }) => (new_id.clone(), new_buffer),
+                        }) => {
+                            let new_name = symbol_table.get_name(*new_id);
+                            new_buffer.id = *new_id;
+                            new_buffer.identifier = new_name.clone();
+                            (new_name.clone(), new_buffer)
+                        }
                         Union::I2(_) => unreachable!(),
                     }
                 } else {
-                    (buffer_id.clone(), new_buffer)
+                    (name.clone(), new_buffer)
                 }
             })
             .collect();

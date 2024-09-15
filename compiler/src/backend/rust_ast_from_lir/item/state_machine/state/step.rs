@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 prelude! {
     macro2::{Span, TokenStream},
-    quote::quote,
+    quote::{format_ident, quote},
     syn::*,
     backend::rust_ast_from_lir::{
         expression::{
@@ -39,7 +39,7 @@ fn term_to_token_stream(term: Term, prophecy: bool) -> TokenStream {
             quote!(#id)
         }
         Term::MemoryAccess { identifier } => {
-            let id = Ident::new(&identifier, Span::call_site());
+            let id = format_ident!("last_{}", identifier);
             if prophecy {
                 quote!((^self).#id)
             } else {
@@ -177,19 +177,11 @@ pub fn rust_ast_from_lir(step: Step, crates: &mut BTreeSet<String>) -> ImplItemF
             |StateElementStep {
                  identifier,
                  expression,
-             }| {
-                let identifier = Ident::new(&identifier, Span::call_site());
-                let field_acces = parse_quote!(self.#identifier);
-
-                Stmt::Expr(
-                    Expr::Assign(ExprAssign {
-                        attrs: vec![],
-                        left: Box::new(field_acces),
-                        eq_token: Default::default(),
-                        right: Box::new(expression_rust_ast_from_lir(expression, crates)),
-                    }),
-                    Some(Default::default()),
-                )
+             }|
+             -> Stmt {
+                let id = format_ident!("{}", identifier);
+                let expr = expression_rust_ast_from_lir(expression, crates);
+                parse_quote! { self.#id = #expr; }
             },
         )
         .collect::<Vec<_>>();

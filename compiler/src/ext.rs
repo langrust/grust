@@ -656,12 +656,10 @@ mod stmt_pattern {
                             hir::stream::Kind::none_event()
                         } else {
                             hir::stream::Kind::fby(
+                                id,
                                 hir::stream::expr(hir::stream::Kind::expr(
                                     hir::expr::Kind::constant(Constant::default()),
                                 )),
-                                hir::stream::expr(hir::stream::Kind::expr(hir::expr::Kind::ident(
-                                    id,
-                                ))),
                             )
                         }
                     }
@@ -681,12 +679,10 @@ mod stmt_pattern {
                             hir::stream::Kind::none_event()
                         } else {
                             hir::stream::Kind::fby(
+                                id,
                                 hir::stream::expr(hir::stream::Kind::expr(
                                     hir::expr::Kind::constant(Constant::default()),
                                 )),
-                                hir::stream::expr(hir::stream::Kind::expr(hir::expr::Kind::ident(
-                                    id,
-                                ))),
                             )
                         }
                     }

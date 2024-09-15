@@ -185,13 +185,10 @@ impl<'a> HIRFromAST<PatLocCtxt<'a>> for stream::Expr {
                     ctxt.loc.clone(),
                     ctxt.errors,
                 )?;
-                let id_expr = hir::stream::Kind::Expression {
-                    expression: hir::expr::Kind::Identifier { id },
-                };
 
                 hir::stream::Kind::FollowedBy {
                     constant: Box::new(constant),
-                    expression: Box::new(hir::stream::expr(id_expr)),
+                    id,
                 }
             }
             stream::Expr::Emit(stream::Emit { expr, .. }) => {
