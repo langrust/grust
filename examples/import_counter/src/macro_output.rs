@@ -5,26 +5,26 @@ pub fn add(x: i64, y: i64) -> i64 {
 use counter::{CounterInput, CounterState};
 pub struct TestInput {}
 pub struct TestState {
-    mem: bool,
-    mem_1: bool,
+    last_not_half: bool,
+    last_stop: bool,
     counter: CounterState,
 }
 impl TestState {
     pub fn init() -> TestState {
         TestState {
-            mem: Default::default(),
-            mem_1: Default::default(),
+            last_not_half: Default::default(),
+            last_stop: Default::default(),
             counter: CounterState::init(),
         }
     }
     pub fn step(&mut self, input: TestInput) -> i64 {
-        let half = self.mem_1;
-        let x = self.mem;
+        let half = self.last_not_half;
+        let x = self.last_stop;
         let y = self.counter.step(CounterInput { res: x, tick: half });
         let stop = y > 35i64;
         let not_half = !half;
-        self.mem = stop;
-        self.mem_1 = not_half;
+        self.last_not_half = not_half;
+        self.last_stop = stop;
         y
     }
 }

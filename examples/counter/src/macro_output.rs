@@ -7,43 +7,47 @@ pub struct CounterInput {
     pub tick: bool,
 }
 pub struct CounterState {
-    mem: i64,
+    last_o: i64,
 }
 impl CounterState {
     pub fn init() -> CounterState {
         CounterState {
-            mem: Default::default(),
+            last_o: Default::default(),
         }
     }
     pub fn step(&mut self, input: CounterInput) -> i64 {
         let inc = if input.tick { 1i64 } else { 0i64 };
-        let o = if input.res { 0i64 } else { add(self.mem, inc) };
-        self.mem = o;
+        let o = if input.res {
+            0i64
+        } else {
+            add(self.last_o, inc)
+        };
+        self.last_o = o;
         o
     }
 }
 pub struct TestInput {}
 pub struct TestState {
-    mem: bool,
-    mem_1: bool,
+    last_not_half: bool,
+    last_stop: bool,
     counter: CounterState,
 }
 impl TestState {
     pub fn init() -> TestState {
         TestState {
-            mem: Default::default(),
-            mem_1: Default::default(),
+            last_not_half: Default::default(),
+            last_stop: Default::default(),
             counter: CounterState::init(),
         }
     }
     pub fn step(&mut self, input: TestInput) -> i64 {
-        let half = self.mem_1;
-        let x = self.mem;
+        let half = self.last_not_half;
+        let x = self.last_stop;
         let y = self.counter.step(CounterInput { res: x, tick: half });
         let stop = y > 35i64;
         let not_half = !half;
-        self.mem = stop;
-        self.mem_1 = not_half;
+        self.last_not_half = not_half;
+        self.last_stop = stop;
         y
     }
 }

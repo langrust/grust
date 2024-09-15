@@ -4,98 +4,56 @@ pub struct MultipleEventsInput {
     pub v: i64,
 }
 pub struct MultipleEventsState {
-    mem: i64,
-    mem_1: i64,
-    mem_2: i64,
-    mem_3: i64,
-    mem_4: bool,
-    mem_5: i64,
-    mem_6: i64,
-    mem_7: i64,
-    mem_8: i64,
-    mem_9: bool,
-    mem_10: i64,
-    mem_11: i64,
-    mem_12: i64,
-    mem_13: i64,
-    mem_14: i64,
-    mem_15: i64,
-    mem_16: i64,
-    mem_17: i64,
+    last_aux1: i64,
+    last_aux2: i64,
+    last_aux3: i64,
+    last_x: bool,
+    last_z: i64,
 }
 impl MultipleEventsState {
     pub fn init() -> MultipleEventsState {
         MultipleEventsState {
-            mem: Default::default(),
-            mem_1: Default::default(),
-            mem_2: Default::default(),
-            mem_3: Default::default(),
-            mem_4: false,
-            mem_5: Default::default(),
-            mem_6: Default::default(),
-            mem_7: Default::default(),
-            mem_8: Default::default(),
-            mem_9: false,
-            mem_10: Default::default(),
-            mem_11: Default::default(),
-            mem_12: Default::default(),
-            mem_13: Default::default(),
-            mem_14: Default::default(),
-            mem_15: Default::default(),
-            mem_16: Default::default(),
-            mem_17: Default::default(),
+            last_aux1: Default::default(),
+            last_aux2: Default::default(),
+            last_aux3: Default::default(),
+            last_x: false,
+            last_z: Default::default(),
         }
     }
     pub fn step(&mut self, input: MultipleEventsInput) -> i64 {
-        let c = self.mem;
-        let (aux2, z, aux3, aux1) = match (input.a, input.b) {
-            (Some(a), Some(b)) => {
+        let c = self.last_z;
+        let x = input.v > 50i64;
+        let y = match () {
+            () if x && !self.last_x => Some(()),
+            _ => None,
+        };
+        let (aux2, z, aux3, aux1) = match (input.a, input.b, y) {
+            (Some(a), Some(b), _) => {
                 let aux1 = a;
-                let aux3 = self.mem_1;
+                let aux3 = self.last_aux2;
                 let z = if input.v > 50i64 {
-                    self.mem_2 + aux3
+                    self.last_aux1 + aux3
                 } else {
-                    self.mem_3
+                    b
                 };
                 let aux2 = z;
                 (aux2, z, aux3, aux1)
             }
-            (Some(a), _) => {
-                let x = a > 0i64;
-                let z = match () {
-                    () if x && !self.mem_4 => a,
-                    _ => self.mem_5,
-                };
-                (self.mem_6, z, self.mem_7, self.mem_8)
+            (Some(a), _, _) if a > 0i64 => {
+                let z = a;
+                (self.last_aux2, z, self.last_aux3, self.last_aux1)
             }
-            (_, Some(b)) => {
-                let x_1 = input.v > 50i64;
-                let z = match () {
-                    () if x_1 && !self.mem_9 => b,
-                    _ => self.mem_10,
-                };
-                (self.mem_11, z, self.mem_12, self.mem_13)
+            (_, Some(b), Some(y)) => {
+                let z = b;
+                (self.last_aux2, z, self.last_aux3, self.last_aux1)
             }
-            (_, _) => (self.mem_14, self.mem_15, self.mem_16, self.mem_17),
+            (_, _, _) => (self.last_aux2, self.last_z, self.last_aux3, self.last_aux1),
         };
-        self.mem = z;
-        self.mem_1 = aux2;
-        self.mem_2 = aux1;
-        self.mem_3 = b;
-        self.mem_4 = x;
-        self.mem_5 = z;
-        self.mem_6 = aux2;
-        self.mem_7 = aux3;
-        self.mem_8 = aux1;
-        self.mem_9 = x_1;
-        self.mem_10 = z;
-        self.mem_11 = aux2;
-        self.mem_12 = aux3;
-        self.mem_13 = aux1;
-        self.mem_14 = aux2;
-        self.mem_15 = z;
-        self.mem_16 = aux3;
-        self.mem_17 = aux1;
+        self.last_aux1 = aux1;
+        self.last_aux2 = aux2;
+        self.last_aux3 = aux3;
+        self.last_x = x;
+        self.last_z = z;
         c
     }
 }
@@ -105,14 +63,14 @@ pub struct DefineEventsInput {
     pub v: i64,
 }
 pub struct DefineEventsState {
-    mem: f64,
-    mem_1: i64,
+    last_d: f64,
+    last_z: i64,
 }
 impl DefineEventsState {
     pub fn init() -> DefineEventsState {
         DefineEventsState {
-            mem: Default::default(),
-            mem_1: Default::default(),
+            last_d: Default::default(),
+            last_z: Default::default(),
         }
     }
     pub fn step(&mut self, input: DefineEventsInput) -> (i64, f64, Option<i64>) {
@@ -132,15 +90,15 @@ impl DefineEventsState {
                 let z = if input.v > 50i64 { 3i64 } else { 4i64 };
                 (z, None, x)
             }
-            (_, _) => (self.mem_1, None, None),
+            (_, _) => (self.last_z, None, None),
         };
         let c = z;
         let d = match (y) {
             (Some(a)) => 0.1,
-            _ => self.mem,
+            _ => self.last_d,
         };
-        self.mem = d;
-        self.mem_1 = z;
+        self.last_d = d;
+        self.last_z = z;
         (c, d, x)
     }
 }
@@ -150,65 +108,53 @@ pub struct FinalTestInput {
     pub v: i64,
 }
 pub struct FinalTestState {
-    mem: i64,
-    mem_1: bool,
-    mem_2: bool,
-    mem_3: bool,
-    mem_4: i64,
-    mem_5: i64,
-    mem_6: bool,
+    last_test: bool,
+    last_u: i64,
+    last_z: i64,
 }
 impl FinalTestState {
     pub fn init() -> FinalTestState {
         FinalTestState {
-            mem: Default::default(),
-            mem_1: Default::default(),
-            mem_2: Default::default(),
-            mem_3: false,
-            mem_4: Default::default(),
-            mem_5: Default::default(),
-            mem_6: Default::default(),
+            last_test: false,
+            last_u: Default::default(),
+            last_z: Default::default(),
         }
     }
     pub fn step(&mut self, input: FinalTestInput) -> (i64, Option<i64>, Option<i64>) {
-        let (w, z, y, x, test) = match (input.a, input.b) {
+        let (z, y, x) = match (input.a, input.b) {
             (Some(a), Some(_)) => {
                 let y = Some(());
                 let z = if input.v > 50i64 { 1i64 } else { 0i64 };
-                (None, z, y, None, self.mem_1)
+                (z, y, None)
             }
             (Some(a), _) => {
                 let x = Some(2i64);
                 let z = 2i64;
-                (None, z, None, x, self.mem_2)
+                (z, None, x)
             }
             (_, Some(b)) => {
-                let z = if input.v > 50i64 { 3i64 } else { 4i64 };
-                let w = match () {
-                    () if test && !self.mem_3 => Some(input.v + self.mem_4),
-                    _ => None,
-                };
-                let test = input.v > 50i64;
                 let x = Some(2i64);
-                (w, z, None, x, test)
+                let z = if input.v > 50i64 { 3i64 } else { 4i64 };
+                (z, None, x)
             }
-            (_, _) => (None, self.mem_5, None, None, self.mem_6),
+            (_, _) => (self.last_z, None, None),
         };
         let t = match (input.a) {
             (Some(a)) => Some(a + z),
             _ => None,
         };
+        let test = input.v > 50i64;
+        let w = match () {
+            () if test && !self.last_test => Some(input.v + self.last_u),
+            _ => None,
+        };
         let u = match (y, w) {
             (Some(y), Some(w)) => w + 3i64,
-            _ => self.mem,
+            _ => self.last_u,
         };
-        self.mem = u;
-        self.mem_1 = test;
-        self.mem_2 = test;
-        self.mem_3 = test;
-        self.mem_4 = u;
-        self.mem_5 = z;
-        self.mem_6 = test;
+        self.last_test = test;
+        self.last_u = u;
+        self.last_z = z;
         (u, t, x)
     }
 }

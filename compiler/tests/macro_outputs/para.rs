@@ -2,16 +2,14 @@ pub struct C1Input {
     pub e0: Option<i64>,
 }
 pub struct C1State {
-    mem: bool,
-    mem_1: i64,
-    mem_2: i64,
+    last_s2: i64,
+    last_x: bool,
 }
 impl C1State {
     pub fn init() -> C1State {
         C1State {
-            mem: false,
-            mem_1: Default::default(),
-            mem_2: Default::default(),
+            last_s2: Default::default(),
+            last_x: false,
         }
     }
     pub fn step(&mut self, input: C1Input) -> (i64, Option<i64>) {
@@ -20,17 +18,16 @@ impl C1State {
                 let s2 = e0;
                 let x = e0 > s2;
                 let e1 = match () {
-                    () if x && !self.mem => Some(e0 / (e0 - s2)),
+                    () if x && !self.last_x => Some(e0 / (e0 - s2)),
                     _ => None,
                 };
                 (s2, e1)
             }
-            (_) => (self.mem_1, None),
+            (_) => (self.last_s2, None),
         };
-        let prev_s2 = self.mem_2;
-        self.mem = x;
-        self.mem_1 = s2;
-        self.mem_2 = s2;
+        let prev_s2 = self.last_s2;
+        self.last_s2 = s2;
+        self.last_x = x;
         (s2, e1)
     }
 }
@@ -38,36 +35,33 @@ pub struct C2Input {
     pub e1: Option<i64>,
 }
 pub struct C2State {
-    mem: bool,
-    mem_1: i64,
-    mem_2: i64,
+    last_s3: i64,
+    last_x: bool,
 }
 impl C2State {
     pub fn init() -> C2State {
         C2State {
-            mem: false,
-            mem_1: Default::default(),
-            mem_2: Default::default(),
+            last_s3: Default::default(),
+            last_x: false,
         }
     }
     pub fn step(&mut self, input: C2Input) -> (i64, Option<i64>) {
-        let prev_s3 = self.mem_2;
+        let prev_s3 = self.last_s3;
         let x = prev_s3 > 0i64;
         let (s3, e3) = match (input.e1) {
             (Some(e1)) => {
                 let s3 = e1;
                 (s3, None)
             }
-            (_) if x && !self.mem => {
+            (_) if x && !self.last_x => {
                 let s3 = prev_s3;
                 let e3 = Some(prev_s3);
                 (s3, e3)
             }
-            (_) => (self.mem_1, None),
+            (_) => (self.last_s3, None),
         };
-        self.mem = x;
-        self.mem_1 = s3;
-        self.mem_2 = s3;
+        self.last_s3 = s3;
+        self.last_x = x;
         (s3, e3)
     }
 }
@@ -75,19 +69,19 @@ pub struct C3Input {
     pub s2: i64,
 }
 pub struct C3State {
-    mem: bool,
+    last_x: bool,
 }
 impl C3State {
     pub fn init() -> C3State {
-        C3State { mem: false }
+        C3State { last_x: false }
     }
     pub fn step(&mut self, input: C3Input) -> Option<i64> {
         let x = input.s2 > 1i64;
         let e2 = match () {
-            () if x && !self.mem => Some(input.s2),
+            () if x && !self.last_x => Some(input.s2),
             _ => None,
         };
-        self.mem = x;
+        self.last_x = x;
         e2
     }
 }
@@ -95,20 +89,20 @@ pub struct C4Input {
     pub e2: Option<i64>,
 }
 pub struct C4State {
-    mem: i64,
+    last_s4: i64,
 }
 impl C4State {
     pub fn init() -> C4State {
         C4State {
-            mem: Default::default(),
+            last_s4: Default::default(),
         }
     }
     pub fn step(&mut self, input: C4Input) -> i64 {
         let s4 = match (input.e2) {
             (Some(e2)) => e2,
-            _ => self.mem,
+            _ => self.last_s4,
         };
-        self.mem = s4;
+        self.last_s4 = s4;
         s4
     }
 }
@@ -118,43 +112,40 @@ pub struct C5Input {
     pub e3: Option<i64>,
 }
 pub struct C5State {
-    mem: bool,
-    mem_1: bool,
-    mem_2: i64,
-    mem_3: i64,
+    last_o: i64,
+    last_x: bool,
+    last_x_1: bool,
 }
 impl C5State {
     pub fn init() -> C5State {
         C5State {
-            mem: false,
-            mem_1: false,
-            mem_2: Default::default(),
-            mem_3: Default::default(),
+            last_o: Default::default(),
+            last_x: false,
+            last_x_1: false,
         }
     }
     pub fn step(&mut self, input: C5Input) -> i64 {
         let x = input.s4 <= 0i64;
         let x_1 = input.s3 >= 0i64;
-        let prev_o = self.mem_3;
+        let prev_o = self.last_o;
         let o = match (input.e3) {
             (Some(e3)) => {
                 let o = e3;
                 o
             }
-            (_) if x && !self.mem => {
+            (_) if x && !self.last_x => {
                 let o = prev_o * 2i64;
                 o
             }
-            (_) if x_1 && !self.mem_1 => {
+            (_) if x_1 && !self.last_x_1 => {
                 let o = input.s3;
                 o
             }
-            (_) => self.mem_2,
+            (_) => self.last_o,
         };
-        self.mem = x;
-        self.mem_1 = x_1;
-        self.mem_2 = o;
-        self.mem_3 = o;
+        self.last_o = o;
+        self.last_x = x;
+        self.last_x_1 = x_1;
         o
     }
 }

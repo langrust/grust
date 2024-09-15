@@ -8,18 +8,19 @@ grust! {
 
     component multiple_events(a: int?, b: int?, v: int) -> (c: int) {
         c = last z;
+        let y: unit? = when v > 50 then emit ();
         when {
             (let a = a?, let b = b?) => {
                 let aux1: int = a;
                 let aux2: int = z;
                 let aux3: int = last aux2;
-                let z: int = if v > 50 then (last aux1 + aux3) else last b;
+                let z: int = if v > 50 then (last aux1 + aux3) else b;
             }
-            let a = a? => {
-                let z: int = when a > 0 then a;
+            let a = a? if a > 0 => {
+                let z: int = a;
             }
-            let b = b? => {
-                let z: int = when v > 50 then b;
+            (let b = b?, y?) => {
+                let z: int = b;
             }
         }
     }
@@ -54,6 +55,8 @@ grust! {
     ) {
         t = when a? then emit a + z;
         u = when (y?, w?) then w + 3;
+        let test: bool = v > 50;
+        let w: int? = when test then emit v + last u;
 
         when {
             (a?, let _ = b?) => {
@@ -66,8 +69,6 @@ grust! {
             }
             b? => {
                 let z: int = if v > 50 then 3 else 4;
-                let test: bool = v > 50;
-                let w: int? = when test then emit v + last u;
                 x = emit 2;
             }
         }

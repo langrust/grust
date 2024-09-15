@@ -4,12 +4,12 @@ pub struct DefineEventsInput {
     pub v: i64,
 }
 pub struct DefineEventsState {
-    mem: i64,
+    last_z: i64,
 }
 impl DefineEventsState {
     pub fn init() -> DefineEventsState {
         DefineEventsState {
-            mem: Default::default(),
+            last_z: Default::default(),
         }
     }
     pub fn step(&mut self, input: DefineEventsInput) -> (i64, Option<f64>, Option<i64>) {
@@ -29,14 +29,14 @@ impl DefineEventsState {
                 let z = if input.v > 50i64 { 3i64 } else { 4i64 };
                 (z, None, x)
             }
-            (_, _) => (self.mem, None, None),
+            (_, _) => (self.last_z, None, None),
         };
         let c = z;
         let d = match (y) {
             (Some(_)) => Some(0.1),
             _ => None,
         };
-        self.mem = z;
+        self.last_z = z;
         (c, d, x)
     }
 }

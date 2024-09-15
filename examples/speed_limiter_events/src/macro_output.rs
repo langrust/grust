@@ -92,28 +92,25 @@ pub struct ProcessSetSpeedInput {
     pub set_speed: Option<f64>,
 }
 pub struct ProcessSetSpeedState {
-    mem: f64,
-    mem_1: f64,
+    last_v_set: f64,
 }
 impl ProcessSetSpeedState {
     pub fn init() -> ProcessSetSpeedState {
         ProcessSetSpeedState {
-            mem: Default::default(),
-            mem_1: Default::default(),
+            last_v_set: Default::default(),
         }
     }
     pub fn step(&mut self, input: ProcessSetSpeedInput) -> (f64, bool) {
-        let prev_v_set = self.mem;
+        let prev_v_set = self.last_v_set;
         let v_set = match (input.set_speed) {
             (Some(v)) => {
                 let v_set = threshold_set_speed(v);
                 v_set
             }
-            (_) => self.mem_1,
+            (_) => self.last_v_set,
         };
         let v_update = prev_v_set != v_set;
-        self.mem = v_set;
-        self.mem_1 = v_set;
+        self.last_v_set = v_set;
         (v_set, v_update)
     }
 }
@@ -125,18 +122,18 @@ pub struct SpeedLimiterOnInput {
     pub v_set: f64,
 }
 pub struct SpeedLimiterOnState {
-    mem: Hysterisis,
-    mem_1: Kickdown,
+    last_hysterisis: Hysterisis,
+    last_kickdown_state: Kickdown,
 }
 impl SpeedLimiterOnState {
     pub fn init() -> SpeedLimiterOnState {
         SpeedLimiterOnState {
-            mem: new_hysterisis(0.0),
-            mem_1: Default::default(),
+            last_hysterisis: new_hysterisis(0.0),
+            last_kickdown_state: Default::default(),
         }
     }
     pub fn step(&mut self, input: SpeedLimiterOnInput) -> (SpeedLimiterOn, bool, bool) {
-        let prev_hysterisis = self.mem;
+        let prev_hysterisis = self.last_hysterisis;
         let kickdown_state = match (input.kickdown) {
             (Some(Kickdown::Activated)) if input.prev_on_state == SpeedLimiterOn::Actif => {
                 let kickdown_state = Kickdown::Activated;
@@ -146,7 +143,7 @@ impl SpeedLimiterOnState {
                 let kickdown_state = Kickdown::Deactivated;
                 kickdown_state
             }
-            (_) => self.mem_1,
+            (_) => self.last_kickdown_state,
         };
         let (hysterisis, on_state) = match input.prev_on_state {
             _ if kickdown_state == Kickdown::Activated => {
@@ -184,8 +181,8 @@ impl SpeedLimiterOnState {
         };
         let state_update = input.prev_on_state != on_state;
         let in_reg = in_regulation(hysterisis);
-        self.mem = hysterisis;
-        self.mem_1 = kickdown_state;
+        self.last_hysterisis = hysterisis;
+        self.last_kickdown_state = kickdown_state;
         (on_state, in_reg, state_update)
     }
 }
@@ -199,23 +196,21 @@ pub struct SpeedLimiterInput {
     pub v_set: f64,
 }
 pub struct SpeedLimiterState {
-    mem: SpeedLimiter,
-    mem_1: SpeedLimiterOn,
-    mem_2: SpeedLimiter,
+    last_on_state: SpeedLimiterOn,
+    last_state: SpeedLimiter,
     speed_limiter_on: SpeedLimiterOnState,
 }
 impl SpeedLimiterState {
     pub fn init() -> SpeedLimiterState {
         SpeedLimiterState {
-            mem: Default::default(),
-            mem_1: Default::default(),
-            mem_2: Default::default(),
+            last_on_state: Default::default(),
+            last_state: Default::default(),
             speed_limiter_on: SpeedLimiterOnState::init(),
         }
     }
     pub fn step(&mut self, input: SpeedLimiterInput) -> (SpeedLimiter, SpeedLimiterOn, bool, bool) {
-        let prev_state = self.mem;
-        let prev_on_state = self.mem_1;
+        let prev_state = self.last_state;
+        let prev_on_state = self.last_on_state;
         let state = match (input.activation_req, input.failure) {
             (Some(ActivationRequest::Off), _) => {
                 let state = SpeedLimiter::Off;
@@ -233,7 +228,7 @@ impl SpeedLimiterState {
                 let state = SpeedLimiter::On;
                 state
             }
-            (_, _) => self.mem_2,
+            (_, _) => self.last_state,
         };
         let (state_update, on_state, in_regulation) = match prev_state {
             SpeedLimiter::On => {
@@ -254,9 +249,8 @@ impl SpeedLimiterState {
                 (state_update, on_state, in_regulation)
             }
         };
-        self.mem = state;
-        self.mem_1 = on_state;
-        self.mem_2 = state;
+        self.last_on_state = on_state;
+        self.last_state = state;
         (state, on_state, in_regulation, state_update)
     }
 }
