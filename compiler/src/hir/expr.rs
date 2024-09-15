@@ -89,21 +89,6 @@ pub enum Kind<E> {
         /// The different matching cases.
         arms: Vec<(Pattern, Option<E>, Vec<Stmt<E>>, E)>,
     },
-    /// When present expression.
-    When {
-        /// The identifier of the value when present
-        id: usize,
-        /// The optional expression.
-        option: Box<E>,
-        /// The expression when present.
-        present: Box<E>,
-        /// The body of present case when normalized.
-        present_body: Vec<Stmt<E>>,
-        /// The default expression.
-        default: Box<E>,
-        /// The body of present case when normalized.
-        default_body: Vec<Stmt<E>>,
-    },
     /// Field access expression.
     FieldAccess {
         /// The structure expression.
@@ -186,14 +171,6 @@ mk_new! { impl{E} Kind<E> =>
     Match: match_expr {
         expression: E = expression.into(),
         arms: Vec<(Pattern, Option<E>, Vec<Stmt<E>>, E)>,
-    }
-    When: when {
-        id: usize,
-        option: E = option.into(),
-        present: E = present.into(),
-        present_body: Vec<Stmt<E>>,
-        default: E = default.into(),
-        default_body: Vec<Stmt<E>>,
     }
     FieldAccess: field {
         expression: E = expression.into(),
@@ -316,24 +293,6 @@ impl<E> Kind<E> {
                                 .map_or(true, |expression| predicate_expression(expression))
                             && predicate_expression(expression)
                     })
-            }
-            Kind::When {
-                option,
-                present,
-                present_body,
-                default,
-                default_body,
-                ..
-            } => {
-                present_body
-                    .iter()
-                    .all(|statement| predicate_statement(statement))
-                    && default_body
-                        .iter()
-                        .all(|statement| predicate_statement(statement))
-                    && predicate_expression(option)
-                    && predicate_expression(present)
-                    && predicate_expression(default)
             }
             Kind::FieldAccess { expression, .. } => predicate_expression(expression),
             Kind::TupleElementAccess { expression, .. } => predicate_expression(expression),

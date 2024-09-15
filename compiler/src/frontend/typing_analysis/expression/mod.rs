@@ -21,7 +21,6 @@ mod structure;
 mod tuple;
 mod tuple_element_access;
 mod unop;
-mod when;
 mod zip;
 
 impl<E> hir::expr::Kind<E>
@@ -52,7 +51,6 @@ where
             }
             hir::expr::Kind::Array { .. } => self.typing_array(location, symbol_table, errors),
             hir::expr::Kind::Tuple { .. } => self.typing_tuple(symbol_table, errors),
-            hir::expr::Kind::When { .. } => self.typing_when(location, symbol_table, errors),
             hir::expr::Kind::Match { .. } => self.typing_match(location, symbol_table, errors),
             hir::expr::Kind::FieldAccess { .. } => {
                 self.typing_field_access(location, symbol_table, errors)
