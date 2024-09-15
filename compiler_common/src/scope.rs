@@ -63,8 +63,6 @@ pub enum Scope {
     Local,
     /// Only used during compilation to indicate that the value is not memorizable.
     VeryLocal,
-    /// Only used during compilation to indicate that the value is in the buffer.
-    Memory,
 }
 
 impl Scope {
@@ -73,6 +71,5 @@ impl Scope {
         Output: output()
         Local: local()
         VeryLocal: very_local()
-        Memory: memory()
     }
 }
