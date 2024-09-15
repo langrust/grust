@@ -33,9 +33,11 @@ impl Memory {
                         identifier: ident,
                         typing,
                         initial_expression,
+                        id,
                         ..
                     },
                 )| {
+                    let scope = symbol_table.get_scope(id);
                     let mem_ident = format!("last_{}", ident);
                     elements.push(StateElement::Buffer {
                         identifier: mem_ident.clone(),
@@ -47,7 +49,11 @@ impl Memory {
                     });
                     steps.push(StateElementStep {
                         identifier: mem_ident.clone(),
-                        expression: lir::Expr::ident(ident),
+                        expression: match scope {
+                            Scope::Input => lir::Expr::input_access(ident),
+                            Scope::Output | Scope::Local => lir::Expr::ident(ident),
+                            Scope::VeryLocal => unreachable!(),
+                        },
                     });
                 },
             );

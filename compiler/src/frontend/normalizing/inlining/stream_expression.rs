@@ -28,12 +28,12 @@ impl stream::Expr {
                 }
             }
             stream::Kind::NodeApplication {
-                ref mut called_node_id,
+                ref mut memory_id,
                 ref mut inputs,
                 ..
             } => {
                 // replace the id of the called node
-                if let Some(element) = context_map.get(called_node_id) {
+                if let Some(element) = context_map.get(&memory_id.unwrap()) {
                     match element {
                         Union::I1(new_id)
                         | Union::I2(stream::Expr {
@@ -43,7 +43,7 @@ impl stream::Expr {
                                 },
                             ..
                         }) => {
-                            *called_node_id = new_id.clone();
+                            *memory_id = Some(*new_id);
                         }
                         Union::I2(_) => unreachable!(),
                     }
@@ -81,7 +81,7 @@ impl stream::Expr {
                         }) => {
                             *id = *new_id;
                             self.dependencies =
-                                Dependencies::from(vec![(*new_id, Label::Weight(0))]);
+                                Dependencies::from(vec![(*new_id, Label::Weight(1))]);
                         }
                         Union::I2(_) => unreachable!(),
                     }

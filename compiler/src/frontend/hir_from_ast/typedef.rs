@@ -71,8 +71,7 @@ impl<'a> HIRFromAST<SimpleCtxt<'a>> for Typedef {
                     .get_array_id(&id, false, location.clone(), ctxt.errors)?;
 
                 // insert array's type in symbol table
-                let typing =
-                    array_type.hir_from_ast(&mut ctxt.add_loc(&location))?;
+                let typing = array_type.hir_from_ast(&mut ctxt.add_loc(&location))?;
                 ctxt.syms.set_array_type(type_id, typing);
 
                 Ok(hir::Typedef {
