@@ -37,20 +37,23 @@ impl SemiFibState {
 }
 pub struct FibCallInput {}
 pub struct FibCallState {
-    last_next_o: i64,
+    last_next_o_1: i64,
     next: NextState,
+    next_1: NextState,
 }
 impl FibCallState {
     pub fn init() -> FibCallState {
         FibCallState {
-            last_next_o: Default::default(),
+            last_next_o_1: Default::default(),
             next: NextState::init(),
+            next_1: NextState::init(),
         }
     }
     pub fn step(&mut self, input: FibCallInput) -> i64 {
-        let fib = self.last_next_o;
+        let fib = self.last_next_o_1;
         let next_o = self.next.step(NextInput { i: fib });
-        self.last_next_o = next_o;
+        let next_o_1 = self.next_1.step(NextInput { i: fib });
+        self.last_next_o_1 = next_o_1;
         fib
     }
 }

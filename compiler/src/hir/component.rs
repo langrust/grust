@@ -83,6 +83,7 @@ impl ComponentDefinition {
         self.statements
             .iter()
             .flat_map(|statement| statement.get_identifiers())
+            .chain(self.memory.get_identifiers().cloned())
             .map(|id| symbol_table.get_name(id).clone())
             .collect()
     }
