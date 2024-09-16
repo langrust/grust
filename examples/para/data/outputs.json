@@ -1,307 +1,307 @@
 [{
   "timestamp": 0,
   "message": {
-    "S2": 5
-  }
-}
-,{
-  "timestamp": 0,
-  "message": {
-    "E1": 1
-  }
-}
-,{
-  "timestamp": 0,
-  "message": {
-    "S3": 1
-  }
-}
-,{
-  "timestamp": 0,
-  "message": {
-    "E2": 5
-  }
-}
-,{
-  "timestamp": 0,
-  "message": {
-    "S4": 5
-  }
-}
-,{
-  "timestamp": 0,
-  "message": {
     "O1": 10
   }
 }
 ,{
   "timestamp": 800,
   "message": {
-    "S2": 10
-  }
-}
-,{
-  "timestamp": 800,
-  "message": {
-    "S3": 1
-  }
-}
-,{
-  "timestamp": 800,
-  "message": {
-    "S4": 5
-  }
-}
-,{
-  "timestamp": 800,
-  "message": {
-    "O1": 10
+    "O1": 1
   }
 }
 ,{
   "timestamp": 900,
   "message": {
-    "S2": 20
-  }
-}
-,{
-  "timestamp": 900,
-  "message": {
-    "S3": 1
-  }
-}
-,{
-  "timestamp": 900,
-  "message": {
-    "S4": 5
-  }
-}
-,{
-  "timestamp": 900,
-  "message": {
-    "O1": 10
+    "O1": 2
   }
 }
 ,{
   "timestamp": 1000,
   "message": {
-    "S2": 17
-  }
-}
-,{
-  "timestamp": 1000,
-  "message": {
-    "S3": 1
-  }
-}
-,{
-  "timestamp": 1000,
-  "message": {
-    "S4": 5
-  }
-}
-,{
-  "timestamp": 1000,
-  "message": {
-    "O1": 10
+    "O1": 2
   }
 }
 ,{
   "timestamp": 1400,
   "message": {
-    "S2": 9
-  }
-}
-,{
-  "timestamp": 1400,
-  "message": {
-    "S3": 1
-  }
-}
-,{
-  "timestamp": 1400,
-  "message": {
-    "S4": 5
-  }
-}
-,{
-  "timestamp": 1400,
-  "message": {
-    "O1": 10
+    "O1": 2
   }
 }
 ,{
   "timestamp": 2000,
   "message": {
-    "S2": -2
-  }
-}
-,{
-  "timestamp": 2000,
-  "message": {
-    "S3": 1
-  }
-}
-,{
-  "timestamp": 2000,
-  "message": {
-    "S4": 5
-  }
-}
-,{
-  "timestamp": 2000,
-  "message": {
-    "O1": 10
+    "O1": 2
   }
 }
 ,{
   "timestamp": 2500,
   "message": {
-    "S2": -5
-  }
-}
-,{
-  "timestamp": 2500,
-  "message": {
-    "S3": 1
-  }
-}
-,{
-  "timestamp": 2500,
-  "message": {
-    "S4": 5
-  }
-}
-,{
-  "timestamp": 2500,
-  "message": {
-    "O1": 10
+    "O1": 2
   }
 }
 ,{
   "timestamp": 2800,
   "message": {
-    "S2": 0
-  }
-}
-,{
-  "timestamp": 2800,
-  "message": {
-    "E1": 0
-  }
-}
-,{
-  "timestamp": 2800,
-  "message": {
-    "S3": 0
-  }
-}
-,{
-  "timestamp": 2800,
-  "message": {
-    "S4": 5
-  }
-}
-,{
-  "timestamp": 2800,
-  "message": {
-    "O1": 10
+    "O1": 2
   }
 }
 ,{
   "timestamp": 3000,
   "message": {
-    "S2": 3
-  }
-}
-,{
-  "timestamp": 3000,
-  "message": {
-    "S3": 0
-  }
-}
-,{
-  "timestamp": 3000,
-  "message": {
-    "E2": 3
-  }
-}
-,{
-  "timestamp": 3000,
-  "message": {
-    "S4": 3
-  }
-}
-,{
-  "timestamp": 3000,
-  "message": {
-    "O1": 10
+    "O1": 2
   }
 }
 ,{
   "timestamp": 4000,
   "message": {
-    "S2": -3
-  }
-}
-,{
-  "timestamp": 4000,
-  "message": {
-    "S3": 0
-  }
-}
-,{
-  "timestamp": 4000,
-  "message": {
-    "S4": 3
-  }
-}
-,{
-  "timestamp": 4000,
-  "message": {
-    "O1": 10
+    "O1": 2
   }
 }
 ,{
   "timestamp": 5000,
   "message": {
-    "S2": 6
-  }
-}
-,{
-  "timestamp": 5000,
-  "message": {
-    "E1": 0
-  }
-}
-,{
-  "timestamp": 5000,
-  "message": {
-    "S3": 0
-  }
-}
-,{
-  "timestamp": 5000,
-  "message": {
-    "E2": 6
-  }
-}
-,{
-  "timestamp": 5000,
-  "message": {
-    "S4": 6
-  }
-}
-,{
-  "timestamp": 5000,
-  "message": {
-    "O1": 10
+    "O1": 2
   }
 }
 ,{
   "timestamp": 5100,
   "message": {
-    "S2": 15
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 8100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 11100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 14100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 17100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 20100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 23100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 26100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 29100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 32100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 35100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 38100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 41100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 44100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 47100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 50100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 53100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 56100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 59100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 62100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 65100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 68100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 71100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 74100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 77100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 80100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 83100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 86100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 89100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 92100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 95100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 98100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 101100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 104100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 107100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 110100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 113100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 116100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 119100,
+  "message": {
+    "O1": 2
+  }
+}
+,{
+  "timestamp": 122100,
+  "message": {
+    "O1": 2
   }
 }
 ]
