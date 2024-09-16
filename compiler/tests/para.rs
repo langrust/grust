@@ -12,9 +12,12 @@ fn should_compile_para() {
 
         component C1(e0: int?) -> (s2: int, e1: int?) {
             when {
+                e0? if e0 > prev_s2 => {
+                    s2 = e0;
+                    e1 = emit e0 / (e0 - s2);
+                }
                 e0? => {
                     s2 = e0;
-                    e1 = when e0 > s2 then emit e0 / (e0 - s2);
                 }
             }
             let prev_s2: int = last s2;

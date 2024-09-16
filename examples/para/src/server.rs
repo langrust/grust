@@ -20,10 +20,12 @@ mod para {
 
         component C1(e0: int?) -> (s2: int, e1: int?) {
             when {
+                e0? if e0 > prev_s2 => {
+                    s2 = e0;
+                    e1 = emit e0 / (e0 - prev_s2);
+                }
                 e0? => {
                     s2 = e0;
-                    let x: bool = e0 > prev_s2;
-                    e1 = when x then emit e0 / (e0 - prev_s2);
                 }
             }
             let prev_s2: int = last s2;
@@ -62,7 +64,6 @@ mod para {
                     o = s3;
                 }
             }
-            let prev_o: int = last o;
         }
 
         service para_mess @ [10, 3000] {
