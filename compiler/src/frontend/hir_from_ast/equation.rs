@@ -1,6 +1,9 @@
 prelude! {
     ast::{
-        equation::{ Arm, Equation, EventArmWhen, Instantiation, Match, MatchWhen },
+        equation::{
+            Arm, ReactEq, Eq, EventArmWhen,
+            Instantiation, Match, MatchWhen,
+        },
         stmt::LetDecl,
     },
     hir::{ pattern, stream },
@@ -9,7 +12,7 @@ prelude! {
 
 use super::{HIRFromAST, SimpleCtxt};
 
-impl<'a> HIRFromAST<SimpleCtxt<'a>> for Equation {
+impl<'a> HIRFromAST<SimpleCtxt<'a>> for Eq {
     type HIR = hir::Stmt<stream::Expr>;
 
     /// Pre-condition: equation's signal is already stored in symbol table.
@@ -23,12 +26,12 @@ impl<'a> HIRFromAST<SimpleCtxt<'a>> for Equation {
         self.get_signals(&mut defined_signals, ctxt.syms, ctxt.errors)?;
 
         match self {
-            Equation::LocalDef(LetDecl {
+            Eq::LocalDef(LetDecl {
                 expression,
                 typed_pattern: pattern,
                 ..
             })
-            | Equation::OutputDef(Instantiation {
+            | Eq::OutputDef(Instantiation {
                 expression,
                 pattern,
                 ..
@@ -42,7 +45,7 @@ impl<'a> HIRFromAST<SimpleCtxt<'a>> for Equation {
                     location,
                 })
             }
-            Equation::Match(Match {
+            Eq::Match(Match {
                 expression, arms, ..
             }) => {
                 // create the receiving pattern for the equation
@@ -163,7 +166,165 @@ impl<'a> HIRFromAST<SimpleCtxt<'a>> for Equation {
                     location,
                 })
             }
-            Equation::MatchWhen(MatchWhen { arms, .. }) => {
+        }
+    }
+}
+
+impl<'a> HIRFromAST<SimpleCtxt<'a>> for ReactEq {
+    type HIR = hir::Stmt<stream::Expr>;
+
+    /// Pre-condition: equation's signal is already stored in symbol table.
+    ///
+    /// Post-condition: construct HIR equation and check identifiers good use.
+    fn hir_from_ast(self, ctxt: &mut SimpleCtxt<'a>) -> TRes<Self::HIR> {
+        let location = Location::default();
+
+        // get signals defined by the equation
+        let mut defined_signals = HashMap::new();
+        self.get_signals(&mut defined_signals, ctxt.syms, ctxt.errors)?;
+
+        match self {
+            ReactEq::LocalDef(LetDecl {
+                expression,
+                typed_pattern: pattern,
+                ..
+            })
+            | ReactEq::OutputDef(Instantiation {
+                expression,
+                pattern,
+                ..
+            }) => {
+                let expression =
+                    expression.hir_from_ast(&mut ctxt.add_pat_loc(Some(&pattern), &location))?;
+                let pattern = pattern.hir_from_ast(&mut ctxt.add_loc(&location))?;
+                Ok(hir::Stmt {
+                    pattern,
+                    expression,
+                    location,
+                })
+            }
+            ReactEq::Match(Match {
+                expression, arms, ..
+            }) => {
+                // create the receiving pattern for the equation
+                let pattern = {
+                    let mut elements = defined_signals
+                        .values()
+                        .map(|pat| pat.clone().hir_from_ast(&mut ctxt.add_loc(&location)))
+                        .collect::<TRes<Vec<_>>>()?;
+                    if elements.len() == 1 {
+                        elements.pop().unwrap()
+                    } else {
+                        hir::stmt::init(hir::stmt::Kind::tuple(elements))
+                    }
+                };
+
+                // for each arm, construct pattern guard and statements
+                let arms = arms
+                    .into_iter()
+                    .map(
+                        |Arm {
+                             pattern,
+                             guard,
+                             equations,
+                             ..
+                         }| {
+                            // transform pattern guard and equations into HIR
+                            let (signals, pattern, guard, statements) = {
+                                ctxt.syms.local();
+
+                                // set local context: pattern signals + equations' signals
+                                pattern.store(ctxt.syms, ctxt.errors)?;
+                                let mut signals = HashMap::new();
+                                equations
+                                    .iter()
+                                    .map(|equation| {
+                                        // store equations' signals in the local context
+                                        equation.store_signals(
+                                            true,
+                                            &mut signals,
+                                            ctxt.syms,
+                                            ctxt.errors,
+                                        )
+                                    })
+                                    .collect::<TRes<()>>()?;
+
+                                // transform pattern guard and equations into HIR with local context
+                                let pattern = pattern.hir_from_ast(&mut ctxt.add_loc(&location))?;
+                                let guard = guard
+                                    .map(|(_, expression)| {
+                                        expression
+                                            .hir_from_ast(&mut ctxt.add_pat_loc(None, &location))
+                                    })
+                                    .transpose()?;
+                                let statements = equations
+                                    .into_iter()
+                                    .map(|equation| equation.hir_from_ast(ctxt))
+                                    .collect::<TRes<Vec<_>>>()?;
+
+                                ctxt.syms.global();
+
+                                (signals, pattern, guard, statements)
+                            };
+
+                            // create the tuple expression
+                            let expression = {
+                                // check defined signals are all the same
+                                if defined_signals.len() != signals.len() {
+                                    let error = Error::IncompatibleMatchStatements {
+                                        expected: defined_signals.len(),
+                                        received: signals.len(),
+                                        location: location.clone(),
+                                    };
+                                    ctxt.errors.push(error);
+                                    return Err(TerminationError);
+                                }
+                                let mut elements = defined_signals
+                                    .keys()
+                                    .map(|signal_name| {
+                                        if let Some(id) = signals.get(signal_name) {
+                                            Ok(stream::expr(stream::Kind::expr(
+                                                hir::expr::Kind::ident(*id),
+                                            )))
+                                        } else {
+                                            let error = Error::MissingMatchStatement {
+                                                identifier: signal_name.clone(),
+                                                location: location.clone(),
+                                            };
+                                            ctxt.errors.push(error);
+                                            return Err(TerminationError);
+                                        }
+                                    })
+                                    .collect::<TRes<Vec<_>>>()?;
+
+                                // create the tuple expression
+                                if elements.len() == 1 {
+                                    elements.pop().unwrap()
+                                } else {
+                                    stream::expr(stream::Kind::expr(hir::expr::Kind::tuple(
+                                        elements,
+                                    )))
+                                }
+                            };
+
+                            Ok((pattern, guard, statements, expression))
+                        },
+                    )
+                    .collect::<TRes<Vec<_>>>()?;
+
+                // construct the match expression
+                let expression = stream::expr(stream::Kind::expr(hir::expr::Kind::match_expr(
+                    expression.hir_from_ast(&mut ctxt.add_pat_loc(None, &location))?,
+                    arms,
+                )));
+
+                Ok(hir::Stmt {
+                    pattern,
+                    expression,
+                    location,
+                })
+            }
+            ReactEq::MatchWhen(MatchWhen { arms, .. }) => {
                 // create the receiving pattern for the equation
                 let defined_pattern = {
                     let mut elements = defined_signals.into_values().collect::<Vec<_>>();
