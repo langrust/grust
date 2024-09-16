@@ -355,6 +355,8 @@ mod isles {
         memory: HashSet<usize>,
         /// Maps event indices to the (indices of) statements triggered by this event.
         event_to_stmts: HashMap<usize, Vec<usize>>,
+        /// Stores indices of statements triggered by events.
+        eventful_calls: HashSet<usize>,
         /// Symbol table.
         syms: &'a SymbolTable,
         /// Service to build isles for.
@@ -378,13 +380,16 @@ mod isles {
             service: &'a Service,
             imports: &HashMap<usize, FlowImport>,
         ) -> Self {
-            let event_to_stmts = Self::build_event_to_stmts(syms, service, imports);
+            let real_events = Self::build_real_events(syms, service, imports);
+            let (event_to_stmts, eventful_calls) =
+                Self::build_event_to_stmts(syms, service, imports, real_events);
             Self {
                 isles: Self::new_isles(syms),
                 events: HashSet::with_capacity(10),
                 stack: Vec::with_capacity(service.statements.len() / 2),
                 memory: HashSet::with_capacity(service.statements.len()),
                 event_to_stmts,
+                eventful_calls,
                 syms,
                 service,
             }
@@ -401,29 +406,34 @@ mod isles {
             syms: &SymbolTable,
             service: &Service,
             imports: &HashMap<usize, FlowImport>,
-        ) -> HashMap<usize, Vec<usize>> {
+            real_events: HashSet<usize>,
+        ) -> (HashMap<usize, Vec<usize>>, HashSet<usize>) {
             let mut map = HashMap::with_capacity(10);
+            let mut set = HashSet::with_capacity(10);
             for (stmt_id, stmt) in service.statements.iter() {
                 let mut triggered_by = |event: usize| {
                     let vec = map.entry(event).or_insert_with(Vec::new);
                     debug_assert!(!vec.contains(stmt_id));
                     vec.push(*stmt_id);
+                    set.insert(*stmt_id);
                 };
 
+                // store events that trigger stmt
                 if let Some((_, inputs)) = stmt.try_get_call() {
                     // scan incoming stmt for timers
                     for import_id in service.get_dependencies(*stmt_id) {
                         if let Some(FlowImport { id: timer, .. }) = &imports.get(&import_id) {
-                            if syms.is_timer(*timer) {
+                            if !syms.is_service_timeout(service.id, *timer) && syms.is_timer(*timer)
+                            {
                                 // register `stmt_id` as triggered by `input`
                                 triggered_by(*timer);
                             }
                         }
                     }
-                    // scan inputs for events
+                    // scan inputs for real events
                     for input in inputs {
                         if let flow::Kind::Ident { id: input } = input.1.kind {
-                            if syms.get_flow_kind(input).is_event() {
+                            if real_events.contains(&input) {
                                 // register `stmt_id` as triggered by `input`
                                 triggered_by(input);
                             }
@@ -435,7 +445,51 @@ mod isles {
             }
             // all vectors in `map` should be sorted and non-empty
             debug_assert! { map.iter().all(|(_, vec)| !vec.is_empty()) }
-            map
+            (map, set)
+        }
+
+        /// Scans the statements in the `service` and produces the set of real events.
+        ///
+        /// Used by [`Self::new`].
+        ///
+        /// Real events are not produced by components.
+        fn build_real_events(
+            syms: &SymbolTable,
+            service: &Service,
+            imports: &HashMap<usize, FlowImport>,
+        ) -> HashSet<usize> {
+            let mut stack = vec![];
+            let mut seen = HashSet::with_capacity(10);
+            let mut real_events = HashSet::with_capacity(10);
+            // add only events to 'real_events'
+            let mut add_real_event = |event: usize| {
+                if syms.get_flow_kind(event).is_event() {
+                    real_events.insert(event);
+                }
+            };
+            // add next stmt to 'stack' if not in 'seen'
+            let mut prep_next = |stmt_id: usize, stack: &mut Vec<usize>| {
+                for next in service.graph.neighbors(stmt_id) {
+                    if seen.insert(next) {
+                        stack.push(next);
+                    }
+                }
+            };
+            for (import_id, import) in imports {
+                add_real_event(import.id);
+                prep_next(*import_id, &mut stack);
+                while let Some(stmt_id) = stack.pop() {
+                    if let Some(stmt) = service.statements.get(&stmt_id) {
+                        if !stmt.is_comp_call() {
+                            for flow_id in stmt.get_identifiers() {
+                                add_real_event(flow_id);
+                                prep_next(stmt_id, &mut stack);
+                            }
+                        }
+                    }
+                }
+            }
+            real_events
         }
 
         /// True if `stmt` corresponds to a component call that reacts to some event.
@@ -443,15 +497,7 @@ mod isles {
         /// Used to stop the exploration of a dependency branch on component calls that are eventful and
         /// not triggered by the event the isle is for.
         fn is_eventful_call(&self, stmt_id: usize) -> bool {
-            if let Some(stmt) = self.service.statements.get(&stmt_id) {
-                stmt.try_get_call()
-                    .map(|(id, _)| {
-                        self.syms.has_events(id) || self.syms.get_node_period_id(id).is_some()
-                    })
-                    .unwrap_or(false)
-            } else {
-                false
-            }
+            self.eventful_calls.contains(&stmt_id)
         }
 
         /// True if `stmt` corresponds to a component call.
@@ -485,6 +531,8 @@ mod isles {
                 return ();
             }
 
+            println!("{}", self.syms.get_name(event));
+
             debug_assert!(self.isles.is_isle_empty(event));
             debug_assert!(self.memory.is_empty());
             debug_assert!(self.events.is_empty());
@@ -499,6 +547,19 @@ mod isles {
                 }
 
                 if self.is_call(stmt_id) {
+                    println!("{:?} triggered by '{}'", stmt_id, event);
+                    println!(
+                        "{:?} triggered by '{}'",
+                        self.service
+                            .statements
+                            .get(&stmt_id)
+                            .unwrap()
+                            .get_identifiers()
+                            .into_iter()
+                            .map(|id| self.syms.get_name(id))
+                            .collect::<Vec<_>>(),
+                        self.syms.get_name(event)
+                    );
                     self.isles.insert(event, stmt_id);
                 }
 
@@ -591,6 +652,8 @@ mod triggered {
 
     /// Isles of statements triggered by events only.
     pub struct EventIslesGraph<'a> {
+        service: &'a Service,
+        syms: &'a SymbolTable,
         graph: &'a DiGraphMap<usize, ()>,
         stmts: &'a HashMap<usize, FlowStatement>,
         imports: &'a HashMap<usize, FlowImport>,
@@ -630,10 +693,32 @@ mod triggered {
                 stmts: &service.statements,
                 imports,
                 isles,
+                syms,
+                service,
             }
         }
 
         fn get_triggered(&self, parent: usize) -> Vec<usize> {
+            // if service timeout then trigger
+            if self
+                .get_def_flows(parent)
+                .into_iter()
+                .any(|id| self.syms.is_service_timeout(self.service.id, id))
+            {
+                return self
+                    .service
+                    .statements
+                    .iter()
+                    .filter_map(|(stmt_id, stmt)| {
+                        if stmt.is_comp_call() {
+                            Some(*stmt_id)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<Vec<_>>();
+            }
+
             // get graph dependencies
             let dependencies = self.graph.neighbors(parent).filter_map(|child| {
                 // filter component call because they will appear in isles
@@ -676,6 +761,8 @@ mod triggered {
                     }
                 }
             }
+            // add relations from dependency graph between existing nodes
+            todo!();
             trig_graph
         }
 
@@ -1320,8 +1407,8 @@ mod flow_instr {
             );
             // add timing_event in graph
             service.graph.add_node(fresh_statement_id);
-            service.statements.keys().for_each(|stmt_id| {
-                if service.statements[stmt_id].is_comp_call() {
+            service.statements.iter().for_each(|(stmt_id, stmt)| {
+                if stmt.is_comp_call() {
                     service.graph.add_edge(fresh_statement_id, *stmt_id, ());
                 }
             });
@@ -1769,24 +1856,25 @@ mod flow_instr {
             instrs.extend(updates);
             let comp_call = FlowInstruction::seq(instrs);
 
-            // call component when activated by its period
-            if let Some(period_id) = self.syms.get_node_period_id(component_id) {
-                if self.events.contains(&period_id) {
-                    return comp_call;
+            match conf::propag() {
+                conf::PropagOption::EventIsles => comp_call, // call component when activated by isle
+                conf::PropagOption::OnChange => {
+                    // call component when activated by its period
+                    if let Some(period_id) = self.syms.get_node_period_id(component_id) {
+                        if self.events.contains(&period_id) {
+                            return comp_call;
+                        }
+                    }
+                    // call component when activated by inputs
+                    let events: Vec<String> = events
+                        .into_iter()
+                        .filter_map(|(_, opt_event)| opt_event)
+                        .collect();
+                    let signals: Vec<String> =
+                        signals.into_iter().map(|(_, signal)| signal).collect();
+                    FlowInstruction::if_activated(events, signals, comp_call, None)
                 }
             }
-            // call component when activated by inputs
-            let events: Vec<String> = events
-                .into_iter()
-                .filter_map(|(_, opt_event)| opt_event)
-                .collect();
-            let signals = match conf::propag() {
-                conf::PropagOption::EventIsles => vec![], // isles activated on events
-                conf::PropagOption::OnChange => {
-                    signals.into_iter().map(|(_, signal)| signal).collect()
-                }
-            };
-            FlowInstruction::if_activated(events, signals, comp_call, None)
         }
 
         /// Add signal send in current propagation branch.
