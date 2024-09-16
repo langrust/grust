@@ -10,12 +10,6 @@ mod para {
     grust! {
         #![dump = "examples/para/src/macro_output.rs", propag = "onchange", para, test]
         import event e0: int;
-        export event e1: int;
-        export event e2: int;
-        export event e3: int;
-        export signal s2: int;
-        export signal s3: int;
-        export signal s4: int;
         export signal o1: int;
 
         component C1(e0: int?) -> (s2: int, e1: int?) {
@@ -33,15 +27,14 @@ mod para {
 
         component C2(e1: int?) -> (s3: int, e3: int?) {
             when {
+                e1? if e1 > 1 => {
+                    s3 = e1;
+                    e3 = emit (last s3);
+                }
                 e1? => {
                     s3 = e1;
                 }
-                prev_s3 > 0 => {
-                    s3 = prev_s3;
-                    e3 = emit prev_s3;
-                }
             }
-            let prev_s3: int = last s3;
         }
 
         component C3(s2: int) -> (e2: int?) {
@@ -67,10 +60,10 @@ mod para {
         }
 
         service para_mess @ [10, 3000] {
-            (s2, e1) = C1(e0);
-            (s3, e3) = C2(e1);
-            e2 = C3(s2);
-            s4 = C4(e2);
+            let (signal s2: int, event e1: int) = C1(e0);
+            let (signal s3: int, event e3: int) = C2(e1);
+            let event e2: int = C3(s2);
+            let signal s4: int = C4(e2);
             o1 = C5(s4, s3, e3);
         }
     }
@@ -108,33 +101,9 @@ fn into_para_service_input(input: Input) -> Option<RuntimeInput> {
 
 fn from_para_service_output(output: RuntimeOutput) -> Result<Output, Status> {
     match output {
-        RuntimeOutput::S3(s3, instant) => Ok(Output {
-            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
-            message: Some(Message::S3(s3)),
-        }),
-        RuntimeOutput::E2(e2, instant) => Ok(Output {
-            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
-            message: Some(Message::E2(e2)),
-        }),
-        RuntimeOutput::S4(s4, instant) => Ok(Output {
-            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
-            message: Some(Message::S4(s4)),
-        }),
-        RuntimeOutput::E3(e3, instant) => Ok(Output {
-            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
-            message: Some(Message::E3(e3)),
-        }),
         RuntimeOutput::O1(o1, instant) => Ok(Output {
             timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
             message: Some(Message::O1(o1)),
-        }),
-        RuntimeOutput::S2(s2, instant) => Ok(Output {
-            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
-            message: Some(Message::S2(s2)),
-        }),
-        RuntimeOutput::E1(e1, instant) => Ok(Output {
-            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
-            message: Some(Message::E1(e1)),
         }),
     }
 }
