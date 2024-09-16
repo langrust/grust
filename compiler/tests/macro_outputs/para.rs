@@ -3,31 +3,28 @@ pub struct C1Input {
 }
 pub struct C1State {
     last_s2: i64,
-    last_x: bool,
 }
 impl C1State {
     pub fn init() -> C1State {
         C1State {
             last_s2: Default::default(),
-            last_x: false,
         }
     }
     pub fn step(&mut self, input: C1Input) -> (i64, Option<i64>) {
+        let prev_s2 = self.last_s2;
         let (s2, e1) = match (input.e0) {
+            (Some(e0)) if e0 > prev_s2 => {
+                let s2 = e0;
+                let e1 = Some(e0 / (e0 - s2));
+                (s2, e1)
+            }
             (Some(e0)) => {
                 let s2 = e0;
-                let x = e0 > s2;
-                let e1 = match () {
-                    () if x && !self.last_x => Some(e0 / (e0 - s2)),
-                    _ => None,
-                };
-                (s2, e1)
+                (s2, None)
             }
             (_) => (self.last_s2, None),
         };
-        let prev_s2 = self.last_s2;
         self.last_s2 = s2;
-        self.last_x = x;
         (s2, e1)
     }
 }
@@ -275,74 +272,6 @@ pub mod runtime {
             }
         }
         #[derive(Clone, Copy, PartialEq, Default)]
-        pub struct E1(i64, bool);
-        impl E1 {
-            fn set(&mut self, e1: i64) {
-                self.0 = e1;
-                self.1 = true;
-            }
-            fn get(&self) -> i64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default)]
-        pub struct E3(i64, bool);
-        impl E3 {
-            fn set(&mut self, e3: i64) {
-                self.0 = e3;
-                self.1 = true;
-            }
-            fn get(&self) -> i64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default)]
-        pub struct E2(i64, bool);
-        impl E2 {
-            fn set(&mut self, e2: i64) {
-                self.0 = e2;
-                self.1 = true;
-            }
-            fn get(&self) -> i64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default)]
-        pub struct O1(i64, bool);
-        impl O1 {
-            fn set(&mut self, o1: i64) {
-                self.0 = o1;
-                self.1 = true;
-            }
-            fn get(&self) -> i64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default)]
         pub struct S4(i64, bool);
         impl S4 {
             fn set(&mut self, s4: i64) {
@@ -377,14 +306,82 @@ pub mod runtime {
             }
         }
         #[derive(Clone, Copy, PartialEq, Default)]
+        pub struct E2(i64, bool);
+        impl E2 {
+            fn set(&mut self, e2: i64) {
+                self.0 = e2;
+                self.1 = true;
+            }
+            fn get(&self) -> i64 {
+                self.0
+            }
+            fn is_new(&self) -> bool {
+                self.1
+            }
+            fn reset(&mut self) {
+                self.1 = false;
+            }
+        }
+        #[derive(Clone, Copy, PartialEq, Default)]
+        pub struct E1(i64, bool);
+        impl E1 {
+            fn set(&mut self, e1: i64) {
+                self.0 = e1;
+                self.1 = true;
+            }
+            fn get(&self) -> i64 {
+                self.0
+            }
+            fn is_new(&self) -> bool {
+                self.1
+            }
+            fn reset(&mut self) {
+                self.1 = false;
+            }
+        }
+        #[derive(Clone, Copy, PartialEq, Default)]
+        pub struct E3(i64, bool);
+        impl E3 {
+            fn set(&mut self, e3: i64) {
+                self.0 = e3;
+                self.1 = true;
+            }
+            fn get(&self) -> i64 {
+                self.0
+            }
+            fn is_new(&self) -> bool {
+                self.1
+            }
+            fn reset(&mut self) {
+                self.1 = false;
+            }
+        }
+        #[derive(Clone, Copy, PartialEq, Default)]
+        pub struct O1(i64, bool);
+        impl O1 {
+            fn set(&mut self, o1: i64) {
+                self.0 = o1;
+                self.1 = true;
+            }
+            fn get(&self) -> i64 {
+                self.0
+            }
+            fn is_new(&self) -> bool {
+                self.1
+            }
+            fn reset(&mut self) {
+                self.1 = false;
+            }
+        }
+        #[derive(Clone, Copy, PartialEq, Default)]
         pub struct Context {
             pub s2: S2,
-            pub e1: E1,
-            pub e3: E3,
-            pub e2: E2,
-            pub o1: O1,
             pub s4: S4,
             pub s3: S3,
+            pub e2: E2,
+            pub e1: E1,
+            pub e3: E3,
+            pub o1: O1,
         }
         impl Context {
             fn init() -> Context {
@@ -392,12 +389,12 @@ pub mod runtime {
             }
             fn reset(&mut self) {
                 self.s2.reset();
-                self.e1.reset();
-                self.e3.reset();
-                self.e2.reset();
-                self.o1.reset();
                 self.s4.reset();
                 self.s3.reset();
+                self.e2.reset();
+                self.e1.reset();
+                self.e3.reset();
+                self.o1.reset();
             }
         }
         #[derive(Default)]
@@ -413,11 +410,11 @@ pub mod runtime {
             context: Context,
             delayed: bool,
             input_store: ParaMessServiceStore,
+            C1: C1State,
             C5: C5State,
             C2: C2State,
             C3: C3State,
             C4: C4State,
-            C1: C1State,
             output: futures::channel::mpsc::Sender<O>,
             timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
         }
@@ -429,20 +426,20 @@ pub mod runtime {
                 let context = Context::init();
                 let delayed = true;
                 let input_store = Default::default();
+                let C1 = C1State::init();
                 let C5 = C5State::init();
                 let C2 = C2State::init();
                 let C3 = C3State::init();
                 let C4 = C4State::init();
-                let C1 = C1State::init();
                 ParaMessService {
                     context,
                     delayed,
                     input_store,
+                    C1,
                     C5,
                     C2,
                     C3,
                     C4,
-                    C1,
                     output,
                     timer,
                 }
