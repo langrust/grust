@@ -239,7 +239,7 @@ pub trait EquationExt {
 mod equation {
     prelude! { ast::equation::* }
 
-    impl super::EquationExt for Equation {
+    impl super::EquationExt for Eq {
         fn store_signals(
             &self,
             store_outputs: bool,
@@ -249,28 +249,84 @@ mod equation {
         ) -> TRes<()> {
             match self {
                 // output defintions should be stored
-                Equation::OutputDef(instantiation) if store_outputs => instantiation
+                Eq::OutputDef(instantiation) if store_outputs => instantiation
                     .pattern
                     .store(false, symbol_table, errors)
                     .map(|idents| signals.extend(idents)),
                 // when output defintions are already stored (as component's outputs)
-                Equation::OutputDef(_) => Ok(()),
-                Equation::LocalDef(declaration) => declaration
+                Eq::OutputDef(_) => Ok(()),
+                Eq::LocalDef(declaration) => declaration
                     .typed_pattern
                     .store(true, symbol_table, errors)
                     .map(|idents| signals.extend(idents)),
-                Equation::Match(Match { arms, .. }) => {
+                Eq::Match(Match { arms, .. }) => {
                     let Arm { equations, .. } = arms.first().unwrap();
                     for eq in equations.iter() {
                         eq.store_signals(store_outputs, signals, symbol_table, errors)?;
                     }
                     Ok(())
                 }
-                Equation::MatchWhen(MatchWhen { arms, .. }) => {
+            }
+        }
+
+        fn get_signals(
+            &self,
+            signals: &mut HashMap<String, ast::stmt::Pattern>,
+            symbol_table: &SymbolTable,
+            errors: &mut Vec<Error>,
+        ) -> TRes<()> {
+            match self {
+                Eq::OutputDef(instantiation) => instantiation
+                    .pattern
+                    .get_signals(symbol_table, errors)
+                    .map(|idents| signals.extend(idents)),
+                Eq::LocalDef(declaration) => declaration
+                    .typed_pattern
+                    .get_signals(symbol_table, errors)
+                    .map(|idents| signals.extend(idents)),
+                Eq::Match(Match { arms, .. }) => {
+                    let Arm { equations, .. } = arms.first().unwrap();
+                    for eq in equations {
+                        eq.get_signals(signals, symbol_table, errors)?;
+                    }
+                    Ok(())
+                }
+            }
+        }
+    }
+
+    impl super::EquationExt for ReactEq {
+        fn store_signals(
+            &self,
+            store_outputs: bool,
+            signals: &mut HashMap<String, usize>,
+            symbol_table: &mut SymbolTable,
+            errors: &mut Vec<Error>,
+        ) -> TRes<()> {
+            match self {
+                // output defintions should be stored
+                ReactEq::OutputDef(instantiation) if store_outputs => instantiation
+                    .pattern
+                    .store(false, symbol_table, errors)
+                    .map(|idents| signals.extend(idents)),
+                // when output defintions are already stored (as component's outputs)
+                ReactEq::OutputDef(_) => Ok(()),
+                ReactEq::LocalDef(declaration) => declaration
+                    .typed_pattern
+                    .store(true, symbol_table, errors)
+                    .map(|idents| signals.extend(idents)),
+                ReactEq::Match(Match { arms, .. }) => {
+                    let Arm { equations, .. } = arms.first().unwrap();
+                    for eq in equations.iter() {
+                        eq.store_signals(store_outputs, signals, symbol_table, errors)?;
+                    }
+                    Ok(())
+                }
+                ReactEq::MatchWhen(MatchWhen { arms, .. }) => {
                     // we want to collect every identifier, but events might be declared in only one branch
                     // then, it is needed to explore all branches
                     let mut when_signals = HashMap::new();
-                    let mut add_signals = |equations: &Vec<Equation>| {
+                    let mut add_signals = |equations: &Vec<Eq>| {
                         // non-events are defined in all branches so we don't want them to trigger
                         // the 'duplicated definiiton' error.
                         symbol_table.local();
@@ -314,23 +370,23 @@ mod equation {
             errors: &mut Vec<Error>,
         ) -> TRes<()> {
             match self {
-                Equation::OutputDef(instantiation) => instantiation
+                ReactEq::OutputDef(instantiation) => instantiation
                     .pattern
                     .get_signals(symbol_table, errors)
                     .map(|idents| signals.extend(idents)),
-                Equation::LocalDef(declaration) => declaration
+                ReactEq::LocalDef(declaration) => declaration
                     .typed_pattern
                     .get_signals(symbol_table, errors)
                     .map(|idents| signals.extend(idents)),
-                Equation::Match(Match { arms, .. }) => {
+                ReactEq::Match(Match { arms, .. }) => {
                     let Arm { equations, .. } = arms.first().unwrap();
                     for eq in equations {
                         eq.get_signals(signals, symbol_table, errors)?;
                     }
                     Ok(())
                 }
-                Equation::MatchWhen(MatchWhen { arms, .. }) => {
-                    let mut add_signals = |equations: &Vec<Equation>| {
+                ReactEq::MatchWhen(MatchWhen { arms, .. }) => {
+                    let mut add_signals = |equations: &Vec<Eq>| {
                         // we want to collect every identifier, but events might be declared in only one branch
                         // then, it is needed to explore all branches
                         for eq in equations {
@@ -809,7 +865,6 @@ mod stream_expr {
                 // Not constant by default
                 stream::Expr::TypedAbstraction { .. }
                 | stream::Expr::Match { .. }
-                | stream::Expr::When { .. }
                 | stream::Expr::Emit { .. }
                 | stream::Expr::FieldAccess { .. }
                 | stream::Expr::TupleElementAccess { .. }
@@ -883,6 +938,25 @@ mod stream_expr {
                     .iter()
                     .map(|expression| expression.check_is_constant(symbol_table, errors))
                     .collect::<TRes<_>>(),
+            }
+        }
+    }
+
+    impl StreamExprExt for ast::stream::ReactExpr {
+        fn check_is_constant(
+            &self,
+            symbol_table: &mut SymbolTable,
+            errors: &mut Vec<Error>,
+        ) -> TRes<()> {
+            match &self {
+                stream::ReactExpr::Expr(expr) => expr.check_is_constant(symbol_table, errors),
+                stream::ReactExpr::When { .. } => {
+                    let error = Error::ExpectConstant {
+                        location: Location::default(),
+                    };
+                    errors.push(error);
+                    Err(TerminationError)
+                }
             }
         }
     }

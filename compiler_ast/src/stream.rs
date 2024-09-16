@@ -149,12 +149,9 @@ pub enum Expr {
     Zip(Zip<Self>),
     /// Initialized buffer stream expression.
     Last(Last),
-    /// Pattern matching event.
-    When(When),
     /// Emit event.
     Emit(Emit),
 }
-
 mk_new! { impl Expr =>
     Constant: cst(arg: Constant = arg)
     Identifier: ident(arg : impl Into<String> = arg.into())
@@ -175,10 +172,8 @@ mk_new! { impl Expr =>
     Sort: sort(arg: Sort<Self> = arg)
     Zip: zip(arg: Zip<Self> = arg)
     Last: last(arg: Last = arg)
-    When: when_match(arg: When = arg)
     Emit: emit(arg: Emit = arg)
 }
-
 impl ParsePrec for Expr {
     fn parse_term(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let mut expression = if input.fork().call(Constant::parse).is_ok() {
@@ -286,12 +281,35 @@ impl Parse for Expr {
             Self::TypedAbstraction(input.parse()?)
         } else if IfThenElse::<Self>::peek(input) {
             Self::IfThenElse(input.parse()?)
-        } else if When::peek(input) {
-            Self::When(input.parse()?)
         } else if Emit::peek(input) {
             Self::Emit(input.parse()?)
+        } else if When::peek(input) {
+            return Err(input.error("'when' is a root expression"));
         } else {
             Self::parse_prec4(input)?
+        };
+        Ok(expression)
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+/// GRust reactive expression kind AST.
+pub enum ReactExpr {
+    /// Stream expression.
+    Expr(Expr),
+    /// Pattern matching event.
+    When(When),
+}
+mk_new! { impl ReactExpr =>
+    Expr: expr(arg: Expr = arg)
+    When: when_match(arg: When = arg)
+}
+impl Parse for ReactExpr {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let expression = if When::peek(input) {
+            Self::when_match(input.parse()?)
+        } else {
+            Self::expr(input.parse()?)
         };
         Ok(expression)
     }
@@ -305,64 +323,67 @@ mod parse_stream_expression {
             Structure, Tuple, TupleElementAccess, TypedAbstraction, Zip, PatStructure, Pattern
         },
         equation::{EventPattern, LetEventPattern},
-        stream::{Last, Expr, Emit, When},
+        stream::{Last, Expr, Emit, When, ReactExpr},
         operator::BinaryOperator,
         quote::format_ident,
     }
 
     #[test]
     fn should_parse_last() {
-        let expression: Expr = syn::parse_quote! {last x};
-        let control = Expr::last(Last::new(syn::parse_quote! {x}, None));
+        let expression: ReactExpr = syn::parse_quote! {last x};
+        let control = ReactExpr::expr(Expr::last(Last::new(syn::parse_quote! {x}, None)));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_initialized_last() {
-        let expression: Expr = syn::parse_quote! {last x init 0};
-        let control = Expr::last(Last::new(
+        let expression: ReactExpr = syn::parse_quote! {last x init 0};
+        let control = ReactExpr::expr(Expr::last(Last::new(
             syn::parse_quote! {x},
             Some(Expr::cst(Constant::int(syn::parse_quote! {0}))),
-        ));
+        )));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_constant() {
-        let expression: Expr = syn::parse_quote! {1};
-        let control = Expr::cst(Constant::int(syn::parse_quote! {1}));
+        let expression: ReactExpr = syn::parse_quote! {1};
+        let control = ReactExpr::expr(Expr::cst(Constant::int(syn::parse_quote! {1})));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_identifier() {
-        let expression: Expr = syn::parse_quote! {x};
-        let control = Expr::ident("x");
+        let expression: ReactExpr = syn::parse_quote! {x};
+        let control = ReactExpr::expr(Expr::ident("x"));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_application() {
-        let expression: Expr = syn::parse_quote! {f(x)};
-        let control = Expr::app(Application::new(Expr::ident("f"), vec![Expr::ident("x")]));
+        let expression: ReactExpr = syn::parse_quote! {f(x)};
+        let control = ReactExpr::expr(Expr::app(Application::new(
+            Expr::ident("f"),
+            vec![Expr::ident("x")],
+        )));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_binop() {
-        let expression: Expr = syn::parse_quote! {a+b};
-        let control = Expr::binop(Binop::new(
+        let expression: ReactExpr = syn::parse_quote! {a+b};
+        let control = ReactExpr::expr(Expr::binop(Binop::new(
             BinaryOperator::Add,
             Expr::ident("a"),
             Expr::ident("b"),
-        ));
+        )));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_binop_with_precedence() {
-        let expression: Expr = syn::parse_quote! {a+b*c};
-        let control = Expr::binop(Binop::new(
+        let expression: ReactExpr = syn::parse_quote! {a+b*c};
+        let control = ReactExpr::expr(Expr::binop(Binop::new(
             BinaryOperator::Add,
             Expr::ident("a"),
             Expr::Binop(Binop::new(
@@ -370,71 +391,71 @@ mod parse_stream_expression {
                 Expr::ident("b"),
                 Expr::ident("c"),
             )),
-        ));
+        )));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_typed_abstraction() {
-        let expression: Expr = syn::parse_quote! {|x: int| f(x)};
-        let control = Expr::type_abstraction(TypedAbstraction::new(
+        let expression: ReactExpr = syn::parse_quote! {|x: int| f(x)};
+        let control = ReactExpr::expr(Expr::type_abstraction(TypedAbstraction::new(
             vec![("x".into(), Typ::int())],
             Expr::app(Application::new(Expr::ident("f"), vec![Expr::ident("x")])),
-        ));
+        )));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_structure() {
-        let expression: Expr = syn::parse_quote! {Point {x: 0, y: 1}};
-        let control = Expr::structure(Structure::new(
+        let expression: ReactExpr = syn::parse_quote! {Point {x: 0, y: 1}};
+        let control = ReactExpr::expr(Expr::structure(Structure::new(
             "Point",
             vec![
                 ("x".into(), Expr::cst(Constant::int(syn::parse_quote! {0}))),
                 ("y".into(), Expr::cst(Constant::int(syn::parse_quote! {1}))),
             ],
-        ));
+        )));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_tuple() {
-        let expression: Expr = syn::parse_quote! {(x, 0)};
-        let control = Expr::tuple(Tuple::new(vec![
+        let expression: ReactExpr = syn::parse_quote! {(x, 0)};
+        let control = ReactExpr::expr(Expr::tuple(Tuple::new(vec![
             Expr::ident("x"),
             Expr::cst(Constant::int(syn::parse_quote! {0})),
-        ]));
+        ])));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_enumeration() {
-        let expression: Expr = syn::parse_quote! {Color::Pink};
-        let control = Expr::enumeration(Enumeration::new("Color", "Pink"));
+        let expression: ReactExpr = syn::parse_quote! {Color::Pink};
+        let control = ReactExpr::expr(Expr::enumeration(Enumeration::new("Color", "Pink")));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_array() {
-        let expression: Expr = syn::parse_quote! {[1, 2, 3]};
-        let control = Expr::array(Array::new(vec![
+        let expression: ReactExpr = syn::parse_quote! {[1, 2, 3]};
+        let control = ReactExpr::expr(Expr::array(Array::new(vec![
             Expr::cst(Constant::int(syn::parse_quote! {1})),
             Expr::cst(Constant::int(syn::parse_quote! {2})),
             Expr::cst(Constant::int(syn::parse_quote! {3})),
-        ]));
+        ])));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_match() {
-        let expression: Expr = syn::parse_quote! {
+        let expression: ReactExpr = syn::parse_quote! {
             match a {
                 Point {x: 0, y: _} => 0,
                 Point {x: x, y: _} if f(x) => -1,
                 _ => 1,
             }
         };
-        let control = Expr::pat_match(Match::new(
+        let control = ReactExpr::expr(Expr::pat_match(Match::new(
             Expr::ident("a"),
             vec![
                 Arm::new(
@@ -471,74 +492,80 @@ mod parse_stream_expression {
                     Expr::cst(Constant::int(syn::parse_quote! {1})),
                 ),
             ],
-        ));
+        )));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_field_access() {
-        let expression: Expr = syn::parse_quote! {p.x};
-        let control = Expr::field_access(FieldAccess::new(Expr::ident("p"), "x"));
+        let expression: ReactExpr = syn::parse_quote! {p.x};
+        let control = ReactExpr::expr(Expr::field_access(FieldAccess::new(Expr::ident("p"), "x")));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_tuple_element_access() {
-        let expression: Expr = syn::parse_quote! {t.0};
-        let control = Expr::tuple_access(TupleElementAccess::new(Expr::ident("t"), 0));
+        let expression: ReactExpr = syn::parse_quote! {t.0};
+        let control = ReactExpr::expr(Expr::tuple_access(TupleElementAccess::new(
+            Expr::ident("t"),
+            0,
+        )));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_map() {
-        let expression: Expr = syn::parse_quote! {a.map(f)};
-        let control = Expr::map(Map::new(Expr::ident("a"), Expr::ident("f")));
+        let expression: ReactExpr = syn::parse_quote! {a.map(f)};
+        let control = ReactExpr::expr(Expr::map(Map::new(Expr::ident("a"), Expr::ident("f"))));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_fold() {
-        let expression: Expr = syn::parse_quote! {a.fold(0, sum)};
-        let control = Expr::fold(Fold::new(
+        let expression: ReactExpr = syn::parse_quote! {a.fold(0, sum)};
+        let control = ReactExpr::expr(Expr::fold(Fold::new(
             Expr::ident("a"),
             Expr::cst(Constant::int(syn::parse_quote! {0})),
             Expr::ident("sum"),
-        ));
+        )));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_sort() {
-        let expression: Expr = syn::parse_quote! {a.sort(order)};
-        let control = Expr::sort(Sort::new(Expr::ident("a"), Expr::ident("order")));
+        let expression: ReactExpr = syn::parse_quote! {a.sort(order)};
+        let control = ReactExpr::expr(Expr::sort(Sort::new(
+            Expr::ident("a"),
+            Expr::ident("order"),
+        )));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_zip() {
-        let expression: Expr = syn::parse_quote! {zip(a, b, c)};
-        let control = Expr::zip(Zip::new(vec![
+        let expression: ReactExpr = syn::parse_quote! {zip(a, b, c)};
+        let control = ReactExpr::expr(Expr::zip(Zip::new(vec![
             Expr::ident("a"),
             Expr::ident("b"),
             Expr::ident("c"),
-        ]));
+        ])));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_emit() {
-        let expression: Expr = syn::parse_quote! {emit 0};
-        let control = Expr::emit(Emit::new(
+        let expression: ReactExpr = syn::parse_quote! {emit 0};
+        let control = ReactExpr::expr(Expr::emit(Emit::new(
             Default::default(),
             Expr::cst(Constant::int(syn::parse_quote! {0})),
-        ));
+        )));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_when() {
-        let expression: Expr = syn::parse_quote! {when let d = p? then emit x};
-        let control = Expr::when_match(When::new(
+        let expression: ReactExpr = syn::parse_quote! {when let d = p? then emit x};
+        let control = ReactExpr::when_match(When::new(
             EventPattern::Let(LetEventPattern::new(
                 Default::default(),
                 expr::Pattern::ident("d"),
@@ -555,8 +582,8 @@ mod parse_stream_expression {
 
     #[test]
     fn should_parse_when_with_guard() {
-        let expression: Expr = syn::parse_quote! {when p? if p > 0 then emit x};
-        let control = Expr::when_match(When::new(
+        let expression: ReactExpr = syn::parse_quote! {when p? if p > 0 then emit x};
+        let control = ReactExpr::when_match(When::new(
             EventPattern::Let(LetEventPattern::new(
                 Default::default(),
                 expr::Pattern::ident("p"),

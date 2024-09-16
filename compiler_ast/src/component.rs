@@ -5,7 +5,7 @@ prelude! {
         punctuated::Punctuated,
         braced, parenthesized, token, LitInt, Token,
     },
-    contract::Contract, equation::Equation,
+    contract::Contract, equation::ReactEq,
 }
 
 use super::colon::Colon;
@@ -29,7 +29,7 @@ pub struct Component {
     pub contract: Contract,
     pub brace: token::Brace,
     /// Component's equations.
-    pub equations: Vec<Equation>,
+    pub equations: Vec<ReactEq>,
 }
 impl Component {
     pub fn peek(input: syn::parse::ParseStream) -> bool {
@@ -59,7 +59,7 @@ impl Parse for Component {
         let contract: Contract = input.parse()?;
         let content;
         let brace: token::Brace = braced!(content in input);
-        let equations: Vec<Equation> = {
+        let equations: Vec<ReactEq> = {
             let mut equations = vec![];
             while !content.is_empty() {
                 equations.push(content.parse()?)

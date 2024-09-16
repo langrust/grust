@@ -194,7 +194,6 @@ impl<'a> HIRFromAST<PatLocCtxt<'a>> for stream::Expr {
             stream::Expr::Emit(stream::Emit { expr, .. }) => {
                 hir::stream::Kind::some_event(expr.hir_from_ast(ctxt)?)
             }
-            stream::Expr::When(expression) => expression.hir_from_ast(ctxt)?,
             stream::Expr::Constant(constant) => hir::stream::Kind::Expression {
                 expression: hir::expr::Kind::Constant { constant },
             },
@@ -262,5 +261,26 @@ impl<'a> HIRFromAST<PatLocCtxt<'a>> for stream::Expr {
             location: ctxt.loc.clone(),
             dependencies: hir::Dependencies::new(),
         })
+    }
+}
+
+impl<'a> HIRFromAST<PatLocCtxt<'a>> for stream::ReactExpr {
+    type HIR = hir::stream::Expr;
+
+    // precondition: identifiers are stored in symbol table
+    // postcondition: construct HIR stream expression and check identifiers good use
+    fn hir_from_ast(self, ctxt: &mut PatLocCtxt<'a>) -> TRes<Self::HIR> {
+        match self {
+            stream::ReactExpr::Expr(expr) => expr.hir_from_ast(ctxt),
+            stream::ReactExpr::When(expr) => {
+                let kind = expr.hir_from_ast(ctxt)?;
+                Ok(hir::stream::Expr {
+                    kind,
+                    typing: None,
+                    location: ctxt.loc.clone(),
+                    dependencies: hir::Dependencies::new(),
+                })
+            }
+        }
     }
 }

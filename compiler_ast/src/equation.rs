@@ -9,29 +9,29 @@ use syn::parenthesized;
 
 use super::keyword;
 
-pub struct Instantiation {
+pub struct Instantiation<E> {
     /// Pattern of instantiated signals.
     pub pattern: Pattern,
     pub eq_token: Token![=],
     /// The stream expression defining the signals.
-    pub expression: stream::Expr,
+    pub expression: E,
     pub semi_token: Token![;],
 }
 
-mk_new! { impl Instantiation =>
+mk_new! { impl{E} Instantiation<E> =>
     new {
         pattern: Pattern,
         eq_token: Token![=],
-        expression: stream::Expr,
+        expression: E,
         semi_token: Token![;],
     }
 }
 
-impl Parse for Instantiation {
+impl<E: Parse> Parse for Instantiation<E> {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let pattern: Pattern = input.parse()?;
         let eq: Token![=] = input.parse()?;
-        let expr: stream::Expr = input.parse()?;
+        let expr: E = input.parse()?;
         let semi_token: Token![;] = input.parse()?;
 
         Ok(Instantiation::new(pattern, eq, expr, semi_token))
@@ -47,7 +47,7 @@ pub struct Arm {
     pub arrow_token: Token![=>],
     pub brace_token: token::Brace,
     /// The equations.
-    pub equations: Vec<Equation>,
+    pub equations: Vec<Eq>,
 }
 
 mk_new! { impl Arm =>
@@ -56,7 +56,7 @@ mk_new! { impl Arm =>
         guard: Option<(Token![if], stream::Expr)>,
         arrow_token: Token![=>],
         brace_token: token::Brace,
-        equations: Vec<Equation>,
+        equations: Vec<Eq>,
     }
 }
 
@@ -113,6 +113,29 @@ impl Parse for Match {
         let arms: Punctuated<Arm, Token![,]> = Punctuated::parse_terminated(&content)?;
 
         Ok(Match::new(match_token, expr, brace, arms))
+    }
+}
+
+/// GRust simpl equation AST.
+pub enum Eq {
+    LocalDef(LetDecl<stream::Expr>),
+    OutputDef(Instantiation<stream::Expr>),
+    Match(Match),
+}
+mk_new! { impl Eq =>
+    LocalDef: local_def(e: LetDecl<stream::Expr> = e)
+    OutputDef: out_def(i: Instantiation<stream::Expr> = i)
+    Match: pat_match(m : Match = m)
+}
+impl Parse for Eq {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        if input.peek(Token![match]) {
+            Ok(Eq::pat_match(input.parse()?))
+        } else if input.peek(Token![let]) {
+            Ok(Eq::local_def(input.parse()?))
+        } else {
+            Ok(Eq::out_def(input.parse()?))
+        }
     }
 }
 
@@ -229,7 +252,7 @@ pub struct EventArmWhen {
     pub arrow_token: Token![=>],
     pub brace_token: token::Brace,
     /// The equations.
-    pub equations: Vec<Equation>,
+    pub equations: Vec<Eq>,
 }
 mk_new! { impl EventArmWhen =>
     new {
@@ -237,7 +260,7 @@ mk_new! { impl EventArmWhen =>
         guard: Option<(Token![if], stream::Expr)>,
         arrow_token: Token![=>],
         brace_token: token::Brace,
-        equations: Vec<Equation>,
+        equations: Vec<Eq>,
     }
 }
 
@@ -294,31 +317,29 @@ impl Parse for MatchWhen {
     }
 }
 
-/// GRust equation AST.
-pub enum Equation {
-    LocalDef(LetDecl<stream::Expr>),
-    OutputDef(Instantiation),
-    Match(Match),
+/// GRust reactive equation AST.
+pub enum ReactEq {
+    LocalDef(LetDecl<stream::ReactExpr>),
+    OutputDef(Instantiation<stream::ReactExpr>),
     MatchWhen(MatchWhen),
+    Match(Match),
 }
-
-mk_new! { impl Equation =>
-    LocalDef: local_def(e: LetDecl<stream::Expr> = e)
-    OutputDef: out_def(i: Instantiation = i)
-    Match: pat_match(m : Match = m)
+mk_new! { impl ReactEq =>
+    LocalDef: local_def(e: LetDecl<stream::ReactExpr> = e)
+    OutputDef: out_def(i: Instantiation<stream::ReactExpr> = i)
     MatchWhen: match_when(m : MatchWhen = m)
+    Match: pat_match(m : Match = m)
 }
-
-impl Parse for Equation {
+impl Parse for ReactEq {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         if input.peek(Token![match]) {
-            Ok(Equation::pat_match(input.parse()?))
+            Ok(ReactEq::pat_match(input.parse()?))
         } else if input.peek(keyword::when) {
-            Ok(Equation::match_when(input.parse()?))
+            Ok(ReactEq::match_when(input.parse()?))
         } else if input.peek(Token![let]) {
-            Ok(Equation::local_def(input.parse()?))
+            Ok(ReactEq::local_def(input.parse()?))
         } else {
-            Ok(Equation::out_def(input.parse()?))
+            Ok(ReactEq::out_def(input.parse()?))
         }
     }
 }
@@ -334,9 +355,9 @@ mod parse_equation {
         operator::BinaryOperator,
     }
 
-    use super::Equation;
+    use super::{Eq, ReactEq};
 
-    impl PartialEq for Equation {
+    impl PartialEq for Eq {
         fn eq(&self, other: &Self) -> bool {
             match (self, other) {
                 (Self::LocalDef(l0), Self::LocalDef(r0)) => {
@@ -345,24 +366,32 @@ mod parse_equation {
                 (Self::OutputDef(l0), Self::OutputDef(r0)) => {
                     l0.expression == r0.expression && l0.pattern == r0.pattern
                 }
+                (Self::Match(l0), Self::Match(r0)) => {
+                    l0.expression == r0.expression
+                        && l0.arms.iter().zip(r0.arms.iter()).all(|(l0, r0)| {
+                            l0.pattern == r0.pattern
+                                && l0.guard == r0.guard
+                                && l0.equations == r0.equations
+                        })
+                }
                 _ => false,
             }
         }
     }
-    impl Debug for Equation {
+    impl Debug for Eq {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             match self {
-                Equation::LocalDef(arg0) => f
+                Self::LocalDef(arg0) => f
                     .debug_tuple("LocalDef")
                     .field(&arg0.typed_pattern)
                     .field(&arg0.expression)
                     .finish(),
-                Equation::OutputDef(arg0) => f
+                Self::OutputDef(arg0) => f
                     .debug_tuple("OutputDef")
                     .field(&arg0.pattern)
                     .field(&arg0.expression)
                     .finish(),
-                Equation::Match(arg0) => f
+                Self::Match(arg0) => f
                     .debug_tuple("Match")
                     .field(&arg0.expression)
                     .field(
@@ -379,7 +408,69 @@ mod parse_equation {
                             .collect::<Vec<_>>(),
                     )
                     .finish(),
-                Equation::MatchWhen(arg0) => f
+            }
+        }
+    }
+
+    impl PartialEq for ReactEq {
+        fn eq(&self, other: &Self) -> bool {
+            match (self, other) {
+                (Self::LocalDef(l0), Self::LocalDef(r0)) => {
+                    l0.expression == r0.expression && l0.typed_pattern == r0.typed_pattern
+                }
+                (Self::OutputDef(l0), Self::OutputDef(r0)) => {
+                    l0.expression == r0.expression && l0.pattern == r0.pattern
+                }
+                (Self::Match(l0), Self::Match(r0)) => {
+                    l0.expression == r0.expression
+                        && l0.arms.iter().zip(r0.arms.iter()).all(|(l0, r0)| {
+                            l0.pattern == r0.pattern
+                                && l0.guard == r0.guard
+                                && l0.equations == r0.equations
+                        })
+                }
+                (Self::MatchWhen(l0), Self::MatchWhen(r0)) => {
+                    l0.arms.iter().zip(r0.arms.iter()).all(|(l0, r0)| {
+                        l0.pattern == r0.pattern
+                            && l0.guard == r0.guard
+                            && l0.equations == r0.equations
+                    })
+                }
+                _ => false,
+            }
+        }
+    }
+    impl Debug for ReactEq {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                Self::LocalDef(arg0) => f
+                    .debug_tuple("LocalDef")
+                    .field(&arg0.typed_pattern)
+                    .field(&arg0.expression)
+                    .finish(),
+                Self::OutputDef(arg0) => f
+                    .debug_tuple("OutputDef")
+                    .field(&arg0.pattern)
+                    .field(&arg0.expression)
+                    .finish(),
+                Self::Match(arg0) => f
+                    .debug_tuple("Match")
+                    .field(&arg0.expression)
+                    .field(
+                        &arg0
+                            .arms
+                            .iter()
+                            .map(|arm| {
+                                (
+                                    &arm.pattern,
+                                    arm.guard.as_ref().map(|(_, expr)| expr),
+                                    &arm.equations,
+                                )
+                            })
+                            .collect::<Vec<_>>(),
+                    )
+                    .finish(),
+                Self::MatchWhen(arg0) => f
                     .debug_tuple("MatchWhen")
                     .field(
                         &arg0
@@ -400,11 +491,11 @@ mod parse_equation {
 
     #[test]
     fn should_parse_output_definition() {
-        let equation: Equation = syn::parse_quote! {o = if res then 0 else (last o init 0) + inc;};
-        let control = Equation::out_def(Instantiation {
+        let equation: ReactEq = syn::parse_quote! {o = if res then 0 else (last o init 0) + inc;};
+        let control = ReactEq::out_def(Instantiation {
             pattern: syn::parse_quote! {o},
             eq_token: syn::parse_quote! {=},
-            expression: stream::Expr::ite(IfThenElse::new(
+            expression: stream::ReactExpr::expr(stream::Expr::ite(IfThenElse::new(
                 stream::Expr::ident("res"),
                 stream::Expr::cst(Constant::int(syn::parse_quote! {0})),
                 stream::Expr::binop(Binop::new(
@@ -415,7 +506,7 @@ mod parse_equation {
                     )),
                     stream::Expr::ident("inc"),
                 )),
-            )),
+            ))),
             semi_token: syn::parse_quote! {;},
         });
         assert_eq!(equation, control)
@@ -423,16 +514,16 @@ mod parse_equation {
 
     #[test]
     fn should_parse_tuple_instantiation() {
-        let equation: Equation = syn::parse_quote! {
+        let equation: ReactEq = syn::parse_quote! {
             (o1, o2) = if res then (0, 0) else ((last o1 init 0) + inc1, last o2 + inc2);
         };
-        let control = Equation::out_def(Instantiation {
+        let control = ReactEq::out_def(Instantiation {
             pattern: stmt::Pattern::tuple(stmt::Tuple::new(vec![
                 syn::parse_quote! {o1},
                 syn::parse_quote! {o2},
             ])),
             eq_token: syn::parse_quote! {=},
-            expression: stream::Expr::ite(IfThenElse::new(
+            expression: stream::ReactExpr::expr(stream::Expr::ite(IfThenElse::new(
                 stream::Expr::ident("res"),
                 stream::Expr::tuple(Tuple::new(vec![
                     stream::Expr::cst(Constant::int(syn::parse_quote! {0})),
@@ -453,7 +544,7 @@ mod parse_equation {
                         stream::Expr::ident("inc2"),
                     )),
                 ])),
-            )),
+            ))),
             semi_token: syn::parse_quote! {;},
         });
         assert_eq!(equation, control)
@@ -461,8 +552,8 @@ mod parse_equation {
 
     #[test]
     fn should_parse_local_definition() {
-        let equation: Equation = syn::parse_quote! {let o: int = if res then 0 else last o + inc;};
-        let control = Equation::local_def(LetDecl::new(
+        let equation: ReactEq = syn::parse_quote! {let o: int = if res then 0 else last o + inc;};
+        let control = ReactEq::local_def(LetDecl::new(
             syn::parse_quote!(let),
             stmt::Pattern::typed(stmt::Typed {
                 ident: syn::parse_quote!(o),
@@ -470,7 +561,7 @@ mod parse_equation {
                 typing: Typ::int(),
             }),
             syn::parse_quote!(=),
-            stream::Expr::ite(IfThenElse::new(
+            stream::ReactExpr::expr(stream::Expr::ite(IfThenElse::new(
                 stream::Expr::ident("res"),
                 stream::Expr::cst(Constant::int(syn::parse_quote! {0})),
                 stream::Expr::binop(Binop::new(
@@ -478,7 +569,7 @@ mod parse_equation {
                     stream::Expr::last(stream::Last::new(syn::parse_quote! {o}, None)),
                     stream::Expr::ident("inc"),
                 )),
-            )),
+            ))),
             syn::parse_quote! {;},
         ));
         assert_eq!(equation, control)
@@ -486,10 +577,10 @@ mod parse_equation {
 
     #[test]
     fn should_parse_multiple_definitions() {
-        let equation: Equation = syn::parse_quote! {
+        let equation: ReactEq = syn::parse_quote! {
             let (o1: int, o2: int) = if res then (0, 0) else ((last o1 init 0) + inc1, last o2 + inc2);
         };
-        let control = Equation::local_def(LetDecl::new(
+        let control = ReactEq::local_def(LetDecl::new(
             syn::parse_quote!(let),
             stmt::Pattern::tuple(stmt::Tuple::new(vec![
                 stmt::Pattern::Typed(stmt::Typed {
@@ -504,7 +595,7 @@ mod parse_equation {
                 }),
             ])),
             syn::parse_quote!(=),
-            stream::Expr::ite(IfThenElse::new(
+            stream::ReactExpr::expr(stream::Expr::ite(IfThenElse::new(
                 stream::Expr::ident("res"),
                 stream::Expr::tuple(Tuple::new(vec![
                     stream::Expr::cst(Constant::int(syn::parse_quote! {0})),
@@ -525,7 +616,7 @@ mod parse_equation {
                         stream::Expr::ident("inc2"),
                     )),
                 ])),
-            )),
+            ))),
             syn::parse_quote! {;},
         ));
         assert_eq!(equation, control)
