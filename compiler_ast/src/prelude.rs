@@ -17,7 +17,7 @@ pub use crate::{
     colon::Colon,
     component::{Component, ComponentImport},
     contract,
-    equation::{self, ReactEq, Eq},
+    equation::{self, Eq, ReactEq},
     expr::{self, Expr},
     function::Function,
     interface::{self, Constrains, FlowExport, FlowImport, Service},
