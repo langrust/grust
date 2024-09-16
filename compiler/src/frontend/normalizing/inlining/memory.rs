@@ -5,6 +5,10 @@ prelude! {
 use super::Union;
 
 impl Memory {
+    pub fn get_identifiers(&self) -> impl Iterator<Item = &usize> {
+        self.called_nodes.keys()
+    }
+
     /// Add the buffer and called_node identifier to the identifier creator.
     ///
     /// It will add the buffer and called_node identifier to the identifier creator. If the
@@ -24,7 +28,7 @@ impl Memory {
             if &fresh_name != name {
                 let scope = symbol_table.get_scope(*memory_id).clone(); // supposed to be Scope::Local
                 debug_assert_eq!(scope, Scope::Local);
-                let typing = Some(symbol_table.get_type(*memory_id).clone());
+                let typing = None;
                 let fresh_id = symbol_table.insert_fresh_signal(fresh_name, scope, typing);
                 let _unique = context_map.insert(*memory_id, Union::I1(fresh_id));
                 debug_assert!(_unique.is_none());
