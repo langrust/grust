@@ -357,8 +357,6 @@ mod isles {
         event_to_stmts: HashMap<usize, Vec<usize>>,
         /// Stores indices of statements triggered by events.
         eventful_calls: HashSet<usize>,
-        /// Symbol table.
-        syms: &'a SymbolTable,
         /// Service to build isles for.
         service: &'a Service,
     }
@@ -390,7 +388,6 @@ mod isles {
                 memory: HashSet::with_capacity(service.statements.len()),
                 event_to_stmts,
                 eventful_calls,
-                syms,
                 service,
             }
         }

@@ -6,13 +6,13 @@ pub enum Braking {
     SoftBrake,
     NoBrake,
 }
-#[requires(0i64 <= speed && speed < 50i64)]
-#[ensures(result == speed * speed / 100i64)]
+# [requires (0i64 <= speed && speed < 50i64)]
+# [ensures (result == speed * speed / 100i64)]
 pub fn compute_soft_braking_distance(speed: i64) -> i64 {
     (speed * speed) / 100i64
 }
-#[requires(0i64 <= speed && speed < 50i64)]
-#[ensures(result != Braking :: NoBrake)]
+# [requires (0i64 <= speed && speed < 50i64)]
+# [ensures (result != Braking :: NoBrake)]
 pub fn brakes(distance: i64, speed: i64) -> Braking {
     let braking_distance = compute_soft_braking_distance(speed);
     let response = if braking_distance < distance {
@@ -36,9 +36,8 @@ impl BrakingStateState {
             last_state: Default::default(),
         }
     }
-    #[requires(0i64 <= input.speed && input.speed < 50i64)]
-    #[ensures(forall < p : i64 > Some(p) == input.pedest == > result !=
-    Braking :: NoBrake)]
+    # [requires (0i64 <= input . speed && input . speed < 50i64)]
+    # [ensures (forall < p : i64 > Some (p) == input . pedest == > result != Braking :: NoBrake)]
     pub fn step(&mut self, input: BrakingStateInput) -> Braking {
         let state = match (input.pedest, input.timeout_pedest) {
             (Some(d), _) => {
