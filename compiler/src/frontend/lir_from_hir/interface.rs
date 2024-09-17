@@ -531,8 +531,6 @@ mod isles {
                 return ();
             }
 
-            println!("{}", self.syms.get_name(event));
-
             debug_assert!(self.isles.is_isle_empty(event));
             debug_assert!(self.memory.is_empty());
             debug_assert!(self.events.is_empty());
@@ -547,19 +545,6 @@ mod isles {
                 }
 
                 if self.is_call(stmt_id) {
-                    println!("{:?} triggered by '{}'", stmt_id, event);
-                    println!(
-                        "{:?} triggered by '{}'",
-                        self.service
-                            .statements
-                            .get(&stmt_id)
-                            .unwrap()
-                            .get_identifiers()
-                            .into_iter()
-                            .map(|id| self.syms.get_name(id))
-                            .collect::<Vec<_>>(),
-                        self.syms.get_name(event)
-                    );
                     self.isles.insert(event, stmt_id);
                 }
 
@@ -676,6 +661,22 @@ mod triggered {
                 .get(&id)
                 .map_or(false, FlowStatement::is_comp_call)
         }
+
+        /// Adds the directed dependencies between 'node' and other existing nodes of the 'trig_graph'.
+        fn add_nodes_deps(&self, trig_graph: &mut DiGraphMap<usize, ()>, node: usize) {
+            for (from, to, ()) in self.graph.edges_directed(node, graph::Direction::Incoming) {
+                debug_assert_eq!(node, to);
+                if trig_graph.contains_node(from) {
+                    trig_graph.add_edge(from, to, ());
+                }
+            }
+            for (from, to, ()) in self.graph.edges_directed(node, graph::Direction::Outgoing) {
+                debug_assert_eq!(node, from);
+                if trig_graph.contains_node(to) {
+                    trig_graph.add_edge(from, to, ());
+                }
+            }
+        }
     }
     impl<'a> TriggersGraph<'a> for EventIslesGraph<'a> {
         fn new(
@@ -751,9 +752,12 @@ mod triggered {
             });
             // loop on stack
             while let Some(parent) = stack.pop() {
+                // add edges of dependency graph between existing nodes
+                self.add_nodes_deps(&mut trig_graph, parent);
+
+                // add triggered nodes
                 let neighbors = self.get_triggered(parent);
                 for child in neighbors {
-                    // add in subgraph of triggers
                     trig_graph.add_edge(parent, child, ());
                     // only insert in stack if not seen
                     if seen.insert(child) {
@@ -761,8 +765,6 @@ mod triggered {
                     }
                 }
             }
-            // add relations from dependency graph between existing nodes
-            todo!();
             trig_graph
         }
 
