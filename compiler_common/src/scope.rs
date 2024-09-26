@@ -5,8 +5,8 @@
 /// - a [Scope::Input], when it is an input of the node/component
 /// - a [Scope::Output] meaning that the signal can be retreived by a node/component application
 /// - a [Scope::Local], when it is only reachable in the node/component defining it
-/// - but it can also be a [Scope::Memory] signal, only used during compilation to tag a `fby` right
-///   expression memory.
+/// - but it can also be a [Scope::VeryLocal] signal, only used during compilation to tag a `fby`
+///   right expression memory.
 ///
 /// # Example
 ///

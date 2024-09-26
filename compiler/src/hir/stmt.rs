@@ -1,4 +1,4 @@
-//! HIR [Statement](crate::hir::statement::Statement) module.
+//! HIR [Statement](crate::hir::Stmt) module.
 
 prelude! {
     hir::stream,
