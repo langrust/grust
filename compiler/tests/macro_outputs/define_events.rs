@@ -33,7 +33,7 @@ impl DefineEventsState {
         };
         let c = z;
         let d = match (y) {
-            (Some(_)) => Some(0.1),
+            (Some(_)) => Some(0.1f64),
             _ => None,
         };
         self.last_z = z;

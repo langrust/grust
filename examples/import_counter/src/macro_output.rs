@@ -22,7 +22,7 @@ impl TestState {
         let x = self.last_stop;
         let y = self.counter.step(CounterInput { res: x, tick: half });
         let stop = y > 35i64;
-        let not_half = !half;
+        let not_half = !(half);
         self.last_not_half = not_half;
         self.last_stop = stop;
         y

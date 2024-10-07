@@ -54,12 +54,12 @@ pub fn new_hysterisis(value: f64) -> Hysterisis {
     }
 }
 pub fn update_hysterisis(prev_hyst: Hysterisis, speed: f64, v_set: f64) -> Hysterisis {
-    let activation_threshold = v_set * 0.99;
-    let deactivation_threshold = v_set * 0.98;
+    let activation_threshold = v_set * 0.99f64;
+    let deactivation_threshold = v_set * 0.98f64;
     let flag = if prev_hyst.flag && (speed <= deactivation_threshold) {
         false
     } else {
-        if !prev_hyst.flag && (speed >= activation_threshold) {
+        if !(prev_hyst.flag) && (speed >= activation_threshold) {
             true
         } else {
             prev_hyst.flag
@@ -78,15 +78,23 @@ pub fn into_diagnostic(to_be_defined: i64) -> i64 {
     to_be_defined
 }
 pub fn threshold_set_speed(set_speed: f64) -> f64 {
-    let ceiled_speed = if set_speed > 150.0 { 150.0 } else { set_speed };
-    let grounded_speed = if set_speed < 10.0 { 10.0 } else { ceiled_speed };
+    let ceiled_speed = if set_speed > 150.0f64 {
+        150.0f64
+    } else {
+        set_speed
+    };
+    let grounded_speed = if set_speed < 10.0f64 {
+        10.0f64
+    } else {
+        ceiled_speed
+    };
     grounded_speed
 }
 pub fn activation_condition(vacuum_brake_state: VacuumBrakeState, v_set: f64) -> bool {
-    (vacuum_brake_state != VacuumBrakeState::BelowMinLevel) && (v_set > 0.0)
+    (vacuum_brake_state != VacuumBrakeState::BelowMinLevel) && (v_set > 0.0f64)
 }
 pub fn standby_condition(vacuum_brake_state: VacuumBrakeState, v_set: f64) -> bool {
-    (vacuum_brake_state == VacuumBrakeState::BelowMinLevel) || (v_set <= 0.0)
+    (vacuum_brake_state == VacuumBrakeState::BelowMinLevel) || (v_set <= 0.0f64)
 }
 pub struct ProcessSetSpeedInput {
     pub set_speed: Option<f64>,
@@ -128,7 +136,7 @@ pub struct SpeedLimiterOnState {
 impl SpeedLimiterOnState {
     pub fn init() -> SpeedLimiterOnState {
         SpeedLimiterOnState {
-            last_hysterisis: new_hysterisis(0.0),
+            last_hysterisis: new_hysterisis(0.0f64),
             last_kickdown_state: Default::default(),
         }
     }
@@ -155,12 +163,12 @@ impl SpeedLimiterOnState {
                 if activation_condition(input.vacuum_brake_state, input.v_set) =>
             {
                 let on_state = SpeedLimiterOn::Actif;
-                let hysterisis = new_hysterisis(0.0);
+                let hysterisis = new_hysterisis(0.0f64);
                 (hysterisis, on_state)
             }
             SpeedLimiterOn::OverrideVoluntary if input.speed <= input.v_set => {
                 let on_state = SpeedLimiterOn::Actif;
-                let hysterisis = new_hysterisis(0.0);
+                let hysterisis = new_hysterisis(0.0f64);
                 (hysterisis, on_state)
             }
             SpeedLimiterOn::Actif if standby_condition(input.vacuum_brake_state, input.v_set) => {

@@ -19,6 +19,7 @@ pub fn binary_to_syn(op: BinaryOperator) -> BinOp {
     match op {
         BinaryOperator::Mul => BinOp::Mul(Default::default()),
         BinaryOperator::Div => BinOp::Div(Default::default()),
+        BinaryOperator::Mod => BinOp::Rem(Default::default()),
         BinaryOperator::Add => BinOp::Add(Default::default()),
         BinaryOperator::Sub => BinOp::Sub(Default::default()),
         BinaryOperator::And => BinOp::And(Default::default()),
@@ -40,7 +41,7 @@ pub fn unary_to_syn(op: UnaryOperator) -> syn::UnOp {
     }
 }
 
-/// Transforms unary operator into syn's unary operator.
+/// Transforms constants into syn constants.
 pub fn constant_to_syn(literal: Constant) -> Expr {
     match literal {
         Constant::Integer(i) => Expr::Lit(ExprLit {
@@ -52,7 +53,21 @@ pub fn constant_to_syn(literal: Constant) -> Expr {
         }),
         Constant::Float(f) => Expr::Lit(ExprLit {
             attrs: vec![],
-            lit: syn::Lit::Float(f),
+            lit: {
+                // force `f64` suffix
+                let f = if f.suffix() == "" {
+                    let mut s = f.to_string();
+                    // careful on trailing `.`
+                    if s.ends_with(".") {
+                        s.push('0');
+                    }
+                    s.push_str("f64");
+                    syn::LitFloat::new(&s, f.span())
+                } else {
+                    f
+                };
+                syn::Lit::Float(f)
+            },
         }),
         Constant::Boolean(b) => Expr::Lit(ExprLit {
             attrs: vec![],
@@ -138,7 +153,7 @@ pub fn rust_ast_from_lir(expression: lir::Expr, crates: &mut BTreeSet<String>) -
         lir::Expr::Unop { op, expression } => {
             let op = unary_to_syn(op);
             let expr = rust_ast_from_lir(*expression, crates);
-            Expr::Unary(parse_quote! { #op #expr})
+            Expr::Unary(parse_quote! { #op (#expr) })
         }
         lir::Expr::Binop {
             op,
