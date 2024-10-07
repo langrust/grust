@@ -27,6 +27,8 @@ pub enum BinaryOperator {
     Mul,
     /// Division, `x / y`.
     Div,
+    /// Modulo, `x % y`.
+    Mod,
     /// Addition, `x + y`.
     Add,
     /// Subtraction, `x - y`.
@@ -129,6 +131,7 @@ impl std::fmt::Display for BinaryOperator {
         match self {
             BinaryOperator::Mul => " * ".fmt(f),
             BinaryOperator::Div => " / ".fmt(f),
+            BinaryOperator::Mod => " % ".fmt(f),
             BinaryOperator::Add => " + ".fmt(f),
             BinaryOperator::Sub => " - ".fmt(f),
             BinaryOperator::And => " && ".fmt(f),
@@ -256,6 +259,7 @@ impl BinaryOperator {
             // or `float -> float -> float` then it is a [Typ::Polymorphism]
             BinaryOperator::Mul
             | BinaryOperator::Div
+            | BinaryOperator::Mod
             | BinaryOperator::Add
             | BinaryOperator::Sub => Typ::Polymorphism(BinaryOperator::numerical_operator),
             // If self is a comparison over numbers then its type can either be `int -> int -> bool`

@@ -24,7 +24,7 @@ impl MultipleEventsState {
         let c = self.last_z;
         let x = input.v > 50i64;
         let y = match () {
-            () if x && !self.last_x => Some(()),
+            () if x && !(self.last_x) => Some(()),
             _ => None,
         };
         let (aux2, z, aux3, aux1) = match (input.a, input.b, y) {
@@ -94,7 +94,7 @@ impl DefineEventsState {
         };
         let c = z;
         let d = match (y) {
-            (Some(a)) => 0.1,
+            (Some(a)) => 0.1f64,
             _ => self.last_d,
         };
         self.last_d = d;
@@ -145,7 +145,7 @@ impl FinalTestState {
         };
         let test = input.v > 50i64;
         let w = match () {
-            () if test && !self.last_test => Some(input.v + self.last_u),
+            () if test && !(self.last_test) => Some(input.v + self.last_u),
             _ => None,
         };
         let u = match (y, w) {
