@@ -20,7 +20,7 @@ where
     queue: TimerQueue<T, N>,
     #[pin]
     sleep: Sleep,
-    sleeping_timer: Option<(T, Instant)>,
+    sleep_infos: Option<(T, Instant)>,
 }
 impl<S, T, const N: usize> Stream for TimerStream<S, T, N>
 where
@@ -36,24 +36,28 @@ where
         let mut abort = false;
         if !*project.end {
             loop {
-                // println!("take timers");
                 // collect arriving timers
                 match project.stream.as_mut().poll_next(cx) {
                     // the stream have a value
                     Poll::Ready(Some((kind, pushed_instant))) => {
-                        // if it is sleeping timer's kind then abort sleep
+                        // check if need to abort `sleep`
                         if let Some((sleeping_timer, sleeping_deadline)) =
-                            project.sleeping_timer.as_ref()
+                            project.sleep_infos.as_ref()
                         {
+                            // if it is sleeping timer's kind then plan to abort `sleep`
                             if kind.do_reset() && kind.eq(sleeping_timer) {
                                 abort = true;
-                            } else if sleeping_deadline > &(pushed_instant + kind.get_duration()) {
+                            } else 
+                            // if urgent then plan to abort `sleep` and push current timer back into queue
+                            if sleeping_deadline > &(pushed_instant + kind.get_duration()) {
                                 abort = true;
                                 let (sleeping_timer, sleeping_deadline) =
-                                    project.sleeping_timer.take().unwrap();
+                                    project.sleep_infos.take().unwrap();
                                 queue.push(Timer::from_deadline(sleeping_deadline, sleeping_timer))
                             }
                         }
+
+                        // push new timer into queue
                         if kind.do_reset() {
                             queue.reset(Timer::init(kind, pushed_instant));
                         } else {
@@ -71,15 +75,19 @@ where
             }
         }
 
+        // need to reset `sleep` (= `abort` planned or `sleep` terminated)
         if abort || project.sleep.as_mut().poll(cx).is_ready() {
             match queue.pop() {
                 Some(timer) => {
                     let (timer_kind, timer_deadline) = timer.get_kind_and_deadline();
+                    // reset `sleep` with popped timer
                     project.sleep.reset(timer_deadline.into());
+                    // update `sleep_infos`
                     let output = std::mem::replace(
-                        project.sleeping_timer,
+                        project.sleep_infos,
                         Some((timer_kind, timer_deadline.into())),
                     );
+                    // if `sleep` terminated then send its infos
                     if !abort && output.is_some() {
                         Poll::Ready(output)
                     } else {
@@ -87,10 +95,12 @@ where
                     }
                 }
                 None => {
-                    if project.sleeping_timer.is_some() {
-                        let output = project.sleeping_timer.take();
+                    if project.sleep_infos.is_some() {
+                        // if `sleep` terminated then send its infos
+                        let output = project.sleep_infos.take();
                         Poll::Ready(output)
                     } else {
+                        // if no more timers then end the stream
                         if *project.end {
                             Poll::Ready(None)
                         } else {
@@ -114,7 +124,7 @@ where
         end: false,
         queue: TimerQueue::new(),
         sleep: sleep_until(tokio::time::Instant::now()),
-        sleeping_timer: None,
+        sleep_infos: None,
     }
 }
 
