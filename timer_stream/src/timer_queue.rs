@@ -28,16 +28,6 @@ impl<T, const N: usize> TimerQueue<T, N> {
     pub fn is_full(&self) -> bool {
         self.len == N
     }
-    /// Pop the most urgent timer from the queue.
-    pub fn pop(&mut self) -> Option<Timer<T>> {
-        if self.is_empty() {
-            None
-        } else {
-            let res = std::mem::take(&mut self.queue[self.len - 1]);
-            self.len -= 1;
-            res
-        }
-    }
     /// Push a value in timer queue.
     ///
     /// # Panics
@@ -51,7 +41,7 @@ impl<T, const N: usize> TimerQueue<T, N> {
 
         // puts the value at the right place
         for index in 0..self.len {
-            let curr = self.queue[index].as_mut().unwrap();
+            let curr = self.queue[index].as_ref().unwrap();
             match value.get_deadline().cmp(&curr.get_deadline()) {
                 Ordering::Greater | Ordering::Equal => {
                     self.queue[index..=self.len].rotate_right(1);
@@ -65,6 +55,31 @@ impl<T, const N: usize> TimerQueue<T, N> {
         // if not inserted, then put it at the end
         self.queue[self.len] = Some(value);
         self.len += 1;
+    }
+    /// Pop the most urgent timer from the queue.
+    pub fn pop(&mut self) -> Option<Timer<T>> {
+        if self.is_empty() {
+            None
+        } else {
+            let res = std::mem::take(&mut self.queue[self.len - 1]);
+            self.len -= 1;
+            res
+        }
+    }
+    pub fn println(&self)
+    where
+        T: Debug,
+    {
+        if self.is_empty() {
+            println!("[]")
+        } else {
+            print!("[");
+            self.queue
+                .iter()
+                .take(self.len - 1)
+                .for_each(|t| print!("{t:?}, "));
+            println!("{:?}]", self.queue[self.len - 1])
+        }
     }
 }
 impl<T, const N: usize> TimerQueue<T, N>
@@ -94,23 +109,6 @@ where
         }
         // pushes the value at the right place
         self.push(value)
-    }
-}
-impl<T, const N: usize> TimerQueue<T, N>
-where
-    T: Debug,
-{
-    pub fn println(&self) {
-        if self.is_empty() {
-            println!("[]")
-        } else {
-            print!("[");
-            self.queue
-                .iter()
-                .take(self.len - 1)
-                .for_each(|t| print!("{t:?}, "));
-            println!("{:?}]", self.queue[self.len - 1])
-        }
     }
 }
 impl<T, const N: usize> Into<Vec<T>> for TimerQueue<T, N> {

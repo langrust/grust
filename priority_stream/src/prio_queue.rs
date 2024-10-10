@@ -45,7 +45,8 @@ where
 
         // puts the value at the right place
         for index in 0..self.len {
-            match (self.order)(&value, self.queue[index].as_ref().unwrap()) {
+            let curr = self.queue[index].as_ref().unwrap();
+            match (self.order)(&value, curr) {
                 Ordering::Greater | Ordering::Equal => {
                     self.queue[index..=self.len].rotate_right(1);
                     self.queue[index] = Some(value);
