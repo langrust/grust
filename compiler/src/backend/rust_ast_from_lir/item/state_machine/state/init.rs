@@ -1,6 +1,6 @@
 prelude! {
     backend::rust_ast_from_lir::expression::rust_ast_from_lir as expression_rust_ast_from_lir,
-    lir::item::state_machine::state::init::{Init, StateElementInit},
+    lir::item::state_machine::{Init, StateElmInit},
     macro2::Span, quote::format_ident,
 }
 
@@ -25,23 +25,20 @@ pub fn rust_ast_from_lir(init: Init, crates: &mut BTreeSet<String>) -> syn::Impl
     };
 
     let fields = init
-        .state_elements_init
+        .state_init
         .into_iter()
         .map(|element| -> syn::FieldValue {
             match element {
-                StateElementInit::BufferInit {
-                    identifier,
-                    initial_expression,
-                } => {
-                    let id = format_ident!("{}", identifier);
-                    let expr: syn::Expr = expression_rust_ast_from_lir(initial_expression, crates);
+                StateElmInit::Buffer { ident, data } => {
+                    let id = format_ident!("{}", ident);
+                    let expr: syn::Expr = expression_rust_ast_from_lir(data, crates);
                     parse_quote! { #id : #expr }
                 }
-                StateElementInit::CalledNodeInit {
-                    identifier,
+                StateElmInit::CalledNode {
+                    memory_ident,
                     node_name,
                 } => {
-                    let id = Ident::new(&identifier, Span::call_site());
+                    let id = Ident::new(&memory_ident, Span::call_site());
                     let called_state_ty = Ident::new(
                         &to_camel_case(&format!("{}State", node_name)),
                         Span::call_site(),
@@ -81,26 +78,20 @@ mod rust_ast_from_lir {
     prelude! {
         backend::rust_ast_from_lir::item::state_machine::state::init::rust_ast_from_lir,
         lir::{
-            item::state_machine::state::init::{Init, StateElementInit},
+            item::state_machine::{Init, StateElmInit},
         },
     }
 
     #[test]
     fn should_create_rust_ast_associated_method_from_lir_node_init() {
-        let init = Init {
-            invariant_initialisation: vec![],
-            node_name: format!("Node"),
-            state_elements_init: vec![
-                StateElementInit::BufferInit {
-                    identifier: format!("mem_i"),
-                    initial_expression: lir::Expr::lit(Constant::int(parse_quote!(0i64))),
-                },
-                StateElementInit::CalledNodeInit {
-                    identifier: format!("called_node_state"),
-                    node_name: format!("CalledNode"),
-                },
+        let init = Init::new(
+            format!("Node"),
+            vec![
+                StateElmInit::buffer("mem_i", lir::Expr::lit(Constant::int(parse_quote!(0i64)))),
+                StateElmInit::called_node("called_node_state", "CalledNode"),
             ],
-        };
+            vec![],
+        );
 
         let control = parse_quote! {
             pub fn init() -> NodeState {

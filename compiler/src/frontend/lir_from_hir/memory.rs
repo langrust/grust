@@ -2,7 +2,7 @@ use itertools::Itertools;
 
 prelude! {
     hir::memory::{Buffer, CalledNode, Memory},
-    lir::item::state_machine::state::{init::StateElementInit, step::StateElementStep, StateElement},
+    lir::item::state_machine::{StateElmInit, StateElmInfo, StateElmStep},
 }
 
 use super::LIRFromHIR;
@@ -12,11 +12,7 @@ impl Memory {
     pub fn get_state_elements(
         self,
         symbol_table: &SymbolTable,
-    ) -> (
-        Vec<StateElement>,
-        Vec<StateElementInit>,
-        Vec<StateElementStep>,
-    ) {
+    ) -> (Vec<StateElmInfo>, Vec<StateElmInit>, Vec<StateElmStep>) {
         let Memory {
             buffers,
             called_nodes,
@@ -39,22 +35,19 @@ impl Memory {
                 )| {
                     let scope = symbol_table.get_scope(id);
                     let mem_ident = format!("last_{}", ident);
-                    elements.push(StateElement::Buffer {
-                        identifier: mem_ident.clone(),
-                        typ: typing,
-                    });
-                    inits.push(StateElementInit::BufferInit {
-                        identifier: mem_ident.clone(),
-                        initial_expression: initial_expression.lir_from_hir(symbol_table),
-                    });
-                    steps.push(StateElementStep {
-                        identifier: mem_ident.clone(),
-                        expression: match scope {
+                    elements.push(StateElmInfo::buffer(&mem_ident, typing));
+                    inits.push(StateElmInit::buffer(
+                        &mem_ident,
+                        initial_expression.lir_from_hir(symbol_table),
+                    ));
+                    steps.push(StateElmStep::new(
+                        mem_ident,
+                        match scope {
                             Scope::Input => lir::Expr::input_access(ident),
                             Scope::Output | Scope::Local => lir::Expr::ident(ident),
                             Scope::VeryLocal => unreachable!(),
                         },
-                    });
+                    ));
                 },
             );
         called_nodes
@@ -63,14 +56,8 @@ impl Memory {
             .for_each(|(memory_id, CalledNode { node_id, .. })| {
                 let memory_name = symbol_table.get_name(memory_id);
                 let node_name = symbol_table.get_name(node_id);
-                elements.push(StateElement::CalledNode {
-                    identifier: memory_name.clone(),
-                    node_name: node_name.clone(),
-                });
-                inits.push(StateElementInit::CalledNodeInit {
-                    identifier: memory_name.clone(),
-                    node_name: node_name.clone(),
-                });
+                elements.push(StateElmInfo::called_node(memory_name, node_name));
+                inits.push(StateElmInit::called_node(memory_name, node_name));
             });
 
         (elements, inits, steps)

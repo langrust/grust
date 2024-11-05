@@ -9,7 +9,7 @@ prelude! {
         rust_ast_from_lir::typ::rust_ast_from_lir
             as type_rust_ast_from_lir,
     },
-    lir::item::state_machine::state::{State, StateElement},
+    lir::item::state_machine::{State, StateElm},
     quote::format_ident,
 }
 
@@ -27,19 +27,19 @@ pub fn rust_ast_from_lir(
         .elements
         .into_iter()
         .map(|element| match element {
-            StateElement::Buffer { identifier, typ } => {
-                let identifier = format_ident!("{identifier}");
+            StateElm::Buffer { ident, data: typ } => {
+                let ident = format_ident!("{ident}");
                 let ty = type_rust_ast_from_lir(typ);
-                parse_quote! { #identifier : #ty }
+                parse_quote! { #ident : #ty }
             }
-            StateElement::CalledNode {
-                identifier,
+            StateElm::CalledNode {
+                memory_ident,
                 node_name,
             } => {
                 let name = format_ident!("{}", to_camel_case(&format!("{}State", node_name)));
-                let identifier = format_ident!("{identifier}");
+                let memory_ident = format_ident!("{memory_ident}");
 
-                parse_quote! { #identifier : #name }
+                parse_quote! { #memory_ident : #name }
             }
         })
         .collect();
