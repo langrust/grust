@@ -1,7 +1,5 @@
 //! Basic types, helpers and re-exports.
 
-pub extern crate syn as syn_lib;
-
 /// Imports the compiler prelude.
 #[macro_export]
 macro_rules! prelude {
