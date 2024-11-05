@@ -41,8 +41,8 @@ pub mod syn {
 }
 
 pub use syn::{
-    braced, bracketed, custom_keyword, parenthesized, parse_macro_input, parse_quote, BinOp, Ident,
-    ParseStream, Token, UnOp,
+    braced, bracketed, custom_keyword, parenthesized, parse_macro_input, parse_quote, Ident,
+    ParseStream, Token,
 };
 
 pub use crate::{

@@ -2,7 +2,7 @@ prelude! { just
     macro2::Span,
     backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir,
     lir::item::array_alias::ArrayAlias,
-    syn, parse_quote
+    syn, parse_quote, Ident,
 }
 
 /// Transform LIR array alias into RustAST type alias.
@@ -12,7 +12,7 @@ pub fn rust_ast_from_lir(array_alias: ArrayAlias) -> syn::ItemType {
         attrs: Default::default(),
         vis: syn::Visibility::Public(Default::default()),
         type_token: Default::default(),
-        ident: syn::Ident::new(&array_alias.name, Span::call_site()),
+        ident: Ident::new(&array_alias.name, Span::call_site()),
         generics: Default::default(),
         eq_token: Default::default(),
         ty: Box::new(syn::Type::Array(syn::TypeArray {

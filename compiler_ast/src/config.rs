@@ -1,5 +1,5 @@
 prelude! {
-    syn::{Parse, Punctuated, Token, Res, Error, LitStr},
+    syn::{Parse, Punctuated, Res, Error, LitStr},
 }
 
 /// Configuration items in the AST.

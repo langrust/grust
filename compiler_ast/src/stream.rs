@@ -1,5 +1,5 @@
 prelude! {
-    syn::{Parse, Token},
+    syn::Parse,
     equation::EventPattern,
     expr::*,
     operator::BinaryOperator,
