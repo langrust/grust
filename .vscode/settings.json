@@ -14,4 +14,7 @@
         "Hysterisis",
         "Kickdown"
     ],
+    "files.exclude": {
+        "/creusot": true
+    },
 }
