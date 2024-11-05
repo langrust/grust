@@ -1,9 +1,5 @@
 prelude! {
-    syn::{
-        parse::Parse,
-        punctuated::Punctuated,
-        braced, bracketed, parenthesized, token, Token,
-    },
+    syn::{Parse, Punctuated, token},
     operator::{BinaryOperator, UnaryOperator},
 }
 
@@ -13,11 +9,11 @@ pub trait ParsePrec
 where
     Self: Sized,
 {
-    fn parse_term(input: syn::parse::ParseStream) -> syn::Result<Self>;
-    fn parse_prec1(input: syn::parse::ParseStream) -> syn::Result<Self>;
-    fn parse_prec2(input: syn::parse::ParseStream) -> syn::Result<Self>;
-    fn parse_prec3(input: syn::parse::ParseStream) -> syn::Result<Self>;
-    fn parse_prec4(input: syn::parse::ParseStream) -> syn::Result<Self>;
+    fn parse_term(input: ParseStream) -> syn::Res<Self>;
+    fn parse_prec1(input: ParseStream) -> syn::Res<Self>;
+    fn parse_prec2(input: ParseStream) -> syn::Res<Self>;
+    fn parse_prec3(input: ParseStream) -> syn::Res<Self>;
+    fn parse_prec4(input: ParseStream) -> syn::Res<Self>;
 }
 
 /// Unop expression.
@@ -41,7 +37,7 @@ impl<E> Unop<E>
 where
     E: Parse,
 {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         UnaryOperator::peek(input)
     }
 }
@@ -49,7 +45,7 @@ impl<E> Parse for Unop<E>
 where
     E: ParsePrec,
 {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let op = input.parse()?;
         let expression = Box::new(E::parse_term(input)?);
         Ok(Unop { op, expression })
@@ -82,25 +78,25 @@ impl<E> Binop<E>
 where
     E: ParsePrec,
 {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         BinaryOperator::peek(input)
     }
-    pub fn parse_term(lhs: E, input: syn::parse::ParseStream) -> syn::Result<Self> {
+    pub fn parse_term(lhs: E, input: ParseStream) -> syn::Res<Self> {
         let op = input.parse()?;
         let rhs = E::parse_term(input)?;
         Ok(Binop::new(op, lhs, rhs))
     }
-    pub fn parse_prec1(lhs: E, input: syn::parse::ParseStream) -> syn::Result<Self> {
+    pub fn parse_prec1(lhs: E, input: ParseStream) -> syn::Res<Self> {
         let op = input.parse()?;
         let rhs = E::parse_prec1(input)?;
         Ok(Binop::new(op, lhs, rhs))
     }
-    pub fn parse_prec2(lhs: E, input: syn::parse::ParseStream) -> syn::Result<Self> {
+    pub fn parse_prec2(lhs: E, input: ParseStream) -> syn::Res<Self> {
         let op = input.parse()?;
         let rhs = E::parse_prec2(input)?;
         Ok(Binop::new(op, lhs, rhs))
     }
-    pub fn parse_prec3(lhs: E, input: syn::parse::ParseStream) -> syn::Result<Self> {
+    pub fn parse_prec3(lhs: E, input: ParseStream) -> syn::Res<Self> {
         let op = input.parse()?;
         let rhs = E::parse_prec3(input)?;
         Ok(Binop::new(op, lhs, rhs))
@@ -130,7 +126,7 @@ impl<E> IfThenElse<E>
 where
     E: Parse,
 {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(Token![if])
     }
 }
@@ -138,7 +134,7 @@ impl<E> Parse for IfThenElse<E>
 where
     E: Parse,
 {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let _: Token![if] = input.parse()?;
         let expression = Box::new(input.parse()?);
         let _: keyword::then = input.parse()?;
@@ -173,11 +169,11 @@ impl<E> Application<E>
 where
     E: Parse,
 {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(token::Paren)
     }
 
-    pub fn parse(function: E, input: syn::parse::ParseStream) -> syn::Result<Self> {
+    pub fn parse(function: E, input: ParseStream) -> syn::Res<Self> {
         let content;
         let _ = syn::parenthesized!(content in input);
         let inputs: Punctuated<E, Token![,]> = Punctuated::parse_terminated(&content)?;
@@ -188,10 +184,10 @@ impl<E> Parse for Application<E>
 where
     E: Parse,
 {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let function: E = input.parse()?;
         let content;
-        let _ = syn::parenthesized!(content in input);
+        let _ = parenthesized!(content in input);
         let inputs: Punctuated<E, Token![,]> = Punctuated::parse_terminated(&content)?;
         Ok(Application::new(function, inputs.into_iter().collect()))
     }
@@ -217,7 +213,7 @@ impl<E> TypedAbstraction<E>
 where
     E: Parse,
 {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(Token![|])
     }
 }
@@ -225,9 +221,9 @@ impl<E> Parse for TypedAbstraction<E>
 where
     E: Parse,
 {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let _: Token![|] = input.parse()?;
-        let mut inputs: Punctuated<Colon<syn::Ident, Typ>, Token![,]> = Punctuated::new();
+        let mut inputs: Punctuated<Colon<Ident, Typ>, Token![,]> = Punctuated::new();
         loop {
             if input.peek(Token![|]) {
                 break;
@@ -272,7 +268,7 @@ impl<E> Structure<E>
 where
     E: Parse,
 {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         let forked = input.fork();
         forked.call(Structure::<E>::parse).is_ok()
     }
@@ -281,11 +277,11 @@ impl<E> Parse for Structure<E>
 where
     E: Parse,
 {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let ident: syn::Ident = input.parse()?;
+    fn parse(input: ParseStream) -> syn::Res<Self> {
+        let ident: Ident = input.parse()?;
         let content;
         let _ = braced!(content in input);
-        let fields: Punctuated<Colon<syn::Ident, E>, Token![,]> =
+        let fields: Punctuated<Colon<Ident, E>, Token![,]> =
             Punctuated::parse_terminated(&content)?;
         Ok(Structure::new(
             ident.to_string(),
@@ -312,7 +308,7 @@ impl<E> Tuple<E>
 where
     E: Parse,
 {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(token::Paren)
     }
 }
@@ -320,7 +316,7 @@ impl<E> Parse for Tuple<E>
 where
     E: Parse,
 {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let content;
         let _ = parenthesized!(content in input);
         let elements: Punctuated<E, Token![,]> = Punctuated::parse_terminated(&content)?;
@@ -347,19 +343,19 @@ impl<E> Enumeration<E> {
             mark: std::marker::PhantomData,
         }
     }
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         let forked = input.fork();
-        if forked.call(syn::Ident::parse).is_err() {
+        if forked.call(Ident::parse).is_err() {
             return false;
         }
         forked.peek(Token![::])
     }
 }
 impl<E> Parse for Enumeration<E> {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let ident_enum: syn::Ident = input.parse()?;
+    fn parse(input: ParseStream) -> syn::Res<Self> {
+        let ident_enum: Ident = input.parse()?;
         let _: Token![::] = input.parse()?;
-        let ident_elem: syn::Ident = input.parse()?;
+        let ident_elem: Ident = input.parse()?;
         Ok(Enumeration::new(
             ident_enum.to_string(),
             ident_elem.to_string(),
@@ -382,7 +378,7 @@ impl<E> Array<E>
 where
     E: Parse,
 {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(token::Bracket)
     }
 }
@@ -390,7 +386,7 @@ impl<E> Parse for Array<E>
 where
     E: Parse,
 {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let content;
         let _ = bracketed!(content in input);
         let elements: Punctuated<E, Token![,]> = Punctuated::parse_terminated(&content)?;
@@ -416,20 +412,20 @@ mk_new! { impl PatStructure =>
     }
 }
 impl PatStructure {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         let forked = input.fork();
-        if forked.call(syn::Ident::parse).is_err() {
+        if forked.call(Ident::parse).is_err() {
             return false;
         }
         forked.peek(token::Brace)
     }
 }
 impl Parse for PatStructure {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let ident: syn::Ident = input.parse()?;
+    fn parse(input: ParseStream) -> syn::Res<Self> {
+        let ident: Ident = input.parse()?;
         let content;
         let _ = braced!(content in input);
-        let mut fields: Punctuated<(syn::Ident, Option<(Token![:], Pattern)>), Token![,]> =
+        let mut fields: Punctuated<(Ident, Option<(Token![:], Pattern)>), Token![,]> =
             Punctuated::new();
         let mut rest = None;
         while !content.is_empty() {
@@ -438,7 +434,7 @@ impl Parse for PatStructure {
                 break;
             }
 
-            let member: syn::Ident = content.parse()?;
+            let member: Ident = content.parse()?;
             let optional_pattern = if content.peek(Token![:]) {
                 let colon_token = content.parse()?;
                 let pattern = content.parse()?;
@@ -485,19 +481,19 @@ mk_new! { impl PatEnumeration =>
     }
 }
 impl PatEnumeration {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         let forked = input.fork();
-        if forked.call(syn::Ident::parse).is_err() {
+        if forked.call(Ident::parse).is_err() {
             return false;
         }
         forked.peek(Token![::])
     }
 }
 impl Parse for PatEnumeration {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let ident_enum: syn::Ident = input.parse()?;
+    fn parse(input: ParseStream) -> syn::Res<Self> {
+        let ident_enum: Ident = input.parse()?;
         let _: Token![::] = input.parse()?;
-        let ident_elem: syn::Ident = input.parse()?;
+        let ident_elem: Ident = input.parse()?;
         Ok(PatEnumeration {
             enum_name: ident_enum.to_string(),
             elem_name: ident_elem.to_string(),
@@ -515,12 +511,12 @@ mk_new! { impl PatTuple =>
     new { elements: Vec<Pattern> }
 }
 impl PatTuple {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(token::Paren)
     }
 }
 impl Parse for PatTuple {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let content;
         let _ = parenthesized!(content in input);
         let elements: Punctuated<Pattern, Token![,]> = Punctuated::parse_terminated(&content)?;
@@ -558,7 +554,7 @@ impl Pattern {
     }
 }
 impl Parse for Pattern {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let pattern = if input.fork().call(Constant::parse).is_ok() {
             Pattern::Constant(input.parse()?)
         } else if PatStructure::peek(input) {
@@ -571,7 +567,7 @@ impl Parse for Pattern {
             let _: Token![_] = input.parse()?;
             Pattern::Default
         } else {
-            let ident: syn::Ident = input.parse()?;
+            let ident: Ident = input.parse()?;
             Pattern::Identifier(ident.to_string())
         };
 
@@ -585,21 +581,21 @@ mod parse_pattern {
 
     #[test]
     fn should_parse_constant() {
-        let pattern: Pattern = syn::parse_quote! {1};
-        let control = Pattern::cst(Constant::int(syn::parse_quote! {1}));
+        let pattern: Pattern = parse_quote! {1};
+        let control = Pattern::cst(Constant::int(parse_quote! {1}));
         assert_eq!(pattern, control)
     }
 
     #[test]
     fn should_parse_identifier() {
-        let pattern: Pattern = syn::parse_quote! {x};
+        let pattern: Pattern = parse_quote! {x};
         let control = Pattern::ident("x");
         assert_eq!(pattern, control)
     }
 
     #[test]
     fn should_parse_structure() {
-        let pattern: Pattern = syn::parse_quote! {
+        let pattern: Pattern = parse_quote! {
             Point {
                 x: 0,
                 y: _,
@@ -610,7 +606,7 @@ mod parse_pattern {
             vec![
                 (
                     "x".into(),
-                    Some(Pattern::cst(Constant::int(syn::parse_quote! {0}))),
+                    Some(Pattern::cst(Constant::int(parse_quote! {0}))),
                 ),
                 ("y".into(), Some(Pattern::default())),
             ],
@@ -621,7 +617,7 @@ mod parse_pattern {
 
     #[test]
     fn should_parse_structure_with_unrenamed_field() {
-        let pattern: Pattern = syn::parse_quote! {
+        let pattern: Pattern = parse_quote! {
             Point { x: 0, y, }
         };
         let control = Pattern::structure(PatStructure::new(
@@ -629,7 +625,7 @@ mod parse_pattern {
             vec![
                 (
                     "x".into(),
-                    Some(Pattern::cst(Constant::int(syn::parse_quote! {0}))),
+                    Some(Pattern::cst(Constant::int(parse_quote! {0}))),
                 ),
                 ("y".into(), None),
             ],
@@ -640,40 +636,40 @@ mod parse_pattern {
 
     #[test]
     fn should_parse_structure_with_unspecified_field() {
-        let pattern: Pattern = syn::parse_quote! {
+        let pattern: Pattern = parse_quote! {
             Point { x: 0, .. }
         };
         let control = Pattern::structure(PatStructure::new(
             "Point",
             vec![(
                 "x".into(),
-                Some(Pattern::cst(Constant::int(syn::parse_quote! {0}))),
+                Some(Pattern::cst(Constant::int(parse_quote! {0}))),
             )],
-            Some(syn::parse_quote!(..)),
+            Some(parse_quote!(..)),
         ));
         assert_eq!(pattern, control)
     }
 
     #[test]
     fn should_parse_tuple() {
-        let pattern: Pattern = syn::parse_quote! {(x, 0)};
+        let pattern: Pattern = parse_quote! {(x, 0)};
         let control = Pattern::tuple(PatTuple::new(vec![
             Pattern::ident("x"),
-            Pattern::cst(Constant::int(syn::parse_quote! {0})),
+            Pattern::cst(Constant::int(parse_quote! {0})),
         ]));
         assert_eq!(pattern, control)
     }
 
     #[test]
     fn should_parse_enumeration() {
-        let pattern: Pattern = syn::parse_quote! {Color::Pink};
+        let pattern: Pattern = parse_quote! {Color::Pink};
         let control = Pattern::enumeration(PatEnumeration::new("Color", "Pink"));
         assert_eq!(pattern, control)
     }
 
     #[test]
     fn should_parse_default() {
-        let pattern: Pattern = syn::parse_quote! {_};
+        let pattern: Pattern = parse_quote! {_};
         let control = Pattern::default();
         assert_eq!(pattern, control)
     }
@@ -711,7 +707,7 @@ impl<E> Parse for Arm<E>
 where
     E: Parse,
 {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let pattern = input.parse()?;
         let guard = {
             if input.fork().peek(Token![if]) {
@@ -752,7 +748,7 @@ impl<E> Match<E>
 where
     E: Parse,
 {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(Token![match])
     }
 }
@@ -760,7 +756,7 @@ impl<E> Parse for Match<E>
 where
     E: Parse,
 {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let _: Token![match] = input.parse()?;
         let expression: E = input.parse()?;
         let content;
@@ -790,17 +786,17 @@ impl<E> FieldAccess<E>
 where
     E: Parse,
 {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         let forked = input.fork();
         if forked.call(token::Dot::parse).is_err() {
             return false;
         }
-        forked.call(syn::Ident::parse).is_ok()
+        forked.call(Ident::parse).is_ok()
     }
 
-    pub fn parse(expression: E, input: syn::parse::ParseStream) -> syn::Result<Self> {
+    pub fn parse(expression: E, input: ParseStream) -> syn::Res<Self> {
         let _: Token![.] = input.parse()?;
-        let field: syn::Ident = input.parse()?;
+        let field: Ident = input.parse()?;
         Ok(FieldAccess::new(expression, field.to_string()))
     }
 }
@@ -808,10 +804,10 @@ impl<E> Parse for FieldAccess<E>
 where
     E: Parse,
 {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let expression: E = input.parse()?;
         let _: Token![.] = input.parse()?;
-        let field: syn::Ident = input.parse()?;
+        let field: Ident = input.parse()?;
         Ok(FieldAccess::new(expression, field.to_string()))
     }
 }
@@ -836,7 +832,7 @@ impl<E> TupleElementAccess<E>
 where
     E: Parse,
 {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         let forked = input.fork();
         if forked.call(token::Dot::parse).is_err() {
             return false;
@@ -844,7 +840,7 @@ where
         forked.call(syn::LitInt::parse).is_ok()
     }
 
-    pub fn parse(expression: E, input: syn::parse::ParseStream) -> syn::Result<Self> {
+    pub fn parse(expression: E, input: ParseStream) -> syn::Res<Self> {
         let _: Token![.] = input.parse()?;
         let element_number: syn::LitInt = input.parse()?;
         Ok(TupleElementAccess::new(
@@ -857,7 +853,7 @@ impl<E> Parse for TupleElementAccess<E>
 where
     E: Parse,
 {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let expression: E = input.parse()?;
         let _: Token![.] = input.parse()?;
         let element_number: syn::LitInt = input.parse()?;
@@ -888,7 +884,7 @@ impl<E> Map<E>
 where
     E: Parse,
 {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         let forked = input.fork();
         if forked.call(token::Dot::parse).is_err() {
             return false;
@@ -896,7 +892,7 @@ where
         forked.peek(keyword::map)
     }
 
-    pub fn parse(expression: E, input: syn::parse::ParseStream) -> syn::Result<Self> {
+    pub fn parse(expression: E, input: ParseStream) -> syn::Res<Self> {
         let _: Token![.] = input.parse()?;
         let _: keyword::map = input.parse()?;
         let content;
@@ -913,7 +909,7 @@ impl<E> Parse for Map<E>
 where
     E: Parse,
 {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let expression: E = input.parse()?;
         let _: Token![.] = input.parse()?;
         let _: keyword::map = input.parse()?;
@@ -951,7 +947,7 @@ impl<E> Fold<E>
 where
     E: Parse,
 {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         let forked = input.fork();
         if forked.call(token::Dot::parse).is_err() {
             return false;
@@ -959,7 +955,7 @@ where
         forked.peek(keyword::fold)
     }
 
-    pub fn parse(expression: E, input: syn::parse::ParseStream) -> syn::Result<Self> {
+    pub fn parse(expression: E, input: ParseStream) -> syn::Res<Self> {
         let _: Token![.] = input.parse()?;
         let _: keyword::fold = input.parse()?;
         let content;
@@ -978,7 +974,7 @@ impl<E> Parse for Fold<E>
 where
     E: Parse,
 {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let expression: E = input.parse()?;
         let _: Token![.] = input.parse()?;
         let _: keyword::fold = input.parse()?;
@@ -1015,7 +1011,7 @@ impl<E> Sort<E>
 where
     E: Parse,
 {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         let forked = input.fork();
         if forked.call(token::Dot::parse).is_err() {
             return false;
@@ -1023,7 +1019,7 @@ where
         forked.peek(keyword::sort)
     }
 
-    pub fn parse(expression: E, input: syn::parse::ParseStream) -> syn::Result<Self> {
+    pub fn parse(expression: E, input: ParseStream) -> syn::Res<Self> {
         let _: Token![.] = input.parse()?;
         let _: keyword::sort = input.parse()?;
         let content;
@@ -1040,7 +1036,7 @@ impl<E> Parse for Sort<E>
 where
     E: Parse,
 {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let expression: E = input.parse()?;
         let _: Token![.] = input.parse()?;
         let _: keyword::sort = input.parse()?;
@@ -1070,7 +1066,7 @@ impl<E> Zip<E>
 where
     E: Parse,
 {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(keyword::zip)
     }
 }
@@ -1078,7 +1074,7 @@ impl<E> Parse for Zip<E>
 where
     E: Parse,
 {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let _: keyword::zip = input.parse()?;
         let content;
         let _ = parenthesized!(content in input);
@@ -1151,7 +1147,7 @@ mk_new! { impl Expr =>
 }
 
 impl ParsePrec for Expr {
-    fn parse_term(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse_term(input: ParseStream) -> syn::Res<Self> {
         let mut expression = if input.fork().call(Constant::parse).is_ok() {
             Self::cst(input.parse()?)
         } else if Unop::<Self>::peek(input) {
@@ -1173,8 +1169,8 @@ impl ParsePrec for Expr {
             Self::structure(input.parse()?)
         } else if Enumeration::<Self>::peek(input) {
             Self::enumeration(input.parse()?)
-        } else if input.fork().call(syn::Ident::parse).is_ok() {
-            let ident: syn::Ident = input.parse()?;
+        } else if input.fork().call(Ident::parse).is_ok() {
+            let ident: Ident = input.parse()?;
             Self::ident(ident.to_string())
         } else {
             return Err(input.error("expected expression"));
@@ -1199,7 +1195,7 @@ impl ParsePrec for Expr {
         }
         Ok(expression)
     }
-    fn parse_prec1(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse_prec1(input: ParseStream) -> syn::Res<Self> {
         let mut expression = Expr::parse_term(input)?;
 
         loop {
@@ -1211,7 +1207,7 @@ impl ParsePrec for Expr {
         }
         Ok(expression)
     }
-    fn parse_prec2(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse_prec2(input: ParseStream) -> syn::Res<Self> {
         let mut expression = Expr::parse_prec1(input)?;
 
         loop {
@@ -1223,7 +1219,7 @@ impl ParsePrec for Expr {
         }
         Ok(expression)
     }
-    fn parse_prec3(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse_prec3(input: ParseStream) -> syn::Res<Self> {
         let mut expression = Expr::parse_prec2(input)?;
 
         loop {
@@ -1235,7 +1231,7 @@ impl ParsePrec for Expr {
         }
         Ok(expression)
     }
-    fn parse_prec4(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse_prec4(input: ParseStream) -> syn::Res<Self> {
         let mut expression = Expr::parse_prec3(input)?;
 
         loop {
@@ -1249,7 +1245,7 @@ impl ParsePrec for Expr {
     }
 }
 impl Parse for Expr {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let expression = if TypedAbstraction::<Self>::peek(input) {
             Self::typed_abstraction(input.parse()?)
         } else if IfThenElse::<Self>::peek(input) {
@@ -1271,28 +1267,28 @@ mod parse_expression {
 
     #[test]
     fn should_parse_constant() {
-        let expression: Expr = syn::parse_quote! {1};
-        let control = Expr::cst(Constant::int(syn::parse_quote! {1}));
+        let expression: Expr = parse_quote! {1};
+        let control = Expr::cst(Constant::int(parse_quote! {1}));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_identifier() {
-        let expression: Expr = syn::parse_quote! {x};
+        let expression: Expr = parse_quote! {x};
         let control = Expr::ident("x");
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_application() {
-        let expression: Expr = syn::parse_quote! {f(x)};
+        let expression: Expr = parse_quote! {f(x)};
         let control = Expr::app(Application::new(Expr::ident("f"), vec![Expr::ident("x")]));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_binop() {
-        let expression: Expr = syn::parse_quote! {a+b};
+        let expression: Expr = parse_quote! {a+b};
         let control = Expr::binop(Binop::new(
             BinaryOperator::Add,
             Expr::ident("a"),
@@ -1303,7 +1299,7 @@ mod parse_expression {
 
     #[test]
     fn should_parse_binop_with_precedence() {
-        let expression: Expr = syn::parse_quote! {a+b*c};
+        let expression: Expr = parse_quote! {a+b*c};
         let control = Expr::binop(Binop::new(
             BinaryOperator::Add,
             Expr::ident("a"),
@@ -1318,18 +1314,18 @@ mod parse_expression {
 
     #[test]
     fn should_parse_binop_with_unop() {
-        let term: Expr = syn::parse_quote! {-x + 1};
+        let term: Expr = parse_quote! {-x + 1};
         let control = Expr::binop(Binop::new(
             BinaryOperator::Add,
             Expr::unop(Unop::new(UnaryOperator::Neg, Expr::ident("x"))),
-            Expr::constant(Constant::int(syn::parse_quote! {1})),
+            Expr::constant(Constant::int(parse_quote! {1})),
         ));
         assert_eq!(term, control)
     }
 
     #[test]
     fn should_parse_typed_abstraction() {
-        let expression: Expr = syn::parse_quote! {|x: int| f(x)};
+        let expression: Expr = parse_quote! {|x: int| f(x)};
         let control = Expr::typed_abstraction(TypedAbstraction::new(
             vec![("x".into(), Typ::int())],
             Expr::app(Application::new(Expr::ident("f"), vec![Expr::ident("x")])),
@@ -1339,12 +1335,12 @@ mod parse_expression {
 
     #[test]
     fn should_parse_structure() {
-        let expression: Expr = syn::parse_quote! {Point {x: 0, y: 1}};
+        let expression: Expr = parse_quote! {Point {x: 0, y: 1}};
         let control = Expr::structure(Structure::new(
             "Point",
             vec![
-                ("x".into(), Expr::cst(Constant::int(syn::parse_quote! {0}))),
-                ("y".into(), Expr::cst(Constant::int(syn::parse_quote! {1}))),
+                ("x".into(), Expr::cst(Constant::int(parse_quote! {0}))),
+                ("y".into(), Expr::cst(Constant::int(parse_quote! {1}))),
             ],
         ));
         assert_eq!(expression, control)
@@ -1352,35 +1348,35 @@ mod parse_expression {
 
     #[test]
     fn should_parse_tuple() {
-        let expression: Expr = syn::parse_quote! {(x, 0)};
+        let expression: Expr = parse_quote! {(x, 0)};
         let control = Expr::tuple(Tuple::new(vec![
             Expr::ident("x"),
-            Expr::cst(Constant::int(syn::parse_quote! {0})),
+            Expr::cst(Constant::int(parse_quote! {0})),
         ]));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_enumeration() {
-        let expression: Expr = syn::parse_quote! {Color::Pink};
+        let expression: Expr = parse_quote! {Color::Pink};
         let control = Expr::enumeration(Enumeration::new("Color", "Pink"));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_array() {
-        let expression: Expr = syn::parse_quote! {[1, 2, 3]};
+        let expression: Expr = parse_quote! {[1, 2, 3]};
         let control = Expr::array(Array::new(vec![
-            Expr::cst(Constant::int(syn::parse_quote! {1})),
-            Expr::cst(Constant::int(syn::parse_quote! {2})),
-            Expr::cst(Constant::int(syn::parse_quote! {3})),
+            Expr::cst(Constant::int(parse_quote! {1})),
+            Expr::cst(Constant::int(parse_quote! {2})),
+            Expr::cst(Constant::int(parse_quote! {3})),
         ]));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_match() {
-        let expression: Expr = syn::parse_quote! {
+        let expression: Expr = parse_quote! {
             match a {
                 Point {x: 0, y: _} => 0,
                 Point {x: x, y: _} if f(x) => -1,
@@ -1396,13 +1392,13 @@ mod parse_expression {
                         vec![
                             (
                                 "x".into(),
-                                Some(Pattern::cst(Constant::int(syn::parse_quote! {0}))),
+                                Some(Pattern::cst(Constant::int(parse_quote! {0}))),
                             ),
                             ("y".into(), Some(Pattern::default())),
                         ],
                         None,
                     )),
-                    Expr::Constant(Constant::Integer(syn::parse_quote! {0})),
+                    Expr::Constant(Constant::Integer(parse_quote! {0})),
                 ),
                 Arm::new_with_guard(
                     Pattern::Structure(PatStructure::new(
@@ -1413,16 +1409,13 @@ mod parse_expression {
                         ],
                         None,
                     )),
-                    Expr::cst(Constant::int(syn::parse_quote! {-1})),
+                    Expr::cst(Constant::int(parse_quote! {-1})),
                     Some(Expr::app(Application::new(
                         Expr::ident("f"),
                         vec![Expr::ident("x")],
                     ))),
                 ),
-                Arm::new(
-                    Pattern::Default,
-                    Expr::cst(Constant::int(syn::parse_quote! {1})),
-                ),
+                Arm::new(Pattern::Default, Expr::cst(Constant::int(parse_quote! {1}))),
             ],
         ));
         assert_eq!(expression, control)
@@ -1430,31 +1423,31 @@ mod parse_expression {
 
     #[test]
     fn should_parse_field_access() {
-        let expression: Expr = syn::parse_quote! {p.x};
+        let expression: Expr = parse_quote! {p.x};
         let control = Expr::field_access(FieldAccess::new(Expr::ident("p"), "x"));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_tuple_element_access() {
-        let expression: Expr = syn::parse_quote! {t.0};
+        let expression: Expr = parse_quote! {t.0};
         let control = Expr::tuple_access(TupleElementAccess::new(Expr::ident("t"), 0));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_map() {
-        let expression: Expr = syn::parse_quote! {a.map(f)};
+        let expression: Expr = parse_quote! {a.map(f)};
         let control = Expr::map(Map::new(Expr::ident("a"), Expr::ident("f")));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_fold() {
-        let expression: Expr = syn::parse_quote! {a.fold(0, sum)};
+        let expression: Expr = parse_quote! {a.fold(0, sum)};
         let control = Expr::fold(Fold::new(
             Expr::ident("a"),
-            Expr::cst(Constant::int(syn::parse_quote! {0})),
+            Expr::cst(Constant::int(parse_quote! {0})),
             Expr::ident("sum"),
         ));
         assert_eq!(expression, control)
@@ -1462,14 +1455,14 @@ mod parse_expression {
 
     #[test]
     fn should_parse_sort() {
-        let expression: Expr = syn::parse_quote! {a.sort(order)};
+        let expression: Expr = parse_quote! {a.sort(order)};
         let control = Expr::sort(Sort::new(Expr::ident("a"), Expr::ident("order")));
         assert_eq!(expression, control)
     }
 
     #[test]
     fn should_parse_zip() {
-        let expression: Expr = syn::parse_quote! {zip(a, b, c)};
+        let expression: Expr = parse_quote! {zip(a, b, c)};
         let control = Expr::zip(Zip::new(vec![
             Expr::ident("a"),
             Expr::ident("b"),

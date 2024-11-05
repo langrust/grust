@@ -4,7 +4,7 @@ compiler::prelude! {
 
 #[test]
 fn should_compile_define_events() {
-    let ast: Ast = syn::parse_quote! {
+    let ast: Ast = parse_quote! {
         #![dump = "tests/macro_outputs/define_events.rs"]
 
         component define_events(a: int?, b: int?, v: int) -> (

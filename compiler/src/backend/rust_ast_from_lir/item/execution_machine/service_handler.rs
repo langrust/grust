@@ -1,6 +1,5 @@
 prelude! {
     macro2::Span,
-    syn::*,
     quote::format_ident,
     backend::rust_ast_from_lir::{
         item::execution_machine::{flows_context, instruction_flow},
@@ -13,7 +12,7 @@ prelude! {
 }
 
 /// Transform LIR run-loop into an async function performing a loop over events.
-pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
+pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> syn::Item {
     let ServiceHandler {
         service,
         components,
@@ -25,8 +24,8 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
     let mut items = flows_context::rust_ast_from_lir(flows_context).collect::<Vec<_>>();
 
     // store all inputs in a service_store
-    let mut service_store_fields: Vec<Field> = vec![];
-    let mut service_store_is_somes: Vec<Expr> = vec![];
+    let mut service_store_fields: Vec<syn::Field> = vec![];
+    let mut service_store_is_somes: Vec<syn::Expr> = vec![];
     flows_handling
         .iter()
         .for_each(|FlowHandler { arriving_flow, .. }| match arriving_flow {
@@ -47,14 +46,14 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
         });
     // service store
     let service_store_name = format_ident!("{}", to_camel_case(&format!("{service}ServiceStore")));
-    items.push(Item::Struct(parse_quote! {
+    items.push(syn::Item::Struct(parse_quote! {
         #[derive(Default)]
         pub struct #service_store_name {
             #(#service_store_fields),*
         }
     }));
     // tells is the service_store is not empty
-    items.push(Item::Impl(parse_quote! {
+    items.push(syn::Item::Impl(parse_quote! {
         impl #service_store_name {
             pub fn not_empty(&self) -> bool {
                 #(#service_store_is_somes)||*
@@ -63,12 +62,12 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
     }));
 
     // create service structure
-    let mut service_fields: Vec<Field> = vec![
+    let mut service_fields: Vec<syn::Field> = vec![
         parse_quote! { context: Context },
         parse_quote! { delayed: bool },
         parse_quote! { input_store: #service_store_name },
     ];
-    let mut field_values: Vec<FieldValue> = vec![
+    let mut field_values: Vec<syn::FieldValue> = vec![
         parse_quote! { context },
         parse_quote! { delayed },
         parse_quote! { input_store },
@@ -88,21 +87,21 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
     field_values.push(parse_quote! { output });
     field_values.push(parse_quote! { timer });
     let service_name = format_ident!("{}", to_camel_case(&format!("{service}Service")));
-    items.push(Item::Struct(parse_quote! {
+    items.push(syn::Item::Struct(parse_quote! {
         pub struct #service_name {
             #(#service_fields),*
         }
     }));
 
     // implement the service with `init` and handler functions
-    let mut impl_items: Vec<ImplItem> = vec![];
+    let mut impl_items: Vec<syn::ImplItem> = vec![];
 
     // create components states
     let components_states = components.into_iter().map(|component_name| {
         let component_state_struct =
             format_ident!("{}", to_camel_case(&format!("{}State", component_name)));
         let component_name = format_ident!("{}", component_name);
-        let state: Stmt = parse_quote! {
+        let state: syn::Stmt = parse_quote! {
             let #component_name = #component_state_struct::init();
         };
         state
@@ -234,7 +233,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
     );
 
     // service handlers in an implementation block
-    items.push(Item::Impl(parse_quote! {
+    items.push(syn::Item::Impl(parse_quote! {
         impl #service_name {
             #(#impl_items)*
             #[inline]
@@ -259,7 +258,7 @@ pub fn rust_ast_from_lir(run_loop: ServiceHandler) -> Item {
 
     // service module
     let module_name = format_ident!("{service}_service");
-    Item::Mod(parse_quote! {
+    syn::Item::Mod(parse_quote! {
        pub mod #module_name {
             use futures::{stream::StreamExt, sink::SinkExt};
             use super::*;

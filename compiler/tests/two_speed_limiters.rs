@@ -4,7 +4,7 @@ compiler::prelude! {
 
 #[test]
 fn should_compile_two_speed_limiters() {
-    let ast: Ast = syn::parse_quote! {
+    let ast: Ast = parse_quote! {
         #![dump = "tests/macro_outputs/two_speed_limiters.rs", test]
 
         // # Imports

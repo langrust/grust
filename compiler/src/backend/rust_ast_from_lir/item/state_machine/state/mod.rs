@@ -11,7 +11,6 @@ prelude! {
     },
     lir::item::state_machine::state::{State, StateElement},
     quote::format_ident,
-    syn::*,
 }
 
 /// RustAST init method construction from LIR init.
@@ -20,8 +19,11 @@ pub mod init;
 pub mod step;
 
 /// Transform LIR state into RustAST structure and implementation.
-pub fn rust_ast_from_lir(state: State, crates: &mut BTreeSet<String>) -> (ItemStruct, ItemImpl) {
-    let fields: Vec<Field> = state
+pub fn rust_ast_from_lir(
+    state: State,
+    crates: &mut BTreeSet<String>,
+) -> (syn::ItemStruct, syn::ItemImpl) {
+    let fields: Vec<syn::Field> = state
         .elements
         .into_iter()
         .map(|element| match element {

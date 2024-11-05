@@ -13,7 +13,6 @@ prelude! {
         item::function::Function},
     macro2::{Span, TokenStream},
     quote::quote,
-    syn::*,
 }
 
 fn term_to_token_stream(term: Term, prophecy: bool) -> TokenStream {
@@ -77,7 +76,7 @@ fn term_to_token_stream(term: Term, prophecy: bool) -> TokenStream {
 }
 
 /// Transform LIR function into RustAST function.
-pub fn rust_ast_from_lir(function: Function, crates: &mut BTreeSet<String>) -> Item {
+pub fn rust_ast_from_lir(function: Function, crates: &mut BTreeSet<String>) -> syn::Item {
     // create attributes from contract
     let Contract {
         requires,
@@ -117,7 +116,7 @@ pub fn rust_ast_from_lir(function: Function, crates: &mut BTreeSet<String>) -> I
         .into_iter()
         .map(|(name, r#type)| {
             let name = Ident::new(&name, Span::call_site());
-            FnArg::Typed(PatType {
+            syn::FnArg::Typed(syn::PatType {
                 attrs: vec![],
                 pat: parse_quote!(#name),
                 colon_token: Default::default(),
@@ -137,15 +136,15 @@ pub fn rust_ast_from_lir(function: Function, crates: &mut BTreeSet<String>) -> I
         paren_token: Default::default(),
         inputs,
         variadic: None,
-        output: ReturnType::Type(
+        output: syn::ReturnType::Type(
             Default::default(),
             Box::new(type_rust_ast_from_lir(function.output)),
         ),
     };
 
-    let item_function = Item::Fn(ItemFn {
+    let item_function = syn::Item::Fn(syn::ItemFn {
         attrs: attributes,
-        vis: Visibility::Public(Default::default()),
+        vis: syn::Visibility::Public(Default::default()),
         sig,
         block: Box::new(block_rust_ast_from_lir(function.body, crates)),
     });
@@ -159,7 +158,6 @@ mod rust_ast_from_lir {
         backend::rust_ast_from_lir::item::function::rust_ast_from_lir,
         lir::{ Block, item::Function, Stmt },
     }
-    use syn::*;
 
     #[test]
     fn should_create_rust_ast_function_from_lir_function() {

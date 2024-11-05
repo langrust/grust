@@ -1,21 +1,20 @@
 prelude! { just
     macro2::Span,
-    syn::*,
     lir::item::enumeration::Enumeration,
-    conf
+    conf, syn, parse_quote, Ident,
 }
 
 /// Transform LIR enumeration into RustAST enumeration.
-pub fn rust_ast_from_lir(enumeration: Enumeration) -> ItemEnum {
-    let attribute: Attribute = if conf::greusot() {
+pub fn rust_ast_from_lir(enumeration: Enumeration) -> syn::ItemEnum {
+    let attribute: syn::Attribute = if conf::greusot() {
         // todo: when v0.1.1 then parse_quote!(#[derive(prelude::Clone, Copy, prelude::PartialEq, prelude::Default, DeepModel)])
         parse_quote!(#[derive(prelude::Clone, Copy, prelude::PartialEq, prelude::Default, DeepModel)])
     } else {
         parse_quote!(#[derive(Clone, Copy, PartialEq, Default)])
     };
-    ItemEnum {
+    syn::ItemEnum {
         attrs: vec![attribute],
-        vis: Visibility::Public(Default::default()),
+        vis: syn::Visibility::Public(Default::default()),
         enum_token: Default::default(),
         ident: Ident::new(&enumeration.name, Span::call_site()),
         generics: Default::default(),
@@ -25,15 +24,15 @@ pub fn rust_ast_from_lir(enumeration: Enumeration) -> ItemEnum {
             .iter()
             .enumerate()
             .map(|(index, element)| {
-                let attrs: Vec<Attribute> = if index == 0 {
+                let attrs: Vec<syn::Attribute> = if index == 0 {
                     vec![parse_quote!(#[default])]
                 } else {
                     vec![]
                 };
-                Variant {
+                syn::Variant {
                     attrs,
                     ident: Ident::new(element, Span::call_site()),
-                    fields: Fields::Unit,
+                    fields: syn::Fields::Unit,
                     discriminant: Default::default(),
                 }
             })
@@ -44,9 +43,9 @@ pub fn rust_ast_from_lir(enumeration: Enumeration) -> ItemEnum {
 #[cfg(test)]
 mod rust_ast_from_lir {
     prelude! { just
-        syn::*,
         backend::rust_ast_from_lir::item::enumeration::rust_ast_from_lir,
         lir::item::enumeration::Enumeration,
+        parse_quote,
     }
 
     #[test]

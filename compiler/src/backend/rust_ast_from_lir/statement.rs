@@ -5,21 +5,19 @@ use super::{
     pattern::rust_ast_from_lir as pattern_rust_ast_from_lir,
 };
 
-prelude! {
-    syn::*,
-}
+prelude! {}
 
 /// Transform LIR statement into RustAST statement.
-pub fn rust_ast_from_lir(statement: lir::Stmt, crates: &mut BTreeSet<String>) -> Stmt {
+pub fn rust_ast_from_lir(statement: lir::Stmt, crates: &mut BTreeSet<String>) -> syn::Stmt {
     match statement {
         lir::Stmt::Let {
             pattern,
             expression,
-        } => Stmt::Local(Local {
+        } => syn::Stmt::Local(syn::Local {
             attrs: vec![],
             let_token: Default::default(),
             pat: pattern_rust_ast_from_lir(pattern),
-            init: Some(LocalInit {
+            init: Some(syn::LocalInit {
                 eq_token: Default::default(),
                 expr: Box::new(expression_rust_ast_from_lir(expression, crates)),
                 diverge: None,
@@ -27,7 +25,7 @@ pub fn rust_ast_from_lir(statement: lir::Stmt, crates: &mut BTreeSet<String>) ->
             semi_token: Default::default(),
         }),
         lir::Stmt::ExprLast { expression } => {
-            Stmt::Expr(expression_rust_ast_from_lir(expression, crates), None)
+            syn::Stmt::Expr(expression_rust_ast_from_lir(expression, crates), None)
         }
     }
 }
@@ -35,7 +33,6 @@ pub fn rust_ast_from_lir(statement: lir::Stmt, crates: &mut BTreeSet<String>) ->
 #[cfg(test)]
 mod rust_ast_from_lir {
     prelude! {
-        syn::*,
         backend::rust_ast_from_lir::statement::rust_ast_from_lir,
         lir::Pattern,
     }
@@ -83,7 +80,7 @@ mod rust_ast_from_lir {
         let statement =
             lir::Stmt::expression_last(lir::Expr::lit(Constant::int(parse_quote!(1i64))));
 
-        let control = Stmt::Expr(parse_quote! { 1i64 }, None);
+        let control = syn::Stmt::Expr(parse_quote! { 1i64 }, None);
         assert_eq!(
             rust_ast_from_lir(statement, &mut Default::default()),
             control

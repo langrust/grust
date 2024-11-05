@@ -3,11 +3,7 @@ use std::fmt::{self, Display};
 use macro2::Span;
 
 prelude! {
-    syn::{
-        parse::Parse,
-        punctuated::Punctuated,
-        Token,
-    },
+    syn::{Parse, Punctuated, Token, token},
 }
 
 /// GRust type system.
@@ -39,7 +35,7 @@ pub enum Typ {
     Unit(keyword::unit),
     /// Array type, if `a = [1, 2, 3]` then `a: [int; 3]`
     Array {
-        bracket_token: syn::token::Bracket,
+        bracket_token: token::Bracket,
         ty: Box<Typ>,
         semi_token: Token![;],
         size: syn::LitInt,
@@ -52,20 +48,20 @@ pub enum Typ {
     /// User defined enumeration, if `c = Color.Yellow` then `c: Enumeration(Color)`
     Enumeration {
         /// Enumeration's name.
-        name: syn::Ident,
+        name: Ident,
         /// Enumeration's identifier.
         id: usize,
     },
     /// User defined structure, if `p = Point { x: 1, y: 0}` then `p: Structure(Point)`
     Structure {
         /// Structure's name.
-        name: syn::Ident,
+        name: Ident,
         /// Structure's identifier.
         id: usize,
     },
     /// Functions types, if `f = |x| x+1` then `f: int -> int`
     Abstract {
-        paren_token: Option<syn::token::Paren>,
+        paren_token: Option<token::Paren>,
         inputs: Punctuated<Typ, Token![,]>,
         arrow_token: Token![->],
         output: Box<Typ>,
@@ -73,7 +69,7 @@ pub enum Typ {
     /// Tuple type, if `z = zip(a, b)` with `a: [int; 5]` and `b: [float; 5]` then
     /// `z: [(int, float); 5]`
     Tuple {
-        paren_token: syn::token::Paren,
+        paren_token: token::Paren,
         elements: Punctuated<Typ, Token![,]>,
     },
     /// Signal type, in interface if `s' = map(s, |x| x + 1)` then `s': signal int`
@@ -87,7 +83,7 @@ pub enum Typ {
         ty: Box<Typ>,
     },
     /// Not defined yet, if `x: Color` then `x: NotDefinedYet(Color)`
-    NotDefinedYet(syn::Ident),
+    NotDefinedYet(Ident),
     /// Polymorphic type, if `add = |x, y| x+y` then `add: 't : Typ -> t -> 't -> 't`
     Polymorphism(fn(Vec<Typ>, Location) -> Res<Typ>),
     /// Match any type.
@@ -204,7 +200,7 @@ impl Display for Typ {
     }
 }
 impl Parse for Typ {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let mut ty = if input.peek(keyword::int) {
             let keyword: keyword::int = input.parse()?;
             Typ::Integer(keyword)
@@ -217,17 +213,17 @@ impl Parse for Typ {
         } else if input.peek(keyword::unit) {
             let keyword: keyword::unit = input.parse()?;
             Typ::Unit(keyword)
-        } else if input.peek(syn::token::Paren) {
+        } else if input.peek(token::Paren) {
             let content;
-            let paren_token = syn::parenthesized!(content in input);
+            let paren_token = parenthesized!(content in input);
             let elements: Punctuated<Typ, Token![,]> = Punctuated::parse_terminated(&content)?;
             Typ::Tuple {
                 paren_token,
                 elements,
             }
-        } else if input.peek(syn::token::Bracket) {
+        } else if input.peek(token::Bracket) {
             let content;
-            let bracket_token = syn::bracketed!(content in input);
+            let bracket_token = bracketed!(content in input);
             if content.is_empty() {
                 return Err(input.error("expected type: `int`, `float`, etc"));
             } else {
@@ -242,7 +238,7 @@ impl Parse for Typ {
                 }
             }
         } else {
-            let ident: syn::Ident = input.parse()?;
+            let ident: Ident = input.parse()?;
             Typ::NotDefinedYet(ident)
         };
 
@@ -267,7 +263,7 @@ impl Parse for Typ {
                         output: Box::new(out_ty),
                     },
                     _ => {
-                        let mut inputs = syn::punctuated::Punctuated::new();
+                        let mut inputs = syn::Punctuated::new();
                         inputs.push_value(ty);
                         Typ::Abstract {
                             paren_token: None,
@@ -306,11 +302,11 @@ mk_new! { impl Typ =>
         size: usize = syn::LitInt::new(&format!("{size}"), Span::call_site()),
     }
     Enumeration: enumeration {
-        name: impl Into<String> = syn::Ident::new(&name.into(), Span::call_site()),
+        name: impl Into<String> = Ident::new(&name.into(), Span::call_site()),
         id: usize,
     }
     Structure: structure {
-        name: impl Into<String> = syn::Ident::new(&name.into(), Span::call_site()),
+        name: impl Into<String> = Ident::new(&name.into(), Span::call_site()),
         id: usize,
     }
     Abstract: function {
@@ -344,7 +340,7 @@ mk_new! { impl Typ =>
         ty: Typ = ty.into(),
     }
     NotDefinedYet: undef(
-        name: impl Into<String> = syn::Ident::new(&name.into(), Span::call_site())
+        name: impl Into<String> = Ident::new(&name.into(), Span::call_site())
     )
     Polymorphism: poly(f : fn(Vec<Self>, Location) -> Res<Self> = f)
     Any: any()

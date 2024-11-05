@@ -1,11 +1,10 @@
 prelude! {
     quote::format_ident,
-    syn::*,
     lir::item::Import,
 }
 
 /// Transform LIR import into RustAST 'use' import.
-pub fn rust_ast_from_lir(import: Import) -> ItemUse {
+pub fn rust_ast_from_lir(import: Import) -> syn::ItemUse {
     let Import { name, path } = import;
     let state_name = format_ident!("{}", to_camel_case(&format!("{}State", name)));
     let input_name = format_ident!("{}", to_camel_case(&format!("{}Input", name)));
@@ -19,7 +18,6 @@ mod rust_ast_from_lir {
         lir::item::Import,
     }
 
-    use syn::*;
     #[test]
     fn should_create_rust_ast_use_from_lir_import() {
         let import = Import {

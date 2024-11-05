@@ -1,5 +1,4 @@
 prelude! {
-    syn::Token,
     graph::{DiGraphMap, Direction},
     ast::keyword,
     hir::{flow, stmt},

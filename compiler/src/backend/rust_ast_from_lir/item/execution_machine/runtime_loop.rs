@@ -1,6 +1,5 @@
 prelude! {
     macro2::Span,
-    syn::*,
     quote::format_ident,
     lir::item::execution_machine::{
         ArrivingFlow,
@@ -9,13 +8,13 @@ prelude! {
 }
 
 /// Transform LIR run-loop into an async function performing a loop over events.
-pub fn rust_ast_from_lir(run_loop: RuntimeLoop) -> ImplItem {
+pub fn rust_ast_from_lir(run_loop: RuntimeLoop) -> syn::ImplItem {
     let RuntimeLoop { input_handlers } = run_loop;
 
     // init timers
     let init_timers = input_handlers
         .iter()
-        .filter_map(|input_flow| -> Option<Stmt> {
+        .filter_map(|input_flow| -> Option<syn::Stmt> {
             match &input_flow.arriving_flow {
                 ArrivingFlow::Channel(_, _, _) | ArrivingFlow::ServiceDelay(_) => None,
                 ArrivingFlow::Period(time_flow_name)
@@ -30,8 +29,8 @@ pub fn rust_ast_from_lir(run_loop: RuntimeLoop) -> ImplItem {
             }
         });
     // loop on the input stream
-    let async_loop: Stmt = {
-        let mut input_arms: Vec<Arm> = vec![];
+    let async_loop: syn::Stmt = {
+        let mut input_arms: Vec<syn::Arm> = vec![];
         input_handlers.iter().for_each(
             |InputHandler{
                 arriving_flow,
@@ -82,7 +81,7 @@ pub fn rust_ast_from_lir(run_loop: RuntimeLoop) -> ImplItem {
     };
 
     // `run_loop` function
-    ImplItem::Fn(parse_quote! {
+    syn::ImplItem::Fn(parse_quote! {
         pub async fn run_loop(self, init_instant: std::time::Instant, input: impl futures::Stream<Item = I>) -> Result<(), futures::channel::mpsc::SendError> {
             futures::pin_mut!(input);
             let mut runtime = self;

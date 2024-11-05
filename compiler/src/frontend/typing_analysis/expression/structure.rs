@@ -32,7 +32,7 @@ where
                     .collect::<TRes<()>>()?;
 
                 Ok(Typ::Structure {
-                    name: syn::Ident::new(symbol_table.get_name(*id), Span::call_site()),
+                    name: Ident::new(symbol_table.get_name(*id), Span::call_site()),
                     id: *id,
                 })
             }

@@ -1,5 +1,5 @@
 prelude! {
-    syn::{parenthesized, parse::Parse, punctuated::Punctuated, token, Token},
+    syn::{Parse, Punctuated, token, LitInt},
 }
 
 use super::{colon::Colon, keyword};
@@ -12,21 +12,21 @@ pub struct Sample {
     pub flow_expression: Box<FlowExpression>,
     pub comma_token: Token![,],
     /// Sampling period in milliseconds.
-    pub period_ms: syn::LitInt,
+    pub period_ms: LitInt,
 }
 impl Sample {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(keyword::sample)
     }
 }
 impl Parse for Sample {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let sample_token: keyword::sample = input.parse()?;
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
         let flow_expression: FlowExpression = content.parse()?;
         let comma_token: Token![,] = content.parse()?;
-        let period_ms: syn::LitInt = content.parse()?;
+        let period_ms: LitInt = content.parse()?;
         if content.is_empty() {
             Ok(Sample::new(
                 sample_token,
@@ -46,7 +46,7 @@ mk_new! { impl Sample =>
         paren_token: token::Paren,
         flow_expression: FlowExpression = flow_expression.into(),
         comma_token: Token![,],
-        period_ms: syn::LitInt,
+        period_ms: LitInt,
     }
 }
 
@@ -58,21 +58,21 @@ pub struct Scan {
     pub flow_expression: Box<FlowExpression>,
     pub comma_token: Token![,],
     /// Scaning period in milliseconds.
-    pub period_ms: syn::LitInt,
+    pub period_ms: LitInt,
 }
 impl Scan {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(keyword::scan)
     }
 }
 impl Parse for Scan {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let scan_token: keyword::scan = input.parse()?;
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
         let flow_expression: FlowExpression = content.parse()?;
         let comma_token: Token![,] = content.parse()?;
-        let period_ms: syn::LitInt = content.parse()?;
+        let period_ms: LitInt = content.parse()?;
         if content.is_empty() {
             Ok(Scan::new(
                 scan_token,
@@ -92,7 +92,7 @@ mk_new! { impl Scan =>
         paren_token: token::Paren,
         flow_expression: FlowExpression = flow_expression.into(),
         comma_token: Token![,],
-        period_ms: syn::LitInt,
+        period_ms: LitInt,
     }
 }
 
@@ -104,21 +104,21 @@ pub struct Timeout {
     pub flow_expression: Box<FlowExpression>,
     pub comma_token: Token![,],
     /// Deadline in milliseconds.
-    pub deadline: syn::LitInt,
+    pub deadline: LitInt,
 }
 impl Timeout {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(keyword::timeout)
     }
 }
 impl Parse for Timeout {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let timeout_token: keyword::timeout = input.parse()?;
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
         let flow_expression: FlowExpression = content.parse()?;
         let comma_token: Token![,] = content.parse()?;
-        let deadline: syn::LitInt = content.parse()?;
+        let deadline: LitInt = content.parse()?;
         if content.is_empty() {
             Ok(Timeout::new(
                 timeout_token,
@@ -138,7 +138,7 @@ mk_new! { impl Timeout =>
         paren_token: token::Paren,
         flow_expression: FlowExpression = flow_expression.into(),
         comma_token: Token![,],
-        deadline: syn::LitInt,
+        deadline: LitInt,
     }
 }
 
@@ -153,12 +153,12 @@ pub struct Throttle {
     pub delta: Constant,
 }
 impl Throttle {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(keyword::throttle)
     }
 }
 impl Parse for Throttle {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let throttle_token: keyword::throttle = input.parse()?;
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
@@ -197,12 +197,12 @@ pub struct OnChange {
     pub flow_expression: Box<FlowExpression>,
 }
 impl OnChange {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(keyword::on_change)
     }
 }
 impl Parse for OnChange {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let on_change_token: keyword::on_change = input.parse()?;
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
@@ -233,12 +233,12 @@ pub struct Merge {
     pub flow_expression_2: Box<FlowExpression>,
 }
 impl Merge {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(keyword::merge)
     }
 }
 impl Parse for Merge {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let merge_token: keyword::merge = input.parse()?;
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
@@ -272,18 +272,18 @@ mk_new! { impl Merge =>
 /// Component call.
 pub struct ComponentCall {
     /// Identifier to the component to call.
-    pub ident_component: syn::Ident,
+    pub ident_component: Ident,
     pub paren_token: token::Paren,
     /// Input expressions.
     pub inputs: Punctuated<FlowExpression, Token![,]>,
 }
 impl Parse for ComponentCall {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let ident_component: syn::Ident = input.parse()?;
+    fn parse(input: ParseStream) -> syn::Res<Self> {
+        let ident_component: Ident = input.parse()?;
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
         let inputs: Punctuated<FlowExpression, Token![,]> = Punctuated::parse_terminated(&content)?;
-        // let ident_signal: Option<(Token![.], syn::Ident)> = {
+        // let ident_signal: Option<(Token![.], Ident)> = {
         //     if input.peek(Token![.]) {
         //         Some((input.parse()?, input.parse()?))
         //     } else {
@@ -318,7 +318,7 @@ pub enum FlowExpression {
     Ident(String),
 }
 impl Parse for FlowExpression {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         if Sample::peek(input) {
             Ok(Self::sample(input.parse()?))
         } else if Scan::peek(input) {
@@ -334,7 +334,7 @@ impl Parse for FlowExpression {
         } else if input.fork().call(ComponentCall::parse).is_ok() {
             Ok(Self::comp_call(input.parse()?))
         } else {
-            let ident: syn::Ident = input.parse()?;
+            let ident: Ident = input.parse()?;
             Ok(Self::ident(ident.to_string()))
         }
     }
@@ -357,7 +357,7 @@ pub enum FlowKind {
     Event(keyword::event),
 }
 impl FlowKind {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(keyword::signal) || input.peek(keyword::event)
     }
 
@@ -374,7 +374,7 @@ impl FlowKind {
     }
 }
 impl Parse for FlowKind {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         if input.peek(keyword::signal) {
             Ok(FlowKind::Signal(input.parse()?))
         } else if input.peek(keyword::event) {
@@ -392,16 +392,16 @@ pub enum FlowPattern {
     },
     SingleTyped {
         kind: FlowKind,
-        ident: syn::Ident,
+        ident: Ident,
         colon_token: Token![:],
         ty: Typ,
     },
     Single {
-        ident: syn::Ident,
+        ident: Ident,
     },
 }
 impl Parse for FlowPattern {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         if input.peek(token::Paren) {
             let content;
             let paren_token: token::Paren = parenthesized!(content in input);
@@ -413,7 +413,7 @@ impl Parse for FlowPattern {
             })
         } else if FlowKind::peek(input) {
             let kind: FlowKind = input.parse()?;
-            let ident: syn::Ident = input.parse()?;
+            let ident: Ident = input.parse()?;
             let colon_token: Token![:] = input.parse()?;
             let ty: Typ = input.parse()?;
             Ok(FlowPattern::SingleTyped {
@@ -423,7 +423,7 @@ impl Parse for FlowPattern {
                 ty,
             })
         } else {
-            let ident: syn::Ident = input.parse()?;
+            let ident: Ident = input.parse()?;
             Ok(FlowPattern::Single { ident })
         }
     }
@@ -439,12 +439,12 @@ pub struct FlowDeclaration {
     pub semi_token: Token![;],
 }
 impl FlowDeclaration {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(Token![let])
     }
 }
 impl Parse for FlowDeclaration {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let let_token: Token![let] = input.parse()?;
         let typed_pattern: FlowPattern = input.parse()?;
         let eq_token: Token![=] = input.parse()?;
@@ -470,7 +470,7 @@ pub struct FlowInstantiation {
     pub semi_token: Token![;],
 }
 impl FlowInstantiation {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         let forked = input.fork();
         if forked.call(FlowPattern::parse).is_err() {
             return false;
@@ -479,7 +479,7 @@ impl FlowInstantiation {
     }
 }
 impl Parse for FlowInstantiation {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let pattern: FlowPattern = input.parse()?;
         let eq_token: Token![=] = input.parse()?;
         let flow_expression: FlowExpression = input.parse()?;
@@ -503,7 +503,7 @@ pub struct FlowImport {
     pub semi_token: Token![;],
 }
 impl FlowImport {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         let forked = input.fork();
         forked
             .parse::<keyword::import>()
@@ -512,7 +512,7 @@ impl FlowImport {
     }
 }
 impl Parse for FlowImport {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let import_token: keyword::import = input.parse()?;
         let kind: FlowKind = input.parse()?;
         let typed_path: Colon<syn::Path, Typ> = input.parse()?;
@@ -536,12 +536,12 @@ pub struct FlowExport {
     pub semi_token: Token![;],
 }
 impl FlowExport {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(keyword::export)
     }
 }
 impl Parse for FlowExport {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let export_token: keyword::export = input.parse()?;
         let kind: FlowKind = input.parse()?;
         let typed_path: Colon<syn::Path, Typ> = input.parse()?;
@@ -560,12 +560,12 @@ pub enum FlowStatement {
     Instantiation(FlowInstantiation),
 }
 impl FlowStatement {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         FlowDeclaration::peek(input) || FlowInstantiation::peek(input)
     }
 }
 impl Parse for FlowStatement {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         if FlowDeclaration::peek(input) {
             Ok(FlowStatement::Declaration(input.parse()?))
         } else if FlowInstantiation::peek(input) {
@@ -580,23 +580,23 @@ impl Parse for FlowStatement {
 pub struct Constrains {
     pub at_token: Token![@],
     pub bracket_token: token::Bracket,
-    pub min: syn::LitInt,
+    pub min: LitInt,
     pub comma_token: Token![,],
-    pub max: syn::LitInt,
+    pub max: LitInt,
 }
 impl Constrains {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(Token![@])
     }
 }
 impl Parse for Constrains {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let at_token: token::At = input.parse()?;
         let content;
         let bracket_token: token::Bracket = syn::bracketed!(content in input);
-        let min: syn::LitInt = content.parse()?;
+        let min: LitInt = content.parse()?;
         let comma_token: token::Comma = content.parse()?;
-        let max: syn::LitInt = content.parse()?;
+        let max: LitInt = content.parse()?;
         if content.is_empty() {
             Ok(Constrains {
                 at_token,
@@ -615,7 +615,7 @@ impl Parse for Constrains {
 pub struct Service {
     pub service_token: keyword::service,
     /// Service identifier.
-    pub ident: syn::Ident,
+    pub ident: Ident,
     /// Service's time constrains.
     pub constrains: Option<Constrains>,
     pub brace: token::Brace,
@@ -623,14 +623,14 @@ pub struct Service {
     pub flow_statements: Vec<FlowStatement>,
 }
 impl Service {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(keyword::service)
     }
 }
 impl Parse for Service {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let service_token: keyword::service = input.parse()?;
-        let ident: syn::Ident = input.parse()?;
+        let ident: Ident = input.parse()?;
         let constrains = if Constrains::peek(input) {
             Some(input.parse()?)
         } else {
@@ -661,7 +661,7 @@ mod parse_service {
 
     #[test]
     fn should_parse_service() {
-        let _: Service = syn::parse_quote! {
+        let _: Service = parse_quote! {
             service aeb {
                 let event pedestrian: float = merge(pedestrian_l, pedestrian_r);
                 let event timeout_pedestrian: unit = timeout(pedestrian, 2000);

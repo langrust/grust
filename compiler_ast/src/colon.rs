@@ -1,5 +1,5 @@
 prelude! {
-    syn::{parse::Parse, Token},
+    syn::{Parse, Token},
 }
 
 pub struct Colon<U: Parse, V: Parse> {
@@ -8,7 +8,7 @@ pub struct Colon<U: Parse, V: Parse> {
     pub right: V,
 }
 impl<U: Parse, V: Parse> Parse for Colon<U, V> {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         Ok(Self {
             left: input.parse()?,
             colon: input.parse()?,

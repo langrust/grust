@@ -1,8 +1,8 @@
 prelude! {
-    macro2::Span,
-    quote::format_ident,
-    syn::*,
-    lir::Pattern,
+    macro2::Span, quote::format_ident, lir::Pattern,
+    syn::{
+        Pat, PatTuple, PatIdent, PatWild, PatTupleStruct, PatStruct, FieldPat, Member,
+    },
 }
 
 /// Transform LIR pattern into RustAST pattern.
@@ -89,7 +89,6 @@ pub fn rust_ast_from_lir(pattern: Pattern) -> Pat {
 #[cfg(test)]
 mod rust_ast_from_lir {
     prelude! {
-        syn::*,
         backend::rust_ast_from_lir::pattern::rust_ast_from_lir,
         lir::Pattern,
     }

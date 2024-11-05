@@ -1,7 +1,9 @@
-prelude! { syn::* }
+prelude! {
+    syn::{LitInt},
+}
 
 /// Transform LIR type into RustAST type.
-pub fn rust_ast_from_lir(r#type: Typ) -> Type {
+pub fn rust_ast_from_lir(r#type: Typ) -> syn::Type {
     match r#type {
         Typ::Integer(_) => parse_quote!(i64),
         Typ::Float(_) => parse_quote!(f64),

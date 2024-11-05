@@ -34,7 +34,7 @@ pub fn binary_to_syn(op: BinaryOperator) -> BinOp {
 }
 
 /// Transforms unary operator into syn's unary operator.
-pub fn unary_to_syn(op: UnaryOperator) -> syn::UnOp {
+pub fn unary_to_syn(op: UnaryOperator) -> UnOp {
     match op {
         UnaryOperator::Neg => UnOp::Neg(Default::default()),
         UnaryOperator::Not => UnOp::Not(Default::default()),
@@ -222,7 +222,7 @@ pub fn rust_ast_from_lir(expression: lir::Expr, crates: &mut BTreeSet<String>) -
                         attrs: Vec::new(),
                         by_ref: None,
                         mutability: None,
-                        ident: syn::Ident::new(&identifier, Span::call_site()),
+                        ident: Ident::new(&identifier, Span::call_site()),
                         subpat: None,
                     });
                     let pattern = syn::Pat::Type(syn::PatType {
@@ -296,7 +296,7 @@ pub fn rust_ast_from_lir(expression: lir::Expr, crates: &mut BTreeSet<String>) -
         }
         lir::Expr::Map { mapped, function } => {
             let receiver = Box::new(rust_ast_from_lir(*mapped, crates));
-            let method = syn::Ident::new("map", Span::call_site());
+            let method = Ident::new("map", Span::call_site());
             let arguments = vec![rust_ast_from_lir(*function, crates)];
             let method_call = syn::ExprMethodCall {
                 attrs: Vec::new(),
@@ -304,7 +304,7 @@ pub fn rust_ast_from_lir(expression: lir::Expr, crates: &mut BTreeSet<String>) -
                 method,
                 turbofish: None,
                 paren_token: Default::default(),
-                args: syn::punctuated::Punctuated::from_iter(arguments),
+                args: syn::Punctuated::from_iter(arguments),
                 dot_token: Default::default(),
             };
             syn::Expr::MethodCall(method_call)
@@ -318,16 +318,16 @@ pub fn rust_ast_from_lir(expression: lir::Expr, crates: &mut BTreeSet<String>) -
             receiver: Box::new(syn::Expr::MethodCall(syn::ExprMethodCall {
                 attrs: Vec::new(),
                 receiver: Box::new(rust_ast_from_lir(*folded, crates)),
-                method: syn::Ident::new("into_iter", Span::call_site()),
+                method: Ident::new("into_iter", Span::call_site()),
                 turbofish: None,
                 paren_token: Default::default(),
-                args: syn::punctuated::Punctuated::new(),
+                args: syn::Punctuated::new(),
                 dot_token: Default::default(),
             })),
-            method: syn::Ident::new("fold", Span::call_site()),
+            method: Ident::new("fold", Span::call_site()),
             turbofish: None,
             paren_token: Default::default(),
-            args: syn::punctuated::Punctuated::from_iter(vec![
+            args: syn::Punctuated::from_iter(vec![
                 rust_ast_from_lir(*initialization, crates),
                 rust_ast_from_lir(*function, crates),
             ]),
@@ -378,7 +378,6 @@ mod rust_ast_from_lir {
     prelude! {
         backend::rust_ast_from_lir::expression::rust_ast_from_lir,
         lir::{ Block, FieldIdentifier, Pattern, Stmt },
-        syn::parse_quote,
     }
 
     #[test]

@@ -1,6 +1,5 @@
 prelude! {
     macro2::Span,
-    syn::*,
     quote::format_ident,
     backend::rust_ast_from_lir::{
         r#type::rust_ast_from_lir as type_rust_ast_from_lir,
@@ -33,68 +32,68 @@ pub fn rust_ast_from_lir(execution_machine: ExecutionMachine) -> syn::Item {
         let mut runtime_items = vec![];
 
         // create runtime structures and their implementations
-        let mut timer_variants: Vec<Variant> = vec![];
-        let mut timer_duration_arms: Vec<Arm> = vec![];
-        let mut timer_reset_arms: Vec<Arm> = vec![];
-        let mut input_variants: Vec<Variant> = vec![];
-        let mut input_eq_arms: Vec<Arm> = vec![];
-        let mut input_get_instant_arms: Vec<Arm> = vec![];
-        let mut output_variants: Vec<Variant> = vec![];
-        let mut runtime_fields: Vec<Field> = vec![];
-        let mut field_values: Vec<FieldValue> = vec![];
-        timing_events
-            .iter()
-            .for_each(|TimingEvent { identifier, kind }| {
-                let enum_ident = Ident::new(
-                    to_camel_case(identifier.as_str()).as_str(),
-                    Span::call_site(),
-                );
-                timer_variants.push(parse_quote! { #enum_ident });
-                match kind {
-                    TimingEventKind::Period(duration) => {
-                        timer_duration_arms.push(parse_quote! { T::#enum_ident => {
-                            std::time::Duration::from_millis(#duration)
-                        } });
-                        timer_reset_arms.push(parse_quote! { T::#enum_ident => false });
-                    }
-                    TimingEventKind::Timeout(duration)
-                    | TimingEventKind::ServiceTimeout(duration)
-                    | TimingEventKind::ServiceDelay(duration) => {
-                        timer_duration_arms.push(parse_quote! { T::#enum_ident => {
-                            std::time::Duration::from_millis(#duration)
-                        } });
-                        timer_reset_arms.push(parse_quote! { T::#enum_ident => true });
-                    }
+        let mut timer_variants: Vec<syn::Variant> = vec![];
+        let mut timer_duration_arms: Vec<syn::Arm> = vec![];
+        let mut timer_reset_arms: Vec<syn::Arm> = vec![];
+        let mut input_variants: Vec<syn::Variant> = vec![];
+        let mut input_eq_arms: Vec<syn::Arm> = vec![];
+        let mut input_get_instant_arms: Vec<syn::Arm> = vec![];
+        let mut output_variants: Vec<syn::Variant> = vec![];
+        let mut runtime_fields: Vec<syn::Field> = vec![];
+        let mut field_values: Vec<syn::FieldValue> = vec![];
+
+        for TimingEvent { identifier, kind } in timing_events.iter() {
+            let enum_ident = Ident::new(
+                to_camel_case(identifier.as_str()).as_str(),
+                Span::call_site(),
+            );
+            timer_variants.push(parse_quote! { #enum_ident });
+            match kind {
+                TimingEventKind::Period(duration) => {
+                    timer_duration_arms.push(parse_quote! { T::#enum_ident => {
+                        std::time::Duration::from_millis(#duration)
+                    } });
+                    timer_reset_arms.push(parse_quote! { T::#enum_ident => false });
                 }
-            });
-        input_flows.iter().for_each(
-            |InterfaceFlow {
-                 identifier, r#type, ..
-             }| {
-                let enum_ident = Ident::new(
-                    to_camel_case(identifier.as_str()).as_str(),
-                    Span::call_site(),
-                );
-                let ty = type_rust_ast_from_lir(r#type.clone());
-                input_variants.push(parse_quote! { #enum_ident(#ty, std::time::Instant) });
-                input_eq_arms.push(
+                TimingEventKind::Timeout(duration)
+                | TimingEventKind::ServiceTimeout(duration)
+                | TimingEventKind::ServiceDelay(duration) => {
+                    timer_duration_arms.push(parse_quote! { T::#enum_ident => {
+                        std::time::Duration::from_millis(#duration)
+                    } });
+                    timer_reset_arms.push(parse_quote! { T::#enum_ident => true });
+                }
+            }
+        }
+
+        for InterfaceFlow {
+            identifier, r#type, ..
+        } in input_flows.iter()
+        {
+            let enum_ident = Ident::new(
+                to_camel_case(identifier.as_str()).as_str(),
+                Span::call_site(),
+            );
+            let ty = type_rust_ast_from_lir(r#type.clone());
+            input_variants.push(parse_quote! { #enum_ident(#ty, std::time::Instant) });
+            input_eq_arms.push(
                     parse_quote! { (I::#enum_ident(this, _), I::#enum_ident(other, _)) => this.eq(other) },
                 );
-                input_get_instant_arms.push(parse_quote! { I::#enum_ident(_, instant) => *instant });
-            },
-        );
-        output_flows.into_iter().for_each(
-            |InterfaceFlow {
-                 identifier, r#type, ..
-             }| {
-                let enum_ident = Ident::new(
-                    to_camel_case(identifier.as_str()).as_str(),
-                    Span::call_site(),
-                );
-                let ty = type_rust_ast_from_lir(r#type);
-                output_variants.push(parse_quote! { #enum_ident(#ty, std::time::Instant) });
-            },
-        );
+            input_get_instant_arms.push(parse_quote! { I::#enum_ident(_, instant) => *instant });
+        }
+
+        for InterfaceFlow {
+            identifier, r#type, ..
+        } in output_flows.into_iter()
+        {
+            let enum_ident = Ident::new(
+                to_camel_case(identifier.as_str()).as_str(),
+                Span::call_site(),
+            );
+            let ty = type_rust_ast_from_lir(r#type);
+            output_variants.push(parse_quote! { #enum_ident(#ty, std::time::Instant) });
+        }
+
         if !timer_variants.is_empty() {
             input_variants.push(parse_quote! { Timer(T, std::time::Instant) });
             input_eq_arms
@@ -102,13 +101,13 @@ pub fn rust_ast_from_lir(execution_machine: ExecutionMachine) -> syn::Item {
             input_get_instant_arms.push(parse_quote! { I::Timer(_, instant) => *instant });
         }
         input_eq_arms.push(parse_quote! { _ => false });
-        runtime_items.push(Item::Enum(parse_quote! {
+        runtime_items.push(syn::Item::Enum(parse_quote! {
             #[derive(PartialEq)]
             pub enum RuntimeTimer {
                 #(#timer_variants),*
             }
         }));
-        runtime_items.push(Item::Impl(parse_quote! {
+        runtime_items.push(syn::Item::Impl(parse_quote! {
             impl timer_stream::Timing for RuntimeTimer {
                 fn get_duration(&self) -> std::time::Duration {
                     match self {
@@ -122,7 +121,7 @@ pub fn rust_ast_from_lir(execution_machine: ExecutionMachine) -> syn::Item {
                 }
             }
         }));
-        runtime_items.push(Item::Enum(parse_quote! {
+        runtime_items.push(syn::Item::Enum(parse_quote! {
             pub enum RuntimeInput {
                 #(#input_variants),*
             }
@@ -160,7 +159,7 @@ pub fn rust_ast_from_lir(execution_machine: ExecutionMachine) -> syn::Item {
                 }
             }
         });
-        runtime_items.push(Item::Enum(parse_quote! {
+        runtime_items.push(syn::Item::Enum(parse_quote! {
             pub enum RuntimeOutput {
                 #(#output_variants),*
             }
@@ -179,7 +178,7 @@ pub fn rust_ast_from_lir(execution_machine: ExecutionMachine) -> syn::Item {
             .push(parse_quote! { timer: futures::channel::mpsc::Sender<(T, std::time::Instant)> });
         field_values.push(parse_quote! { timer });
 
-        runtime_items.push(Item::Struct(parse_quote! {
+        runtime_items.push(syn::Item::Struct(parse_quote! {
             pub struct Runtime {
                 #(#runtime_fields),*
             }
@@ -188,7 +187,7 @@ pub fn rust_ast_from_lir(execution_machine: ExecutionMachine) -> syn::Item {
         (runtime_items, field_values)
     };
 
-    // funtion that creates a new runtime
+    // function that creates a new runtime
     let new_runtime = {
         let nb_services = services_handlers.len();
         let is_last = |idx| idx < nb_services - 1;
@@ -204,13 +203,13 @@ pub fn rust_ast_from_lir(execution_machine: ExecutionMachine) -> syn::Item {
             } else {
                 parse_quote! { output }
             };
-            let state: Stmt = parse_quote! {
+            let state: syn::Stmt = parse_quote! {
                 let #service_name = #service_path::#service_state_struct::init(#output_channel, timer.clone());
             };
             state
         });
         // parse the funtion that creates a new runtime
-        ImplItem::Fn(parse_quote! {
+        syn::ImplItem::Fn(parse_quote! {
             pub fn new(
                 output: futures::channel::mpsc::Sender<O>,
                 timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>
@@ -232,7 +231,7 @@ pub fn rust_ast_from_lir(execution_machine: ExecutionMachine) -> syn::Item {
         .map(service_handler_rust_ast_from_lir);
 
     // parse the runtime module
-    syn::Item::Mod(syn::parse_quote! {
+    syn::Item::Mod(parse_quote! {
         pub mod runtime {
             use futures::{stream::StreamExt, sink::SinkExt};
             use super::*;

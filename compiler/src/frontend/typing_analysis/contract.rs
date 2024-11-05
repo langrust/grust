@@ -2,7 +2,6 @@ prelude! {
     frontend::TypeAnalysis,
     hir::{Contract, contract},
     macro2::Span,
-    syn::Ident,
 }
 
 impl TypeAnalysis for Contract {

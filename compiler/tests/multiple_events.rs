@@ -4,7 +4,7 @@ compiler::prelude! {
 
 #[test]
 fn should_compile_multiple_events() {
-    let ast: Ast = syn::parse_quote! {
+    let ast: Ast = parse_quote! {
         #![dump = "tests/macro_outputs/multiple_events.rs"]
 
         component multiple_events(a: int?, b: int?, v: int) -> (c: int, d: int) {

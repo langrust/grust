@@ -1,12 +1,12 @@
 prelude! {
-    syn::{ parenthesized, parse::Parse, punctuated::Punctuated, token, Token },
+    syn::{Parse, punctuated::Punctuated, token},
 }
 
 /// Typed pattern.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Typed {
     /// The ident.
-    pub ident: syn::Ident,
+    pub ident: Ident,
     /// The colon token.
     pub colon_token: Token![:],
     /// The type.
@@ -14,17 +14,17 @@ pub struct Typed {
 }
 mk_new! { impl Typed =>
     new {
-        ident: syn::Ident = ident,
+        ident: Ident = ident,
         colon_token: Token![:],
         typing: Typ,
     }
 }
 impl Typed {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(Token![:])
     }
 
-    pub fn parse(ident: syn::Ident, input: syn::parse::ParseStream) -> syn::Result<Self> {
+    pub fn parse(ident: Ident, input: ParseStream) -> syn::Res<Self> {
         let colon_token: Token![:] = input.parse()?;
         let typing = input.parse()?;
         Ok(Typed {
@@ -45,12 +45,12 @@ mk_new! { impl Tuple =>
     new { elements: Vec<Pattern> }
 }
 impl Tuple {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(token::Paren)
     }
 }
 impl Parse for Tuple {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let content;
         let _ = parenthesized!(content in input);
         let elements: Punctuated<Pattern, Token![,]> = Punctuated::parse_terminated(&content)?;
@@ -64,7 +64,7 @@ impl Parse for Tuple {
 /// GRust matching pattern AST.
 pub enum Pattern {
     /// Identifier pattern.
-    Identifier(syn::Ident),
+    Identifier(Ident),
     /// Typed pattern.
     Typed(Typed),
     /// Tuple pattern that matches tuples.
@@ -72,17 +72,17 @@ pub enum Pattern {
 }
 impl Pattern {
     mk_new! {
-        Identifier: ident(ident: syn::Ident = ident)
+        Identifier: ident(ident: Ident = ident)
         Typed: typed(t: Typed = t)
         Tuple: tuple(t: Tuple = t)
     }
 }
 impl Parse for Pattern {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let pattern = if Tuple::peek(input) {
             Pattern::Tuple(input.parse()?)
         } else {
-            let ident: syn::Ident = input.parse()?;
+            let ident: Ident = input.parse()?;
             if Typed::peek(input) {
                 Pattern::Typed(Typed::parse(ident, input)?)
             } else {
@@ -119,7 +119,7 @@ impl<E> Parse for LetDecl<E>
 where
     E: Parse,
 {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let let_token: Token![let] = input.parse()?;
         let typed_pattern: Pattern = input.parse()?;
         let eq_token: Token![=] = input.parse()?;
@@ -144,7 +144,7 @@ pub struct Return {
     pub semi_token: Token![;],
 }
 impl Parse for Return {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let return_token: Token![return] = input.parse()?;
         let expression: Expr = input.parse()?;
         let semi_token: Token![;] = input.parse()?;
@@ -165,7 +165,7 @@ pub enum Stmt {
     Return(Return),
 }
 impl Parse for Stmt {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         if input.peek(Token![let]) {
             Ok(Stmt::Declaration(input.parse()?))
         } else {

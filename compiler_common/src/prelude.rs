@@ -1,5 +1,7 @@
 //! Basic types, helpers and re-exports.
 
+pub extern crate syn as syn_lib;
+
 /// Imports the compiler prelude.
 #[macro_export]
 macro_rules! prelude {
@@ -11,16 +13,43 @@ macro_rules! prelude {
     };
 }
 
+#[macro_export]
+macro_rules! bail {
+    { $e:expr } => { return Err($e.into()) };
+    { $($fmt:tt)* } => { return Err(format!($($fmt)*).into()) };
+}
+
+pub use crate::bail;
+
 pub use std::{
     collections::{BTreeMap, BTreeSet},
     fmt::Display,
+};
+
+pub mod syn {
+    pub use syn::{
+        braced, bracketed, custom_keyword, parenthesized,
+        parse::{Parse, ParseStream},
+        parse_macro_input, parse_quote, parse_str,
+        punctuated::{self, Punctuated},
+        spanned::Spanned,
+        Token, *,
+    };
+
+    /// Alias for `syn`'s notion of result.
+    pub type Res<T> = syn::Result<T>;
+}
+
+pub use syn::{
+    braced, bracketed, custom_keyword, parenthesized, parse_macro_input, parse_quote, BinOp, Ident,
+    ParseStream, Token, UnOp,
 };
 
 pub use crate::{
     codespan_reporting, conf, constant::Constant, convert_case::to_camel_case, error::*, graph,
     hash_map::*, itertools, keyword, lazy_static::lazy_static, location::Location, macro2, mk_new,
     once_cell, operator, petgraph, quote, r#type::Typ, rustc_hash, safe_index, scope::Scope, serde,
-    strum, syn, synced,
+    strum, synced,
 };
 
 /// Provides context-dependent a *less than* (`lt`) relation.

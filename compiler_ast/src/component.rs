@@ -1,10 +1,5 @@
 prelude! {
-    syn::{
-        Result,
-        parse::Parse,
-        punctuated::Punctuated,
-        braced, parenthesized, token, LitInt, Token,
-    },
+    syn::{Parse, Punctuated, token, LitInt},
     contract::Contract, equation::ReactEq,
 }
 
@@ -15,14 +10,14 @@ use super::keyword;
 pub struct Component {
     pub component_token: keyword::component,
     /// Component identifier.
-    pub ident: syn::Ident,
+    pub ident: Ident,
     pub args_paren: token::Paren,
     /// Component's inputs identifiers and their types.
-    pub args: Punctuated<Colon<syn::Ident, Typ>, Token![,]>,
+    pub args: Punctuated<Colon<Ident, Typ>, Token![,]>,
     pub arrow_token: Token![->],
     pub outs_paren: token::Paren,
     /// Component's outputs identifiers and their types.
-    pub outs: Punctuated<Colon<syn::Ident, Typ>, Token![,]>,
+    pub outs: Punctuated<Colon<Ident, Typ>, Token![,]>,
     /// Component's computation period.
     pub period: Option<(Token![@], LitInt, keyword::ms)>,
     /// Component's contract.
@@ -32,22 +27,22 @@ pub struct Component {
     pub equations: Vec<ReactEq>,
 }
 impl Component {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(keyword::component)
     }
 }
 impl Parse for Component {
-    fn parse(input: syn::parse::ParseStream) -> Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let component_token: keyword::component = input.parse()?;
-        let ident: syn::Ident = input.parse()?;
+        let ident: Ident = input.parse()?;
         let content;
         let args_paren: token::Paren = parenthesized!(content in input);
-        let args: Punctuated<Colon<syn::Ident, Typ>, Token![,]> =
+        let args: Punctuated<Colon<Ident, Typ>, Token![,]> =
             Punctuated::parse_terminated(&content)?;
         let arrow_token: Token![->] = input.parse()?;
         let content;
         let outs_paren: token::Paren = parenthesized!(content in input);
-        let outs: Punctuated<Colon<syn::Ident, Typ>, Token![,]> =
+        let outs: Punctuated<Colon<Ident, Typ>, Token![,]> =
             Punctuated::parse_terminated(&content)?;
         let period: Option<(Token![@], LitInt, keyword::ms)> = {
             if input.peek(Token![@]) {
@@ -88,7 +83,7 @@ mod parse_component {
 
     #[test]
     fn should_parse_component() {
-        let _: Component = syn::parse_quote! {
+        let _: Component = parse_quote! {
             component counter(res: bool, tick: bool) -> (o: int) {
                 o = if res then 0 else (last o init 0) + inc;
                 let inc: int = if tick then 1 else 0;
@@ -105,17 +100,17 @@ pub struct ComponentImport {
     pub colon_token: Token![:],
     pub args_paren: token::Paren,
     /// Component's inputs identifiers and their types.
-    pub args: Punctuated<Colon<syn::Ident, Typ>, Token![,]>,
+    pub args: Punctuated<Colon<Ident, Typ>, Token![,]>,
     pub arrow_token: Token![->],
     pub outs_paren: token::Paren,
     /// Component's outputs identifiers and their types.
-    pub outs: Punctuated<Colon<syn::Ident, Typ>, Token![,]>,
+    pub outs: Punctuated<Colon<Ident, Typ>, Token![,]>,
     /// Component's computation period.
     pub period: Option<(Token![@], LitInt, keyword::ms)>,
     pub semi_token: Token![;],
 }
 impl ComponentImport {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         let forked = input.fork();
         forked
             .parse::<keyword::import>()
@@ -124,19 +119,19 @@ impl ComponentImport {
     }
 }
 impl Parse for ComponentImport {
-    fn parse(input: syn::parse::ParseStream) -> Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let import_token: keyword::import = input.parse()?;
         let component_token: keyword::component = input.parse()?;
         let path: syn::Path = input.parse()?;
         let colon_token: Token![:] = input.parse()?;
         let content;
         let args_paren: token::Paren = parenthesized!(content in input);
-        let args: Punctuated<Colon<syn::Ident, Typ>, Token![,]> =
+        let args: Punctuated<Colon<Ident, Typ>, Token![,]> =
             Punctuated::parse_terminated(&content)?;
         let arrow_token: Token![->] = input.parse()?;
         let content;
         let outs_paren: token::Paren = parenthesized!(content in input);
-        let outs: Punctuated<Colon<syn::Ident, Typ>, Token![,]> =
+        let outs: Punctuated<Colon<Ident, Typ>, Token![,]> =
             Punctuated::parse_terminated(&content)?;
         let period: Option<(Token![@], LitInt, keyword::ms)> = {
             if input.peek(Token![@]) {
@@ -168,7 +163,7 @@ mod parse_component_import {
 
     #[test]
     fn should_parse_component() {
-        let _: ComponentImport = syn::parse_quote! {
+        let _: ComponentImport = parse_quote! {
             import component grust::grust_std::rising_edge: (test: bool) -> (res: bool);
         };
     }
