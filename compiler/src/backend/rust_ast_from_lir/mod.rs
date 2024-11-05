@@ -13,4 +13,4 @@ pub mod project;
 /// RustAST statement construction from LIR statement.
 pub mod statement;
 /// RustAST type construction from LIR type.
-pub mod r#type;
+pub mod typ;

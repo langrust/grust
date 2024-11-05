@@ -3,8 +3,8 @@ prelude! {
 }
 
 /// Transform LIR type into RustAST type.
-pub fn rust_ast_from_lir(r#type: Typ) -> syn::Type {
-    match r#type {
+pub fn rust_ast_from_lir(typ: Typ) -> syn::Type {
+    match typ {
         Typ::Integer(_) => parse_quote!(i64),
         Typ::Float(_) => parse_quote!(f64),
         Typ::Boolean(_) => parse_quote!(bool),
@@ -48,75 +48,75 @@ pub fn rust_ast_from_lir(r#type: Typ) -> syn::Type {
 #[cfg(test)]
 mod rust_ast_from_lir {
     prelude! {
-        backend::rust_ast_from_lir::r#type::rust_ast_from_lir,
+        backend::rust_ast_from_lir::typ::rust_ast_from_lir,
         syn::parse_quote,
     }
 
     #[test]
     fn should_create_i64_from_lir_integer() {
-        let r#type = Typ::int();
+        let typ = Typ::int();
         let control = parse_quote! { i64 };
-        assert_eq!(rust_ast_from_lir(r#type), control)
+        assert_eq!(rust_ast_from_lir(typ), control)
     }
 
     #[test]
     fn should_create_f64_from_lir_float() {
-        let r#type = Typ::float();
+        let typ = Typ::float();
         let control = parse_quote! { f64 };
-        assert_eq!(rust_ast_from_lir(r#type), control)
+        assert_eq!(rust_ast_from_lir(typ), control)
     }
 
     #[test]
     fn should_create_bool_from_lir_boolean() {
-        let r#type = Typ::bool();
+        let typ = Typ::bool();
         let control = parse_quote! { bool };
-        assert_eq!(rust_ast_from_lir(r#type), control)
+        assert_eq!(rust_ast_from_lir(typ), control)
     }
 
     #[test]
     fn should_create_unit_from_lir_unit() {
-        let r#type = Typ::unit();
+        let typ = Typ::unit();
         let control = parse_quote! { () };
 
-        assert_eq!(rust_ast_from_lir(r#type), control)
+        assert_eq!(rust_ast_from_lir(typ), control)
     }
 
     #[test]
     fn should_create_structure_from_lir_structure() {
-        let r#type = Typ::structure("Point", 0);
+        let typ = Typ::structure("Point", 0);
         let control = parse_quote! { Point };
 
-        assert_eq!(rust_ast_from_lir(r#type), control)
+        assert_eq!(rust_ast_from_lir(typ), control)
     }
 
     #[test]
     fn should_create_enumeration_from_lir_enumeration() {
-        let r#type = Typ::enumeration("Color", 0);
+        let typ = Typ::enumeration("Color", 0);
         let control = parse_quote! { Color };
 
-        assert_eq!(rust_ast_from_lir(r#type), control)
+        assert_eq!(rust_ast_from_lir(typ), control)
     }
 
     #[test]
     fn should_create_array_from_lir_array() {
-        let r#type = Typ::array(Typ::float(), 5);
+        let typ = Typ::array(Typ::float(), 5);
         let control = parse_quote! { [f64; 5usize] };
 
-        assert_eq!(rust_ast_from_lir(r#type), control)
+        assert_eq!(rust_ast_from_lir(typ), control)
     }
 
     #[test]
     fn should_create_option_from_lir_statemachine_event() {
-        let r#type = Typ::sm_event(Typ::float());
+        let typ = Typ::sm_event(Typ::float());
         let control = parse_quote!(Option<f64>);
-        assert_eq!(rust_ast_from_lir(r#type), control)
+        assert_eq!(rust_ast_from_lir(typ), control)
     }
 
     #[test]
     fn should_create_closure_from_lir_abstract() {
-        let r#type = Typ::function(vec![Typ::int()], Typ::float());
+        let typ = Typ::function(vec![Typ::int()], Typ::float());
         let control = parse_quote!(impl Fn(i64) -> f64);
 
-        assert_eq!(rust_ast_from_lir(r#type), control)
+        assert_eq!(rust_ast_from_lir(typ), control)
     }
 }

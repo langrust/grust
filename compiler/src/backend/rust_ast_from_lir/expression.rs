@@ -11,7 +11,7 @@ prelude! {
 use super::{
     block::rust_ast_from_lir as block_rust_ast_from_lir,
     pattern::rust_ast_from_lir as pattern_rust_ast_from_lir,
-    r#type::rust_ast_from_lir as type_rust_ast_from_lir,
+    typ::rust_ast_from_lir as type_rust_ast_from_lir,
 };
 
 /// Transforms binary operator into syn's binary operator.

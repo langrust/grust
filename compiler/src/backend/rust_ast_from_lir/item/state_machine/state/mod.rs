@@ -6,7 +6,7 @@ prelude! {
             as init_rust_ast_from_lir,
         rust_ast_from_lir::item::state_machine::state::step::rust_ast_from_lir
             as step_rust_ast_from_lir,
-        rust_ast_from_lir::r#type::rust_ast_from_lir
+        rust_ast_from_lir::typ::rust_ast_from_lir
             as type_rust_ast_from_lir,
     },
     lir::item::state_machine::state::{State, StateElement},

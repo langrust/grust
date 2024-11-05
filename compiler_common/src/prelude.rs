@@ -48,8 +48,8 @@ pub use syn::{
 pub use crate::{
     codespan_reporting, conf, constant::Constant, convert_case::to_camel_case, error::*, graph,
     hash_map::*, itertools, keyword, lazy_static::lazy_static, location::Location, macro2, mk_new,
-    once_cell, operator, petgraph, quote, r#type::Typ, rustc_hash, safe_index, scope::Scope, serde,
-    strum, synced,
+    once_cell, operator, petgraph, quote, rustc_hash, safe_index, scope::Scope, serde, strum,
+    synced, typ::Typ,
 };
 
 /// Provides context-dependent a *less than* (`lt`) relation.

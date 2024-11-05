@@ -1,6 +1,6 @@
 prelude! { just
     macro2::Span,
-    backend::rust_ast_from_lir::r#type::rust_ast_from_lir as type_rust_ast_from_lir,
+    backend::rust_ast_from_lir::typ::rust_ast_from_lir as type_rust_ast_from_lir,
     lir::item::structure::Structure,
     conf, syn, parse_quote, Ident
 }
