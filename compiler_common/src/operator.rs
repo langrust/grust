@@ -1,7 +1,7 @@
 use strum::EnumIter;
 
 prelude! {
-    syn::{Parse, Token},
+    syn::Parse,
 }
 
 /// GRust binary operators.

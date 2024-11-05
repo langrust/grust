@@ -3,7 +3,7 @@ use std::fmt::{self, Display};
 use macro2::Span;
 
 prelude! {
-    syn::{Parse, Punctuated, Token, token},
+    syn::{Parse, Punctuated, token},
 }
 
 /// GRust type system.

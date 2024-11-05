@@ -1,5 +1,5 @@
 prelude! {
-    syn::{Parse, Punctuated, token, Token},
+    syn::{Parse, Punctuated, token},
 }
 
 use super::{colon::Colon, keyword};

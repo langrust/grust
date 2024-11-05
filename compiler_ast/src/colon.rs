@@ -1,5 +1,5 @@
 prelude! {
-    syn::{Parse, Token},
+    syn::Parse,
 }
 
 pub struct Colon<U: Parse, V: Parse> {
