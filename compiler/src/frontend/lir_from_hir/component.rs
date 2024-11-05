@@ -3,11 +3,7 @@ prelude! {
     lir::{
         item::{
             Item, Import,
-            state_machine::{
-                input::{Input, InputElement},
-                state::{init::Init, step::Step, State},
-                StateMachine,
-            }
+            state_machine::{Input, InputElm, Init, Step, State, StateMachine},
         },
     },
 }
@@ -34,7 +30,7 @@ impl LIRFromHIR for ComponentDefinition {
 
     fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
         // get node name
-        let name = symbol_table.get_name(self.id).clone();
+        let name = symbol_table.get_name(self.id);
 
         // get node inputs
         let inputs = symbol_table
@@ -86,35 +82,30 @@ impl LIRFromHIR for ComponentDefinition {
 
         // transform contract
         let contract = self.contract.lir_from_hir(symbol_table);
-        let invariant_initialisation = vec![]; // TODO
+        let invariant_initialization = vec![]; // TODO
 
         // 'init' method
-        let init = Init {
-            node_name: name.clone(),
-            state_elements_init,
-            invariant_initialisation,
-        };
+        let init = Init::new(name, state_elements_init, invariant_initialization);
 
         // 'step' method
-        let step = Step {
-            contract,
-            node_name: name.clone(),
+        let step = Step::new(
+            name,
             output_type,
-            body: self
-                .statements
+            self.statements
                 .into_iter()
                 .map(|equation| equation.lir_from_hir(symbol_table))
                 .collect(),
             state_elements_step,
             output_expression,
-        };
+            contract,
+        );
 
         // 'input' structure
         let input = Input {
             node_name: name.clone(),
             elements: inputs
                 .into_iter()
-                .map(|(identifier, typ)| InputElement { identifier, typ })
+                .map(|(identifier, typ)| InputElm::new(identifier, typ))
                 .collect(),
         };
 
@@ -126,7 +117,7 @@ impl LIRFromHIR for ComponentDefinition {
             init,
         };
 
-        StateMachine { name, input, state }
+        StateMachine::new(name, input, state)
     }
 }
 

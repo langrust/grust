@@ -12,7 +12,7 @@ prelude! {
     },
     lir::{
         contract::{Contract, Term},
-        item::state_machine::state::step::{StateElementStep, Step},
+        item::state_machine::{StateElmStep, Step},
     },
 }
 
@@ -169,28 +169,24 @@ pub fn rust_ast_from_lir(step: Step, crates: &mut BTreeSet<String>) -> syn::Impl
         .map(|statement| statement_rust_ast_from_lir(statement, crates))
         .collect::<Vec<_>>();
 
-    let mut fields_update = step
-        .state_elements_step
-        .into_iter()
-        .map(
-            |StateElementStep {
-                 identifier,
-                 expression,
-             }|
-             -> syn::Stmt {
-                let id = format_ident!("{}", identifier);
-                let expr = expression_rust_ast_from_lir(expression, crates);
-                parse_quote! { self.#id = #expr; }
-            },
-        )
-        .collect::<Vec<_>>();
+    let fields_update = step.state_elements_step.into_iter().map(
+        |StateElmStep {
+             identifier,
+             expression,
+         }|
+         -> syn::Stmt {
+            let id = format_ident!("{}", identifier);
+            let expr = expression_rust_ast_from_lir(expression, crates);
+            parse_quote! { self.#id = #expr; }
+        },
+    );
+    statements.extend(fields_update);
 
     let output_statement = syn::Stmt::Expr(
         expression_rust_ast_from_lir(step.output_expression, crates),
         None,
     );
 
-    statements.append(&mut fields_update);
     statements.push(output_statement);
 
     let body = syn::Block {
@@ -213,7 +209,7 @@ mod rust_ast_from_lir {
         backend::rust_ast_from_lir::item::state_machine::state::step::rust_ast_from_lir,
         lir::{
             FieldIdentifier, Pattern, Stmt,
-            item::state_machine::state::step::{StateElementStep, Step},
+            item::state_machine::{StateElmStep, Step},
         },
     }
 
@@ -242,7 +238,7 @@ mod rust_ast_from_lir {
                 },
             ],
             state_elements_step: vec![
-                StateElementStep::new(
+                StateElmStep::new(
                     "mem_i",
                     lir::Expr::binop(
                         operator::BinaryOperator::Add,
@@ -250,7 +246,7 @@ mod rust_ast_from_lir {
                         lir::Expr::lit(Constant::Integer(parse_quote!(1i64))),
                     ),
                 ),
-                StateElementStep::new(
+                StateElmStep::new(
                     "called_node_state",
                     lir::Expr::ident("new_called_node_state"),
                 ),

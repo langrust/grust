@@ -12,14 +12,14 @@ use self::state::rust_ast_from_lir as state_rust_ast_from_lir;
 mod input {
     prelude! {
         backend::rust_ast_from_lir::typ::rust_ast_from_lir as type_rust_ast_from_lir,
-        lir::item::state_machine::input::{Input, InputElement},
+        lir::item::state_machine::{Input, InputElm},
         quote::format_ident,
     }
 
     /// Transform LIR input into RustAST structure.
     pub fn rust_ast_from_lir(input: Input) -> syn::ItemStruct {
         let mut fields: Vec<syn::Field> = Vec::new();
-        for InputElement { identifier, typ } in input.elements {
+        for InputElm { identifier, typ } in input.elements {
             let typ = type_rust_ast_from_lir(typ);
             let identifier = format_ident!("{identifier}");
             fields.push(parse_quote! { pub #identifier : #typ });
@@ -37,14 +37,14 @@ mod input {
     mod rust_ast_from_lir {
         prelude! {
             backend::rust_ast_from_lir::item::state_machine::input::rust_ast_from_lir,
-            lir::item::state_machine::input::{Input, InputElement},
+            lir::item::state_machine::{Input, InputElm},
         }
 
         #[test]
         fn should_create_rust_ast_structure_from_lir_node_input() {
             let input = Input {
                 node_name: format!("Node"),
-                elements: vec![InputElement {
+                elements: vec![InputElm {
                     identifier: format!("i"),
                     typ: Typ::int(),
                 }],
