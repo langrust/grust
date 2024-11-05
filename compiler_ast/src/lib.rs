@@ -4,7 +4,7 @@ pub extern crate compiler_common as common;
 pub mod prelude;
 
 prelude! {
-    syn::parse::{Parse, ParseStream, Result},
+    syn::{Parse, Res},
 }
 
 mod colon;
@@ -36,7 +36,7 @@ pub enum Item {
     Export(FlowExport),
 }
 impl Parse for Item {
-    fn parse(input: ParseStream) -> Result<Self> {
+    fn parse(input: ParseStream) -> Res<Self> {
         if ComponentImport::peek(input) {
             Ok(Item::ComponentImport(input.parse()?))
         } else if Component::peek(input) {
@@ -65,7 +65,7 @@ pub struct Ast {
     pub items: Vec<Item>,
 }
 impl Parse for Ast {
-    fn parse(input: ParseStream) -> Result<Self> {
+    fn parse(input: ParseStream) -> Res<Self> {
         let _: config::Config = input.parse()?;
         let items: Vec<Item> = {
             let mut items = Vec::with_capacity(100);

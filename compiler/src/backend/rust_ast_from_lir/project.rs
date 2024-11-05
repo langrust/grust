@@ -1,8 +1,5 @@
 use std::collections::BTreeSet;
 
-use itertools::Itertools;
-use syn::parse_quote;
-
 prelude! {
     backend::rust_ast_from_lir::item::{
         array_alias::rust_ast_from_lir as array_alias_rust_ast_from_lir,
@@ -61,6 +58,7 @@ pub fn rust_ast_from_lir(project: Project) -> Vec<syn::Item> {
     });
 
     // remove duplicated imports
+    use itertools::Itertools; // for `unique`
     rust_items = std::mem::take(&mut rust_items)
         .into_iter()
         .unique()

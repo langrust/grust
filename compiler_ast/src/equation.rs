@@ -1,11 +1,7 @@
 prelude! {
-    syn::{
-        punctuated::Punctuated, braced, Token, parse::Parse, token,
-    },
+    syn::{Punctuated, Parse, token},
     stmt::Pattern, stmt::LetDecl,
 }
-
-use syn::parenthesized;
 
 use super::keyword;
 
@@ -28,7 +24,7 @@ mk_new! { impl{E} Instantiation<E> =>
 }
 
 impl<E: Parse> Parse for Instantiation<E> {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let pattern: Pattern = input.parse()?;
         let eq: Token![=] = input.parse()?;
         let expr: E = input.parse()?;
@@ -61,7 +57,7 @@ mk_new! { impl Arm =>
 }
 
 impl Parse for Arm {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let pattern = input.parse()?;
         let guard = {
             if input.fork().peek(Token![if]) {
@@ -105,7 +101,7 @@ mk_new! { impl Match =>
 }
 
 impl Parse for Match {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let match_token = input.parse()?;
         let expr = input.parse()?;
         let content;
@@ -128,7 +124,7 @@ mk_new! { impl Eq =>
     Match: pat_match(m : Match = m)
 }
 impl Parse for Eq {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         if input.peek(Token![match]) {
             Ok(Eq::pat_match(input.parse()?))
         } else if input.peek(Token![let]) {
@@ -152,7 +148,7 @@ mk_new! { impl TupleEventPattern =>
     }
 }
 impl Parse for TupleEventPattern {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let content;
         let paren_token = parenthesized!(content in input);
         let patterns = Punctuated::parse_terminated(&content)?;
@@ -167,7 +163,7 @@ pub struct LetEventPattern {
     pub pattern: expr::Pattern,
     pub eq_token: Token![=],
     /// The event to match.
-    pub event: syn::Ident,
+    pub event: Ident,
     pub question_token: Token![?],
 }
 mk_new! { impl LetEventPattern =>
@@ -175,12 +171,12 @@ mk_new! { impl LetEventPattern =>
         let_token: Token![let],
         pattern: expr::Pattern,
         eq_token: Token![=],
-        event: syn::Ident,
+        event: Ident,
         question_token: Token![?],
     }
 }
 impl Parse for LetEventPattern {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let let_token = input.parse()?;
         let pattern = input.parse()?;
         let eq_token = input.parse()?;
@@ -203,7 +199,7 @@ pub enum EventPattern {
     RisingEdge(Box<stream::Expr>),
 }
 impl Parse for EventPattern {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         if input.peek(token::Paren) {
             Ok(EventPattern::Tuple(input.parse()?))
         } else if input.peek(Token![let]) {
@@ -211,10 +207,10 @@ impl Parse for EventPattern {
         } else {
             let forked = input.fork();
             let is_event = forked
-                .parse::<syn::Ident>()
+                .parse::<Ident>()
                 .is_ok_and(|_| forked.parse::<token::Question>().is_ok());
             if is_event {
-                let event: syn::Ident = input.parse()?;
+                let event: Ident = input.parse()?;
                 let question_token: token::Question = input.parse()?;
                 let span = event.span();
                 let let_token = token::Let { span };
@@ -265,7 +261,7 @@ mk_new! { impl EventArmWhen =>
 }
 
 impl Parse for EventArmWhen {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let pat = input.parse()?;
         let guard = {
             if input.fork().peek(Token![if]) {
@@ -304,7 +300,7 @@ mk_new! { impl MatchWhen =>
     }
 }
 impl Parse for MatchWhen {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let when_token = input.parse()?;
         let content;
         let brace = braced!(content in input);
@@ -331,7 +327,7 @@ mk_new! { impl ReactEq =>
     Match: pat_match(m : Match = m)
 }
 impl Parse for ReactEq {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         if input.peek(Token![match]) {
             Ok(ReactEq::pat_match(input.parse()?))
         } else if input.peek(keyword::when) {
@@ -491,133 +487,136 @@ mod parse_equation {
 
     #[test]
     fn should_parse_output_definition() {
-        let equation: ReactEq = syn::parse_quote! {o = if res then 0 else (last o init 0) + inc;};
+        let equation: ReactEq = parse_quote! {o = if res then 0 else (last o init 0) + inc;};
         let control = ReactEq::out_def(Instantiation {
-            pattern: syn::parse_quote! {o},
-            eq_token: syn::parse_quote! {=},
+            pattern: parse_quote! {o},
+            eq_token: parse_quote! {=},
             expression: stream::ReactExpr::expr(stream::Expr::ite(IfThenElse::new(
                 stream::Expr::ident("res"),
-                stream::Expr::cst(Constant::int(syn::parse_quote! {0})),
+                stream::Expr::cst(Constant::int(parse_quote! {0})),
                 stream::Expr::binop(Binop::new(
                     BinaryOperator::Add,
                     stream::Expr::last(stream::Last::new(
-                        syn::parse_quote! {o},
-                        Some(stream::Expr::cst(Constant::int(syn::parse_quote! {0}))),
+                        parse_quote! {o},
+                        Some(stream::Expr::cst(Constant::int(parse_quote! {0}))),
                     )),
                     stream::Expr::ident("inc"),
                 )),
             ))),
-            semi_token: syn::parse_quote! {;},
+            semi_token: parse_quote! {;},
         });
         assert_eq!(equation, control)
     }
 
     #[test]
     fn should_parse_tuple_instantiation() {
-        let equation: ReactEq = syn::parse_quote! {
+        let equation: ReactEq = parse_quote! {
             (o1, o2) = if res then (0, 0) else ((last o1 init 0) + inc1, last o2 + inc2);
         };
         let control = ReactEq::out_def(Instantiation {
             pattern: stmt::Pattern::tuple(stmt::Tuple::new(vec![
-                syn::parse_quote! {o1},
-                syn::parse_quote! {o2},
+                parse_quote! {o1},
+                parse_quote! {o2},
             ])),
-            eq_token: syn::parse_quote! {=},
+            eq_token: parse_quote! {=},
             expression: stream::ReactExpr::expr(stream::Expr::ite(IfThenElse::new(
                 stream::Expr::ident("res"),
                 stream::Expr::tuple(Tuple::new(vec![
-                    stream::Expr::cst(Constant::int(syn::parse_quote! {0})),
-                    stream::Expr::cst(Constant::int(syn::parse_quote! {0})),
+                    stream::Expr::cst(Constant::int(parse_quote! {0})),
+                    stream::Expr::cst(Constant::int(parse_quote! {0})),
                 ])),
                 stream::Expr::tuple(Tuple::new(vec![
                     stream::Expr::binop(Binop::new(
                         BinaryOperator::Add,
                         stream::Expr::last(stream::Last::new(
-                            syn::parse_quote! {o1},
-                            Some(stream::Expr::cst(Constant::int(syn::parse_quote! {0}))),
+                            parse_quote! {o1},
+                            Some(stream::Expr::cst(Constant::int(parse_quote! {0}))),
                         )),
                         stream::Expr::ident("inc1"),
                     )),
                     stream::Expr::binop(Binop::new(
                         BinaryOperator::Add,
-                        stream::Expr::last(stream::Last::new(syn::parse_quote! {o2}, None)),
+                        stream::Expr::last(stream::Last::new(parse_quote! {o2}, None)),
                         stream::Expr::ident("inc2"),
                     )),
                 ])),
             ))),
-            semi_token: syn::parse_quote! {;},
+            semi_token: parse_quote! {;},
         });
         assert_eq!(equation, control)
     }
 
     #[test]
     fn should_parse_local_definition() {
-        let equation: ReactEq = syn::parse_quote! {let o: int = if res then 0 else last o + inc;};
+        let equation: ReactEq = parse_quote! {
+            let o: int = if res then 0 else last o + inc;
+        };
         let control = ReactEq::local_def(LetDecl::new(
-            syn::parse_quote!(let),
+            parse_quote!(let),
             stmt::Pattern::typed(stmt::Typed {
-                ident: syn::parse_quote!(o),
-                colon_token: syn::parse_quote!(:),
+                ident: parse_quote!(o),
+                colon_token: parse_quote!(:),
                 typing: Typ::int(),
             }),
-            syn::parse_quote!(=),
+            parse_quote!(=),
             stream::ReactExpr::expr(stream::Expr::ite(IfThenElse::new(
                 stream::Expr::ident("res"),
-                stream::Expr::cst(Constant::int(syn::parse_quote! {0})),
+                stream::Expr::cst(Constant::int(parse_quote! {0})),
                 stream::Expr::binop(Binop::new(
                     BinaryOperator::Add,
-                    stream::Expr::last(stream::Last::new(syn::parse_quote! {o}, None)),
+                    stream::Expr::last(stream::Last::new(parse_quote! {o}, None)),
                     stream::Expr::ident("inc"),
                 )),
             ))),
-            syn::parse_quote! {;},
+            parse_quote! {;},
         ));
         assert_eq!(equation, control)
     }
 
     #[test]
     fn should_parse_multiple_definitions() {
-        let equation: ReactEq = syn::parse_quote! {
-            let (o1: int, o2: int) = if res then (0, 0) else ((last o1 init 0) + inc1, last o2 + inc2);
+        let equation: ReactEq = parse_quote! {
+            let (o1: int, o2: int) =
+                if res then (0, 0) else ((last o1 init 0) + inc1, last o2 + inc2);
         };
         let control = ReactEq::local_def(LetDecl::new(
-            syn::parse_quote!(let),
+            parse_quote!(let),
             stmt::Pattern::tuple(stmt::Tuple::new(vec![
                 stmt::Pattern::Typed(stmt::Typed {
-                    ident: syn::parse_quote!(o1),
-                    colon_token: syn::parse_quote!(:),
+                    ident: parse_quote!(o1),
+                    colon_token: parse_quote!(:),
                     typing: Typ::int(),
                 }),
                 stmt::Pattern::Typed(stmt::Typed {
-                    ident: syn::parse_quote!(o2),
-                    colon_token: syn::parse_quote!(:),
+                    ident: parse_quote!(o2),
+                    colon_token: parse_quote!(:),
                     typing: Typ::int(),
                 }),
             ])),
-            syn::parse_quote!(=),
+            parse_quote!(=),
             stream::ReactExpr::expr(stream::Expr::ite(IfThenElse::new(
                 stream::Expr::ident("res"),
                 stream::Expr::tuple(Tuple::new(vec![
-                    stream::Expr::cst(Constant::int(syn::parse_quote! {0})),
-                    stream::Expr::cst(Constant::int(syn::parse_quote! {0})),
+                    stream::Expr::cst(Constant::int(parse_quote! {0})),
+                    stream::Expr::cst(Constant::int(parse_quote! {0})),
                 ])),
                 stream::Expr::tuple(Tuple::new(vec![
                     stream::Expr::binop(Binop::new(
                         BinaryOperator::Add,
                         stream::Expr::last(stream::Last::new(
-                            syn::parse_quote! {o1},
-                            Some(stream::Expr::cst(Constant::int(syn::parse_quote! {0}))),
+                            parse_quote! {o1},
+                            Some(stream::Expr::cst(Constant::int(parse_quote! {0}))),
                         )),
                         stream::Expr::ident("inc1"),
                     )),
                     stream::Expr::binop(Binop::new(
                         BinaryOperator::Add,
-                        stream::Expr::last(stream::Last::new(syn::parse_quote! {o2}, None)),
+                        stream::Expr::last(stream::Last::new(parse_quote! {o2}, None)),
                         stream::Expr::ident("inc2"),
                     )),
                 ])),
             ))),
-            syn::parse_quote! {;},
+            parse_quote! {;},
         ));
         assert_eq!(equation, control)
     }

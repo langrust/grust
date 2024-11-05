@@ -25,8 +25,6 @@ mod location;
 mod scope;
 mod r#type;
 
-pub use syn::parse_quote;
-
 pub mod conf;
 pub mod graph;
 pub mod keyword;

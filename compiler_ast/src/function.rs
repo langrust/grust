@@ -1,9 +1,5 @@
 prelude! {
-    syn::{
-        parse::Parse,
-        punctuated::Punctuated,
-        {braced, parenthesized, token, Token},
-    },
+    syn::{Parse, Punctuated, token},
     contract::Contract,
     Stmt,
 }
@@ -15,10 +11,10 @@ use super::keyword;
 pub struct Function {
     pub function_token: keyword::function,
     /// Function identifier.
-    pub ident: syn::Ident,
+    pub ident: Ident,
     pub args_paren: token::Paren,
     /// Function's inputs identifiers and their types.
-    pub args: Punctuated<Colon<syn::Ident, Typ>, Token![,]>,
+    pub args: Punctuated<Colon<Ident, Typ>, Token![,]>,
     pub arrow_token: Token![->],
     pub output_type: Typ,
     /// Function's contract.
@@ -28,17 +24,17 @@ pub struct Function {
     pub statements: Vec<Stmt>,
 }
 impl Function {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(keyword::function)
     }
 }
 impl Parse for Function {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let function_token: keyword::function = input.parse()?;
-        let ident: syn::Ident = input.parse()?;
+        let ident: Ident = input.parse()?;
         let content;
         let args_paren: token::Paren = parenthesized!(content in input);
-        let args: Punctuated<Colon<syn::Ident, Typ>, Token![,]> =
+        let args: Punctuated<Colon<Ident, Typ>, Token![,]> =
             Punctuated::parse_terminated(&content)?;
         let arrow_token: Token![->] = input.parse()?;
         let output_type: Typ = input.parse()?;

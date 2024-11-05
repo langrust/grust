@@ -29,7 +29,7 @@ pub mod hir;
 
 /// Compiles input GRust tokens into output Rust tokens.
 pub fn handle_tokens(tokens: TokenStream) -> TokenStream {
-    let ast = syn::parse_macro_input!(tokens as Ast);
+    let ast = parse_macro_input!(tokens as Ast);
     let tokens = into_token_stream(ast);
     if let Some(path) = conf::dump_code() {
         dump_code(&path, &tokens);

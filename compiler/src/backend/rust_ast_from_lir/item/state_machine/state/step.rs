@@ -3,7 +3,6 @@ use std::collections::BTreeSet;
 prelude! {
     macro2::{Span, TokenStream},
     quote::{format_ident, quote},
-    syn::*,
     backend::rust_ast_from_lir::{
         expression::{
             binary_to_syn, constant_to_syn, rust_ast_from_lir as expression_rust_ast_from_lir, unary_to_syn,
@@ -89,7 +88,7 @@ fn term_to_token_stream(term: Term, prophecy: bool) -> TokenStream {
 }
 
 /// Transform LIR step into RustAST implementation method.
-pub fn rust_ast_from_lir(step: Step, crates: &mut BTreeSet<String>) -> ImplItemFn {
+pub fn rust_ast_from_lir(step: Step, crates: &mut BTreeSet<String>) -> syn::ImplItemFn {
     // create attributes from contract
     let Contract {
         requires,
@@ -132,9 +131,9 @@ pub fn rust_ast_from_lir(step: Step, crates: &mut BTreeSet<String>) -> ImplItemF
 
     let inputs = vec![
         parse_quote!(&mut self),
-        FnArg::Typed(PatType {
+        syn::FnArg::Typed(syn::PatType {
             attrs: vec![],
-            pat: Box::new(Pat::Ident(PatIdent {
+            pat: Box::new(syn::Pat::Ident(syn::PatIdent {
                 attrs: vec![],
                 by_ref: None,
                 mutability: None,
@@ -159,7 +158,7 @@ pub fn rust_ast_from_lir(step: Step, crates: &mut BTreeSet<String>) -> ImplItemF
         paren_token: Default::default(),
         inputs,
         variadic: None,
-        output: ReturnType::Type(
+        output: syn::ReturnType::Type(
             Default::default(),
             Box::new(type_rust_ast_from_lir(step.output_type)),
         ),
@@ -178,7 +177,7 @@ pub fn rust_ast_from_lir(step: Step, crates: &mut BTreeSet<String>) -> ImplItemF
                  identifier,
                  expression,
              }|
-             -> Stmt {
+             -> syn::Stmt {
                 let id = format_ident!("{}", identifier);
                 let expr = expression_rust_ast_from_lir(expression, crates);
                 parse_quote! { self.#id = #expr; }
@@ -186,7 +185,7 @@ pub fn rust_ast_from_lir(step: Step, crates: &mut BTreeSet<String>) -> ImplItemF
         )
         .collect::<Vec<_>>();
 
-    let output_statement = Stmt::Expr(
+    let output_statement = syn::Stmt::Expr(
         expression_rust_ast_from_lir(step.output_expression, crates),
         None,
     );
@@ -194,14 +193,14 @@ pub fn rust_ast_from_lir(step: Step, crates: &mut BTreeSet<String>) -> ImplItemF
     statements.append(&mut fields_update);
     statements.push(output_statement);
 
-    let body = Block {
+    let body = syn::Block {
         stmts: statements,
         brace_token: Default::default(),
     };
 
-    ImplItemFn {
+    syn::ImplItemFn {
         attrs: attributes,
-        vis: Visibility::Public(Default::default()),
+        vis: syn::Visibility::Public(Default::default()),
         defaultness: None,
         sig: signature,
         block: body,
@@ -211,7 +210,6 @@ pub fn rust_ast_from_lir(step: Step, crates: &mut BTreeSet<String>) -> ImplItemF
 #[cfg(test)]
 mod rust_ast_from_lir {
     prelude! {
-        syn::*,
         backend::rust_ast_from_lir::item::state_machine::state::step::rust_ast_from_lir,
         lir::{
             FieldIdentifier, Pattern, Stmt,

@@ -1,5 +1,5 @@
 prelude! {
-    macro2::Span, syn::*, quote::format_ident,
+    macro2::Span, quote::format_ident,
     backend::{
         rust_ast_from_lir::expression::constant_to_syn,
         rust_ast_from_lir::{
@@ -98,10 +98,10 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> Vec<syn::Stmt> {
 
             let input_fields = signals_fields
                 .into_iter()
-                .map(|(field_name, in_context)| -> FieldValue {
+                .map(|(field_name, in_context)| -> syn::FieldValue {
                     let field_id = Ident::new(&field_name, Span::call_site());
                     let in_context_id = Ident::new(&in_context, Span::call_site());
-                    let expr: Expr = parse_quote!(self.context.#in_context_id.get());
+                    let expr: syn::Expr = parse_quote!(self.context.#in_context_id.get());
                     parse_quote! { #field_id : #expr }
                 })
                 .chain(events_fields.into_iter().map(|(field_name, opt_event)| {
@@ -123,7 +123,7 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> Vec<syn::Stmt> {
             }
         }
         FlowInstruction::HandleDelay(input_flows, match_arms) => {
-            let input_flows = input_flows.iter().map(|name| -> Expr {
+            let input_flows = input_flows.iter().map(|name| -> syn::Expr {
                 let ident = Ident::new(name, Span::call_site());
                 parse_quote! { self.input_store.#ident.take() }
             });
@@ -142,11 +142,11 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> Vec<syn::Stmt> {
         FlowInstruction::IfActivated(events, signals, then, els) => {
             let actv_cond = events
                 .iter()
-                .map(|e| -> Expr {
+                .map(|e| -> syn::Expr {
                     let ident = format_ident!("{e}_ref");
                     parse_quote! { #ident.is_some() }
                 })
-                .chain(signals.iter().map(|s| -> Expr {
+                .chain(signals.iter().map(|s| -> syn::Expr {
                     let ident = Ident::new(s, Span::call_site());
                     parse_quote! { self.context.#ident.is_new() }
                 }));
@@ -178,7 +178,7 @@ pub fn rust_ast_from_lir(instruction_flow: FlowInstruction) -> Vec<syn::Stmt> {
         }
         FlowInstruction::Para(method_map) => {
             let para_futures = method_map.into_iter().flat_map(|(_method, para_instrs)| {
-                para_instrs.into_iter().map(|instr| -> Expr {
+                para_instrs.into_iter().map(|instr| -> syn::Expr {
                     let stmts = rust_ast_from_lir(instr);
                     parse_quote! {async { #(#stmts)* }}
                 })

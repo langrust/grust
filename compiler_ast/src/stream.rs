@@ -1,5 +1,5 @@
 prelude! {
-    syn::{parse::Parse, Token},
+    syn::{Parse, Token},
     equation::EventPattern,
     expr::*,
     operator::BinaryOperator,
@@ -9,23 +9,23 @@ prelude! {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Last {
     /// Signal identifier.
-    pub ident: syn::Ident,
+    pub ident: Ident,
     /// The initialization constant.
     pub constant: Option<Box<Expr>>,
 }
 mk_new! { impl Last =>
     new {
-        ident: syn::Ident,
+        ident: Ident,
         constant: Option<Expr> = constant.map(Expr::into),
     }
 }
 impl Last {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(keyword::last)
     }
 }
 impl Parse for Last {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let _: keyword::last = input.parse()?;
         let ident = input.parse()?;
         let constant = if input.peek(keyword::init) {
@@ -59,12 +59,12 @@ mk_new! { impl When =>
     }
 }
 impl When {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(keyword::when)
     }
 }
 impl Parse for When {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let _: keyword::when = input.parse()?;
         let pattern: EventPattern = input.parse()?;
         let guard = {
@@ -96,12 +96,12 @@ mk_new! { impl Emit =>
     }
 }
 impl Emit {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(keyword::emit)
     }
 }
 impl Parse for Emit {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let emit_token: keyword::emit = input.parse()?;
         let expr: Expr = input.parse()?;
         Ok(Emit::new(emit_token, expr))
@@ -175,7 +175,7 @@ mk_new! { impl Expr =>
     Emit: emit(arg: Emit = arg)
 }
 impl ParsePrec for Expr {
-    fn parse_term(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse_term(input: ParseStream) -> syn::Res<Self> {
         let mut expression = if input.fork().call(Constant::parse).is_ok() {
             Self::Constant(input.parse()?)
         } else if Last::peek(input) {
@@ -199,8 +199,8 @@ impl ParsePrec for Expr {
             Self::Structure(input.parse()?)
         } else if Enumeration::<Self>::peek(input) {
             Self::Enumeration(input.parse()?)
-        } else if input.fork().call(syn::Ident::parse).is_ok() {
-            let ident: syn::Ident = input.parse()?;
+        } else if input.fork().call(Ident::parse).is_ok() {
+            let ident: Ident = input.parse()?;
             Self::Identifier(ident.to_string())
         } else {
             return Err(input.error("expected expression"));
@@ -226,7 +226,7 @@ impl ParsePrec for Expr {
         Ok(expression)
     }
 
-    fn parse_prec1(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse_prec1(input: ParseStream) -> syn::Res<Self> {
         let mut expression = Self::parse_term(input)?;
 
         loop {
@@ -238,7 +238,7 @@ impl ParsePrec for Expr {
         }
         Ok(expression)
     }
-    fn parse_prec2(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse_prec2(input: ParseStream) -> syn::Res<Self> {
         let mut expression = Self::parse_prec1(input)?;
 
         loop {
@@ -250,7 +250,7 @@ impl ParsePrec for Expr {
         }
         Ok(expression)
     }
-    fn parse_prec3(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse_prec3(input: ParseStream) -> syn::Res<Self> {
         let mut expression = Self::parse_prec2(input)?;
 
         loop {
@@ -262,7 +262,7 @@ impl ParsePrec for Expr {
         }
         Ok(expression)
     }
-    fn parse_prec4(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse_prec4(input: ParseStream) -> syn::Res<Self> {
         let mut expression = Self::parse_prec3(input)?;
 
         loop {
@@ -276,7 +276,7 @@ impl ParsePrec for Expr {
     }
 }
 impl Parse for Expr {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let expression = if TypedAbstraction::<Self>::peek(input) {
             Self::TypedAbstraction(input.parse()?)
         } else if IfThenElse::<Self>::peek(input) {
@@ -305,7 +305,7 @@ mk_new! { impl ReactExpr =>
     When: when_match(arg: When = arg)
 }
 impl Parse for ReactExpr {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let expression = if When::peek(input) {
             Self::when_match(input.parse()?)
         } else {

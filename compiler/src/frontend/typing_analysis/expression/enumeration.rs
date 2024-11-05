@@ -13,7 +13,7 @@ where
             hir::expr::Kind::Enumeration { ref enum_id, .. } => {
                 // type each field and check their type
                 Ok(Typ::Enumeration {
-                    name: syn::Ident::new(symbol_table.get_name(*enum_id), Span::call_site()),
+                    name: Ident::new(symbol_table.get_name(*enum_id), Span::call_site()),
                     id: *enum_id,
                 })
             }

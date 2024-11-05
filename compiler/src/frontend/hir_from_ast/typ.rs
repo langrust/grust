@@ -1,9 +1,8 @@
-use syn::{
-    punctuated::{Pair, Punctuated},
-    Token,
-};
-
-prelude! { ast::Typ, frontend::hir_from_ast::{HIRFromAST, LocCtxt} }
+prelude! {
+    ast::Typ,
+    frontend::hir_from_ast::{HIRFromAST, LocCtxt},
+    syn::punctuated::{Pair, Punctuated},
+}
 
 impl<'a> HIRFromAST<LocCtxt<'a>> for Typ {
     type HIR = Typ;

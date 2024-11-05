@@ -1,13 +1,12 @@
 use compiler_lir::common::quote::format_ident;
 
 prelude! { just
-    macro2::Span,
-    syn::{parse_quote, Expr, Ident},
+    macro2::Span, syn, parse_quote, Ident,
     backend::rust_ast_from_lir::expression::constant_to_syn,
     lir::item::execution_machine::service_handler::Expression,
 }
 
-pub fn rust_ast_from_lir(expression: Expression) -> Expr {
+pub fn rust_ast_from_lir(expression: Expression) -> syn::Expr {
     match expression {
         Expression::Literal { literal } => constant_to_syn(literal),
         Expression::Event { identifier } => {

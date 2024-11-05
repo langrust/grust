@@ -4,7 +4,7 @@ compiler::prelude! {
 
 #[test]
 fn should_compile_fibo() {
-    let ast: Ast = syn::parse_quote! {
+    let ast: Ast = parse_quote! {
         #![dump = "tests/macro_outputs/fibo.rs"]
 
         component next(i: int) -> (next_o: int) {

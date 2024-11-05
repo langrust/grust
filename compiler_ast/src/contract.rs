@@ -1,7 +1,7 @@
 //! Contracts for the AST.
 
 prelude! {
-    syn::{braced, parse::Parse, token, Token},
+    syn::{Parse, token},
     operator::{BinaryOperator, UnaryOperator},
     expr::ParsePrec,
 }
@@ -29,14 +29,14 @@ mk_new! { impl ForAll =>
 }
 
 impl ForAll {
-    fn peek(input: syn::parse::ParseStream) -> bool {
+    fn peek(input: ParseStream) -> bool {
         input.peek(keyword::forall)
     }
 }
 impl Parse for ForAll {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let forall_token: keyword::forall = input.parse()?;
-        let ident: syn::Ident = input.parse()?;
+        let ident: Ident = input.parse()?;
         let colon_token: Token![:] = input.parse()?;
         let ty: Typ = input.parse()?;
         let comma_token: Token![,] = input.parse()?;
@@ -69,10 +69,10 @@ mk_new! { impl Implication =>
 }
 
 impl Implication {
-    fn peek(input: syn::parse::ParseStream) -> bool {
+    fn peek(input: ParseStream) -> bool {
         input.peek(Token![=>])
     }
-    fn parse(input: syn::parse::ParseStream, left: Term) -> syn::Result<Self> {
+    fn parse(input: ParseStream, left: Term) -> syn::Res<Self> {
         let arrow: Token![=>] = input.parse()?;
         let right: Term = input.parse()?;
         Ok(Implication::new(left, arrow, right))
@@ -106,16 +106,16 @@ mk_new! { impl EventImplication =>
 }
 
 impl EventImplication {
-    fn peek(input: syn::parse::ParseStream) -> bool {
+    fn peek(input: ParseStream) -> bool {
         input.peek(keyword::when)
     }
 }
 impl Parse for EventImplication {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let when_token: keyword::when = input.parse()?;
-        let pattern: syn::Ident = input.parse()?;
+        let pattern: Ident = input.parse()?;
         let eq_token: token::Eq = input.parse()?;
-        let event: syn::Ident = input.parse()?;
+        let event: Ident = input.parse()?;
         let question_token: token::Question = input.parse()?;
         let arrow: Token![=>] = input.parse()?;
         let term: Term = Term::parse_prec4(input)?;
@@ -146,19 +146,19 @@ mk_new! { impl Enumeration =>
     }
 }
 impl Enumeration {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         let forked = input.fork();
-        if forked.call(syn::Ident::parse).is_err() {
+        if forked.call(Ident::parse).is_err() {
             return false;
         }
         forked.peek(Token![::])
     }
 }
 impl Parse for Enumeration {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let ident_enum: syn::Ident = input.parse()?;
+    fn parse(input: ParseStream) -> syn::Res<Self> {
+        let ident_enum: Ident = input.parse()?;
         let _: Token![::] = input.parse()?;
-        let ident_elem: syn::Ident = input.parse()?;
+        let ident_elem: Ident = input.parse()?;
         Ok(Enumeration::new(
             ident_enum.to_string(),
             ident_elem.to_string(),
@@ -181,12 +181,12 @@ mk_new! { impl Unary =>
 }
 
 impl Unary {
-    fn peek(input: syn::parse::ParseStream) -> bool {
+    fn peek(input: ParseStream) -> bool {
         UnaryOperator::peek(input)
     }
 }
 impl Parse for Unary {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let op: UnaryOperator = input.parse()?;
         let term: Term = Term::parse_term(input)?;
         Ok(Unary::new(op, term))
@@ -210,29 +210,29 @@ mk_new! { impl Binary =>
 }
 
 impl Binary {
-    fn parse_term(left: Box<Term>, input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse_term(left: Box<Term>, input: ParseStream) -> syn::Res<Self> {
         let op = input.parse()?;
         let right = Box::new(Term::parse_term(input)?);
         Ok(Binary { op, left, right })
     }
-    fn parse_prec1(left: Box<Term>, input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse_prec1(left: Box<Term>, input: ParseStream) -> syn::Res<Self> {
         let op = input.parse()?;
         let right = Box::new(Term::parse_prec1(input)?);
         Ok(Binary { op, left, right })
     }
-    fn parse_prec2(left: Box<Term>, input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse_prec2(left: Box<Term>, input: ParseStream) -> syn::Res<Self> {
         let op = input.parse()?;
         let right = Box::new(Term::parse_prec2(input)?);
         Ok(Binary { op, left, right })
     }
-    fn parse_prec3(left: Box<Term>, input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse_prec3(left: Box<Term>, input: ParseStream) -> syn::Res<Self> {
         let op = input.parse()?;
         let right = Box::new(Term::parse_prec3(input)?);
         Ok(Binary { op, left, right })
     }
 }
 impl Parse for Binary {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let left: Box<Term> = Box::new(input.parse()?);
         let op: BinaryOperator = input.parse()?;
         let right: Box<Term> = Box::new(input.parse()?);
@@ -267,7 +267,7 @@ mk_new! { impl Term =>
 }
 
 impl ParsePrec for Term {
-    fn parse_term(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse_term(input: ParseStream) -> syn::Res<Self> {
         let term = if input.peek(keyword::result) {
             Term::result(input.parse()?)
         } else if input.fork().call(Constant::parse).is_ok() {
@@ -276,8 +276,8 @@ impl ParsePrec for Term {
             Term::enumeration(input.parse()?)
         } else if Unary::peek(input) {
             Term::unary(input.parse()?)
-        } else if input.fork().call(syn::Ident::parse).is_ok() {
-            let ident: syn::Ident = input.parse()?;
+        } else if input.fork().call(Ident::parse).is_ok() {
+            let ident: Ident = input.parse()?;
             Term::ident(ident.to_string())
         } else {
             return Err(input.error("expected expression"));
@@ -286,7 +286,7 @@ impl ParsePrec for Term {
         Ok(term)
     }
 
-    fn parse_prec1(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse_prec1(input: ParseStream) -> syn::Res<Self> {
         let mut term = Term::parse_term(input)?;
 
         loop {
@@ -299,7 +299,7 @@ impl ParsePrec for Term {
         Ok(term)
     }
 
-    fn parse_prec2(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse_prec2(input: ParseStream) -> syn::Res<Self> {
         let mut term = Term::parse_prec1(input)?;
 
         loop {
@@ -312,7 +312,7 @@ impl ParsePrec for Term {
         Ok(term)
     }
 
-    fn parse_prec3(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse_prec3(input: ParseStream) -> syn::Res<Self> {
         let mut term = Term::parse_prec2(input)?;
 
         loop {
@@ -325,7 +325,7 @@ impl ParsePrec for Term {
         Ok(term)
     }
 
-    fn parse_prec4(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse_prec4(input: ParseStream) -> syn::Res<Self> {
         let mut term = Term::parse_prec3(input)?;
 
         loop {
@@ -340,7 +340,7 @@ impl ParsePrec for Term {
     }
 }
 impl Parse for Term {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let mut term = if ForAll::peek(input) {
             Self::forall(input.parse()?)
         } else if EventImplication::peek(input) {
@@ -370,39 +370,39 @@ mod parse_term {
 
     #[test]
     fn should_parse_constant() {
-        let term: Term = syn::parse_quote! {1};
-        let control = Term::constant(Constant::int(syn::parse_quote! {1}));
+        let term: Term = parse_quote! {1};
+        let control = Term::constant(Constant::int(parse_quote! {1}));
         assert_eq!(term, control)
     }
 
     #[test]
     fn should_parse_identifier() {
-        let term: Term = syn::parse_quote! {x};
+        let term: Term = parse_quote! {x};
         let control = Term::ident("x");
         assert_eq!(term, control)
     }
 
     #[test]
     fn should_parse_unary_operation() {
-        let term: Term = syn::parse_quote! {!x};
+        let term: Term = parse_quote! {!x};
         let control = Term::unary(Unary::new(UnaryOperator::Not, Term::ident("x")));
         assert_eq!(term, control)
     }
 
     #[test]
     fn should_parse_binary_operation() {
-        let term: Term = syn::parse_quote! {-x + 1};
+        let term: Term = parse_quote! {-x + 1};
         let control = Term::binary(Binary::new(
             Term::unary(Unary::new(UnaryOperator::Neg, Term::ident("x"))),
             BinaryOperator::Add,
-            Term::constant(Constant::int(syn::parse_quote! {1})),
+            Term::constant(Constant::int(parse_quote! {1})),
         ));
         assert_eq!(term, control)
     }
 
     #[test]
     fn should_parse_implication() {
-        let term: Term = syn::parse_quote! { !x && y => z};
+        let term: Term = parse_quote! { !x && y => z};
         let control = Term::implication(Implication::new(
             Term::binary(Binary::new(
                 Term::unary(Unary::new(UnaryOperator::Not, Term::ident("x"))),
@@ -417,7 +417,7 @@ mod parse_term {
 
     #[test]
     fn should_parse_event_implication() {
-        let term: Term = syn::parse_quote! { when d = p? => d > x+y};
+        let term: Term = parse_quote! { when d = p? => d > x+y};
         let control = Term::event(EventImplication::new(
             Default::default(),
             "d",
@@ -440,7 +440,7 @@ mod parse_term {
 
     #[test]
     fn should_parse_forall() {
-        let term: Term = syn::parse_quote! { forall d: int, d > x+y};
+        let term: Term = parse_quote! { forall d: int, d > x+y};
         let control = Term::forall(ForAll::new(
             Default::default(),
             "d",
@@ -470,7 +470,7 @@ pub enum ClauseKind {
     Assert(keyword::assert),
 }
 impl ClauseKind {
-    fn peek(input: syn::parse::ParseStream) -> bool {
+    fn peek(input: ParseStream) -> bool {
         input.peek(keyword::requires)
             || input.peek(keyword::ensures)
             || input.peek(keyword::invariant)
@@ -495,7 +495,7 @@ mk_new! { impl Clause =>
 }
 
 impl Parse for Clause {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let kind = {
             if input.peek(keyword::requires) {
                 Ok(ClauseKind::Requires(input.parse()?))
@@ -535,7 +535,7 @@ mk_new! { impl Contract =>
 }
 
 impl Parse for Contract {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         let clauses = {
             let mut clauses = Vec::new();
             while ClauseKind::peek(input) {

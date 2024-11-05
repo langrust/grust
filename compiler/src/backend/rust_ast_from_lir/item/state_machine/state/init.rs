@@ -1,11 +1,11 @@
 prelude! {
     backend::rust_ast_from_lir::expression::rust_ast_from_lir as expression_rust_ast_from_lir,
     lir::item::state_machine::state::init::{Init, StateElementInit},
-    macro2::Span, syn::*, quote::format_ident,
+    macro2::Span, quote::format_ident,
 }
 
 /// Transform LIR init into RustAST implementation method.
-pub fn rust_ast_from_lir(init: Init, crates: &mut BTreeSet<String>) -> ImplItemFn {
+pub fn rust_ast_from_lir(init: Init, crates: &mut BTreeSet<String>) -> syn::ImplItemFn {
     let state_ty = Ident::new(
         &to_camel_case(&format!("{}State", init.node_name)),
         Span::call_site(),
@@ -21,20 +21,20 @@ pub fn rust_ast_from_lir(init: Init, crates: &mut BTreeSet<String>) -> ImplItemF
         paren_token: Default::default(),
         inputs: Default::default(),
         variadic: None,
-        output: ReturnType::Type(Default::default(), parse_quote! { #state_ty }),
+        output: syn::ReturnType::Type(Default::default(), parse_quote! { #state_ty }),
     };
 
     let fields = init
         .state_elements_init
         .into_iter()
-        .map(|element| -> FieldValue {
+        .map(|element| -> syn::FieldValue {
             match element {
                 StateElementInit::BufferInit {
                     identifier,
                     initial_expression,
                 } => {
                     let id = format_ident!("{}", identifier);
-                    let expr: Expr = expression_rust_ast_from_lir(initial_expression, crates);
+                    let expr: syn::Expr = expression_rust_ast_from_lir(initial_expression, crates);
                     parse_quote! { #id : #expr }
                 }
                 StateElementInit::CalledNodeInit {
@@ -54,8 +54,8 @@ pub fn rust_ast_from_lir(init: Init, crates: &mut BTreeSet<String>) -> ImplItemF
 
     let body = syn::Block {
         brace_token: Default::default(),
-        stmts: vec![Stmt::Expr(
-            Expr::Struct(ExprStruct {
+        stmts: vec![syn::Stmt::Expr(
+            syn::Expr::Struct(syn::ExprStruct {
                 attrs: vec![],
                 path: parse_quote! { #state_ty },
                 brace_token: Default::default(),
@@ -67,9 +67,9 @@ pub fn rust_ast_from_lir(init: Init, crates: &mut BTreeSet<String>) -> ImplItemF
             None,
         )],
     };
-    ImplItemFn {
+    syn::ImplItemFn {
         attrs: vec![],
-        vis: Visibility::Public(Default::default()),
+        vis: syn::Visibility::Public(Default::default()),
         defaultness: None,
         sig: signature,
         block: body,
@@ -79,7 +79,6 @@ pub fn rust_ast_from_lir(init: Init, crates: &mut BTreeSet<String>) -> ImplItemF
 #[cfg(test)]
 mod rust_ast_from_lir {
     prelude! {
-        syn::*,
         backend::rust_ast_from_lir::item::state_machine::state::init::rust_ast_from_lir,
         lir::{
             item::state_machine::state::init::{Init, StateElementInit},

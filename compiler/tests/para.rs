@@ -5,7 +5,7 @@ compiler::prelude! {
 
 #[test]
 fn should_compile_para() {
-    let ast: Ast = syn::parse_quote! {
+    let ast: Ast = parse_quote! {
         #![dump = "tests/macro_outputs/para.rs", propag = "onchange", para, test]
         import event e0: int;
         export signal o1: int;

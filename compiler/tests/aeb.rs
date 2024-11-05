@@ -5,7 +5,7 @@ compiler::prelude! {
 
 #[test]
 fn should_compile_aeb() {
-    let ast: Ast = syn::parse_quote! {
+    let ast: Ast = parse_quote! {
         #![dump = "tests/macro_outputs/aeb.rs", demo]
 
         import signal car::speed_km_h                   : float;

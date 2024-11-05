@@ -1,7 +1,7 @@
 use strum::EnumIter;
 
 prelude! {
-    syn::{parse::Parse, Token},
+    syn::{Parse, Token},
 }
 
 /// GRust binary operators.
@@ -51,7 +51,7 @@ pub enum BinaryOperator {
     Low,
 }
 impl BinaryOperator {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(Token![*])
             || input.peek(Token![/])
             || input.peek(Token![+])
@@ -65,13 +65,13 @@ impl BinaryOperator {
             || input.peek(Token![>])
             || input.peek(Token![<])
     }
-    pub fn peek_prec1(input: syn::parse::ParseStream) -> bool {
+    pub fn peek_prec1(input: ParseStream) -> bool {
         input.peek(Token![*]) || input.peek(Token![/])
     }
-    pub fn peek_prec2(input: syn::parse::ParseStream) -> bool {
+    pub fn peek_prec2(input: ParseStream) -> bool {
         input.peek(Token![+]) || input.peek(Token![-])
     }
-    pub fn peek_prec3(input: syn::parse::ParseStream) -> bool {
+    pub fn peek_prec3(input: ParseStream) -> bool {
         input.peek(Token![==])
             || input.peek(Token![!=])
             || input.peek(Token![>=])
@@ -79,12 +79,12 @@ impl BinaryOperator {
             || input.peek(Token![>])
             || input.peek(Token![<])
     }
-    pub fn peek_prec4(input: syn::parse::ParseStream) -> bool {
+    pub fn peek_prec4(input: ParseStream) -> bool {
         input.peek(Token![&&]) || input.peek(Token![||])
     }
 }
 impl Parse for BinaryOperator {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         if input.peek(Token![*]) {
             let _: Token![*] = input.parse()?;
             Ok(BinaryOperator::Mul)
@@ -294,12 +294,12 @@ pub enum UnaryOperator {
     Not,
 }
 impl UnaryOperator {
-    pub fn peek(input: syn::parse::ParseStream) -> bool {
+    pub fn peek(input: ParseStream) -> bool {
         input.peek(Token![-]) || input.peek(Token![!])
     }
 }
 impl Parse for UnaryOperator {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream) -> syn::Res<Self> {
         if input.peek(Token![-]) {
             let _: Token![-] = input.parse()?;
             Ok(UnaryOperator::Neg)

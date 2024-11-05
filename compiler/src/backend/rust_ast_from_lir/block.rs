@@ -22,7 +22,6 @@ pub fn rust_ast_from_lir(block: Block, crates: &mut BTreeSet<String>) -> syn::Bl
 #[cfg(test)]
 mod rust_ast_from_lir {
     prelude! {
-        syn::*,
         backend::rust_ast_from_lir::block::rust_ast_from_lir,
         lir::{ Block, Pattern, Stmt },
     }

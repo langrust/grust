@@ -1,7 +1,5 @@
 prelude! {
-    syn::{
-        LitInt, LitFloat, LitBool, token::Paren, parse::Parse, spanned::Spanned
-    },
+    syn::{LitInt, LitFloat, LitBool, token::Paren, Parse, Spanned, ParseStream},
 }
 
 /// GRust constants.
@@ -51,19 +49,19 @@ impl Constant {
     }
 }
 impl Parse for Constant {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        if input.peek(syn::LitInt) {
-            let i: syn::LitInt = input.parse()?;
+    fn parse(input: ParseStream) -> syn::Res<Self> {
+        if input.peek(LitInt) {
+            let i: LitInt = input.parse()?;
             Ok(Constant::Integer(i))
-        } else if input.peek(syn::LitFloat) {
-            let f: syn::LitFloat = input.parse()?;
+        } else if input.peek(LitFloat) {
+            let f: LitFloat = input.parse()?;
             Ok(Constant::Float(f))
-        } else if input.peek(syn::LitBool) {
-            let b: syn::LitBool = input.parse()?;
+        } else if input.peek(LitBool) {
+            let b: LitBool = input.parse()?;
             Ok(Constant::Boolean(b))
         } else {
             let content;
-            let parens = syn::parenthesized!(content in input);
+            let parens = parenthesized!(content in input);
             if content.is_empty() {
                 Ok(Constant::Unit(parens))
             } else {
