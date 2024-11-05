@@ -217,7 +217,7 @@ pub fn rust_ast_from_lir(expression: lir::Expr, crates: &mut BTreeSet<String>) -
         } => {
             let inputs = inputs
                 .into_iter()
-                .map(|(identifier, r#type)| {
+                .map(|(identifier, typ)| {
                     let pattern = syn::Pat::Ident(syn::PatIdent {
                         attrs: Vec::new(),
                         by_ref: None,
@@ -229,7 +229,7 @@ pub fn rust_ast_from_lir(expression: lir::Expr, crates: &mut BTreeSet<String>) -
                         attrs: Vec::new(),
                         pat: Box::new(pattern),
                         colon_token: Default::default(),
-                        ty: Box::new(type_rust_ast_from_lir(r#type)),
+                        ty: Box::new(type_rust_ast_from_lir(typ)),
                     });
                     pattern
                 })

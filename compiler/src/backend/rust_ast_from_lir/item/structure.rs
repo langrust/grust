@@ -7,15 +7,15 @@ prelude! { just
 
 /// Transform LIR structure into RustAST structure.
 pub fn rust_ast_from_lir(structure: Structure) -> syn::ItemStruct {
-    let fields = structure.fields.into_iter().map(|(name, r#type)| {
+    let fields = structure.fields.into_iter().map(|(name, typ)| {
         let name = Ident::new(&name, Span::call_site());
-        let r#type = type_rust_ast_from_lir(r#type);
+        let typ = type_rust_ast_from_lir(typ);
         syn::Field {
             attrs: vec![],
             vis: syn::Visibility::Public(Default::default()),
             ident: Some(name),
             colon_token: Default::default(),
-            ty: r#type,
+            ty: typ,
             mutability: syn::FieldMutability::None,
         }
     });

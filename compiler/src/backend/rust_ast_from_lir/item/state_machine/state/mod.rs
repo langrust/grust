@@ -27,9 +27,9 @@ pub fn rust_ast_from_lir(
         .elements
         .into_iter()
         .map(|element| match element {
-            StateElement::Buffer { identifier, r#type } => {
+            StateElement::Buffer { identifier, typ } => {
                 let identifier = format_ident!("{identifier}");
-                let ty = type_rust_ast_from_lir(r#type);
+                let ty = type_rust_ast_from_lir(typ);
                 parse_quote! { #identifier : #ty }
             }
             StateElement::CalledNode {

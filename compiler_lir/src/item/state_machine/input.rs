@@ -17,5 +17,5 @@ pub struct InputElement {
     /// The name of the input.
     pub identifier: String,
     /// The type of the input.
-    pub r#type: Typ,
+    pub typ: Typ,
 }

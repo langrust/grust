@@ -7,10 +7,10 @@ prelude! {
 /// Transform LIR input into RustAST structure.
 pub fn rust_ast_from_lir(input: Input) -> syn::ItemStruct {
     let mut fields: Vec<syn::Field> = Vec::new();
-    for InputElement { identifier, r#type } in input.elements {
-        let ty = type_rust_ast_from_lir(r#type);
+    for InputElement { identifier, typ } in input.elements {
+        let typ = type_rust_ast_from_lir(typ);
         let identifier = format_ident!("{identifier}");
-        fields.push(parse_quote! { pub #identifier : #ty });
+        fields.push(parse_quote! { pub #identifier : #typ });
     }
 
     let name = format_ident!("{}", to_camel_case(&format!("{}Input", input.node_name)));
@@ -34,7 +34,7 @@ mod rust_ast_from_lir {
             node_name: format!("Node"),
             elements: vec![InputElement {
                 identifier: format!("i"),
-                r#type: Typ::int(),
+                typ: Typ::int(),
             }],
         };
         let control = parse_quote!(

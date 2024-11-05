@@ -91,7 +91,7 @@ impl LIRFromHIR for FlowImport {
             Some(InterfaceFlow {
                 path,
                 identifier: symbol_table.get_name(id).clone(),
-                r#type: flow_type,
+                typ: flow_type,
             })
         }
     }
@@ -111,7 +111,7 @@ impl LIRFromHIR for FlowExport {
         InterfaceFlow {
             path,
             identifier: symbol_table.get_name(id).clone(),
-            r#type: flow_type,
+            typ: flow_type,
         }
     }
 }

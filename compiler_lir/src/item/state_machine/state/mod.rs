@@ -28,7 +28,7 @@ pub enum StateElement {
         /// The name of the buffer.
         identifier: String,
         /// The type of the buffer.
-        r#type: Typ,
+        typ: Typ,
     },
     /// A called node memory.
     CalledNode {

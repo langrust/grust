@@ -41,7 +41,7 @@ impl Memory {
                     let mem_ident = format!("last_{}", ident);
                     elements.push(StateElement::Buffer {
                         identifier: mem_ident.clone(),
-                        r#type: typing,
+                        typ: typing,
                     });
                     inits.push(StateElementInit::BufferInit {
                         identifier: mem_ident.clone(),

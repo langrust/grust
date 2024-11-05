@@ -114,13 +114,13 @@ pub fn rust_ast_from_lir(function: Function, crates: &mut BTreeSet<String>) -> s
     let inputs = function
         .inputs
         .into_iter()
-        .map(|(name, r#type)| {
+        .map(|(name, typ)| {
             let name = Ident::new(&name, Span::call_site());
             syn::FnArg::Typed(syn::PatType {
                 attrs: vec![],
                 pat: parse_quote!(#name),
                 colon_token: Default::default(),
-                ty: Box::new(type_rust_ast_from_lir(r#type)),
+                ty: Box::new(type_rust_ast_from_lir(typ)),
             })
         })
         .collect();

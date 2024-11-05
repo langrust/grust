@@ -67,14 +67,14 @@ pub fn rust_ast_from_lir(execution_machine: ExecutionMachine) -> syn::Item {
         }
 
         for InterfaceFlow {
-            identifier, r#type, ..
+            identifier, typ, ..
         } in input_flows.iter()
         {
             let enum_ident = Ident::new(
                 to_camel_case(identifier.as_str()).as_str(),
                 Span::call_site(),
             );
-            let ty = type_rust_ast_from_lir(r#type.clone());
+            let ty = type_rust_ast_from_lir(typ.clone());
             input_variants.push(parse_quote! { #enum_ident(#ty, std::time::Instant) });
             input_eq_arms.push(
                     parse_quote! { (I::#enum_ident(this, _), I::#enum_ident(other, _)) => this.eq(other) },
@@ -83,14 +83,14 @@ pub fn rust_ast_from_lir(execution_machine: ExecutionMachine) -> syn::Item {
         }
 
         for InterfaceFlow {
-            identifier, r#type, ..
+            identifier, typ, ..
         } in output_flows.into_iter()
         {
             let enum_ident = Ident::new(
                 to_camel_case(identifier.as_str()).as_str(),
                 Span::call_site(),
             );
-            let ty = type_rust_ast_from_lir(r#type);
+            let ty = type_rust_ast_from_lir(typ);
             output_variants.push(parse_quote! { #enum_ident(#ty, std::time::Instant) });
         }
 
