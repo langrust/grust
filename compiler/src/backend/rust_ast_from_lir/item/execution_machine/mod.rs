@@ -2,7 +2,7 @@ prelude! {
     macro2::Span,
     quote::format_ident,
     backend::rust_ast_from_lir::{
-        r#type::rust_ast_from_lir as type_rust_ast_from_lir,
+        typ::rust_ast_from_lir as type_rust_ast_from_lir,
     },
     lir::item::execution_machine::{
         InterfaceFlow, ExecutionMachine, TimingEvent, TimingEventKind

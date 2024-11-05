@@ -7,7 +7,7 @@ prelude! {
         expression::{
             binary_to_syn, constant_to_syn, rust_ast_from_lir as expression_rust_ast_from_lir, unary_to_syn,
         },
-        r#type::rust_ast_from_lir as type_rust_ast_from_lir,
+        typ::rust_ast_from_lir as type_rust_ast_from_lir,
         statement::rust_ast_from_lir as statement_rust_ast_from_lir,
     },
     lir::{

@@ -3,7 +3,7 @@ prelude! {
     quote::format_ident,
     backend::rust_ast_from_lir::{
         item::execution_machine::{flows_context, instruction_flow},
-        r#type::rust_ast_from_lir as type_rust_ast_from_lir,
+        typ::rust_ast_from_lir as type_rust_ast_from_lir,
     },
     lir::item::execution_machine::{
         service_handler::{ FlowHandler, ServiceHandler },

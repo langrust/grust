@@ -23,7 +23,7 @@ mod error;
 mod hash_map;
 mod location;
 mod scope;
-mod r#type;
+mod typ;
 
 pub mod conf;
 pub mod graph;

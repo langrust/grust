@@ -6,7 +6,7 @@ prelude! {
             binary_to_syn, constant_to_syn, unary_to_syn,
         },
         block::rust_ast_from_lir as block_rust_ast_from_lir,
-        r#type::rust_ast_from_lir as type_rust_ast_from_lir,
+        typ::rust_ast_from_lir as type_rust_ast_from_lir,
     },
     lir::{
         contract::{Contract, Term},
