@@ -31,7 +31,7 @@ pub struct InterfaceFlow {
     /// The name of the flow.
     pub identifier: String,
     /// The type of the flow.
-    pub r#type: Typ,
+    pub typ: Typ,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]

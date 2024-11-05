@@ -114,7 +114,7 @@ impl LIRFromHIR for ComponentDefinition {
             node_name: name.clone(),
             elements: inputs
                 .into_iter()
-                .map(|(identifier, r#type)| InputElement { identifier, r#type })
+                .map(|(identifier, typ)| InputElement { identifier, typ })
                 .collect(),
         };
 
