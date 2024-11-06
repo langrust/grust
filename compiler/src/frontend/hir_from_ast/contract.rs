@@ -48,7 +48,7 @@ mod term {
                         ctxt.syms
                             .get_function_result_id(false, location.clone(), ctxt.errors)?;
                     Ok(hir::contract::Term::new(
-                        hir::contract::term::Kind::ident(id),
+                        hir::contract::Kind::ident(id),
                         None,
                         location,
                     ))
@@ -58,7 +58,7 @@ mod term {
                     let right = right.hir_from_ast(ctxt)?;
 
                     Ok(hir::contract::Term::new(
-                        hir::contract::term::Kind::implication(left, right),
+                        hir::contract::Kind::implication(left, right),
                         None,
                         location,
                     ))
@@ -79,18 +79,18 @@ mod term {
                     )?;
                     // TODO check elem is in enum
                     Ok(hir::contract::Term::new(
-                        hir::contract::term::Kind::enumeration(enum_id, element_id),
+                        hir::contract::Kind::enumeration(enum_id, element_id),
                         None,
                         location,
                     ))
                 }
                 Term::Unary(Unary { op, term }) => Ok(hir::contract::Term::new(
-                    hir::contract::term::Kind::unary(op, term.hir_from_ast(ctxt)?),
+                    hir::contract::Kind::unary(op, term.hir_from_ast(ctxt)?),
                     None,
                     location,
                 )),
                 Term::Binary(Binary { op, left, right }) => Ok(hir::contract::Term::new(
-                    hir::contract::term::Kind::binary(
+                    hir::contract::Kind::binary(
                         op,
                         left.hir_from_ast(ctxt)?,
                         right.hir_from_ast(ctxt)?,
@@ -99,7 +99,7 @@ mod term {
                     location,
                 )),
                 Term::Constant(constant) => Ok(hir::contract::Term::new(
-                    hir::contract::term::Kind::constant(constant),
+                    hir::contract::Kind::constant(constant),
                     None,
                     location,
                 )),
@@ -111,7 +111,7 @@ mod term {
                         ctxt.errors,
                     )?;
                     Ok(hir::contract::Term::new(
-                        hir::contract::term::Kind::ident(id),
+                        hir::contract::Kind::ident(id),
                         None,
                         location,
                     ))
@@ -131,7 +131,7 @@ mod term {
                     let term = term.hir_from_ast(ctxt)?;
                     ctxt.syms.global();
                     Ok(hir::contract::Term::new(
-                        hir::contract::term::Kind::forall(id, term),
+                        hir::contract::Kind::forall(id, term),
                         None,
                         location,
                     ))
@@ -163,15 +163,15 @@ mod term {
                     ctxt.syms.global();
                     // construct right side of implication: `PresentEvent(pat) == event`
                     let left = hir::contract::Term::new(
-                        hir::contract::term::Kind::binary(
+                        hir::contract::Kind::binary(
                             BinaryOperator::Eq,
                             hir::contract::Term::new(
-                                hir::contract::term::Kind::present(event_id, pattern_id),
+                                hir::contract::Kind::present(event_id, pattern_id),
                                 None,
                                 location.clone(),
                             ),
                             hir::contract::Term::new(
-                                hir::contract::term::Kind::ident(event_id),
+                                hir::contract::Kind::ident(event_id),
                                 None,
                                 location.clone(),
                             ),
@@ -181,10 +181,10 @@ mod term {
                     );
                     // construct result term: `when pat = e? => t` becomes `forall pat, PresentEvent(pat) == event => t`
                     let term = hir::contract::Term::new(
-                        hir::contract::term::Kind::forall(
+                        hir::contract::Kind::forall(
                             pattern_id,
                             hir::contract::Term::new(
-                                hir::contract::term::Kind::implication(left, right),
+                                hir::contract::Kind::implication(left, right),
                                 None,
                                 location.clone(),
                             ),

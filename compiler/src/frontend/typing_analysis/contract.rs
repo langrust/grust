@@ -31,19 +31,19 @@ impl TypeAnalysis for Contract {
 impl TypeAnalysis for contract::Term {
     fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         let ty = match &mut self.kind {
-            contract::term::Kind::Constant { constant } => constant.get_type(),
-            contract::term::Kind::Identifier { id } => symbol_table.get_type(*id).clone(),
-            contract::term::Kind::Enumeration { enum_id, .. } => Typ::Enumeration {
+            contract::Kind::Constant { constant } => constant.get_type(),
+            contract::Kind::Identifier { id } => symbol_table.get_type(*id).clone(),
+            contract::Kind::Enumeration { enum_id, .. } => Typ::Enumeration {
                 name: Ident::new(symbol_table.get_name(*enum_id), Span::call_site()),
                 id: *enum_id,
             },
-            contract::term::Kind::Unary { op, term } => {
+            contract::Kind::Unary { op, term } => {
                 term.typing(symbol_table, errors)?;
                 let ty = term.typing.as_ref().unwrap().clone();
                 let mut unop_type = op.get_type();
                 unop_type.apply(vec![ty], self.location.clone(), errors)?
             }
-            contract::term::Kind::Binary { op, left, right } => {
+            contract::Kind::Binary { op, left, right } => {
                 left.typing(symbol_table, errors)?;
                 let left_type = left.typing.as_ref().unwrap().clone();
                 right.typing(symbol_table, errors)?;
@@ -51,13 +51,13 @@ impl TypeAnalysis for contract::Term {
                 let mut binop_type = op.get_type();
                 binop_type.apply(vec![left_type, right_type], self.location.clone(), errors)?
             }
-            contract::term::Kind::ForAll { term, .. } => {
+            contract::Kind::ForAll { term, .. } => {
                 term.typing(symbol_table, errors)?;
                 let ty = term.typing.as_ref().unwrap();
                 ty.eq_check(&Typ::bool(), self.location.clone(), errors)?;
                 Typ::bool()
             }
-            contract::term::Kind::Implication { left, right } => {
+            contract::Kind::Implication { left, right } => {
                 left.typing(symbol_table, errors)?;
                 let ty = left.typing.as_ref().unwrap();
                 ty.eq_check(&Typ::bool(), self.location.clone(), errors)?;
@@ -66,7 +66,7 @@ impl TypeAnalysis for contract::Term {
                 ty.eq_check(&Typ::bool(), self.location.clone(), errors)?;
                 ty.clone()
             }
-            contract::term::Kind::PresentEvent { event_id, pattern } => {
+            contract::Kind::PresentEvent { event_id, pattern } => {
                 let typing = symbol_table.get_type(*event_id).clone();
                 match &typing {
                     Typ::SMEvent { ty, .. } => {
