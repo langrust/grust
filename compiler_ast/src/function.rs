@@ -4,9 +4,6 @@ prelude! {
     Stmt,
 }
 
-use super::colon::Colon;
-use super::keyword;
-
 /// GRust function AST.
 pub struct Function {
     pub function_token: keyword::function,

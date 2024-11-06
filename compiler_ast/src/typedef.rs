@@ -2,8 +2,6 @@ prelude! {
     syn::{Parse, Punctuated, token},
 }
 
-use super::{colon::Colon, keyword};
-
 /// GRust user defined type AST.
 pub enum Typedef {
     /// Represents a structure definition.
