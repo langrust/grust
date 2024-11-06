@@ -1,9 +1,6 @@
 //! LIR [Expr] module.
 
-prelude! {
-    operator::{BinaryOperator, UnaryOperator},
-    Pattern, Block,
-}
+prelude! {}
 
 /// LIR expressions.
 #[derive(Debug, PartialEq)]
@@ -28,14 +25,14 @@ pub enum Expr {
     /// An unitary operation: `!x`.
     Unop {
         /// The operator.
-        op: UnaryOperator,
+        op: UOp,
         /// The expression.
         expression: Box<Self>,
     },
     /// A binary operation: `x + y`.
     Binop {
         /// The operator.
-        op: BinaryOperator,
+        op: BOp,
         /// The left expression.
         left_expression: Box<Self>,
         /// The right expression.
@@ -170,11 +167,11 @@ impl Expr {
         }
         None: none ()
         Unop: unop {
-            op: UnaryOperator,
+            op: UOp,
             expression: Self = Box::new(expression),
         }
         Binop: binop {
-            op: BinaryOperator,
+            op: BOp,
             left_expression: Self = left_expression.into(),
             right_expression: Self = right_expression.into(),
         }
@@ -685,11 +682,7 @@ mod test {
 
     #[test]
     fn should_create_rust_ast_binary_from_lir_function_call() {
-        let expression = Expr::binop(
-            operator::BinaryOperator::Add,
-            Expr::ident("a"),
-            Expr::ident("b"),
-        );
+        let expression = Expr::binop(BOp::Add, Expr::ident("a"), Expr::ident("b"));
 
         let control = parse_quote! { a + b };
         assert_eq!(expression.into_syn(&mut Default::default()), control)

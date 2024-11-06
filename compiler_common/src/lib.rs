@@ -28,6 +28,6 @@ mod typ;
 pub mod conf;
 pub mod graph;
 pub mod keyword;
-pub mod operator;
+pub mod op;
 pub mod serialize;
 pub mod synced;

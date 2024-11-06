@@ -30,7 +30,6 @@ impl IntoHir<hir::ctx::Simple<'_>> for Contract {
 mod term {
     prelude! {
         ast::contract::{Binary, Implication, Term, Unary, Enumeration, EventImplication, ForAll},
-        operator::BinaryOperator,
     }
 
     impl<'a> IntoHir<hir::ctx::Simple<'a>> for Term {
@@ -156,7 +155,7 @@ mod term {
                     // construct right side of implication: `PresentEvent(pat) == event`
                     let left = hir::contract::Term::new(
                         hir::contract::Kind::binary(
-                            BinaryOperator::Eq,
+                            BOp::Eq,
                             hir::contract::Term::new(
                                 hir::contract::Kind::present(event_id, pattern_id),
                                 None,

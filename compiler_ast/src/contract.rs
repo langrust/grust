@@ -2,7 +2,6 @@
 
 prelude! {
     syn::{Parse, token},
-    operator::{BinaryOperator, UnaryOperator},
     expr::ParsePrec,
 }
 
@@ -169,25 +168,25 @@ impl Parse for Enumeration {
 #[derive(Debug, PartialEq, Clone)]
 /// Unary term.
 pub struct Unary {
-    pub op: UnaryOperator,
+    pub op: UOp,
     pub term: Box<Term>,
 }
 
 mk_new! { impl Unary =>
     new {
-        op: UnaryOperator,
+        op: UOp,
         term: Term = term.into(),
     }
 }
 
 impl Unary {
     fn peek(input: ParseStream) -> bool {
-        UnaryOperator::peek(input)
+        UOp::peek(input)
     }
 }
 impl Parse for Unary {
     fn parse(input: ParseStream) -> syn::Res<Self> {
-        let op: UnaryOperator = input.parse()?;
+        let op: UOp = input.parse()?;
         let term: Term = Term::parse_term(input)?;
         Ok(Unary::new(op, term))
     }
@@ -197,14 +196,14 @@ impl Parse for Unary {
 /// Binary term.
 pub struct Binary {
     pub left: Box<Term>,
-    pub op: BinaryOperator,
+    pub op: BOp,
     pub right: Box<Term>,
 }
 
 mk_new! { impl Binary =>
     new {
         left: Term = left.into(),
-        op: BinaryOperator,
+        op: BOp,
         right: Term = right.into(),
     }
 }
@@ -234,7 +233,7 @@ impl Binary {
 impl Parse for Binary {
     fn parse(input: ParseStream) -> syn::Res<Self> {
         let left: Box<Term> = Box::new(input.parse()?);
-        let op: BinaryOperator = input.parse()?;
+        let op: BOp = input.parse()?;
         let right: Box<Term> = Box::new(input.parse()?);
         Ok(Binary { left, op, right })
     }
@@ -290,7 +289,7 @@ impl ParsePrec for Term {
         let mut term = Term::parse_term(input)?;
 
         loop {
-            if BinaryOperator::peek_prec1(input) {
+            if BOp::peek_prec1(input) {
                 term = Term::binary(Binary::parse_term(Box::new(term), input)?);
             } else {
                 break;
@@ -303,7 +302,7 @@ impl ParsePrec for Term {
         let mut term = Term::parse_prec1(input)?;
 
         loop {
-            if BinaryOperator::peek_prec2(input) {
+            if BOp::peek_prec2(input) {
                 term = Term::binary(Binary::parse_prec1(Box::new(term), input)?);
             } else {
                 break;
@@ -316,7 +315,7 @@ impl ParsePrec for Term {
         let mut term = Term::parse_prec2(input)?;
 
         loop {
-            if BinaryOperator::peek_prec3(input) {
+            if BOp::peek_prec3(input) {
                 term = Term::binary(Binary::parse_prec2(Box::new(term), input)?);
             } else {
                 break;
@@ -329,7 +328,7 @@ impl ParsePrec for Term {
         let mut term = Term::parse_prec3(input)?;
 
         loop {
-            if BinaryOperator::peek_prec4(input) {
+            if BOp::peek_prec4(input) {
                 term = Term::binary(Binary::parse_prec3(Box::new(term), input)?);
             } else {
                 break;
@@ -365,7 +364,6 @@ impl Parse for Term {
 mod parse_term {
     prelude! {
         contract::*,
-        operator::BinaryOperator,
     }
 
     #[test]
@@ -385,7 +383,7 @@ mod parse_term {
     #[test]
     fn should_parse_unary_operation() {
         let term: Term = parse_quote! {!x};
-        let control = Term::unary(Unary::new(UnaryOperator::Not, Term::ident("x")));
+        let control = Term::unary(Unary::new(UOp::Not, Term::ident("x")));
         assert_eq!(term, control)
     }
 
@@ -393,8 +391,8 @@ mod parse_term {
     fn should_parse_binary_operation() {
         let term: Term = parse_quote! {-x + 1};
         let control = Term::binary(Binary::new(
-            Term::unary(Unary::new(UnaryOperator::Neg, Term::ident("x"))),
-            BinaryOperator::Add,
+            Term::unary(Unary::new(UOp::Neg, Term::ident("x"))),
+            BOp::Add,
             Term::constant(Constant::int(parse_quote! {1})),
         ));
         assert_eq!(term, control)
@@ -405,8 +403,8 @@ mod parse_term {
         let term: Term = parse_quote! { !x && y => z};
         let control = Term::implication(Implication::new(
             Term::binary(Binary::new(
-                Term::unary(Unary::new(UnaryOperator::Not, Term::ident("x"))),
-                BinaryOperator::And,
+                Term::unary(Unary::new(UOp::Not, Term::ident("x"))),
+                BOp::And,
                 Term::ident("y"),
             )),
             Default::default(),
@@ -427,12 +425,8 @@ mod parse_term {
             Default::default(),
             Term::binary(Binary::new(
                 Term::ident("d"),
-                BinaryOperator::Grt,
-                Term::binary(Binary::new(
-                    Term::ident("x"),
-                    BinaryOperator::Add,
-                    Term::ident("y"),
-                )),
+                BOp::Grt,
+                Term::binary(Binary::new(Term::ident("x"), BOp::Add, Term::ident("y"))),
             )),
         ));
         assert_eq!(term, control)
@@ -449,12 +443,8 @@ mod parse_term {
             Default::default(),
             Term::binary(Binary::new(
                 Term::ident("d"),
-                BinaryOperator::Grt,
-                Term::binary(Binary::new(
-                    Term::ident("x"),
-                    BinaryOperator::Add,
-                    Term::ident("y"),
-                )),
+                BOp::Grt,
+                Term::binary(Binary::new(Term::ident("x"), BOp::Add, Term::ident("y"))),
             )),
         ));
         assert_eq!(term, control)

@@ -2,7 +2,6 @@
 
 prelude! {
     graph::Label,
-    operator::{BinaryOperator, UnaryOperator},
     hir::{Dependencies, Pattern, Stmt},
 }
 
@@ -22,14 +21,14 @@ pub enum Kind<E> {
     /// Unop expression.
     Unop {
         /// The unary operator.
-        op: UnaryOperator,
+        op: UOp,
         /// The input expression.
         expression: Box<E>,
     },
     /// Binop expression.
     Binop {
         /// The unary operator.
-        op: BinaryOperator,
+        op: BOp,
         /// The left expression.
         left_expression: Box<E>,
         /// The right expression.
@@ -137,11 +136,11 @@ mk_new! { impl{E} Kind<E> =>
     Constant: constant { constant: Constant }
     Identifier: ident { id : usize }
     Unop: unop {
-        op: UnaryOperator,
+        op: UOp,
         expression: E = expression.into(),
     }
     Binop: binop {
-        op: BinaryOperator,
+        op: BOp,
         left_expression: E = left_expression.into(),
         right_expression: E = right_expression.into(),
     }

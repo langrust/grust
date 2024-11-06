@@ -1,8 +1,6 @@
 //! LIR [Contract] module.
 
-prelude! {
-    operator::{BinaryOperator, UnaryOperator}
-}
+prelude! {}
 
 #[derive(Debug, PartialEq, Clone)]
 /// Term.
@@ -30,14 +28,14 @@ pub enum Term {
     /// An unitary operation: `!x`.
     Unop {
         /// The operator.
-        op: UnaryOperator,
+        op: UOp,
         /// The expression.
         term: Box<Self>,
     },
     /// A binary operation: `x + y`.
     Binop {
         /// The operator.
-        op: BinaryOperator,
+        op: BOp,
         /// The left expression.
         left: Box<Self>,
         /// The right expression.
@@ -98,11 +96,11 @@ mk_new! { impl Term =>
         identifier: impl Into<String> = identifier.into(),
     }
     Unop: unop {
-        op: UnaryOperator,
+        op: UOp,
         term: Self = term.into(),
     }
     Binop: binop {
-        op: BinaryOperator,
+        op: BOp,
         left: Self = left.into(),
         right: Self = right.into(),
     }

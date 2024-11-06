@@ -6,23 +6,23 @@ prelude! {
 
 /// GRust binary operators.
 ///
-/// [BinaryOperator] enumeration represents all possible binary operations that can be used in a
+/// [BOp] enumeration represents all possible binary operations that can be used in a
 /// GRust program:
 ///
-/// - [BinaryOperator::Mul] is the multiplication `*`
-/// - [BinaryOperator::Div], the division `/`
-/// - [BinaryOperator::Add], addition `+`
-/// - [BinaryOperator::Sub], subtraction `-`
-/// - [BinaryOperator::And], logical "and" `&&`
-/// - [BinaryOperator::Or], logical "or" `||`
-/// - [BinaryOperator::Eq], equality test `==`
-/// - [BinaryOperator::Dif], inequality test `!=`
-/// - [BinaryOperator::Geq], "greater or equal" `>=`
-/// - [BinaryOperator::Leq], "lower or equal" `<=`
-/// - [BinaryOperator::Grt], "greater" `>`
-/// - [BinaryOperator::Low], "lower" `<`
+/// - [BOp::Mul] is the multiplication `*`
+/// - [BOp::Div], the division `/`
+/// - [BOp::Add], addition `+`
+/// - [BOp::Sub], subtraction `-`
+/// - [BOp::And], logical "and" `&&`
+/// - [BOp::Or], logical "or" `||`
+/// - [BOp::Eq], equality test `==`
+/// - [BOp::Dif], inequality test `!=`
+/// - [BOp::Geq], "greater or equal" `>=`
+/// - [BOp::Leq], "lower or equal" `<=`
+/// - [BOp::Grt], "greater" `>`
+/// - [BOp::Low], "lower" `<`
 #[derive(EnumIter, Debug, Clone, Copy, PartialEq)]
-pub enum BinaryOperator {
+pub enum BOp {
     /// Multiplication, `x * y`.
     Mul,
     /// Division, `x / y`.
@@ -50,7 +50,7 @@ pub enum BinaryOperator {
     /// Test "lower", `x < y`.
     Low,
 }
-impl BinaryOperator {
+impl BOp {
     /// The `syn` version of an operator.
     pub fn into_syn(self) -> BinOp {
         match self {
@@ -102,69 +102,69 @@ impl BinaryOperator {
         input.peek(Token![&&]) || input.peek(Token![||])
     }
 }
-impl Parse for BinaryOperator {
+impl Parse for BOp {
     fn parse(input: ParseStream) -> syn::Res<Self> {
         if input.peek(Token![*]) {
             let _: Token![*] = input.parse()?;
-            Ok(BinaryOperator::Mul)
+            Ok(BOp::Mul)
         } else if input.peek(Token![/]) {
             let _: Token![/] = input.parse()?;
-            Ok(BinaryOperator::Div)
+            Ok(BOp::Div)
         } else if input.peek(Token![+]) {
             let _: Token![+] = input.parse()?;
-            Ok(BinaryOperator::Add)
+            Ok(BOp::Add)
         } else if input.peek(Token![-]) {
             let _: Token![-] = input.parse()?;
-            Ok(BinaryOperator::Sub)
+            Ok(BOp::Sub)
         } else if input.peek(Token![&&]) {
             let _: Token![&&] = input.parse()?;
-            Ok(BinaryOperator::And)
+            Ok(BOp::And)
         } else if input.peek(Token![||]) {
             let _: Token![||] = input.parse()?;
-            Ok(BinaryOperator::Or)
+            Ok(BOp::Or)
         } else if input.peek(Token![==]) {
             let _: Token![==] = input.parse()?;
-            Ok(BinaryOperator::Eq)
+            Ok(BOp::Eq)
         } else if input.peek(Token![!=]) {
             let _: Token![!=] = input.parse()?;
-            Ok(BinaryOperator::Dif)
+            Ok(BOp::Dif)
         } else if input.peek(Token![>=]) {
             let _: Token![>=] = input.parse()?;
-            Ok(BinaryOperator::Geq)
+            Ok(BOp::Geq)
         } else if input.peek(Token![<=]) {
             let _: Token![<=] = input.parse()?;
-            Ok(BinaryOperator::Leq)
+            Ok(BOp::Leq)
         } else if input.peek(Token![>]) {
             let _: Token![>] = input.parse()?;
-            Ok(BinaryOperator::Grt)
+            Ok(BOp::Grt)
         } else if input.peek(Token![<]) {
             let _: Token![<] = input.parse()?;
-            Ok(BinaryOperator::Low)
+            Ok(BOp::Low)
         } else {
             Err(input.error("expected binary operators"))
         }
     }
 }
-impl std::fmt::Display for BinaryOperator {
+impl std::fmt::Display for BOp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            BinaryOperator::Mul => " * ".fmt(f),
-            BinaryOperator::Div => " / ".fmt(f),
-            BinaryOperator::Mod => " % ".fmt(f),
-            BinaryOperator::Add => " + ".fmt(f),
-            BinaryOperator::Sub => " - ".fmt(f),
-            BinaryOperator::And => " && ".fmt(f),
-            BinaryOperator::Or => " || ".fmt(f),
-            BinaryOperator::Eq => " == ".fmt(f),
-            BinaryOperator::Dif => " != ".fmt(f),
-            BinaryOperator::Geq => " >= ".fmt(f),
-            BinaryOperator::Leq => " <= ".fmt(f),
-            BinaryOperator::Grt => " > ".fmt(f),
-            BinaryOperator::Low => " < ".fmt(f),
+            BOp::Mul => " * ".fmt(f),
+            BOp::Div => " / ".fmt(f),
+            BOp::Mod => " % ".fmt(f),
+            BOp::Add => " + ".fmt(f),
+            BOp::Sub => " - ".fmt(f),
+            BOp::And => " && ".fmt(f),
+            BOp::Or => " || ".fmt(f),
+            BOp::Eq => " == ".fmt(f),
+            BOp::Dif => " != ".fmt(f),
+            BOp::Geq => " >= ".fmt(f),
+            BOp::Leq => " <= ".fmt(f),
+            BOp::Grt => " > ".fmt(f),
+            BOp::Low => " < ".fmt(f),
         }
     }
 }
-impl BinaryOperator {
+impl BOp {
     fn numerical_operator(mut input_types: Vec<Typ>, location: Location) -> Res<Typ> {
         if input_types.len() == 2 {
             let type_2 = input_types.pop().unwrap();
@@ -268,51 +268,46 @@ impl BinaryOperator {
     /// # Example
     ///
     /// ```rust
-    /// # compiler_common::prelude! { operator::BinaryOperator }
-    /// let add_type = BinaryOperator::Add.get_type();
+    /// # compiler_common::prelude! {}
+    /// let add_type = BOp::Add.get_type();
     /// assert!(add_type.is_polymorphic());
     /// ```
     pub fn get_type(&self) -> Typ {
         match self {
             // If self is an operator over numbers then its type can either be `int -> int -> int`
             // or `float -> float -> float` then it is a [Typ::Polymorphism]
-            BinaryOperator::Mul
-            | BinaryOperator::Div
-            | BinaryOperator::Mod
-            | BinaryOperator::Add
-            | BinaryOperator::Sub => Typ::Polymorphism(BinaryOperator::numerical_operator),
+            BOp::Mul | BOp::Div | BOp::Mod | BOp::Add | BOp::Sub => {
+                Typ::Polymorphism(BOp::numerical_operator)
+            }
             // If self is a comparison over numbers then its type can either be `int -> int -> bool`
             // or `float -> float -> bool` then it is a [Typ::Polymorphism]
-            BinaryOperator::Geq
-            | BinaryOperator::Leq
-            | BinaryOperator::Grt
-            | BinaryOperator::Low => Typ::Polymorphism(BinaryOperator::numerical_comparison),
+            BOp::Geq | BOp::Leq | BOp::Grt | BOp::Low => {
+                Typ::Polymorphism(BOp::numerical_comparison)
+            }
             // If self is an equality or inequality test then its type can be `t -> t -> bool` for
             // any t then it is a [Typ::Polymorphism]
-            BinaryOperator::Eq | BinaryOperator::Dif => Typ::Polymorphism(BinaryOperator::equality),
+            BOp::Eq | BOp::Dif => Typ::Polymorphism(BOp::equality),
             // If self is a logical operator then its type is `bool -> bool -> bool`
-            BinaryOperator::And | BinaryOperator::Or => {
-                Typ::function(vec![Typ::bool(), Typ::bool()], Typ::bool())
-            }
+            BOp::And | BOp::Or => Typ::function(vec![Typ::bool(), Typ::bool()], Typ::bool()),
         }
     }
 }
 
 /// GRust unary operators.
 ///
-/// [UnaryOperator] enumeration represents all possible unary operations that can be used in a GRust
+/// [UOp] enumeration represents all possible unary operations that can be used in a GRust
 /// program:
 ///
-/// - [UnaryOperator::Neg] is the numerical negation `-`
-/// - [UnaryOperator::Not], the logical negation `!`
+/// - [UOp::Neg] is the numerical negation `-`
+/// - [UOp::Not], the logical negation `!`
 #[derive(EnumIter, Debug, Clone, Copy, PartialEq)]
-pub enum UnaryOperator {
+pub enum UOp {
     /// Numerical negation, `-x`.
     Neg,
     /// Logical negation, `!x`.
     Not,
 }
-impl UnaryOperator {
+impl UOp {
     pub fn peek(input: ParseStream) -> bool {
         input.peek(Token![-]) || input.peek(Token![!])
     }
@@ -325,28 +320,28 @@ impl UnaryOperator {
         }
     }
 }
-impl Parse for UnaryOperator {
+impl Parse for UOp {
     fn parse(input: ParseStream) -> syn::Res<Self> {
         if input.peek(Token![-]) {
             let _: Token![-] = input.parse()?;
-            Ok(UnaryOperator::Neg)
+            Ok(UOp::Neg)
         } else if input.peek(Token![!]) {
             let _: Token![!] = input.parse()?;
-            Ok(UnaryOperator::Not)
+            Ok(UOp::Not)
         } else {
             Err(input.error("expected '-', or '!' unary operators"))
         }
     }
 }
-impl std::fmt::Display for UnaryOperator {
+impl std::fmt::Display for UOp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            UnaryOperator::Neg => "-".fmt(f),
-            UnaryOperator::Not => "!".fmt(f),
+            UOp::Neg => "-".fmt(f),
+            UOp::Not => "!".fmt(f),
         }
     }
 }
-impl UnaryOperator {
+impl UOp {
     fn numerical_negation(mut input_types: Vec<Typ>, location: Location) -> Res<Typ> {
         if input_types.len() == 1 {
             let type_1 = input_types.pop().unwrap();
@@ -374,8 +369,8 @@ impl UnaryOperator {
     /// # Example
     ///
     /// ```rust
-    /// # compiler_common::prelude! { operator::UnaryOperator }
-    /// let neg_type = UnaryOperator::Neg.get_type();
+    /// # compiler_common::prelude! {}
+    /// let neg_type = UOp::Neg.get_type();
     /// assert!(neg_type.is_polymorphic());
     /// ```
     pub fn get_type(&self) -> Typ {
@@ -383,31 +378,31 @@ impl UnaryOperator {
             // If self is the numerical negation then its type can either
             // be `int -> int` or `float -> float`
             // then it is a [Typ::Polymorphism]
-            UnaryOperator::Neg => Typ::Polymorphism(UnaryOperator::numerical_negation),
+            UOp::Neg => Typ::Polymorphism(UOp::numerical_negation),
             // If self is the logical negation then its type is `bool -> bool`
-            UnaryOperator::Not => Typ::function(vec![Typ::bool()], Typ::bool()),
+            UOp::Not => Typ::function(vec![Typ::bool()], Typ::bool()),
         }
     }
 }
 
 /// Other builtin operators in GRust.
 ///
-/// [OtherOperator] enumeration represents all other operations that can be used in a GRust program:
+/// [OtherOp] enumeration represents all other operations that can be used in a GRust program:
 ///
-/// - [OtherOperator::IfThenElse] is `if _ then _ else _`
+/// - [OtherOp::IfThenElse] is `if _ then _ else _`
 #[derive(EnumIter)]
-pub enum OtherOperator {
+pub enum OtherOp {
     /// The `if b then x else y` GRust expression.
     IfThenElse,
 }
-impl std::fmt::Display for OtherOperator {
+impl std::fmt::Display for OtherOp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            OtherOperator::IfThenElse => "if_then_else".fmt(f),
+            OtherOp::IfThenElse => "if_then_else".fmt(f),
         }
     }
 }
-impl OtherOperator {
+impl OtherOp {
     fn if_then_else(mut input_types: Vec<Typ>, location: Location) -> Res<Typ> {
         if input_types.len() == 3 {
             let type_3 = input_types.pop().unwrap();
@@ -445,8 +440,8 @@ impl OtherOperator {
     /// # Example
     ///
     /// ```rust
-    /// # compiler_common::prelude! { operator::OtherOperator }
-    /// let ifthenelse_type = OtherOperator::IfThenElse.get_type();
+    /// # compiler_common::prelude! {}
+    /// let ifthenelse_type = OtherOp::IfThenElse.get_type();
     /// assert!(ifthenelse_type.is_polymorphic());
     /// ```
     pub fn get_type(&self) -> Typ {
@@ -454,77 +449,75 @@ impl OtherOperator {
             // If self is "if _ then _ else _" its type can be
             // `bool -> t -> t` for any type t
             // then it is a [Typ::Polymorphism]
-            OtherOperator::IfThenElse => Typ::Polymorphism(OtherOperator::if_then_else),
+            OtherOp::IfThenElse => Typ::Polymorphism(OtherOp::if_then_else),
         }
     }
 }
 
 #[cfg(test)]
 mod to_string {
-    prelude! { just
-        operator::{BinaryOperator, OtherOperator, UnaryOperator},
-    }
+    use super::{BOp, OtherOp, UOp};
 
     #[test]
     fn should_convert_negation_operator_to_string() {
-        assert_eq!("-", UnaryOperator::Neg.to_string());
+        assert_eq!("-", UOp::Neg.to_string());
     }
     #[test]
     fn should_convert_not_operator_to_string() {
-        assert_eq!("!", UnaryOperator::Not.to_string());
+        assert_eq!("!", UOp::Not.to_string());
     }
 
     #[test]
     fn should_convert_multiplication_operator_to_string() {
-        assert_eq!(" * ", BinaryOperator::Mul.to_string());
+        assert_eq!(" * ", BOp::Mul.to_string());
     }
     #[test]
     fn should_convert_division_operator_to_string() {
-        assert_eq!(" / ", BinaryOperator::Div.to_string());
+        assert_eq!(" / ", BOp::Div.to_string());
     }
     #[test]
     fn should_convert_addition_operator_to_string() {
-        assert_eq!(" + ", BinaryOperator::Add.to_string());
+        assert_eq!(" + ", BOp::Add.to_string());
     }
     #[test]
     fn should_convert_substraction_operator_to_string() {
-        assert_eq!(" - ", BinaryOperator::Sub.to_string());
+        assert_eq!(" - ", BOp::Sub.to_string());
     }
     #[test]
     fn should_convert_and_operator_to_string() {
-        assert_eq!(" && ", BinaryOperator::And.to_string());
+        assert_eq!(" && ", BOp::And.to_string());
     }
     #[test]
     fn should_convert_or_operator_to_string() {
-        assert_eq!(" || ", BinaryOperator::Or.to_string());
+        assert_eq!(" || ", BOp::Or.to_string());
     }
     #[test]
     fn should_convert_equality_operator_to_string() {
-        assert_eq!(" == ", BinaryOperator::Eq.to_string());
+        assert_eq!(" == ", BOp::Eq.to_string());
     }
     #[test]
     fn should_convert_difference_operator_to_string() {
-        assert_eq!(" != ", BinaryOperator::Dif.to_string());
+        assert_eq!(" != ", BOp::Dif.to_string());
     }
     #[test]
     fn should_convert_greater_equal_operator_to_string() {
-        assert_eq!(" >= ", BinaryOperator::Geq.to_string());
+        assert_eq!(" >= ", BOp::Geq.to_string());
     }
     #[test]
     fn should_convert_lower_equal_operator_to_string() {
-        assert_eq!(" <= ", BinaryOperator::Leq.to_string());
+        assert_eq!(" <= ", BOp::Leq.to_string());
     }
     #[test]
     fn should_convert_greater_operator_to_string() {
-        assert_eq!(" > ", BinaryOperator::Grt.to_string());
+        assert_eq!(" > ", BOp::Grt.to_string());
     }
     #[test]
     fn should_convert_lower_operator_to_string() {
-        assert_eq!(" < ", BinaryOperator::Low.to_string());
+        assert_eq!(" < ", BOp::Low.to_string());
     }
 
     #[test]
     fn should_convert_ifthenelse_operator_to_string() {
-        assert_eq!("if_then_else", OtherOperator::IfThenElse.to_string());
+        assert_eq!("if_then_else", OtherOp::IfThenElse.to_string());
     }
 }

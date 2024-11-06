@@ -1,6 +1,5 @@
 prelude! {
     syn::{Parse, Punctuated, token},
-    operator::{BinaryOperator, UnaryOperator},
 }
 
 use super::keyword;
@@ -20,14 +19,14 @@ where
 #[derive(Debug, PartialEq, Clone)]
 pub struct Unop<E> {
     /// The unary operator.
-    pub op: UnaryOperator,
+    pub op: UOp,
     /// The input expression.
     pub expression: Box<E>,
 }
 
 mk_new! { impl{E} Unop<E> =>
     new {
-        op : UnaryOperator,
+        op : UOp,
         expression: impl Into<Box<E>> = expression.into(),
     }
 
@@ -38,7 +37,7 @@ where
     E: Parse,
 {
     pub fn peek(input: ParseStream) -> bool {
-        UnaryOperator::peek(input)
+        UOp::peek(input)
     }
 }
 impl<E> Parse for Unop<E>
@@ -58,7 +57,7 @@ where
 #[derive(Debug, PartialEq, Clone)]
 pub struct Binop<E> {
     /// The unary operator.
-    pub op: BinaryOperator,
+    pub op: BOp,
     /// The left expression.
     pub left_expression: Box<E>,
     /// The right expression.
@@ -67,7 +66,7 @@ pub struct Binop<E> {
 
 mk_new! { impl{E} Binop<E> =>
     new {
-        op : BinaryOperator,
+        op : BOp,
         left_expression: impl Into<Box<E>> = left_expression.into(),
         right_expression: impl Into<Box<E>> = right_expression.into(),
     }
@@ -79,7 +78,7 @@ where
     E: ParsePrec,
 {
     pub fn peek(input: ParseStream) -> bool {
-        BinaryOperator::peek(input)
+        BOp::peek(input)
     }
     pub fn parse_term(lhs: E, input: ParseStream) -> syn::Res<Self> {
         let op = input.parse()?;
@@ -1199,7 +1198,7 @@ impl ParsePrec for Expr {
         let mut expression = Expr::parse_term(input)?;
 
         loop {
-            if BinaryOperator::peek_prec1(input) {
+            if BOp::peek_prec1(input) {
                 expression = Expr::binop(Binop::parse_term(expression, input)?);
             } else {
                 break;
@@ -1211,7 +1210,7 @@ impl ParsePrec for Expr {
         let mut expression = Expr::parse_prec1(input)?;
 
         loop {
-            if BinaryOperator::peek_prec2(input) {
+            if BOp::peek_prec2(input) {
                 expression = Expr::Binop(Binop::parse_prec1(expression, input)?);
             } else {
                 break;
@@ -1223,7 +1222,7 @@ impl ParsePrec for Expr {
         let mut expression = Expr::parse_prec2(input)?;
 
         loop {
-            if BinaryOperator::peek_prec3(input) {
+            if BOp::peek_prec3(input) {
                 expression = Expr::binop(Binop::parse_prec2(expression, input)?);
             } else {
                 break;
@@ -1235,7 +1234,7 @@ impl ParsePrec for Expr {
         let mut expression = Expr::parse_prec3(input)?;
 
         loop {
-            if BinaryOperator::peek_prec4(input) {
+            if BOp::peek_prec4(input) {
                 expression = Expr::binop(Binop::parse_prec3(expression, input)?);
             } else {
                 break;
@@ -1262,7 +1261,6 @@ impl Parse for Expr {
 mod parse_expression {
     prelude! {
         expr::*,
-        operator::BinaryOperator,
     }
 
     #[test]
@@ -1289,11 +1287,7 @@ mod parse_expression {
     #[test]
     fn should_parse_binop() {
         let expression: Expr = parse_quote! {a+b};
-        let control = Expr::binop(Binop::new(
-            BinaryOperator::Add,
-            Expr::ident("a"),
-            Expr::ident("b"),
-        ));
+        let control = Expr::binop(Binop::new(BOp::Add, Expr::ident("a"), Expr::ident("b")));
         assert_eq!(expression, control)
     }
 
@@ -1301,13 +1295,9 @@ mod parse_expression {
     fn should_parse_binop_with_precedence() {
         let expression: Expr = parse_quote! {a+b*c};
         let control = Expr::binop(Binop::new(
-            BinaryOperator::Add,
+            BOp::Add,
             Expr::ident("a"),
-            Expr::binop(Binop::new(
-                BinaryOperator::Mul,
-                Expr::ident("b"),
-                Expr::ident("c"),
-            )),
+            Expr::binop(Binop::new(BOp::Mul, Expr::ident("b"), Expr::ident("c"))),
         ));
         assert_eq!(expression, control)
     }
@@ -1316,8 +1306,8 @@ mod parse_expression {
     fn should_parse_binop_with_unop() {
         let term: Expr = parse_quote! {-x + 1};
         let control = Expr::binop(Binop::new(
-            BinaryOperator::Add,
-            Expr::unop(Unop::new(UnaryOperator::Neg, Expr::ident("x"))),
+            BOp::Add,
+            Expr::unop(Unop::new(UOp::Neg, Expr::ident("x"))),
             Expr::constant(Constant::int(parse_quote! {1})),
         ));
         assert_eq!(term, control)

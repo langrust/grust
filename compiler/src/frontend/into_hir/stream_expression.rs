@@ -56,11 +56,7 @@ impl IntoHir<hir::ctx::PatLoc<'_>> for stream::When {
                 if let Some(rising_edges) = opt_rising_edges {
                     if let Some(old_guard) = guard.take() {
                         guard = Some(hir::stream::expr(hir::stream::Kind::expr(
-                            hir::expr::Kind::binop(
-                                operator::BinaryOperator::And,
-                                old_guard,
-                                rising_edges,
-                            ),
+                            hir::expr::Kind::binop(BOp::And, old_guard, rising_edges),
                         )));
                     } else {
                         guard = Some(rising_edges)

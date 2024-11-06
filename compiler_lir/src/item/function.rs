@@ -81,11 +81,7 @@ mod test {
             output: Typ::int(),
             body: Block {
                 statements: vec![Stmt::ExprLast {
-                    expression: Expr::binop(
-                        operator::BinaryOperator::Add,
-                        Expr::ident("a"),
-                        Expr::ident("b"),
-                    ),
+                    expression: Expr::binop(BOp::Add, Expr::ident("a"), Expr::ident("b")),
                 }],
             },
             contract: Default::default(),

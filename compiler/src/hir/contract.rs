@@ -2,7 +2,6 @@
 
 //! HIR [Term] module.
 prelude! {
-    operator::{BinaryOperator, UnaryOperator},
     graph::*,
 }
 
@@ -29,14 +28,14 @@ pub enum Kind {
     /// Unary term: !x
     Unary {
         /// The operator
-        op: UnaryOperator,
+        op: UOp,
         /// The term
         term: Box<Term>,
     },
     /// Binary term: x == y
     Binary {
         /// The operator
-        op: BinaryOperator,
+        op: BOp,
         /// Left term
         left: Box<Term>,
         /// Right term
@@ -63,11 +62,11 @@ mk_new! { impl Kind =>
         element_id: usize,
     }
     Unary: unary {
-        op: UnaryOperator,
+        op: UOp,
         term: Term = term.into(),
     }
     Binary: binary {
-        op: BinaryOperator,
+        op: BOp,
         left: Term = left.into(),
         right: Term = right.into(),
     }

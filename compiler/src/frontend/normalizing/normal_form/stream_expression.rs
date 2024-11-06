@@ -61,10 +61,7 @@ impl stream::Expr {
                         dependencies: fby_dependencies.clone(),
                     };
                     let not_mem = stream::Expr {
-                        kind: stream::Kind::expr(expr::Kind::unop(
-                            operator::UnaryOperator::Not,
-                            mem,
-                        )),
+                        kind: stream::Kind::expr(expr::Kind::unop(UOp::Not, mem)),
                         typing: Some(Typ::Boolean(Default::default())),
                         location: Default::default(),
                         dependencies: fby_dependencies,
@@ -73,7 +70,7 @@ impl stream::Expr {
                     self.dependencies =
                         Dependencies::from(vec![(id, Label::weight(0)), (id, Label::weight(1))]);
                     self.kind = stream::Kind::expr(expr::Kind::binop(
-                        operator::BinaryOperator::And,
+                        BOp::And,
                         *expression.clone(),
                         not_mem,
                     ));

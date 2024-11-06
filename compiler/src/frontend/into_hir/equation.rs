@@ -412,7 +412,7 @@ impl IntoHir<hir::ctx::Simple<'_>> for ReactEq {
                                     if let Some(old_guard) = guard.take() {
                                         guard = Some(hir::stream::expr(hir::stream::Kind::expr(
                                             hir::expr::Kind::binop(
-                                                operator::BinaryOperator::And,
+                                                BOp::And,
                                                 old_guard,
                                                 rising_edges,
                                             ),
