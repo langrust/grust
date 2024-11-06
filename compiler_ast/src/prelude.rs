@@ -14,9 +14,8 @@ macro_rules! prelude {
 pub use compiler_common::prelude::{mk_new, *};
 
 pub use crate::{
-    colon::Colon,
     component::{Component, ComponentImport},
-    contract,
+    contract::{self, Contract},
     equation::{self, Eq, ReactEq},
     expr::{self, Expr},
     function::Function,
@@ -25,5 +24,5 @@ pub use crate::{
     stream,
     symbol::{self, SymbolTable},
     typedef::{self, Typedef},
-    Ast, Item,
+    Ast, Colon, Item,
 };

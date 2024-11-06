@@ -1,10 +1,7 @@
 prelude! {
     syn::{Parse, Punctuated, token, LitInt},
-    contract::Contract, equation::ReactEq,
+    equation::ReactEq,
 }
-
-use super::colon::Colon;
-use super::keyword;
 
 /// GRust component AST.
 pub struct Component {

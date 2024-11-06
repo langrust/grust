@@ -2,8 +2,6 @@ prelude! {
     syn::{Parse, Punctuated, token, LitInt},
 }
 
-use super::{colon::Colon, keyword};
-
 /// GReact `sample` operator.
 pub struct Sample {
     pub sample_token: keyword::sample,
