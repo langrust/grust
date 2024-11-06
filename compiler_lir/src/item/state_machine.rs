@@ -73,10 +73,10 @@ mk_new! { impl Input =>
 }
 
 impl Input {
-    pub fn to_syn(self) -> syn::ItemStruct {
+    pub fn into_syn(self) -> syn::ItemStruct {
         let mut fields: Vec<syn::Field> = Vec::new();
         for InputElm { identifier, typ } in self.elements {
-            let typ = typ.to_syn();
+            let typ = typ.into_syn();
             let identifier = format_ident!("{identifier}");
             fields.push(parse_quote! { pub #identifier : #typ });
         }
@@ -110,7 +110,7 @@ mk_new! { impl Init =>
 }
 
 impl Init {
-    pub fn to_syn(self, crates: &mut BTreeSet<String>) -> syn::ImplItemFn {
+    pub fn into_syn(self, crates: &mut BTreeSet<String>) -> syn::ImplItemFn {
         let state_ty = Ident::new(
             &to_camel_case(&format!("{}State", self.node_name)),
             Span::call_site(),
@@ -136,7 +136,7 @@ impl Init {
                 match element {
                     StateElmInit::Buffer { ident, data } => {
                         let id = format_ident!("{}", ident);
-                        let expr: syn::Expr = data.to_syn(crates);
+                        let expr: syn::Expr = data.into_syn(crates);
                         parse_quote! { #id : #expr }
                     }
                     StateElmInit::CalledNode {
@@ -209,8 +209,8 @@ mk_new! { impl Step =>
 
 impl Step {
     /// Transform LIR step into RustAST implementation method.
-    pub fn to_syn(self, crates: &mut BTreeSet<String>) -> syn::ImplItemFn {
-        let attributes = self.contract.to_syn(false);
+    pub fn into_syn(self, crates: &mut BTreeSet<String>) -> syn::ImplItemFn {
+        let attributes = self.contract.into_syn(false);
 
         let input_ty_name = Ident::new(
             &to_camel_case(&format!("{}Input", self.node_name)),
@@ -247,14 +247,17 @@ impl Step {
             paren_token: Default::default(),
             inputs,
             variadic: None,
-            output: syn::ReturnType::Type(Default::default(), Box::new(self.output_type.to_syn())),
+            output: syn::ReturnType::Type(
+                Default::default(),
+                Box::new(self.output_type.into_syn()),
+            ),
         };
 
         let statements = {
             let mut vec = Vec::with_capacity(self.state_elements_step.len() + self.body.len());
 
             for stmt in self.body {
-                vec.push(stmt.to_syn(crates))
+                vec.push(stmt.into_syn(crates))
             }
             for StateElmStep {
                 identifier,
@@ -262,11 +265,14 @@ impl Step {
             } in self.state_elements_step
             {
                 let id = format_ident!("{}", identifier);
-                let expr = expression.to_syn(crates);
+                let expr = expression.into_syn(crates);
                 vec.push(parse_quote! { self.#id = #expr; })
             }
 
-            vec.push(syn::Stmt::Expr(self.output_expression.to_syn(crates), None));
+            vec.push(syn::Stmt::Expr(
+                self.output_expression.into_syn(crates),
+                None,
+            ));
 
             vec
         };
@@ -324,14 +330,14 @@ mk_new! { impl State => new {
 
 impl State {
     /// Transform LIR state into RustAST structure and implementation.
-    pub fn to_syn(self, crates: &mut BTreeSet<String>) -> (syn::ItemStruct, syn::ItemImpl) {
+    pub fn into_syn(self, crates: &mut BTreeSet<String>) -> (syn::ItemStruct, syn::ItemImpl) {
         let fields: Vec<syn::Field> = self
             .elements
             .into_iter()
             .map(|element| match element {
                 StateElm::Buffer { ident, data: typ } => {
                     let ident = format_ident!("{ident}");
-                    let ty = typ.to_syn();
+                    let ty = typ.into_syn();
                     parse_quote! { #ident : #ty }
                 }
                 StateElm::CalledNode {
@@ -351,8 +357,8 @@ impl State {
             pub struct #name { #(#fields),* }
         );
 
-        let init = self.init.to_syn(crates);
-        let step = self.step.to_syn(crates);
+        let init = self.init.into_syn(crates);
+        let step = self.step.into_syn(crates);
         let implementation = parse_quote!(
             impl #name {
                 #init
@@ -383,13 +389,13 @@ mk_new! { impl StateMachine => new {
 
 impl StateMachine {
     /// Transform LIR state_machine into items.
-    pub fn to_syn(self, crates: &mut BTreeSet<String>) -> Vec<syn::Item> {
+    pub fn into_syn(self, crates: &mut BTreeSet<String>) -> Vec<syn::Item> {
         let mut items = vec![];
 
-        let input_structure = self.input.to_syn();
+        let input_structure = self.input.into_syn();
         items.push(syn::Item::Struct(input_structure));
 
-        let (state_structure, state_implementation) = self.state.to_syn(crates);
+        let (state_structure, state_implementation) = self.state.into_syn(crates);
         items.push(syn::Item::Struct(state_structure));
         items.push(syn::Item::Impl(state_implementation));
 
@@ -420,7 +426,7 @@ mod test {
                 }
             }
         };
-        assert_eq!(init.to_syn(&mut Default::default()), control)
+        assert_eq!(init.into_syn(&mut Default::default()), control)
     }
 
     #[test]
@@ -474,7 +480,7 @@ mod test {
                 o + y
             }
         };
-        assert_eq!(init.to_syn(&mut Default::default()), control)
+        assert_eq!(init.into_syn(&mut Default::default()), control)
     }
 
     #[test]
@@ -492,6 +498,6 @@ mod test {
             }
         );
 
-        assert_eq!(input.to_syn(), control)
+        assert_eq!(input.into_syn(), control)
     }
 }

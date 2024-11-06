@@ -37,7 +37,7 @@ mk_new! { impl Constant =>
 
 impl Constant {
     /// The `syn` version of a constant.
-    pub fn to_syn(self) -> syn::Expr {
+    pub fn into_syn(self) -> syn::Expr {
         prelude!(syn::{Expr, ExprLit, ExprTuple});
         match self {
             Constant::Integer(i) => Expr::Lit(ExprLit {

@@ -52,7 +52,7 @@ pub enum BinaryOperator {
 }
 impl BinaryOperator {
     /// The `syn` version of an operator.
-    pub fn to_syn(self) -> BinOp {
+    pub fn into_syn(self) -> BinOp {
         match self {
             Self::Mul => BinOp::Mul(Default::default()),
             Self::Div => BinOp::Div(Default::default()),
@@ -318,7 +318,7 @@ impl UnaryOperator {
     }
 
     /// The `syn` version of an operator.
-    pub fn to_syn(self) -> syn::UnOp {
+    pub fn into_syn(self) -> syn::UnOp {
         match self {
             Self::Neg => syn::UnOp::Neg(Default::default()),
             Self::Not => syn::UnOp::Not(Default::default()),

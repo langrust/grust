@@ -20,10 +20,10 @@ mk_new! { impl Structure =>
 
 impl Structure {
     /// Transform LIR structure into RustAST structure.
-    pub fn to_syn(self) -> syn::ItemStruct {
+    pub fn into_syn(self) -> syn::ItemStruct {
         let fields = self.fields.into_iter().map(|(name, typ)| {
             let name = Ident::new(&name, Span::call_site());
-            let typ = typ.to_syn();
+            let typ = typ.into_syn();
             syn::Field {
                 attrs: vec![],
                 vis: syn::Visibility::Public(Default::default()),
@@ -68,6 +68,6 @@ mod test {
                 pub y: i64
             }
         };
-        assert_eq!(structure.to_syn(), control)
+        assert_eq!(structure.into_syn(), control)
     }
 }

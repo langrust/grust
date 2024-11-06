@@ -137,17 +137,17 @@ impl Term {
         match self {
             Self::Unop { op, term } => {
                 let ts_term = term.to_token_stream(prophecy, function_like);
-                let ts_op = op.to_syn();
+                let ts_op = op.into_syn();
                 quote!(#ts_op #ts_term)
             }
             Self::Binop { op, left, right } => {
                 let ts_left = left.to_token_stream(prophecy, function_like);
                 let ts_right = right.to_token_stream(prophecy, function_like);
-                let ts_op = op.to_syn();
+                let ts_op = op.into_syn();
                 quote!(#ts_left #ts_op #ts_right)
             }
             Self::Literal { literal } => {
-                let expr = literal.to_syn();
+                let expr = literal.into_syn();
                 quote!(#expr)
             }
             Self::Identifier { identifier } => {
@@ -182,7 +182,7 @@ impl Term {
             Self::Forall { name, ty, term } => {
                 let id = Ident::new(&name, Span::call_site());
                 let ts_term = term.to_token_stream(prophecy, function_like);
-                let ts_ty = ty.to_syn();
+                let ts_ty = ty.into_syn();
                 quote!(forall<#id:#ts_ty> #ts_term)
             }
             Self::Enumeration {
@@ -231,7 +231,7 @@ mk_new! { impl Contract => new {
 } }
 
 impl Contract {
-    pub fn to_syn(self, function_like: bool) -> Vec<syn::Attribute> {
+    pub fn into_syn(self, function_like: bool) -> Vec<syn::Attribute> {
         let Self {
             requires,
             ensures,

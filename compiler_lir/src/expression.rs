@@ -296,15 +296,15 @@ impl Expr {
         }
     }
     /// Transform LIR expression into RustAST expression.
-    pub fn to_syn(self, crates: &mut BTreeSet<String>) -> syn::Expr {
+    pub fn into_syn(self, crates: &mut BTreeSet<String>) -> syn::Expr {
         match self {
-            Self::Literal { literal } => literal.to_syn(),
+            Self::Literal { literal } => literal.into_syn(),
             Self::Identifier { identifier } => {
                 let identifier = Ident::new(&identifier, Span::call_site());
                 parse_quote! { #identifier }
             }
             Self::Some { expression } => {
-                let syn_expr = expression.to_syn(crates);
+                let syn_expr = expression.into_syn(crates);
                 parse_quote! { Some(#syn_expr) }
             }
             Self::None => parse_quote! { None },
@@ -321,7 +321,7 @@ impl Expr {
                     .into_iter()
                     .map(|(name, expression)| {
                         let name = format_ident!("{name}");
-                        let expression = expression.to_syn(crates);
+                        let expression = expression.into_syn(crates);
                         parse_quote!(#name : #expression)
                     })
                     .collect();
@@ -334,29 +334,29 @@ impl Expr {
             Self::Array { elements } => {
                 let elements = elements
                     .into_iter()
-                    .map(|expression| expression.to_syn(crates));
+                    .map(|expression| expression.into_syn(crates));
                 parse_quote! { [#(#elements),*]}
             }
             Self::Tuple { elements } => {
                 let elements = elements
                     .into_iter()
-                    .map(|expression| expression.to_syn(crates));
+                    .map(|expression| expression.into_syn(crates));
                 parse_quote! { (#(#elements),*) }
             }
             Self::Block { block } => syn::Expr::Block(syn::ExprBlock {
                 attrs: vec![],
                 label: None,
-                block: block.to_syn(crates),
+                block: block.into_syn(crates),
             }),
             Self::FunctionCall {
                 function,
                 arguments,
             } => {
                 let function_parens = function.as_function_requires_parens();
-                let function = function.to_syn(crates);
+                let function = function.into_syn(crates);
                 let arguments = arguments
                     .into_iter()
-                    .map(|expression| expression.to_syn(crates));
+                    .map(|expression| expression.into_syn(crates));
                 if function_parens {
                     parse_quote! { (#function)(#(#arguments),*) }
                 } else {
@@ -364,8 +364,8 @@ impl Expr {
                 }
             }
             Self::Unop { op, expression } => {
-                let op = op.to_syn();
-                let expr = expression.to_syn(crates);
+                let op = op.into_syn();
+                let expr = expression.into_syn(crates);
                 syn::Expr::Unary(parse_quote! { #op (#expr) })
             }
             Self::Binop {
@@ -374,18 +374,18 @@ impl Expr {
                 right_expression,
             } => {
                 let left = if left_expression.as_op_arg_requires_parens() {
-                    let expr = left_expression.to_syn(crates);
+                    let expr = left_expression.into_syn(crates);
                     parse_quote! { (#expr) }
                 } else {
-                    left_expression.to_syn(crates)
+                    left_expression.into_syn(crates)
                 };
                 let right = if right_expression.as_op_arg_requires_parens() {
-                    let expr = right_expression.to_syn(crates);
+                    let expr = right_expression.into_syn(crates);
                     parse_quote! { (#expr) }
                 } else {
-                    right_expression.to_syn(crates)
+                    right_expression.into_syn(crates)
                 };
-                let binary = op.to_syn();
+                let binary = op.into_syn();
                 syn::Expr::Binary(parse_quote! { #left #binary #right })
             }
             Self::NodeCall {
@@ -400,7 +400,7 @@ impl Expr {
                     .into_iter()
                     .map(|(name, expression)| {
                         let id = Ident::new(&name, Span::call_site());
-                        let expr = expression.to_syn(crates);
+                        let expr = expression.into_syn(crates);
                         parse_quote! { #id : #expr }
                     })
                     .collect();
@@ -411,7 +411,7 @@ impl Expr {
                 syn::Expr::MethodCall(parse_quote! { #receiver.step (#argument) })
             }
             Self::FieldAccess { expression, field } => {
-                let expression = expression.to_syn(crates);
+                let expression = expression.into_syn(crates);
                 match field {
                     FieldIdentifier::Named(name) => {
                         let name = Ident::new(&name, Span::call_site());
@@ -442,7 +442,7 @@ impl Expr {
                             attrs: Vec::new(),
                             pat: Box::new(pattern),
                             colon_token: Default::default(),
-                            ty: Box::new(typ.to_syn()),
+                            ty: Box::new(typ.into_syn()),
                         });
                         pattern
                     })
@@ -457,8 +457,8 @@ impl Expr {
                     or1_token: Default::default(),
                     inputs,
                     or2_token: Default::default(),
-                    output: syn::ReturnType::Type(Default::default(), Box::new(output.to_syn())),
-                    body: Box::new(body.to_syn(crates)),
+                    output: syn::ReturnType::Type(Default::default(), Box::new(output.into_syn())),
+                    body: Box::new(body.into_syn(crates)),
                     lifetimes: None,
                     constness: None,
                 };
@@ -469,9 +469,9 @@ impl Expr {
                 then_branch,
                 else_branch,
             } => {
-                let condition = Box::new(condition.to_syn(crates));
-                let then_branch = then_branch.to_syn(crates);
-                let else_branch = else_branch.to_syn(crates);
+                let condition = Box::new(condition.into_syn(crates));
+                let then_branch = then_branch.into_syn(crates);
+                let else_branch = else_branch.into_syn(crates);
                 let else_branch = parse_quote! { #else_branch };
                 let else_branch = Some((Default::default(), Box::new(else_branch)));
                 syn::Expr::If(syn::ExprIf {
@@ -487,11 +487,11 @@ impl Expr {
                     .into_iter()
                     .map(|(pattern, guard, body)| syn::Arm {
                         attrs: Vec::new(),
-                        pat: pattern.to_syn(),
+                        pat: pattern.into_syn(),
                         guard: guard
-                            .map(|expression| expression.to_syn(crates))
+                            .map(|expression| expression.into_syn(crates))
                             .map(|g| (Default::default(), Box::new(g))),
-                        body: Box::new(body.to_syn(crates)),
+                        body: Box::new(body.into_syn(crates)),
                         fat_arrow_token: Default::default(),
                         comma: Some(Default::default()),
                     })
@@ -499,15 +499,15 @@ impl Expr {
                 syn::Expr::Match(syn::ExprMatch {
                     attrs: Vec::new(),
                     match_token: Default::default(),
-                    expr: Box::new(matched.to_syn(crates)),
+                    expr: Box::new(matched.into_syn(crates)),
                     brace_token: Default::default(),
                     arms,
                 })
             }
             Self::Map { mapped, function } => {
-                let receiver = Box::new(mapped.to_syn(crates));
+                let receiver = Box::new(mapped.into_syn(crates));
                 let method = Ident::new("map", Span::call_site());
-                let arguments = vec![function.to_syn(crates)];
+                let arguments = vec![function.into_syn(crates)];
                 let method_call = syn::ExprMethodCall {
                     attrs: Vec::new(),
                     receiver,
@@ -527,7 +527,7 @@ impl Expr {
                 attrs: Vec::new(),
                 receiver: Box::new(syn::Expr::MethodCall(syn::ExprMethodCall {
                     attrs: Vec::new(),
-                    receiver: Box::new(folded.to_syn(crates)),
+                    receiver: Box::new(folded.into_syn(crates)),
                     method: Ident::new("into_iter", Span::call_site()),
                     turbofish: None,
                     paren_token: Default::default(),
@@ -538,14 +538,14 @@ impl Expr {
                 turbofish: None,
                 paren_token: Default::default(),
                 args: syn::Punctuated::from_iter(vec![
-                    initialization.to_syn(crates),
-                    function.to_syn(crates),
+                    initialization.into_syn(crates),
+                    function.into_syn(crates),
                 ]),
                 dot_token: Default::default(),
             }),
             Self::Sort { sorted, function } => {
-                let token_sorted = sorted.to_syn(crates);
-                let token_function = function.to_syn(crates);
+                let token_sorted = sorted.into_syn(crates);
+                let token_function = function.into_syn(crates);
 
                 parse_quote!({
                     let mut x = #token_sorted.clone();
@@ -563,7 +563,7 @@ impl Expr {
                 crates.insert("itertools = \"0.12.1\"".into());
                 let arguments = arrays
                     .into_iter()
-                    .map(|expression| expression.to_syn(crates));
+                    .map(|expression| expression.into_syn(crates));
                 let macro_call = syn::ExprMacro {
                     attrs: Vec::new(),
                     mac: syn::Macro {
@@ -610,28 +610,28 @@ mod test {
     fn should_create_rust_ast_literal_from_lir_literal() {
         let expression = Expr::lit(Constant::Integer(parse_quote!(1i64)));
         let control = parse_quote! { 1i64 };
-        assert_eq!(expression.to_syn(&mut Default::default()), control)
+        assert_eq!(expression.into_syn(&mut Default::default()), control)
     }
 
     #[test]
     fn should_create_rust_ast_identifier_from_lir_identifier() {
         let expression = Expr::ident("x");
         let control = parse_quote! { x };
-        assert_eq!(expression.to_syn(&mut Default::default()), control)
+        assert_eq!(expression.into_syn(&mut Default::default()), control)
     }
 
     #[test]
     fn should_create_rust_ast_field_access_to_self_from_lir_memory_access() {
         let expression = Expr::memory_access("x");
         let control = parse_quote! { self.last_x};
-        assert_eq!(expression.to_syn(&mut Default::default()), control)
+        assert_eq!(expression.into_syn(&mut Default::default()), control)
     }
 
     #[test]
     fn should_create_rust_ast_field_access_to_input_from_lir_input_access() {
         let expression = Expr::input_access("i");
         let control = parse_quote! { input.i};
-        assert_eq!(expression.to_syn(&mut Default::default()), control)
+        assert_eq!(expression.into_syn(&mut Default::default()), control)
     }
 
     #[test]
@@ -644,7 +644,7 @@ mod test {
             ],
         );
         let control = parse_quote! { Point { x : 1i64, y : 2i64 } };
-        assert_eq!(expression.to_syn(&mut Default::default()), control)
+        assert_eq!(expression.into_syn(&mut Default::default()), control)
     }
 
     #[test]
@@ -654,7 +654,7 @@ mod test {
             Expr::lit(Constant::Integer(parse_quote!(2i64))),
         ]);
         let control = parse_quote! { [1i64, 2i64] };
-        assert_eq!(expression.to_syn(&mut Default::default()), control)
+        assert_eq!(expression.into_syn(&mut Default::default()), control)
     }
 
     #[test]
@@ -671,7 +671,7 @@ mod test {
             ],
         });
         let control = parse_quote! { { let x = 1i64; x } };
-        assert_eq!(expression.to_syn(&mut Default::default()), control)
+        assert_eq!(expression.into_syn(&mut Default::default()), control)
     }
 
     #[test]
@@ -680,7 +680,7 @@ mod test {
             Expr::function_call(Expr::ident("foo"), vec![Expr::ident("a"), Expr::ident("b")]);
 
         let control = parse_quote! { foo (a, b) };
-        assert_eq!(expression.to_syn(&mut Default::default()), control)
+        assert_eq!(expression.into_syn(&mut Default::default()), control)
     }
 
     #[test]
@@ -692,7 +692,7 @@ mod test {
         );
 
         let control = parse_quote! { a + b };
-        assert_eq!(expression.to_syn(&mut Default::default()), control)
+        assert_eq!(expression.into_syn(&mut Default::default()), control)
     }
 
     #[test]
@@ -710,7 +710,7 @@ mod test {
         );
 
         let control = parse_quote! { self.node_state.step ( NodeInput { i : 1i64 }) };
-        assert_eq!(expression.to_syn(&mut Default::default()), control)
+        assert_eq!(expression.into_syn(&mut Default::default()), control)
     }
 
     #[test]
@@ -719,7 +719,7 @@ mod test {
             Expr::field_access(Expr::ident("my_point"), FieldIdentifier::Named("x".into()));
 
         let control = parse_quote! { my_point.x };
-        assert_eq!(expression.to_syn(&mut Default::default()), control)
+        assert_eq!(expression.into_syn(&mut Default::default()), control)
     }
 
     #[test]
@@ -736,7 +736,7 @@ mod test {
         );
 
         let control = parse_quote! { move |x: i64| -> i64 { let y = x; y } };
-        assert_eq!(expression.to_syn(&mut Default::default()), control,)
+        assert_eq!(expression.into_syn(&mut Default::default()), control,)
     }
 
     #[test]
@@ -752,7 +752,7 @@ mod test {
         );
 
         let control = parse_quote! { if test { 1i64 } else { 0i64 } };
-        assert_eq!(expression.to_syn(&mut Default::default()), control)
+        assert_eq!(expression.into_syn(&mut Default::default()), control)
     }
 
     #[test]
@@ -777,7 +777,7 @@ mod test {
 
         let control =
             parse_quote! { match my_color { Color::Blue => 1i64, Color::Green => 0i64, } };
-        assert_eq!(expression.to_syn(&mut Default::default()), control)
+        assert_eq!(expression.into_syn(&mut Default::default()), control)
     }
 
     #[test]
@@ -785,7 +785,7 @@ mod test {
         let expression = Expr::map(Expr::ident("a"), Expr::ident("f"));
 
         let control = parse_quote! { a.map (f) };
-        assert_eq!(expression.to_syn(&mut Default::default()), control)
+        assert_eq!(expression.into_syn(&mut Default::default()), control)
     }
 
     #[test]
@@ -797,7 +797,7 @@ mod test {
         );
 
         let control = parse_quote! { a.into_iter().fold(0i64, sum) };
-        assert_eq!(expression.to_syn(&mut Default::default()), control)
+        assert_eq!(expression.into_syn(&mut Default::default()), control)
     }
 
     #[test]
@@ -819,7 +819,7 @@ mod test {
             });
             x
         });
-        assert_eq!(expression.to_syn(&mut Default::default()), control)
+        assert_eq!(expression.into_syn(&mut Default::default()), control)
     }
 
     #[test]
@@ -830,6 +830,6 @@ mod test {
             let mut iter = itertools::izip!(a, b);
             std::array::from_fn(|_| iter.next().unwrap())
         });
-        assert_eq!(expression.to_syn(&mut Default::default()), control)
+        assert_eq!(expression.into_syn(&mut Default::default()), control)
     }
 }

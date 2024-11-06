@@ -26,7 +26,7 @@ mk_new! { impl Stmt =>
 }
 
 impl Stmt {
-    pub fn to_syn(self, crates: &mut BTreeSet<String>) -> syn::Stmt {
+    pub fn into_syn(self, crates: &mut BTreeSet<String>) -> syn::Stmt {
         match self {
             Self::Let {
                 pattern,
@@ -34,15 +34,15 @@ impl Stmt {
             } => syn::Stmt::Local(syn::Local {
                 attrs: vec![],
                 let_token: Default::default(),
-                pat: pattern.to_syn(),
+                pat: pattern.into_syn(),
                 init: Some(syn::LocalInit {
                     eq_token: Default::default(),
-                    expr: Box::new(expression.to_syn(crates)),
+                    expr: Box::new(expression.into_syn(crates)),
                     diverge: None,
                 }),
                 semi_token: Default::default(),
             }),
-            Stmt::ExprLast { expression } => syn::Stmt::Expr(expression.to_syn(crates), None),
+            Stmt::ExprLast { expression } => syn::Stmt::Expr(expression.into_syn(crates), None),
         }
     }
 }
@@ -61,7 +61,7 @@ mod test {
         let control = parse_quote! {
             let x = 1i64;
         };
-        assert_eq!(statement.to_syn(&mut Default::default()), control)
+        assert_eq!(statement.into_syn(&mut Default::default()), control)
     }
 
     #[test]
@@ -77,7 +77,7 @@ mod test {
         );
 
         let control = parse_quote! { let o = self.node_state.step(NodeInput { i: 1i64 }); };
-        assert_eq!(statement.to_syn(&mut Default::default()), control)
+        assert_eq!(statement.into_syn(&mut Default::default()), control)
     }
 
     #[test]
@@ -85,6 +85,6 @@ mod test {
         let statement = Stmt::expression_last(Expr::lit(Constant::int(parse_quote!(1i64))));
 
         let control = syn::Stmt::Expr(parse_quote! { 1i64 }, None);
-        assert_eq!(statement.to_syn(&mut Default::default()), control)
+        assert_eq!(statement.into_syn(&mut Default::default()), control)
     }
 }

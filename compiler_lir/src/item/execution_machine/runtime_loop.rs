@@ -9,7 +9,7 @@ pub struct RuntimeLoop {
 
 impl RuntimeLoop {
     /// Transform LIR run-loop into an async function performing a loop over events.
-    pub fn to_syn(self) -> syn::ImplItem {
+    pub fn into_syn(self) -> syn::ImplItem {
         let RuntimeLoop { input_handlers } = self;
 
         // init timers

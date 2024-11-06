@@ -26,7 +26,7 @@ pub struct ExecutionMachine {
 
 impl ExecutionMachine {
     /// Transform LIR execution-machine into a runtime module.
-    pub fn to_syn(self) -> syn::Item {
+    pub fn into_syn(self) -> syn::Item {
         let ExecutionMachine {
             input_flows,
             output_flows,
@@ -81,7 +81,7 @@ impl ExecutionMachine {
                     to_camel_case(identifier.as_str()).as_str(),
                     Span::call_site(),
                 );
-                let ty = typ.to_syn();
+                let ty = typ.into_syn();
                 input_variants.push(parse_quote! { #enum_ident(#ty, std::time::Instant) });
                 input_eq_arms.push(
                     parse_quote! { (I::#enum_ident(this, _), I::#enum_ident(other, _)) => this.eq(other) },
@@ -98,7 +98,7 @@ impl ExecutionMachine {
                     to_camel_case(identifier.as_str()).as_str(),
                     Span::call_site(),
                 );
-                let ty = typ.to_syn();
+                let ty = typ.into_syn();
                 output_variants.push(parse_quote! { #enum_ident(#ty, std::time::Instant) });
             }
 
@@ -233,12 +233,12 @@ impl ExecutionMachine {
         };
 
         // create the runtime loop
-        let run_loop = runtime_loop.to_syn();
+        let run_loop = runtime_loop.into_syn();
 
         // create the services handlers
         let handlers = services_handlers
             .into_iter()
-            .map(|handler| handler.to_syn());
+            .map(|handler| handler.into_syn());
 
         // parse the runtime module
         syn::Item::Mod(parse_quote! {
