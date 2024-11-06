@@ -15,7 +15,6 @@ pub use proc_macro::TokenStream;
 pub mod prelude;
 
 prelude! {
-    backend::rust_ast_from_lir::project::rust_ast_from_lir,
     frontend::{hir_from_ast::HIRFromAST, typing_analysis::TypeAnalysis},
     lir::Project,
     quote::TokenStreamExt,
@@ -23,7 +22,6 @@ prelude! {
 
 mod ext;
 
-pub mod backend;
 pub mod frontend;
 pub mod hir;
 
@@ -78,7 +76,7 @@ pub fn into_token_stream(ast: Ast) -> macro2::TokenStream {
 
     hir.normalize(&mut symbol_table);
     let lir: Project = hir.lir_from_hir(symbol_table);
-    let rust = rust_ast_from_lir(lir);
+    let rust = lir.to_syn();
 
     let mut tokens = macro2::TokenStream::new();
     tokens.append_all(rust);

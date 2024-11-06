@@ -20,8 +20,27 @@ pub use compiler_lir::{
 };
 
 pub use crate::{
-    backend,
     ext::*,
     frontend::{self, hir_from_ast::HIRFromAST},
     hir,
 };
+
+/// Translation to Rust AST with additional information.
+pub trait ToRustAstWith<Data>: Sized {
+    type Output;
+    fn to_rust_with(self, data: Data) -> Self::Output;
+}
+
+/// Auto-implemented for `T: ToRustAstWith<()>`.
+pub trait ToRustAst: ToRustAstWith<()> + Sized {
+    fn to_rust(self) -> Self::Output;
+}
+
+impl<T> ToRustAst for T
+where
+    T: ToRustAstWith<()>,
+{
+    fn to_rust(self) -> Self::Output {
+        self.to_rust_with(())
+    }
+}

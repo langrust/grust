@@ -1,7 +1,7 @@
 use strum::EnumIter;
 
 prelude! {
-    syn::Parse,
+    syn::{Parse, BinOp},
 }
 
 /// GRust binary operators.
@@ -21,7 +21,7 @@ prelude! {
 /// - [BinaryOperator::Leq], "lower or equal" `<=`
 /// - [BinaryOperator::Grt], "greater" `>`
 /// - [BinaryOperator::Low], "lower" `<`
-#[derive(EnumIter, Debug, Clone, PartialEq)]
+#[derive(EnumIter, Debug, Clone, Copy, PartialEq)]
 pub enum BinaryOperator {
     /// Multiplication, `x * y`.
     Mul,
@@ -51,6 +51,25 @@ pub enum BinaryOperator {
     Low,
 }
 impl BinaryOperator {
+    /// The `syn` version of an operator.
+    pub fn to_syn(self) -> BinOp {
+        match self {
+            Self::Mul => BinOp::Mul(Default::default()),
+            Self::Div => BinOp::Div(Default::default()),
+            Self::Mod => BinOp::Rem(Default::default()),
+            Self::Add => BinOp::Add(Default::default()),
+            Self::Sub => BinOp::Sub(Default::default()),
+            Self::And => BinOp::And(Default::default()),
+            Self::Or => BinOp::Or(Default::default()),
+            Self::Eq => BinOp::Eq(Default::default()),
+            Self::Dif => BinOp::Ne(Default::default()),
+            Self::Geq => BinOp::Ge(Default::default()),
+            Self::Leq => BinOp::Le(Default::default()),
+            Self::Grt => BinOp::Gt(Default::default()),
+            Self::Low => BinOp::Lt(Default::default()),
+        }
+    }
+
     pub fn peek(input: ParseStream) -> bool {
         input.peek(Token![*])
             || input.peek(Token![/])
@@ -286,7 +305,7 @@ impl BinaryOperator {
 ///
 /// - [UnaryOperator::Neg] is the numerical negation `-`
 /// - [UnaryOperator::Not], the logical negation `!`
-#[derive(EnumIter, Debug, Clone, PartialEq)]
+#[derive(EnumIter, Debug, Clone, Copy, PartialEq)]
 pub enum UnaryOperator {
     /// Numerical negation, `-x`.
     Neg,
@@ -296,6 +315,14 @@ pub enum UnaryOperator {
 impl UnaryOperator {
     pub fn peek(input: ParseStream) -> bool {
         input.peek(Token![-]) || input.peek(Token![!])
+    }
+
+    /// The `syn` version of an operator.
+    pub fn to_syn(self) -> syn::UnOp {
+        match self {
+            Self::Neg => syn::UnOp::Neg(Default::default()),
+            Self::Not => syn::UnOp::Not(Default::default()),
+        }
     }
 }
 impl Parse for UnaryOperator {
