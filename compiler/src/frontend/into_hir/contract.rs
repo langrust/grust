@@ -2,17 +2,17 @@ prelude! {
     ast::contract::{ClauseKind, Contract},
 }
 
-impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for Contract {
-    type HIR = hir::Contract;
+impl IntoHir<hir::ctx::Simple<'_>> for Contract {
+    type Hir = hir::Contract;
 
-    fn hir_from_ast(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::HIR> {
+    fn into_hir(self, ctxt: &mut hir::ctx::Simple) -> TRes<Self::Hir> {
         let (requires, ensures, invariant) = self.clauses.into_iter().fold(
             (vec![], vec![], vec![]),
             |(mut requires, mut ensures, mut invariant), clause| {
                 match clause.kind {
-                    ClauseKind::Requires(_) => requires.push(clause.term.hir_from_ast(ctxt)),
-                    ClauseKind::Ensures(_) => ensures.push(clause.term.hir_from_ast(ctxt)),
-                    ClauseKind::Invariant(_) => invariant.push(clause.term.hir_from_ast(ctxt)),
+                    ClauseKind::Requires(_) => requires.push(clause.term.into_hir(ctxt)),
+                    ClauseKind::Ensures(_) => ensures.push(clause.term.into_hir(ctxt)),
+                    ClauseKind::Invariant(_) => invariant.push(clause.term.into_hir(ctxt)),
                     ClauseKind::Assert(_) => todo!(),
                 };
                 (requires, ensures, invariant)
@@ -33,10 +33,10 @@ mod term {
         operator::BinaryOperator,
     }
 
-    impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for Term {
-        type HIR = hir::contract::Term;
+    impl<'a> IntoHir<hir::ctx::Simple<'a>> for Term {
+        type Hir = hir::contract::Term;
 
-        fn hir_from_ast(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::HIR> {
+        fn into_hir(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::Hir> {
             let location = Location::default();
             match self {
                 Term::Result(_) => {
@@ -50,8 +50,8 @@ mod term {
                     ))
                 }
                 Term::Implication(Implication { left, right, .. }) => {
-                    let left = left.hir_from_ast(ctxt)?;
-                    let right = right.hir_from_ast(ctxt)?;
+                    let left = left.into_hir(ctxt)?;
+                    let right = right.into_hir(ctxt)?;
 
                     Ok(hir::contract::Term::new(
                         hir::contract::Kind::implication(left, right),
@@ -81,16 +81,12 @@ mod term {
                     ))
                 }
                 Term::Unary(Unary { op, term }) => Ok(hir::contract::Term::new(
-                    hir::contract::Kind::unary(op, term.hir_from_ast(ctxt)?),
+                    hir::contract::Kind::unary(op, term.into_hir(ctxt)?),
                     None,
                     location,
                 )),
                 Term::Binary(Binary { op, left, right }) => Ok(hir::contract::Term::new(
-                    hir::contract::Kind::binary(
-                        op,
-                        left.hir_from_ast(ctxt)?,
-                        right.hir_from_ast(ctxt)?,
-                    ),
+                    hir::contract::Kind::binary(op, left.into_hir(ctxt)?, right.into_hir(ctxt)?),
                     None,
                     location,
                 )),
@@ -115,7 +111,7 @@ mod term {
                 Term::ForAll(ForAll {
                     ident, ty, term, ..
                 }) => {
-                    let ty = ty.hir_from_ast(&mut ctxt.add_loc(&location))?;
+                    let ty = ty.into_hir(&mut ctxt.add_loc(&location))?;
                     ctxt.syms.local();
                     let id = ctxt.syms.insert_identifier(
                         ident.clone(),
@@ -124,7 +120,7 @@ mod term {
                         location.clone(),
                         ctxt.errors,
                     )?;
-                    let term = term.hir_from_ast(ctxt)?;
+                    let term = term.into_hir(ctxt)?;
                     ctxt.syms.global();
                     Ok(hir::contract::Term::new(
                         hir::contract::Kind::forall(id, term),
@@ -155,7 +151,7 @@ mod term {
                         ctxt.errors,
                     )?;
                     // transform term into HIR
-                    let right = term.hir_from_ast(ctxt)?;
+                    let right = term.into_hir(ctxt)?;
                     ctxt.syms.global();
                     // construct right side of implication: `PresentEvent(pat) == event`
                     let left = hir::contract::Term::new(

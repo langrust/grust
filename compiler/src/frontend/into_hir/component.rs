@@ -1,11 +1,11 @@
 prelude! {}
 
-impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for ast::Component {
-    type HIR = hir::Component;
+impl IntoHir<hir::ctx::Simple<'_>> for ast::Component {
+    type Hir = hir::Component;
 
     // precondition: node and its signals are already stored in symbol table
     // postcondition: construct HIR node and check identifiers good use
-    fn hir_from_ast(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::HIR> {
+    fn into_hir(self, ctxt: &mut hir::ctx::Simple) -> TRes<Self::Hir> {
         let ast::Component {
             ident,
             contract,
@@ -24,9 +24,9 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for ast::Component {
 
         let statements = equations
             .into_iter()
-            .map(|equation| equation.hir_from_ast(ctxt))
+            .map(|equation| equation.into_hir(ctxt))
             .collect::<TRes<Vec<_>>>()?;
-        let contract = contract.hir_from_ast(ctxt)?;
+        let contract = contract.into_hir(ctxt)?;
 
         ctxt.syms.global();
 
@@ -42,12 +42,12 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for ast::Component {
     }
 }
 
-impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for ast::ComponentImport {
-    type HIR = hir::Component;
+impl IntoHir<hir::ctx::Simple<'_>> for ast::ComponentImport {
+    type Hir = hir::Component;
 
     // precondition: node and its signals are already stored in symbol table
     // postcondition: construct HIR node
-    fn hir_from_ast(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::HIR> {
+    fn into_hir(self, ctxt: &mut hir::ctx::Simple) -> TRes<Self::Hir> {
         let ast::ComponentImport { path, .. } = self;
 
         let last = path.clone().segments.pop().unwrap().into_value();

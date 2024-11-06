@@ -1,5 +1,5 @@
 /// HIR construction from AST.
-pub mod hir_from_ast;
+pub mod into_hir;
 
 /// Dependency graph construction algorithms.
 pub mod dependency_graph;
@@ -20,4 +20,5 @@ pub use typing_analysis::TypeAnalysis;
 
 pub mod ctx;
 
+pub use into_hir::IntoHir;
 pub use into_lir::IntoLir;

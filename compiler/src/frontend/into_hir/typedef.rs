@@ -2,12 +2,12 @@ prelude! {
     ast::{Colon, Typedef},
 }
 
-impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for Typedef {
-    type HIR = hir::Typedef;
+impl IntoHir<hir::ctx::Simple<'_>> for Typedef {
+    type Hir = hir::Typedef;
 
     // precondition: typedefs are already stored in symbol table
     // postcondition: construct HIR typedef and check identifiers good use
-    fn hir_from_ast(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::HIR> {
+    fn into_hir(self, ctxt: &mut hir::ctx::Simple) -> TRes<Self::Hir> {
         let location = Location::default();
         match self {
             Typedef::Structure { ident, fields, .. } => {
@@ -32,7 +32,7 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for Typedef {
                         )| {
                             let name = ident.to_string();
                             debug_assert_eq!(&name, ctxt.syms.get_name(*id));
-                            let typing = typing.hir_from_ast(&mut ctxt.add_loc(&location))?;
+                            let typing = typing.into_hir(&mut ctxt.add_loc(&location))?;
                             Ok(ctxt.syms.set_type(*id, typing))
                         },
                     )
@@ -69,7 +69,7 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for Typedef {
                     .get_array_id(&id, false, location.clone(), ctxt.errors)?;
 
                 // insert array's type in symbol table
-                let typing = array_type.hir_from_ast(&mut ctxt.add_loc(&location))?;
+                let typing = array_type.into_hir(&mut ctxt.add_loc(&location))?;
                 ctxt.syms.set_array_type(type_id, typing);
 
                 Ok(hir::Typedef {
