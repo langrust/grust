@@ -1,11 +1,8 @@
-use itertools::Itertools;
-
 prelude! {
     hir::memory::{Buffer, CalledNode, Memory},
     lir::state_machine::{StateElmInit, StateElmInfo, StateElmStep},
+    itertools::Itertools,
 }
-
-use super::LIRFromHIR;
 
 impl Memory {
     /// Get state elements from memory.
@@ -38,7 +35,7 @@ impl Memory {
                     elements.push(StateElmInfo::buffer(&mem_ident, typing));
                     inits.push(StateElmInit::buffer(
                         &mem_ident,
-                        initial_expression.lir_from_hir(symbol_table),
+                        initial_expression.into_lir(symbol_table),
                     ));
                     steps.push(StateElmStep::new(
                         mem_ident,

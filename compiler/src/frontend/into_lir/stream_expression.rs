@@ -1,13 +1,11 @@
-prelude! { hir::stream }
+prelude! { hir::stream::Kind }
 
-use super::LIRFromHIR;
+impl IntoLir<&'_ SymbolTable> for hir::stream::Expr {
+    type Lir = lir::Expr;
 
-impl LIRFromHIR for stream::Expr {
-    type LIR = lir::Expr;
-
-    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
+    fn into_lir(self, symbol_table: &SymbolTable) -> Self::Lir {
         match self.kind {
-            stream::Kind::NodeApplication {
+            Kind::NodeApplication {
                 memory_id,
                 called_node_id,
                 inputs,
@@ -24,7 +22,7 @@ impl LIRFromHIR for stream::Expr {
                     .map(|(id, expression)| {
                         (
                             symbol_table.get_name(id).clone(),
-                            expression.lir_from_hir(symbol_table),
+                            expression.into_lir(symbol_table),
                         )
                     })
                     .collect::<Vec<_>>();
@@ -35,16 +33,14 @@ impl LIRFromHIR for stream::Expr {
                     input_fields,
                 }
             }
-            stream::Kind::Expression { expression } => expression.lir_from_hir(symbol_table),
-            stream::Kind::SomeEvent { expression } => {
-                lir::Expr::some(expression.lir_from_hir(symbol_table))
-            }
-            stream::Kind::NoneEvent => lir::Expr::none(),
-            stream::Kind::FollowedBy { id, .. } => {
+            Kind::Expression { expression } => expression.into_lir(symbol_table),
+            Kind::SomeEvent { expression } => lir::Expr::some(expression.into_lir(symbol_table)),
+            Kind::NoneEvent => lir::Expr::none(),
+            Kind::FollowedBy { id, .. } => {
                 let name = symbol_table.get_name(id).clone();
                 lir::Expr::MemoryAccess { identifier: name }
             }
-            stream::Kind::RisingEdge { .. } => unreachable!(),
+            Kind::RisingEdge { .. } => unreachable!(),
         }
     }
 
@@ -54,7 +50,7 @@ impl LIRFromHIR for stream::Expr {
 
     fn is_if_then_else(&self, symbol_table: &SymbolTable) -> bool {
         match &self.kind {
-            stream::Kind::Expression { expression } => expression.is_if_then_else(symbol_table),
+            Kind::Expression { expression } => expression.is_if_then_else(symbol_table),
             _ => false,
         }
     }

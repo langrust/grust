@@ -3,12 +3,10 @@ prelude! {
     lir::{ Block, item::Function as LIRFunction, Stmt },
 }
 
-use super::LIRFromHIR;
+impl IntoLir<&'_ SymbolTable> for Function {
+    type Lir = LIRFunction;
 
-impl LIRFromHIR for Function {
-    type LIR = LIRFunction;
-
-    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
+    fn into_lir(self, symbol_table: &SymbolTable) -> Self::Lir {
         let Function {
             id,
             contract,
@@ -38,14 +36,14 @@ impl LIRFromHIR for Function {
         // tranforms into LIR statements
         let mut statements = statements
             .into_iter()
-            .map(|statement| statement.lir_from_hir(symbol_table))
+            .map(|statement| statement.into_lir(symbol_table))
             .collect::<Vec<_>>();
         statements.push(Stmt::ExprLast {
-            expression: returned.lir_from_hir(symbol_table),
+            expression: returned.into_lir(symbol_table),
         });
 
         // transform contract
-        let contract = contract.lir_from_hir(symbol_table);
+        let contract = contract.into_lir(symbol_table);
 
         LIRFunction {
             name,

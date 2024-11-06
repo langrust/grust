@@ -3,12 +3,10 @@ prelude! {
     lir::contract::Contract as LIRContract,
 }
 
-use super::LIRFromHIR;
+impl IntoLir<&'_ SymbolTable> for Contract {
+    type Lir = LIRContract;
 
-impl LIRFromHIR for Contract {
-    type LIR = LIRContract;
-
-    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
+    fn into_lir(self, symbol_table: &SymbolTable) -> Self::Lir {
         let Contract {
             requires,
             ensures,
@@ -18,15 +16,15 @@ impl LIRFromHIR for Contract {
         LIRContract {
             requires: requires
                 .into_iter()
-                .map(|term| term.lir_from_hir(symbol_table))
+                .map(|term| term.into_lir(symbol_table))
                 .collect(),
             ensures: ensures
                 .into_iter()
-                .map(|term| term.lir_from_hir(symbol_table))
+                .map(|term| term.into_lir(symbol_table))
                 .collect(),
             invariant: invariant
                 .into_iter()
-                .map(|term| term.lir_from_hir(symbol_table))
+                .map(|term| term.into_lir(symbol_table))
                 .collect(),
         }
     }
@@ -37,10 +35,10 @@ mod term {
         hir::contract::{Term, Kind},
     }
 
-    impl super::LIRFromHIR for Term {
-        type LIR = lir::contract::Term;
+    impl IntoLir<&'_ SymbolTable> for Term {
+        type Lir = lir::contract::Term;
 
-        fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
+        fn into_lir(self, symbol_table: &SymbolTable) -> Self::Lir {
             match self.kind {
                 Kind::Constant { constant } => lir::contract::Term::literal(constant),
                 Kind::Identifier { id } => {
@@ -61,22 +59,22 @@ mod term {
                     None,
                 ),
                 Kind::Unary { op, term } => {
-                    lir::contract::Term::unop(op, term.lir_from_hir(symbol_table))
+                    lir::contract::Term::unop(op, term.into_lir(symbol_table))
                 }
                 Kind::Binary { op, left, right } => lir::contract::Term::binop(
                     op,
-                    left.lir_from_hir(symbol_table),
-                    right.lir_from_hir(symbol_table),
+                    left.into_lir(symbol_table),
+                    right.into_lir(symbol_table),
                 ),
                 Kind::ForAll { id, term } => {
                     let name = symbol_table.get_name(id);
                     let ty = symbol_table.get_type(id).clone();
-                    let term = term.lir_from_hir(symbol_table);
+                    let term = term.into_lir(symbol_table);
                     lir::contract::Term::forall(name, ty, term)
                 }
                 Kind::Implication { left, right } => lir::contract::Term::implication(
-                    left.lir_from_hir(symbol_table),
-                    right.lir_from_hir(symbol_table),
+                    left.into_lir(symbol_table),
+                    right.into_lir(symbol_table),
                 ),
                 Kind::PresentEvent { event_id, pattern } => match symbol_table.get_type(event_id) {
                     Typ::SMEvent { .. } => lir::contract::Term::some(lir::contract::Term::ident(

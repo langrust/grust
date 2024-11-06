@@ -3,12 +3,10 @@ prelude! {
     lir::item::{ArrayAlias, Enumeration, Structure, Item},
 }
 
-use super::LIRFromHIR;
+impl IntoLir<&'_ SymbolTable> for Typedef {
+    type Lir = Item;
 
-impl LIRFromHIR for Typedef {
-    type LIR = Item;
-
-    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
+    fn into_lir(self, symbol_table: &SymbolTable) -> Self::Lir {
         match self.kind {
             typedef::Kind::Structure { fields, .. } => Item::Structure(Structure {
                 name: symbol_table.get_name(self.id).clone(),
