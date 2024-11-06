@@ -1,7 +1,8 @@
 prelude! {
     graph::*,
-    frontend::ctx::*,
 }
+
+use super::ctx;
 
 impl hir::stream::Stmt {
     /// Add direct dependencies of a statement.
@@ -14,7 +15,7 @@ impl hir::stream::Stmt {
     ///     x: int = i;     // depends on i
     /// }
     /// ```
-    pub fn add_dependencies(&self, ctx: &mut GraphProcCtx) -> TRes<()> {
+    pub fn add_dependencies(&self, ctx: &mut ctx::GraphProcCtx) -> TRes<()> {
         let signals = self.pattern.identifiers();
         for signal in signals {
             self.add_signal_dependencies(signal, ctx)?
@@ -32,7 +33,7 @@ impl hir::stream::Stmt {
     ///     x: int = i;     // depends on i
     /// }
     /// ```
-    pub fn add_signal_dependencies(&self, signal: usize, ctx: &mut GraphProcCtx) -> TRes<()> {
+    pub fn add_signal_dependencies(&self, signal: usize, ctx: &mut ctx::GraphProcCtx) -> TRes<()> {
         let hir::Stmt {
             expression,
             location,
