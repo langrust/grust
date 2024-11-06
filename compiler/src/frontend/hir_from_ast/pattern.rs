@@ -1,13 +1,12 @@
 mod expr_pattern {
     prelude! {
         ast::expr::{PatEnumeration, PatStructure, PatTuple},
-        frontend::hir_from_ast::{HIRFromAST, LocCtxt}
     }
 
-    impl<'a> HIRFromAST<LocCtxt<'a>> for PatStructure {
+    impl<'a> HIRFromAST<hir::ctx::Loc<'a>> for PatStructure {
         type HIR = hir::pattern::Kind;
 
-        fn hir_from_ast(self, ctxt: &mut LocCtxt<'a>) -> TRes<hir::pattern::Kind> {
+        fn hir_from_ast(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<hir::pattern::Kind> {
             let PatStructure { name, fields, rest } = self;
 
             let id = ctxt
@@ -63,10 +62,10 @@ mod expr_pattern {
         }
     }
 
-    impl<'a> HIRFromAST<LocCtxt<'a>> for PatEnumeration {
+    impl<'a> HIRFromAST<hir::ctx::Loc<'a>> for PatEnumeration {
         type HIR = hir::pattern::Kind;
 
-        fn hir_from_ast(self, ctxt: &mut LocCtxt<'a>) -> TRes<hir::pattern::Kind> {
+        fn hir_from_ast(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<hir::pattern::Kind> {
             let PatEnumeration {
                 enum_name,
                 elem_name,
@@ -86,10 +85,10 @@ mod expr_pattern {
         }
     }
 
-    impl<'a> HIRFromAST<LocCtxt<'a>> for PatTuple {
+    impl<'a> HIRFromAST<hir::ctx::Loc<'a>> for PatTuple {
         type HIR = hir::pattern::Kind;
 
-        fn hir_from_ast(self, ctxt: &mut LocCtxt<'a>) -> TRes<hir::pattern::Kind> {
+        fn hir_from_ast(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<hir::pattern::Kind> {
             let PatTuple { elements } = self;
             Ok(hir::pattern::Kind::Tuple {
                 elements: elements
@@ -100,10 +99,10 @@ mod expr_pattern {
         }
     }
 
-    impl<'a> HIRFromAST<LocCtxt<'a>> for ast::expr::Pattern {
+    impl<'a> HIRFromAST<hir::ctx::Loc<'a>> for ast::expr::Pattern {
         type HIR = hir::Pattern;
 
-        fn hir_from_ast(self, ctxt: &mut LocCtxt<'a>) -> TRes<Self::HIR> {
+        fn hir_from_ast(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<Self::HIR> {
             let kind = match self {
                 ast::expr::Pattern::Constant(constant) => hir::pattern::Kind::Constant { constant },
                 ast::expr::Pattern::Identifier(name) => {
@@ -131,13 +130,12 @@ mod expr_pattern {
 mod stmt_pattern {
     prelude! {
         ast::stmt::{Typed, Tuple},
-        frontend::hir_from_ast::{HIRFromAST, LocCtxt}
     }
 
-    impl<'a> HIRFromAST<LocCtxt<'a>> for Typed {
+    impl<'a> HIRFromAST<hir::ctx::Loc<'a>> for Typed {
         type HIR = hir::stmt::Kind;
 
-        fn hir_from_ast(self, ctxt: &mut LocCtxt<'a>) -> TRes<hir::stmt::Kind> {
+        fn hir_from_ast(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<hir::stmt::Kind> {
             let Typed { ident, typing, .. } = self;
 
             let id = ctxt.syms.get_identifier_id(
@@ -151,10 +149,10 @@ mod stmt_pattern {
         }
     }
 
-    impl<'a> HIRFromAST<LocCtxt<'a>> for Tuple {
+    impl<'a> HIRFromAST<hir::ctx::Loc<'a>> for Tuple {
         type HIR = hir::stmt::Kind;
 
-        fn hir_from_ast(self, ctxt: &mut LocCtxt<'a>) -> TRes<hir::stmt::Kind> {
+        fn hir_from_ast(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<hir::stmt::Kind> {
             let Tuple { elements } = self;
             Ok(hir::stmt::Kind::Tuple {
                 elements: elements
@@ -165,10 +163,10 @@ mod stmt_pattern {
         }
     }
 
-    impl<'a> HIRFromAST<LocCtxt<'a>> for ast::stmt::Pattern {
+    impl<'a> HIRFromAST<hir::ctx::Loc<'a>> for ast::stmt::Pattern {
         type HIR = hir::stmt::Pattern;
 
-        fn hir_from_ast(self, ctxt: &mut LocCtxt<'a>) -> TRes<Self::HIR> {
+        fn hir_from_ast(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<Self::HIR> {
             let kind = match self {
                 ast::stmt::Pattern::Identifier(ident) => {
                     let id = ctxt.syms.get_identifier_id(

@@ -2,12 +2,10 @@ prelude! {
     ast::contract::{ClauseKind, Contract},
 }
 
-use super::{HIRFromAST, SimpleCtxt};
-
-impl<'a> HIRFromAST<SimpleCtxt<'a>> for Contract {
+impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for Contract {
     type HIR = hir::Contract;
 
-    fn hir_from_ast(self, ctxt: &mut SimpleCtxt<'a>) -> TRes<Self::HIR> {
+    fn hir_from_ast(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::HIR> {
         let (requires, ensures, invariant) = self.clauses.into_iter().fold(
             (vec![], vec![], vec![]),
             |(mut requires, mut ensures, mut invariant), clause| {
@@ -35,12 +33,10 @@ mod term {
         operator::BinaryOperator,
     }
 
-    use super::{HIRFromAST, SimpleCtxt};
-
-    impl<'a> HIRFromAST<SimpleCtxt<'a>> for Term {
+    impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for Term {
         type HIR = hir::contract::Term;
 
-        fn hir_from_ast(self, ctxt: &mut SimpleCtxt<'a>) -> TRes<Self::HIR> {
+        fn hir_from_ast(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::HIR> {
             let location = Location::default();
             match self {
                 Term::Result(_) => {

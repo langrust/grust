@@ -3,13 +3,11 @@ prelude! {
     itertools::Itertools,
 }
 
-use super::{HIRFromAST, PatLocCtxt};
-
-impl<'a> HIRFromAST<PatLocCtxt<'a>> for stream::When {
+impl<'a> HIRFromAST<hir::ctx::PatLoc<'a>> for stream::When {
     type HIR = hir::stream::Kind;
 
     /// Transforms AST into HIR and check identifiers good use.
-    fn hir_from_ast(self, ctxt: &mut PatLocCtxt<'a>) -> TRes<Self::HIR> {
+    fn hir_from_ast(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<Self::HIR> {
         let stream::When {
             pattern: event_pattern,
             guard,
@@ -114,12 +112,12 @@ impl<'a> HIRFromAST<PatLocCtxt<'a>> for stream::When {
     }
 }
 
-impl<'a> HIRFromAST<PatLocCtxt<'a>> for stream::Expr {
+impl<'a> HIRFromAST<hir::ctx::PatLoc<'a>> for stream::Expr {
     type HIR = hir::stream::Expr;
 
     // precondition: identifiers are stored in symbol table
     // postcondition: construct HIR stream expression and check identifiers good use
-    fn hir_from_ast(self, ctxt: &mut PatLocCtxt<'a>) -> TRes<Self::HIR> {
+    fn hir_from_ast(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<Self::HIR> {
         let kind = match self {
             stream::Expr::Application(Application {
                 function_expression,
@@ -264,12 +262,12 @@ impl<'a> HIRFromAST<PatLocCtxt<'a>> for stream::Expr {
     }
 }
 
-impl<'a> HIRFromAST<PatLocCtxt<'a>> for stream::ReactExpr {
+impl<'a> HIRFromAST<hir::ctx::PatLoc<'a>> for stream::ReactExpr {
     type HIR = hir::stream::Expr;
 
     // precondition: identifiers are stored in symbol table
     // postcondition: construct HIR stream expression and check identifiers good use
-    fn hir_from_ast(self, ctxt: &mut PatLocCtxt<'a>) -> TRes<Self::HIR> {
+    fn hir_from_ast(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<Self::HIR> {
         match self {
             stream::ReactExpr::Expr(expr) => expr.hir_from_ast(ctxt),
             stream::ReactExpr::When(expr) => {

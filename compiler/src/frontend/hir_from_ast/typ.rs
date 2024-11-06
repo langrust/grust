@@ -1,14 +1,13 @@
 prelude! {
     ast::Typ,
-    frontend::hir_from_ast::{HIRFromAST, LocCtxt},
     syn::punctuated::{Pair, Punctuated},
 }
 
-impl<'a> HIRFromAST<LocCtxt<'a>> for Typ {
+impl<'a> HIRFromAST<hir::ctx::Loc<'a>> for Typ {
     type HIR = Typ;
 
     /// Transforms AST into HIR and check identifiers good use.
-    fn hir_from_ast(self, ctxt: &mut LocCtxt<'a>) -> TRes<Typ> {
+    fn hir_from_ast(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<Typ> {
         // precondition: Typedefs are stored in symbol table
         // postcondition: construct a new Type without `Typ::NotDefinedYet`
         match self {

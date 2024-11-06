@@ -1,4 +1,4 @@
-prelude! {frontend::hir_from_ast::LocCtxt}
+prelude! {}
 
 pub trait ComponentExt {
     /// Store node in symbol table.
@@ -8,14 +8,13 @@ pub trait ComponentExt {
 mod component {
     prelude! {
         ast::{Component, ComponentImport, Colon},
-        frontend::hir_from_ast::{LocCtxt},
     }
 
     impl super::ComponentExt for Component {
         /// Store node's signals in symbol table.
         fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
             let location = Location::default();
-            let ctxt = &mut LocCtxt::new(&location, symbol_table, errors);
+            let ctxt = &mut hir::ctx::Loc::new(&location, symbol_table, errors);
 
             ctxt.syms.local();
 
@@ -112,7 +111,7 @@ mod component {
         /// Store node's signals in symbol table.
         fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
             let location = Location::default();
-            let ctxt = &mut LocCtxt::new(&location, symbol_table, errors);
+            let ctxt = &mut hir::ctx::Loc::new(&location, symbol_table, errors);
             ctxt.syms.local();
 
             let last = self.path.clone().segments.pop().unwrap().into_value();
@@ -436,7 +435,7 @@ pub trait FunctionExt {
 impl FunctionExt for ast::Function {
     fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         let location = Location::default();
-        let ctxt = &mut LocCtxt::new(&location, symbol_table, errors);
+        let ctxt = &mut hir::ctx::Loc::new(&location, symbol_table, errors);
         ctxt.syms.local();
 
         let inputs = self
@@ -604,7 +603,6 @@ pub trait StmtPatternExt: Sized {
 mod stmt_pattern {
     prelude! {
         ast::stmt::{Pattern, Tuple, Typed},
-        frontend::hir_from_ast::LocCtxt,
     }
 
     impl super::StmtPatternExt for Pattern {
@@ -643,7 +641,7 @@ mod stmt_pattern {
                 }
                 Pattern::Typed(Typed { ident, typing, .. }) => {
                     if is_declaration {
-                        let typing = typing.clone().hir_from_ast(&mut LocCtxt::new(
+                        let typing = typing.clone().hir_from_ast(&mut hir::ctx::Loc::new(
                             &location,
                             symbol_table,
                             errors,
@@ -983,7 +981,7 @@ pub trait EventPatternExt {
 
 mod event_pattern {
     prelude! {
-        ast::equation::EventPattern, frontend::hir_from_ast::{LocCtxt, PatLocCtxt}
+        ast::equation::EventPattern,
     }
 
     impl super::EventPatternExt for EventPattern {
@@ -1066,7 +1064,7 @@ mod event_pattern {
                 }
                 EventPattern::Let(pattern) => {
                     let location = Location::default();
-                    let ctxt = &mut LocCtxt::new(&location, syms, errors);
+                    let ctxt = &mut hir::ctx::Loc::new(&location, syms, errors);
 
                     // get the event identifier
                     let event_id = ctxt.syms.get_identifier_id(
@@ -1090,7 +1088,7 @@ mod event_pattern {
                 }
                 EventPattern::RisingEdge(expr) => {
                     let location = Location::default();
-                    let ctxt = &mut PatLocCtxt::new(None, &location, syms, errors);
+                    let ctxt = &mut hir::ctx::PatLoc::new(None, &location, syms, errors);
                     let guard = hir::stream::Kind::rising_edge(expr.hir_from_ast(ctxt)?);
                     Ok(Some(hir::stream::expr(guard)))
                 }
