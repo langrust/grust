@@ -2,7 +2,7 @@ prelude! {
     hir::{ Contract, IdentifierCreator, Memory, stream },
 }
 
-impl hir::expr::Kind<stream::Expr> {
+impl stream::ExprKind {
     /// Increment memory with expression.
     ///
     /// Store buffer for followed by expressions and unitary node applications.
