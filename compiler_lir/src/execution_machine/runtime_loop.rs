@@ -32,14 +32,17 @@ impl RuntimeLoop {
         // loop on the input stream
         let async_loop: syn::Stmt = {
             let mut input_arms: Vec<syn::Arm> = vec![];
-            input_handlers.iter().for_each(
-            |InputHandler{
+            for InputHandler {
                 arriving_flow,
                 services,
-            }| {
+            } in input_handlers.iter()
+            {
                 match arriving_flow {
                     ArrivingFlow::Channel(flow_name, _, _) => {
-                        let enum_ident = Ident::new(to_camel_case(flow_name.as_str()).as_str(), Span::call_site());
+                        let enum_ident = Ident::new(
+                            to_camel_case(flow_name.as_str()).as_str(),
+                            Span::call_site(),
+                        );
                         let ident = Ident::new(flow_name.as_str(), Span::call_site());
                         let function_name: Ident = format_ident!("handle_{flow_name}");
                         let call_services_handlers = services.iter().map(|service_name| -> syn::Stmt {
@@ -51,12 +54,15 @@ impl RuntimeLoop {
                                 #(#call_services_handlers)*
                             }
                         })
-                    },
+                    }
                     ArrivingFlow::Period(time_flow_name)
                     | ArrivingFlow::Deadline(time_flow_name)
                     | ArrivingFlow::ServiceDelay(time_flow_name)
                     | ArrivingFlow::ServiceTimeout(time_flow_name) => {
-                        let enum_ident = Ident::new(to_camel_case(time_flow_name.as_str()).as_str(), Span::call_site());
+                        let enum_ident = Ident::new(
+                            to_camel_case(time_flow_name.as_str()).as_str(),
+                            Span::call_site(),
+                        );
                         let function_name: Ident = format_ident!("handle_{time_flow_name}");
                         let call_services_handlers = services.iter().map(|service_name| -> syn::Stmt {
                             let service_name = Ident::new(service_name, Span::call_site());
@@ -69,8 +75,7 @@ impl RuntimeLoop {
                         })
                     }
                 }
-            },
-        );
+            }
             // parse the loop
             parse_quote! {
                 while let Some(input) = input.next().await {

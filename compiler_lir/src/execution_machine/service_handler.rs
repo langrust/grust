@@ -14,6 +14,13 @@ pub struct ServiceHandler {
     pub flows_context: FlowsContext,
 }
 
+mk_new! { impl ServiceHandler => new {
+    service: impl Into<String> = service.into(),
+    components: Vec<String>,
+    flows_handling: Vec<FlowHandler>,
+    flows_context: FlowsContext,
+} }
+
 impl ServiceHandler {
     /// Transform LIR run-loop into an async function performing a loop over events.
     pub fn into_syn(self) -> syn::Item {
@@ -130,21 +137,26 @@ impl ServiceHandler {
 
         // flows handler functions
         flows_handling.into_iter().for_each(
-        |FlowHandler {
-             arriving_flow,
-             instruction,
-             ..
-         }| {
-            let stmts = instruction.into_syn();
-            match arriving_flow {
-                ArrivingFlow::Channel(flow_name, flow_type, _) => {
-                    let ident = Ident::new(flow_name.as_str(), Span::call_site());
-                    let instant = format_ident!("{flow_name}_instant");
-                    let function_name: Ident = format_ident!("handle_{flow_name}");
-                    let ty = flow_type.into_syn();
-                    let message = syn::LitStr::new(format!("{flow_name} changes too frequently").as_str(), Span::call_site());
-                    impl_items.push(parse_quote! {
-                        pub async fn #function_name(&mut self, #instant: std::time::Instant, #ident: #ty) -> Result<(), futures::channel::mpsc::SendError> {
+            |FlowHandler {
+                 arriving_flow,
+                 instruction,
+                 ..
+             }| {
+                let stmts = instruction.into_syn();
+                match arriving_flow {
+                    ArrivingFlow::Channel(flow_name, flow_type, _) => {
+                        let ident = Ident::new(flow_name.as_str(), Span::call_site());
+                        let instant = format_ident!("{flow_name}_instant");
+                        let function_name: Ident = format_ident!("handle_{flow_name}");
+                        let ty = flow_type.into_syn();
+                        let message = syn::LitStr::new(
+                            format!("{flow_name} changes too frequently").as_str(),
+                            Span::call_site(),
+                        );
+                        impl_items.push(parse_quote! {
+                        pub async fn #function_name(
+                            &mut self, #instant: std::time::Instant, #ident: #ty
+                        ) -> Result<(), futures::channel::mpsc::SendError> {
                             if self.delayed {
                                 // reset time constrains
                                 self.reset_time_constrains(#instant).await?;
@@ -160,106 +172,126 @@ impl ServiceHandler {
                             Ok(())
                         }
                     })
-                }
-                ArrivingFlow::Period(time_flow_name) | ArrivingFlow::Deadline(time_flow_name) => {
-                    let ident = Ident::new(time_flow_name.as_str(), Span::call_site());
-                    let instant = format_ident!("{time_flow_name}_instant");
-                    let function_name: Ident = format_ident!("handle_{time_flow_name}");
-                    let message = syn::LitStr::new(format!("{time_flow_name} changes too frequently").as_str(), Span::call_site());
-                    impl_items.push(parse_quote! {
-                        pub async fn #function_name(&mut self,  #instant: std::time::Instant) -> Result<(), futures::channel::mpsc::SendError> {
-                            if self.delayed {
+                    }
+                    ArrivingFlow::Period(time_flow_name)
+                    | ArrivingFlow::Deadline(time_flow_name) => {
+                        let ident = Ident::new(time_flow_name.as_str(), Span::call_site());
+                        let instant = format_ident!("{time_flow_name}_instant");
+                        let function_name: Ident = format_ident!("handle_{time_flow_name}");
+                        let message = syn::LitStr::new(
+                            format!("{time_flow_name} changes too frequently").as_str(),
+                            Span::call_site(),
+                        );
+                        impl_items.push(parse_quote! {
+                            pub async fn #function_name(
+                                &mut self,  #instant: std::time::Instant
+                            ) -> Result<(), futures::channel::mpsc::SendError> {
+                                if self.delayed {
+                                    // reset time constrains
+                                    self.reset_time_constrains(#instant).await?;
+                                    // reset all signals' update
+                                    self.context.reset();
+                                    // propagate changes
+                                #(#stmts)*
+                                } else {
+                                    // store in input_store
+                                    let unique = self.input_store.#ident.replace(((), #instant));
+                                    assert!(unique.is_none(), #message);
+                                }
+                                Ok(())
+                            }
+                        })
+                    }
+                    ArrivingFlow::ServiceDelay(service_delay) => {
+                        let function_name: Ident = format_ident!("handle_{service_delay}");
+                        impl_items.push(parse_quote! {
+                            pub async fn #function_name(
+                                &mut self, instant: std::time::Instant
+                            ) -> Result<(), futures::channel::mpsc::SendError> {
+                                // reset all signals' update
+                                self.context.reset();
+                                // propagate changes
+                                #(#stmts)*
+                                Ok(())
+                            }
+                        });
+                        let enum_ident = Ident::new(
+                            to_camel_case(service_delay.as_str()).as_str(),
+                            Span::call_site(),
+                        );
+                        impl_items.push(parse_quote! {
+                            #[inline]
+                            pub async fn reset_service_delay(
+                                &mut self, instant: std::time::Instant
+                            ) -> Result<(), futures::channel::mpsc::SendError> {
+                                self.timer.send((T::#enum_ident, instant)).await?;
+                                Ok(())
+                            }
+                        })
+                    }
+                    ArrivingFlow::ServiceTimeout(service_timeout) => {
+                        let instant = format_ident!("{service_timeout}_instant");
+                        let function_name: Ident = format_ident!("handle_{service_timeout}");
+                        impl_items.push(parse_quote! {
+                            pub async fn #function_name(
+                                &mut self, #instant: std::time::Instant
+                            ) -> Result<(), futures::channel::mpsc::SendError> {
                                 // reset time constrains
                                 self.reset_time_constrains(#instant).await?;
                                 // reset all signals' update
                                 self.context.reset();
                                 // propagate changes
-                            #(#stmts)*
-                            } else {
-                                // store in input_store
-                                let unique = self.input_store.#ident.replace(((), #instant));
-                                assert!(unique.is_none(), #message);
+                                #(#stmts)*
+                                Ok(())
                             }
-                            Ok(())
-                        }
-                    })
+                        });
+                        let enum_ident = Ident::new(
+                            to_camel_case(service_timeout.as_str()).as_str(),
+                            Span::call_site(),
+                        );
+                        impl_items.push(parse_quote! {
+                            #[inline]
+                            pub async fn reset_service_timeout(
+                                &mut self, instant: std::time::Instant
+                            ) -> Result<(), futures::channel::mpsc::SendError> {
+                                self.timer.send((T::#enum_ident, instant)).await?;
+                                Ok(())
+                            }
+                        })
+                    }
                 }
-                ArrivingFlow::ServiceDelay(service_delay) => {
-                    let function_name: Ident = format_ident!("handle_{service_delay}");
-                    impl_items.push(parse_quote! {
-                        pub async fn #function_name(&mut self, instant: std::time::Instant) -> Result<(), futures::channel::mpsc::SendError> {
-                            // reset all signals' update
-                            self.context.reset();
-                            // propagate changes
-                            #(#stmts)*
-                            Ok(())
-                        }
-                    });
-                    let enum_ident = Ident::new(
-                        to_camel_case(service_delay.as_str()).as_str(),
-                        Span::call_site(),
-                    );
-                    impl_items.push(parse_quote! {
-                        #[inline]
-                        pub async fn reset_service_delay(&mut self, instant: std::time::Instant) -> Result<(), futures::channel::mpsc::SendError> {
-                            self.timer.send((T::#enum_ident, instant)).await?;
-                            Ok(())
-                        }
-                    })
-                }
-                ArrivingFlow::ServiceTimeout(service_timeout) => {
-                    let instant = format_ident!("{service_timeout}_instant");
-                    let function_name: Ident = format_ident!("handle_{service_timeout}");
-                    impl_items.push(parse_quote! {
-                        pub async fn #function_name(&mut self, #instant: std::time::Instant) -> Result<(), futures::channel::mpsc::SendError> {
-                            // reset time constrains
-                            self.reset_time_constrains(#instant).await?;
-                            // reset all signals' update
-                            self.context.reset();
-                            // propagate changes
-                            #(#stmts)*
-                            Ok(())
-                        }
-                    });
-                    let enum_ident = Ident::new(
-                        to_camel_case(service_timeout.as_str()).as_str(),
-                        Span::call_site(),
-                    );
-                    impl_items.push(parse_quote! {
-                        #[inline]
-                        pub async fn reset_service_timeout(&mut self, instant: std::time::Instant) -> Result<(), futures::channel::mpsc::SendError> {
-                            self.timer.send((T::#enum_ident, instant)).await?;
-                            Ok(())
-                        }
-                    })
-                }
-            }
-        },
-    );
+            },
+        );
 
         // service handlers in an implementation block
         items.push(syn::Item::Impl(parse_quote! {
-        impl #service_name {
-            #(#impl_items)*
-            #[inline]
-            pub async fn reset_time_constrains(&mut self, instant: std::time::Instant) -> Result<(), futures::channel::mpsc::SendError> {
-                self.reset_service_delay(instant).await?;
-                self.reset_service_timeout(instant).await?;
-                self.delayed = false;
-                Ok(())
+            impl #service_name {
+                #(#impl_items)*
+                #[inline]
+                pub async fn reset_time_constrains(
+                    &mut self, instant: std::time::Instant
+                ) -> Result<(), futures::channel::mpsc::SendError> {
+                    self.reset_service_delay(instant).await?;
+                    self.reset_service_timeout(instant).await?;
+                    self.delayed = false;
+                    Ok(())
+                }
+                #[inline]
+                pub async fn send_output(
+                    &mut self, output: O
+                ) -> Result<(), futures::channel::mpsc::SendError> {
+                    self.output.send(output).await?;
+                    Ok(())
+                }
+                #[inline]
+                pub async fn send_timer(
+                    &mut self, timer: T, instant: std::time::Instant
+                ) -> Result<(), futures::channel::mpsc::SendError> {
+                    self.timer.send((timer, instant)).await?;
+                    Ok(())
+                }
             }
-            #[inline]
-            pub async fn send_output(&mut self, output: O) -> Result<(), futures::channel::mpsc::SendError> {
-                self.output.send(output).await?;
-                Ok(())
-            }
-            #[inline]
-            pub async fn send_timer(&mut self, timer: T, instant: std::time::Instant) -> Result<(), futures::channel::mpsc::SendError> {
-                self.timer.send((timer, instant)).await?;
-                Ok(())
-            }
-        }
-    }));
+        }));
 
         // service module
         let module_name = format_ident!("{service}_service");
