@@ -32,15 +32,13 @@ mod test {
     #[test]
     fn should_create_rust_ast_block_from_lir_block() {
         // use lir::{Pattern, Stmt};
-        let block = Block {
-            statements: vec![
-                Stmt::let_binding(
-                    Pattern::ident("x"),
-                    Expr::lit(Constant::int(parse_quote!(1i64))),
-                ),
-                Stmt::expression_last(Expr::ident("x")),
-            ],
-        };
+        let block = Block::new(vec![
+            Stmt::let_binding(
+                Pattern::ident("x"),
+                Expr::lit(Constant::int(parse_quote!(1i64))),
+            ),
+            Stmt::expression_last(Expr::ident("x")),
+        ]);
 
         let control: syn::Block = parse_quote!({
             let x = 1i64;
