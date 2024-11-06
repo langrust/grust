@@ -14,32 +14,32 @@ mod simple_expr {
         hir::expr,
     }
 
-    impl<'a, E> HIRFromAST<hir::ctx::PatLoc<'a>> for Unop<E>
+    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for Unop<E>
     where
-        E: HIRFromAST<hir::ctx::PatLoc<'a>>,
+        E: IntoHir<hir::ctx::PatLoc<'a>>,
     {
-        type HIR = expr::Kind<E::HIR>;
+        type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn hir_from_ast(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::HIR>> {
+        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
             let Unop { op, expression } = self;
             // precondition: identifiers are stored in symbol table
             // postcondition: construct HIR expression kind and check identifiers good use
             Ok(expr::Kind::Unop {
                 op,
-                expression: Box::new(expression.hir_from_ast(ctxt)?),
+                expression: Box::new(expression.into_hir(ctxt)?),
             })
         }
     }
 
-    impl<'a, E> HIRFromAST<hir::ctx::PatLoc<'a>> for Binop<E>
+    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for Binop<E>
     where
-        E: HIRFromAST<hir::ctx::PatLoc<'a>>,
+        E: IntoHir<hir::ctx::PatLoc<'a>>,
     {
-        type HIR = expr::Kind<E::HIR>;
+        type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn hir_from_ast(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::HIR>> {
+        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
             let Binop {
                 op,
                 left_expression,
@@ -49,20 +49,20 @@ mod simple_expr {
             // postcondition: construct HIR expression kind and check identifiers good use
             Ok(expr::Kind::Binop {
                 op,
-                left_expression: Box::new(left_expression.hir_from_ast(ctxt)?),
-                right_expression: Box::new(right_expression.hir_from_ast(ctxt)?),
+                left_expression: Box::new(left_expression.into_hir(ctxt)?),
+                right_expression: Box::new(right_expression.into_hir(ctxt)?),
             })
         }
     }
 
-    impl<'a, E> HIRFromAST<hir::ctx::PatLoc<'a>> for IfThenElse<E>
+    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for IfThenElse<E>
     where
-        E: HIRFromAST<hir::ctx::PatLoc<'a>>,
+        E: IntoHir<hir::ctx::PatLoc<'a>>,
     {
-        type HIR = expr::Kind<E::HIR>;
+        type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn hir_from_ast(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::HIR>> {
+        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
             let IfThenElse {
                 expression,
                 true_expression,
@@ -71,22 +71,22 @@ mod simple_expr {
             // precondition: identifiers are stored in symbol table
             // postcondition: construct HIR expression kind and check identifiers good use
             Ok(expr::Kind::IfThenElse {
-                expression: Box::new(expression.hir_from_ast(ctxt)?),
-                true_expression: Box::new(true_expression.hir_from_ast(ctxt)?),
+                expression: Box::new(expression.into_hir(ctxt)?),
+                true_expression: Box::new(true_expression.into_hir(ctxt)?),
 
-                false_expression: Box::new(false_expression.hir_from_ast(ctxt)?),
+                false_expression: Box::new(false_expression.into_hir(ctxt)?),
             })
         }
     }
 
-    impl<'a, E> HIRFromAST<hir::ctx::PatLoc<'a>> for Application<E>
+    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for Application<E>
     where
-        E: HIRFromAST<hir::ctx::PatLoc<'a>>,
+        E: IntoHir<hir::ctx::PatLoc<'a>>,
     {
-        type HIR = expr::Kind<E::HIR>;
+        type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn hir_from_ast(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::HIR>> {
+        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
             let Application {
                 function_expression,
                 inputs,
@@ -94,23 +94,23 @@ mod simple_expr {
             // precondition: identifiers are stored in symbol table
             // postcondition: construct HIR expression kind and check identifiers good use
             Ok(expr::Kind::Application {
-                function_expression: Box::new(function_expression.hir_from_ast(ctxt)?),
+                function_expression: Box::new(function_expression.into_hir(ctxt)?),
                 inputs: inputs
                     .into_iter()
-                    .map(|input| input.hir_from_ast(ctxt))
+                    .map(|input| input.into_hir(ctxt))
                     .collect::<TRes<Vec<_>>>()?,
             })
         }
     }
 
-    impl<'a, E> HIRFromAST<hir::ctx::PatLoc<'a>> for Structure<E>
+    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for Structure<E>
     where
-        E: HIRFromAST<hir::ctx::PatLoc<'a>>,
+        E: IntoHir<hir::ctx::PatLoc<'a>>,
     {
-        type HIR = expr::Kind<E::HIR>;
+        type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn hir_from_ast(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::HIR>> {
+        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
             let Structure { name, fields } = self;
             // precondition: identifiers are stored in symbol table
             // postcondition: construct HIR expression kind and check identifiers good use
@@ -140,7 +140,7 @@ mod simple_expr {
                         },
                         |id| Ok(id),
                     )?;
-                    let expression = expression.hir_from_ast(ctxt)?;
+                    let expression = expression.into_hir(ctxt)?;
                     Ok((id, expression))
                 })
                 .collect::<TRes<Vec<_>>>()?;
@@ -163,16 +163,16 @@ mod simple_expr {
         }
     }
 
-    impl<'a, E> HIRFromAST<hir::ctx::PatLoc<'a>> for Enumeration<E>
+    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for Enumeration<E>
     where
-        E: HIRFromAST<hir::ctx::PatLoc<'a>>,
+        E: IntoHir<hir::ctx::PatLoc<'a>>,
     {
-        type HIR = expr::Kind<E::HIR>;
+        type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn hir_from_ast(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::HIR>>
+        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>>
         where
-            E: HIRFromAST<hir::ctx::PatLoc<'a>>,
+            E: IntoHir<hir::ctx::PatLoc<'a>>,
         {
             let Enumeration {
                 enum_name,
@@ -197,59 +197,59 @@ mod simple_expr {
         }
     }
 
-    impl<'a, E> HIRFromAST<hir::ctx::PatLoc<'a>> for Array<E>
+    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for Array<E>
     where
-        E: HIRFromAST<hir::ctx::PatLoc<'a>>,
+        E: IntoHir<hir::ctx::PatLoc<'a>>,
     {
-        type HIR = expr::Kind<E::HIR>;
+        type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn hir_from_ast(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::HIR>> {
+        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
             let Array { elements } = self;
             // precondition: identifiers are stored in symbol table
             // postcondition: construct HIR expression kind and check identifiers good use
             Ok(expr::Kind::Array {
                 elements: elements
                     .into_iter()
-                    .map(|expression| expression.hir_from_ast(ctxt))
+                    .map(|expression| expression.into_hir(ctxt))
                     .collect::<TRes<Vec<_>>>()?,
             })
         }
     }
 
-    impl<'a, E> HIRFromAST<hir::ctx::PatLoc<'a>> for Tuple<E>
+    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for Tuple<E>
     where
-        E: HIRFromAST<hir::ctx::PatLoc<'a>>,
+        E: IntoHir<hir::ctx::PatLoc<'a>>,
     {
-        type HIR = expr::Kind<E::HIR>;
+        type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn hir_from_ast(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::HIR>> {
+        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
             let Tuple { elements } = self;
             // precondition: identifiers are stored in symbol table
             // postcondition: construct HIR expression kind and check identifiers good use
             Ok(expr::Kind::Tuple {
                 elements: elements
                     .into_iter()
-                    .map(|expression| expression.hir_from_ast(ctxt))
+                    .map(|expression| expression.into_hir(ctxt))
                     .collect::<TRes<Vec<_>>>()?,
             })
         }
     }
 
-    impl<'a, E> HIRFromAST<hir::ctx::PatLoc<'a>> for Match<E>
+    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for Match<E>
     where
-        E: HIRFromAST<hir::ctx::PatLoc<'a>>,
+        E: IntoHir<hir::ctx::PatLoc<'a>>,
     {
-        type HIR = expr::Kind<E::HIR>;
+        type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn hir_from_ast(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::HIR>> {
+        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
             let Match { expression, arms } = self;
             // precondition: identifiers are stored in symbol table
             // postcondition: construct HIR expression kind and check identifiers good use
             Ok(expr::Kind::Match {
-                expression: Box::new(expression.hir_from_ast(ctxt)?),
+                expression: Box::new(expression.into_hir(ctxt)?),
                 arms: arms
                     .into_iter()
                     .map(
@@ -260,11 +260,11 @@ mod simple_expr {
                          }| {
                             ctxt.syms.local();
                             pattern.store(ctxt.syms, ctxt.errors)?;
-                            let pattern = pattern.hir_from_ast(&mut ctxt.remove_pat())?;
+                            let pattern = pattern.into_hir(&mut ctxt.remove_pat())?;
                             let guard = guard
-                                .map(|expression| expression.hir_from_ast(ctxt))
+                                .map(|expression| expression.into_hir(ctxt))
                                 .transpose()?;
-                            let expression = expression.hir_from_ast(ctxt)?;
+                            let expression = expression.into_hir(ctxt)?;
                             ctxt.syms.global();
                             Ok((pattern, guard, vec![], expression))
                         },
@@ -274,32 +274,32 @@ mod simple_expr {
         }
     }
 
-    impl<'a, E> HIRFromAST<hir::ctx::PatLoc<'a>> for FieldAccess<E>
+    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for FieldAccess<E>
     where
-        E: HIRFromAST<hir::ctx::PatLoc<'a>>,
+        E: IntoHir<hir::ctx::PatLoc<'a>>,
     {
-        type HIR = expr::Kind<E::HIR>;
+        type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn hir_from_ast(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::HIR>> {
+        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
             let FieldAccess { expression, field } = self;
             // precondition: identifiers are stored in symbol table
             // postcondition: construct HIR expression kind and check identifiers good use
             Ok(expr::Kind::FieldAccess {
-                expression: Box::new(expression.hir_from_ast(ctxt)?),
+                expression: Box::new(expression.into_hir(ctxt)?),
                 field,
             })
         }
     }
 
-    impl<'a, E> HIRFromAST<hir::ctx::PatLoc<'a>> for TupleElementAccess<E>
+    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for TupleElementAccess<E>
     where
-        E: HIRFromAST<hir::ctx::PatLoc<'a>>,
+        E: IntoHir<hir::ctx::PatLoc<'a>>,
     {
-        type HIR = expr::Kind<E::HIR>;
+        type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn hir_from_ast(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::HIR>> {
+        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
             let TupleElementAccess {
                 expression,
                 element_number,
@@ -307,20 +307,20 @@ mod simple_expr {
             // precondition: identifiers are stored in symbol table
             // postcondition: construct HIR expression kind and check identifiers good use
             Ok(expr::Kind::TupleElementAccess {
-                expression: Box::new(expression.hir_from_ast(ctxt)?),
+                expression: Box::new(expression.into_hir(ctxt)?),
                 element_number,
             })
         }
     }
 
-    impl<'a, E> HIRFromAST<hir::ctx::PatLoc<'a>> for Map<E>
+    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for Map<E>
     where
-        E: HIRFromAST<hir::ctx::PatLoc<'a>>,
+        E: IntoHir<hir::ctx::PatLoc<'a>>,
     {
-        type HIR = expr::Kind<E::HIR>;
+        type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn hir_from_ast(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::HIR>> {
+        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
             let Map {
                 expression,
                 function_expression,
@@ -328,20 +328,20 @@ mod simple_expr {
             // precondition: identifiers are stored in symbol table
             // postcondition: construct HIR expression kind and check identifiers good use
             Ok(expr::Kind::Map {
-                expression: Box::new(expression.hir_from_ast(ctxt)?),
-                function_expression: Box::new(function_expression.hir_from_ast(ctxt)?),
+                expression: Box::new(expression.into_hir(ctxt)?),
+                function_expression: Box::new(function_expression.into_hir(ctxt)?),
             })
         }
     }
 
-    impl<'a, E> HIRFromAST<hir::ctx::PatLoc<'a>> for Fold<E>
+    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for Fold<E>
     where
-        E: HIRFromAST<hir::ctx::PatLoc<'a>>,
+        E: IntoHir<hir::ctx::PatLoc<'a>>,
     {
-        type HIR = expr::Kind<E::HIR>;
+        type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn hir_from_ast(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::HIR>> {
+        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
             let Fold {
                 expression,
                 initialization_expression,
@@ -350,21 +350,21 @@ mod simple_expr {
             // precondition: identifiers are stored in symbol table
             // postcondition: construct HIR expression kind and check identifiers good use
             Ok(expr::Kind::Fold {
-                expression: Box::new(expression.hir_from_ast(ctxt)?),
-                initialization_expression: Box::new(initialization_expression.hir_from_ast(ctxt)?),
-                function_expression: Box::new(function_expression.hir_from_ast(ctxt)?),
+                expression: Box::new(expression.into_hir(ctxt)?),
+                initialization_expression: Box::new(initialization_expression.into_hir(ctxt)?),
+                function_expression: Box::new(function_expression.into_hir(ctxt)?),
             })
         }
     }
 
-    impl<'a, E> HIRFromAST<hir::ctx::PatLoc<'a>> for Sort<E>
+    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for Sort<E>
     where
-        E: HIRFromAST<hir::ctx::PatLoc<'a>>,
+        E: IntoHir<hir::ctx::PatLoc<'a>>,
     {
-        type HIR = expr::Kind<E::HIR>;
+        type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn hir_from_ast(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::HIR>> {
+        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
             let Sort {
                 expression,
                 function_expression,
@@ -372,40 +372,40 @@ mod simple_expr {
             // precondition: identifiers are stored in symbol table
             // postcondition: construct HIR expression kind and check identifiers good use
             Ok(expr::Kind::Sort {
-                expression: Box::new(expression.hir_from_ast(ctxt)?),
-                function_expression: Box::new(function_expression.hir_from_ast(ctxt)?),
+                expression: Box::new(expression.into_hir(ctxt)?),
+                function_expression: Box::new(function_expression.into_hir(ctxt)?),
             })
         }
     }
 
-    impl<'a, E> HIRFromAST<hir::ctx::PatLoc<'a>> for Zip<E>
+    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for Zip<E>
     where
-        E: HIRFromAST<hir::ctx::PatLoc<'a>>,
+        E: IntoHir<hir::ctx::PatLoc<'a>>,
     {
-        type HIR = expr::Kind<E::HIR>;
+        type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn hir_from_ast(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::HIR>> {
+        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
             let Zip { arrays } = self;
             // precondition: identifiers are stored in symbol table
             // postcondition: construct HIR expression kind and check identifiers good use
             Ok(expr::Kind::Zip {
                 arrays: arrays
                     .into_iter()
-                    .map(|array| array.hir_from_ast(ctxt))
+                    .map(|array| array.into_hir(ctxt))
                     .collect::<TRes<Vec<_>>>()?,
             })
         }
     }
 
-    impl<'a, E> HIRFromAST<hir::ctx::PatLoc<'a>> for TypedAbstraction<E>
+    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for TypedAbstraction<E>
     where
-        E: HIRFromAST<hir::ctx::PatLoc<'a>>,
+        E: IntoHir<hir::ctx::PatLoc<'a>>,
     {
-        type HIR = expr::Kind<E::HIR>;
+        type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn hir_from_ast(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::HIR>> {
+        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
             let TypedAbstraction { inputs, expression } = self;
             // precondition: identifiers are stored in symbol table
             // postcondition: construct HIR expression kind and check identifiers good use
@@ -414,7 +414,7 @@ mod simple_expr {
             let inputs = inputs
                 .into_iter()
                 .map(|(input_name, typing)| {
-                    let typing = typing.hir_from_ast(&mut ctxt.remove_pat())?;
+                    let typing = typing.into_hir(&mut ctxt.remove_pat())?;
                     ctxt.syms.insert_identifier(
                         input_name,
                         Some(typing),
@@ -424,7 +424,7 @@ mod simple_expr {
                     )
                 })
                 .collect::<TRes<Vec<_>>>()?;
-            let expression = expression.hir_from_ast(ctxt)?;
+            let expression = expression.into_hir(ctxt)?;
             ctxt.syms.global();
 
             Ok(expr::Kind::Abstraction {
@@ -435,12 +435,12 @@ mod simple_expr {
     }
 }
 
-impl<'a> HIRFromAST<hir::ctx::PatLoc<'a>> for Expr {
-    type HIR = hir::Expr;
+impl<'a> IntoHir<hir::ctx::PatLoc<'a>> for Expr {
+    type Hir = hir::Expr;
 
     // precondition: identifiers are stored in symbol table
     // postcondition: construct HIR expression and check identifiers good use
-    fn hir_from_ast(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<Self::HIR> {
+    fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<Self::Hir> {
         let kind = match self {
             Self::Constant(constant) => hir::expr::Kind::Constant { constant },
             Self::Identifier(id) => {
@@ -453,22 +453,22 @@ impl<'a> HIRFromAST<hir::ctx::PatLoc<'a>> for Expr {
                     })?;
                 hir::expr::Kind::Identifier { id }
             }
-            Self::Unop(expression) => expression.hir_from_ast(ctxt)?,
-            Self::Binop(expression) => expression.hir_from_ast(ctxt)?,
-            Self::IfThenElse(expression) => expression.hir_from_ast(ctxt)?,
-            Self::Application(expression) => expression.hir_from_ast(ctxt)?,
-            Self::TypedAbstraction(expression) => expression.hir_from_ast(ctxt)?,
-            Self::Structure(expression) => expression.hir_from_ast(ctxt)?,
-            Self::Tuple(expression) => expression.hir_from_ast(ctxt)?,
-            Self::Enumeration(expression) => expression.hir_from_ast(ctxt)?,
-            Self::Array(expression) => expression.hir_from_ast(ctxt)?,
-            Self::Match(expression) => expression.hir_from_ast(ctxt)?,
-            Self::FieldAccess(expression) => expression.hir_from_ast(ctxt)?,
-            Self::TupleElementAccess(expression) => expression.hir_from_ast(ctxt)?,
-            Self::Map(expression) => expression.hir_from_ast(ctxt)?,
-            Self::Fold(expression) => expression.hir_from_ast(ctxt)?,
-            Self::Sort(expression) => expression.hir_from_ast(ctxt)?,
-            Self::Zip(expression) => expression.hir_from_ast(ctxt)?,
+            Self::Unop(expression) => expression.into_hir(ctxt)?,
+            Self::Binop(expression) => expression.into_hir(ctxt)?,
+            Self::IfThenElse(expression) => expression.into_hir(ctxt)?,
+            Self::Application(expression) => expression.into_hir(ctxt)?,
+            Self::TypedAbstraction(expression) => expression.into_hir(ctxt)?,
+            Self::Structure(expression) => expression.into_hir(ctxt)?,
+            Self::Tuple(expression) => expression.into_hir(ctxt)?,
+            Self::Enumeration(expression) => expression.into_hir(ctxt)?,
+            Self::Array(expression) => expression.into_hir(ctxt)?,
+            Self::Match(expression) => expression.into_hir(ctxt)?,
+            Self::FieldAccess(expression) => expression.into_hir(ctxt)?,
+            Self::TupleElementAccess(expression) => expression.into_hir(ctxt)?,
+            Self::Map(expression) => expression.into_hir(ctxt)?,
+            Self::Fold(expression) => expression.into_hir(ctxt)?,
+            Self::Sort(expression) => expression.into_hir(ctxt)?,
+            Self::Zip(expression) => expression.into_hir(ctxt)?,
         };
         Ok(hir::Expr {
             kind,

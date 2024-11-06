@@ -3,10 +3,10 @@ prelude! {
     hir::interface::Interface,
 }
 
-impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for Ast {
-    type HIR = hir::File;
+impl IntoHir<hir::ctx::Simple<'_>> for Ast {
+    type Hir = hir::File;
 
-    fn hir_from_ast(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::HIR> {
+    fn into_hir(self, ctxt: &mut hir::ctx::Simple) -> TRes<Self::Hir> {
         // initialize symbol table with builtin operators
         ctxt.syms.initialize();
 
@@ -27,24 +27,22 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for Ast {
             ),
              item| {
                 match item {
-                    ast::Item::Component(component) => {
-                        components.push(component.hir_from_ast(ctxt))
-                    }
-                    ast::Item::Function(function) => functions.push(function.hir_from_ast(ctxt)),
-                    ast::Item::Typedef(typedef) => typedefs.push(typedef.hir_from_ast(ctxt)),
-                    ast::Item::Service(service) => services.push(service.hir_from_ast(ctxt)),
+                    ast::Item::Component(component) => components.push(component.into_hir(ctxt)),
+                    ast::Item::Function(function) => functions.push(function.into_hir(ctxt)),
+                    ast::Item::Typedef(typedef) => typedefs.push(typedef.into_hir(ctxt)),
+                    ast::Item::Service(service) => services.push(service.into_hir(ctxt)),
                     ast::Item::Import(import) => imports.push(
                         import
-                            .hir_from_ast(ctxt)
+                            .into_hir(ctxt)
                             .map(|res| (ctxt.syms.get_fresh_id(), res)),
                     ),
                     ast::Item::Export(export) => exports.push(
                         export
-                            .hir_from_ast(ctxt)
+                            .into_hir(ctxt)
                             .map(|res| (ctxt.syms.get_fresh_id(), res)),
                     ),
                     ast::Item::ComponentImport(component) => {
-                        components.push(component.hir_from_ast(ctxt))
+                        components.push(component.into_hir(ctxt))
                     }
                 }
                 (typedefs, functions, components, imports, exports, services)

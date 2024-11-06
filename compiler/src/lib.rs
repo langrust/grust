@@ -14,7 +14,7 @@ pub use proc_macro::TokenStream;
 pub mod prelude;
 
 prelude! {
-    frontend::{hir_from_ast::HIRFromAST, typing_analysis::TypeAnalysis},
+    frontend::typing_analysis::TypeAnalysis,
     lir::Project,
     quote::TokenStreamExt,
 }
@@ -58,7 +58,7 @@ pub fn into_token_stream(ast: Ast) -> macro2::TokenStream {
 
     let mut hir = present_errors!(
         "HIR generation from AST",
-        ast.hir_from_ast(&mut hir::ctx::Simple::new(&mut symbol_table, &mut errors))
+        ast.into_hir(&mut hir::ctx::Simple::new(&mut symbol_table, &mut errors))
     );
 
     present_errors!("HIR typing", hir.typing(&mut symbol_table, &mut errors));

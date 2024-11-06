@@ -12,10 +12,10 @@ prelude! {
     },
 }
 
-impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for Service {
-    type HIR = hir::Service;
+impl<'a> IntoHir<hir::ctx::Simple<'a>> for Service {
+    type Hir = hir::Service;
 
-    fn hir_from_ast(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::HIR> {
+    fn into_hir(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::Hir> {
         let Service {
             ident,
             constrains,
@@ -38,7 +38,7 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for Service {
             .into_iter()
             .map(|flow_statement| {
                 flow_statement
-                    .hir_from_ast(ctxt)
+                    .into_hir(ctxt)
                     .map(|res| (ctxt.syms.get_fresh_id(), res))
             })
             .collect::<TRes<HashMap<_, _>>>()?;
@@ -54,10 +54,10 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for Service {
     }
 }
 
-impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for FlowImport {
-    type HIR = HIRFlowImport;
+impl<'a> IntoHir<hir::ctx::Simple<'a>> for FlowImport {
+    type Hir = HIRFlowImport;
 
-    fn hir_from_ast(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::HIR> {
+    fn into_hir(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::Hir> {
         let FlowImport {
             import_token,
             kind,
@@ -71,9 +71,7 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for FlowImport {
         assert!(last.arguments.is_none());
         let path = typed_path.left;
         let flow_type = {
-            let inner = typed_path
-                .right
-                .hir_from_ast(&mut ctxt.add_loc(&location))?;
+            let inner = typed_path.right.into_hir(&mut ctxt.add_loc(&location))?;
             match kind {
                 FlowKind::Signal(_) => Typ::signal(inner),
                 FlowKind::Event(_) => Typ::event(inner),
@@ -100,10 +98,10 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for FlowImport {
     }
 }
 
-impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for FlowExport {
-    type HIR = HIRFlowExport;
+impl<'a> IntoHir<hir::ctx::Simple<'a>> for FlowExport {
+    type Hir = HIRFlowExport;
 
-    fn hir_from_ast(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::HIR> {
+    fn into_hir(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::Hir> {
         let FlowExport {
             export_token,
             kind,
@@ -117,9 +115,7 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for FlowExport {
         assert!(last.arguments.is_none());
         let path = typed_path.left;
         let flow_type = {
-            let inner = typed_path
-                .right
-                .hir_from_ast(&mut ctxt.add_loc(&location))?;
+            let inner = typed_path.right.into_hir(&mut ctxt.add_loc(&location))?;
             match kind {
                 FlowKind::Signal(_) => Typ::signal(inner),
                 FlowKind::Event(_) => Typ::event(inner),
@@ -146,10 +142,10 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for FlowExport {
     }
 }
 
-impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for FlowStatement {
-    type HIR = HIRFlowStatement;
+impl<'a> IntoHir<hir::ctx::Simple<'a>> for FlowStatement {
+    type Hir = HIRFlowStatement;
 
-    fn hir_from_ast(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::HIR> {
+    fn into_hir(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::Hir> {
         match self {
             FlowStatement::Declaration(FlowDeclaration {
                 let_token,
@@ -158,9 +154,9 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for FlowStatement {
                 flow_expression,
                 semi_token,
             }) => {
-                let pattern = typed_pattern.hir_from_ast(ctxt)?;
+                let pattern = typed_pattern.into_hir(ctxt)?;
                 let flow_expression =
-                    flow_expression.hir_from_ast(&mut ctxt.add_loc(&Location::default()))?;
+                    flow_expression.into_hir(&mut ctxt.add_loc(&Location::default()))?;
 
                 Ok(HIRFlowStatement::Declaration(HIRFlowDeclaration {
                     let_token,
@@ -177,10 +173,10 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for FlowStatement {
                 semi_token,
             }) => {
                 // transform pattern and check its identifiers exist
-                let pattern = pattern.hir_from_ast(ctxt)?;
+                let pattern = pattern.into_hir(ctxt)?;
                 // transform the expression
                 let flow_expression =
-                    flow_expression.hir_from_ast(&mut ctxt.add_loc(&Location::default()))?;
+                    flow_expression.into_hir(&mut ctxt.add_loc(&Location::default()))?;
 
                 Ok(HIRFlowStatement::Instantiation(HIRFlowInstantiation {
                     pattern,
@@ -193,10 +189,10 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for FlowStatement {
     }
 }
 
-impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for FlowPattern {
-    type HIR = hir::stmt::Pattern;
+impl<'a> IntoHir<hir::ctx::Simple<'a>> for FlowPattern {
+    type Hir = hir::stmt::Pattern;
 
-    fn hir_from_ast(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::HIR> {
+    fn into_hir(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::Hir> {
         let location = Location::default();
 
         match self {
@@ -218,7 +214,7 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for FlowPattern {
             FlowPattern::SingleTyped {
                 kind, ident, ty, ..
             } => {
-                let inner = ty.hir_from_ast(&mut ctxt.add_loc(&location))?;
+                let inner = ty.into_hir(&mut ctxt.add_loc(&location))?;
                 let flow_typing = match kind {
                     FlowKind::Signal(_) => Typ::signal(inner),
                     FlowKind::Event(_) => Typ::event(inner),
@@ -245,7 +241,7 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for FlowPattern {
             FlowPattern::Tuple { patterns, .. } => {
                 let elements = patterns
                     .into_iter()
-                    .map(|pattern| pattern.hir_from_ast(ctxt))
+                    .map(|pattern| pattern.into_hir(ctxt))
                     .collect::<TRes<Vec<_>>>()?;
 
                 let mut types = elements
@@ -276,110 +272,110 @@ mod flow_expr {
         hir::flow,
     }
 
-    impl<'a> HIRFromAST<hir::ctx::Loc<'a>> for ast::interface::Sample {
-        type HIR = hir::flow::Kind;
+    impl<'a> IntoHir<hir::ctx::Loc<'a>> for ast::interface::Sample {
+        type Hir = hir::flow::Kind;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn hir_from_ast(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
+        fn into_hir(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
             let Sample {
                 flow_expression,
                 period_ms,
                 ..
             } = self;
             Ok(hir::flow::Kind::Sample {
-                flow_expression: Box::new(flow_expression.hir_from_ast(ctxt)?),
+                flow_expression: Box::new(flow_expression.into_hir(ctxt)?),
                 period_ms: period_ms.base10_parse().unwrap(),
             })
         }
     }
 
-    impl<'a> HIRFromAST<hir::ctx::Loc<'a>> for Scan {
-        type HIR = hir::flow::Kind;
+    impl<'a> IntoHir<hir::ctx::Loc<'a>> for Scan {
+        type Hir = hir::flow::Kind;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn hir_from_ast(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
+        fn into_hir(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
             let Scan {
                 flow_expression,
                 period_ms,
                 ..
             } = self;
             Ok(hir::flow::Kind::Scan {
-                flow_expression: Box::new(flow_expression.hir_from_ast(ctxt)?),
+                flow_expression: Box::new(flow_expression.into_hir(ctxt)?),
                 period_ms: period_ms.base10_parse().unwrap(),
             })
         }
     }
 
-    impl<'a> HIRFromAST<hir::ctx::Loc<'a>> for Timeout {
-        type HIR = hir::flow::Kind;
+    impl<'a> IntoHir<hir::ctx::Loc<'a>> for Timeout {
+        type Hir = hir::flow::Kind;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn hir_from_ast(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
+        fn into_hir(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
             let Timeout {
                 flow_expression,
                 deadline,
                 ..
             } = self;
             Ok(hir::flow::Kind::Timeout {
-                flow_expression: Box::new(flow_expression.hir_from_ast(ctxt)?),
+                flow_expression: Box::new(flow_expression.into_hir(ctxt)?),
                 deadline: deadline.base10_parse().unwrap(),
             })
         }
     }
 
-    impl<'a> HIRFromAST<hir::ctx::Loc<'a>> for Throttle {
-        type HIR = hir::flow::Kind;
+    impl<'a> IntoHir<hir::ctx::Loc<'a>> for Throttle {
+        type Hir = hir::flow::Kind;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn hir_from_ast(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
+        fn into_hir(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
             let Throttle {
                 flow_expression,
                 delta,
                 ..
             } = self;
             Ok(hir::flow::Kind::Throttle {
-                flow_expression: Box::new(flow_expression.hir_from_ast(ctxt)?),
+                flow_expression: Box::new(flow_expression.into_hir(ctxt)?),
                 delta,
             })
         }
     }
 
-    impl<'a> HIRFromAST<hir::ctx::Loc<'a>> for OnChange {
-        type HIR = hir::flow::Kind;
+    impl<'a> IntoHir<hir::ctx::Loc<'a>> for OnChange {
+        type Hir = hir::flow::Kind;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn hir_from_ast(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
+        fn into_hir(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
             let OnChange {
                 flow_expression, ..
             } = self;
             Ok(hir::flow::Kind::OnChange {
-                flow_expression: Box::new(flow_expression.hir_from_ast(ctxt)?),
+                flow_expression: Box::new(flow_expression.into_hir(ctxt)?),
             })
         }
     }
 
-    impl<'a> HIRFromAST<hir::ctx::Loc<'a>> for Merge {
-        type HIR = hir::flow::Kind;
+    impl<'a> IntoHir<hir::ctx::Loc<'a>> for Merge {
+        type Hir = hir::flow::Kind;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn hir_from_ast(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
+        fn into_hir(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
             let Merge {
                 flow_expression_1,
                 flow_expression_2,
                 ..
             } = self;
             Ok(hir::flow::Kind::Merge {
-                flow_expression_1: Box::new(flow_expression_1.hir_from_ast(ctxt)?),
-                flow_expression_2: Box::new(flow_expression_2.hir_from_ast(ctxt)?),
+                flow_expression_1: Box::new(flow_expression_1.into_hir(ctxt)?),
+                flow_expression_2: Box::new(flow_expression_2.into_hir(ctxt)?),
             })
         }
     }
 
-    impl<'a> HIRFromAST<hir::ctx::Loc<'a>> for ComponentCall {
-        type HIR = hir::flow::Kind;
+    impl<'a> IntoHir<hir::ctx::Loc<'a>> for ComponentCall {
+        type Hir = hir::flow::Kind;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn hir_from_ast(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
+        fn into_hir(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
             let ComponentCall {
                 ident_component,
                 inputs,
@@ -410,7 +406,7 @@ mod flow_expr {
             let inputs = inputs
                 .into_iter()
                 .zip(component_inputs)
-                .map(|(input, id)| Ok((id, input.hir_from_ast(ctxt)?)))
+                .map(|(input, id)| Ok((id, input.into_hir(ctxt)?)))
                 .collect::<TRes<Vec<_>>>()?;
 
             Ok(hir::flow::Kind::ComponentCall {
@@ -420,12 +416,12 @@ mod flow_expr {
         }
     }
 
-    impl<'a> HIRFromAST<hir::ctx::Loc<'a>> for FlowExpression {
-        type HIR = flow::Expr;
+    impl<'a> IntoHir<hir::ctx::Loc<'a>> for FlowExpression {
+        type Hir = flow::Expr;
 
         // precondition: identifiers are stored in symbol table
         // postcondition: construct HIR expression and check identifiers good use
-        fn hir_from_ast(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<Self::HIR> {
+        fn into_hir(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<Self::Hir> {
             let kind = match self {
                 FlowExpression::Ident(ident) => {
                     let id = ctxt
@@ -433,15 +429,13 @@ mod flow_expr {
                         .get_flow_id(&ident, false, ctxt.loc.clone(), ctxt.errors)?;
                     flow::Kind::Ident { id }
                 }
-                FlowExpression::ComponentCall(flow_expression) => {
-                    flow_expression.hir_from_ast(ctxt)?
-                }
-                FlowExpression::Sample(flow_expression) => flow_expression.hir_from_ast(ctxt)?,
-                FlowExpression::Scan(flow_expression) => flow_expression.hir_from_ast(ctxt)?,
-                FlowExpression::Timeout(flow_expression) => flow_expression.hir_from_ast(ctxt)?,
-                FlowExpression::Throttle(flow_expression) => flow_expression.hir_from_ast(ctxt)?,
-                FlowExpression::OnChange(flow_expression) => flow_expression.hir_from_ast(ctxt)?,
-                FlowExpression::Merge(flow_expression) => flow_expression.hir_from_ast(ctxt)?,
+                FlowExpression::ComponentCall(flow_expression) => flow_expression.into_hir(ctxt)?,
+                FlowExpression::Sample(flow_expression) => flow_expression.into_hir(ctxt)?,
+                FlowExpression::Scan(flow_expression) => flow_expression.into_hir(ctxt)?,
+                FlowExpression::Timeout(flow_expression) => flow_expression.into_hir(ctxt)?,
+                FlowExpression::Throttle(flow_expression) => flow_expression.into_hir(ctxt)?,
+                FlowExpression::OnChange(flow_expression) => flow_expression.into_hir(ctxt)?,
+                FlowExpression::Merge(flow_expression) => flow_expression.into_hir(ctxt)?,
             };
             Ok(flow::Expr {
                 kind,

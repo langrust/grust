@@ -3,11 +3,11 @@ prelude! {
     itertools::Itertools,
 }
 
-impl<'a> HIRFromAST<hir::ctx::PatLoc<'a>> for stream::When {
-    type HIR = hir::stream::Kind;
+impl IntoHir<hir::ctx::PatLoc<'_>> for stream::When {
+    type Hir = hir::stream::Kind;
 
     /// Transforms AST into HIR and check identifiers good use.
-    fn hir_from_ast(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<Self::HIR> {
+    fn into_hir(self, ctxt: &mut hir::ctx::PatLoc) -> TRes<Self::Hir> {
         let stream::When {
             pattern: event_pattern,
             guard,
@@ -50,7 +50,7 @@ impl<'a> HIRFromAST<hir::ctx::PatLoc<'a>> for stream::When {
 
                 // transform AST guard into HIR
                 let mut guard = guard
-                    .map(|expression| expression.hir_from_ast(ctxt))
+                    .map(|expression| expression.into_hir(ctxt))
                     .transpose()?;
                 // add rising edge detection to the guard
                 if let Some(rising_edges) = opt_rising_edges {
@@ -70,7 +70,7 @@ impl<'a> HIRFromAST<hir::ctx::PatLoc<'a>> for stream::When {
                 (matched, guard)
             };
             // transform into HIR
-            let expression = expression.hir_from_ast(ctxt)?;
+            let expression = expression.into_hir(ctxt)?;
             ctxt.syms.global();
             arms.push((match_pattern, guard, vec![], expression));
         }
@@ -112,12 +112,12 @@ impl<'a> HIRFromAST<hir::ctx::PatLoc<'a>> for stream::When {
     }
 }
 
-impl<'a> HIRFromAST<hir::ctx::PatLoc<'a>> for stream::Expr {
-    type HIR = hir::stream::Expr;
+impl IntoHir<hir::ctx::PatLoc<'_>> for stream::Expr {
+    type Hir = hir::stream::Expr;
 
     // precondition: identifiers are stored in symbol table
     // postcondition: construct HIR stream expression and check identifiers good use
-    fn hir_from_ast(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<Self::HIR> {
+    fn into_hir(self, ctxt: &mut hir::ctx::PatLoc) -> TRes<Self::Hir> {
         let kind = match self {
             stream::Expr::Application(Application {
                 function_expression,
@@ -150,7 +150,7 @@ impl<'a> HIRFromAST<hir::ctx::PatLoc<'a>> for stream::Expr {
                                 inputs_stream_expressions
                                     .into_iter()
                                     .zip(inputs)
-                                    .map(|(input, id)| Ok((*id, input.clone().hir_from_ast(ctxt)?)))
+                                    .map(|(input, id)| Ok((*id, input.clone().into_hir(ctxt)?)))
                                     .collect::<TRes<Vec<_>>>()?,
                             )
                         }
@@ -159,10 +159,10 @@ impl<'a> HIRFromAST<hir::ctx::PatLoc<'a>> for stream::Expr {
                 }
                 function_expression => hir::stream::Kind::Expression {
                     expression: hir::expr::Kind::Application {
-                        function_expression: Box::new(function_expression.hir_from_ast(ctxt)?),
+                        function_expression: Box::new(function_expression.into_hir(ctxt)?),
                         inputs: inputs_stream_expressions
                             .into_iter()
-                            .map(|input| input.clone().hir_from_ast(ctxt))
+                            .map(|input| input.clone().into_hir(ctxt))
                             .collect::<TRes<Vec<_>>>()?,
                     },
                 },
@@ -174,7 +174,7 @@ impl<'a> HIRFromAST<hir::ctx::PatLoc<'a>> for stream::Expr {
                 let constant = constant.map_or(Ok(hir::stream::expr(default)), |cst| {
                     // check the constant expression is indeed constant
                     cst.check_is_constant(ctxt.syms, ctxt.errors)?;
-                    cst.hir_from_ast(ctxt)
+                    cst.into_hir(ctxt)
                 })?;
 
                 let id = ctxt.syms.get_identifier_id(
@@ -190,7 +190,7 @@ impl<'a> HIRFromAST<hir::ctx::PatLoc<'a>> for stream::Expr {
                 }
             }
             stream::Expr::Emit(stream::Emit { expr, .. }) => {
-                hir::stream::Kind::some_event(expr.hir_from_ast(ctxt)?)
+                hir::stream::Kind::some_event(expr.into_hir(ctxt)?)
             }
             stream::Expr::Constant(constant) => hir::stream::Kind::Expression {
                 expression: hir::expr::Kind::Constant { constant },
@@ -208,49 +208,49 @@ impl<'a> HIRFromAST<hir::ctx::PatLoc<'a>> for stream::Expr {
                 }
             }
             stream::Expr::Unop(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(ctxt)?,
+                expression: expression.into_hir(ctxt)?,
             },
             stream::Expr::Binop(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(ctxt)?,
+                expression: expression.into_hir(ctxt)?,
             },
             stream::Expr::IfThenElse(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(ctxt)?,
+                expression: expression.into_hir(ctxt)?,
             },
             stream::Expr::TypedAbstraction(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(ctxt)?,
+                expression: expression.into_hir(ctxt)?,
             },
             stream::Expr::Structure(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(ctxt)?,
+                expression: expression.into_hir(ctxt)?,
             },
             stream::Expr::Tuple(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(ctxt)?,
+                expression: expression.into_hir(ctxt)?,
             },
             stream::Expr::Enumeration(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(ctxt)?,
+                expression: expression.into_hir(ctxt)?,
             },
             stream::Expr::Array(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(ctxt)?,
+                expression: expression.into_hir(ctxt)?,
             },
             stream::Expr::Match(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(ctxt)?,
+                expression: expression.into_hir(ctxt)?,
             },
             stream::Expr::FieldAccess(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(ctxt)?,
+                expression: expression.into_hir(ctxt)?,
             },
             stream::Expr::TupleElementAccess(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(ctxt)?,
+                expression: expression.into_hir(ctxt)?,
             },
             stream::Expr::Map(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(ctxt)?,
+                expression: expression.into_hir(ctxt)?,
             },
             stream::Expr::Fold(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(ctxt)?,
+                expression: expression.into_hir(ctxt)?,
             },
             stream::Expr::Sort(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(ctxt)?,
+                expression: expression.into_hir(ctxt)?,
             },
             stream::Expr::Zip(expression) => hir::stream::Kind::Expression {
-                expression: expression.hir_from_ast(ctxt)?,
+                expression: expression.into_hir(ctxt)?,
             },
         };
         Ok(hir::stream::Expr {
@@ -262,16 +262,16 @@ impl<'a> HIRFromAST<hir::ctx::PatLoc<'a>> for stream::Expr {
     }
 }
 
-impl<'a> HIRFromAST<hir::ctx::PatLoc<'a>> for stream::ReactExpr {
-    type HIR = hir::stream::Expr;
+impl IntoHir<hir::ctx::PatLoc<'_>> for stream::ReactExpr {
+    type Hir = hir::stream::Expr;
 
     // precondition: identifiers are stored in symbol table
     // postcondition: construct HIR stream expression and check identifiers good use
-    fn hir_from_ast(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<Self::HIR> {
+    fn into_hir(self, ctxt: &mut hir::ctx::PatLoc) -> TRes<Self::Hir> {
         match self {
-            stream::ReactExpr::Expr(expr) => expr.hir_from_ast(ctxt),
+            stream::ReactExpr::Expr(expr) => expr.into_hir(ctxt),
             stream::ReactExpr::When(expr) => {
-                let kind = expr.hir_from_ast(ctxt)?;
+                let kind = expr.into_hir(ctxt)?;
                 Ok(hir::stream::Expr {
                     kind,
                     typing: None,

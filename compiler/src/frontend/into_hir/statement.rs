@@ -2,12 +2,12 @@ prelude! {
     ast::stmt::LetDecl,
 }
 
-impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for LetDecl<ast::Expr> {
-    type HIR = hir::Stmt<hir::Expr>;
+impl IntoHir<hir::ctx::Simple<'_>> for LetDecl<ast::Expr> {
+    type Hir = hir::Stmt<hir::Expr>;
 
     // precondition: NOTHING is in symbol table
     // postcondition: construct HIR statement and check identifiers good use
-    fn hir_from_ast(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::HIR> {
+    fn into_hir(self, ctxt: &mut hir::ctx::Simple) -> TRes<Self::Hir> {
         let LetDecl {
             typed_pattern,
             expression,
@@ -19,8 +19,8 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for LetDecl<ast::Expr> {
         // then patterns are stored in order
         typed_pattern.store(true, ctxt.syms, ctxt.errors)?;
         let expression =
-            expression.hir_from_ast(&mut ctxt.add_pat_loc(Some(&typed_pattern), &location))?;
-        let pattern = typed_pattern.hir_from_ast(&mut ctxt.add_loc(&location))?;
+            expression.into_hir(&mut ctxt.add_pat_loc(Some(&typed_pattern), &location))?;
+        let pattern = typed_pattern.into_hir(&mut ctxt.add_loc(&location))?;
 
         Ok(hir::Stmt {
             pattern,

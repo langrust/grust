@@ -10,13 +10,13 @@ prelude! {
     itertools::Itertools,
 }
 
-impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for Eq {
-    type HIR = stream::Stmt;
+impl IntoHir<hir::ctx::Simple<'_>> for Eq {
+    type Hir = stream::Stmt;
 
     /// Pre-condition: equation's signal is already stored in symbol table.
     ///
     /// Post-condition: construct HIR equation and check identifiers good use.
-    fn hir_from_ast(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::HIR> {
+    fn into_hir(self, ctxt: &mut hir::ctx::Simple) -> TRes<Self::Hir> {
         let location = Location::default();
 
         // get signals defined by the equation
@@ -35,8 +35,8 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for Eq {
                 ..
             }) => {
                 let expression =
-                    expression.hir_from_ast(&mut ctxt.add_pat_loc(Some(&pattern), &location))?;
-                let pattern = pattern.hir_from_ast(&mut ctxt.add_loc(&location))?;
+                    expression.into_hir(&mut ctxt.add_pat_loc(Some(&pattern), &location))?;
+                let pattern = pattern.into_hir(&mut ctxt.add_loc(&location))?;
                 Ok(hir::Stmt {
                     pattern,
                     expression,
@@ -50,7 +50,7 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for Eq {
                 let pattern = {
                     let mut elements = defined_signals
                         .values()
-                        .map(|pat| pat.clone().hir_from_ast(&mut ctxt.add_loc(&location)))
+                        .map(|pat| pat.clone().into_hir(&mut ctxt.add_loc(&location)))
                         .collect::<TRes<Vec<_>>>()?;
                     if elements.len() == 1 {
                         elements.pop().unwrap()
@@ -90,16 +90,15 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for Eq {
                                     .collect::<TRes<()>>()?;
 
                                 // transform pattern guard and equations into HIR with local context
-                                let pattern = pattern.hir_from_ast(&mut ctxt.add_loc(&location))?;
+                                let pattern = pattern.into_hir(&mut ctxt.add_loc(&location))?;
                                 let guard = guard
                                     .map(|(_, expression)| {
-                                        expression
-                                            .hir_from_ast(&mut ctxt.add_pat_loc(None, &location))
+                                        expression.into_hir(&mut ctxt.add_pat_loc(None, &location))
                                     })
                                     .transpose()?;
                                 let statements = equations
                                     .into_iter()
-                                    .map(|equation| equation.hir_from_ast(ctxt))
+                                    .map(|equation| equation.into_hir(ctxt))
                                     .collect::<TRes<Vec<_>>>()?;
 
                                 ctxt.syms.global();
@@ -154,7 +153,7 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for Eq {
 
                 // construct the match expression
                 let expression = stream::expr(stream::Kind::expr(hir::expr::Kind::match_expr(
-                    expression.hir_from_ast(&mut ctxt.add_pat_loc(None, &location))?,
+                    expression.into_hir(&mut ctxt.add_pat_loc(None, &location))?,
                     arms,
                 )));
 
@@ -168,13 +167,13 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for Eq {
     }
 }
 
-impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for ReactEq {
-    type HIR = stream::Stmt;
+impl IntoHir<hir::ctx::Simple<'_>> for ReactEq {
+    type Hir = stream::Stmt;
 
     /// Pre-condition: equation's signal is already stored in symbol table.
     ///
     /// Post-condition: construct HIR equation and check identifiers good use.
-    fn hir_from_ast(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::HIR> {
+    fn into_hir(self, ctxt: &mut hir::ctx::Simple) -> TRes<Self::Hir> {
         let location = Location::default();
 
         // get signals defined by the equation
@@ -193,8 +192,8 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for ReactEq {
                 ..
             }) => {
                 let expression =
-                    expression.hir_from_ast(&mut ctxt.add_pat_loc(Some(&pattern), &location))?;
-                let pattern = pattern.hir_from_ast(&mut ctxt.add_loc(&location))?;
+                    expression.into_hir(&mut ctxt.add_pat_loc(Some(&pattern), &location))?;
+                let pattern = pattern.into_hir(&mut ctxt.add_loc(&location))?;
                 Ok(hir::Stmt {
                     pattern,
                     expression,
@@ -208,7 +207,7 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for ReactEq {
                 let pattern = {
                     let mut elements = defined_signals
                         .values()
-                        .map(|pat| pat.clone().hir_from_ast(&mut ctxt.add_loc(&location)))
+                        .map(|pat| pat.clone().into_hir(&mut ctxt.add_loc(&location)))
                         .collect::<TRes<Vec<_>>>()?;
                     if elements.len() == 1 {
                         elements.pop().unwrap()
@@ -248,16 +247,15 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for ReactEq {
                                     .collect::<TRes<()>>()?;
 
                                 // transform pattern guard and equations into HIR with local context
-                                let pattern = pattern.hir_from_ast(&mut ctxt.add_loc(&location))?;
+                                let pattern = pattern.into_hir(&mut ctxt.add_loc(&location))?;
                                 let guard = guard
                                     .map(|(_, expression)| {
-                                        expression
-                                            .hir_from_ast(&mut ctxt.add_pat_loc(None, &location))
+                                        expression.into_hir(&mut ctxt.add_pat_loc(None, &location))
                                     })
                                     .transpose()?;
                                 let statements = equations
                                     .into_iter()
-                                    .map(|equation| equation.hir_from_ast(ctxt))
+                                    .map(|equation| equation.into_hir(ctxt))
                                     .collect::<TRes<Vec<_>>>()?;
 
                                 ctxt.syms.global();
@@ -312,7 +310,7 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for ReactEq {
 
                 // construct the match expression
                 let expression = stream::expr(stream::Kind::expr(hir::expr::Kind::match_expr(
-                    expression.hir_from_ast(&mut ctxt.add_pat_loc(None, &location))?,
+                    expression.into_hir(&mut ctxt.add_pat_loc(None, &location))?,
                     arms,
                 )));
 
@@ -406,8 +404,7 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for ReactEq {
                                 // transform AST guard into HIR
                                 let mut guard = guard
                                     .map(|(_, expression)| {
-                                        expression
-                                            .hir_from_ast(&mut ctxt.add_pat_loc(None, &location))
+                                        expression.into_hir(&mut ctxt.add_pat_loc(None, &location))
                                     })
                                     .transpose()?;
                                 // add rising edge detection to the guard
@@ -449,7 +446,7 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for ReactEq {
                             // transform equations into HIR with local context
                             let statements = equations
                                 .into_iter()
-                                .map(|equation| equation.hir_from_ast(ctxt))
+                                .map(|equation| equation.into_hir(ctxt))
                                 .collect::<TRes<Vec<_>>>()?;
 
                             ctxt.syms.global();
@@ -485,7 +482,7 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for ReactEq {
                     )))
                 };
 
-                let pattern = defined_pattern.hir_from_ast(&mut ctxt.add_loc(&location))?;
+                let pattern = defined_pattern.into_hir(&mut ctxt.add_loc(&location))?;
 
                 Ok(hir::Stmt {
                     pattern,

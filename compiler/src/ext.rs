@@ -10,7 +10,7 @@ mod component {
         ast::{Component, ComponentImport, Colon},
     }
 
-    impl super::ComponentExt for Component {
+    impl ComponentExt for Component {
         /// Store node's signals in symbol table.
         fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
             let location = Location::default();
@@ -40,7 +40,7 @@ mod component {
                          ..
                      }| {
                         let name = ident.to_string();
-                        let typing = typing.clone().hir_from_ast(ctxt)?;
+                        let typing = typing.clone().into_hir(ctxt)?;
                         let id = ctxt.syms.insert_signal(
                             name,
                             Scope::Input,
@@ -65,7 +65,7 @@ mod component {
                          ..
                      }| {
                         let name = ident.to_string();
-                        let typing = typing.clone().hir_from_ast(ctxt)?;
+                        let typing = typing.clone().into_hir(ctxt)?;
                         let id = ctxt.syms.insert_signal(
                             name.clone(),
                             Scope::Output,
@@ -107,7 +107,7 @@ mod component {
         }
     }
 
-    impl super::ComponentExt for ComponentImport {
+    impl ComponentExt for ComponentImport {
         /// Store node's signals in symbol table.
         fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
             let location = Location::default();
@@ -140,7 +140,7 @@ mod component {
                          ..
                      }| {
                         let name = ident.to_string();
-                        let typing = typing.clone().hir_from_ast(ctxt)?;
+                        let typing = typing.clone().into_hir(ctxt)?;
                         let id = ctxt.syms.insert_signal(
                             name,
                             Scope::Input,
@@ -165,7 +165,7 @@ mod component {
                          ..
                      }| {
                         let name = ident.to_string();
-                        let typing = typing.clone().hir_from_ast(ctxt)?;
+                        let typing = typing.clone().into_hir(ctxt)?;
                         let id = ctxt.syms.insert_signal(
                             name.clone(),
                             Scope::Output,
@@ -238,7 +238,7 @@ pub trait EquationExt {
 mod equation {
     prelude! { ast::equation::* }
 
-    impl super::EquationExt for Eq {
+    impl EquationExt for Eq {
         fn store_signals(
             &self,
             store_outputs: bool,
@@ -294,7 +294,7 @@ mod equation {
         }
     }
 
-    impl super::EquationExt for ReactEq {
+    impl EquationExt for ReactEq {
         fn store_signals(
             &self,
             store_outputs: bool,
@@ -322,8 +322,8 @@ mod equation {
                     Ok(())
                 }
                 ReactEq::MatchWhen(MatchWhen { arms, .. }) => {
-                    // we want to collect every identifier, but events might be declared in only one branch
-                    // then, it is needed to explore all branches
+                    // we want to collect every identifier, but events might be declared in only one
+                    // branch then, it is needed to explore all branches
                     let mut when_signals = HashMap::new();
                     let mut add_signals = |equations: &Vec<Eq>| {
                         // non-events are defined in all branches so we don't want them to trigger
@@ -386,8 +386,8 @@ mod equation {
                 }
                 ReactEq::MatchWhen(MatchWhen { arms, .. }) => {
                     let mut add_signals = |equations: &Vec<Eq>| {
-                        // we want to collect every identifier, but events might be declared in only one branch
-                        // then, it is needed to explore all branches
+                        // we want to collect every identifier, but events might be declared in only
+                        // one branch then, it is needed to explore all branches
                         for eq in equations {
                             eq.get_signals(signals, symbol_table, errors)?;
                         }
@@ -448,7 +448,7 @@ impl FunctionExt for ast::Function {
                      ..
                  }| {
                     let name = ident.to_string();
-                    let typing = typing.clone().hir_from_ast(ctxt)?;
+                    let typing = typing.clone().into_hir(ctxt)?;
                     let id = ctxt.syms.insert_identifier(
                         name.clone(),
                         Some(typing),
@@ -495,7 +495,7 @@ mod expr_pattern {
         ast::expr::{PatStructure, PatTuple, Pattern},
     }
 
-    impl super::ExprPatternExt for Pattern {
+    impl ExprPatternExt for Pattern {
         fn store(
             &self,
             symbol_table: &mut SymbolTable,
@@ -600,12 +600,13 @@ pub trait StmtPatternExt: Sized {
         errors: &mut Vec<Error>,
     ) -> TRes<hir::stream::Expr>;
 }
+
 mod stmt_pattern {
     prelude! {
         ast::stmt::{Pattern, Tuple, Typed},
     }
 
-    impl super::StmtPatternExt for Pattern {
+    impl StmtPatternExt for Pattern {
         fn store(
             &self,
             is_declaration: bool,
@@ -641,7 +642,7 @@ mod stmt_pattern {
                 }
                 Pattern::Typed(Typed { ident, typing, .. }) => {
                     if is_declaration {
-                        let typing = typing.clone().hir_from_ast(&mut hir::ctx::Loc::new(
+                        let typing = typing.clone().into_hir(&mut hir::ctx::Loc::new(
                             &location,
                             symbol_table,
                             errors,
@@ -984,7 +985,7 @@ mod event_pattern {
         ast::equation::EventPattern,
     }
 
-    impl super::EventPatternExt for EventPattern {
+    impl EventPatternExt for EventPattern {
         /// Accumulates in `events_indices` the indices of events in the matched tuple.
         fn place_events(
             &self,
@@ -1076,7 +1077,7 @@ mod event_pattern {
 
                     // transform inner_pattern into HIR
                     pattern.pattern.store(ctxt.syms, ctxt.errors)?;
-                    let inner_pattern = pattern.pattern.hir_from_ast(ctxt)?;
+                    let inner_pattern = pattern.pattern.into_hir(ctxt)?;
                     let event_pattern =
                         hir::pattern::init(hir::pattern::Kind::present(event_id, inner_pattern));
 
@@ -1089,7 +1090,7 @@ mod event_pattern {
                 EventPattern::RisingEdge(expr) => {
                     let location = Location::default();
                     let ctxt = &mut hir::ctx::PatLoc::new(None, &location, syms, errors);
-                    let guard = hir::stream::Kind::rising_edge(expr.hir_from_ast(ctxt)?);
+                    let guard = hir::stream::Kind::rising_edge(expr.into_hir(ctxt)?);
                     Ok(Some(hir::stream::expr(guard)))
                 }
             }

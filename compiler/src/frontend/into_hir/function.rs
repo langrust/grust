@@ -2,12 +2,12 @@ prelude! {
     ast::{ Function, stmt::Return },
 }
 
-impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for Function {
-    type HIR = hir::Function;
+impl IntoHir<hir::ctx::Simple<'_>> for Function {
+    type Hir = hir::Function;
 
     // precondition: function and its inputs are already stored in symbol table
     // postcondition: construct HIR function and check identifiers good use
-    fn hir_from_ast(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::HIR> {
+    fn into_hir(self, ctxt: &mut hir::ctx::Simple) -> TRes<Self::Hir> {
         let Function {
             ident,
             output_type,
@@ -26,7 +26,7 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for Function {
         ctxt.syms.restore_context(id);
 
         // insert function output type in symbol table
-        let output_typing = output_type.hir_from_ast(&mut ctxt.add_loc(&location))?;
+        let output_typing = output_type.into_hir(&mut ctxt.add_loc(&location))?;
         if !contract.clauses.is_empty() {
             let _ = ctxt.syms.insert_function_result(
                 output_typing.clone(),
@@ -41,19 +41,19 @@ impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for Function {
             (vec![], None),
             |(mut declarations, option_returned), statement| match statement {
                 ast::Stmt::Declaration(declaration) => {
-                    declarations.push(declaration.hir_from_ast(ctxt));
+                    declarations.push(declaration.into_hir(ctxt));
                     (declarations, option_returned)
                 }
                 ast::Stmt::Return(Return { expression, .. }) => {
                     assert!(option_returned.is_none());
                     (
                         declarations,
-                        Some(expression.hir_from_ast(&mut ctxt.add_pat_loc(None, &location))),
+                        Some(expression.into_hir(&mut ctxt.add_pat_loc(None, &location))),
                     )
                 }
             },
         );
-        let contract = contract.hir_from_ast(ctxt)?;
+        let contract = contract.into_hir(ctxt)?;
 
         ctxt.syms.global();
 

@@ -25,10 +25,10 @@ pub mod typ;
 pub mod typedef;
 
 /// AST transformation into HIR.
-pub trait HIRFromAST<Ctxt> {
+pub trait IntoHir<Ctxt> {
     /// Corresponding HIR construct.
-    type HIR;
+    type Hir;
 
     /// Transforms AST into HIR and check identifiers good use.
-    fn hir_from_ast(self, ctxt: &mut Ctxt) -> TRes<Self::HIR>;
+    fn into_hir(self, ctxt: &mut Ctxt) -> TRes<Self::Hir>;
 }

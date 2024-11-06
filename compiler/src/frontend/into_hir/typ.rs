@@ -3,17 +3,17 @@ prelude! {
     syn::punctuated::{Pair, Punctuated},
 }
 
-impl<'a> HIRFromAST<hir::ctx::Loc<'a>> for Typ {
-    type HIR = Typ;
+impl IntoHir<hir::ctx::Loc<'_>> for Typ {
+    type Hir = Typ;
 
     /// Transforms AST into HIR and check identifiers good use.
-    fn hir_from_ast(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<Typ> {
+    fn into_hir(self, ctxt: &mut hir::ctx::Loc) -> TRes<Typ> {
         // precondition: Typedefs are stored in symbol table
         // postcondition: construct a new Type without `Typ::NotDefinedYet`
         match self {
                 Typ::Array { bracket_token, ty, semi_token, size } => Ok(Typ::Array {
                     bracket_token,
-                    ty: Box::new(ty.hir_from_ast(ctxt)?),
+                    ty: Box::new(ty.into_hir(ctxt)?),
                     semi_token,
                     size
                 }),
@@ -22,7 +22,7 @@ impl<'a> HIRFromAST<hir::ctx::Loc<'a>> for Typ {
                     elements: elements.into_pairs()
                     .map(|pair| {
                         let (ty, comma) = pair.into_tuple();
-                        let ty = ty.hir_from_ast(ctxt)?;
+                        let ty = ty.into_hir(ctxt)?;
                         Ok(Pair::new(ty, comma))
                     }).collect::<TRes<Punctuated<Typ, Token![,]>>>()?
                 }),
@@ -42,23 +42,23 @@ impl<'a> HIRFromAST<hir::ctx::Loc<'a>> for Typ {
                     let inputs = inputs.into_pairs()
                     .map(|pair| {
                         let (ty, comma) = pair.into_tuple();
-                        let ty = ty.hir_from_ast(ctxt)?;
+                        let ty = ty.into_hir(ctxt)?;
                         Ok(Pair::new(ty, comma))
                     }).collect::<TRes<Punctuated<Typ, Token![,]>>>()?;
-                    let output = output.hir_from_ast(ctxt)?;
+                    let output = output.into_hir(ctxt)?;
                     Ok(Typ::Abstract { paren_token, inputs, arrow_token, output: output.into() })
                 }
                 Typ::SMEvent { ty, question_token } => Ok(Typ::SMEvent {
-                    ty: Box::new(ty.hir_from_ast(ctxt)?),
+                    ty: Box::new(ty.into_hir(ctxt)?),
                     question_token
                 }),
                 Typ::Signal { signal_token, ty } => Ok(Typ::Signal {
                     signal_token,
-                    ty: Box::new(ty.hir_from_ast(ctxt)?),
+                    ty: Box::new(ty.into_hir(ctxt)?),
                 }),
                 Typ::Event { event_token, ty } => Ok(Typ::Event {
                     event_token,
-                    ty: Box::new(ty.hir_from_ast(ctxt)?),
+                    ty: Box::new(ty.into_hir(ctxt)?),
                 }),
                 Typ::Integer(_) | Typ::Float(_) | Typ::Boolean(_) | Typ::Unit(_) => Ok(self),
                 Typ::Enumeration { .. }    // no enumeration at this time: they are `NotDefinedYet`
