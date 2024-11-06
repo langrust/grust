@@ -1,5 +1,4 @@
 prelude! {
-    operator::OtherOperator,
     frontend::TypeAnalysis,
 }
 
@@ -31,7 +30,7 @@ where
                 let false_expression_type = false_expression.get_type().unwrap().clone();
 
                 // get if_then_else type
-                let mut if_then_else_type = OtherOperator::IfThenElse.get_type();
+                let mut if_then_else_type = OtherOp::IfThenElse.get_type();
 
                 if_then_else_type.apply(
                     vec![expression_type, true_expression_type, false_expression_type],

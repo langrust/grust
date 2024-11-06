@@ -457,18 +457,14 @@ mod test {
                 StateElmStep::new(
                     "mem_i",
                     Expr::binop(
-                        operator::BinaryOperator::Add,
+                        BOp::Add,
                         Expr::ident("o"),
                         Expr::lit(Constant::Integer(parse_quote!(1i64))),
                     ),
                 ),
                 StateElmStep::new("called_node_state", Expr::ident("new_called_node_state")),
             ],
-            output_expression: Expr::binop(
-                operator::BinaryOperator::Add,
-                Expr::ident("o"),
-                Expr::ident("y"),
-            ),
+            output_expression: Expr::binop(BOp::Add, Expr::ident("o"), Expr::ident("y")),
         };
 
         let control = parse_quote! {

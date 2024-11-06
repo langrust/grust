@@ -2,7 +2,6 @@ use strum::IntoEnumIterator;
 
 prelude! {
     interface::FlowKind,
-    operator::*,
 }
 
 #[derive(Clone)]
@@ -258,7 +257,7 @@ impl SymbolTable {
     /// Initialize symbol table with builtin operators.
     pub fn initialize(&mut self) {
         // initialize with unary, binary and other operators
-        UnaryOperator::iter().for_each(|op| {
+        UOp::iter().for_each(|op| {
             let symbol = Symbol {
                 kind: SymbolKind::Function {
                     inputs: vec![],
@@ -271,7 +270,7 @@ impl SymbolTable {
             self.insert_symbol(symbol, false, Location::default(), &mut vec![])
                 .expect("you should not fail");
         });
-        BinaryOperator::iter().for_each(|op| {
+        BOp::iter().for_each(|op| {
             let symbol = Symbol {
                 kind: SymbolKind::Function {
                     inputs: vec![],
@@ -284,7 +283,7 @@ impl SymbolTable {
             self.insert_symbol(symbol, false, Location::default(), &mut vec![])
                 .expect("you should not fail");
         });
-        OtherOperator::iter().for_each(|op| {
+        OtherOp::iter().for_each(|op| {
             let symbol = Symbol {
                 kind: SymbolKind::Function {
                     inputs: vec![],

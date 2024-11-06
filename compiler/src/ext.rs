@@ -1033,11 +1033,7 @@ mod event_pattern {
                         if let Some(add_guard) = opt_guard {
                             if let Some(old_guard) = guard.take() {
                                 guard = Some(hir::stream::expr(hir::stream::Kind::expr(
-                                    hir::expr::Kind::binop(
-                                        operator::BinaryOperator::And,
-                                        old_guard,
-                                        add_guard,
-                                    ),
+                                    hir::expr::Kind::binop(BOp::And, old_guard, add_guard),
                                 )));
                             } else {
                                 guard = Some(add_guard);

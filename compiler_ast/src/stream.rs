@@ -2,7 +2,6 @@ prelude! {
     syn::Parse,
     equation::EventPattern,
     expr::*,
-    operator::BinaryOperator,
 }
 
 /// Buffered signal.
@@ -230,7 +229,7 @@ impl ParsePrec for Expr {
         let mut expression = Self::parse_term(input)?;
 
         loop {
-            if BinaryOperator::peek_prec1(input) {
+            if BOp::peek_prec1(input) {
                 expression = Self::Binop(Binop::<Self>::parse_term(expression, input)?);
             } else {
                 break;
@@ -242,7 +241,7 @@ impl ParsePrec for Expr {
         let mut expression = Self::parse_prec1(input)?;
 
         loop {
-            if BinaryOperator::peek_prec2(input) {
+            if BOp::peek_prec2(input) {
                 expression = Self::Binop(Binop::<Self>::parse_prec1(expression, input)?);
             } else {
                 break;
@@ -254,7 +253,7 @@ impl ParsePrec for Expr {
         let mut expression = Self::parse_prec2(input)?;
 
         loop {
-            if BinaryOperator::peek_prec3(input) {
+            if BOp::peek_prec3(input) {
                 expression = Self::Binop(Binop::<Self>::parse_prec2(expression, input)?);
             } else {
                 break;
@@ -266,7 +265,7 @@ impl ParsePrec for Expr {
         let mut expression = Self::parse_prec3(input)?;
 
         loop {
-            if BinaryOperator::peek_prec4(input) {
+            if BOp::peek_prec4(input) {
                 expression = Self::Binop(Binop::<Self>::parse_prec3(expression, input)?);
             } else {
                 break;
@@ -324,7 +323,6 @@ mod parse_stream_expression {
         },
         equation::{EventPattern, LetEventPattern},
         stream::{Last, Expr, Emit, When, ReactExpr},
-        operator::BinaryOperator,
         quote::format_ident,
     }
 
@@ -373,7 +371,7 @@ mod parse_stream_expression {
     fn should_parse_binop() {
         let expression: ReactExpr = syn::parse_quote! {a+b};
         let control = ReactExpr::expr(Expr::binop(Binop::new(
-            BinaryOperator::Add,
+            BOp::Add,
             Expr::ident("a"),
             Expr::ident("b"),
         )));
@@ -384,13 +382,9 @@ mod parse_stream_expression {
     fn should_parse_binop_with_precedence() {
         let expression: ReactExpr = syn::parse_quote! {a+b*c};
         let control = ReactExpr::expr(Expr::binop(Binop::new(
-            BinaryOperator::Add,
+            BOp::Add,
             Expr::ident("a"),
-            Expr::Binop(Binop::new(
-                BinaryOperator::Mul,
-                Expr::ident("b"),
-                Expr::ident("c"),
-            )),
+            Expr::Binop(Binop::new(BOp::Mul, Expr::ident("b"), Expr::ident("c"))),
         )));
         assert_eq!(expression, control)
     }
@@ -592,7 +586,7 @@ mod parse_stream_expression {
                 Default::default(),
             )),
             Some(Expr::binop(Binop::new(
-                BinaryOperator::Grt,
+                BOp::Grt,
                 Expr::ident("p"),
                 Expr::cst(Constant::Integer(syn::parse_quote! {0})),
             ))),

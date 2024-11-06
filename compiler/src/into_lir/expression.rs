@@ -1,5 +1,4 @@
 prelude! {
-    operator::OtherOperator,
     lir::{ Block, FieldIdentifier, Stmt },
 }
 
@@ -214,7 +213,7 @@ where
 
     fn is_if_then_else(&self, symbol_table: &SymbolTable) -> bool {
         match self {
-            Self::Identifier { id, .. } => OtherOperator::IfThenElse
+            Self::Identifier { id, .. } => OtherOp::IfThenElse
                 .to_string()
                 .eq(symbol_table.get_name(*id)),
             _ => false,

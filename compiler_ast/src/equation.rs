@@ -348,7 +348,6 @@ mod parse_equation {
 
     prelude! { just
         expr::{Binop, IfThenElse, Tuple},
-        operator::BinaryOperator,
     }
 
     use super::{Eq, ReactEq};
@@ -495,7 +494,7 @@ mod parse_equation {
                 stream::Expr::ident("res"),
                 stream::Expr::cst(Constant::int(parse_quote! {0})),
                 stream::Expr::binop(Binop::new(
-                    BinaryOperator::Add,
+                    BOp::Add,
                     stream::Expr::last(stream::Last::new(
                         parse_quote! {o},
                         Some(stream::Expr::cst(Constant::int(parse_quote! {0}))),
@@ -527,7 +526,7 @@ mod parse_equation {
                 ])),
                 stream::Expr::tuple(Tuple::new(vec![
                     stream::Expr::binop(Binop::new(
-                        BinaryOperator::Add,
+                        BOp::Add,
                         stream::Expr::last(stream::Last::new(
                             parse_quote! {o1},
                             Some(stream::Expr::cst(Constant::int(parse_quote! {0}))),
@@ -535,7 +534,7 @@ mod parse_equation {
                         stream::Expr::ident("inc1"),
                     )),
                     stream::Expr::binop(Binop::new(
-                        BinaryOperator::Add,
+                        BOp::Add,
                         stream::Expr::last(stream::Last::new(parse_quote! {o2}, None)),
                         stream::Expr::ident("inc2"),
                     )),
@@ -563,7 +562,7 @@ mod parse_equation {
                 stream::Expr::ident("res"),
                 stream::Expr::cst(Constant::int(parse_quote! {0})),
                 stream::Expr::binop(Binop::new(
-                    BinaryOperator::Add,
+                    BOp::Add,
                     stream::Expr::last(stream::Last::new(parse_quote! {o}, None)),
                     stream::Expr::ident("inc"),
                 )),
@@ -602,7 +601,7 @@ mod parse_equation {
                 ])),
                 stream::Expr::tuple(Tuple::new(vec![
                     stream::Expr::binop(Binop::new(
-                        BinaryOperator::Add,
+                        BOp::Add,
                         stream::Expr::last(stream::Last::new(
                             parse_quote! {o1},
                             Some(stream::Expr::cst(Constant::int(parse_quote! {0}))),
@@ -610,7 +609,7 @@ mod parse_equation {
                         stream::Expr::ident("inc1"),
                     )),
                     stream::Expr::binop(Binop::new(
-                        BinaryOperator::Add,
+                        BOp::Add,
                         stream::Expr::last(stream::Last::new(parse_quote! {o2}, None)),
                         stream::Expr::ident("inc2"),
                     )),
