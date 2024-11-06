@@ -20,9 +20,11 @@ pub use ast::{Ast, SymbolTable};
 pub use crate::{
     block::Block,
     contract::{self, Contract},
+    execution_machine::{self, ExecutionMachine},
     expression::*,
-    item::{self, Item},
+    item::{self, Enumeration, Function, Import, Item, Structure},
     pattern::Pattern,
     project::Project,
+    state_machine::{self, StateMachine},
     stmt::Stmt,
 };

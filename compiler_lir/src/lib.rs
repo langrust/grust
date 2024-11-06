@@ -6,9 +6,17 @@ pub use ast::common;
 pub mod prelude;
 
 mod block;
-pub mod contract;
 mod expression;
-pub mod item;
-pub mod pattern;
-pub mod project;
+mod pattern;
 mod stmt;
+
+pub mod contract;
+pub mod execution_machine;
+pub mod item;
+pub mod project;
+pub mod state_machine;
+
+pub use prelude::{
+    Block, Contract, Enumeration, ExecutionMachine, Expr, FieldIdentifier, Function, Import, Item,
+    Pattern, Project, StateMachine, Stmt, Structure,
+};
