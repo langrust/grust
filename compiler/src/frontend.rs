@@ -11,7 +11,7 @@ pub mod causality_analysis;
 pub mod normalizing;
 
 /// LIR construction from HIR.
-pub mod lir_from_hir;
+pub mod into_lir;
 
 /// Typing analysis from HIR.
 pub mod typing_analysis;
@@ -19,3 +19,5 @@ pub mod typing_analysis;
 pub use typing_analysis::TypeAnalysis;
 
 pub mod ctx;
+
+pub use into_lir::IntoLir;

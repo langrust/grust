@@ -74,7 +74,7 @@ pub fn into_token_stream(ast: Ast) -> macro2::TokenStream {
     );
 
     hir.normalize(&mut symbol_table);
-    let lir: Project = hir.lir_from_hir(symbol_table);
+    let lir: Project = hir.into_lir(symbol_table);
     let rust = lir.into_syn();
 
     let mut tokens = macro2::TokenStream::new();

@@ -1,17 +1,15 @@
-prelude! { hir::{Pattern, pattern} }
+prelude! { hir::{Pattern, pattern::Kind} }
 
-use super::LIRFromHIR;
+impl IntoLir<&'_ SymbolTable> for Pattern {
+    type Lir = lir::Pattern;
 
-impl LIRFromHIR for Pattern {
-    type LIR = lir::Pattern;
-
-    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
+    fn into_lir(self, symbol_table: &SymbolTable) -> Self::Lir {
         match self.kind {
-            pattern::Kind::Identifier { id } => lir::Pattern::Identifier {
+            Kind::Identifier { id } => lir::Pattern::Identifier {
                 name: symbol_table.get_name(id).clone(),
             },
-            pattern::Kind::Constant { constant } => lir::Pattern::Literal { literal: constant },
-            pattern::Kind::Structure { id, fields } => lir::Pattern::Structure {
+            Kind::Constant { constant } => lir::Pattern::Literal { literal: constant },
+            Kind::Structure { id, fields } => lir::Pattern::Structure {
                 name: symbol_table.get_name(id).clone(),
                 fields: fields
                     .into_iter()
@@ -22,35 +20,33 @@ impl LIRFromHIR for Pattern {
                                 lir::Pattern::Identifier {
                                     name: symbol_table.get_name(id).clone(),
                                 },
-                                |pattern| pattern.lir_from_hir(symbol_table),
+                                |pattern| pattern.into_lir(symbol_table),
                             ),
                         )
                     })
                     .collect(),
             },
-            pattern::Kind::Enumeration { enum_id, elem_id } => lir::Pattern::Enumeration {
+            Kind::Enumeration { enum_id, elem_id } => lir::Pattern::Enumeration {
                 enum_name: symbol_table.get_name(enum_id).clone(),
                 elem_name: symbol_table.get_name(elem_id).clone(),
                 element: None,
             },
-            pattern::Kind::Tuple { elements } => lir::Pattern::Tuple {
+            Kind::Tuple { elements } => lir::Pattern::Tuple {
                 elements: elements
                     .into_iter()
-                    .map(|element| element.lir_from_hir(symbol_table))
+                    .map(|element| element.into_lir(symbol_table))
                     .collect(),
             },
-            pattern::Kind::Some { pattern } => lir::Pattern::Some {
-                pattern: Box::new(pattern.lir_from_hir(symbol_table)),
+            Kind::Some { pattern } => lir::Pattern::Some {
+                pattern: Box::new(pattern.into_lir(symbol_table)),
             },
-            pattern::Kind::None => lir::Pattern::None,
-            pattern::Kind::Default => lir::Pattern::Default,
-            pattern::Kind::PresentEvent { event_id, pattern } => {
-                match symbol_table.get_type(event_id) {
-                    Typ::SMEvent { .. } => lir::Pattern::some(pattern.lir_from_hir(symbol_table)),
-                    _ => unreachable!(),
-                }
-            }
-            pattern::Kind::NoEvent { event_id } => match symbol_table.get_type(event_id) {
+            Kind::None => lir::Pattern::None,
+            Kind::Default => lir::Pattern::Default,
+            Kind::PresentEvent { event_id, pattern } => match symbol_table.get_type(event_id) {
+                Typ::SMEvent { .. } => lir::Pattern::some(pattern.into_lir(symbol_table)),
+                _ => unreachable!(),
+            },
+            Kind::NoEvent { event_id } => match symbol_table.get_type(event_id) {
                 Typ::SMEvent { .. } => lir::Pattern::none(),
                 _ => unreachable!(),
             },
@@ -58,10 +54,10 @@ impl LIRFromHIR for Pattern {
     }
 }
 
-impl LIRFromHIR for hir::stmt::Pattern {
-    type LIR = lir::Pattern;
+impl IntoLir<&'_ SymbolTable> for hir::stmt::Pattern {
+    type Lir = lir::Pattern;
 
-    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
+    fn into_lir(self, symbol_table: &SymbolTable) -> Self::Lir {
         match self.kind {
             hir::stmt::Kind::Identifier { id } => lir::Pattern::Identifier {
                 name: symbol_table.get_name(id).clone(),
@@ -75,7 +71,7 @@ impl LIRFromHIR for hir::stmt::Pattern {
             hir::stmt::Kind::Tuple { elements } => lir::Pattern::Tuple {
                 elements: elements
                     .into_iter()
-                    .map(|element| element.lir_from_hir(symbol_table))
+                    .map(|element| element.into_lir(symbol_table))
                     .collect(),
             },
         }

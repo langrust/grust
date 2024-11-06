@@ -33,12 +33,12 @@ pub mod pattern;
 pub mod interface;
 
 /// HIR transformation into LIR.
-pub trait LIRFromHIR {
+pub trait IntoLir<Ctx> {
     /// Corresponding LIR construct.
-    type LIR;
+    type Lir;
 
     /// Transforms HIR into LIR.
-    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR;
+    fn into_lir(self, symbol_table: Ctx) -> Self::Lir;
 
     /// Get type from LIR.
     fn get_type(&self) -> Option<&Typ> {

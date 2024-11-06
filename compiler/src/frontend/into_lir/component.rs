@@ -6,27 +6,25 @@ prelude! {
     },
 }
 
-use super::LIRFromHIR;
+impl IntoLir<&'_ SymbolTable> for Component {
+    type Lir = Item;
 
-impl LIRFromHIR for Component {
-    type LIR = Item;
-
-    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
+    fn into_lir(self, symbol_table: &SymbolTable) -> Self::Lir {
         match self {
             hir::Component::Definition(comp_def) => {
-                Item::StateMachine(comp_def.lir_from_hir(&symbol_table))
+                Item::StateMachine(comp_def.into_lir(&symbol_table))
             }
             hir::Component::Import(comp_import) => {
-                Item::Import(comp_import.lir_from_hir(&symbol_table))
+                Item::Import(comp_import.into_lir(&symbol_table))
             }
         }
     }
 }
 
-impl LIRFromHIR for ComponentDefinition {
-    type LIR = StateMachine;
+impl IntoLir<&'_ SymbolTable> for ComponentDefinition {
+    type Lir = StateMachine;
 
-    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
+    fn into_lir(self, symbol_table: &SymbolTable) -> Self::Lir {
         // get node name
         let name = symbol_table.get_name(self.id);
 
@@ -79,7 +77,7 @@ impl LIRFromHIR for ComponentDefinition {
             self.memory.get_state_elements(symbol_table);
 
         // transform contract
-        let contract = self.contract.lir_from_hir(symbol_table);
+        let contract = self.contract.into_lir(symbol_table);
         let invariant_initialization = vec![]; // TODO
 
         // 'init' method
@@ -91,7 +89,7 @@ impl LIRFromHIR for ComponentDefinition {
             output_type,
             self.statements
                 .into_iter()
-                .map(|equation| equation.lir_from_hir(symbol_table))
+                .map(|equation| equation.into_lir(symbol_table))
                 .collect(),
             state_elements_step,
             output_expression,
@@ -119,10 +117,10 @@ impl LIRFromHIR for ComponentDefinition {
     }
 }
 
-impl LIRFromHIR for ComponentImport {
-    type LIR = Import;
+impl IntoLir<&'_ SymbolTable> for ComponentImport {
+    type Lir = Import;
 
-    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
+    fn into_lir(self, symbol_table: &SymbolTable) -> Self::Lir {
         // get node name
         let name = symbol_table.get_name(self.id).clone();
         let path = self.path;

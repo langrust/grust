@@ -13,10 +13,8 @@ prelude! {
     },
 }
 
-use super::LIRFromHIR;
-
 impl Interface {
-    pub fn lir_from_hir(self, symbol_table: &mut SymbolTable) -> ExecutionMachine {
+    pub fn into_lir(self, symbol_table: &mut SymbolTable) -> ExecutionMachine {
         if self.services.is_empty() {
             return Default::default();
         }
@@ -30,7 +28,7 @@ impl Interface {
         let services_handlers: Vec<ServiceHandler> = services
             .into_iter()
             .map(|service| {
-                service.lir_from_hir(&mut imports, &exports, &mut timing_events, symbol_table)
+                service.into_lir(&mut imports, &exports, &mut timing_events, symbol_table)
             })
             .collect();
         let mut input_handlers = HashMap::new();
@@ -47,11 +45,11 @@ impl Interface {
         });
         let input_flows = imports
             .into_values()
-            .filter_map(|import| import.lir_from_hir(symbol_table))
+            .filter_map(|import| import.into_lir(symbol_table))
             .collect();
         let output_flows = exports
             .into_values()
-            .map(|export| export.lir_from_hir(symbol_table))
+            .map(|export| export.into_lir(symbol_table))
             .collect();
 
         let runtime_loop = RuntimeLoop {
@@ -74,10 +72,10 @@ impl Interface {
     }
 }
 
-impl LIRFromHIR for FlowImport {
-    type LIR = Option<InterfaceFlow>;
+impl IntoLir<&'_ SymbolTable> for FlowImport {
+    type Lir = Option<InterfaceFlow>;
 
-    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
+    fn into_lir(self, symbol_table: &SymbolTable) -> Self::Lir {
         let FlowImport {
             id,
             path,
@@ -97,10 +95,10 @@ impl LIRFromHIR for FlowImport {
     }
 }
 
-impl LIRFromHIR for FlowExport {
-    type LIR = InterfaceFlow;
+impl IntoLir<&'_ SymbolTable> for FlowExport {
+    type Lir = InterfaceFlow;
 
-    fn lir_from_hir(self, symbol_table: &SymbolTable) -> Self::LIR {
+    fn into_lir(self, symbol_table: &SymbolTable) -> Self::Lir {
         let FlowExport {
             id,
             path,
@@ -117,7 +115,7 @@ impl LIRFromHIR for FlowExport {
 }
 
 impl Service {
-    pub fn lir_from_hir(
+    pub fn into_lir(
         self,
         imports: &mut HashMap<usize, FlowImport>,
         exports: &HashMap<usize, FlowExport>,
@@ -825,7 +823,7 @@ mod service_handler {
         synced::{Builder, Synced},
     }
 
-    use frontend::lir_from_hir::interface::clean_synced;
+    use frontend::into_lir::interface::clean_synced;
 
     use super::{flow_instr, from_synced, triggered::TriggersGraph};
 
@@ -1011,7 +1009,7 @@ mod flow_instr {
 
     use super::{
         triggered::{self, TriggersGraph},
-        LIRFromHIR,
+        IntoLir,
     };
 
     /// A context to build [FlowInstruction]s.
@@ -1832,7 +1830,7 @@ mod flow_instr {
 
             // call component
             let mut instrs = vec![FlowInstruction::comp_call(
-                output_pattern.lir_from_hir(self.syms),
+                output_pattern.into_lir(self.syms),
                 component_name,
                 signals.clone(),
                 events.clone(),
