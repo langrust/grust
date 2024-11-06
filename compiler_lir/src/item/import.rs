@@ -15,7 +15,7 @@ mk_new! { impl Import => new {
 }}
 
 impl Import {
-    pub fn to_syn(self) -> syn::ItemUse {
+    pub fn into_syn(self) -> syn::ItemUse {
         let Import { name, path } = self;
         let state_name = format_ident!("{}", to_camel_case(&format!("{}State", name)));
         let input_name = format_ident!("{}", to_camel_case(&format!("{}Input", name)));
@@ -37,6 +37,6 @@ mod test {
         let control = parse_quote! {
             use grust::grust_std::rising_edge::{ RisingEdgeInput, RisingEdgeState };
         };
-        assert_eq!(import.to_syn(), control)
+        assert_eq!(import.into_syn(), control)
     }
 }

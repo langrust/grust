@@ -20,7 +20,7 @@ mk_new! { impl Enumeration =>
 
 impl Enumeration {
     /// Transform LIR enumeration into RustAST enumeration.
-    pub fn to_syn(self) -> syn::ItemEnum {
+    pub fn into_syn(self) -> syn::ItemEnum {
         let attribute: syn::Attribute = if conf::greusot() {
             // todo: when v0.1.1 then parse_quote!(#[derive(prelude::Clone, Copy, prelude::PartialEq, prelude::Default, DeepModel)])
             parse_quote!(
@@ -75,6 +75,6 @@ mod test {
             Red,
             Green
         }};
-        assert_eq!(enumeration.to_syn(), control)
+        assert_eq!(enumeration.into_syn(), control)
     }
 }

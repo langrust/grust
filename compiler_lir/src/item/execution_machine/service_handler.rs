@@ -17,7 +17,7 @@ pub struct ServiceHandler {
 
 impl ServiceHandler {
     /// Transform LIR run-loop into an async function performing a loop over events.
-    pub fn to_syn(self) -> syn::Item {
+    pub fn into_syn(self) -> syn::Item {
         let ServiceHandler {
             service,
             components,
@@ -26,7 +26,7 @@ impl ServiceHandler {
         } = self;
 
         // result
-        let mut items = flows_context.to_syn().collect::<Vec<_>>();
+        let mut items = flows_context.into_syn().collect::<Vec<_>>();
 
         // store all inputs in a service_store
         let mut service_store_fields: Vec<syn::Field> = vec![];
@@ -36,7 +36,7 @@ impl ServiceHandler {
             .for_each(|FlowHandler { arriving_flow, .. }| match arriving_flow {
                 ArrivingFlow::Channel(flow_name, flow_type, _) => {
                     let ident = Ident::new(flow_name.as_str(), Span::call_site());
-                    let ty = flow_type.to_syn();
+                    let ty = flow_type.into_syn();
                     service_store_fields
                         .push(parse_quote! { #ident: Option<(#ty, std::time::Instant)> });
                     service_store_is_somes.push(parse_quote! { self.#ident.is_some() });
@@ -136,13 +136,13 @@ impl ServiceHandler {
              instruction,
              ..
          }| {
-            let stmts = instruction.to_syn();
+            let stmts = instruction.into_syn();
             match arriving_flow {
                 ArrivingFlow::Channel(flow_name, flow_type, _) => {
                     let ident = Ident::new(flow_name.as_str(), Span::call_site());
                     let instant = format_ident!("{flow_name}_instant");
                     let function_name: Ident = format_ident!("handle_{flow_name}");
-                    let ty = flow_type.to_syn();
+                    let ty = flow_type.into_syn();
                     let message = syn::LitStr::new(format!("{flow_name} changes too frequently").as_str(), Span::call_site());
                     impl_items.push(parse_quote! {
                         pub async fn #function_name(&mut self, #instant: std::time::Instant, #ident: #ty) -> Result<(), futures::channel::mpsc::SendError> {
@@ -305,11 +305,11 @@ pub enum FlowInstruction {
 }
 impl FlowInstruction {
     /// Transform LIR instruction on flows into statement.
-    pub fn to_syn(self) -> Vec<syn::Stmt> {
+    pub fn into_syn(self) -> Vec<syn::Stmt> {
         let stmt = match self {
             FlowInstruction::Let(ident, flow_expression) => {
                 let ident = Ident::new(&ident, Span::call_site());
-                let expression = flow_expression.to_syn();
+                let expression = flow_expression.into_syn();
                 parse_quote! { let #ident = #expression; }
             }
             FlowInstruction::InitEvent(ident) => {
@@ -318,18 +318,18 @@ impl FlowInstruction {
             }
             FlowInstruction::UpdateEvent(ident, expr) => {
                 let ident = format_ident!("{}_ref", ident);
-                let expression = expr.to_syn();
+                let expression = expr.into_syn();
                 parse_quote! { *#ident = #expression; }
             }
             FlowInstruction::UpdateContext(ident, flow_expression) => {
                 let ident = Ident::new(&ident, Span::call_site());
-                let expression = flow_expression.to_syn();
+                let expression = flow_expression.into_syn();
                 parse_quote! { self.context.#ident.set(#expression); }
             }
             FlowInstruction::SendSignal(name, send_expr, instant) => {
                 let enum_ident =
                     Ident::new(to_camel_case(name.as_str()).as_str(), Span::call_site());
-                let send_expr = send_expr.to_syn();
+                let send_expr = send_expr.into_syn();
                 let instant = if let Some(instant) = instant {
                     format_ident!("{instant}_instant")
                 } else {
@@ -341,8 +341,8 @@ impl FlowInstruction {
                 let ident = Ident::new(name.as_str(), Span::call_site());
                 let enum_ident =
                     Ident::new(to_camel_case(name.as_str()).as_str(), Span::call_site());
-                let event_expr = event_expr.to_syn();
-                let send_expr = send_expr.to_syn();
+                let event_expr = event_expr.into_syn();
+                let send_expr = send_expr.into_syn();
                 let instant = if let Some(instant) = instant {
                     format_ident!("{instant}_instant")
                 } else {
@@ -357,8 +357,8 @@ impl FlowInstruction {
             FlowInstruction::IfThrottle(receiver_name, source_name, delta, instruction) => {
                 let receiver_ident = Ident::new(&receiver_name, Span::call_site());
                 let source_ident = Ident::new(&source_name, Span::call_site());
-                let delta = delta.to_syn();
-                let instructions = instruction.to_syn();
+                let delta = delta.into_syn();
+                let instructions = instruction.into_syn();
 
                 parse_quote! {
                     if (self.context.#receiver_ident.get() - #source_ident).abs() >= #delta {
@@ -368,8 +368,8 @@ impl FlowInstruction {
             }
             FlowInstruction::IfChange(old_event_name, signal, then) => {
                 let old_event_ident = Ident::new(&old_event_name, Span::call_site());
-                let expr = signal.to_syn();
-                let then = then.to_syn();
+                let expr = signal.into_syn();
+                let then = then.into_syn();
                 parse_quote! {
                     if self.context.#old_event_ident.get() != #expr {
                         #(#then)*
@@ -390,7 +390,7 @@ impl FlowInstruction {
                 signals_fields,
                 events_fields,
             ) => {
-                let outputs = pattern.to_syn();
+                let outputs = pattern.into_syn();
                 let component_ident = Ident::new(&component_name, Span::call_site());
                 let component_input_name =
                     format_ident!("{}", to_camel_case(&format!("{component_name}Input")));
@@ -426,7 +426,7 @@ impl FlowInstruction {
                     let ident = Ident::new(name, Span::call_site());
                     parse_quote! { self.input_store.#ident.take() }
                 });
-                let arms = match_arms.into_iter().map(|arm| arm.to_syn());
+                let arms = match_arms.into_iter().map(|arm| arm.into_syn());
                 parse_quote! {
                     if self.input_store.not_empty() {
                         self.reset_time_constrains(instant).await?;
@@ -449,13 +449,13 @@ impl FlowInstruction {
                         let ident = Ident::new(s, Span::call_site());
                         parse_quote! { self.context.#ident.is_new() }
                     }));
-                let then_instrs = then.to_syn();
+                let then_instrs = then.into_syn();
 
                 if events.is_empty() && signals.is_empty() {
-                    return els.map_or(vec![], |instr| instr.to_syn());
+                    return els.map_or(vec![], |instr| instr.into_syn());
                 } else {
                     if let Some(instr) = els {
-                        let els_instrs = instr.to_syn();
+                        let els_instrs = instr.into_syn();
                         parse_quote! {
                             if #(#actv_cond)||* {
                                 #(#then_instrs)*
@@ -475,13 +475,13 @@ impl FlowInstruction {
             FlowInstruction::Seq(instrs) => {
                 return instrs
                     .into_iter()
-                    .flat_map(|instr| instr.to_syn())
+                    .flat_map(|instr| instr.into_syn())
                     .collect()
             }
             FlowInstruction::Para(method_map) => {
                 let para_futures = method_map.into_iter().flat_map(|(_method, para_instrs)| {
                     para_instrs.into_iter().map(|instr| -> syn::Expr {
-                        let stmts = instr.to_syn();
+                        let stmts = instr.into_syn();
                         parse_quote! {async { #(#stmts)* }}
                     })
                 });
@@ -605,10 +605,10 @@ mk_new! { impl MatchArm =>
 }
 
 impl MatchArm {
-    fn to_syn(self) -> syn::Arm {
+    fn into_syn(self) -> syn::Arm {
         let MatchArm { patterns, instr } = self;
-        let syn_pats = patterns.into_iter().map(|pat| pat.to_syn());
-        let stmts = instr.to_syn();
+        let syn_pats = patterns.into_iter().map(|pat| pat.into_syn());
+        let stmts = instr.into_syn();
         parse_quote! {
             (#(#syn_pats),*) => {
                 #(#stmts)*
@@ -676,9 +676,9 @@ mk_new! { impl Expression =>
 }
 
 impl Expression {
-    pub fn to_syn(self) -> syn::Expr {
+    pub fn into_syn(self) -> syn::Expr {
         match self {
-            Expression::Literal { literal } => literal.to_syn(),
+            Expression::Literal { literal } => literal.into_syn(),
             Expression::Event { identifier } => {
                 let identifier = format_ident!("{}_ref", identifier);
                 parse_quote! { *#identifier }
@@ -696,7 +696,7 @@ impl Expression {
                 parse_quote! { std::mem::take(&mut self.context.#flow.0) }
             }
             Expression::Some { expression } => {
-                let expression = expression.to_syn();
+                let expression = expression.into_syn();
                 parse_quote! { Some(#expression) }
             }
             Expression::None => parse_quote! { None },

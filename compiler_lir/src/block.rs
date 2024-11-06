@@ -12,11 +12,11 @@ mk_new! { impl Block => new {
 }}
 
 impl Block {
-    pub fn to_syn(self, crates: &mut BTreeSet<String>) -> syn::Block {
+    pub fn into_syn(self, crates: &mut BTreeSet<String>) -> syn::Block {
         let stmts = self
             .statements
             .into_iter()
-            .map(|statement| statement.to_syn(crates))
+            .map(|statement| statement.into_syn(crates))
             .collect();
         syn::Block {
             stmts,
@@ -47,6 +47,6 @@ mod test {
             x
         });
 
-        assert_eq!(block.to_syn(&mut Default::default()), control)
+        assert_eq!(block.into_syn(&mut Default::default()), control)
     }
 }

@@ -17,7 +17,7 @@ impl FlowsContext {
         self.elements.contains_key(element_name)
     }
 
-    pub fn to_syn(self) -> impl Iterator<Item = syn::Item> {
+    pub fn into_syn(self) -> impl Iterator<Item = syn::Item> {
         let FlowsContext { elements } = self;
 
         // construct Context structure type
@@ -68,7 +68,7 @@ impl FlowsContext {
         let items = elements.into_iter().flat_map(|(element_name, element_ty)| {
             let struct_name = Ident::new(&to_camel_case(&element_name), Span::call_site());
             let name = Ident::new(&element_name, Span::call_site());
-            let ty = element_ty.to_syn();
+            let ty = element_ty.into_syn();
             let attribute: syn::Attribute =
                 parse_quote!(#[derive(Clone, Copy, PartialEq, Default)]);
             let item_struct: syn::ItemStruct = parse_quote! {

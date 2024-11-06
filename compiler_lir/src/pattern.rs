@@ -86,7 +86,7 @@ mk_new! { impl Pattern =>
 }
 
 impl Pattern {
-    pub fn to_syn(self) -> syn::Pat {
+    pub fn into_syn(self) -> syn::Pat {
         use syn::*;
         match self {
             Pattern::Literal { literal } => match literal {
@@ -114,7 +114,7 @@ impl Pattern {
             Pattern::Ok { pattern } => Pat::TupleStruct(PatTupleStruct {
                 attrs: vec![],
                 path: parse_quote! { Ok },
-                elems: vec![pattern.to_syn()].into_iter().collect(),
+                elems: vec![pattern.into_syn()].into_iter().collect(),
                 paren_token: Default::default(),
                 qself: None,
             }),
@@ -122,12 +122,12 @@ impl Pattern {
             Pattern::Some { pattern } => Pat::TupleStruct(PatTupleStruct {
                 attrs: vec![],
                 path: parse_quote! { Some },
-                elems: vec![pattern.to_syn()].into_iter().collect(),
+                elems: vec![pattern.into_syn()].into_iter().collect(),
                 paren_token: Default::default(),
                 qself: None,
             }),
             Pattern::None => parse_quote! { None },
-            Pattern::Typed { pattern, .. } => pattern.to_syn(),
+            Pattern::Typed { pattern, .. } => pattern.into_syn(),
             Pattern::Structure { name, fields } => Pat::Struct(PatStruct {
                 attrs: vec![],
                 path: format_ident!("{name}").into(),
@@ -138,7 +138,7 @@ impl Pattern {
                         attrs: vec![],
                         member: Member::Named(Ident::new(&name, Span::call_site())),
                         colon_token: Some(Default::default()),
-                        pat: Box::new(pattern.to_syn()),
+                        pat: Box::new(pattern.into_syn()),
                     })
                     .collect(),
                 qself: None,
@@ -152,7 +152,7 @@ impl Pattern {
                 let ty = Ident::new(&enum_name, Span::call_site());
                 let cons = Ident::new(&elem_name, Span::call_site());
                 if let Some(pattern) = element {
-                    let inner = pattern.to_syn();
+                    let inner = pattern.into_syn();
                     parse_quote! { #ty::#cons(#inner) }
                 } else {
                     parse_quote! { #ty::#cons }
@@ -161,7 +161,7 @@ impl Pattern {
             Pattern::Tuple { elements } => {
                 let elements = elements
                     .into_iter()
-                    .map(|element| -> Pat { element.to_syn() });
+                    .map(|element| -> Pat { element.into_syn() });
                 parse_quote! { (#(#elements),*) }
             }
         }
@@ -176,14 +176,14 @@ mod test {
     fn should_create_a_rust_ast_default_pattern_from_a_lir_default_pattern() {
         let pattern = Pattern::Default;
         let control = parse_quote! { _ };
-        assert_eq!(pattern.to_syn(), control)
+        assert_eq!(pattern.into_syn(), control)
     }
 
     #[test]
     fn should_create_a_rust_ast_default_pattern_from_a_lir_none_pattern() {
         let pattern = Pattern::None;
         let control = parse_quote! { None };
-        assert_eq!(pattern.to_syn(), control)
+        assert_eq!(pattern.into_syn(), control)
     }
 
     #[test]
@@ -193,7 +193,7 @@ mod test {
         };
 
         let control = parse_quote! { Some(_) };
-        assert_eq!(pattern.to_syn(), control)
+        assert_eq!(pattern.into_syn(), control)
     }
 
     #[test]
@@ -203,7 +203,7 @@ mod test {
         };
 
         let control = parse_quote! { 1i64 };
-        assert_eq!(pattern.to_syn(), control)
+        assert_eq!(pattern.into_syn(), control)
     }
 
     #[test]
@@ -212,7 +212,7 @@ mod test {
         let pattern = Pattern::ident("x");
 
         let control = parse_quote! { x };
-        assert_eq!(pattern.to_syn(), control)
+        assert_eq!(pattern.into_syn(), control)
     }
 
     #[test]
@@ -226,6 +226,6 @@ mod test {
         };
 
         let control = parse_quote! { Point { x: _, y : y } };
-        assert_eq!(pattern.to_syn(), control)
+        assert_eq!(pattern.into_syn(), control)
     }
 }

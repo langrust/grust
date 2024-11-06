@@ -26,8 +26,8 @@ mk_new! { impl Function => new {
 } }
 
 impl Function {
-    pub fn to_syn(self, crates: &mut BTreeSet<String>) -> syn::Item {
-        let attributes = self.contract.to_syn(true);
+    pub fn into_syn(self, crates: &mut BTreeSet<String>) -> syn::Item {
+        let attributes = self.contract.into_syn(true);
 
         let inputs = self
             .inputs
@@ -38,7 +38,7 @@ impl Function {
                     attrs: vec![],
                     pat: parse_quote!(#name),
                     colon_token: Default::default(),
-                    ty: Box::new(typ.to_syn()),
+                    ty: Box::new(typ.into_syn()),
                 })
             })
             .collect();
@@ -54,14 +54,14 @@ impl Function {
             paren_token: Default::default(),
             inputs,
             variadic: None,
-            output: syn::ReturnType::Type(Default::default(), Box::new(self.output.to_syn())),
+            output: syn::ReturnType::Type(Default::default(), Box::new(self.output.into_syn())),
         };
 
         let item_function = syn::Item::Fn(syn::ItemFn {
             attrs: attributes,
             vis: syn::Visibility::Public(Default::default()),
             sig,
-            block: Box::new(self.body.to_syn(crates)),
+            block: Box::new(self.body.into_syn(crates)),
         });
 
         item_function
@@ -96,6 +96,6 @@ mod test {
                 a + b
             }
         };
-        assert_eq!(function.to_syn(&mut Default::default()), control)
+        assert_eq!(function.into_syn(&mut Default::default()), control)
     }
 }

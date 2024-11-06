@@ -22,7 +22,7 @@ mk_new! { impl ArrayAlias =>
 }
 
 impl ArrayAlias {
-    pub fn to_syn(self) -> syn::ItemType {
+    pub fn into_syn(self) -> syn::ItemType {
         let size = self.size;
         syn::ItemType {
             attrs: Default::default(),
@@ -33,7 +33,7 @@ impl ArrayAlias {
             eq_token: Default::default(),
             ty: Box::new(syn::Type::Array(syn::TypeArray {
                 bracket_token: Default::default(),
-                elem: Box::new(self.array_type.to_syn()),
+                elem: Box::new(self.array_type.into_syn()),
                 semi_token: Default::default(),
                 len: parse_quote! { #size},
             })),
@@ -55,6 +55,6 @@ mod test {
         };
 
         let control = parse_quote! { pub type Matrix5x5 = [[i64; 5usize]; 5usize];};
-        assert_eq!(array_alias.to_syn(), control)
+        assert_eq!(array_alias.into_syn(), control)
     }
 }
