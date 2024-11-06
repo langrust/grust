@@ -10,6 +10,7 @@ prelude! {
 mod component;
 mod config;
 mod function;
+mod typedef;
 
 pub mod contract;
 pub mod equation;
@@ -18,7 +19,6 @@ pub mod interface;
 pub mod stmt;
 pub mod stream;
 pub mod symbol;
-pub mod typedef;
 
 pub struct Colon<U: Parse, V: Parse> {
     pub left: U,
