@@ -155,11 +155,11 @@ pub enum Error {
         location: Location,
     },
     /// Given inputs are not of the right number.
-    IncompatibleInputsNumber {
+    ArityMismatch {
         /// The given number of inputs.
-        given_inputs_number: usize,
+        input_count: usize,
         /// The expected number of inputs.
-        expected_inputs_number: usize,
+        arity: usize,
         /// The error location.
         location: Location,
     },
@@ -472,7 +472,7 @@ impl Error {
                     Label::primary(location.file_id, location.range.clone())
                         .with_message("not a statement pattern")
                 ]),
-            Error::IncompatibleInputsNumber { given_inputs_number, expected_inputs_number, location } => Diagnostic::error()
+            Error::ArityMismatch { input_count, arity, location } => Diagnostic::error()
                 .with_message("incompatible number of inputs")
                 .with_labels(vec![
                     Label::primary(location.file_id, location.range.clone())
@@ -480,10 +480,10 @@ impl Error {
                 ])
                 .with_notes(vec![
                     format!(
-                        "expected {expected_inputs_number} input{} but {given_inputs_number} input{} {} given",
-                        if expected_inputs_number < &2 {""} else {"s"},
-                        if given_inputs_number < &2 {""} else {"s"},
-                        if given_inputs_number < &2 {"was"} else {"were"}
+                        "expected {arity} input{} but {input_count} input{} {} given",
+                        if arity < &2 {""} else {"s"},
+                        if input_count < &2 {""} else {"s"},
+                        if input_count < &2 {"was"} else {"were"}
                     )
                 ]
             ),
@@ -504,7 +504,7 @@ impl Error {
                         .with_message("not constant")
                 ])
                 .with_notes(vec![
-                    format!("expect a constant expression")
+                    format!("expected a constant expression")
                 ]
             ),
             Error::ExpectInput { location } => Diagnostic::error()
@@ -514,7 +514,7 @@ impl Error {
                         .with_message("empty")
                 ])
                 .with_notes(vec![
-                    format!("expect at least one input")
+                    format!("expected at least one input")
                 ]
             ),
             Error::ExpectNumber { given_type, location } => Diagnostic::error()
@@ -534,7 +534,7 @@ impl Error {
                         .with_message("wrong type")
                 ])
                 .with_notes(vec![
-                    format!("expect function type of the form '({}) -> t' but '{given_type}' was given",
+                    format!("expected function type of the form '({}) -> t' but '{given_type}' was given",
                     input_types.into_iter().map(|input_type| input_type.to_string()).collect::<Vec<_>>().join(", ")
                 )
                 ]
@@ -546,7 +546,7 @@ impl Error {
                         .with_message("wrong type")
                 ])
                 .with_notes(vec![
-                    format!("expect option type of the form 't?' but '{given_type}' was given")
+                    format!("expected option type of the form 't?' but '{given_type}' was given")
                 ]
             ),
             Error::ExpectStructure { given_type, location } => Diagnostic::error()
@@ -556,7 +556,7 @@ impl Error {
                         .with_message("wrong type")
                 ])
                 .with_notes(vec![
-                    format!("expect structure type but '{given_type}' was given")
+                    format!("expected structure type but '{given_type}' was given")
                 ]
             ),
             Error::ExpectTuple { given_type, location } => Diagnostic::error()
@@ -566,7 +566,7 @@ impl Error {
                         .with_message("wrong type")
                 ])
                 .with_notes(vec![
-                    format!("expect tuple type but '{given_type}' was given")
+                    format!("expected tuple type but '{given_type}' was given")
                 ]
             ),
             Error::ExpectArray { given_type, location } => Diagnostic::error()
@@ -576,7 +576,7 @@ impl Error {
                         .with_message("wrong type")
                 ])
                 .with_notes(vec![
-                    format!("expect array type but '{given_type}' was given")
+                    format!("expected array type but '{given_type}' was given")
                 ]
             ),
             Error::ExpectEvent { given_type, location } => Diagnostic::error()
@@ -586,7 +586,7 @@ impl Error {
                         .with_message("wrong type")
                 ])
                 .with_notes(vec![
-                    format!("expect event type but '{given_type}' was given")
+                    format!("expected event type but '{given_type}' was given")
                 ]
             ),
             Error::ExpectSignal { given_type, location } => Diagnostic::error()
@@ -596,7 +596,7 @@ impl Error {
                         .with_message("wrong type")
                 ])
                 .with_notes(vec![
-                    format!("expect signal type but '{given_type}' was given")
+                    format!("expected signal type but '{given_type}' was given")
                 ]
             ),
             Error::ExpectOptionPattern { location } => Diagnostic::error()
@@ -606,7 +606,7 @@ impl Error {
                         .with_message("wrong pattern")
                 ])
                 .with_notes(vec![
-                    format!("expect option pattern of the form 'some(p)'")
+                    format!("expected option pattern of the form 'some(p)'")
                 ]
             ),
             Error::ExpectTuplePattern { location } => Diagnostic::error()
@@ -616,7 +616,7 @@ impl Error {
                         .with_message("wrong pattern")
                 ])
                 .with_notes(vec![
-                    format!("expect tuple pattern of the form '(p1, p2, ...)'")
+                    format!("expected tuple pattern of the form '(p1, p2, ...)'")
                 ]
             ),
             Error::IncompatibleLength { given_length, expected_length, location } => Diagnostic::error()
@@ -626,7 +626,7 @@ impl Error {
                         .with_message("wrong length")
                 ])
                 .with_notes(vec![
-                    format!("expect array of length '{expected_length}' but an array of length '{given_length}' was given")
+                    format!("expected array of length '{expected_length}' but an array of length '{given_length}' was given")
                 ]
             ),
             Error::NoTypeInference { location } => Diagnostic::error()
@@ -682,17 +682,25 @@ impl Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Error::UnknownElement { name, .. } => write!(f, "Unknown Element: {name}"),
-            Error::UnknownSignal { name, .. } => write!(f, "Unknown Signal: {name}"),
-            Error::UnknownNode { .. } => write!(f, "Unknown Node"),
-            Error::UnknownInterface { .. } => write!(f, "Unknown Interface"),
-            Error::UnknownType { .. } => write!(f, "Unknown Type"),
-            Error::UnknownEnumeration { .. } => write!(f, "Unknown Enumeration"),
-            Error::UnknownField { .. } => write!(f, "Unknown Field"),
-            Error::MissingField { .. } => write!(f, "Missing Field"),
-            Error::IndexOutOfBounds { .. } => write!(f, "Index Out Of Bounds"),
+            Error::UnknownElement { name, .. } => write!(f, "unknown element `{name}`"),
+            Error::UnknownSignal { name, .. } => write!(f, "unknown signal `{name}`"),
+            Error::UnknownNode { name, .. } => write!(f, "unknown node `{name}`"),
+            Error::UnknownInterface { name, .. } => write!(f, "unknown interface `{name}`"),
+            Error::UnknownType { name, .. } => write!(f, "unknown type `{name}`"),
+            Error::UnknownEnumeration { name, .. } => write!(f, "unknown enumeration `{name}`"),
+            Error::UnknownField {
+                structure_name,
+                field_name,
+                ..
+            } => write!(f, "unknown field `{structure_name}::{field_name}"),
+            Error::MissingField {
+                structure_name,
+                field_name,
+                ..
+            } => write!(f, "missing field `{structure_name}::{field_name}"),
+            Error::IndexOutOfBounds { .. } => write!(f, "index out of bounds"),
             Error::AlreadyDefinedElement { name, .. } => {
-                write!(f, "Already Defined Element: {name}")
+                write!(f, "trying to redefine element `{name}`")
             }
             Error::IncompatibleType {
                 given_type,
@@ -700,31 +708,57 @@ impl std::fmt::Display for Error {
                 ..
             } => write!(
                 f,
-                "Incompatible Type: given {given_type} / expected {expected_type}"
+                "type mismatch: got `{given_type}`, expected `{expected_type}`"
             ),
-            Error::IncompatibleTuple { .. } => write!(f, "Incompatible Tuple"),
-            Error::IncompatibleMatchStatements { .. } => write!(f, "Incompatible Match Statements"),
-            Error::MissingMatchStatement { .. } => write!(f, "Missing Match Statement"),
-            Error::NotStatementPattern { .. } => write!(f, "Not Statement Pattern"),
-            Error::IncompatibleInputsNumber { .. } => write!(f, "Incompatible Inputs Number"),
-            Error::UnknownOuputSignal { .. } => write!(f, "Unknown Output Signal"),
-            Error::ExpectConstant { .. } => write!(f, "Expect Constant"),
-            Error::ExpectInput { .. } => write!(f, "Expect Input"),
-            Error::ExpectNumber { .. } => write!(f, "Expect Number"),
-            Error::ExpectAbstraction { .. } => write!(f, "Expect Abstraction"),
-            Error::ExpectOption { .. } => write!(f, "Expect Option"),
-            Error::ExpectStructure { .. } => write!(f, "Expect Structure"),
-            Error::ExpectTuple { .. } => write!(f, "Expect Tuple"),
-            Error::ExpectArray { .. } => write!(f, "Expect Array"),
-            Error::ExpectEvent { .. } => write!(f, "Expect Event"),
-            Error::ExpectSignal { .. } => write!(f, "Expect Signal"),
-            Error::ExpectOptionPattern { .. } => write!(f, "Expect Option Pattern"),
-            Error::ExpectTuplePattern { .. } => write!(f, "Expect Tuple Pattern"),
-            Error::IncompatibleLength { .. } => write!(f, "Incompatible Length"),
-            Error::NoTypeInference { .. } => write!(f, "No Type Inference"),
-            Error::NotCausalSignal { .. } => write!(f, "Not Causal Signal"),
-            Error::NotCausalNode { .. } => write!(f, "Not Causal Node"),
-            Error::UnusedSignal { .. } => write!(f, "Unused Signal"),
+            Error::IncompatibleTuple { .. } => write!(f, "incompatible tuple"),
+            Error::IncompatibleMatchStatements {
+                expected, received, ..
+            } => write!(
+                f,
+                "incompatible match statements: got {}, expected {}",
+                received, expected
+            ),
+            Error::MissingMatchStatement { identifier, .. } => {
+                write!(f, "missing match statement for `{identifier}`")
+            }
+            Error::NotStatementPattern { .. } => write!(f, "not statement pattern"),
+            Error::ArityMismatch {
+                input_count, arity, ..
+            } => write!(
+                f,
+                "arity mismatch: got {} input{}, expected {}",
+                input_count,
+                plural(*input_count),
+                arity
+            ),
+            Error::UnknownOuputSignal {
+                node_name,
+                signal_name,
+                ..
+            } => write!(
+                f,
+                "unknown output signal in node `{}`: `{}`",
+                node_name, signal_name
+            ),
+            Error::ExpectConstant { .. } => write!(f, "expected constant"),
+            Error::ExpectInput { .. } => write!(f, "expected input"),
+            Error::ExpectNumber { given_type, .. } => {
+                write!(f, "expected a number, got `{}`", given_type)
+            }
+            Error::ExpectAbstraction { .. } => write!(f, "expected abstraction"),
+            Error::ExpectOption { .. } => write!(f, "expected option"),
+            Error::ExpectStructure { .. } => write!(f, "expected structure"),
+            Error::ExpectTuple { .. } => write!(f, "expected tuple"),
+            Error::ExpectArray { .. } => write!(f, "expected array"),
+            Error::ExpectEvent { .. } => write!(f, "expected event"),
+            Error::ExpectSignal { .. } => write!(f, "expected signal"),
+            Error::ExpectOptionPattern { .. } => write!(f, "expected option pattern"),
+            Error::ExpectTuplePattern { .. } => write!(f, "expected tuple pattern"),
+            Error::IncompatibleLength { .. } => write!(f, "incompatible Length"),
+            Error::NoTypeInference { .. } => write!(f, "no type inference"),
+            Error::NotCausalSignal { .. } => write!(f, "not causal signal"),
+            Error::NotCausalNode { .. } => write!(f, "not causal node"),
+            Error::UnusedSignal { .. } => write!(f, "unused signal"),
         }
     }
 }

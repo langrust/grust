@@ -432,9 +432,9 @@ impl Typ {
                         .collect::<TRes<()>>()?;
                     Ok((**output).clone())
                 } else {
-                    let error = Error::IncompatibleInputsNumber {
-                        given_inputs_number: input_types.len(),
-                        expected_inputs_number: inputs.len(),
+                    let error = Error::ArityMismatch {
+                        input_count: input_types.len(),
+                        arity: inputs.len(),
                         location,
                     };
                     errors.push(error);
@@ -673,9 +673,9 @@ mod test {
                 Err(error)
             }
         } else {
-            let error = Error::IncompatibleInputsNumber {
-                given_inputs_number: input_types.len(),
-                expected_inputs_number: 2,
+            let error = Error::ArityMismatch {
+                input_count: input_types.len(),
+                arity: 2,
                 location,
             };
             Err(error)

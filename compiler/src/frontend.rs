@@ -1,22 +1,55 @@
-/// HIR construction from AST.
-pub mod into_hir;
+mod causality_analysis;
+mod dependency_graph;
+mod into_hir;
+mod normalizing;
+mod typing_analysis;
 
-/// Dependency graph construction algorithms.
-pub mod dependency_graph;
+pub use self::{into_hir::IntoHir, typing_analysis::TypeAnalysis};
 
-/// Causality analysis of HIR.
-pub mod causality_analysis;
+prelude! {}
 
-/// Normalization module.
-pub mod normalizing;
+fn present_errors(blah: &str, errors: &mut Vec<Error>) -> bool {
+    if !errors.is_empty() {
+        let count = errors.len();
+        eprintln!("{} error{} occurred during {}:", count, plural(count), blah);
+        for e in errors.drain(0..) {
+            eprintln!("- {}", e);
+        }
+        true
+    } else {
+        false
+    }
+}
 
-/// LIR construction from HIR.
-pub mod into_lir;
+fn handle_result<T>(res: TRes<T>) -> T {
+    match res {
+        Ok(res) => res,
+        Err(e) => {
+            panic!("a fatal error occurred: {}", e)
+        }
+    }
+}
 
-/// Typing analysis from HIR.
-pub mod typing_analysis;
+fn raw_hir_with(ast: Ast, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> hir::File {
+    handle_result(ast.into_hir(&mut hir::ctx::Simple::new(symbols, errors)))
+}
 
-pub use typing_analysis::TypeAnalysis;
+fn raw_hir(ast: Ast, symbols: &mut SymbolTable) -> (hir::File, Vec<Error>) {
+    let mut errors = vec![];
+    let hir = raw_hir_with(ast, symbols, &mut errors);
+    (hir, errors)
+}
 
-pub use into_hir::IntoHir;
-pub use into_lir::IntoLir;
+pub fn hir_analysis(ast: Ast, symbols: &mut SymbolTable) -> hir::File {
+    let (mut hir, mut errors) = raw_hir(ast, symbols);
+    let errors = &mut errors;
+    present_errors("HIR generation from AST", errors);
+    handle_result(hir.typing(symbols, errors));
+    present_errors("HIR type-checking", errors);
+    handle_result(hir.generate_dependency_graphs(symbols, errors));
+    present_errors("HIR dependency graph generation", errors);
+    handle_result(hir.causality_analysis(symbols, errors));
+    present_errors("HIR causality analysis", errors);
+    hir.normalize(symbols);
+    hir
+}

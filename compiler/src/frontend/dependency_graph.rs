@@ -1,3 +1,5 @@
+//! Dependency graph construction algorithms.
+
 mod component;
 mod ctx;
 mod expression;

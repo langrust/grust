@@ -393,9 +393,9 @@ mod flow_expr {
 
             // check inputs and node_inputs have the same length
             if inputs.len() != component_inputs.len() {
-                let error = Error::IncompatibleInputsNumber {
-                    given_inputs_number: inputs.len(),
-                    expected_inputs_number: component_inputs.len(),
+                let error = Error::ArityMismatch {
+                    input_count: inputs.len(),
+                    arity: component_inputs.len(),
                     location: ctxt.loc.clone(),
                 };
                 ctxt.errors.push(error);

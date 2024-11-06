@@ -13,16 +13,15 @@ pub use proc_macro::TokenStream;
 #[macro_use]
 pub mod prelude;
 
-prelude! {
-    frontend::typing_analysis::TypeAnalysis,
-    lir::Project,
-    quote::TokenStreamExt,
-}
+prelude! {}
 
 mod ext;
 
 pub mod frontend;
 pub mod hir;
+pub mod into_lir;
+
+pub use into_lir::IntoLir;
 
 /// Compiles input GRust tokens into output Rust tokens.
 pub fn handle_tokens(tokens: TokenStream) -> TokenStream {
@@ -35,55 +34,19 @@ pub fn handle_tokens(tokens: TokenStream) -> TokenStream {
 }
 
 /// Creates RustAST from GRust file.
-pub fn into_token_stream(ast: Ast) -> macro2::TokenStream {
+pub fn into_token_stream(ast: Ast) -> TokenStream2 {
     let mut symbol_table = SymbolTable::new();
-    let mut errors = vec![];
-    macro_rules! present_errors {
-        {
-            $desc:literal, $work:expr $(,)?
-        } => {{
-            let res = $work;
-            if !errors.is_empty() {
-                let desc = $desc;
-                let count = errors.len();
-                let plural = if count > 1 { "s" } else { "" };
-                eprintln!("{count} error{plural} occurred during {desc}:");
-                for err in &errors {
-                    println!("- {err}")
-                }
-            }
-            res.expect(concat!("failure during ", $desc))
-        }}
-    }
-
-    let mut hir = present_errors!(
-        "HIR generation from AST",
-        ast.into_hir(&mut hir::ctx::Simple::new(&mut symbol_table, &mut errors))
-    );
-
-    present_errors!("HIR typing", hir.typing(&mut symbol_table, &mut errors));
-
-    present_errors!(
-        "dependency graph generation",
-        hir.generate_dependency_graphs(&symbol_table, &mut errors)
-    );
-
-    present_errors!(
-        "causality analysis",
-        hir.causality_analysis(&symbol_table, &mut errors)
-    );
-
-    hir.normalize(&mut symbol_table);
-    let lir: Project = hir.into_lir(symbol_table);
+    let hir = frontend::hir_analysis(ast, &mut symbol_table);
+    let lir = hir.into_lir(symbol_table);
     let rust = lir.into_syn();
-
-    let mut tokens = macro2::TokenStream::new();
+    let mut tokens = TokenStream2::new();
+    use quote::TokenStreamExt;
     tokens.append_all(rust);
     tokens
 }
 
 /// Writes the generated code at the given filepath.
-pub fn dump_code(path_name: &str, tokens: &macro2::TokenStream) {
+pub fn dump_code(path_name: &str, tokens: &TokenStream2) {
     use std::{fs::OpenOptions, io::Write, path::Path, process::Command};
     let path = Path::new(path_name);
 

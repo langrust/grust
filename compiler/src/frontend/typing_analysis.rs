@@ -1,3 +1,5 @@
+//! Typing analysis from HIR.
+
 prelude! {}
 
 // "Empty" modules, *i.e.* only define `impl`-s and need not be `pub`lic.

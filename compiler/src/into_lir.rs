@@ -1,36 +1,28 @@
+//! LIR construction from HIR.
+
 prelude! {}
 
-/// LIR file construction from HIR project.
-pub mod file;
-
-/// LIR function construction from HIR function.
-pub mod function;
-
 /// LIR node files construction from HIR node.
-pub mod component;
-
-/// LIR expression construction from HIR expression.
-pub mod expression;
-
-/// LIR statement construction from HIR statement.
-pub mod statement;
-
-/// LIR expression construction from HIR stream expression.
-pub mod stream_expression;
-
-/// LIR item construction from HIR typedef.
-pub mod typedef;
-
+mod component;
 /// LIR contract construction from HIR contract.
-pub mod contract;
-
+mod contract;
+/// LIR expression construction from HIR expression.
+mod expression;
+/// LIR file construction from HIR project.
+mod file;
+/// LIR function construction from HIR function.
+mod function;
+mod interface;
 /// LIR memory construction from HIR typedef.
-pub mod memory;
-
+mod memory;
 /// LIR pattern construction from HIR pattern.
-pub mod pattern;
-
-pub mod interface;
+mod pattern;
+/// LIR statement construction from HIR statement.
+mod statement;
+/// LIR expression construction from HIR stream expression.
+mod stream_expression;
+/// LIR item construction from HIR typedef.
+mod typedef;
 
 /// HIR transformation into LIR.
 pub trait IntoLir<Ctx> {

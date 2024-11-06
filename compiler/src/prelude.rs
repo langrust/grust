@@ -21,8 +21,8 @@ pub use compiler_lir::{
 
 pub use crate::{
     ext::*,
-    frontend::{self, IntoHir, IntoLir},
-    hir,
+    frontend::{self, IntoHir},
+    hir, IntoLir, TokenStream,
 };
 
 /// Translation to Rust AST with additional information.

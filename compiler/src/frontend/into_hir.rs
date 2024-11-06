@@ -1,28 +1,30 @@
+//! HIR construction from AST.
+
 prelude! {}
 
 /// HIR Component construction from AST Component
-pub mod component;
+mod component;
 /// HIR Contract construction from AST Contract
-pub mod contract;
+mod contract;
 /// HIR Equation construction from AST Equation
-pub mod equation;
+mod equation;
 /// HIR Expression construction from AST Expression
-pub mod expression;
+mod expression;
 /// HIR File construction from AST File
-pub mod file;
+mod file;
 /// HIR Function construction from AST Function
-pub mod function;
+mod function;
 /// HIR Interface construction from AST Interface.
-pub mod interface;
+mod interface;
 /// HIR Pattern construction from AST Pattern
-pub mod pattern;
+mod pattern;
 /// HIR Statement construction from AST Statement
-pub mod statement;
+mod statement;
 /// HIR StreamExpression construction from AST StreamExpression
-pub mod stream_expression;
-pub mod typ;
+mod stream_expression;
+mod typ;
 /// HIR Typedef construction from AST Typedef.
-pub mod typedef;
+mod typedef;
 
 /// AST transformation into HIR.
 pub trait IntoHir<Ctxt> {

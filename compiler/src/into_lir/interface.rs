@@ -823,7 +823,7 @@ mod service_handler {
         synced::{Builder, Synced},
     }
 
-    use frontend::into_lir::interface::clean_synced;
+    use super::clean_synced;
 
     use super::{flow_instr, from_synced, triggered::TriggersGraph};
 

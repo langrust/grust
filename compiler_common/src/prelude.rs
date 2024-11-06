@@ -52,6 +52,14 @@ pub use crate::{
     synced, typ::Typ,
 };
 
+pub fn plural(n: usize) -> &'static str {
+    if n == 1 {
+        ""
+    } else {
+        "s"
+    }
+}
+
 /// Provides context-dependent a *less than* (`lt`) relation.
 pub trait Lt {
     /// Type of the context.

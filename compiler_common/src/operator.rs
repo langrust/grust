@@ -193,9 +193,9 @@ impl BinaryOperator {
             };
             Ok(Typ::function(vec![type_1.clone(), type_2], type_1))
         } else {
-            let error = Error::IncompatibleInputsNumber {
-                given_inputs_number: input_types.len(),
-                expected_inputs_number: 2,
+            let error = Error::ArityMismatch {
+                input_count: input_types.len(),
+                arity: 2,
                 location,
             };
             Err(error)
@@ -230,9 +230,9 @@ impl BinaryOperator {
             };
             Ok(Typ::function(vec![type_1, type_2], Typ::bool()))
         } else {
-            let error = Error::IncompatibleInputsNumber {
-                given_inputs_number: input_types.len(),
-                expected_inputs_number: 2,
+            let error = Error::ArityMismatch {
+                input_count: input_types.len(),
+                arity: 2,
                 location,
             };
             Err(error)
@@ -254,9 +254,9 @@ impl BinaryOperator {
                 Err(error)
             }
         } else {
-            let error = Error::IncompatibleInputsNumber {
-                given_inputs_number: input_types.len(),
-                expected_inputs_number: 2,
+            let error = Error::ArityMismatch {
+                input_count: input_types.len(),
+                arity: 2,
                 location,
             };
             Err(error)
@@ -360,9 +360,9 @@ impl UnaryOperator {
                 Err(error)
             }
         } else {
-            let error = Error::IncompatibleInputsNumber {
-                given_inputs_number: input_types.len(),
-                expected_inputs_number: 2,
+            let error = Error::ArityMismatch {
+                input_count: input_types.len(),
+                arity: 1,
                 location,
             };
             Err(error)
@@ -431,9 +431,9 @@ impl OtherOperator {
             };
             Ok(Typ::function(vec![type_1, type_2.clone(), type_3], type_2))
         } else {
-            let error = Error::IncompatibleInputsNumber {
-                given_inputs_number: input_types.len(),
-                expected_inputs_number: 2,
+            let error = Error::ArityMismatch {
+                input_count: input_types.len(),
+                arity: 1,
                 location,
             };
             Err(error)
