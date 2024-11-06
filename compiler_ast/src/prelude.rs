@@ -23,6 +23,6 @@ pub use crate::{
     stmt::{self, Stmt},
     stream,
     symbol::{self, SymbolTable},
-    typedef::{self, Typedef},
+    typedef::Typedef,
     Ast, Colon, Item,
 };
