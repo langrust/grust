@@ -2,14 +2,12 @@ prelude! {
     ast::stmt::LetDecl,
 }
 
-use super::{HIRFromAST, SimpleCtxt};
-
-impl<'a> HIRFromAST<SimpleCtxt<'a>> for LetDecl<ast::Expr> {
+impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for LetDecl<ast::Expr> {
     type HIR = hir::Stmt<hir::Expr>;
 
     // precondition: NOTHING is in symbol table
     // postcondition: construct HIR statement and check identifiers good use
-    fn hir_from_ast(self, ctxt: &mut SimpleCtxt<'a>) -> TRes<Self::HIR> {
+    fn hir_from_ast(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::HIR> {
         let LetDecl {
             typed_pattern,
             expression,

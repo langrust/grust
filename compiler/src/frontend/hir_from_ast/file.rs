@@ -3,12 +3,10 @@ prelude! {
     hir::interface::Interface,
 }
 
-use super::{HIRFromAST, SimpleCtxt};
-
-impl<'a> HIRFromAST<SimpleCtxt<'a>> for Ast {
+impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for Ast {
     type HIR = hir::File;
 
-    fn hir_from_ast(self, ctxt: &mut SimpleCtxt<'a>) -> TRes<Self::HIR> {
+    fn hir_from_ast(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::HIR> {
         // initialize symbol table with builtin operators
         ctxt.syms.initialize();
 

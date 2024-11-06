@@ -1,13 +1,11 @@
 prelude! {}
 
-use super::{HIRFromAST, SimpleCtxt};
-
-impl<'a> HIRFromAST<SimpleCtxt<'a>> for ast::Component {
+impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for ast::Component {
     type HIR = hir::Component;
 
     // precondition: node and its signals are already stored in symbol table
     // postcondition: construct HIR node and check identifiers good use
-    fn hir_from_ast(self, ctxt: &mut SimpleCtxt<'a>) -> TRes<Self::HIR> {
+    fn hir_from_ast(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::HIR> {
         let ast::Component {
             ident,
             contract,
@@ -44,12 +42,12 @@ impl<'a> HIRFromAST<SimpleCtxt<'a>> for ast::Component {
     }
 }
 
-impl<'a> HIRFromAST<SimpleCtxt<'a>> for ast::ComponentImport {
+impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for ast::ComponentImport {
     type HIR = hir::Component;
 
     // precondition: node and its signals are already stored in symbol table
     // postcondition: construct HIR node
-    fn hir_from_ast(self, ctxt: &mut SimpleCtxt<'a>) -> TRes<Self::HIR> {
+    fn hir_from_ast(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::HIR> {
         let ast::ComponentImport { path, .. } = self;
 
         let last = path.clone().segments.pop().unwrap().into_value();

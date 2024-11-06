@@ -2,14 +2,12 @@ prelude! {
     ast::{Colon, Typedef},
 }
 
-use super::{HIRFromAST, SimpleCtxt};
-
-impl<'a> HIRFromAST<SimpleCtxt<'a>> for Typedef {
+impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for Typedef {
     type HIR = hir::Typedef;
 
     // precondition: typedefs are already stored in symbol table
     // postcondition: construct HIR typedef and check identifiers good use
-    fn hir_from_ast(self, ctxt: &mut SimpleCtxt<'a>) -> TRes<Self::HIR> {
+    fn hir_from_ast(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::HIR> {
         let location = Location::default();
         match self {
             Typedef::Structure { ident, fields, .. } => {

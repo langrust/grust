@@ -8,7 +8,6 @@
 
 extern crate proc_macro;
 
-use frontend::hir_from_ast::SimpleCtxt;
 pub use proc_macro::TokenStream;
 
 #[macro_use]
@@ -59,7 +58,7 @@ pub fn into_token_stream(ast: Ast) -> macro2::TokenStream {
 
     let mut hir = present_errors!(
         "HIR generation from AST",
-        ast.hir_from_ast(&mut SimpleCtxt::new(&mut symbol_table, &mut errors))
+        ast.hir_from_ast(&mut hir::ctx::Simple::new(&mut symbol_table, &mut errors))
     );
 
     present_errors!("HIR typing", hir.typing(&mut symbol_table, &mut errors));

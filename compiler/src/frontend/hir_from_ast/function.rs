@@ -2,14 +2,12 @@ prelude! {
     ast::{ Function, stmt::Return },
 }
 
-use super::{HIRFromAST, SimpleCtxt};
-
-impl<'a> HIRFromAST<SimpleCtxt<'a>> for Function {
+impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for Function {
     type HIR = hir::Function;
 
     // precondition: function and its inputs are already stored in symbol table
     // postcondition: construct HIR function and check identifiers good use
-    fn hir_from_ast(self, ctxt: &mut SimpleCtxt<'a>) -> TRes<Self::HIR> {
+    fn hir_from_ast(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::HIR> {
         let Function {
             ident,
             output_type,

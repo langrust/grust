@@ -10,15 +10,13 @@ prelude! {
     itertools::Itertools,
 }
 
-use super::{HIRFromAST, SimpleCtxt};
-
-impl<'a> HIRFromAST<SimpleCtxt<'a>> for Eq {
+impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for Eq {
     type HIR = stream::Stmt;
 
     /// Pre-condition: equation's signal is already stored in symbol table.
     ///
     /// Post-condition: construct HIR equation and check identifiers good use.
-    fn hir_from_ast(self, ctxt: &mut SimpleCtxt<'a>) -> TRes<Self::HIR> {
+    fn hir_from_ast(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::HIR> {
         let location = Location::default();
 
         // get signals defined by the equation
@@ -170,13 +168,13 @@ impl<'a> HIRFromAST<SimpleCtxt<'a>> for Eq {
     }
 }
 
-impl<'a> HIRFromAST<SimpleCtxt<'a>> for ReactEq {
+impl<'a> HIRFromAST<hir::ctx::Simple<'a>> for ReactEq {
     type HIR = stream::Stmt;
 
     /// Pre-condition: equation's signal is already stored in symbol table.
     ///
     /// Post-condition: construct HIR equation and check identifiers good use.
-    fn hir_from_ast(self, ctxt: &mut SimpleCtxt<'a>) -> TRes<Self::HIR> {
+    fn hir_from_ast(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::HIR> {
         let location = Location::default();
 
         // get signals defined by the equation
