@@ -38,29 +38,7 @@ mk_new! { impl{T} StateElm<T> =>
 
 pub type StateElmInfo = StateElm<Typ>;
 
-mk_new! { impl StateElmInfo =>
-    Buffer : buffer_info {
-        ident : impl Into<String> = ident.into(),
-        data : Typ,
-    }
-    CalledNode : called_node_info {
-        memory_ident : impl Into<String> = memory_ident.into(),
-        node_name : impl Into<String> = node_name.into(),
-    }
-}
-
 pub type StateElmInit = StateElm<Expr>;
-
-mk_new! { impl StateElmInit =>
-    Buffer : buffer_init {
-        ident : impl Into<String> = ident.into(),
-        data : Expr,
-    }
-    CalledNode : called_node_init {
-        memory_ident : impl Into<String> = memory_ident.into(),
-        node_name : impl Into<String> = node_name.into(),
-    }
-}
 
 /// An input element structure.
 #[derive(Debug, PartialEq)]
@@ -94,6 +72,24 @@ mk_new! { impl Input =>
     }
 }
 
+impl Input {
+    pub fn to_syn(self) -> syn::ItemStruct {
+        let mut fields: Vec<syn::Field> = Vec::new();
+        for InputElm { identifier, typ } in self.elements {
+            let typ = typ.to_syn();
+            let identifier = format_ident!("{identifier}");
+            fields.push(parse_quote! { pub #identifier : #typ });
+        }
+
+        let name = format_ident!("{}", to_camel_case(&format!("{}Input", self.node_name)));
+        parse_quote! {
+            pub struct #name {
+                #(#fields,)*
+            }
+        }
+    }
+}
+
 /// A init function.
 #[derive(Debug, PartialEq)]
 pub struct Init {
@@ -110,6 +106,76 @@ mk_new! { impl Init =>
         node_name : impl Into<String> = node_name.into(),
         state_init : Vec<StateElmInit>,
         invariant_initialization : Vec<Term>,
+    }
+}
+
+impl Init {
+    pub fn to_syn(self, crates: &mut BTreeSet<String>) -> syn::ImplItemFn {
+        let state_ty = Ident::new(
+            &to_camel_case(&format!("{}State", self.node_name)),
+            Span::call_site(),
+        );
+        let signature = syn::Signature {
+            constness: None,
+            asyncness: None,
+            unsafety: None,
+            abi: None,
+            fn_token: Default::default(),
+            ident: Ident::new("init", Span::call_site()),
+            generics: Default::default(),
+            paren_token: Default::default(),
+            inputs: Default::default(),
+            variadic: None,
+            output: syn::ReturnType::Type(Default::default(), parse_quote! { #state_ty }),
+        };
+
+        let fields = self
+            .state_init
+            .into_iter()
+            .map(|element| -> syn::FieldValue {
+                match element {
+                    StateElmInit::Buffer { ident, data } => {
+                        let id = format_ident!("{}", ident);
+                        let expr: syn::Expr = data.to_syn(crates);
+                        parse_quote! { #id : #expr }
+                    }
+                    StateElmInit::CalledNode {
+                        memory_ident,
+                        node_name,
+                    } => {
+                        let id = Ident::new(&memory_ident, Span::call_site());
+                        let called_state_ty = Ident::new(
+                            &to_camel_case(&format!("{}State", node_name)),
+                            Span::call_site(),
+                        );
+                        parse_quote! { #id : #called_state_ty::init () }
+                    }
+                }
+            })
+            .collect();
+
+        let body = syn::Block {
+            brace_token: Default::default(),
+            stmts: vec![syn::Stmt::Expr(
+                syn::Expr::Struct(syn::ExprStruct {
+                    attrs: vec![],
+                    path: parse_quote! { #state_ty },
+                    brace_token: Default::default(),
+                    dot2_token: None,
+                    rest: None,
+                    fields,
+                    qself: None, // Add the qself field here
+                }),
+                None,
+            )],
+        };
+        syn::ImplItemFn {
+            attrs: vec![],
+            vis: syn::Visibility::Public(Default::default()),
+            defaultness: None,
+            sig: signature,
+            block: body,
+        }
     }
 }
 
@@ -138,6 +204,85 @@ mk_new! { impl Step =>
         state_elements_step: Vec<StateElmStep>,
         output_expression: Expr,
         contract: Contract,
+    }
+}
+
+impl Step {
+    /// Transform LIR step into RustAST implementation method.
+    pub fn to_syn(self, crates: &mut BTreeSet<String>) -> syn::ImplItemFn {
+        let attributes = self.contract.to_syn(false);
+
+        let input_ty_name = Ident::new(
+            &to_camel_case(&format!("{}Input", self.node_name)),
+            Span::call_site(),
+        );
+        let ty = parse_quote! { #input_ty_name };
+
+        let inputs = vec![
+            parse_quote!(&mut self),
+            syn::FnArg::Typed(syn::PatType {
+                attrs: vec![],
+                pat: Box::new(syn::Pat::Ident(syn::PatIdent {
+                    attrs: vec![],
+                    by_ref: None,
+                    mutability: None,
+                    ident: Ident::new("input", Span::call_site()),
+                    subpat: None,
+                })),
+                colon_token: Default::default(),
+                ty,
+            }),
+        ]
+        .into_iter()
+        .collect();
+
+        let signature = syn::Signature {
+            constness: None,
+            asyncness: None,
+            unsafety: None,
+            abi: None,
+            fn_token: Default::default(),
+            ident: Ident::new("step", Span::call_site()),
+            generics: Default::default(),
+            paren_token: Default::default(),
+            inputs,
+            variadic: None,
+            output: syn::ReturnType::Type(Default::default(), Box::new(self.output_type.to_syn())),
+        };
+
+        let statements = {
+            let mut vec = Vec::with_capacity(self.state_elements_step.len() + self.body.len());
+
+            for stmt in self.body {
+                vec.push(stmt.to_syn(crates))
+            }
+            for StateElmStep {
+                identifier,
+                expression,
+            } in self.state_elements_step
+            {
+                let id = format_ident!("{}", identifier);
+                let expr = expression.to_syn(crates);
+                vec.push(parse_quote! { self.#id = #expr; })
+            }
+
+            vec.push(syn::Stmt::Expr(self.output_expression.to_syn(crates), None));
+
+            vec
+        };
+
+        let body = syn::Block {
+            stmts: statements,
+            brace_token: Default::default(),
+        };
+
+        syn::ImplItemFn {
+            attrs: attributes,
+            vis: syn::Visibility::Public(Default::default()),
+            defaultness: None,
+            sig: signature,
+            block: body,
+        }
     }
 }
 
@@ -177,6 +322,48 @@ mk_new! { impl State => new {
     step : Step,
 } }
 
+impl State {
+    /// Transform LIR state into RustAST structure and implementation.
+    pub fn to_syn(self, crates: &mut BTreeSet<String>) -> (syn::ItemStruct, syn::ItemImpl) {
+        let fields: Vec<syn::Field> = self
+            .elements
+            .into_iter()
+            .map(|element| match element {
+                StateElm::Buffer { ident, data: typ } => {
+                    let ident = format_ident!("{ident}");
+                    let ty = typ.to_syn();
+                    parse_quote! { #ident : #ty }
+                }
+                StateElm::CalledNode {
+                    memory_ident,
+                    node_name,
+                } => {
+                    let name = format_ident!("{}", to_camel_case(&format!("{}State", node_name)));
+                    let memory_ident = format_ident!("{memory_ident}");
+
+                    parse_quote! { #memory_ident : #name }
+                }
+            })
+            .collect();
+
+        let name = format_ident!("{}", to_camel_case(&format!("{}State", self.node_name)));
+        let structure = parse_quote!(
+            pub struct #name { #(#fields),* }
+        );
+
+        let init = self.init.to_syn(crates);
+        let step = self.step.to_syn(crates);
+        let implementation = parse_quote!(
+            impl #name {
+                #init
+                #step
+            }
+        );
+
+        (structure, implementation)
+    }
+}
+
 /// A state-machine structure.
 #[derive(Debug, PartialEq)]
 pub struct StateMachine {
@@ -193,3 +380,118 @@ mk_new! { impl StateMachine => new {
     input : Input,
     state : State,
 } }
+
+impl StateMachine {
+    /// Transform LIR state_machine into items.
+    pub fn to_syn(self, crates: &mut BTreeSet<String>) -> Vec<syn::Item> {
+        let mut items = vec![];
+
+        let input_structure = self.input.to_syn();
+        items.push(syn::Item::Struct(input_structure));
+
+        let (state_structure, state_implementation) = self.state.to_syn(crates);
+        items.push(syn::Item::Struct(state_structure));
+        items.push(syn::Item::Impl(state_implementation));
+
+        items
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn should_create_rust_ast_associated_method_from_lir_node_init() {
+        let init = Init::new(
+            format!("Node"),
+            vec![
+                StateElmInit::buffer("mem_i", Expr::lit(Constant::int(parse_quote!(0i64)))),
+                StateElmInit::called_node("called_node_state", "CalledNode"),
+            ],
+            vec![],
+        );
+
+        let control = parse_quote! {
+            pub fn init() -> NodeState {
+                NodeState {
+                    mem_i: 0i64,
+                    called_node_state: CalledNodeState::init()
+                }
+            }
+        };
+        assert_eq!(init.to_syn(&mut Default::default()), control)
+    }
+
+    #[test]
+    fn should_create_rust_ast_associated_method_from_lir_node_step() {
+        let init = Step {
+            contract: Default::default(),
+            node_name: format!("Node"),
+            output_type: Typ::int(),
+            body: vec![
+                Stmt::Let {
+                    pattern: Pattern::ident("o"),
+                    expression: Expr::field_access(
+                        Expr::ident("self"),
+                        FieldIdentifier::named("mem_i"),
+                    ),
+                },
+                Stmt::Let {
+                    pattern: Pattern::ident("y"),
+                    expression: Expr::node_call(
+                        "called_node_state",
+                        "called_node",
+                        "CalledNodeInput",
+                        vec![],
+                    ),
+                },
+            ],
+            state_elements_step: vec![
+                StateElmStep::new(
+                    "mem_i",
+                    Expr::binop(
+                        operator::BinaryOperator::Add,
+                        Expr::ident("o"),
+                        Expr::lit(Constant::Integer(parse_quote!(1i64))),
+                    ),
+                ),
+                StateElmStep::new("called_node_state", Expr::ident("new_called_node_state")),
+            ],
+            output_expression: Expr::binop(
+                operator::BinaryOperator::Add,
+                Expr::ident("o"),
+                Expr::ident("y"),
+            ),
+        };
+
+        let control = parse_quote! {
+            pub fn step(&mut self, input: NodeInput) -> i64 {
+                let o = self.mem_i;
+                let y = self.called_node_state.step(CalledNodeInput {});
+                self.mem_i = o + 1i64;
+                self.called_node_state = new_called_node_state;
+                o + y
+            }
+        };
+        assert_eq!(init.to_syn(&mut Default::default()), control)
+    }
+
+    #[test]
+    fn should_create_rust_ast_structure_from_lir_node_input() {
+        let input = Input {
+            node_name: format!("Node"),
+            elements: vec![InputElm {
+                identifier: format!("i"),
+                typ: Typ::int(),
+            }],
+        };
+        let control = parse_quote!(
+            pub struct NodeInput {
+                pub i: i64,
+            }
+        );
+
+        assert_eq!(input.to_syn(), control)
+    }
+}

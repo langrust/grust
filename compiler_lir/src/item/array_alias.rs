@@ -20,3 +20,41 @@ mk_new! { impl ArrayAlias =>
         size: usize,
     }
 }
+
+impl ArrayAlias {
+    pub fn to_syn(self) -> syn::ItemType {
+        let size = self.size;
+        syn::ItemType {
+            attrs: Default::default(),
+            vis: syn::Visibility::Public(Default::default()),
+            type_token: Default::default(),
+            ident: Ident::new(&self.name, Span::call_site()),
+            generics: Default::default(),
+            eq_token: Default::default(),
+            ty: Box::new(syn::Type::Array(syn::TypeArray {
+                bracket_token: Default::default(),
+                elem: Box::new(self.array_type.to_syn()),
+                semi_token: Default::default(),
+                len: parse_quote! { #size},
+            })),
+            semi_token: Default::default(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn should_create_rust_ast_type_alias_from_lir_array_alias() {
+        let array_alias = ArrayAlias {
+            name: "Matrix5x5".into(),
+            array_type: Typ::array(Typ::int(), 5),
+            size: 5,
+        };
+
+        let control = parse_quote! { pub type Matrix5x5 = [[i64; 5usize]; 5usize];};
+        assert_eq!(array_alias.to_syn(), control)
+    }
+}

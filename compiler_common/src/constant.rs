@@ -1,5 +1,5 @@
 prelude! {
-    syn::{LitInt, LitFloat, LitBool, token::Paren, Parse, Spanned, ParseStream},
+    syn::{LitInt, LitFloat, LitBool, token::Paren, Parse, Spanned},
 }
 
 /// GRust constants.
@@ -25,6 +25,7 @@ pub enum Constant {
     /// Default constant
     Default,
 }
+
 mk_new! { impl Constant =>
     Integer: int(l: LitInt = l)
     Float: float(l: LitFloat = l)
@@ -35,6 +36,48 @@ mk_new! { impl Constant =>
 }
 
 impl Constant {
+    /// The `syn` version of a constant.
+    pub fn to_syn(self) -> syn::Expr {
+        prelude!(syn::{Expr, ExprLit, ExprTuple});
+        match self {
+            Constant::Integer(i) => Expr::Lit(ExprLit {
+                attrs: vec![],
+                lit: syn::Lit::Int(LitInt::new(
+                    &(i.base10_digits().to_owned() + "i64"),
+                    i.span(),
+                )),
+            }),
+            Constant::Float(f) => Expr::Lit(ExprLit {
+                attrs: vec![],
+                lit: {
+                    // force `f64` suffix
+                    let f = if f.suffix() == "" {
+                        let mut s = f.to_string();
+                        // careful on trailing `.`
+                        if s.ends_with(".") {
+                            s.push('0');
+                        }
+                        s.push_str("f64");
+                        syn::LitFloat::new(&s, f.span())
+                    } else {
+                        f.clone()
+                    };
+                    syn::Lit::Float(f)
+                },
+            }),
+            Constant::Boolean(b) => Expr::Lit(ExprLit {
+                attrs: vec![],
+                lit: syn::Lit::Bool(b.clone()),
+            }),
+            Constant::Unit(paren_token) => Expr::Tuple(ExprTuple {
+                attrs: vec![],
+                paren_token,
+                elems: Default::default(),
+            }),
+            Constant::Default => parse_quote! { Default::default() },
+        }
+    }
+
     /// Get the [Typ] of the constant.
     pub fn get_type(&self) -> Typ {
         match self {
