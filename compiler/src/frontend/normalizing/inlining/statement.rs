@@ -1,12 +1,12 @@
 prelude! {
     petgraph::algo::toposort,
     graph::*,
-    hir::{ IdentifierCreator, Memory, Component, Stmt, stream },
+    hir::{ IdentifierCreator, Memory, Component, stream },
 }
 
 use super::Union;
 
-impl Stmt<stream::Expr> {
+impl stream::Stmt {
     /// Add the statement identifier to the identifier creator.
     ///
     /// It will add the statement identifier to the identifier creator. If the identifier already
@@ -50,7 +50,7 @@ impl Stmt<stream::Expr> {
     pub fn replace_by_context(
         &self,
         context_map: &HashMap<usize, Union<usize, stream::Expr>>,
-    ) -> Stmt<stream::Expr> {
+    ) -> stream::Stmt {
         let mut new_statement = self.clone();
 
         // replace statement's identifiers by the new ones
@@ -101,7 +101,7 @@ impl Stmt<stream::Expr> {
         identifier_creator: &mut IdentifierCreator,
         symbol_table: &mut SymbolTable,
         nodes: &HashMap<usize, Component>,
-    ) -> Vec<Stmt<stream::Expr>> {
+    ) -> Vec<stream::Stmt> {
         let mut current_statements = vec![self.clone()];
         let mut new_statements =
             self.inline_when_needed(memory, identifier_creator, symbol_table, nodes);
@@ -124,7 +124,7 @@ impl Stmt<stream::Expr> {
         identifier_creator: &mut IdentifierCreator,
         symbol_table: &mut SymbolTable,
         nodes: &HashMap<usize, Component>,
-    ) -> Vec<Stmt<stream::Expr>> {
+    ) -> Vec<stream::Stmt> {
         match &self.expression.kind {
             stream::Kind::NodeApplication {
                 called_node_id,

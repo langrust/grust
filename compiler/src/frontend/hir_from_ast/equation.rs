@@ -13,7 +13,7 @@ prelude! {
 use super::{HIRFromAST, SimpleCtxt};
 
 impl<'a> HIRFromAST<SimpleCtxt<'a>> for Eq {
-    type HIR = hir::Stmt<stream::Expr>;
+    type HIR = stream::Stmt;
 
     /// Pre-condition: equation's signal is already stored in symbol table.
     ///
@@ -171,7 +171,7 @@ impl<'a> HIRFromAST<SimpleCtxt<'a>> for Eq {
 }
 
 impl<'a> HIRFromAST<SimpleCtxt<'a>> for ReactEq {
-    type HIR = hir::Stmt<stream::Expr>;
+    type HIR = stream::Stmt;
 
     /// Pre-condition: equation's signal is already stored in symbol table.
     ///

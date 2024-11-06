@@ -311,7 +311,7 @@ impl expr::Kind<stream::Expr> {
         arms: &Vec<(
             hir::pattern::Pattern,
             Option<stream::Expr>,
-            Vec<hir::Stmt<stream::Expr>>,
+            Vec<stream::Stmt>,
             stream::Expr,
         )>,
     ) -> TRes<Vec<(usize, Label)>> {
