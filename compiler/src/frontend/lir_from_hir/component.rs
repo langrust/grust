@@ -1,10 +1,8 @@
 prelude! {
     hir::{Component, ComponentDefinition, ComponentImport},
     lir::{
-        item::{
-            Item, Import,
-            state_machine::{Input, InputElm, Init, Step, State, StateMachine},
-        },
+        item::{Item, Import},
+        state_machine::{Input, InputElm, Init, Step, State, StateMachine}
     },
 }
 

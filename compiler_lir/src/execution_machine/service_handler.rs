@@ -1,6 +1,5 @@
 prelude! {
-    BTreeMap as Map,
-    item::execution_machine::{flows_context::FlowsContext, ArrivingFlow}
+    execution_machine::{flows_context::FlowsContext, ArrivingFlow},
 }
 
 #[derive(Debug, PartialEq)]
@@ -301,7 +300,7 @@ pub enum FlowInstruction {
     ),
     HandleDelay(Vec<String>, Vec<MatchArm>),
     Seq(Vec<Self>),
-    Para(Map<ParaMethod, Vec<Self>>),
+    Para(BTreeMap<ParaMethod, Vec<Self>>),
 }
 impl FlowInstruction {
     /// Transform LIR instruction on flows into statement.
@@ -574,7 +573,7 @@ mk_new! { impl FlowInstruction =>
         instrs: Vec<FlowInstruction> = instrs,
     )
     Para: para(
-        para_instr: Map<ParaMethod, Vec<Self>> = para_instr,
+        para_instr: BTreeMap<ParaMethod, Vec<Self>> = para_instr,
     )
 }
 

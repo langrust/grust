@@ -5,10 +5,10 @@ prelude! {
             FlowStatement, Interface, Service,
         },
     },
-    lir::item::execution_machine::{
-        flows_context::FlowsContext,
-        service_handler::ServiceHandler,
-        runtime_loop::{InputHandler, RuntimeLoop},
+    lir::execution_machine::{
+        FlowsContext,
+        ServiceHandler,
+        InputHandler, RuntimeLoop,
         ExecutionMachine,TimingEvent, InterfaceFlow,
     },
 }
@@ -817,9 +817,8 @@ mod triggered {
 mod service_handler {
     prelude! {
         lir::{
-            item::execution_machine::{
-                service_handler::{FlowHandler, FlowInstruction, MatchArm, ServiceHandler},
-                ArrivingFlow,
+            execution_machine::{
+                FlowHandler, FlowInstruction, MatchArm, ServiceHandler, ArrivingFlow,
             },
             Pattern,
         },
@@ -1005,9 +1004,8 @@ mod flow_instr {
             },
             IdentifierCreator, Service,
         },
-        lir::item::execution_machine::{
-            flows_context::FlowsContext, service_handler::{Expression, FlowInstruction},
-            TimingEvent, TimingEventKind,
+        lir::execution_machine::{
+            FlowsContext, Expression, FlowInstruction, TimingEvent, TimingEventKind,
         },
     }
 
@@ -1942,7 +1940,7 @@ mod from_synced {
     prelude! { just
         BTreeMap as Map,
         hir::interface::{ FlowStatement, FlowDeclaration, FlowInstantiation },
-        lir::item::execution_machine::service_handler::{ParaMethod, FlowInstruction},
+        lir::execution_machine::{ParaMethod, FlowInstruction},
         synced::{ CtxSpec, Synced },
     }
 

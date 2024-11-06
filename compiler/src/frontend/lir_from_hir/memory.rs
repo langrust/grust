@@ -2,7 +2,7 @@ use itertools::Itertools;
 
 prelude! {
     hir::memory::{Buffer, CalledNode, Memory},
-    lir::item::state_machine::{StateElmInit, StateElmInfo, StateElmStep},
+    lir::state_machine::{StateElmInit, StateElmInfo, StateElmStep},
 }
 
 use super::LIRFromHIR;
