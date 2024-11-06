@@ -1,6 +1,6 @@
-prelude! {
-    hir::File
-}
+//! Normalization module.
+
+prelude! {}
 
 mod flow_dependency_graph;
 mod inlining;
@@ -8,7 +8,7 @@ mod memorize;
 mod normal_form;
 mod scheduling;
 
-impl File {
+impl hir::File {
     /// Normalize HIR nodes in file.
     ///
     /// This is a chain of the following computations:

@@ -1,3 +1,5 @@
+//! Causality analysis of HIR.
+
 prelude! {
     graph::Label,
 }

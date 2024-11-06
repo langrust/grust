@@ -136,9 +136,9 @@ impl IntoHir<hir::ctx::PatLoc<'_>> for stream::Expr {
                         SymbolKind::Node { inputs, .. } => {
                             // check inputs and node_inputs have the same length
                             if inputs.len() != inputs_stream_expressions.len() {
-                                let error = Error::IncompatibleInputsNumber {
-                                    given_inputs_number: inputs_stream_expressions.len(),
-                                    expected_inputs_number: inputs.len(),
+                                let error = Error::ArityMismatch {
+                                    input_count: inputs_stream_expressions.len(),
+                                    arity: inputs.len(),
                                     location: ctxt.loc.clone(),
                                 };
                                 ctxt.errors.push(error);
