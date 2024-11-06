@@ -3,7 +3,7 @@ prelude! {
     hir::{ Dependencies, IdentifierCreator, stream },
 }
 
-impl hir::expr::Kind<stream::Expr> {
+impl stream::ExprKind {
     /// Change HIR expression into a normal form.
     ///
     /// The normal form of an expression is as follows:

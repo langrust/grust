@@ -5,6 +5,10 @@ prelude! {
     hir::{Dependencies, expr},
 }
 
+pub type Stmt = hir::Stmt<Expr>;
+
+pub type ExprKind = hir::expr::Kind<Expr>;
+
 #[derive(Debug, PartialEq, Clone)]
 /// LanGRust stream expression kind AST.
 pub enum Kind {
@@ -158,5 +162,3 @@ impl Expr {
         }
     }
 }
-
-pub type Stmt = hir::Stmt<Expr>;

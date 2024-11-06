@@ -5,7 +5,7 @@ prelude! {
 
 use super::Union;
 
-impl hir::expr::Kind<stream::Expr> {
+impl stream::ExprKind {
     /// Replace identifier occurrence by element in context.
     ///
     /// It will modify the expression according to the context:

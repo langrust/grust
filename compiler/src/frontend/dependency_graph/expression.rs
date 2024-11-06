@@ -5,7 +5,7 @@ prelude! {
 
 use super::ctx;
 
-impl expr::Kind<stream::Expr> {
+impl stream::ExprKind {
     /// Get nodes applications identifiers.
     pub fn get_called_nodes(&self) -> Vec<usize> {
         match &self {
@@ -177,7 +177,7 @@ impl expr::Kind<stream::Expr> {
     }
 }
 
-impl expr::Kind<stream::Expr> {
+impl stream::ExprKind {
     /// Compute dependencies of an abstraction stream expression.
     fn abstraction_deps() -> TRes<Vec<(usize, Label)>> {
         Ok(vec![])
