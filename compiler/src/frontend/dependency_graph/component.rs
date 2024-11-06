@@ -1,8 +1,9 @@
 prelude! {
     graph::*,
     hir::{Component, ComponentDefinition, ComponentImport},
-    frontend::ctx::*,
 }
+
+use super::ctx;
 
 impl Component {
     /// Store nodes applications as dependencies.
@@ -26,7 +27,7 @@ impl Component {
     ///     x: int = i;     // depends on i
     /// }
     /// ```
-    pub fn compute_dependencies(&mut self, ctx: &mut Ctx) -> TRes<()> {
+    pub fn compute_dependencies(&mut self, ctx: &mut ctx::Ctx) -> TRes<()> {
         match self {
             Component::Definition(comp_def) => comp_def.compute_dependencies(ctx),
             Component::Import(comp_import) => Ok(comp_import.compute_dependencies(ctx)),
@@ -54,7 +55,7 @@ impl ComponentImport {
     ///     x: int = i;     // depends on i
     /// }
     /// ```
-    pub fn compute_dependencies(&mut self, ctx: &mut Ctx) {
+    pub fn compute_dependencies(&mut self, ctx: &mut ctx::Ctx) {
         // initiate graph
         let mut graph = self.create_initialized_graph(ctx.symbol_table);
 
@@ -80,7 +81,7 @@ impl ComponentImport {
     ///
     /// The created graph has every node's signals as vertices.
     /// But no edges are added.
-    fn create_initialized_graph(&self, symbol_table: &SymbolTable) -> Graph {
+    fn create_initialized_graph(&self, symbol_table: &SymbolTable) -> ctx::Graph {
         // create an empty graph
         let mut graph = DiGraphMap::new();
 
@@ -102,7 +103,7 @@ impl ComponentDefinition {
     ///
     /// The created graph has every node's signals as vertices.
     /// But no edges are added.
-    fn create_initialized_graph(&self, symbol_table: &SymbolTable) -> Graph {
+    fn create_initialized_graph(&self, symbol_table: &SymbolTable) -> ctx::Graph {
         // create an empty graph
         let mut graph = DiGraphMap::new();
 
@@ -185,7 +186,7 @@ impl ComponentDefinition {
     ///     x: int = i;     // depends on i
     /// }
     /// ```
-    pub fn compute_dependencies(&mut self, ctx: &mut Ctx) -> TRes<()> {
+    pub fn compute_dependencies(&mut self, ctx: &mut ctx::Ctx) -> TRes<()> {
         // initiate graph
         let mut graph = self.create_initialized_graph(ctx.symbol_table);
 
@@ -217,7 +218,7 @@ impl ComponentDefinition {
     ///     x: int = i;     // depends on i
     /// }
     /// ```
-    fn add_equations_dependencies(&self, ctx: &mut GraphCtx) -> TRes<()> {
+    fn add_equations_dependencies(&self, ctx: &mut ctx::GraphCtx) -> TRes<()> {
         let mut processus_manager = self.create_initialized_processus_manager(ctx.symbol_table);
 
         // scope for inner `ctx`
@@ -246,7 +247,7 @@ impl ComponentDefinition {
         Ok(())
     }
 
-    fn construct_reduced_graph(&mut self, ctx: &mut Ctx) {
+    fn construct_reduced_graph(&mut self, ctx: &mut ctx::Ctx) {
         ctx.reduced_graphs
             .insert(self.id, self.create_initialized_graph(ctx.symbol_table));
 
@@ -281,7 +282,7 @@ impl ComponentDefinition {
     fn add_signal_dependencies_over_inputs(
         &self,
         signal: usize,
-        ctx: &mut Ctx,
+        ctx: &mut ctx::Ctx,
         processus_manager: &mut HashMap<usize, Color>,
     ) {
         let ComponentDefinition { id: node, .. } = self;

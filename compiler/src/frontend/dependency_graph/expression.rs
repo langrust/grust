@@ -1,8 +1,9 @@
 prelude! {
     graph::*,
     hir::{expr, stream},
-    frontend::ctx::*,
 }
+
+use super::ctx;
 
 impl expr::Kind<stream::Expr> {
     /// Get nodes applications identifiers.
@@ -135,7 +136,7 @@ impl expr::Kind<stream::Expr> {
     /// The stream expression `my_node(f(x), 1).o` depends on the signal `x` with
     /// a dependency label weight of 2. Indeed, the expression depends on the memory
     /// of the memory of `x` (the signal is behind 2 fby operations).
-    pub fn compute_dependencies(&self, ctx: &mut GraphProcCtx) -> TRes<Vec<(usize, Label)>> {
+    pub fn compute_dependencies(&self, ctx: &mut ctx::GraphProcCtx) -> TRes<Vec<(usize, Label)>> {
         use expr::Kind::*;
         match self {
             Constant { .. } => Self::constant_deps(),
@@ -193,7 +194,7 @@ impl expr::Kind<stream::Expr> {
     }
 
     fn fun_app_deps(
-        ctx: &mut GraphProcCtx,
+        ctx: &mut ctx::GraphProcCtx,
         function: &stream::Expr,
         inputs: &Vec<stream::Expr>,
     ) -> TRes<Vec<(usize, Label)>> {
@@ -212,7 +213,7 @@ impl expr::Kind<stream::Expr> {
 
     /// Compute dependencies of an array stream expression.
     pub fn array_deps(
-        ctx: &mut GraphProcCtx,
+        ctx: &mut ctx::GraphProcCtx,
         elems: &Vec<stream::Expr>,
     ) -> TRes<Vec<(usize, Label)>> {
         let mut res = Vec::with_capacity(elems.len());
@@ -226,7 +227,7 @@ impl expr::Kind<stream::Expr> {
 
     /// Compute dependencies of a binop stream expression.
     fn binop_deps(
-        ctx: &mut GraphProcCtx,
+        ctx: &mut ctx::GraphProcCtx,
         lhs: &stream::Expr,
         rhs: &stream::Expr,
     ) -> TRes<Vec<(usize, Label)>> {
@@ -242,7 +243,7 @@ impl expr::Kind<stream::Expr> {
     /// Compute dependencies of a field access stream expression.
     fn field_access_deps(
         &self,
-        ctx: &mut GraphProcCtx,
+        ctx: &mut ctx::GraphProcCtx,
         expr: &stream::Expr,
     ) -> TRes<Vec<(usize, Label)>> {
         // get accessed expression dependencies
@@ -252,7 +253,7 @@ impl expr::Kind<stream::Expr> {
 
     /// Compute dependencies of a fold stream expression.
     fn fold_deps(
-        ctx: &mut GraphProcCtx,
+        ctx: &mut ctx::GraphProcCtx,
         expr: &stream::Expr,
         init: &stream::Expr,
     ) -> TRes<Vec<(usize, Label)>> {
@@ -279,7 +280,7 @@ impl expr::Kind<stream::Expr> {
 
     /// Compute dependencies of a ifthenelse stream expression.
     pub fn ite_deps(
-        ctx: &mut GraphProcCtx,
+        ctx: &mut ctx::GraphProcCtx,
         c: &stream::Expr,
         t: &stream::Expr,
         e: &stream::Expr,
@@ -297,7 +298,7 @@ impl expr::Kind<stream::Expr> {
     }
 
     /// Compute dependencies of a map stream expression.
-    pub fn map_deps(ctx: &mut GraphProcCtx, expr: &stream::Expr) -> TRes<Vec<(usize, Label)>> {
+    pub fn map_deps(ctx: &mut ctx::GraphProcCtx, expr: &stream::Expr) -> TRes<Vec<(usize, Label)>> {
         // get mapped expression dependencies
         expr.compute_dependencies(ctx)?;
         Ok(expr.get_dependencies().clone())
@@ -306,7 +307,7 @@ impl expr::Kind<stream::Expr> {
     /// Compute dependencies of a match stream expression.
     pub fn match_deps(
         &self,
-        ctx: &mut GraphProcCtx,
+        ctx: &mut ctx::GraphProcCtx,
         expr: &stream::Expr,
         arms: &Vec<(
             hir::pattern::Pattern,
@@ -356,7 +357,7 @@ impl expr::Kind<stream::Expr> {
     /// Compute dependencies of a sort stream expression.
     pub fn sort_deps(
         &self,
-        ctx: &mut GraphProcCtx,
+        ctx: &mut ctx::GraphProcCtx,
         expr: &stream::Expr,
     ) -> TRes<Vec<(usize, Label)>> {
         // get sorted expression dependencies
@@ -366,7 +367,7 @@ impl expr::Kind<stream::Expr> {
 
     /// Compute dependencies of a structure stream expression.
     pub fn structure_deps(
-        ctx: &mut GraphProcCtx,
+        ctx: &mut ctx::GraphProcCtx,
         fields: &Vec<(usize, stream::Expr)>,
     ) -> TRes<Vec<(usize, Label)>> {
         // propagate dependencies computation
@@ -381,7 +382,7 @@ impl expr::Kind<stream::Expr> {
 
     /// Compute dependencies of a tuple element access stream expression.
     pub fn tuple_access_deps(
-        ctx: &mut GraphProcCtx,
+        ctx: &mut ctx::GraphProcCtx,
         expr: &stream::Expr,
     ) -> TRes<Vec<(usize, Label)>> {
         // get accessed expression dependencies
@@ -391,7 +392,7 @@ impl expr::Kind<stream::Expr> {
 
     /// Compute dependencies of an tuple stream expression.
     pub fn tuple_deps(
-        ctx: &mut GraphProcCtx,
+        ctx: &mut ctx::GraphProcCtx,
         elems: &Vec<stream::Expr>,
     ) -> TRes<Vec<(usize, Label)>> {
         let mut deps = Vec::with_capacity(25);
@@ -405,7 +406,10 @@ impl expr::Kind<stream::Expr> {
     }
 
     /// Compute dependencies of a unop stream expression.
-    pub fn unop_deps(ctx: &mut GraphProcCtx, expr: &stream::Expr) -> TRes<Vec<(usize, Label)>> {
+    pub fn unop_deps(
+        ctx: &mut ctx::GraphProcCtx,
+        expr: &stream::Expr,
+    ) -> TRes<Vec<(usize, Label)>> {
         // get expression dependencies
         expr.compute_dependencies(ctx)?;
         Ok(expr.get_dependencies().clone())
@@ -413,7 +417,7 @@ impl expr::Kind<stream::Expr> {
 
     /// Compute dependencies of a zip stream expression.
     pub fn zip_deps(
-        ctx: &mut GraphProcCtx,
+        ctx: &mut ctx::GraphProcCtx,
         arrays: &Vec<stream::Expr>,
     ) -> TRes<Vec<(usize, Label)>> {
         let mut deps = Vec::with_capacity(25);

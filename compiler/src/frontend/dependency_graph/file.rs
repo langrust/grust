@@ -1,10 +1,10 @@
-use petgraph::algo::toposort;
-
 prelude! {
     graph::*,
     hir::File,
-    frontend::ctx::*,
 }
+
+use super::ctx;
+use petgraph::algo::toposort;
 
 impl File {
     /// Generate dependency graph for every nodes/component.
@@ -47,7 +47,7 @@ impl File {
         });
 
         // ordered nodes complete their dependency graphs
-        let mut ctx = Ctx::new(symbol_table, &mut nodes_reduced_graphs, errors);
+        let mut ctx = ctx::Ctx::new(symbol_table, &mut nodes_reduced_graphs, errors);
         components
             .iter_mut()
             .map(|component| component.compute_dependencies(&mut ctx))

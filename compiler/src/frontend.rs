@@ -18,7 +18,5 @@ pub mod typing_analysis;
 
 pub use typing_analysis::TypeAnalysis;
 
-pub mod ctx;
-
 pub use into_hir::IntoHir;
 pub use into_lir::IntoLir;

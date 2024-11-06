@@ -1,8 +1,9 @@
 prelude! {
     graph::*,
     hir::stream,
-    frontend::ctx::*,
 }
+
+use super::ctx;
 
 impl stream::Expr {
     /// Get nodes applications identifiers.
@@ -44,7 +45,7 @@ impl stream::Expr {
     /// The stream expression `my_node(f(x), 1).o` depends on the signal `x` with
     /// a dependency label weight of 2. Indeed, the expression depends on the memory
     /// of the memory of `x` (the signal is behind 2 fby operations).
-    pub fn compute_dependencies(&self, ctx: &mut GraphProcCtx) -> TRes<()> {
+    pub fn compute_dependencies(&self, ctx: &mut ctx::GraphProcCtx) -> TRes<()> {
         match &self.kind {
             stream::Kind::FollowedBy { ref constant, id } => {
                 // constant should not have dependencies
