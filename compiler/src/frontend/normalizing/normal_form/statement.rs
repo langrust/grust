@@ -3,7 +3,7 @@ prelude! {
     hir::{ Dependencies, IdentifierCreator, Stmt, stream },
 }
 
-impl Stmt<stream::Expr> {
+impl stream::Stmt {
     /// Change HIR statement into a normal form.
     ///
     /// The normal form of an statement is as follows:
@@ -28,7 +28,7 @@ impl Stmt<stream::Expr> {
         nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
         identifier_creator: &mut IdentifierCreator,
         symbol_table: &mut SymbolTable,
-    ) -> Vec<Stmt<stream::Expr>> {
+    ) -> Vec<stream::Stmt> {
         let Stmt {
             pattern,
             mut expression,

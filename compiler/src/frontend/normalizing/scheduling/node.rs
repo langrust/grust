@@ -2,7 +2,7 @@ use petgraph::algo::toposort;
 
 prelude! {
     graph::*,
-    hir::{ Component, ComponentDefinition, Stmt, stream },
+    hir::{ Component, ComponentDefinition, stream },
 }
 
 impl Component {
@@ -84,7 +84,7 @@ impl ComponentDefinition {
             .enumerate()
             .map(|(order, signal_id)| (signal_id, order))
             .collect::<HashMap<_, _>>();
-        let compare = |statement: &Stmt<stream::Expr>| {
+        let compare = |statement: &stream::Stmt| {
             statement
                 .pattern
                 .identifiers()

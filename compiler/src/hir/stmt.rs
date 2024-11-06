@@ -99,7 +99,7 @@ pub struct Stmt<E> {
     pub location: Location,
 }
 
-impl Stmt<stream::Expr> {
+impl stream::Stmt {
     /// Tell if it is in normal form.
     pub fn is_normal_form(&self) -> bool {
         self.expression.is_normal_form()

@@ -1,6 +1,6 @@
 prelude! {
     graph::*,
-    hir::{ Dependencies, IdentifierCreator, Stmt, stream },
+    hir::{ Dependencies, IdentifierCreator, stream },
 }
 
 impl hir::expr::Kind<stream::Expr> {
@@ -29,7 +29,7 @@ impl hir::expr::Kind<stream::Expr> {
         nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
         identifier_creator: &mut IdentifierCreator,
         symbol_table: &mut SymbolTable,
-    ) -> Vec<Stmt<stream::Expr>> {
+    ) -> Vec<stream::Stmt> {
         match self {
             Self::Constant { .. }
             | Self::Identifier { .. }

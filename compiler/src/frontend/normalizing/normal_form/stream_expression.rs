@@ -28,7 +28,7 @@ impl stream::Expr {
         nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
         identifier_creator: &mut IdentifierCreator,
         symbol_table: &mut SymbolTable,
-    ) -> Vec<Stmt<stream::Expr>> {
+    ) -> Vec<stream::Stmt> {
         match self.kind {
             stream::Kind::FollowedBy { ref constant, .. } => {
                 // constant should already be in normal form
@@ -189,7 +189,7 @@ impl stream::Expr {
         nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
         identifier_creator: &mut IdentifierCreator,
         symbol_table: &mut SymbolTable,
-    ) -> Vec<Stmt<stream::Expr>> {
+    ) -> Vec<stream::Stmt> {
         match self.kind {
             stream::Kind::Expression {
                 expression: expr::Kind::Identifier { .. },

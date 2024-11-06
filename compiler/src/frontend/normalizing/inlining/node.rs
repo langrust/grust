@@ -1,7 +1,7 @@
 use petgraph::graphmap::GraphMap;
 
 prelude! {
-    hir::{ IdentifierCreator, Memory, Component, ComponentDefinition, stmt, Stmt, stream },
+    hir::{ IdentifierCreator, Memory, Component, ComponentDefinition, stmt, stream },
 }
 
 use super::Union;
@@ -69,7 +69,7 @@ impl Component {
         inputs: &[(usize, stream::Expr)],
         new_output_pattern: Option<stmt::Pattern>,
         symbol_table: &mut SymbolTable,
-    ) -> (Vec<Stmt<stream::Expr>>, Memory) {
+    ) -> (Vec<stream::Stmt>, Memory) {
         match self {
             Component::Definition(comp_def) => comp_def.instantiate_statements_and_memory(
                 identifier_creator,
@@ -110,7 +110,7 @@ impl ComponentDefinition {
         let mut identifier_creator = IdentifierCreator::from(self.get_signals_names(symbol_table));
 
         // compute new statements for the unitary node
-        let mut new_statements: Vec<Stmt<stream::Expr>> = vec![];
+        let mut new_statements: Vec<stream::Stmt> = vec![];
         std::mem::take(&mut self.statements)
             .into_iter()
             .for_each(|statement| {
@@ -158,7 +158,7 @@ impl ComponentDefinition {
         inputs: &[(usize, stream::Expr)],
         new_output_pattern: Option<stmt::Pattern>,
         symbol_table: &mut SymbolTable,
-    ) -> (Vec<Stmt<stream::Expr>>, Memory) {
+    ) -> (Vec<stream::Stmt>, Memory) {
         // create the context with the given inputs
         let mut context_map = inputs
             .iter()
@@ -199,7 +199,7 @@ impl ComponentDefinition {
     }
 
     /// Update unitary node statements and add the corresponding dependency graph.
-    fn update_statements(&mut self, new_statements: &[Stmt<stream::Expr>]) {
+    fn update_statements(&mut self, new_statements: &[stream::Stmt]) {
         // put new statements in unitary node
         self.statements = new_statements.to_vec();
         // add a dependency graph to the unitary node

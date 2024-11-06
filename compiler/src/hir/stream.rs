@@ -158,3 +158,5 @@ impl Expr {
         }
     }
 }
+
+pub type Stmt = hir::Stmt<Expr>;

@@ -1,10 +1,9 @@
 prelude! {
     graph::*,
-    hir::{ Stmt, stream },
     frontend::ctx::*,
 }
 
-impl Stmt<stream::Expr> {
+impl hir::stream::Stmt {
     /// Add direct dependencies of a statement.
     ///
     /// # Example
@@ -34,7 +33,7 @@ impl Stmt<stream::Expr> {
     /// }
     /// ```
     pub fn add_signal_dependencies(&self, signal: usize, ctx: &mut GraphProcCtx) -> TRes<()> {
-        let Stmt {
+        let hir::Stmt {
             expression,
             location,
             ..
@@ -93,7 +92,7 @@ impl Stmt<stream::Expr> {
 
     pub fn get_identifiers(&self) -> Vec<usize> {
         let mut identifiers = match &self.expression.kind {
-            stream::Kind::Expression { expression } => match expression {
+            hir::stream::Kind::Expression { expression } => match expression {
                 hir::expr::Kind::Match { arms, .. } => arms
                     .iter()
                     .flat_map(|(pattern, _, statements, _)| {

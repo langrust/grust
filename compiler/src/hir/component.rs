@@ -2,7 +2,7 @@
 
 prelude! {
     graph::*,
-    hir::{Contract, Stmt, stream},
+    hir::{Contract, stream},
 }
 
 use super::memory::Memory;
@@ -46,7 +46,7 @@ pub struct ComponentDefinition {
     /// Component identifier.
     pub id: usize,
     /// Component's statements.
-    pub statements: Vec<Stmt<stream::Expr>>,
+    pub statements: Vec<stream::Stmt>,
     /// Component's contract.
     pub contract: Contract,
     /// Component location.

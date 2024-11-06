@@ -1,8 +1,8 @@
 prelude! {
-    hir::{ Contract, IdentifierCreator, Memory, Stmt, stream },
+    hir::{ Contract, IdentifierCreator, Memory, stream },
 }
 
-impl Stmt<stream::Expr> {
+impl stream::Stmt {
     /// Increment memory with statement's expression.
     ///
     /// Store buffer for followed by expressions and unitary node applications.
