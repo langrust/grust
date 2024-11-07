@@ -23,7 +23,7 @@ pub enum Expr {
     /// None value: `None`.
     None,
     /// An unitary operation: `!x`.
-    Unop {
+    UnOp {
         /// The operator.
         op: UOp,
         /// The expression.
@@ -104,7 +104,7 @@ pub enum Expr {
         /// The filled input's fields.
         input_fields: Vec<(String, Self)>,
     },
-    /// A named or unamed field access: `my_point.x`.
+    /// A named or unnamed field access: `my_point.x`.
     FieldAccess {
         /// The structure or tuple typed expression.
         expression: Box<Self>,
@@ -166,7 +166,7 @@ impl Expr {
             expression: Self = Box::new(expression),
         }
         None: none ()
-        Unop: unop {
+        UnOp: unop {
             op: UOp,
             expression: Self = Box::new(expression),
         }
@@ -250,7 +250,7 @@ impl Expr {
             | Tuple { .. }
             | Block { .. }
             | FieldAccess { .. } => false,
-            Unop { .. }
+            UnOp { .. }
             | Binop { .. }
             | IfThenElse { .. }
             | Structure { .. }
@@ -272,7 +272,7 @@ impl Expr {
             Binop { .. } | IfThenElse { .. } | Lambda { .. } => true,
             Literal { .. }
             | Identifier { .. }
-            | Unop { .. }
+            | UnOp { .. }
             | Some { .. }
             | None { .. }
             | FunctionCall { .. }
@@ -360,7 +360,7 @@ impl Expr {
                     parse_quote! { #function(#(#arguments),*) }
                 }
             }
-            Self::Unop { op, expression } => {
+            Self::UnOp { op, expression } => {
                 let op = op.into_syn();
                 let expr = expression.into_syn(crates);
                 syn::Expr::Unary(parse_quote! { #op (#expr) })
@@ -414,7 +414,7 @@ impl Expr {
                         let name = Ident::new(&name, Span::call_site());
                         parse_quote!(#expression.#name)
                     }
-                    FieldIdentifier::Unamed(number) => {
+                    FieldIdentifier::Unnamed(number) => {
                         let number: TokenStream2 = format!("{number}").parse().unwrap();
                         parse_quote!(#expression.#number)
                     }
@@ -586,16 +586,16 @@ impl Expr {
 pub enum FieldIdentifier {
     /// Named field access.
     Named(String),
-    /// Unamed field access.
-    Unamed(usize),
+    /// Unnamed field access.
+    Unnamed(usize),
 }
 
 impl FieldIdentifier {
     pub fn named(s: impl Into<String>) -> Self {
         Self::Named(s.into())
     }
-    pub fn unamed(n: usize) -> Self {
-        Self::Unamed(n)
+    pub fn unnamed(n: usize) -> Self {
+        Self::Unnamed(n)
     }
 }
 
@@ -733,7 +733,7 @@ mod test {
     }
 
     #[test]
-    fn should_create_rust_ast_ifthenelse_from_lir_ifthenelse() {
+    fn should_create_rust_ast_if_then_else_from_lir_if_then_else() {
         let expression = Expr::ite(
             Expr::ident("test"),
             Block::new(vec![Stmt::expression_last(Expr::lit(Constant::int(

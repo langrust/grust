@@ -14,8 +14,8 @@ impl Parse for ConfigItem {
                 let _: Token![=] = input.parse()?;
                 let val: LitStr = input.parse()?;
                 match val.value().as_str() {
-                    "onchange" => conf::set_propag(conf::PropagOption::OnChange),
-                    "onevent" => conf::set_propag(conf::PropagOption::EventIsles),
+                    "onchange" => conf::set_propagation(conf::Propagation::OnChange),
+                    "onevent" => conf::set_propagation(conf::Propagation::EventIsles),
                     _ => {
                         bail!(Error::new_spanned(
                             val,

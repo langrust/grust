@@ -25,9 +25,9 @@ where
                     }
                 }
             }
-            Self::Unop { op, expression } => {
+            Self::UnOp { op, expression } => {
                 let expression = expression.into_lir(symbol_table);
-                lir::Expr::Unop {
+                lir::Expr::UnOp {
                     op,
                     expression: Box::new(expression),
                 }
@@ -174,7 +174,7 @@ where
                 ..
             } => lir::Expr::FieldAccess {
                 expression: Box::new(expression.into_lir(symbol_table)),
-                field: FieldIdentifier::Unamed(element_number),
+                field: FieldIdentifier::Unnamed(element_number),
             },
             Self::Map {
                 expression,

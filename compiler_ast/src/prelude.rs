@@ -20,7 +20,7 @@ pub mod ast {
         equation::{self, Eq, ReactEq},
         expr::{self, Expr},
         function::Function,
-        interface::{self, Constrains, FlowExport, FlowImport, Service},
+        interface::{self, FlowExport, FlowImport, Service, TimeRange},
         stmt::{self, Stmt},
         stream,
         symbol::{self, SymbolTable},

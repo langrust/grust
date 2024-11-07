@@ -13,9 +13,9 @@ mod component {
         /// Store node's signals in symbol table.
         fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
             let location = Location::default();
-            let ctxt = &mut hir::ctx::Loc::new(&location, symbol_table, errors);
+            let ctx = &mut hir::ctx::Loc::new(&location, symbol_table, errors);
 
-            ctxt.syms.local();
+            ctx.symbols.local();
 
             let name = self.ident.to_string();
             let period = self
@@ -39,14 +39,14 @@ mod component {
                          ..
                      }| {
                         let name = ident.to_string();
-                        let typing = typing.clone().into_hir(ctxt)?;
-                        let id = ctxt.syms.insert_signal(
+                        let typing = typing.clone().into_hir(ctx)?;
+                        let id = ctx.symbols.insert_signal(
                             name,
                             Scope::Input,
                             Some(typing),
                             true,
                             location.clone(),
-                            ctxt.errors,
+                            ctx.errors,
                         )?;
                         Ok(id)
                     },
@@ -64,14 +64,14 @@ mod component {
                          ..
                      }| {
                         let name = ident.to_string();
-                        let typing = typing.clone().into_hir(ctxt)?;
-                        let id = ctxt.syms.insert_signal(
+                        let typing = typing.clone().into_hir(ctx)?;
+                        let id = ctx.symbols.insert_signal(
                             name.clone(),
                             Scope::Output,
                             Some(typing),
                             true,
-                            ctxt.loc.clone(),
-                            ctxt.errors,
+                            ctx.loc.clone(),
+                            ctx.errors,
                         )?;
                         Ok((name, id))
                     },
@@ -82,15 +82,15 @@ mod component {
             let locals = {
                 let mut map = HashMap::with_capacity(25);
                 for equation in self.equations.iter() {
-                    equation.store_signals(false, &mut map, ctxt.syms, ctxt.errors)?;
+                    equation.store_signals(false, &mut map, ctx.symbols, ctx.errors)?;
                 }
                 map.shrink_to_fit();
                 map
             };
 
-            ctxt.syms.global();
+            ctx.symbols.global();
 
-            let _ = ctxt.syms.insert_node(
+            let _ = ctx.symbols.insert_node(
                 name,
                 false,
                 inputs,
@@ -98,8 +98,8 @@ mod component {
                 outputs,
                 locals,
                 period,
-                ctxt.loc.clone(),
-                ctxt.errors,
+                ctx.loc.clone(),
+                ctx.errors,
             )?;
 
             Ok(())
@@ -110,8 +110,8 @@ mod component {
         /// Store node's signals in symbol table.
         fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
             let location = Location::default();
-            let ctxt = &mut hir::ctx::Loc::new(&location, symbol_table, errors);
-            ctxt.syms.local();
+            let ctx = &mut hir::ctx::Loc::new(&location, symbol_table, errors);
+            ctx.symbols.local();
 
             let last = self.path.clone().segments.pop().unwrap().into_value();
             let name = last.ident.to_string();
@@ -139,14 +139,14 @@ mod component {
                          ..
                      }| {
                         let name = ident.to_string();
-                        let typing = typing.clone().into_hir(ctxt)?;
-                        let id = ctxt.syms.insert_signal(
+                        let typing = typing.clone().into_hir(ctx)?;
+                        let id = ctx.symbols.insert_signal(
                             name,
                             Scope::Input,
                             Some(typing),
                             true,
                             location.clone(),
-                            ctxt.errors,
+                            ctx.errors,
                         )?;
                         Ok(id)
                     },
@@ -164,14 +164,14 @@ mod component {
                          ..
                      }| {
                         let name = ident.to_string();
-                        let typing = typing.clone().into_hir(ctxt)?;
-                        let id = ctxt.syms.insert_signal(
+                        let typing = typing.clone().into_hir(ctx)?;
+                        let id = ctx.symbols.insert_signal(
                             name.clone(),
                             Scope::Output,
                             Some(typing),
                             true,
                             location.clone(),
-                            ctxt.errors,
+                            ctx.errors,
                         )?;
                         Ok((name, id))
                     },
@@ -246,12 +246,12 @@ mod equation {
             errors: &mut Vec<Error>,
         ) -> TRes<()> {
             match self {
-                // output defintions should be stored
+                // output definitions should be stored
                 Eq::OutputDef(instantiation) if store_outputs => instantiation
                     .pattern
                     .store(false, symbol_table, errors)
                     .map(|idents| signals.extend(idents)),
-                // when output defintions are already stored (as component's outputs)
+                // when output definitions are already stored (as component outputs)
                 Eq::OutputDef(_) => Ok(()),
                 Eq::LocalDef(declaration) => declaration
                     .typed_pattern
@@ -302,12 +302,12 @@ mod equation {
             errors: &mut Vec<Error>,
         ) -> TRes<()> {
             match self {
-                // output defintions should be stored
+                // output definitions should be stored
                 ReactEq::OutputDef(instantiation) if store_outputs => instantiation
                     .pattern
                     .store(false, symbol_table, errors)
                     .map(|idents| signals.extend(idents)),
-                // when output defintions are already stored (as component's outputs)
+                // when output definitions are already stored (as component's outputs)
                 ReactEq::OutputDef(_) => Ok(()),
                 ReactEq::LocalDef(declaration) => declaration
                     .typed_pattern
@@ -326,7 +326,7 @@ mod equation {
                     let mut when_signals = HashMap::new();
                     let mut add_signals = |equations: &Vec<Eq>| {
                         // non-events are defined in all branches so we don't want them to trigger
-                        // the 'duplicated definiiton' error.
+                        // the *duplicated definition* error.
                         symbol_table.local();
                         for eq in equations {
                             eq.store_signals(
@@ -421,8 +421,8 @@ impl AstStore for Ast {
 impl AstStore for ast::Function {
     fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         let location = Location::default();
-        let ctxt = &mut hir::ctx::Loc::new(&location, symbol_table, errors);
-        ctxt.syms.local();
+        let ctx = &mut hir::ctx::Loc::new(&location, symbol_table, errors);
+        ctx.symbols.local();
 
         let inputs = self
             .args
@@ -434,28 +434,28 @@ impl AstStore for ast::Function {
                      ..
                  }| {
                     let name = ident.to_string();
-                    let typing = typing.clone().into_hir(ctxt)?;
-                    let id = ctxt.syms.insert_identifier(
+                    let typing = typing.clone().into_hir(ctx)?;
+                    let id = ctx.symbols.insert_identifier(
                         name.clone(),
                         Some(typing),
                         true,
                         location.clone(),
-                        ctxt.errors,
+                        ctx.errors,
                     )?;
                     Ok(id)
                 },
             )
             .collect::<TRes<Vec<_>>>()?;
 
-        ctxt.syms.global();
+        ctx.symbols.global();
 
-        let _ = ctxt.syms.insert_function(
+        let _ = ctx.symbols.insert_function(
             self.ident.to_string(),
             inputs,
             None,
             false,
-            ctxt.loc.clone(),
-            ctxt.errors,
+            ctx.loc.clone(),
+            ctx.errors,
         )?;
 
         Ok(())
@@ -882,7 +882,7 @@ mod event_pattern {
             self,
             tuple: &mut Vec<hir::Pattern>,
             events_indices: &HashMap<usize, usize>,
-            syms: &mut SymbolTable,
+            symbols: &mut SymbolTable,
             errors: &mut Vec<Error>,
         ) -> TRes<Option<hir::stream::Expr>> {
             match self {
@@ -907,7 +907,7 @@ mod event_pattern {
                             let opt_guard = pattern.create_tuple_pattern(
                                 tuple,
                                 events_indices,
-                                syms,
+                                symbols,
                                 errors,
                             )?;
                             // combine all rising edge detections
@@ -920,19 +920,19 @@ mod event_pattern {
                 }
                 EventPattern::Let(pattern) => {
                     let location = Location::default();
-                    let ctxt = &mut hir::ctx::Loc::new(&location, syms, errors);
+                    let ctx = &mut hir::ctx::Loc::new(&location, symbols, errors);
 
                     // get the event identifier
-                    let event_id = ctxt.syms.get_identifier_id(
+                    let event_id = ctx.symbols.get_identifier_id(
                         &pattern.event.to_string(),
                         false,
-                        ctxt.loc.clone(),
-                        ctxt.errors,
+                        ctx.loc.clone(),
+                        ctx.errors,
                     )?;
 
                     // transform inner_pattern into HIR
-                    pattern.pattern.store(ctxt.syms, ctxt.errors)?;
-                    let inner_pattern = pattern.pattern.into_hir(ctxt)?;
+                    pattern.pattern.store(ctx.symbols, ctx.errors)?;
+                    let inner_pattern = pattern.pattern.into_hir(ctx)?;
                     let event_pattern =
                         hir::pattern::init(hir::pattern::Kind::present(event_id, inner_pattern));
 
@@ -944,8 +944,8 @@ mod event_pattern {
                 }
                 EventPattern::RisingEdge(expr) => {
                     let location = Location::default();
-                    let ctxt = &mut hir::ctx::PatLoc::new(None, &location, syms, errors);
-                    let guard = hir::stream::Kind::rising_edge(expr.into_hir(ctxt)?);
+                    let ctx = &mut hir::ctx::PatLoc::new(None, &location, symbols, errors);
+                    let guard = hir::stream::Kind::rising_edge(expr.into_hir(ctx)?);
                     Ok(Some(hir::stream::expr(guard)))
                 }
             }

@@ -276,7 +276,7 @@ pub mod runtime {
                 timeout_timeout_pedest_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(timeout_timeout_pedest_instant)
+                    self.reset_time_constraints(timeout_timeout_pedest_instant)
                         .await?;
                     self.context.reset();
                     let timeout_pedest_ref = &mut None;
@@ -312,7 +312,7 @@ pub mod runtime {
                 speed_km_h: f64,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(speed_km_h_instant).await?;
+                    self.reset_time_constraints(speed_km_h_instant).await?;
                     self.context.reset();
                     self.context.speed_km_h.set(speed_km_h);
                 } else {
@@ -330,7 +330,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.context.reset();
                 if self.input_store.not_empty() {
-                    self.reset_time_constrains(instant).await?;
+                    self.reset_time_constraints(instant).await?;
                     match (
                         self.input_store.timeout_timeout_pedest.take(),
                         self.input_store.speed_km_h.take(),
@@ -787,7 +787,7 @@ pub mod runtime {
                 pedestrian_l: f64,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(pedestrian_l_instant).await?;
+                    self.reset_time_constraints(pedestrian_l_instant).await?;
                     self.context.reset();
                     let pedestrian_l_ref = &mut None;
                     let pedestrian_ref = &mut None;
@@ -820,7 +820,7 @@ pub mod runtime {
                 &mut self,
                 timeout_aeb_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.reset_time_constrains(timeout_aeb_instant).await?;
+                self.reset_time_constraints(timeout_aeb_instant).await?;
                 self.context.reset();
                 let brakes = self.braking_state.step(BrakingStateInput {
                     speed: self.context.speed_km_h.get(),
@@ -846,7 +846,7 @@ pub mod runtime {
                 pedestrian_r: f64,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(pedestrian_r_instant).await?;
+                    self.reset_time_constraints(pedestrian_r_instant).await?;
                     self.context.reset();
                     let pedestrian_r_ref = &mut None;
                     let pedestrian_ref = &mut None;
@@ -876,7 +876,7 @@ pub mod runtime {
                 Ok(())
             }
             #[inline]
-            pub async fn reset_time_constrains(
+            pub async fn reset_time_constraints(
                 &mut self,
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {

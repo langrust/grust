@@ -444,7 +444,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.context.reset();
                 if self.input_store.not_empty() {
-                    self.reset_time_constrains(instant).await?;
+                    self.reset_time_constraints(instant).await?;
                     match (self.input_store.e0.take()) {
                         (None) => {}
                         (Some((e0, e0_instant))) => {
@@ -513,7 +513,7 @@ pub mod runtime {
                 e0: i64,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(e0_instant).await?;
+                    self.reset_time_constraints(e0_instant).await?;
                     self.context.reset();
                     let e0_ref = &mut None;
                     let e1_ref = &mut None;
@@ -566,7 +566,7 @@ pub mod runtime {
                 &mut self,
                 timeout_para_mess_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.reset_time_constrains(timeout_para_mess_instant)
+                self.reset_time_constraints(timeout_para_mess_instant)
                     .await?;
                 self.context.reset();
                 let e3_ref = &mut None;
@@ -614,7 +614,7 @@ pub mod runtime {
                 Ok(())
             }
             #[inline]
-            pub async fn reset_time_constrains(
+            pub async fn reset_time_constraints(
                 &mut self,
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {

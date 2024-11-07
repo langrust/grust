@@ -133,8 +133,6 @@ impl Memory {
 }
 
 /// Initialized buffer.
-///
-/// Buffer `initial_value`-ized by a constant.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Buffer {
     /// Buffered id.

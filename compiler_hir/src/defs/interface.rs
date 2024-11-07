@@ -5,8 +5,8 @@ prelude! {
 pub struct Service {
     /// Service's identifier.
     pub id: usize,
-    /// Service's time constrains (min, max) periods.
-    pub constrains: (u64, u64),
+    /// Service's time range `[min, max]` periods.
+    pub time_range: (u64, u64),
     /// Service's statements.
     pub statements: HashMap<usize, FlowStatement>,
     /// Flows dependency graph.
@@ -93,8 +93,8 @@ impl Service {
 
     /// Create a map from flow identifier to its definition statement.
     ///
-    /// Export statements do not define the flow, it is the instanciation statement that defines it.
-    /// Then, when a flow is exported, it is the instanciation statement that is linked to the flow
+    /// Export statements do not define the flow, it is the instantiation statement that defines it.
+    /// Then, when a flow is exported, it is the instantiation statement that is linked to the flow
     /// identifier in the map.
     fn flow_id_to_statement_id(
         &self,
@@ -422,7 +422,8 @@ impl FlowStatement {
                 flow::Kind::Sample {
                     flow_expression, ..
                 } => {
-                    // get the id of flow_expression (and check it is an idnetifier, from normalization)
+                    // get the id of flow_expression (and check it is an identifier, from
+                    // normalization)
                     let id = match &flow_expression.kind {
                         flow::Kind::Ident { id } => *id,
                         _ => unreachable!(),
@@ -442,7 +443,8 @@ impl FlowStatement {
                 flow::Kind::Scan {
                     flow_expression, ..
                 } => {
-                    // get the id of flow_expression (and check it is an idnetifier, from normalization)
+                    // get the id of flow_expression (and check it is an identifier, from
+                    // normalization)
                     let id = match &flow_expression.kind {
                         flow::Kind::Ident { id } => *id,
                         _ => unreachable!(),
@@ -466,7 +468,8 @@ impl FlowStatement {
 
                     inputs.iter().for_each(|(_, flow_expression)| {
                         match &flow_expression.kind {
-                            // get the id of flow_expression (and check it is an idnetifier, from normalization)
+                            // get the id of flow_expression (and check it is an identifier, from
+                            // normalization)
                             flow::Kind::Ident { id: flow_id } => {
                                 let flow_name = symbol_table.get_name(*flow_id).clone();
                                 let ty = symbol_table.get_type(*flow_id);

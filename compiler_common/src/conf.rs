@@ -5,7 +5,7 @@ prelude! {}
 /// Services configuration for the propagation of
 /// events and signals changes.
 #[derive(Clone, Default)]
-pub enum PropagOption {
+pub enum Propagation {
     #[default]
     EventIsles,
     OnChange,
@@ -13,7 +13,7 @@ pub enum PropagOption {
 
 /// Stores all possible compiler's configurations.
 pub struct Conf {
-    propag: PropagOption,
+    propagation: Propagation,
     para: bool,
     pub_components: bool,
     dump_code: Option<String>,
@@ -24,7 +24,7 @@ pub struct Conf {
 impl Default for Conf {
     fn default() -> Self {
         Self {
-            propag: PropagOption::default(),
+            propagation: Propagation::default(),
             para: false,
             pub_components: false,
             dump_code: None,
@@ -78,14 +78,14 @@ macro_rules! def {
 }
 
 def! {
-    PropagOption {
+    Propagation {
         #[doc = "Returns the propagation configuration."]
-        propag
+        propagation
         #[doc = "Set the propagation configuration."]
-        set_propag
+        set_propagation
     }
     bool {
-        #[doc = "Tells if services' instrutions are parallelized."]
+        #[doc = "Tells if services' instructions are parallelized."]
         para
         #[doc = "Set parallelization in configuration."]
         set_para

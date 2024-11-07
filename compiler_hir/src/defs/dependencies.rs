@@ -60,8 +60,7 @@ impl Dependencies {
 
     /// Get optional dependencies.
     ///
-    /// Get some dependencies if it as been previously setted.
-    /// Return `None` otherwise.
+    /// Get some dependencies if it as been previously resolved. Return `None` otherwise.
     ///
     /// ```rust
     /// # compiler_hir::prelude! {}

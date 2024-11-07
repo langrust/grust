@@ -17,8 +17,8 @@ pub enum Kind<E> {
         /// Element identifier.
         id: usize,
     },
-    /// Unop expression.
-    Unop {
+    /// UnOp expression.
+    UnOp {
         /// The unary operator.
         op: UOp,
         /// The input expression.
@@ -134,7 +134,7 @@ pub enum Kind<E> {
 mk_new! { impl{E} Kind<E> =>
     Constant: constant { constant: Constant }
     Identifier: ident { id : usize }
-    Unop: unop {
+    UnOp: unop {
         op: UOp,
         expression: E = expression.into(),
     }
@@ -143,7 +143,7 @@ mk_new! { impl{E} Kind<E> =>
         left_expression: E = left_expression.into(),
         right_expression: E = right_expression.into(),
     }
-    IfThenElse: ifthenelse {
+    IfThenElse: if_then_else {
         expression: E = expression.into(),
         true_expression: E = true_expression.into(),
         false_expression: E = false_expression.into(),
@@ -252,7 +252,7 @@ impl<E> Kind<E> {
             | Kind::Identifier { .. }
             | Kind::Abstraction { .. }
             | Kind::Enumeration { .. } => true,
-            Kind::Unop { expression, .. } => predicate_expression(expression),
+            Kind::UnOp { expression, .. } => predicate_expression(expression),
             Kind::Binop {
                 left_expression,
                 right_expression,

@@ -158,8 +158,8 @@ impl ServiceHandler {
                             &mut self, #instant: std::time::Instant, #ident: #ty
                         ) -> Result<(), futures::channel::mpsc::SendError> {
                             if self.delayed {
-                                // reset time constrains
-                                self.reset_time_constrains(#instant).await?;
+                                // reset time constraints
+                                self.reset_time_constraints(#instant).await?;
                                 // reset all signals' update
                                 self.context.reset();
                                 // propagate changes
@@ -187,8 +187,8 @@ impl ServiceHandler {
                                 &mut self,  #instant: std::time::Instant
                             ) -> Result<(), futures::channel::mpsc::SendError> {
                                 if self.delayed {
-                                    // reset time constrains
-                                    self.reset_time_constrains(#instant).await?;
+                                    // reset time constraints
+                                    self.reset_time_constraints(#instant).await?;
                                     // reset all signals' update
                                     self.context.reset();
                                     // propagate changes
@@ -236,8 +236,8 @@ impl ServiceHandler {
                             pub async fn #function_name(
                                 &mut self, #instant: std::time::Instant
                             ) -> Result<(), futures::channel::mpsc::SendError> {
-                                // reset time constrains
-                                self.reset_time_constrains(#instant).await?;
+                                // reset time constraints
+                                self.reset_time_constraints(#instant).await?;
                                 // reset all signals' update
                                 self.context.reset();
                                 // propagate changes
@@ -268,7 +268,7 @@ impl ServiceHandler {
             impl #service_name {
                 #(#impl_items)*
                 #[inline]
-                pub async fn reset_time_constrains(
+                pub async fn reset_time_constraints(
                     &mut self, instant: std::time::Instant
                 ) -> Result<(), futures::channel::mpsc::SendError> {
                     self.reset_service_delay(instant).await?;
@@ -460,7 +460,7 @@ impl FlowInstruction {
                 let arms = match_arms.into_iter().map(|arm| arm.into_syn());
                 parse_quote! {
                     if self.input_store.not_empty() {
-                        self.reset_time_constrains(instant).await?;
+                        self.reset_time_constraints(instant).await?;
                         match (#(#input_flows),*) {
                             #(#arms)*
                         }
