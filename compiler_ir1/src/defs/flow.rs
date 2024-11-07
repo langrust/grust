@@ -1,4 +1,4 @@
-//! [ir1] [Interface](crate::ir1::interface::Interface) module.
+//! [Interface] module.
 
 prelude! {}
 

@@ -1,4 +1,4 @@
-//! [File](crate::ir1::file::File) module.
+//! [File] module.
 
 prelude! {}
 
