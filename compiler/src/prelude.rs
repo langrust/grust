@@ -16,7 +16,7 @@ pub use compiler_common::import::*;
 pub use compiler_hir::import::*;
 pub use compiler_lir::import::*;
 
-pub use crate::{IntoLir, TokenStream};
+pub use crate::TokenStream;
 
 /// Translation to Rust AST with additional information.
 pub trait ToRustAstWith<Data>: Sized {

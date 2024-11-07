@@ -21,6 +21,7 @@ pub mod lir {
         contract::{self, Contract},
         execution_machine::{self, ExecutionMachine},
         expression::*,
+        hir_into_lir::HirIntoLir,
         item::{self, Enumeration, Function, Import, Item, Structure},
         pattern::Pattern,
         project::Project,

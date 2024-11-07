@@ -1,11 +1,11 @@
 prelude! {
     hir::interface::{FlowExport, FlowImport, Interface, Service},
-    lir::execution_machine::{
+    execution_machine::{
         ServiceHandler, InputHandler, RuntimeLoop, ExecutionMachine,TimingEvent, InterfaceFlow,
     },
 }
 
-impl IntoLir<&mut SymbolTable> for Interface {
+impl HirIntoLir<&mut SymbolTable> for Interface {
     type Lir = ExecutionMachine;
     fn into_lir(mut self, symbol_table: &mut SymbolTable) -> ExecutionMachine {
         if self.services.is_empty() {
@@ -68,7 +68,7 @@ impl IntoLir<&mut SymbolTable> for Interface {
     }
 }
 
-impl IntoLir<&'_ SymbolTable> for FlowImport {
+impl HirIntoLir<&'_ SymbolTable> for FlowImport {
     type Lir = Option<InterfaceFlow>;
 
     fn into_lir(self, symbol_table: &SymbolTable) -> Self::Lir {
@@ -84,7 +84,7 @@ impl IntoLir<&'_ SymbolTable> for FlowImport {
     }
 }
 
-impl IntoLir<&'_ SymbolTable> for FlowExport {
+impl HirIntoLir<&'_ SymbolTable> for FlowExport {
     type Lir = InterfaceFlow;
 
     fn into_lir(self, symbol_table: &SymbolTable) -> Self::Lir {
@@ -96,7 +96,7 @@ impl IntoLir<&'_ SymbolTable> for FlowExport {
     }
 }
 
-impl IntoLir<hir::ctx::Full<'_, TimingEvent>> for Service {
+impl HirIntoLir<hir::ctx::Full<'_, TimingEvent>> for Service {
     type Lir = ServiceHandler;
     fn into_lir(mut self, ctx: hir::ctx::Full<TimingEvent>) -> ServiceHandler {
         let flows_context = self.get_flows_context(ctx.symbols);
@@ -679,7 +679,7 @@ mod triggered {
 
 mod service_handler {
     prelude! {
-        lir::{
+        {
             execution_machine::{
                 FlowHandler, FlowInstruction, MatchArm, ServiceHandler, ArrivingFlow,
             },
@@ -867,15 +867,12 @@ mod flow_instr {
             },
             IdentifierCreator, Service,
         },
-        lir::execution_machine::{
+        execution_machine::{
             Expression, FlowInstruction, TimingEvent, TimingEventKind,
         },
     }
 
-    use super::{
-        triggered::{self, TriggersGraph},
-        IntoLir,
-    };
+    use super::triggered::{self, TriggersGraph};
 
     /// A context to build [FlowInstruction]s.
     pub struct Builder<'a> {
@@ -1798,7 +1795,7 @@ mod from_synced {
     prelude! { just
         BTreeMap as Map,
         hir::interface::{ FlowStatement, FlowDeclaration, FlowInstantiation },
-        lir::execution_machine::{ParaMethod, FlowInstruction},
+        execution_machine::{ParaMethod, FlowInstruction},
         synced::{ CtxSpec, Synced },
     }
 

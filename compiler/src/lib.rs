@@ -15,11 +15,6 @@ pub mod prelude;
 
 prelude! {}
 
-// pub mod frontend;
-pub mod into_lir;
-
-pub use into_lir::IntoLir;
-
 /// Compiles input GRust tokens into output Rust tokens.
 pub fn handle_tokens(tokens: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(tokens as Ast);
