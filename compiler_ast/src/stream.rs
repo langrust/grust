@@ -116,8 +116,8 @@ pub enum Expr {
     Identifier(String),
     /// Application expression.
     Application(Application<Self>),
-    /// Unop expression.
-    Unop(Unop<Self>),
+    /// UnOp expression.
+    UnOp(UnOp<Self>),
     /// Binop expression.
     Binop(Binop<Self>),
     /// IfThenElse expression.
@@ -155,7 +155,7 @@ mk_new! { impl Expr =>
     Constant: cst(arg: Constant = arg)
     Identifier: ident(arg : impl Into<String> = arg.into())
     Application: app(arg : Application<Self> = arg)
-    Unop: unop(arg: Unop<Self> = arg)
+    UnOp: unop(arg: UnOp<Self> = arg)
     Binop: binop(arg: Binop<Self> = arg)
     IfThenElse: ite(arg: IfThenElse<Self> = arg)
     TypedAbstraction: type_abstraction(arg: TypedAbstraction<Self> = arg)
@@ -213,7 +213,7 @@ impl Expr {
                     Err(TerminationError)
                 }
             }
-            stream::Expr::Unop(Unop { expression, .. }) => {
+            stream::Expr::UnOp(UnOp { expression, .. }) => {
                 expression.check_is_constant(table, errors)
             }
             stream::Expr::Binop(Binop {
@@ -264,8 +264,8 @@ impl ParsePrec for Expr {
             Self::Constant(input.parse()?)
         } else if Last::peek(input) {
             Self::Last(input.parse()?)
-        } else if Unop::<Self>::peek(input) {
-            Self::Unop(input.parse()?)
+        } else if UnOp::<Self>::peek(input) {
+            Self::UnOp(input.parse()?)
         } else if Zip::<Self>::peek(input) {
             Self::Zip(input.parse()?)
         } else if Match::<Self>::peek(input) {

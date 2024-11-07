@@ -809,7 +809,7 @@ pub mod runtime {
                 &mut self,
                 timeout_speed_limiter_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.reset_time_constrains(timeout_speed_limiter_instant)
+                self.reset_time_constraints(timeout_speed_limiter_instant)
                     .await?;
                 self.context.reset();
                 let (v_set_aux, v_update) = self
@@ -860,7 +860,7 @@ pub mod runtime {
                 activation: ActivationRequest,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(activation_instant).await?;
+                    self.reset_time_constraints(activation_instant).await?;
                     self.context.reset();
                     let activation_ref = &mut None;
                     *activation_ref = Some(activation);
@@ -899,7 +899,7 @@ pub mod runtime {
                 failure: Failure,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(failure_instant).await?;
+                    self.reset_time_constraints(failure_instant).await?;
                     self.context.reset();
                     let failure_ref = &mut None;
                     *failure_ref = Some(failure);
@@ -935,7 +935,7 @@ pub mod runtime {
                 speed: f64,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(speed_instant).await?;
+                    self.reset_time_constraints(speed_instant).await?;
                     self.context.reset();
                     self.context.speed.set(speed);
                 } else {
@@ -949,7 +949,7 @@ pub mod runtime {
                 period_speed_limiter_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(period_speed_limiter_instant)
+                    self.reset_time_constraints(period_speed_limiter_instant)
                         .await?;
                     self.context.reset();
                     self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
@@ -992,7 +992,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.context.reset();
                 if self.input_store.not_empty() {
-                    self.reset_time_constrains(instant).await?;
+                    self.reset_time_constraints(instant).await?;
                     match (
                         self.input_store.activation.take(),
                         self.input_store.failure.take(),
@@ -11964,7 +11964,7 @@ pub mod runtime {
                 kickdown: Kickdown,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(kickdown_instant).await?;
+                    self.reset_time_constraints(kickdown_instant).await?;
                     self.context.reset();
                     let kickdown_ref = &mut None;
                     *kickdown_ref = Some(kickdown);
@@ -12003,7 +12003,7 @@ pub mod runtime {
                 set_speed: f64,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(set_speed_instant).await?;
+                    self.reset_time_constraints(set_speed_instant).await?;
                     self.context.reset();
                     let changed_set_speed_ref = &mut None;
                     if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -12036,7 +12036,7 @@ pub mod runtime {
                 vdc: VdcState,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(vdc_instant).await?;
+                    self.reset_time_constraints(vdc_instant).await?;
                     self.context.reset();
                     self.context.vdc.set(vdc);
                 } else {
@@ -12051,7 +12051,7 @@ pub mod runtime {
                 vacuum_brake: VacuumBrakeState,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(vacuum_brake_instant).await?;
+                    self.reset_time_constraints(vacuum_brake_instant).await?;
                     self.context.reset();
                     self.context.vacuum_brake.set(vacuum_brake);
                 } else {
@@ -12064,7 +12064,7 @@ pub mod runtime {
                 Ok(())
             }
             #[inline]
-            pub async fn reset_time_constrains(
+            pub async fn reset_time_constraints(
                 &mut self,
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
@@ -12391,7 +12391,7 @@ pub mod runtime {
                 activation: ActivationRequest,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(activation_instant).await?;
+                    self.reset_time_constraints(activation_instant).await?;
                     self.context.reset();
                     let activation_ref = &mut None;
                     *activation_ref = Some(activation);
@@ -12428,7 +12428,7 @@ pub mod runtime {
                 &mut self,
                 timeout_another_speed_limiter_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.reset_time_constrains(timeout_another_speed_limiter_instant)
+                self.reset_time_constraints(timeout_another_speed_limiter_instant)
                     .await?;
                 self.context.reset();
                 let (v_set_aux, v_update) = self
@@ -12481,7 +12481,7 @@ pub mod runtime {
                 failure: Failure,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(failure_instant).await?;
+                    self.reset_time_constraints(failure_instant).await?;
                     self.context.reset();
                     let failure_ref = &mut None;
                     *failure_ref = Some(failure);
@@ -12517,7 +12517,7 @@ pub mod runtime {
                 speed: f64,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(speed_instant).await?;
+                    self.reset_time_constraints(speed_instant).await?;
                     self.context.reset();
                     self.context.speed.set(speed);
                 } else {
@@ -12532,7 +12532,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.context.reset();
                 if self.input_store.not_empty() {
-                    self.reset_time_constrains(instant).await?;
+                    self.reset_time_constraints(instant).await?;
                     match (
                         self.input_store.activation.take(),
                         self.input_store.failure.take(),
@@ -23506,7 +23506,7 @@ pub mod runtime {
                 kickdown: Kickdown,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(kickdown_instant).await?;
+                    self.reset_time_constraints(kickdown_instant).await?;
                     self.context.reset();
                     let kickdown_ref = &mut None;
                     *kickdown_ref = Some(kickdown);
@@ -23544,7 +23544,7 @@ pub mod runtime {
                 period_speed_limiter_1_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(period_speed_limiter_1_instant)
+                    self.reset_time_constraints(period_speed_limiter_1_instant)
                         .await?;
                     self.context.reset();
                     self.send_timer(T::PeriodSpeedLimiter1, period_speed_limiter_1_instant)
@@ -23590,7 +23590,7 @@ pub mod runtime {
                 set_speed: f64,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(set_speed_instant).await?;
+                    self.reset_time_constraints(set_speed_instant).await?;
                     self.context.reset();
                     let changed_set_speed_ref = &mut None;
                     if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -23623,7 +23623,7 @@ pub mod runtime {
                 vdc: VdcState,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(vdc_instant).await?;
+                    self.reset_time_constraints(vdc_instant).await?;
                     self.context.reset();
                     self.context.vdc.set(vdc);
                 } else {
@@ -23638,7 +23638,7 @@ pub mod runtime {
                 vacuum_brake: VacuumBrakeState,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constrains(vacuum_brake_instant).await?;
+                    self.reset_time_constraints(vacuum_brake_instant).await?;
                     self.context.reset();
                     self.context.vacuum_brake.set(vacuum_brake);
                 } else {
@@ -23651,7 +23651,7 @@ pub mod runtime {
                 Ok(())
             }
             #[inline]
-            pub async fn reset_time_constrains(
+            pub async fn reset_time_constraints(
                 &mut self,
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {

@@ -15,16 +15,16 @@ where
     fn parse_prec4(input: ParseStream) -> syn::Res<Self>;
 }
 
-/// Unop expression.
+/// UnOp expression.
 #[derive(Debug, PartialEq, Clone)]
-pub struct Unop<E> {
+pub struct UnOp<E> {
     /// The unary operator.
     pub op: UOp,
     /// The input expression.
     pub expression: Box<E>,
 }
 
-mk_new! { impl{E} Unop<E> =>
+mk_new! { impl{E} UnOp<E> =>
     new {
         op : UOp,
         expression: impl Into<Box<E>> = expression.into(),
@@ -32,7 +32,7 @@ mk_new! { impl{E} Unop<E> =>
 
 }
 
-impl<E> Unop<E>
+impl<E> UnOp<E>
 where
     E: Parse,
 {
@@ -40,14 +40,14 @@ where
         UOp::peek(input)
     }
 }
-impl<E> Parse for Unop<E>
+impl<E> Parse for UnOp<E>
 where
     E: ParsePrec,
 {
     fn parse(input: ParseStream) -> syn::Res<Self> {
         let op = input.parse()?;
         let expression = Box::new(E::parse_term(input)?);
-        Ok(Unop { op, expression })
+        Ok(UnOp { op, expression })
     }
 }
 
@@ -232,8 +232,8 @@ where
             if input.peek(Token![|]) {
                 break;
             }
-            let punct: Token![,] = input.parse()?;
-            inputs.push_punct(punct);
+            let comma: Token![,] = input.parse()?;
+            inputs.push_punct(comma);
         }
         let _: Token![|] = input.parse()?;
         let expression: E = input.parse()?;
@@ -615,7 +615,7 @@ mod parse_pattern {
     }
 
     #[test]
-    fn should_parse_structure_with_unrenamed_field() {
+    fn should_parse_structure_with_not_renamed_field() {
         let pattern: Pattern = parse_quote! {
             Point { x: 0, y, }
         };
@@ -1089,8 +1089,8 @@ pub enum Expr {
     Constant(Constant),
     /// Identifier expression.
     Identifier(String),
-    /// Unop expression.
-    Unop(Unop<Self>),
+    /// UnOp expression.
+    UnOp(UnOp<Self>),
     /// Binop expression.
     Binop(Binop<Self>),
     /// IfThenElse expression.
@@ -1127,7 +1127,7 @@ mk_new! { impl Expr =>
     Constant: constant (val: Constant = val)
     Constant: cst (val: Constant = val)
     Identifier: ident (val: impl Into<String> = val.into())
-    Unop: unop (val: Unop<Self> = val)
+    UnOp: unop (val: UnOp<Self> = val)
     Binop: binop (val: Binop<Self> = val)
     IfThenElse: ite (val: IfThenElse<Self> = val)
     Application: app (val: Application<Self> = val)
@@ -1149,7 +1149,7 @@ impl ParsePrec for Expr {
     fn parse_term(input: ParseStream) -> syn::Res<Self> {
         let mut expression = if input.fork().call(Constant::parse).is_ok() {
             Self::cst(input.parse()?)
-        } else if Unop::<Self>::peek(input) {
+        } else if UnOp::<Self>::peek(input) {
             Self::unop(input.parse()?)
         } else if Zip::<Self>::peek(input) {
             Self::zip(input.parse()?)
@@ -1307,7 +1307,7 @@ mod parse_expression {
         let term: Expr = parse_quote! {-x + 1};
         let control = Expr::binop(Binop::new(
             BOp::Add,
-            Expr::unop(Unop::new(UOp::Neg, Expr::ident("x"))),
+            Expr::unop(UnOp::new(UOp::Neg, Expr::ident("x"))),
             Expr::constant(Constant::int(parse_quote! {1})),
         ));
         assert_eq!(term, control)

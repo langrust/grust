@@ -108,11 +108,11 @@ where
 {
     type I = T::Item;
     fn pairwise<Acc>(self, init: Acc, mut f: impl FnMut(Acc, T::Item, T::Item) -> Acc) -> Acc {
-        self.fold((None, init), |(prev, acc), curr| {
+        self.fold((None, init), |(prev, acc), cur| {
             if let Some(prev) = prev {
-                (Some(curr), f(acc, prev, curr))
+                (Some(cur), f(acc, prev, cur))
             } else {
-                (Some(curr), acc)
+                (Some(cur), acc)
             }
         })
         .1

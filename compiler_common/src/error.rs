@@ -93,7 +93,7 @@ pub enum Error {
     UnknownField {
         /// The structure of the supposed field.
         structure_name: String,
-        /// The unknow field.
+        /// The unknown field.
         field_name: String,
         /// The error location.
         location: Location,
@@ -164,10 +164,10 @@ pub enum Error {
         location: Location,
     },
     /// Calling an unknown output signal.
-    UnknownOuputSignal {
+    UnknownOutputSignal {
         /// The node/component identifier.
         node_name: String,
-        /// The unknow identifier.
+        /// The unknown identifier.
         signal_name: String,
         /// The error location.
         location: Location,
@@ -492,7 +492,7 @@ impl Error {
                     if input_count < &2 { "" } else { "s" },
                     if input_count < &2 { "was" } else { "were" }
                 )]),
-            Error::UnknownOuputSignal {
+            Error::UnknownOutputSignal {
                 node_name,
                 signal_name,
                 location,
@@ -657,7 +657,7 @@ impl Error {
                 expected_length,
                 location,
             } => Diagnostic::error()
-                .with_message("incompatible array lenght")
+                .with_message("incompatible array length")
                 .with_labels(vec![Label::primary(
                     location.file_id,
                     location.range.clone(),
@@ -670,7 +670,7 @@ impl Error {
                     "
                 )]),
             Error::NoTypeInference { location } => Diagnostic::error()
-                .with_message("can not infere type")
+                .with_message("can not infer type")
                 .with_labels(vec![Label::primary(
                     location.file_id,
                     location.range.clone(),
@@ -769,7 +769,7 @@ impl std::fmt::Display for Error {
                 plural(*input_count),
                 arity
             ),
-            Error::UnknownOuputSignal {
+            Error::UnknownOutputSignal {
                 node_name,
                 signal_name,
                 ..

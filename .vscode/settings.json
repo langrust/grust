@@ -10,9 +10,30 @@
     "files.trimFinalNewlines": true,
     "files.trimTrailingWhitespace": true,
     "cSpell.words": [
+        "Arity",
+        "binop",
+        "forall",
+        "greusot",
         "grust",
+        "hasher",
         "Hysterisis",
-        "Kickdown"
+        "idents",
+        "itertools",
+        "Kickdown",
+        "onchange",
+        "onevent",
+        "petgraph",
+        "Prec",
+        "propag",
+        "punct",
+        "rustc",
+        "rustfmt",
+        "subpat",
+        "termcolor",
+        "toposort",
+        "twox",
+        "typedefs",
+        "unop"
     ],
     "files.exclude": {
         "/creusot": true

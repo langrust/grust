@@ -3,23 +3,23 @@ prelude! {
 }
 
 /// AST transformation into HIR.
-pub trait IntoHir<Ctxt> {
+pub trait IntoHir<Ctx> {
     /// Corresponding HIR construct.
     type Hir;
 
     /// Transforms AST into HIR and check identifiers good use.
-    fn into_hir(self, ctxt: &mut Ctxt) -> TRes<Self::Hir>;
+    fn into_hir(self, ctx: &mut Ctx) -> TRes<Self::Hir>;
 }
 
 impl IntoHir<hir::ctx::Simple<'_>> for Ast {
     type Hir = hir::File;
 
-    fn into_hir(self, ctxt: &mut hir::ctx::Simple) -> TRes<Self::Hir> {
+    fn into_hir(self, ctx: &mut hir::ctx::Simple) -> TRes<Self::Hir> {
         // initialize symbol table with builtin operators
-        ctxt.syms.initialize();
+        ctx.symbols.initialize();
 
         // store elements in symbol table
-        self.store(ctxt.syms, ctxt.errors)?;
+        self.store(ctx.symbols, ctx.errors)?;
 
         let (typedefs, functions, components, imports, exports, services) =
             self.items.into_iter().fold(
@@ -34,24 +34,22 @@ impl IntoHir<hir::ctx::Simple<'_>> for Ast {
                 ),
                  item| {
                     match item {
-                        ast::Item::Component(component) => {
-                            components.push(component.into_hir(ctxt))
-                        }
-                        ast::Item::Function(function) => functions.push(function.into_hir(ctxt)),
-                        ast::Item::Typedef(typedef) => typedefs.push(typedef.into_hir(ctxt)),
-                        ast::Item::Service(service) => services.push(service.into_hir(ctxt)),
+                        ast::Item::Component(component) => components.push(component.into_hir(ctx)),
+                        ast::Item::Function(function) => functions.push(function.into_hir(ctx)),
+                        ast::Item::Typedef(typedef) => typedefs.push(typedef.into_hir(ctx)),
+                        ast::Item::Service(service) => services.push(service.into_hir(ctx)),
                         ast::Item::Import(import) => imports.push(
                             import
-                                .into_hir(ctxt)
-                                .map(|res| (ctxt.syms.get_fresh_id(), res)),
+                                .into_hir(ctx)
+                                .map(|res| (ctx.symbols.get_fresh_id(), res)),
                         ),
                         ast::Item::Export(export) => exports.push(
                             export
-                                .into_hir(ctxt)
-                                .map(|res| (ctxt.syms.get_fresh_id(), res)),
+                                .into_hir(ctx)
+                                .map(|res| (ctx.symbols.get_fresh_id(), res)),
                         ),
                         ast::Item::ComponentImport(component) => {
-                            components.push(component.into_hir(ctxt))
+                            components.push(component.into_hir(ctx))
                         }
                     }
                     (typedefs, functions, components, imports, exports, services)
@@ -77,7 +75,7 @@ impl IntoHir<hir::ctx::Simple<'_>> for Ast {
 mod interface_impl {
     prelude! {
         ast::interface::{
-            Constrains, FlowDeclaration, FlowExport, FlowImport,
+            TimeRange, FlowDeclaration, FlowExport, FlowImport,
             FlowInstantiation, FlowKind, FlowPattern, FlowStatement, Service,
         },
         hir::{
@@ -92,36 +90,36 @@ mod interface_impl {
     impl<'a> IntoHir<hir::ctx::Simple<'a>> for Service {
         type Hir = hir::Service;
 
-        fn into_hir(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::Hir> {
-            let id = ctxt.syms.insert_service(
+        fn into_hir(self, ctx: &mut hir::ctx::Simple<'a>) -> TRes<Self::Hir> {
+            let id = ctx.symbols.insert_service(
                 self.ident.to_string(),
                 true,
                 Location::default(),
-                ctxt.errors,
+                ctx.errors,
             )?;
 
-            let constrains = if let Some(Constrains { min, max, .. }) = self.constrains {
+            let time_range = if let Some(TimeRange { min, max, .. }) = self.time_range {
                 (min.base10_parse().unwrap(), max.base10_parse().unwrap())
             } else {
                 (10, 500)
             };
 
-            ctxt.syms.local();
+            ctx.symbols.local();
             let statements = self
                 .flow_statements
                 .into_iter()
                 .map(|flow_statement| {
                     flow_statement
-                        .into_hir(ctxt)
-                        .map(|res| (ctxt.syms.get_fresh_id(), res))
+                        .into_hir(ctx)
+                        .map(|res| (ctx.symbols.get_fresh_id(), res))
                 })
                 .collect::<TRes<HashMap<_, _>>>()?;
             let graph = Default::default();
-            ctxt.syms.global();
+            ctx.symbols.global();
 
             Ok(hir::Service {
                 id,
-                constrains,
+                time_range,
                 statements,
                 graph,
             })
@@ -131,7 +129,7 @@ mod interface_impl {
     impl<'a> IntoHir<hir::ctx::Simple<'a>> for FlowImport {
         type Hir = HIRFlowImport;
 
-        fn into_hir(mut self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::Hir> {
+        fn into_hir(mut self, ctx: &mut hir::ctx::Simple<'a>) -> TRes<Self::Hir> {
             let location = Location::default();
 
             let last = self.typed_path.left.segments.pop().unwrap().into_value();
@@ -142,20 +140,20 @@ mod interface_impl {
                 let inner = self
                     .typed_path
                     .right
-                    .into_hir(&mut ctxt.add_loc(&location))?;
+                    .into_hir(&mut ctx.add_loc(&location))?;
                 match self.kind {
                     FlowKind::Signal(_) => Typ::signal(inner),
                     FlowKind::Event(_) => Typ::event(inner),
                 }
             };
-            let id = ctxt.syms.insert_flow(
+            let id = ctx.symbols.insert_flow(
                 name,
                 Some(path.clone()),
                 self.kind,
                 flow_type.clone(),
                 true,
                 location.clone(),
-                ctxt.errors,
+                ctx.errors,
             )?;
 
             Ok(HIRFlowImport {
@@ -172,7 +170,7 @@ mod interface_impl {
     impl<'a> IntoHir<hir::ctx::Simple<'a>> for FlowExport {
         type Hir = HIRFlowExport;
 
-        fn into_hir(mut self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::Hir> {
+        fn into_hir(mut self, ctx: &mut hir::ctx::Simple<'a>) -> TRes<Self::Hir> {
             let location = Location::default();
 
             let last = self.typed_path.left.segments.pop().unwrap().into_value();
@@ -183,20 +181,20 @@ mod interface_impl {
                 let inner = self
                     .typed_path
                     .right
-                    .into_hir(&mut ctxt.add_loc(&location))?;
+                    .into_hir(&mut ctx.add_loc(&location))?;
                 match self.kind {
                     FlowKind::Signal(_) => Typ::signal(inner),
                     FlowKind::Event(_) => Typ::event(inner),
                 }
             };
-            let id = ctxt.syms.insert_flow(
+            let id = ctx.symbols.insert_flow(
                 name,
                 Some(path.clone()),
                 self.kind,
                 flow_type.clone(),
                 true,
                 location.clone(),
-                ctxt.errors,
+                ctx.errors,
             )?;
 
             Ok(HIRFlowExport {
@@ -213,7 +211,7 @@ mod interface_impl {
     impl<'a> IntoHir<hir::ctx::Simple<'a>> for FlowStatement {
         type Hir = HIRFlowStatement;
 
-        fn into_hir(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::Hir> {
+        fn into_hir(self, ctx: &mut hir::ctx::Simple<'a>) -> TRes<Self::Hir> {
             match self {
                 FlowStatement::Declaration(FlowDeclaration {
                     let_token,
@@ -222,9 +220,9 @@ mod interface_impl {
                     flow_expression,
                     semi_token,
                 }) => {
-                    let pattern = typed_pattern.into_hir(ctxt)?;
+                    let pattern = typed_pattern.into_hir(ctx)?;
                     let flow_expression =
-                        flow_expression.into_hir(&mut ctxt.add_loc(&Location::default()))?;
+                        flow_expression.into_hir(&mut ctx.add_loc(&Location::default()))?;
 
                     Ok(HIRFlowStatement::Declaration(HIRFlowDeclaration {
                         let_token,
@@ -241,10 +239,10 @@ mod interface_impl {
                     semi_token,
                 }) => {
                     // transform pattern and check its identifiers exist
-                    let pattern = pattern.into_hir(ctxt)?;
+                    let pattern = pattern.into_hir(ctx)?;
                     // transform the expression
                     let flow_expression =
-                        flow_expression.into_hir(&mut ctxt.add_loc(&Location::default()))?;
+                        flow_expression.into_hir(&mut ctx.add_loc(&Location::default()))?;
 
                     Ok(HIRFlowStatement::Instantiation(HIRFlowInstantiation {
                         pattern,
@@ -260,18 +258,18 @@ mod interface_impl {
     impl<'a> IntoHir<hir::ctx::Simple<'a>> for FlowPattern {
         type Hir = hir::stmt::Pattern;
 
-        fn into_hir(self, ctxt: &mut hir::ctx::Simple<'a>) -> TRes<Self::Hir> {
+        fn into_hir(self, ctx: &mut hir::ctx::Simple<'a>) -> TRes<Self::Hir> {
             let location = Location::default();
 
             match self {
                 FlowPattern::Single { ident } => {
-                    let id = ctxt.syms.get_flow_id(
+                    let id = ctx.symbols.get_flow_id(
                         &ident.to_string(),
                         false,
                         location.clone(),
-                        ctxt.errors,
+                        ctx.errors,
                     )?;
-                    let typing = ctxt.syms.get_type(id);
+                    let typing = ctx.symbols.get_type(id);
 
                     Ok(hir::stmt::Pattern {
                         kind: hir::stmt::Kind::Identifier { id },
@@ -282,19 +280,19 @@ mod interface_impl {
                 FlowPattern::SingleTyped {
                     kind, ident, ty, ..
                 } => {
-                    let inner = ty.into_hir(&mut ctxt.add_loc(&location))?;
+                    let inner = ty.into_hir(&mut ctx.add_loc(&location))?;
                     let flow_typing = match kind {
                         FlowKind::Signal(_) => Typ::signal(inner),
                         FlowKind::Event(_) => Typ::event(inner),
                     };
-                    let id = ctxt.syms.insert_flow(
+                    let id = ctx.symbols.insert_flow(
                         ident.to_string(),
                         None,
                         kind,
                         flow_typing.clone(),
                         true,
                         location.clone(),
-                        ctxt.errors,
+                        ctx.errors,
                     )?;
 
                     Ok(hir::stmt::Pattern {
@@ -309,7 +307,7 @@ mod interface_impl {
                 FlowPattern::Tuple { patterns, .. } => {
                     let elements = patterns
                         .into_iter()
-                        .map(|pattern| pattern.into_hir(ctxt))
+                        .map(|pattern| pattern.into_hir(ctx))
                         .collect::<TRes<Vec<_>>>()?;
 
                     let mut types = elements
@@ -335,50 +333,50 @@ mod interface_impl {
 impl IntoHir<ctx::Simple<'_>> for ast::Function {
     type Hir = Function;
 
-    // precondition: function and its inputs are already stored in symbol table
-    // postcondition: construct HIR function and check identifiers good use
-    fn into_hir(self, ctxt: &mut ctx::Simple) -> TRes<Self::Hir> {
+    // pre-condition: function and its inputs are already stored in symbol table
+    // post-condition: construct HIR function and check identifiers good use
+    fn into_hir(self, ctx: &mut ctx::Simple) -> TRes<Self::Hir> {
         let name = self.ident.to_string();
         let location = Location::default();
-        let id = ctxt
-            .syms
-            .get_function_id(&name, false, location.clone(), ctxt.errors)?;
+        let id = ctx
+            .symbols
+            .get_function_id(&name, false, location.clone(), ctx.errors)?;
 
         // create local context with all signals
-        ctxt.syms.local();
-        ctxt.syms.restore_context(id);
+        ctx.symbols.local();
+        ctx.symbols.restore_context(id);
 
         // insert function output type in symbol table
-        let output_typing = self.output_type.into_hir(&mut ctxt.add_loc(&location))?;
+        let output_typing = self.output_type.into_hir(&mut ctx.add_loc(&location))?;
         if !self.contract.clauses.is_empty() {
-            let _ = ctxt.syms.insert_function_result(
+            let _ = ctx.symbols.insert_function_result(
                 output_typing.clone(),
                 true,
                 location.clone(),
-                ctxt.errors,
+                ctx.errors,
             )?;
         }
-        ctxt.syms.set_function_output_type(id, output_typing);
+        ctx.symbols.set_function_output_type(id, output_typing);
 
         let (statements, returned) = self.statements.into_iter().fold(
             (vec![], None),
             |(mut declarations, option_returned), statement| match statement {
                 ast::Stmt::Declaration(declaration) => {
-                    declarations.push(declaration.into_hir(ctxt));
+                    declarations.push(declaration.into_hir(ctx));
                     (declarations, option_returned)
                 }
                 ast::Stmt::Return(ast::stmt::Return { expression, .. }) => {
                     assert!(option_returned.is_none());
                     (
                         declarations,
-                        Some(expression.into_hir(&mut ctxt.add_pat_loc(None, &location))),
+                        Some(expression.into_hir(&mut ctx.add_pat_loc(None, &location))),
                     )
                 }
             },
         );
-        let contract = self.contract.into_hir(ctxt)?;
+        let contract = self.contract.into_hir(ctx)?;
 
-        ctxt.syms.global();
+        ctx.symbols.global();
 
         Ok(hir::Function {
             id,
@@ -393,27 +391,27 @@ impl IntoHir<ctx::Simple<'_>> for ast::Function {
 impl IntoHir<ctx::Simple<'_>> for ast::Component {
     type Hir = hir::Component;
 
-    // precondition: node and its signals are already stored in symbol table
-    // postcondition: construct HIR node and check identifiers good use
-    fn into_hir(self, ctxt: &mut ctx::Simple) -> TRes<Self::Hir> {
+    // pre-condition: node and its signals are already stored in symbol table
+    // post-condition: construct HIR node and check identifiers good use
+    fn into_hir(self, ctx: &mut ctx::Simple) -> TRes<Self::Hir> {
         let name = self.ident.to_string();
         let location = Location::default();
-        let id = ctxt
-            .syms
-            .get_node_id(&name, false, location.clone(), ctxt.errors)?;
+        let id = ctx
+            .symbols
+            .get_node_id(&name, false, location.clone(), ctx.errors)?;
 
         // create local context with all signals
-        ctxt.syms.local();
-        ctxt.syms.restore_context(id);
+        ctx.symbols.local();
+        ctx.symbols.restore_context(id);
 
         let statements = self
             .equations
             .into_iter()
-            .map(|equation| equation.into_hir(ctxt))
+            .map(|equation| equation.into_hir(ctx))
             .collect::<TRes<Vec<_>>>()?;
-        let contract = self.contract.into_hir(ctxt)?;
+        let contract = self.contract.into_hir(ctx)?;
 
-        ctxt.syms.global();
+        ctx.symbols.global();
 
         Ok(hir::Component::Definition(hir::ComponentDefinition {
             id,
@@ -430,17 +428,17 @@ impl IntoHir<ctx::Simple<'_>> for ast::Component {
 impl IntoHir<ctx::Simple<'_>> for ast::ComponentImport {
     type Hir = hir::Component;
 
-    // precondition: node and its signals are already stored in symbol table
-    // postcondition: construct HIR node
-    fn into_hir(self, ctxt: &mut ctx::Simple) -> TRes<Self::Hir> {
+    // pre-condition: node and its signals are already stored in symbol table
+    // post-condition: construct HIR node
+    fn into_hir(self, ctx: &mut ctx::Simple) -> TRes<Self::Hir> {
         let last = self.path.clone().segments.pop().unwrap().into_value();
         let name = last.ident.to_string();
         assert!(last.arguments.is_none());
 
         let location = Location::default();
-        let id = ctxt
-            .syms
-            .get_node_id(&name, false, location.clone(), ctxt.errors)?;
+        let id = ctx
+            .symbols
+            .get_node_id(&name, false, location.clone(), ctx.errors)?;
 
         Ok(hir::Component::Import(hir::ComponentImport {
             id,
@@ -464,9 +462,9 @@ mod flow_expr_impl {
         type Hir = hir::flow::Kind;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn into_hir(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
+        fn into_hir(self, ctx: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
             Ok(hir::flow::Kind::Sample {
-                flow_expression: Box::new(self.flow_expression.into_hir(ctxt)?),
+                flow_expression: Box::new(self.flow_expression.into_hir(ctx)?),
                 period_ms: self.period_ms.base10_parse().unwrap(),
             })
         }
@@ -476,9 +474,9 @@ mod flow_expr_impl {
         type Hir = hir::flow::Kind;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn into_hir(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
+        fn into_hir(self, ctx: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
             Ok(hir::flow::Kind::Scan {
-                flow_expression: Box::new(self.flow_expression.into_hir(ctxt)?),
+                flow_expression: Box::new(self.flow_expression.into_hir(ctx)?),
                 period_ms: self.period_ms.base10_parse().unwrap(),
             })
         }
@@ -488,9 +486,9 @@ mod flow_expr_impl {
         type Hir = hir::flow::Kind;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn into_hir(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
+        fn into_hir(self, ctx: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
             Ok(hir::flow::Kind::Timeout {
-                flow_expression: Box::new(self.flow_expression.into_hir(ctxt)?),
+                flow_expression: Box::new(self.flow_expression.into_hir(ctx)?),
                 deadline: self.deadline.base10_parse().unwrap(),
             })
         }
@@ -500,9 +498,9 @@ mod flow_expr_impl {
         type Hir = hir::flow::Kind;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn into_hir(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
+        fn into_hir(self, ctx: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
             Ok(hir::flow::Kind::Throttle {
-                flow_expression: Box::new(self.flow_expression.into_hir(ctxt)?),
+                flow_expression: Box::new(self.flow_expression.into_hir(ctx)?),
                 delta: self.delta,
             })
         }
@@ -512,9 +510,9 @@ mod flow_expr_impl {
         type Hir = hir::flow::Kind;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn into_hir(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
+        fn into_hir(self, ctx: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
             Ok(hir::flow::Kind::OnChange {
-                flow_expression: Box::new(self.flow_expression.into_hir(ctxt)?),
+                flow_expression: Box::new(self.flow_expression.into_hir(ctx)?),
             })
         }
     }
@@ -523,10 +521,10 @@ mod flow_expr_impl {
         type Hir = hir::flow::Kind;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn into_hir(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
+        fn into_hir(self, ctx: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
             Ok(hir::flow::Kind::Merge {
-                flow_expression_1: Box::new(self.flow_expression_1.into_hir(ctxt)?),
-                flow_expression_2: Box::new(self.flow_expression_2.into_hir(ctxt)?),
+                flow_expression_1: Box::new(self.flow_expression_1.into_hir(ctx)?),
+                flow_expression_2: Box::new(self.flow_expression_2.into_hir(ctx)?),
             })
         }
     }
@@ -535,24 +533,24 @@ mod flow_expr_impl {
         type Hir = hir::flow::Kind;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn into_hir(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
+        fn into_hir(self, ctx: &mut hir::ctx::Loc<'a>) -> TRes<hir::flow::Kind> {
             let name = self.ident_component.to_string();
 
             // get called component id
             let component_id =
-                ctxt.syms
-                    .get_node_id(&name, false, ctxt.loc.clone(), ctxt.errors)?;
+                ctx.symbols
+                    .get_node_id(&name, false, ctx.loc.clone(), ctx.errors)?;
 
-            let component_inputs = ctxt.syms.get_node_inputs(component_id).clone();
+            let component_inputs = ctx.symbols.get_node_inputs(component_id).clone();
 
             // check inputs and node_inputs have the same length
             if self.inputs.len() != component_inputs.len() {
                 let error = Error::ArityMismatch {
                     input_count: self.inputs.len(),
                     arity: component_inputs.len(),
-                    location: ctxt.loc.clone(),
+                    location: ctx.loc.clone(),
                 };
-                ctxt.errors.push(error);
+                ctx.errors.push(error);
                 return Err(TerminationError);
             }
 
@@ -561,7 +559,7 @@ mod flow_expr_impl {
                 .inputs
                 .into_iter()
                 .zip(component_inputs)
-                .map(|(input, id)| Ok((id, input.into_hir(ctxt)?)))
+                .map(|(input, id)| Ok((id, input.into_hir(ctx)?)))
                 .collect::<TRes<Vec<_>>>()?;
 
             Ok(hir::flow::Kind::ComponentCall {
@@ -574,28 +572,28 @@ mod flow_expr_impl {
     impl<'a> IntoHir<hir::ctx::Loc<'a>> for FlowExpression {
         type Hir = flow::Expr;
 
-        // precondition: identifiers are stored in symbol table
-        // postcondition: construct HIR expression and check identifiers good use
-        fn into_hir(self, ctxt: &mut hir::ctx::Loc<'a>) -> TRes<Self::Hir> {
+        // pre-condition: identifiers are stored in symbol table
+        // post-condition: construct HIR expression and check identifiers good use
+        fn into_hir(self, ctx: &mut hir::ctx::Loc<'a>) -> TRes<Self::Hir> {
             let kind = match self {
                 FlowExpression::Ident(ident) => {
-                    let id = ctxt
-                        .syms
-                        .get_flow_id(&ident, false, ctxt.loc.clone(), ctxt.errors)?;
+                    let id = ctx
+                        .symbols
+                        .get_flow_id(&ident, false, ctx.loc.clone(), ctx.errors)?;
                     flow::Kind::Ident { id }
                 }
-                FlowExpression::ComponentCall(flow_expression) => flow_expression.into_hir(ctxt)?,
-                FlowExpression::Sample(flow_expression) => flow_expression.into_hir(ctxt)?,
-                FlowExpression::Scan(flow_expression) => flow_expression.into_hir(ctxt)?,
-                FlowExpression::Timeout(flow_expression) => flow_expression.into_hir(ctxt)?,
-                FlowExpression::Throttle(flow_expression) => flow_expression.into_hir(ctxt)?,
-                FlowExpression::OnChange(flow_expression) => flow_expression.into_hir(ctxt)?,
-                FlowExpression::Merge(flow_expression) => flow_expression.into_hir(ctxt)?,
+                FlowExpression::ComponentCall(flow_expression) => flow_expression.into_hir(ctx)?,
+                FlowExpression::Sample(flow_expression) => flow_expression.into_hir(ctx)?,
+                FlowExpression::Scan(flow_expression) => flow_expression.into_hir(ctx)?,
+                FlowExpression::Timeout(flow_expression) => flow_expression.into_hir(ctx)?,
+                FlowExpression::Throttle(flow_expression) => flow_expression.into_hir(ctx)?,
+                FlowExpression::OnChange(flow_expression) => flow_expression.into_hir(ctx)?,
+                FlowExpression::Merge(flow_expression) => flow_expression.into_hir(ctx)?,
             };
             Ok(flow::Expr {
                 kind,
                 typing: None,
-                location: ctxt.loc.clone(),
+                location: ctx.loc.clone(),
             })
         }
     }
@@ -604,15 +602,15 @@ mod flow_expr_impl {
 impl IntoHir<ctx::Simple<'_>> for ast::Contract {
     type Hir = Contract;
 
-    fn into_hir(self, ctxt: &mut ctx::Simple) -> TRes<Self::Hir> {
+    fn into_hir(self, ctx: &mut ctx::Simple) -> TRes<Self::Hir> {
         use ast::contract::ClauseKind;
         let (requires, ensures, invariant) = self.clauses.into_iter().fold(
             (vec![], vec![], vec![]),
             |(mut requires, mut ensures, mut invariant), clause| {
                 match clause.kind {
-                    ClauseKind::Requires(_) => requires.push(clause.term.into_hir(ctxt)),
-                    ClauseKind::Ensures(_) => ensures.push(clause.term.into_hir(ctxt)),
-                    ClauseKind::Invariant(_) => invariant.push(clause.term.into_hir(ctxt)),
+                    ClauseKind::Requires(_) => requires.push(clause.term.into_hir(ctx)),
+                    ClauseKind::Ensures(_) => ensures.push(clause.term.into_hir(ctx)),
+                    ClauseKind::Invariant(_) => invariant.push(clause.term.into_hir(ctx)),
                     ClauseKind::Assert(_) => todo!(),
                 };
                 (requires, ensures, invariant)
@@ -630,14 +628,14 @@ impl IntoHir<ctx::Simple<'_>> for ast::Contract {
 impl<'a> IntoHir<ctx::Simple<'a>> for ast::contract::Term {
     type Hir = hir::contract::Term;
 
-    fn into_hir(self, ctxt: &mut ctx::Simple<'a>) -> TRes<Self::Hir> {
+    fn into_hir(self, ctx: &mut ctx::Simple<'a>) -> TRes<Self::Hir> {
         use ast::contract::*;
         let location = Location::default();
         match self {
             Term::Result(_) => {
-                let id = ctxt
-                    .syms
-                    .get_function_result_id(false, location.clone(), ctxt.errors)?;
+                let id = ctx
+                    .symbols
+                    .get_function_result_id(false, location.clone(), ctx.errors)?;
                 Ok(hir::contract::Term::new(
                     hir::contract::Kind::ident(id),
                     None,
@@ -645,8 +643,8 @@ impl<'a> IntoHir<ctx::Simple<'a>> for ast::contract::Term {
                 ))
             }
             Term::Implication(Implication { left, right, .. }) => {
-                let left = left.into_hir(ctxt)?;
-                let right = right.into_hir(ctxt)?;
+                let left = left.into_hir(ctx)?;
+                let right = right.into_hir(ctx)?;
 
                 Ok(hir::contract::Term::new(
                     hir::contract::Kind::implication(left, right),
@@ -659,14 +657,14 @@ impl<'a> IntoHir<ctx::Simple<'a>> for ast::contract::Term {
                 elem_name,
             }) => {
                 let enum_id =
-                    ctxt.syms
-                        .get_enum_id(&enum_name, false, location.clone(), ctxt.errors)?;
-                let element_id = ctxt.syms.get_enum_elem_id(
+                    ctx.symbols
+                        .get_enum_id(&enum_name, false, location.clone(), ctx.errors)?;
+                let element_id = ctx.symbols.get_enum_elem_id(
                     &elem_name,
                     &enum_name,
                     false,
                     location.clone(),
-                    ctxt.errors,
+                    ctx.errors,
                 )?;
                 // TODO check elem is in enum
                 Ok(hir::contract::Term::new(
@@ -676,12 +674,12 @@ impl<'a> IntoHir<ctx::Simple<'a>> for ast::contract::Term {
                 ))
             }
             Term::Unary(Unary { op, term }) => Ok(hir::contract::Term::new(
-                hir::contract::Kind::unary(op, term.into_hir(ctxt)?),
+                hir::contract::Kind::unary(op, term.into_hir(ctx)?),
                 None,
                 location,
             )),
             Term::Binary(Binary { op, left, right }) => Ok(hir::contract::Term::new(
-                hir::contract::Kind::binary(op, left.into_hir(ctxt)?, right.into_hir(ctxt)?),
+                hir::contract::Kind::binary(op, left.into_hir(ctx)?, right.into_hir(ctx)?),
                 None,
                 location,
             )),
@@ -692,8 +690,8 @@ impl<'a> IntoHir<ctx::Simple<'a>> for ast::contract::Term {
             )),
             Term::Identifier(ident) => {
                 let id =
-                    ctxt.syms
-                        .get_identifier_id(&ident, false, location.clone(), ctxt.errors)?;
+                    ctx.symbols
+                        .get_identifier_id(&ident, false, location.clone(), ctx.errors)?;
                 Ok(hir::contract::Term::new(
                     hir::contract::Kind::ident(id),
                     None,
@@ -703,17 +701,17 @@ impl<'a> IntoHir<ctx::Simple<'a>> for ast::contract::Term {
             Term::ForAll(ForAll {
                 ident, ty, term, ..
             }) => {
-                let ty = ty.into_hir(&mut ctxt.add_loc(&location))?;
-                ctxt.syms.local();
-                let id = ctxt.syms.insert_identifier(
+                let ty = ty.into_hir(&mut ctx.add_loc(&location))?;
+                ctx.symbols.local();
+                let id = ctx.symbols.insert_identifier(
                     ident.clone(),
                     Some(ty),
                     true,
                     location.clone(),
-                    ctxt.errors,
+                    ctx.errors,
                 )?;
-                let term = term.into_hir(ctxt)?;
-                ctxt.syms.global();
+                let term = term.into_hir(ctx)?;
+                ctx.symbols.global();
                 Ok(hir::contract::Term::new(
                     hir::contract::Kind::forall(id, term),
                     None,
@@ -728,20 +726,20 @@ impl<'a> IntoHir<ctx::Simple<'a>> for ast::contract::Term {
             }) => {
                 // get the event identifier
                 let event_id =
-                    ctxt.syms
-                        .get_identifier_id(&event, false, location.clone(), ctxt.errors)?;
-                ctxt.syms.local();
+                    ctx.symbols
+                        .get_identifier_id(&event, false, location.clone(), ctx.errors)?;
+                ctx.symbols.local();
                 // set pattern signal in local context
-                let pattern_id = ctxt.syms.insert_identifier(
+                let pattern_id = ctx.symbols.insert_identifier(
                     pattern.clone(),
                     None,
                     true,
                     location.clone(),
-                    ctxt.errors,
+                    ctx.errors,
                 )?;
                 // transform term into HIR
-                let right = term.into_hir(ctxt)?;
-                ctxt.syms.global();
+                let right = term.into_hir(ctx)?;
+                ctx.symbols.global();
                 // construct right side of implication: `PresentEvent(pat) == event`
                 let left = hir::contract::Term::new(
                     hir::contract::Kind::binary(
@@ -788,7 +786,7 @@ impl IntoHir<ctx::Simple<'_>> for ast::Eq {
     /// Pre-condition: equation's signal is already stored in symbol table.
     ///
     /// Post-condition: construct HIR equation and check identifiers good use.
-    fn into_hir(self, ctxt: &mut ctx::Simple) -> TRes<Self::Hir> {
+    fn into_hir(self, ctx: &mut ctx::Simple) -> TRes<Self::Hir> {
         use ast::{
             equation::{Arm, Eq, Instantiation, Match},
             stmt::LetDecl,
@@ -797,7 +795,7 @@ impl IntoHir<ctx::Simple<'_>> for ast::Eq {
 
         // get signals defined by the equation
         let mut defined_signals = HashMap::new();
-        self.get_signals(&mut defined_signals, ctxt.syms, ctxt.errors)?;
+        self.get_signals(&mut defined_signals, ctx.symbols, ctx.errors)?;
 
         match self {
             Eq::LocalDef(LetDecl {
@@ -811,8 +809,8 @@ impl IntoHir<ctx::Simple<'_>> for ast::Eq {
                 ..
             }) => {
                 let expression =
-                    expression.into_hir(&mut ctxt.add_pat_loc(Some(&pattern), &location))?;
-                let pattern = pattern.into_hir(&mut ctxt.add_loc(&location))?;
+                    expression.into_hir(&mut ctx.add_pat_loc(Some(&pattern), &location))?;
+                let pattern = pattern.into_hir(&mut ctx.add_loc(&location))?;
                 Ok(hir::Stmt {
                     pattern,
                     expression,
@@ -826,7 +824,7 @@ impl IntoHir<ctx::Simple<'_>> for ast::Eq {
                 let pattern = {
                     let mut elements = defined_signals
                         .values()
-                        .map(|pat| pat.clone().into_hir(&mut ctxt.add_loc(&location)))
+                        .map(|pat| pat.clone().into_hir(&mut ctx.add_loc(&location)))
                         .collect::<TRes<Vec<_>>>()?;
                     if elements.len() == 1 {
                         elements.pop().unwrap()
@@ -847,10 +845,10 @@ impl IntoHir<ctx::Simple<'_>> for ast::Eq {
                          }| {
                             // transform pattern guard and equations into HIR
                             let (signals, pattern, guard, statements) = {
-                                ctxt.syms.local();
+                                ctx.symbols.local();
 
                                 // set local context: pattern signals + equations' signals
-                                pattern.store(ctxt.syms, ctxt.errors)?;
+                                pattern.store(ctx.symbols, ctx.errors)?;
                                 let mut signals = HashMap::new();
                                 equations
                                     .iter()
@@ -859,25 +857,25 @@ impl IntoHir<ctx::Simple<'_>> for ast::Eq {
                                         equation.store_signals(
                                             true,
                                             &mut signals,
-                                            ctxt.syms,
-                                            ctxt.errors,
+                                            ctx.symbols,
+                                            ctx.errors,
                                         )
                                     })
                                     .collect::<TRes<()>>()?;
 
                                 // transform pattern guard and equations into HIR with local context
-                                let pattern = pattern.into_hir(&mut ctxt.add_loc(&location))?;
+                                let pattern = pattern.into_hir(&mut ctx.add_loc(&location))?;
                                 let guard = guard
                                     .map(|(_, expression)| {
-                                        expression.into_hir(&mut ctxt.add_pat_loc(None, &location))
+                                        expression.into_hir(&mut ctx.add_pat_loc(None, &location))
                                     })
                                     .transpose()?;
                                 let statements = equations
                                     .into_iter()
-                                    .map(|equation| equation.into_hir(ctxt))
+                                    .map(|equation| equation.into_hir(ctx))
                                     .collect::<TRes<Vec<_>>>()?;
 
-                                ctxt.syms.global();
+                                ctx.symbols.global();
 
                                 (signals, pattern, guard, statements)
                             };
@@ -891,7 +889,7 @@ impl IntoHir<ctx::Simple<'_>> for ast::Eq {
                                         received: signals.len(),
                                         location: location.clone(),
                                     };
-                                    ctxt.errors.push(error);
+                                    ctx.errors.push(error);
                                     return Err(TerminationError);
                                 }
                                 let mut elements = defined_signals
@@ -906,7 +904,7 @@ impl IntoHir<ctx::Simple<'_>> for ast::Eq {
                                                 identifier: signal_name.clone(),
                                                 location: location.clone(),
                                             };
-                                            ctxt.errors.push(error);
+                                            ctx.errors.push(error);
                                             return Err(TerminationError);
                                         }
                                     })
@@ -929,7 +927,7 @@ impl IntoHir<ctx::Simple<'_>> for ast::Eq {
 
                 // construct the match expression
                 let expression = stream::expr(stream::Kind::expr(hir::expr::Kind::match_expr(
-                    expression.into_hir(&mut ctxt.add_pat_loc(None, &location))?,
+                    expression.into_hir(&mut ctx.add_pat_loc(None, &location))?,
                     arms,
                 )));
 
@@ -949,7 +947,7 @@ impl IntoHir<ctx::Simple<'_>> for ast::ReactEq {
     /// Pre-condition: equation's signal is already stored in symbol table.
     ///
     /// Post-condition: construct HIR equation and check identifiers good use.
-    fn into_hir(self, ctxt: &mut ctx::Simple) -> TRes<Self::Hir> {
+    fn into_hir(self, ctx: &mut ctx::Simple) -> TRes<Self::Hir> {
         use ast::{
             equation::{Arm, EventArmWhen, Instantiation, MatchWhen},
             stmt::LetDecl,
@@ -959,7 +957,7 @@ impl IntoHir<ctx::Simple<'_>> for ast::ReactEq {
 
         // get signals defined by the equation
         let mut defined_signals = HashMap::new();
-        self.get_signals(&mut defined_signals, ctxt.syms, ctxt.errors)?;
+        self.get_signals(&mut defined_signals, ctx.symbols, ctx.errors)?;
 
         match self {
             ReactEq::LocalDef(LetDecl {
@@ -973,8 +971,8 @@ impl IntoHir<ctx::Simple<'_>> for ast::ReactEq {
                 ..
             }) => {
                 let expression =
-                    expression.into_hir(&mut ctxt.add_pat_loc(Some(&pattern), &location))?;
-                let pattern = pattern.into_hir(&mut ctxt.add_loc(&location))?;
+                    expression.into_hir(&mut ctx.add_pat_loc(Some(&pattern), &location))?;
+                let pattern = pattern.into_hir(&mut ctx.add_loc(&location))?;
                 Ok(hir::Stmt {
                     pattern,
                     expression,
@@ -988,7 +986,7 @@ impl IntoHir<ctx::Simple<'_>> for ast::ReactEq {
                 let pattern = {
                     let mut elements = defined_signals
                         .values()
-                        .map(|pat| pat.clone().into_hir(&mut ctxt.add_loc(&location)))
+                        .map(|pat| pat.clone().into_hir(&mut ctx.add_loc(&location)))
                         .collect::<TRes<Vec<_>>>()?;
                     if elements.len() == 1 {
                         elements.pop().unwrap()
@@ -1009,10 +1007,10 @@ impl IntoHir<ctx::Simple<'_>> for ast::ReactEq {
                          }| {
                             // transform pattern guard and equations into HIR
                             let (signals, pattern, guard, statements) = {
-                                ctxt.syms.local();
+                                ctx.symbols.local();
 
                                 // set local context: pattern signals + equations' signals
-                                pattern.store(ctxt.syms, ctxt.errors)?;
+                                pattern.store(ctx.symbols, ctx.errors)?;
                                 let mut signals = HashMap::new();
                                 equations
                                     .iter()
@@ -1021,25 +1019,25 @@ impl IntoHir<ctx::Simple<'_>> for ast::ReactEq {
                                         equation.store_signals(
                                             true,
                                             &mut signals,
-                                            ctxt.syms,
-                                            ctxt.errors,
+                                            ctx.symbols,
+                                            ctx.errors,
                                         )
                                     })
                                     .collect::<TRes<()>>()?;
 
                                 // transform pattern guard and equations into HIR with local context
-                                let pattern = pattern.into_hir(&mut ctxt.add_loc(&location))?;
+                                let pattern = pattern.into_hir(&mut ctx.add_loc(&location))?;
                                 let guard = guard
                                     .map(|(_, expression)| {
-                                        expression.into_hir(&mut ctxt.add_pat_loc(None, &location))
+                                        expression.into_hir(&mut ctx.add_pat_loc(None, &location))
                                     })
                                     .transpose()?;
                                 let statements = equations
                                     .into_iter()
-                                    .map(|equation| equation.into_hir(ctxt))
+                                    .map(|equation| equation.into_hir(ctx))
                                     .collect::<TRes<Vec<_>>>()?;
 
-                                ctxt.syms.global();
+                                ctx.symbols.global();
 
                                 (signals, pattern, guard, statements)
                             };
@@ -1053,7 +1051,7 @@ impl IntoHir<ctx::Simple<'_>> for ast::ReactEq {
                                         received: signals.len(),
                                         location: location.clone(),
                                     };
-                                    ctxt.errors.push(error);
+                                    ctx.errors.push(error);
                                     return Err(TerminationError);
                                 }
                                 let mut elements = defined_signals
@@ -1068,7 +1066,7 @@ impl IntoHir<ctx::Simple<'_>> for ast::ReactEq {
                                                 identifier: signal_name.clone(),
                                                 location: location.clone(),
                                             };
-                                            ctxt.errors.push(error);
+                                            ctx.errors.push(error);
                                             return Err(TerminationError);
                                         }
                                     })
@@ -1091,7 +1089,7 @@ impl IntoHir<ctx::Simple<'_>> for ast::ReactEq {
 
                 // construct the match expression
                 let expression = stream::expr(stream::Kind::expr(hir::expr::Kind::match_expr(
-                    expression.into_hir(&mut ctxt.add_pat_loc(None, &location))?,
+                    expression.into_hir(&mut ctx.add_pat_loc(None, &location))?,
                     arms,
                 )));
 
@@ -1126,8 +1124,8 @@ impl IntoHir<ctx::Simple<'_>> for ast::ReactEq {
                             event_arm.pattern.place_events(
                                 &mut events_indices,
                                 &mut idx,
-                                ctxt.syms,
-                                ctxt.errors,
+                                ctx.symbols,
+                                ctx.errors,
                             )
                         })
                         .collect::<TRes<()>>()?;
@@ -1151,8 +1149,8 @@ impl IntoHir<ctx::Simple<'_>> for ast::ReactEq {
                     // create the tuple expression
                     let expression = defined_pattern.into_default_expr(
                         &HashMap::new(),
-                        ctxt.syms,
-                        ctxt.errors,
+                        ctx.symbols,
+                        ctx.errors,
                     )?;
 
                     (pattern, guard, vec![], expression)
@@ -1169,7 +1167,7 @@ impl IntoHir<ctx::Simple<'_>> for ast::ReactEq {
                              ..
                          }| {
                             // transform event_pattern guard and equations into HIR
-                            ctxt.syms.local();
+                            ctx.symbols.local();
 
                             // set local context + create matched pattern
                             let (matched_pattern, guard) = {
@@ -1177,15 +1175,15 @@ impl IntoHir<ctx::Simple<'_>> for ast::ReactEq {
                                 let opt_rising_edges = event_pattern.create_tuple_pattern(
                                     &mut elements,
                                     &events_indices,
-                                    ctxt.syms,
-                                    ctxt.errors,
+                                    ctx.symbols,
+                                    ctx.errors,
                                 )?;
                                 let matched = pattern::init(pattern::Kind::tuple(elements));
 
                                 // transform AST guard into HIR
                                 let mut guard = guard
                                     .map(|(_, expression)| {
-                                        expression.into_hir(&mut ctxt.add_pat_loc(None, &location))
+                                        expression.into_hir(&mut ctx.add_pat_loc(None, &location))
                                     })
                                     .transpose()?;
                                 // add rising edge detection to the guard
@@ -1216,8 +1214,8 @@ impl IntoHir<ctx::Simple<'_>> for ast::ReactEq {
                                         equation.store_signals(
                                             true,
                                             &mut signals,
-                                            ctxt.syms,
-                                            ctxt.errors,
+                                            ctx.symbols,
+                                            ctx.errors,
                                         )
                                     })
                                     .collect::<TRes<()>>()?;
@@ -1227,16 +1225,16 @@ impl IntoHir<ctx::Simple<'_>> for ast::ReactEq {
                             // transform equations into HIR with local context
                             let statements = equations
                                 .into_iter()
-                                .map(|equation| equation.into_hir(ctxt))
+                                .map(|equation| equation.into_hir(ctx))
                                 .collect::<TRes<Vec<_>>>()?;
 
-                            ctxt.syms.global();
+                            ctx.symbols.global();
 
                             // create the tuple expression
                             let expression = defined_pattern.into_default_expr(
                                 &signals,
-                                ctxt.syms,
-                                ctxt.errors,
+                                ctx.symbols,
+                                ctx.errors,
                             )?;
 
                             Ok((matched_pattern, guard, statements, expression))
@@ -1263,7 +1261,7 @@ impl IntoHir<ctx::Simple<'_>> for ast::ReactEq {
                     )))
                 };
 
-                let pattern = defined_pattern.into_hir(&mut ctxt.add_loc(&location))?;
+                let pattern = defined_pattern.into_hir(&mut ctx.add_loc(&location))?;
 
                 Ok(hir::Stmt {
                     pattern,
@@ -1275,19 +1273,19 @@ impl IntoHir<ctx::Simple<'_>> for ast::ReactEq {
     }
 }
 
-impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for ast::expr::Unop<E>
+impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for ast::expr::UnOp<E>
 where
     E: IntoHir<hir::ctx::PatLoc<'a>>,
 {
     type Hir = expr::Kind<E::Hir>;
 
     /// Transforms AST into HIR and check identifiers good use.
-    fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
-        // precondition: identifiers are stored in symbol table
-        // postcondition: construct HIR expression kind and check identifiers good use
-        Ok(expr::Kind::Unop {
+    fn into_hir(self, ctx: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
+        // pre-condition: identifiers are stored in symbol table
+        // post-condition: construct HIR expression kind and check identifiers good use
+        Ok(expr::Kind::UnOp {
             op: self.op,
-            expression: Box::new(self.expression.into_hir(ctxt)?),
+            expression: Box::new(self.expression.into_hir(ctx)?),
         })
     }
 }
@@ -1299,18 +1297,18 @@ where
     type Hir = expr::Kind<E::Hir>;
 
     /// Transforms AST into HIR and check identifiers good use.
-    fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
+    fn into_hir(self, ctx: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
         let ast::expr::Binop {
             op,
             left_expression,
             right_expression,
         } = self;
-        // precondition: identifiers are stored in symbol table
-        // postcondition: construct HIR expression kind and check identifiers good use
+        // pre-condition: identifiers are stored in symbol table
+        // post-condition: construct HIR expression kind and check identifiers good use
         Ok(expr::Kind::Binop {
             op,
-            left_expression: Box::new(left_expression.into_hir(ctxt)?),
-            right_expression: Box::new(right_expression.into_hir(ctxt)?),
+            left_expression: Box::new(left_expression.into_hir(ctx)?),
+            right_expression: Box::new(right_expression.into_hir(ctx)?),
         })
     }
 }
@@ -1322,19 +1320,19 @@ where
     type Hir = expr::Kind<E::Hir>;
 
     /// Transforms AST into HIR and check identifiers good use.
-    fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
+    fn into_hir(self, ctx: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
         let ast::expr::IfThenElse {
             expression,
             true_expression,
             false_expression,
         } = self;
-        // precondition: identifiers are stored in symbol table
-        // postcondition: construct HIR expression kind and check identifiers good use
+        // pre-condition: identifiers are stored in symbol table
+        // post-condition: construct HIR expression kind and check identifiers good use
         Ok(expr::Kind::IfThenElse {
-            expression: Box::new(expression.into_hir(ctxt)?),
-            true_expression: Box::new(true_expression.into_hir(ctxt)?),
+            expression: Box::new(expression.into_hir(ctx)?),
+            true_expression: Box::new(true_expression.into_hir(ctx)?),
 
-            false_expression: Box::new(false_expression.into_hir(ctxt)?),
+            false_expression: Box::new(false_expression.into_hir(ctx)?),
         })
     }
 }
@@ -1346,18 +1344,18 @@ where
     type Hir = expr::Kind<E::Hir>;
 
     /// Transforms AST into HIR and check identifiers good use.
-    fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
+    fn into_hir(self, ctx: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
         let ast::expr::Application {
             function_expression,
             inputs,
         } = self;
-        // precondition: identifiers are stored in symbol table
-        // postcondition: construct HIR expression kind and check identifiers good use
+        // pre-condition: identifiers are stored in symbol table
+        // post-condition: construct HIR expression kind and check identifiers good use
         Ok(expr::Kind::Application {
-            function_expression: Box::new(function_expression.into_hir(ctxt)?),
+            function_expression: Box::new(function_expression.into_hir(ctx)?),
             inputs: inputs
                 .into_iter()
-                .map(|input| input.into_hir(ctxt))
+                .map(|input| input.into_hir(ctx))
                 .collect::<TRes<Vec<_>>>()?,
         })
     }
@@ -1370,19 +1368,19 @@ where
     type Hir = expr::Kind<E::Hir>;
 
     /// Transforms AST into HIR and check identifiers good use.
-    fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
+    fn into_hir(self, ctx: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
         let ast::expr::Structure { name, fields } = self;
-        // precondition: identifiers are stored in symbol table
-        // postcondition: construct HIR expression kind and check identifiers good use
-        let id = ctxt
-            .syms
-            .get_struct_id(&name, false, ctxt.loc.clone(), ctxt.errors)?;
-        let mut field_ids = ctxt
-            .syms
+        // pre-condition: identifiers are stored in symbol table
+        // post-condition: construct HIR expression kind and check identifiers good use
+        let id = ctx
+            .symbols
+            .get_struct_id(&name, false, ctx.loc.clone(), ctx.errors)?;
+        let mut field_ids = ctx
+            .symbols
             .get_struct_fields(id)
             .clone()
             .into_iter()
-            .map(|id| (ctxt.syms.get_name(id).clone(), id))
+            .map(|id| (ctx.symbols.get_name(id).clone(), id))
             .collect::<HashMap<_, _>>();
 
         let fields = fields
@@ -1393,14 +1391,14 @@ where
                         let error = Error::UnknownField {
                             structure_name: name.clone(),
                             field_name: field_name.clone(),
-                            location: ctxt.loc.clone(),
+                            location: ctx.loc.clone(),
                         };
-                        ctxt.errors.push(error);
+                        ctx.errors.push(error);
                         Err(TerminationError)
                     },
                     |id| Ok(id),
                 )?;
-                let expression = expression.into_hir(ctxt)?;
+                let expression = expression.into_hir(ctx)?;
                 Ok((id, expression))
             })
             .collect::<TRes<Vec<_>>>()?;
@@ -1412,9 +1410,9 @@ where
                 let error = Error::MissingField {
                     structure_name: name.clone(),
                     field_name: field_name.clone(),
-                    location: ctxt.loc.clone(),
+                    location: ctx.loc.clone(),
                 };
-                ctxt.errors.push(error);
+                ctx.errors.push(error);
                 Err::<(), _>(TerminationError)
             })
             .collect::<TRes<Vec<_>>>()?;
@@ -1435,7 +1433,7 @@ mod simple_expr_impl {
         type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>>
+        fn into_hir(self, ctx: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>>
         where
             E: IntoHir<hir::ctx::PatLoc<'a>>,
         {
@@ -1445,17 +1443,17 @@ mod simple_expr_impl {
                 ..
             } = self;
 
-            // precondition: identifiers are stored in symbol table
-            // postcondition: construct HIR expression kind and check identifiers good use
+            // pre-condition: identifiers are stored in symbol table
+            // post-condition: construct HIR expression kind and check identifiers good use
             let enum_id =
-                ctxt.syms
-                    .get_enum_id(&enum_name, false, ctxt.loc.clone(), ctxt.errors)?;
-            let elem_id = ctxt.syms.get_enum_elem_id(
+                ctx.symbols
+                    .get_enum_id(&enum_name, false, ctx.loc.clone(), ctx.errors)?;
+            let elem_id = ctx.symbols.get_enum_elem_id(
                 &elem_name,
                 &enum_name,
                 false,
-                ctxt.loc.clone(),
-                ctxt.errors,
+                ctx.loc.clone(),
+                ctx.errors,
             )?;
             // TODO check elem is in enum
             Ok(expr::Kind::Enumeration { enum_id, elem_id })
@@ -1469,14 +1467,14 @@ mod simple_expr_impl {
         type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
+        fn into_hir(self, ctx: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
             let Array { elements } = self;
-            // precondition: identifiers are stored in symbol table
-            // postcondition: construct HIR expression kind and check identifiers good use
+            // pre-condition: identifiers are stored in symbol table
+            // post-condition: construct HIR expression kind and check identifiers good use
             Ok(expr::Kind::Array {
                 elements: elements
                     .into_iter()
-                    .map(|expression| expression.into_hir(ctxt))
+                    .map(|expression| expression.into_hir(ctx))
                     .collect::<TRes<Vec<_>>>()?,
             })
         }
@@ -1489,14 +1487,14 @@ mod simple_expr_impl {
         type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
+        fn into_hir(self, ctx: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
             let Tuple { elements } = self;
-            // precondition: identifiers are stored in symbol table
-            // postcondition: construct HIR expression kind and check identifiers good use
+            // pre-condition: identifiers are stored in symbol table
+            // post-condition: construct HIR expression kind and check identifiers good use
             Ok(expr::Kind::Tuple {
                 elements: elements
                     .into_iter()
-                    .map(|expression| expression.into_hir(ctxt))
+                    .map(|expression| expression.into_hir(ctx))
                     .collect::<TRes<Vec<_>>>()?,
             })
         }
@@ -1509,12 +1507,12 @@ mod simple_expr_impl {
         type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
+        fn into_hir(self, ctx: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
             let Match { expression, arms } = self;
-            // precondition: identifiers are stored in symbol table
-            // postcondition: construct HIR expression kind and check identifiers good use
+            // pre-condition: identifiers are stored in symbol table
+            // post-condition: construct HIR expression kind and check identifiers good use
             Ok(expr::Kind::Match {
-                expression: Box::new(expression.into_hir(ctxt)?),
+                expression: Box::new(expression.into_hir(ctx)?),
                 arms: arms
                     .into_iter()
                     .map(
@@ -1523,14 +1521,14 @@ mod simple_expr_impl {
                              guard,
                              expression,
                          }| {
-                            ctxt.syms.local();
-                            pattern.store(ctxt.syms, ctxt.errors)?;
-                            let pattern = pattern.into_hir(&mut ctxt.remove_pat())?;
+                            ctx.symbols.local();
+                            pattern.store(ctx.symbols, ctx.errors)?;
+                            let pattern = pattern.into_hir(&mut ctx.remove_pat())?;
                             let guard = guard
-                                .map(|expression| expression.into_hir(ctxt))
+                                .map(|expression| expression.into_hir(ctx))
                                 .transpose()?;
-                            let expression = expression.into_hir(ctxt)?;
-                            ctxt.syms.global();
+                            let expression = expression.into_hir(ctx)?;
+                            ctx.symbols.global();
                             Ok((pattern, guard, vec![], expression))
                         },
                     )
@@ -1546,12 +1544,12 @@ mod simple_expr_impl {
         type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
+        fn into_hir(self, ctx: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
             let FieldAccess { expression, field } = self;
-            // precondition: identifiers are stored in symbol table
-            // postcondition: construct HIR expression kind and check identifiers good use
+            // pre-condition: identifiers are stored in symbol table
+            // post-condition: construct HIR expression kind and check identifiers good use
             Ok(expr::Kind::FieldAccess {
-                expression: Box::new(expression.into_hir(ctxt)?),
+                expression: Box::new(expression.into_hir(ctx)?),
                 field,
             })
         }
@@ -1564,15 +1562,15 @@ mod simple_expr_impl {
         type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
+        fn into_hir(self, ctx: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
             let TupleElementAccess {
                 expression,
                 element_number,
             } = self;
-            // precondition: identifiers are stored in symbol table
-            // postcondition: construct HIR expression kind and check identifiers good use
+            // pre-condition: identifiers are stored in symbol table
+            // post-condition: construct HIR expression kind and check identifiers good use
             Ok(expr::Kind::TupleElementAccess {
-                expression: Box::new(expression.into_hir(ctxt)?),
+                expression: Box::new(expression.into_hir(ctx)?),
                 element_number,
             })
         }
@@ -1585,16 +1583,16 @@ mod simple_expr_impl {
         type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
+        fn into_hir(self, ctx: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
             let Map {
                 expression,
                 function_expression,
             } = self;
-            // precondition: identifiers are stored in symbol table
-            // postcondition: construct HIR expression kind and check identifiers good use
+            // pre-condition: identifiers are stored in symbol table
+            // post-condition: construct HIR expression kind and check identifiers good use
             Ok(expr::Kind::Map {
-                expression: Box::new(expression.into_hir(ctxt)?),
-                function_expression: Box::new(function_expression.into_hir(ctxt)?),
+                expression: Box::new(expression.into_hir(ctx)?),
+                function_expression: Box::new(function_expression.into_hir(ctx)?),
             })
         }
     }
@@ -1606,18 +1604,18 @@ mod simple_expr_impl {
         type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
+        fn into_hir(self, ctx: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
             let Fold {
                 expression,
                 initialization_expression,
                 function_expression,
             } = self;
-            // precondition: identifiers are stored in symbol table
-            // postcondition: construct HIR expression kind and check identifiers good use
+            // pre-condition: identifiers are stored in symbol table
+            // post-condition: construct HIR expression kind and check identifiers good use
             Ok(expr::Kind::Fold {
-                expression: Box::new(expression.into_hir(ctxt)?),
-                initialization_expression: Box::new(initialization_expression.into_hir(ctxt)?),
-                function_expression: Box::new(function_expression.into_hir(ctxt)?),
+                expression: Box::new(expression.into_hir(ctx)?),
+                initialization_expression: Box::new(initialization_expression.into_hir(ctx)?),
+                function_expression: Box::new(function_expression.into_hir(ctx)?),
             })
         }
     }
@@ -1629,16 +1627,16 @@ mod simple_expr_impl {
         type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
+        fn into_hir(self, ctx: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
             let Sort {
                 expression,
                 function_expression,
             } = self;
-            // precondition: identifiers are stored in symbol table
-            // postcondition: construct HIR expression kind and check identifiers good use
+            // pre-condition: identifiers are stored in symbol table
+            // post-condition: construct HIR expression kind and check identifiers good use
             Ok(expr::Kind::Sort {
-                expression: Box::new(expression.into_hir(ctxt)?),
-                function_expression: Box::new(function_expression.into_hir(ctxt)?),
+                expression: Box::new(expression.into_hir(ctx)?),
+                function_expression: Box::new(function_expression.into_hir(ctx)?),
             })
         }
     }
@@ -1650,14 +1648,14 @@ mod simple_expr_impl {
         type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
+        fn into_hir(self, ctx: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
             let Zip { arrays } = self;
-            // precondition: identifiers are stored in symbol table
-            // postcondition: construct HIR expression kind and check identifiers good use
+            // pre-condition: identifiers are stored in symbol table
+            // post-condition: construct HIR expression kind and check identifiers good use
             Ok(expr::Kind::Zip {
                 arrays: arrays
                     .into_iter()
-                    .map(|array| array.into_hir(ctxt))
+                    .map(|array| array.into_hir(ctx))
                     .collect::<TRes<Vec<_>>>()?,
             })
         }
@@ -1670,27 +1668,27 @@ mod simple_expr_impl {
         type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
+        fn into_hir(self, ctx: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>> {
             let TypedAbstraction { inputs, expression } = self;
-            // precondition: identifiers are stored in symbol table
-            // postcondition: construct HIR expression kind and check identifiers good use
+            // pre-condition: identifiers are stored in symbol table
+            // post-condition: construct HIR expression kind and check identifiers good use
 
-            ctxt.syms.local();
+            ctx.symbols.local();
             let inputs = inputs
                 .into_iter()
                 .map(|(input_name, typing)| {
-                    let typing = typing.into_hir(&mut ctxt.remove_pat())?;
-                    ctxt.syms.insert_identifier(
+                    let typing = typing.into_hir(&mut ctx.remove_pat())?;
+                    ctx.symbols.insert_identifier(
                         input_name,
                         Some(typing),
                         true,
-                        ctxt.loc.clone(),
-                        ctxt.errors,
+                        ctx.loc.clone(),
+                        ctx.errors,
                     )
                 })
                 .collect::<TRes<Vec<_>>>()?;
-            let expression = expression.into_hir(ctxt)?;
-            ctxt.syms.global();
+            let expression = expression.into_hir(ctx)?;
+            ctx.symbols.global();
 
             Ok(expr::Kind::Abstraction {
                 inputs,
@@ -1702,42 +1700,42 @@ mod simple_expr_impl {
     impl<'a> IntoHir<hir::ctx::PatLoc<'a>> for ast::Expr {
         type Hir = hir::Expr;
 
-        // precondition: identifiers are stored in symbol table
-        // postcondition: construct HIR expression and check identifiers good use
-        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc<'a>) -> TRes<Self::Hir> {
+        // pre-condition: identifiers are stored in symbol table
+        // post-condition: construct HIR expression and check identifiers good use
+        fn into_hir(self, ctx: &mut hir::ctx::PatLoc<'a>) -> TRes<Self::Hir> {
             let kind = match self {
                 Self::Constant(constant) => hir::expr::Kind::Constant { constant },
                 Self::Identifier(id) => {
-                    let id = ctxt
-                        .syms
-                        .get_identifier_id(&id, false, ctxt.loc.clone(), &mut vec![])
+                    let id = ctx
+                        .symbols
+                        .get_identifier_id(&id, false, ctx.loc.clone(), &mut vec![])
                         .or_else(|_| {
-                            ctxt.syms
-                                .get_function_id(&id, false, ctxt.loc.clone(), ctxt.errors)
+                            ctx.symbols
+                                .get_function_id(&id, false, ctx.loc.clone(), ctx.errors)
                         })?;
                     hir::expr::Kind::Identifier { id }
                 }
-                Self::Unop(expression) => expression.into_hir(ctxt)?,
-                Self::Binop(expression) => expression.into_hir(ctxt)?,
-                Self::IfThenElse(expression) => expression.into_hir(ctxt)?,
-                Self::Application(expression) => expression.into_hir(ctxt)?,
-                Self::TypedAbstraction(expression) => expression.into_hir(ctxt)?,
-                Self::Structure(expression) => expression.into_hir(ctxt)?,
-                Self::Tuple(expression) => expression.into_hir(ctxt)?,
-                Self::Enumeration(expression) => expression.into_hir(ctxt)?,
-                Self::Array(expression) => expression.into_hir(ctxt)?,
-                Self::Match(expression) => expression.into_hir(ctxt)?,
-                Self::FieldAccess(expression) => expression.into_hir(ctxt)?,
-                Self::TupleElementAccess(expression) => expression.into_hir(ctxt)?,
-                Self::Map(expression) => expression.into_hir(ctxt)?,
-                Self::Fold(expression) => expression.into_hir(ctxt)?,
-                Self::Sort(expression) => expression.into_hir(ctxt)?,
-                Self::Zip(expression) => expression.into_hir(ctxt)?,
+                Self::UnOp(expression) => expression.into_hir(ctx)?,
+                Self::Binop(expression) => expression.into_hir(ctx)?,
+                Self::IfThenElse(expression) => expression.into_hir(ctx)?,
+                Self::Application(expression) => expression.into_hir(ctx)?,
+                Self::TypedAbstraction(expression) => expression.into_hir(ctx)?,
+                Self::Structure(expression) => expression.into_hir(ctx)?,
+                Self::Tuple(expression) => expression.into_hir(ctx)?,
+                Self::Enumeration(expression) => expression.into_hir(ctx)?,
+                Self::Array(expression) => expression.into_hir(ctx)?,
+                Self::Match(expression) => expression.into_hir(ctx)?,
+                Self::FieldAccess(expression) => expression.into_hir(ctx)?,
+                Self::TupleElementAccess(expression) => expression.into_hir(ctx)?,
+                Self::Map(expression) => expression.into_hir(ctx)?,
+                Self::Fold(expression) => expression.into_hir(ctx)?,
+                Self::Sort(expression) => expression.into_hir(ctx)?,
+                Self::Zip(expression) => expression.into_hir(ctx)?,
             };
             Ok(hir::Expr {
                 kind,
                 typing: None,
-                location: ctxt.loc.clone(),
+                location: ctx.loc.clone(),
                 dependencies: Dependencies::new(),
             })
         }
@@ -1752,18 +1750,18 @@ mod expr_pattern_impl {
     impl IntoHir<hir::ctx::Loc<'_>> for PatStructure {
         type Hir = hir::pattern::Kind;
 
-        fn into_hir(self, ctxt: &mut hir::ctx::Loc) -> TRes<hir::pattern::Kind> {
+        fn into_hir(self, ctx: &mut hir::ctx::Loc) -> TRes<hir::pattern::Kind> {
             let PatStructure { name, fields, rest } = self;
 
-            let id = ctxt
-                .syms
-                .get_struct_id(&name, false, ctxt.loc.clone(), ctxt.errors)?;
-            let mut field_ids = ctxt
-                .syms
+            let id = ctx
+                .symbols
+                .get_struct_id(&name, false, ctx.loc.clone(), ctx.errors)?;
+            let mut field_ids = ctx
+                .symbols
                 .get_struct_fields(id)
                 .clone()
                 .into_iter()
-                .map(|id| (ctxt.syms.get_name(id).clone(), id))
+                .map(|id| (ctx.symbols.get_name(id).clone(), id))
                 .collect::<HashMap<_, _>>();
 
             let fields = fields
@@ -1774,15 +1772,15 @@ mod expr_pattern_impl {
                             let error = Error::UnknownField {
                                 structure_name: name.clone(),
                                 field_name: field_name.clone(),
-                                location: ctxt.loc.clone(),
+                                location: ctx.loc.clone(),
                             };
-                            ctxt.errors.push(error);
+                            ctx.errors.push(error);
                             Err(TerminationError)
                         },
                         |id| Ok(id),
                     )?;
                     let pattern = optional_pattern
-                        .map(|pattern| pattern.into_hir(ctxt))
+                        .map(|pattern| pattern.into_hir(ctx))
                         .transpose()?;
                     Ok((id, pattern))
                 })
@@ -1796,9 +1794,9 @@ mod expr_pattern_impl {
                         let error = Error::MissingField {
                             structure_name: name.clone(),
                             field_name: field_name.clone(),
-                            location: ctxt.loc.clone(),
+                            location: ctx.loc.clone(),
                         };
-                        ctxt.errors.push(error);
+                        ctx.errors.push(error);
                         TRes::<()>::Err(TerminationError)
                     })
                     .collect::<TRes<Vec<_>>>()?;
@@ -1811,21 +1809,21 @@ mod expr_pattern_impl {
     impl IntoHir<hir::ctx::Loc<'_>> for PatEnumeration {
         type Hir = hir::pattern::Kind;
 
-        fn into_hir(self, ctxt: &mut hir::ctx::Loc) -> TRes<hir::pattern::Kind> {
+        fn into_hir(self, ctx: &mut hir::ctx::Loc) -> TRes<hir::pattern::Kind> {
             let PatEnumeration {
                 enum_name,
                 elem_name,
             } = self;
 
             let enum_id =
-                ctxt.syms
-                    .get_enum_id(&enum_name, false, ctxt.loc.clone(), ctxt.errors)?;
-            let elem_id = ctxt.syms.get_enum_elem_id(
+                ctx.symbols
+                    .get_enum_id(&enum_name, false, ctx.loc.clone(), ctx.errors)?;
+            let elem_id = ctx.symbols.get_enum_elem_id(
                 &elem_name,
                 &enum_name,
                 false,
-                ctxt.loc.clone(),
-                ctxt.errors,
+                ctx.loc.clone(),
+                ctx.errors,
             )?;
             Ok(hir::pattern::Kind::Enumeration { enum_id, elem_id })
         }
@@ -1834,12 +1832,12 @@ mod expr_pattern_impl {
     impl IntoHir<hir::ctx::Loc<'_>> for PatTuple {
         type Hir = hir::pattern::Kind;
 
-        fn into_hir(self, ctxt: &mut hir::ctx::Loc) -> TRes<hir::pattern::Kind> {
+        fn into_hir(self, ctx: &mut hir::ctx::Loc) -> TRes<hir::pattern::Kind> {
             let PatTuple { elements } = self;
             Ok(hir::pattern::Kind::Tuple {
                 elements: elements
                     .into_iter()
-                    .map(|pattern| pattern.into_hir(ctxt))
+                    .map(|pattern| pattern.into_hir(ctx))
                     .collect::<TRes<Vec<_>>>()?,
             })
         }
@@ -1848,18 +1846,18 @@ mod expr_pattern_impl {
     impl IntoHir<hir::ctx::Loc<'_>> for ast::expr::Pattern {
         type Hir = hir::Pattern;
 
-        fn into_hir(self, ctxt: &mut hir::ctx::Loc) -> TRes<Self::Hir> {
+        fn into_hir(self, ctx: &mut hir::ctx::Loc) -> TRes<Self::Hir> {
             let kind = match self {
                 ast::expr::Pattern::Constant(constant) => hir::pattern::Kind::Constant { constant },
                 ast::expr::Pattern::Identifier(name) => {
                     let id =
-                        ctxt.syms
-                            .get_identifier_id(&name, false, ctxt.loc.clone(), ctxt.errors)?;
+                        ctx.symbols
+                            .get_identifier_id(&name, false, ctx.loc.clone(), ctx.errors)?;
                     hir::pattern::Kind::Identifier { id }
                 }
-                ast::expr::Pattern::Structure(pattern) => pattern.into_hir(ctxt)?,
-                ast::expr::Pattern::Enumeration(pattern) => pattern.into_hir(ctxt)?,
-                ast::expr::Pattern::Tuple(pattern) => pattern.into_hir(ctxt)?,
+                ast::expr::Pattern::Structure(pattern) => pattern.into_hir(ctx)?,
+                ast::expr::Pattern::Enumeration(pattern) => pattern.into_hir(ctx)?,
+                ast::expr::Pattern::Tuple(pattern) => pattern.into_hir(ctx)?,
                 // Pattern::None => hir::pattern::Kind::None,
                 ast::expr::Pattern::Default => hir::pattern::Kind::Default,
             };
@@ -1867,7 +1865,7 @@ mod expr_pattern_impl {
             Ok(hir::Pattern {
                 kind,
                 typing: None,
-                location: ctxt.loc.clone(),
+                location: ctx.loc.clone(),
             })
         }
     }
@@ -1881,16 +1879,16 @@ mod stmt_pattern_impl {
     impl IntoHir<hir::ctx::Loc<'_>> for Typed {
         type Hir = hir::stmt::Kind;
 
-        fn into_hir(self, ctxt: &mut hir::ctx::Loc) -> TRes<hir::stmt::Kind> {
+        fn into_hir(self, ctx: &mut hir::ctx::Loc) -> TRes<hir::stmt::Kind> {
             let Typed { ident, typing, .. } = self;
 
-            let id = ctxt.syms.get_identifier_id(
+            let id = ctx.symbols.get_identifier_id(
                 &ident.to_string(),
                 false,
-                ctxt.loc.clone(),
-                ctxt.errors,
+                ctx.loc.clone(),
+                ctx.errors,
             )?;
-            let typing = typing.into_hir(ctxt)?;
+            let typing = typing.into_hir(ctx)?;
             Ok(hir::stmt::Kind::Typed { id, typing })
         }
     }
@@ -1898,12 +1896,12 @@ mod stmt_pattern_impl {
     impl IntoHir<hir::ctx::Loc<'_>> for Tuple {
         type Hir = hir::stmt::Kind;
 
-        fn into_hir(self, ctxt: &mut hir::ctx::Loc) -> TRes<hir::stmt::Kind> {
+        fn into_hir(self, ctx: &mut hir::ctx::Loc) -> TRes<hir::stmt::Kind> {
             let Tuple { elements } = self;
             Ok(hir::stmt::Kind::Tuple {
                 elements: elements
                     .into_iter()
-                    .map(|pattern| pattern.into_hir(ctxt))
+                    .map(|pattern| pattern.into_hir(ctx))
                     .collect::<TRes<Vec<_>>>()?,
             })
         }
@@ -1912,25 +1910,25 @@ mod stmt_pattern_impl {
     impl IntoHir<hir::ctx::Loc<'_>> for ast::stmt::Pattern {
         type Hir = hir::stmt::Pattern;
 
-        fn into_hir(self, ctxt: &mut hir::ctx::Loc) -> TRes<Self::Hir> {
+        fn into_hir(self, ctx: &mut hir::ctx::Loc) -> TRes<Self::Hir> {
             let kind = match self {
                 ast::stmt::Pattern::Identifier(ident) => {
-                    let id = ctxt.syms.get_identifier_id(
+                    let id = ctx.symbols.get_identifier_id(
                         &ident.to_string(),
                         false,
-                        ctxt.loc.clone(),
-                        ctxt.errors,
+                        ctx.loc.clone(),
+                        ctx.errors,
                     )?;
                     hir::stmt::Kind::Identifier { id }
                 }
-                ast::stmt::Pattern::Typed(pattern) => pattern.into_hir(ctxt)?,
-                ast::stmt::Pattern::Tuple(pattern) => pattern.into_hir(ctxt)?,
+                ast::stmt::Pattern::Typed(pattern) => pattern.into_hir(ctx)?,
+                ast::stmt::Pattern::Tuple(pattern) => pattern.into_hir(ctx)?,
             };
 
             Ok(hir::stmt::Pattern {
                 kind,
                 typing: None,
-                location: ctxt.loc.clone(),
+                location: ctx.loc.clone(),
             })
         }
     }
@@ -1939,9 +1937,9 @@ mod stmt_pattern_impl {
 impl IntoHir<hir::ctx::Simple<'_>> for ast::stmt::LetDecl<ast::Expr> {
     type Hir = hir::Stmt<hir::Expr>;
 
-    // precondition: NOTHING is in symbol table
-    // postcondition: construct HIR statement and check identifiers good use
-    fn into_hir(self, ctxt: &mut hir::ctx::Simple) -> TRes<Self::Hir> {
+    // pre-condition: NOTHING is in symbol table
+    // post-condition: construct HIR statement and check identifiers good use
+    fn into_hir(self, ctx: &mut hir::ctx::Simple) -> TRes<Self::Hir> {
         let ast::stmt::LetDecl {
             typed_pattern,
             expression,
@@ -1951,10 +1949,10 @@ impl IntoHir<hir::ctx::Simple<'_>> for ast::stmt::LetDecl<ast::Expr> {
 
         // stmts should be ordered in functions
         // then patterns are stored in order
-        typed_pattern.store(true, ctxt.syms, ctxt.errors)?;
+        typed_pattern.store(true, ctx.symbols, ctx.errors)?;
         let expression =
-            expression.into_hir(&mut ctxt.add_pat_loc(Some(&typed_pattern), &location))?;
-        let pattern = typed_pattern.into_hir(&mut ctxt.add_loc(&location))?;
+            expression.into_hir(&mut ctx.add_pat_loc(Some(&typed_pattern), &location))?;
+        let pattern = typed_pattern.into_hir(&mut ctx.add_loc(&location))?;
 
         Ok(hir::Stmt {
             pattern,
@@ -1974,7 +1972,7 @@ mod stream_impl {
         type Hir = hir::stream::Kind;
 
         /// Transforms AST into HIR and check identifiers good use.
-        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc) -> TRes<Self::Hir> {
+        fn into_hir(self, ctx: &mut hir::ctx::PatLoc) -> TRes<Self::Hir> {
             let stream::When {
                 pattern: event_pattern,
                 guard,
@@ -1984,8 +1982,8 @@ mod stream_impl {
             let location = Location::default();
             let mut arms = vec![];
 
-            // precondition: identifiers are stored in symbol table
-            // postcondition: construct HIR expression kind and check identifiers good use
+            // pre-condition: identifiers are stored in symbol table
+            // post-condition: construct HIR expression kind and check identifiers good use
 
             // create map from event_id to index in tuple pattern
             let (events_indices, events_nb, no_event_tuple) = {
@@ -1994,8 +1992,8 @@ mod stream_impl {
                 event_pattern.place_events(
                     &mut events_indices,
                     &mut idx,
-                    ctxt.syms,
-                    ctxt.errors,
+                    ctx.symbols,
+                    ctx.errors,
                 )?;
                 // default event_pattern tuple
                 let no_event_tuple: Vec<_> =
@@ -2007,7 +2005,7 @@ mod stream_impl {
 
             // create action arm
             {
-                ctxt.syms.local();
+                ctx.symbols.local();
 
                 // set local context + create matched pattern
                 let (match_pattern, guard) = {
@@ -2015,14 +2013,14 @@ mod stream_impl {
                     let opt_rising_edges = event_pattern.create_tuple_pattern(
                         &mut elements,
                         &events_indices,
-                        ctxt.syms,
-                        ctxt.errors,
+                        ctx.symbols,
+                        ctx.errors,
                     )?;
                     let matched = hir::pattern::init(hir::pattern::Kind::tuple(elements));
 
                     // transform AST guard into HIR
                     let mut guard = guard
-                        .map(|expression| expression.into_hir(ctxt))
+                        .map(|expression| expression.into_hir(ctx))
                         .transpose()?;
                     // add rising edge detection to the guard
                     if let Some(rising_edges) = opt_rising_edges {
@@ -2038,8 +2036,8 @@ mod stream_impl {
                     (matched, guard)
                 };
                 // transform into HIR
-                let expression = expression.into_hir(ctxt)?;
-                ctxt.syms.global();
+                let expression = expression.into_hir(ctx)?;
+                ctx.symbols.global();
                 arms.push((match_pattern, guard, vec![], expression));
             }
 
@@ -2050,9 +2048,9 @@ mod stream_impl {
                     typing: None,
                     location: location.clone(),
                 };
-                let pat = ctxt.pat.expect("there should be a pattern");
+                let pat = ctx.pat.expect("there should be a pattern");
                 // wraps events in 'none' and signals in 'fby'
-                let expression = pat.into_default_expr(&HashMap::new(), ctxt.syms, ctxt.errors)?;
+                let expression = pat.into_default_expr(&HashMap::new(), ctx.symbols, ctx.errors)?;
                 arms.push((match_pattern, None, vec![], expression))
             }
 
@@ -2083,20 +2081,20 @@ mod stream_impl {
     impl IntoHir<hir::ctx::PatLoc<'_>> for ast::stream::Expr {
         type Hir = hir::stream::Expr;
 
-        // precondition: identifiers are stored in symbol table
-        // postcondition: construct HIR stream expression and check identifiers good use
-        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc) -> TRes<Self::Hir> {
+        // pre-condition: identifiers are stored in symbol table
+        // post-condition: construct HIR stream expression and check identifiers good use
+        fn into_hir(self, ctx: &mut hir::ctx::PatLoc) -> TRes<Self::Hir> {
             let kind = match self {
                 stream::Expr::Application(Application {
                     function_expression,
                     inputs: inputs_stream_expressions,
                 }) => match *function_expression {
-                    stream::Expr::Identifier(node) if ctxt.syms.is_node(&node, false) => {
+                    stream::Expr::Identifier(node) if ctx.symbols.is_node(&node, false) => {
                         let called_node_id =
-                            ctxt.syms
-                                .get_node_id(&node, false, ctxt.loc.clone(), ctxt.errors)?;
-                        let node_symbol = ctxt
-                            .syms
+                            ctx.symbols
+                                .get_node_id(&node, false, ctx.loc.clone(), ctx.errors)?;
+                        let node_symbol = ctx
+                            .symbols
                             .get_symbol(called_node_id)
                             .expect("there should be a symbol")
                             .clone();
@@ -2107,9 +2105,9 @@ mod stream_impl {
                                     let error = Error::ArityMismatch {
                                         input_count: inputs_stream_expressions.len(),
                                         arity: inputs.len(),
-                                        location: ctxt.loc.clone(),
+                                        location: ctx.loc.clone(),
                                     };
-                                    ctxt.errors.push(error);
+                                    ctx.errors.push(error);
                                     return Err(TerminationError);
                                 }
 
@@ -2118,7 +2116,7 @@ mod stream_impl {
                                     inputs_stream_expressions
                                         .into_iter()
                                         .zip(inputs)
-                                        .map(|(input, id)| Ok((*id, input.clone().into_hir(ctxt)?)))
+                                        .map(|(input, id)| Ok((*id, input.clone().into_hir(ctx)?)))
                                         .collect::<TRes<Vec<_>>>()?,
                                 )
                             }
@@ -2127,10 +2125,10 @@ mod stream_impl {
                     }
                     function_expression => hir::stream::Kind::Expression {
                         expression: hir::expr::Kind::Application {
-                            function_expression: Box::new(function_expression.into_hir(ctxt)?),
+                            function_expression: Box::new(function_expression.into_hir(ctx)?),
                             inputs: inputs_stream_expressions
                                 .into_iter()
-                                .map(|input| input.clone().into_hir(ctxt))
+                                .map(|input| input.clone().into_hir(ctx))
                                 .collect::<TRes<Vec<_>>>()?,
                         },
                     },
@@ -2141,15 +2139,15 @@ mod stream_impl {
                     };
                     let constant = constant.map_or(Ok(hir::stream::expr(default)), |cst| {
                         // check the constant expression is indeed constant
-                        cst.check_is_constant(ctxt.syms, ctxt.errors)?;
-                        cst.into_hir(ctxt)
+                        cst.check_is_constant(ctx.symbols, ctx.errors)?;
+                        cst.into_hir(ctx)
                     })?;
 
-                    let id = ctxt.syms.get_identifier_id(
+                    let id = ctx.symbols.get_identifier_id(
                         &ident.to_string(),
                         false,
-                        ctxt.loc.clone(),
-                        ctxt.errors,
+                        ctx.loc.clone(),
+                        ctx.errors,
                     )?;
 
                     hir::stream::Kind::FollowedBy {
@@ -2158,73 +2156,73 @@ mod stream_impl {
                     }
                 }
                 stream::Expr::Emit(stream::Emit { expr, .. }) => {
-                    hir::stream::Kind::some_event(expr.into_hir(ctxt)?)
+                    hir::stream::Kind::some_event(expr.into_hir(ctx)?)
                 }
                 stream::Expr::Constant(constant) => hir::stream::Kind::Expression {
                     expression: hir::expr::Kind::Constant { constant },
                 },
                 stream::Expr::Identifier(id) => {
-                    let id = ctxt
-                        .syms
-                        .get_identifier_id(&id, false, ctxt.loc.clone(), &mut vec![])
+                    let id = ctx
+                        .symbols
+                        .get_identifier_id(&id, false, ctx.loc.clone(), &mut vec![])
                         .or_else(|_| {
-                            ctxt.syms
-                                .get_function_id(&id, false, ctxt.loc.clone(), ctxt.errors)
+                            ctx.symbols
+                                .get_function_id(&id, false, ctx.loc.clone(), ctx.errors)
                         })?;
                     hir::stream::Kind::Expression {
                         expression: hir::expr::Kind::Identifier { id },
                     }
                 }
-                stream::Expr::Unop(expression) => hir::stream::Kind::Expression {
-                    expression: expression.into_hir(ctxt)?,
+                stream::Expr::UnOp(expression) => hir::stream::Kind::Expression {
+                    expression: expression.into_hir(ctx)?,
                 },
                 stream::Expr::Binop(expression) => hir::stream::Kind::Expression {
-                    expression: expression.into_hir(ctxt)?,
+                    expression: expression.into_hir(ctx)?,
                 },
                 stream::Expr::IfThenElse(expression) => hir::stream::Kind::Expression {
-                    expression: expression.into_hir(ctxt)?,
+                    expression: expression.into_hir(ctx)?,
                 },
                 stream::Expr::TypedAbstraction(expression) => hir::stream::Kind::Expression {
-                    expression: expression.into_hir(ctxt)?,
+                    expression: expression.into_hir(ctx)?,
                 },
                 stream::Expr::Structure(expression) => hir::stream::Kind::Expression {
-                    expression: expression.into_hir(ctxt)?,
+                    expression: expression.into_hir(ctx)?,
                 },
                 stream::Expr::Tuple(expression) => hir::stream::Kind::Expression {
-                    expression: expression.into_hir(ctxt)?,
+                    expression: expression.into_hir(ctx)?,
                 },
                 stream::Expr::Enumeration(expression) => hir::stream::Kind::Expression {
-                    expression: expression.into_hir(ctxt)?,
+                    expression: expression.into_hir(ctx)?,
                 },
                 stream::Expr::Array(expression) => hir::stream::Kind::Expression {
-                    expression: expression.into_hir(ctxt)?,
+                    expression: expression.into_hir(ctx)?,
                 },
                 stream::Expr::Match(expression) => hir::stream::Kind::Expression {
-                    expression: expression.into_hir(ctxt)?,
+                    expression: expression.into_hir(ctx)?,
                 },
                 stream::Expr::FieldAccess(expression) => hir::stream::Kind::Expression {
-                    expression: expression.into_hir(ctxt)?,
+                    expression: expression.into_hir(ctx)?,
                 },
                 stream::Expr::TupleElementAccess(expression) => hir::stream::Kind::Expression {
-                    expression: expression.into_hir(ctxt)?,
+                    expression: expression.into_hir(ctx)?,
                 },
                 stream::Expr::Map(expression) => hir::stream::Kind::Expression {
-                    expression: expression.into_hir(ctxt)?,
+                    expression: expression.into_hir(ctx)?,
                 },
                 stream::Expr::Fold(expression) => hir::stream::Kind::Expression {
-                    expression: expression.into_hir(ctxt)?,
+                    expression: expression.into_hir(ctx)?,
                 },
                 stream::Expr::Sort(expression) => hir::stream::Kind::Expression {
-                    expression: expression.into_hir(ctxt)?,
+                    expression: expression.into_hir(ctx)?,
                 },
                 stream::Expr::Zip(expression) => hir::stream::Kind::Expression {
-                    expression: expression.into_hir(ctxt)?,
+                    expression: expression.into_hir(ctx)?,
                 },
             };
             Ok(hir::stream::Expr {
                 kind,
                 typing: None,
-                location: ctxt.loc.clone(),
+                location: ctx.loc.clone(),
                 dependencies: hir::Dependencies::new(),
             })
         }
@@ -2233,17 +2231,17 @@ mod stream_impl {
     impl IntoHir<hir::ctx::PatLoc<'_>> for stream::ReactExpr {
         type Hir = hir::stream::Expr;
 
-        // precondition: identifiers are stored in symbol table
-        // postcondition: construct HIR stream expression and check identifiers good use
-        fn into_hir(self, ctxt: &mut hir::ctx::PatLoc) -> TRes<Self::Hir> {
+        // pre-condition: identifiers are stored in symbol table
+        // post-condition: construct HIR stream expression and check identifiers good use
+        fn into_hir(self, ctx: &mut hir::ctx::PatLoc) -> TRes<Self::Hir> {
             match self {
-                stream::ReactExpr::Expr(expr) => expr.into_hir(ctxt),
+                stream::ReactExpr::Expr(expr) => expr.into_hir(ctx),
                 stream::ReactExpr::When(expr) => {
-                    let kind = expr.into_hir(ctxt)?;
+                    let kind = expr.into_hir(ctx)?;
                     Ok(hir::stream::Expr {
                         kind,
                         typing: None,
-                        location: ctxt.loc.clone(),
+                        location: ctx.loc.clone(),
                         dependencies: hir::Dependencies::new(),
                     })
                 }
@@ -2256,14 +2254,14 @@ impl IntoHir<hir::ctx::Loc<'_>> for Typ {
     type Hir = Typ;
 
     /// Transforms AST into HIR and check identifiers good use.
-    fn into_hir(self, ctxt: &mut hir::ctx::Loc) -> TRes<Typ> {
+    fn into_hir(self, ctx: &mut hir::ctx::Loc) -> TRes<Typ> {
         use syn::punctuated::{Pair, Punctuated};
-        // precondition: Typedefs are stored in symbol table
-        // postcondition: construct a new Type without `Typ::NotDefinedYet`
+        // pre-condition: Typedefs are stored in symbol table
+        // post-condition: construct a new Type without `Typ::NotDefinedYet`
         match self {
                 Typ::Array { bracket_token, ty, semi_token, size } => Ok(Typ::Array {
                     bracket_token,
-                    ty: Box::new(ty.into_hir(ctxt)?),
+                    ty: Box::new(ty.into_hir(ctx)?),
                     semi_token,
                     size
                 }),
@@ -2272,43 +2270,43 @@ impl IntoHir<hir::ctx::Loc<'_>> for Typ {
                     elements: elements.into_pairs()
                     .map(|pair| {
                         let (ty, comma) = pair.into_tuple();
-                        let ty = ty.into_hir(ctxt)?;
+                        let ty = ty.into_hir(ctx)?;
                         Ok(Pair::new(ty, comma))
                     }).collect::<TRes<Punctuated<Typ, Token![,]>>>()?
                 }),
-                Typ::NotDefinedYet(name) => ctxt.syms
-                    .get_struct_id(&name.to_string(), false, ctxt.loc.clone(), &mut vec![])
+                Typ::NotDefinedYet(name) => ctx.symbols
+                    .get_struct_id(&name.to_string(), false, ctx.loc.clone(), &mut vec![])
                     .map(|id| Typ::Structure { name: name.clone(), id })
                     .or_else(|_| {
-                        ctxt.syms
-                            .get_enum_id(&name.to_string(), false, ctxt.loc.clone(), &mut vec![])
+                        ctx.symbols
+                            .get_enum_id(&name.to_string(), false, ctx.loc.clone(), &mut vec![])
                             .map(|id| Typ::Enumeration { name: name.clone(), id })
                     })
                     .or_else(|_| {
-                        let id = ctxt.syms.get_array_id(&name.to_string(), false, ctxt.loc.clone(), ctxt.errors)?;
-                        Ok(ctxt.syms.get_array(id))
+                        let id = ctx.symbols.get_array_id(&name.to_string(), false, ctx.loc.clone(), ctx.errors)?;
+                        Ok(ctx.symbols.get_array(id))
                     }),
                 Typ::Abstract { paren_token, inputs, arrow_token, output } => {
                     let inputs = inputs.into_pairs()
                     .map(|pair| {
                         let (ty, comma) = pair.into_tuple();
-                        let ty = ty.into_hir(ctxt)?;
+                        let ty = ty.into_hir(ctx)?;
                         Ok(Pair::new(ty, comma))
                     }).collect::<TRes<Punctuated<Typ, Token![,]>>>()?;
-                    let output = output.into_hir(ctxt)?;
+                    let output = output.into_hir(ctx)?;
                     Ok(Typ::Abstract { paren_token, inputs, arrow_token, output: output.into() })
                 }
                 Typ::SMEvent { ty, question_token } => Ok(Typ::SMEvent {
-                    ty: Box::new(ty.into_hir(ctxt)?),
+                    ty: Box::new(ty.into_hir(ctx)?),
                     question_token
                 }),
                 Typ::Signal { signal_token, ty } => Ok(Typ::Signal {
                     signal_token,
-                    ty: Box::new(ty.into_hir(ctxt)?),
+                    ty: Box::new(ty.into_hir(ctx)?),
                 }),
                 Typ::Event { event_token, ty } => Ok(Typ::Event {
                     event_token,
-                    ty: Box::new(ty.into_hir(ctxt)?),
+                    ty: Box::new(ty.into_hir(ctx)?),
                 }),
                 Typ::Integer(_) | Typ::Float(_) | Typ::Boolean(_) | Typ::Unit(_) => Ok(self),
                 Typ::Enumeration { .. }    // no enumeration at this time: they are `NotDefinedYet`
@@ -2323,18 +2321,18 @@ impl IntoHir<hir::ctx::Loc<'_>> for Typ {
 impl IntoHir<hir::ctx::Simple<'_>> for ast::Typedef {
     type Hir = hir::Typedef;
 
-    // precondition: typedefs are already stored in symbol table
-    // postcondition: construct HIR typedef and check identifiers good use
-    fn into_hir(self, ctxt: &mut hir::ctx::Simple) -> TRes<Self::Hir> {
+    // pre-condition: typedefs are already stored in symbol table
+    // post-condition: construct HIR typedef and check identifiers good use
+    fn into_hir(self, ctx: &mut hir::ctx::Simple) -> TRes<Self::Hir> {
         use ast::{Colon, Typedef};
         let location = Location::default();
         match self {
             Typedef::Structure { ident, fields, .. } => {
                 let id = ident.to_string();
-                let type_id = ctxt
-                    .syms
-                    .get_struct_id(&id, false, location.clone(), ctxt.errors)?;
-                let field_ids = ctxt.syms.get_struct_fields(type_id).clone();
+                let type_id =
+                    ctx.symbols
+                        .get_struct_id(&id, false, location.clone(), ctx.errors)?;
+                let field_ids = ctx.symbols.get_struct_fields(type_id).clone();
 
                 // insert field's type in symbol table
                 field_ids
@@ -2350,9 +2348,9 @@ impl IntoHir<hir::ctx::Simple<'_>> for ast::Typedef {
                             },
                         )| {
                             let name = ident.to_string();
-                            debug_assert_eq!(&name, ctxt.syms.get_name(*id));
-                            let typing = typing.into_hir(&mut ctxt.add_loc(&location))?;
-                            Ok(ctxt.syms.set_type(*id, typing))
+                            debug_assert_eq!(&name, ctx.symbols.get_name(*id));
+                            let typing = typing.into_hir(&mut ctx.add_loc(&location))?;
+                            Ok(ctx.symbols.set_type(*id, typing))
                         },
                     )
                     .collect::<TRes<Vec<_>>>()?;
@@ -2366,10 +2364,10 @@ impl IntoHir<hir::ctx::Simple<'_>> for ast::Typedef {
 
             Typedef::Enumeration { ident, .. } => {
                 let id = ident.to_string();
-                let type_id = ctxt
-                    .syms
-                    .get_enum_id(&id, false, location.clone(), ctxt.errors)?;
-                let element_ids = ctxt.syms.get_enum_elements(type_id).clone();
+                let type_id = ctx
+                    .symbols
+                    .get_enum_id(&id, false, location.clone(), ctx.errors)?;
+                let element_ids = ctx.symbols.get_enum_elements(type_id).clone();
                 Ok(hir::Typedef {
                     id: type_id,
                     kind: hir::typedef::Kind::Enumeration {
@@ -2383,13 +2381,13 @@ impl IntoHir<hir::ctx::Simple<'_>> for ast::Typedef {
                 ident, array_type, ..
             } => {
                 let id = ident.to_string();
-                let type_id = ctxt
-                    .syms
-                    .get_array_id(&id, false, location.clone(), ctxt.errors)?;
+                let type_id = ctx
+                    .symbols
+                    .get_array_id(&id, false, location.clone(), ctx.errors)?;
 
                 // insert array's type in symbol table
-                let typing = array_type.into_hir(&mut ctxt.add_loc(&location))?;
-                ctxt.syms.set_array_type(type_id, typing);
+                let typing = array_type.into_hir(&mut ctx.add_loc(&location))?;
+                ctx.symbols.set_array_type(type_id, typing);
 
                 Ok(hir::Typedef {
                     id: type_id,

@@ -136,8 +136,8 @@ impl Typing for contract::Term {
 }
 
 impl Typing for interface::FlowStatement {
-    // precondition: identifiers associated with statement is already typed
-    // postcondition: expression associated with statement is typed and checked
+    // pre-condition: identifiers associated with statement is already typed
+    // post-condition: expression associated with statement is typed and checked
     fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         use interface::*;
         match self {
@@ -468,8 +468,8 @@ impl Typing for stream::Expr {
 }
 
 impl<E: Typing> Typing for Stmt<E> {
-    // precondition: identifiers associated with statement is already typed
-    // postcondition: expression associated with statement is typed and checked
+    // pre-condition: identifiers associated with statement is already typed
+    // post-condition: expression associated with statement is typed and checked
     fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         let Stmt {
             pattern,
@@ -675,24 +675,24 @@ impl<E: Typing> expr::Kind<E> {
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> TRes<Typ> {
-        let mut typer = ExprTyper::new(location, symbol_table, errors);
+        let mut typing = ExprTyping::new(location, symbol_table, errors);
         match self {
             expr::Kind::Constant { constant } => Ok(constant.get_type()),
             expr::Kind::Identifier { id } => {
                 let typing = symbol_table.get_type(*id);
                 Ok(typing.clone())
             }
-            expr::Kind::Unop { op, expression } => typer.unop(op, expression.as_mut()),
+            expr::Kind::UnOp { op, expression } => typing.unop(op, expression.as_mut()),
             expr::Kind::Binop {
                 op,
                 left_expression,
                 right_expression,
-            } => typer.binop(op, left_expression.as_mut(), right_expression.as_mut()),
+            } => typing.binop(op, left_expression.as_mut(), right_expression.as_mut()),
             expr::Kind::IfThenElse {
                 expression,
                 true_expression,
                 false_expression,
-            } => typer.if_then_else(
+            } => typing.if_then_else(
                 expression.as_mut(),
                 true_expression.as_mut(),
                 false_expression.as_mut(),
@@ -700,26 +700,26 @@ impl<E: Typing> expr::Kind<E> {
             expr::Kind::Application {
                 function_expression: f,
                 inputs,
-            } => typer.application(f.as_mut(), inputs),
+            } => typing.application(f.as_mut(), inputs),
             expr::Kind::Abstraction { inputs, expression } => {
-                typer.abstraction(inputs, expression.as_mut())
+                typing.abstraction(inputs, expression.as_mut())
             }
-            expr::Kind::Structure { id, fields } => typer.structure(*id, fields),
-            expr::Kind::Array { elements } => typer.array(elements),
-            expr::Kind::Tuple { elements } => typer.tuple(elements),
-            expr::Kind::Match { expression, arms } => typer.matching(expression.as_mut(), arms),
+            expr::Kind::Structure { id, fields } => typing.structure(*id, fields),
+            expr::Kind::Array { elements } => typing.array(elements),
+            expr::Kind::Tuple { elements } => typing.tuple(elements),
+            expr::Kind::Match { expression, arms } => typing.matching(expression.as_mut(), arms),
             expr::Kind::FieldAccess { expression, field } => {
-                typer.field_access(expression.as_mut(), field)
+                typing.field_access(expression.as_mut(), field)
             }
             expr::Kind::Map {
                 expression,
                 function_expression,
-            } => typer.map(expression.as_mut(), function_expression.as_mut()),
+            } => typing.map(expression.as_mut(), function_expression.as_mut()),
             expr::Kind::Fold {
                 expression,
                 initialization_expression,
                 function_expression,
-            } => typer.fold(
+            } => typing.fold(
                 expression.as_mut(),
                 initialization_expression.as_mut(),
                 function_expression.as_mut(),
@@ -727,24 +727,24 @@ impl<E: Typing> expr::Kind<E> {
             expr::Kind::Sort {
                 expression,
                 function_expression,
-            } => typer.sort(expression.as_mut(), function_expression.as_mut()),
-            expr::Kind::Zip { arrays } => typer.zip(arrays),
+            } => typing.sort(expression.as_mut(), function_expression.as_mut()),
+            expr::Kind::Zip { arrays } => typing.zip(arrays),
             expr::Kind::TupleElementAccess {
                 expression,
                 element_number,
-            } => typer.tuple_element_access(expression.as_mut(), *element_number),
-            expr::Kind::Enumeration { enum_id, .. } => typer.enumeration(*enum_id),
+            } => typing.tuple_element_access(expression.as_mut(), *element_number),
+            expr::Kind::Enumeration { enum_id, .. } => typing.enumeration(*enum_id),
         }
     }
 }
 
-struct ExprTyper<'a, E: Typing> {
+struct ExprTyping<'a, E: Typing> {
     loc: &'a Location,
     table: &'a mut SymbolTable,
     errors: &'a mut Vec<Error>,
     _phantom: std::marker::PhantomData<E>,
 }
-impl<'a, E: Typing> ExprTyper<'a, E> {
+impl<'a, E: Typing> ExprTyping<'a, E> {
     fn new(loc: &'a Location, table: &'a mut SymbolTable, errors: &'a mut Vec<Error>) -> Self {
         Self {
             loc,

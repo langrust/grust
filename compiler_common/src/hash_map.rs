@@ -17,7 +17,7 @@ impl<K, V> HashMapNew for HashMap<K, V> {
     }
 }
 
-/// An alias for a hashset using `twox_hash::XxHash64`.
+/// An alias for a hash set using `twox_hash::XxHash64`.
 pub type HashSet<K> = rustc_hash::FxHashSet<K>;
 
 pub trait HashSetNew {

@@ -55,7 +55,7 @@ pub struct Scan {
     /// Input expression.
     pub flow_expression: Box<FlowExpression>,
     pub comma_token: Token![,],
-    /// Scaning period in milliseconds.
+    /// Scanning period in milliseconds.
     pub period_ms: LitInt,
 }
 impl Scan {
@@ -574,20 +574,20 @@ impl Parse for FlowStatement {
     }
 }
 
-/// Service's time constrains.
-pub struct Constrains {
+/// Service's time range.
+pub struct TimeRange {
     pub at_token: Token![@],
     pub bracket_token: token::Bracket,
     pub min: LitInt,
     pub comma_token: Token![,],
     pub max: LitInt,
 }
-impl Constrains {
+impl TimeRange {
     pub fn peek(input: ParseStream) -> bool {
         input.peek(Token![@])
     }
 }
-impl Parse for Constrains {
+impl Parse for TimeRange {
     fn parse(input: ParseStream) -> syn::Res<Self> {
         let at_token: token::At = input.parse()?;
         let content;
@@ -596,7 +596,7 @@ impl Parse for Constrains {
         let comma_token: token::Comma = content.parse()?;
         let max: LitInt = content.parse()?;
         if content.is_empty() {
-            Ok(Constrains {
+            Ok(TimeRange {
                 at_token,
                 bracket_token,
                 min,
@@ -614,8 +614,8 @@ pub struct Service {
     pub service_token: keyword::service,
     /// Service identifier.
     pub ident: Ident,
-    /// Service's time constrains.
-    pub constrains: Option<Constrains>,
+    /// Service's time range.
+    pub time_range: Option<TimeRange>,
     pub brace: token::Brace,
     /// Service's flow statements.
     pub flow_statements: Vec<FlowStatement>,
@@ -629,7 +629,7 @@ impl Parse for Service {
     fn parse(input: ParseStream) -> syn::Res<Self> {
         let service_token: keyword::service = input.parse()?;
         let ident: Ident = input.parse()?;
-        let constrains = if Constrains::peek(input) {
+        let time_range = if TimeRange::peek(input) {
             Some(input.parse()?)
         } else {
             None
@@ -646,7 +646,7 @@ impl Parse for Service {
         Ok(Service {
             service_token,
             ident,
-            constrains,
+            time_range,
             brace,
             flow_statements,
         })

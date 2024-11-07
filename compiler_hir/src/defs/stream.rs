@@ -28,18 +28,18 @@ impl Stmt {
         identifiers
     }
 
-    /// Increment memory with statement's expression.
+    /// Increments memory with statement's expression.
     ///
-    /// Store buffer for followed by expressions and unitary node applications.
-    /// Transform followed by expressions in signal call.
+    /// Store buffer for followed by expressions and unitary node applications. Transform followed
+    /// by expressions in signal call.
     ///
     /// # Example
     ///
-    /// An statement `x: int = 0 fby v;` increments memory with the buffer
-    /// `mem: int = 0 fby v;` and becomes `x: int = mem;`.
+    /// A statement `x: int = 0 fby v;` increments memory with the buffer `mem: int = 0 fby v;` and
+    /// becomes `x: int = mem;`.
     ///
-    /// An statement `x: int = my_node(s, x_1).o;` increments memory with the
-    /// node call `memmy_node_o_: (my_node, o);` and the statement is unchanged.
+    /// A statement `x: int = my_node(s, x_1).o;` increments memory with the node call
+    /// `mem_my_node_o_: (my_node, o);` and the statement is unchanged.
     ///
     /// Examples are tested in source.
     pub fn memorize(
@@ -56,6 +56,7 @@ impl Stmt {
     /// Change HIR statement into a normal form.
     ///
     /// The normal form of an statement is as follows:
+    ///
     /// - node application can only append at root expression
     /// - node application inputs are signal calls
     ///
@@ -353,16 +354,16 @@ pub type ExprKind = expr::Kind<Expr>;
 impl ExprKind {
     /// Increment memory with expression.
     ///
-    /// Store buffer for followed by expressions and unitary node applications.
-    /// Transform followed by expressions in signal call.
+    /// Store buffer for followed by expressions and unitary node applications. Transform followed
+    /// by expressions in signal call.
     ///
     /// # Example
     ///
-    /// An expression `0 fby v` increments memory with the buffer
-    /// `mem: int = 0 fby v;` and becomes a call to `mem`.
+    /// An expression `0 fby v` increments memory with the buffer `mem: int = 0 fby v;` and becomes
+    /// a call to `mem`.
     ///
-    /// An expression `my_node(s, x_1).o;` increments memory with the
-    /// node call `memmy_node_o_: (my_node, o);` and is unchanged.
+    /// An expression `my_node(s, x_1).o;` increments memory with the node call `mem_my_node_o_:
+    /// (my_node, o);` and is unchanged.
     ///
     /// Examples are tested in source.
     pub fn memorize(
@@ -377,7 +378,7 @@ impl ExprKind {
             | Self::Identifier { .. }
             | Self::Abstraction { .. }
             | Self::Enumeration { .. } => (),
-            Self::Unop { expression, .. } => {
+            Self::UnOp { expression, .. } => {
                 expression.memorize(identifier_creator, memory, contract, symbol_table)
             }
             Self::Binop {
@@ -499,7 +500,7 @@ impl ExprKind {
             | Self::Abstraction { .. } => {
                 vec![]
             }
-            Self::Unop { expression, .. } => {
+            Self::UnOp { expression, .. } => {
                 let new_statements =
                     expression.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
 
@@ -803,7 +804,7 @@ impl ExprKind {
                     None
                 }
             }
-            Self::Unop { expression, .. } => {
+            Self::UnOp { expression, .. } => {
                 expression.replace_by_context(context_map);
                 *dependencies = Dependencies::from(expression.get_dependencies().clone());
                 None
@@ -1165,7 +1166,7 @@ impl Expr {
     /// An expression `0 fby v` increments memory with the buffer `mem: int = 0 fby v;` and becomes
     /// a call to `mem`.
     ///
-    /// An expression `my_node(s, x_1).o;` increments memory with the node call `memmy_node_o_:
+    /// An expression `my_node(s, x_1).o;` increments memory with the node call `mem_   my_node_o_:
     /// (my_node, o);` and is unchanged.
     ///
     /// Examples are tested in source.

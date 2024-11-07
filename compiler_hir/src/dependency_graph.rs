@@ -452,7 +452,7 @@ impl stream::ExprKind {
                 nodes.append(&mut other_nodes);
                 nodes
             }
-            Self::Abstraction { expression, .. } | Self::Unop { expression, .. } => {
+            Self::Abstraction { expression, .. } | Self::UnOp { expression, .. } => {
                 expression.get_called_nodes()
             }
             Self::Binop {
@@ -573,7 +573,7 @@ impl stream::ExprKind {
             Identifier { id, .. } => Self::ident_deps(ctx.symbol_table, *id),
             Abstraction { .. } => Self::abstraction_deps(),
             Enumeration { .. } => Self::enumeration_deps(),
-            Unop { expression, .. } => Self::unop_deps(ctx, expression),
+            UnOp { expression, .. } => Self::unop_deps(ctx, expression),
             Binop {
                 left_expression,
                 right_expression,
