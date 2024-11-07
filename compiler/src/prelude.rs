@@ -11,19 +11,12 @@ macro_rules! prelude {
     };
 }
 
-pub use ast::Ast;
-pub use compiler_lir::{
-    ast::prelude as ast,
-    common::prelude::{mk_new, *},
-    prelude as lir,
-    prelude::SymbolTable,
-};
+pub use compiler_ast::import::*;
+pub use compiler_common::import::*;
+pub use compiler_hir::import::*;
+pub use compiler_lir::import::*;
 
-pub use crate::{
-    ext::*,
-    frontend::{self, IntoHir},
-    hir, IntoLir, TokenStream,
-};
+pub use crate::{IntoLir, TokenStream};
 
 /// Translation to Rust AST with additional information.
 pub trait ToRustAstWith<Data>: Sized {

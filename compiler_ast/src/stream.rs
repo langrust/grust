@@ -173,6 +173,91 @@ mk_new! { impl Expr =>
     Last: last(arg: Last = arg)
     Emit: emit(arg: Emit = arg)
 }
+
+impl Expr {
+    pub fn check_is_constant(&self, table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+        match &self {
+            // Constant by default
+            stream::Expr::Constant { .. } | stream::Expr::Enumeration { .. } => Ok(()),
+            // Not constant by default
+            stream::Expr::TypedAbstraction { .. }
+            | stream::Expr::Match { .. }
+            | stream::Expr::Emit { .. }
+            | stream::Expr::FieldAccess { .. }
+            | stream::Expr::TupleElementAccess { .. }
+            | stream::Expr::Map { .. }
+            | stream::Expr::Fold { .. }
+            | stream::Expr::Sort { .. }
+            | stream::Expr::Zip { .. }
+            | stream::Expr::Last { .. } => {
+                let error = Error::ExpectConstant {
+                    location: Location::default(),
+                };
+                errors.push(error);
+                Err(TerminationError)
+            }
+            // It depends
+            stream::Expr::Identifier(id) => {
+                // check id exists
+                let id = table
+                    .get_identifier_id(&id, false, Location::default(), &mut vec![])
+                    .or_else(|_| table.get_function_id(&id, false, Location::default(), errors))?;
+                // check it is a function or and operator
+                if table.is_function(id) {
+                    Ok(())
+                } else {
+                    let error = Error::ExpectConstant {
+                        location: Location::default(),
+                    };
+                    errors.push(error);
+                    Err(TerminationError)
+                }
+            }
+            stream::Expr::Unop(Unop { expression, .. }) => {
+                expression.check_is_constant(table, errors)
+            }
+            stream::Expr::Binop(Binop {
+                left_expression,
+                right_expression,
+                ..
+            }) => {
+                left_expression.check_is_constant(table, errors)?;
+                right_expression.check_is_constant(table, errors)
+            }
+            stream::Expr::IfThenElse(IfThenElse {
+                expression,
+                true_expression,
+                false_expression,
+                ..
+            }) => {
+                expression.check_is_constant(table, errors)?;
+                true_expression.check_is_constant(table, errors)?;
+                false_expression.check_is_constant(table, errors)
+            }
+            stream::Expr::Application(Application {
+                function_expression,
+                inputs,
+            }) => {
+                function_expression.check_is_constant(table, errors)?;
+                inputs
+                    .iter()
+                    .map(|expression| expression.check_is_constant(table, errors))
+                    .collect::<TRes<_>>()
+            }
+            stream::Expr::Structure(Structure { fields, .. }) => fields
+                .iter()
+                .map(|(_, expression)| expression.check_is_constant(table, errors))
+                .collect::<TRes<_>>(),
+            stream::Expr::Array(Array { elements }) | stream::Expr::Tuple(Tuple { elements }) => {
+                elements
+                    .iter()
+                    .map(|expression| expression.check_is_constant(table, errors))
+                    .collect::<TRes<_>>()
+            }
+        }
+    }
+}
+
 impl ParsePrec for Expr {
     fn parse_term(input: ParseStream) -> syn::Res<Self> {
         let mut expression = if input.fork().call(Constant::parse).is_ok() {
@@ -302,6 +387,20 @@ pub enum ReactExpr {
 mk_new! { impl ReactExpr =>
     Expr: expr(arg: Expr = arg)
     When: when_match(arg: When = arg)
+}
+impl ReactExpr {
+    pub fn check_is_constant(&self, table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+        match &self {
+            stream::ReactExpr::Expr(expr) => expr.check_is_constant(table, errors),
+            stream::ReactExpr::When { .. } => {
+                let error = Error::ExpectConstant {
+                    location: Location::default(),
+                };
+                errors.push(error);
+                Err(TerminationError)
+            }
+        }
+    }
 }
 impl Parse for ReactExpr {
     fn parse(input: ParseStream) -> syn::Res<Self> {

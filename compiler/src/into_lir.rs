@@ -13,8 +13,6 @@ mod file;
 /// LIR function construction from HIR function.
 mod function;
 mod interface;
-/// LIR memory construction from HIR typedef.
-mod memory;
 /// LIR pattern construction from HIR pattern.
 mod pattern;
 /// LIR statement construction from HIR statement.
@@ -30,7 +28,7 @@ pub trait IntoLir<Ctx> {
     type Lir;
 
     /// Transforms HIR into LIR.
-    fn into_lir(self, symbol_table: Ctx) -> Self::Lir;
+    fn into_lir(self, ctx: Ctx) -> Self::Lir;
 
     /// Get type from LIR.
     fn get_type(&self) -> Option<&Typ> {

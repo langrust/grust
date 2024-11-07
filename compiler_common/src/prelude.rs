@@ -20,8 +20,9 @@ macro_rules! bail {
 pub use crate::bail;
 
 pub use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     fmt::Display,
+    hash::Hash,
 };
 
 pub mod syn {
@@ -38,8 +39,10 @@ pub mod syn {
     pub type Res<T> = syn::Result<T>;
 }
 
+pub use either::{Either, IntoEither};
 pub use proc_macro2::{Span, TokenStream as TokenStream2};
 pub use quote::format_ident;
+pub use serde::{Deserialize, Serialize};
 pub use syn::{
     braced, bracketed, custom_keyword, parenthesized, parse_macro_input, parse_quote, Ident,
     ParseStream, Token,

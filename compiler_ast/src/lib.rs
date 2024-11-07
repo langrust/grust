@@ -20,6 +20,11 @@ pub mod stmt;
 pub mod stream;
 pub mod symbol;
 
+pub mod import {
+    pub use crate::prelude::ast;
+    pub use ast::{Ast, SymbolTable};
+}
+
 pub struct Colon<U: Parse, V: Parse> {
     pub left: U,
     pub colon: Token![:],

@@ -1,10 +1,9 @@
 prelude! {}
 
-mod flows_context;
 mod runtime_loop;
 mod service_handler;
 
-pub use self::{flows_context::*, runtime_loop::*, service_handler::*};
+pub use self::{runtime_loop::*, service_handler::*};
 
 /// A execution-machine structure.
 #[derive(Debug, PartialEq, Default)]

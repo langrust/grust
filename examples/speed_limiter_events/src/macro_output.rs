@@ -238,7 +238,7 @@ impl SpeedLimiterState {
             }
             (_, _) => self.last_state,
         };
-        let (state_update, on_state, in_regulation) = match prev_state {
+        let (on_state, in_regulation, state_update) = match prev_state {
             SpeedLimiter::On => {
                 let (on_state, in_regulation, state_update) =
                     self.speed_limiter_on.step(SpeedLimiterOnInput {
@@ -248,13 +248,13 @@ impl SpeedLimiterState {
                         speed: input.speed,
                         v_set: input.v_set,
                     });
-                (state_update, on_state, in_regulation)
+                (on_state, in_regulation, state_update)
             }
             _ => {
                 let on_state = SpeedLimiterOn::StandBy;
                 let in_regulation = false;
                 let state_update = prev_state != state;
-                (state_update, on_state, in_regulation)
+                (on_state, in_regulation, state_update)
             }
         };
         self.last_on_state = on_state;

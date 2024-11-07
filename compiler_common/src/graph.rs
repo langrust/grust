@@ -1,6 +1,12 @@
 pub use super::{
     new_graph,
-    petgraph::{graphmap::DiGraphMap, visit::DfsEvent, Direction},
+    petgraph::{
+        algo::toposort,
+        graphmap::{DiGraphMap, GraphMap, NodeTrait},
+        visit,
+        visit::DfsEvent,
+        Direction,
+    },
 };
 pub use {color::Color, label::Label};
 

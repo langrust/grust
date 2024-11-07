@@ -1,20 +1,13 @@
 prelude! {
-    hir::{
-        flow, interface::{
-            FlowDeclaration, FlowExport, FlowImport, FlowInstantiation,
-            FlowStatement, Interface, Service,
-        },
-    },
+    hir::interface::{FlowExport, FlowImport, Interface, Service},
     lir::execution_machine::{
-        FlowsContext,
-        ServiceHandler,
-        InputHandler, RuntimeLoop,
-        ExecutionMachine,TimingEvent, InterfaceFlow,
+        ServiceHandler, InputHandler, RuntimeLoop, ExecutionMachine,TimingEvent, InterfaceFlow,
     },
 }
 
-impl Interface {
-    pub fn into_lir(self, symbol_table: &mut SymbolTable) -> ExecutionMachine {
+impl IntoLir<&mut SymbolTable> for Interface {
+    type Lir = ExecutionMachine;
+    fn into_lir(self, symbol_table: &mut SymbolTable) -> ExecutionMachine {
         if self.services.is_empty() {
             return Default::default();
         }
@@ -28,7 +21,12 @@ impl Interface {
         let services_handlers: Vec<ServiceHandler> = services
             .into_iter()
             .map(|service| {
-                service.into_lir(&mut imports, &exports, &mut timing_events, symbol_table)
+                service.into_lir(hir::ctx::Full::new(
+                    &mut imports,
+                    &exports,
+                    &mut timing_events,
+                    symbol_table,
+                ))
             })
             .collect();
         let mut input_handlers = HashMap::new();
@@ -114,140 +112,22 @@ impl IntoLir<&'_ SymbolTable> for FlowExport {
     }
 }
 
-impl Service {
-    pub fn into_lir(
-        self,
-        imports: &mut HashMap<usize, FlowImport>,
-        exports: &HashMap<usize, FlowExport>,
-        timing_events: &mut Vec<TimingEvent>,
-        symbol_table: &mut SymbolTable,
-    ) -> ServiceHandler {
-        self.into(imports, exports, timing_events, symbol_table)
-    }
-
-    fn get_flows_context(&self, symbol_table: &SymbolTable) -> FlowsContext {
-        let mut flows_context = FlowsContext {
-            elements: Default::default(),
-        };
-        self.statements
-            .values()
-            .for_each(|statement| statement.add_flows_context(&mut flows_context, symbol_table));
-        flows_context
-    }
-
-    fn into(
-        mut self,
-        imports: &mut HashMap<usize, FlowImport>,
-        exports: &HashMap<usize, FlowExport>,
-        timing_events: &mut Vec<TimingEvent>,
-        symbol_table: &mut SymbolTable,
-    ) -> ServiceHandler {
-        let flows_context = self.get_flows_context(symbol_table);
-        symbol_table.local();
+impl IntoLir<hir::ctx::Full<'_, TimingEvent>> for Service {
+    type Lir = ServiceHandler;
+    fn into_lir(mut self, ctx: hir::ctx::Full<TimingEvent>) -> ServiceHandler {
+        let flows_context = self.get_flows_context(ctx.symbols);
+        ctx.symbols.local();
         let ctxt: flow_instr::Builder<'_> = flow_instr::Builder::new(
             &mut self,
-            symbol_table,
+            ctx.symbols,
             flows_context,
-            imports,
-            exports,
-            timing_events,
+            ctx.imports,
+            ctx.exports,
+            ctx.timings,
         );
         let service_handler = service_handler::build(ctxt);
-        symbol_table.global();
+        ctx.symbols.global();
         service_handler
-    }
-}
-
-impl FlowStatement {
-    fn add_flows_context(&self, flows_context: &mut FlowsContext, symbol_table: &SymbolTable) {
-        match self {
-            FlowStatement::Declaration(FlowDeclaration {
-                pattern,
-                flow_expression,
-                ..
-            })
-            | FlowStatement::Instantiation(FlowInstantiation {
-                pattern,
-                flow_expression,
-                ..
-            }) => match &flow_expression.kind {
-                flow::Kind::Throttle { .. } => {
-                    // get the id of pattern's flow (and check their is only one flow)
-                    let mut ids = pattern.identifiers();
-                    debug_assert!(ids.len() == 1);
-                    let pattern_id = ids.pop().unwrap();
-
-                    // push in signals context
-                    let flow_name = symbol_table.get_name(pattern_id).clone();
-                    let ty = symbol_table.get_type(pattern_id);
-                    flows_context.add_element(flow_name, ty);
-                }
-                flow::Kind::Sample {
-                    flow_expression, ..
-                } => {
-                    // get the id of flow_expression (and check it is an idnetifier, from normalization)
-                    let id = match &flow_expression.kind {
-                        flow::Kind::Ident { id } => *id,
-                        _ => unreachable!(),
-                    };
-                    // get pattern's id
-                    let mut ids = pattern.identifiers();
-                    assert!(ids.len() == 1);
-                    let pattern_id = ids.pop().unwrap();
-
-                    // push in signals context
-                    let source_name = symbol_table.get_name(id).clone();
-                    let flow_name = symbol_table.get_name(pattern_id).clone();
-                    let ty = Typ::sm_event(symbol_table.get_type(id).clone());
-                    flows_context.add_element(source_name, &ty);
-                    flows_context.add_element(flow_name, &ty);
-                }
-                flow::Kind::Scan {
-                    flow_expression, ..
-                } => {
-                    // get the id of flow_expression (and check it is an idnetifier, from normalization)
-                    let id = match &flow_expression.kind {
-                        flow::Kind::Ident { id } => *id,
-                        _ => unreachable!(),
-                    };
-
-                    // push in signals context
-                    let source_name = symbol_table.get_name(id).clone();
-                    let ty = symbol_table.get_type(id);
-                    flows_context.add_element(source_name, ty);
-                }
-                flow::Kind::ComponentCall { inputs, .. } => {
-                    // get outputs' ids
-                    let outputs_ids = pattern.identifiers();
-
-                    // store output signals in flows_context
-                    for output_id in outputs_ids.iter() {
-                        let output_name = symbol_table.get_name(*output_id);
-                        let output_type = symbol_table.get_type(*output_id);
-                        flows_context.add_element(output_name.clone(), output_type)
-                    }
-
-                    inputs.iter().for_each(|(_, flow_expression)| {
-                        match &flow_expression.kind {
-                            // get the id of flow_expression (and check it is an idnetifier, from normalization)
-                            flow::Kind::Ident { id: flow_id } => {
-                                let flow_name = symbol_table.get_name(*flow_id).clone();
-                                let ty = symbol_table.get_type(*flow_id);
-                                if !ty.is_event() {
-                                    // push in context
-                                    flows_context.add_element(flow_name, ty);
-                                }
-                            }
-                            _ => unreachable!(),
-                        }
-                    });
-                }
-                flow::Kind::Ident { .. }
-                | flow::Kind::OnChange { .. }
-                | flow::Kind::Timeout { .. }
-                | flow::Kind::Merge { .. } => (),
-            },
-        }
     }
 }
 
@@ -256,17 +136,17 @@ mod isles {
 
     /// An *"isle"* for some event `e` is all (and only) the statements to run when receiving `e`.
     ///
-    /// This structure is only meant to be used immutably *after* it is created by [`IsleBuilder`], in
-    /// fact all `&mut self` functions on [`Isles`] are private.
+    /// This structure is only meant to be used immutably *after* it is created by [`IsleBuilder`],
+    /// in fact all `&mut self` functions on [`Isles`] are private.
     ///
     /// Given a service and some statements, each event triggers statements that feature call to
-    /// eventful component. To actually run them, we need to update their inputs, which means that we
-    /// need to know the event-free statements (including event-free component calls) that produce the
-    /// inputs for each eventful component call triggered.
+    /// eventful component. To actually run them, we need to update their inputs, which means that
+    /// we need to know the event-free statements (including event-free component calls) that
+    /// produce the inputs for each eventful component call triggered.
     ///
     /// The *"isle"* for event `e` is the list of statements from the service that need to run to
-    /// fully compute the effect of receiving `e` (including top stateful calls). The isle is a sub-list
-    /// of the original list of statements, in particular it is ordered the same way.
+    /// fully compute the effect of receiving `e` (including top stateful calls). The isle is a
+    /// sub-list of the original list of statements, in particular it is ordered the same way.
     pub struct Isles {
         /// Maps event indices to node isles.
         events_to_isles: HashMap<usize, Vec<usize>>,
@@ -321,9 +201,9 @@ mod isles {
 
         /// Inserts a statement for an event.
         ///
-        /// Note that the statements in the isles are not (insert-)sorted by this function, that's why
-        /// it is private. Each isle is populated by [`IsleBuilder::trace_event`], which does sort
-        /// the isle it creates before returning.
+        /// Note that the statements in the isles are not (insert-)sorted by this function, that's
+        /// why it is private. Each isle is populated by [`IsleBuilder::trace_event`], which does
+        /// sort the isle it creates before returning.
         fn insert(&mut self, event: usize, stmt: usize) {
             self.events_to_isles
                 .entry(event)
@@ -346,8 +226,8 @@ mod isles {
         events: HashSet<usize>,
         /// Cached stack of statements to visit.
         ///
-        /// The `bool` flag indicates the statement is at top-level, meaning it should be inserted in
-        /// the isle despite being stateful.
+        /// The `bool` flag indicates the statement is at top-level, meaning it should be inserted
+        /// in the isle despite being stateful.
         stack: Vec<(usize, bool)>,
         /// Cached memory of the statements visited when tracing an event.
         memory: HashSet<usize>,
@@ -395,8 +275,8 @@ mod isles {
         /// Used by [`Self::new`].
         ///
         /// The vector of statement indices associated to any event identifier is **sorted**, *i.e.*
-        /// statement indices are in the order in which they appear in the service. (It actually does
-        /// not matter for the actual isle building process atm.)
+        /// statement indices are in the order in which they appear in the service. (It actually
+        /// does not matter for the actual isle building process atm.)
         fn build_event_to_stmts(
             syms: &SymbolTable,
             service: &Service,
@@ -489,8 +369,8 @@ mod isles {
 
         /// True if `stmt` corresponds to a component call that reacts to some event.
         ///
-        /// Used to stop the exploration of a dependency branch on component calls that are eventful and
-        /// not triggered by the event the isle is for.
+        /// Used to stop the exploration of a dependency branch on component calls that are eventful
+        /// and not triggered by the event the isle is for.
         fn is_eventful_call(&self, stmt_id: usize) -> bool {
             self.eventful_calls.contains(&stmt_id)
         }
@@ -794,7 +674,7 @@ mod triggered {
             starts.iter().for_each(|id| {
                 trig_graph.add_node(*id);
             });
-            petgraph::visit::depth_first_search(&self.graph, starts, |event| match event {
+            graph::visit::depth_first_search(&self.graph, starts, |event| match event {
                 CrossForwardEdge(parent, child)
                 | BackEdge(parent, child)
                 | TreeEdge(parent, child) => {
@@ -918,7 +798,7 @@ mod service_handler {
             builder.run(ctxt).expect("oh no")
         } else {
             // else, construct an ordered sequence of the instrs
-            let ord_instrs = petgraph::algo::toposort(subgraph, None).expect("no cycle expected");
+            let ord_instrs = graph::toposort(subgraph, None).expect("no cycle expected");
             let seq: Vec<_> = ord_instrs
                 .into_iter()
                 .map(|i| Synced::instr(i, ctxt))
@@ -1003,7 +883,7 @@ mod flow_instr {
             IdentifierCreator, Service,
         },
         lir::execution_machine::{
-            FlowsContext, Expression, FlowInstruction, TimingEvent, TimingEventKind,
+            Expression, FlowInstruction, TimingEvent, TimingEventKind,
         },
     }
 
@@ -1015,7 +895,7 @@ mod flow_instr {
     /// A context to build [FlowInstruction]s.
     pub struct Builder<'a> {
         /// Context of the service.
-        flows_context: FlowsContext,
+        flows_context: hir::ctx::Flows,
         /// Symbol table.
         syms: &'a SymbolTable,
         /// Events currently triggered during a traversal.
@@ -1050,7 +930,7 @@ mod flow_instr {
         pub fn new(
             service: &'a mut Service,
             syms: &'a mut SymbolTable,
-            mut flows_context: FlowsContext,
+            mut flows_context: hir::ctx::Flows,
             imports: &'a mut HashMap<usize, FlowImport>,
             exports: &'a HashMap<usize, FlowExport>,
             timing_events: &'a mut Vec<TimingEvent>,
@@ -1141,7 +1021,7 @@ mod flow_instr {
         pub fn set_multiple_inputs(&mut self, multiple_inputs: bool) {
             self.multiple_inputs = multiple_inputs
         }
-        pub fn destroy(self) -> (FlowsContext, Vec<String>) {
+        pub fn destroy(self) -> (hir::ctx::Flows, Vec<String>) {
             (self.flows_context, self.components)
         }
 
@@ -1163,7 +1043,7 @@ mod flow_instr {
         ) -> HashMap<usize, Vec<(usize, usize)>> {
             let mut stmts_imports = HashMap::new();
             for (stmt_id, import) in imports.iter() {
-                petgraph::visit::depth_first_search(graph, std::iter::once(*stmt_id), |event| {
+                graph::visit::depth_first_search(graph, std::iter::once(*stmt_id), |event| {
                     match event {
                         CrossForwardEdge(_, child) | BackEdge(_, child) | TreeEdge(_, child) => {
                             stmts_imports
@@ -1183,7 +1063,7 @@ mod flow_instr {
             identifier_creator: &mut IdentifierCreator,
             service: &mut Service,
             syms: &mut SymbolTable,
-            flows_context: &mut FlowsContext,
+            flows_context: &mut hir::ctx::Flows,
             imports: &mut HashMap<usize, FlowImport>,
             timing_events: &mut Vec<TimingEvent>,
             components: &mut Vec<String>,

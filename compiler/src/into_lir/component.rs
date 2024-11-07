@@ -74,7 +74,7 @@ impl IntoLir<&'_ SymbolTable> for ComponentDefinition {
 
         // get memory/state elements
         let (elements, state_elements_init, state_elements_step) =
-            self.memory.get_state_elements(symbol_table);
+            memory_state_elements(self.memory, symbol_table);
 
         // transform contract
         let contract = self.contract.into_lir(symbol_table);
@@ -127,4 +127,58 @@ impl IntoLir<&'_ SymbolTable> for ComponentImport {
 
         Import { name, path }
     }
+}
+
+/// Get state elements from memory.
+pub fn memory_state_elements(
+    mem: hir::Memory,
+    symbol_table: &SymbolTable,
+) -> (
+    Vec<lir::state_machine::StateElmInfo>,
+    Vec<lir::state_machine::StateElmInit>,
+    Vec<lir::state_machine::StateElmStep>,
+) {
+    use hir::memory::*;
+    use itertools::Itertools;
+    use lir::state_machine::{StateElmInfo, StateElmInit, StateElmStep};
+
+    let (mut elements, mut inits, mut steps) = (vec![], vec![], vec![]);
+    for (
+        _,
+        Buffer {
+            identifier: ident,
+            typing,
+            initial_expression,
+            id,
+            ..
+        },
+    ) in mem.buffers.into_iter().sorted_by_key(|(id, _)| id.clone())
+    {
+        let scope = symbol_table.get_scope(id);
+        let mem_ident = format!("last_{}", ident);
+        elements.push(StateElmInfo::buffer(&mem_ident, typing));
+        inits.push(StateElmInit::buffer(
+            &mem_ident,
+            initial_expression.into_lir(symbol_table),
+        ));
+        steps.push(StateElmStep::new(
+            mem_ident,
+            match scope {
+                Scope::Input => lir::Expr::input_access(ident),
+                Scope::Output | Scope::Local => lir::Expr::ident(ident),
+                Scope::VeryLocal => unreachable!(),
+            },
+        ))
+    }
+    mem.called_nodes
+        .into_iter()
+        .sorted_by_key(|(id, _)| *id)
+        .for_each(|(memory_id, CalledNode { node_id, .. })| {
+            let memory_name = symbol_table.get_name(memory_id);
+            let node_name = symbol_table.get_name(node_id);
+            elements.push(StateElmInfo::called_node(memory_name, node_name));
+            inits.push(StateElmInit::called_node(memory_name, node_name));
+        });
+
+    (elements, inits, steps)
 }

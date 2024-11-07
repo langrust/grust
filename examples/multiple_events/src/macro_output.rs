@@ -27,7 +27,7 @@ impl MultipleEventsState {
             () if x && !(self.last_x) => Some(()),
             _ => None,
         };
-        let (aux2, z, aux3, aux1) = match (input.a, input.b, y) {
+        let (aux2, aux3, aux1, z) = match (input.a, input.b, y) {
             (Some(a), Some(b), _) => {
                 let aux1 = a;
                 let aux3 = self.last_aux2;
@@ -37,17 +37,17 @@ impl MultipleEventsState {
                     b
                 };
                 let aux2 = z;
-                (aux2, z, aux3, aux1)
+                (aux2, aux3, aux1, z)
             }
             (Some(a), _, _) if a > 0i64 => {
                 let z = a;
-                (self.last_aux2, z, self.last_aux3, self.last_aux1)
+                (self.last_aux2, self.last_aux3, self.last_aux1, z)
             }
             (_, Some(b), Some(y)) => {
                 let z = b;
-                (self.last_aux2, z, self.last_aux3, self.last_aux1)
+                (self.last_aux2, self.last_aux3, self.last_aux1, z)
             }
-            (_, _, _) => (self.last_aux2, self.last_z, self.last_aux3, self.last_aux1),
+            (_, _, _) => (self.last_aux2, self.last_aux3, self.last_aux1, self.last_z),
         };
         self.last_aux1 = aux1;
         self.last_aux2 = aux2;
@@ -74,23 +74,23 @@ impl DefineEventsState {
         }
     }
     pub fn step(&mut self, input: DefineEventsInput) -> (i64, f64, Option<i64>) {
-        let (z, y, x) = match (input.a, input.b) {
+        let (x, y, z) = match (input.a, input.b) {
             (Some(a), Some(e)) => {
-                let y = Some(());
                 let z = if input.v > 50i64 { e } else { a };
-                (z, y, None)
+                let y = Some(());
+                (None, y, z)
             }
             (Some(_), _) => {
-                let x = Some(2i64);
                 let z = 2i64;
-                (z, None, x)
+                let x = Some(2i64);
+                (x, None, z)
             }
             (_, Some(_)) => {
-                let x = Some(2i64);
                 let z = if input.v > 50i64 { 3i64 } else { 4i64 };
-                (z, None, x)
+                let x = Some(2i64);
+                (x, None, z)
             }
-            (_, _) => (self.last_z, None, None),
+            (_, _) => (None, None, self.last_z),
         };
         let c = z;
         let d = match (y) {
@@ -121,23 +121,23 @@ impl FinalTestState {
         }
     }
     pub fn step(&mut self, input: FinalTestInput) -> (i64, Option<i64>, Option<i64>) {
-        let (z, y, x) = match (input.a, input.b) {
+        let (y, z, x) = match (input.a, input.b) {
             (Some(a), Some(_)) => {
-                let y = Some(());
                 let z = if input.v > 50i64 { 1i64 } else { 0i64 };
-                (z, y, None)
+                let y = Some(());
+                (y, z, None)
             }
             (Some(a), _) => {
                 let x = Some(2i64);
                 let z = 2i64;
-                (z, None, x)
+                (None, z, x)
             }
             (_, Some(b)) => {
-                let x = Some(2i64);
                 let z = if input.v > 50i64 { 3i64 } else { 4i64 };
-                (z, None, x)
+                let x = Some(2i64);
+                (None, z, x)
             }
-            (_, _) => (self.last_z, None, None),
+            (_, _) => (None, self.last_z, None),
         };
         let t = match (input.a) {
             (Some(a)) => Some(a + z),

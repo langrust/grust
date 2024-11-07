@@ -11,20 +11,22 @@ macro_rules! prelude {
     };
 }
 
-pub use compiler_ast::common::prelude::{mk_new, *};
+pub use compiler_ast::import::*;
+pub use compiler_common::import::*;
+pub use compiler_hir::import::*;
 
-pub use compiler_ast::prelude as ast;
+pub mod lir {
+    pub use crate::{
+        block::Block,
+        contract::{self, Contract},
+        execution_machine::{self, ExecutionMachine},
+        expression::*,
+        item::{self, Enumeration, Function, Import, Item, Structure},
+        pattern::Pattern,
+        project::Project,
+        state_machine::{self, StateMachine},
+        stmt::Stmt,
+    };
+}
 
-pub use ast::{Ast, SymbolTable};
-
-pub use crate::{
-    block::Block,
-    contract::{self, Contract},
-    execution_machine::{self, ExecutionMachine},
-    expression::*,
-    item::{self, Enumeration, Function, Import, Item, Structure},
-    pattern::Pattern,
-    project::Project,
-    state_machine::{self, StateMachine},
-    stmt::Stmt,
-};
+pub use lir::*;

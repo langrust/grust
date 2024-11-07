@@ -15,10 +15,7 @@ pub mod prelude;
 
 prelude! {}
 
-mod ext;
-
-pub mod frontend;
-pub mod hir;
+// pub mod frontend;
 pub mod into_lir;
 
 pub use into_lir::IntoLir;
@@ -36,10 +33,18 @@ pub fn handle_tokens(tokens: TokenStream) -> TokenStream {
 /// Creates RustAST from GRust file.
 pub fn into_token_stream(ast: Ast) -> TokenStream2 {
     let mut symbol_table = SymbolTable::new();
-    let hir = frontend::hir_analysis(ast, &mut symbol_table);
+    let mut tokens = TokenStream2::new();
+    let hir = match hir::from_ast(ast, &mut symbol_table) {
+        Ok(hir) => hir,
+        Err(errors) => {
+            for e in errors {
+                eprintln!("{}", e)
+            }
+            return tokens;
+        }
+    };
     let lir = hir.into_lir(symbol_table);
     let rust = lir.into_syn();
-    let mut tokens = TokenStream2::new();
     use quote::TokenStreamExt;
     tokens.append_all(rust);
     tokens

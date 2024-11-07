@@ -13,23 +13,23 @@ impl DefineEventsState {
         }
     }
     pub fn step(&mut self, input: DefineEventsInput) -> (i64, Option<f64>, Option<i64>) {
-        let (z, y, x) = match (input.a, input.b) {
+        let (y, z, x) = match (input.a, input.b) {
             (Some(a), Some(e)) => {
-                let y = Some(());
                 let z = if input.v > 50i64 { e } else { a };
-                (z, y, None)
+                let y = Some(());
+                (y, z, None)
             }
             (Some(_), _) => {
                 let x = Some(2i64);
                 let z = 2i64;
-                (z, None, x)
+                (None, z, x)
             }
             (_, Some(_)) => {
-                let x = Some(2i64);
                 let z = if input.v > 50i64 { 3i64 } else { 4i64 };
-                (z, None, x)
+                let x = Some(2i64);
+                (None, z, x)
             }
-            (_, _) => (self.last_z, None, None),
+            (_, _) => (None, self.last_z, None),
         };
         let c = z;
         let d = match (y) {
