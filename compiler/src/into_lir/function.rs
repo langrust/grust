@@ -33,13 +33,13 @@ impl IntoLir<&'_ SymbolTable> for Function {
         // get function output type
         let output = symbol_table.get_function_output_type(id).clone();
 
-        // tranforms into LIR statements
+        // Transforms into LIR statements
         let mut statements = statements
             .into_iter()
             .map(|statement| statement.into_lir(symbol_table))
             .collect::<Vec<_>>();
         statements.push(Stmt::ExprLast {
-            expression: returned.into_lir(symbol_table),
+            expr: returned.into_lir(symbol_table),
         });
 
         // transform contract

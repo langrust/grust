@@ -10,7 +10,7 @@ pub struct Instantiation<E> {
     pub pattern: Pattern,
     pub eq_token: Token![=],
     /// The stream expression defining the signals.
-    pub expression: E,
+    pub expr: E,
     pub semi_token: Token![;],
 }
 
@@ -18,7 +18,7 @@ mk_new! { impl{E} Instantiation<E> =>
     new {
         pattern: Pattern,
         eq_token: Token![=],
-        expression: E,
+        expr: E,
         semi_token: Token![;],
     }
 }
@@ -85,7 +85,7 @@ impl Parse for Arm {
 pub struct Match {
     pub match_token: Token![match],
     /// The stream expression defining the signals.
-    pub expression: stream::Expr,
+    pub expr: stream::Expr,
     pub brace_token: token::Brace,
     /// The different matching cases.
     pub arms: Punctuated<Arm, Token![,]>,
@@ -94,7 +94,7 @@ pub struct Match {
 mk_new! { impl Match =>
     new {
         match_token: Token![match],
-        expression: stream::Expr,
+        expr: stream::Expr,
         brace_token: token::Brace,
         arms: Punctuated<Arm, Token![,]>,
     }
@@ -356,13 +356,13 @@ mod parse_equation {
         fn eq(&self, other: &Self) -> bool {
             match (self, other) {
                 (Self::LocalDef(l0), Self::LocalDef(r0)) => {
-                    l0.expression == r0.expression && l0.typed_pattern == r0.typed_pattern
+                    l0.expr == r0.expr && l0.typed_pattern == r0.typed_pattern
                 }
                 (Self::OutputDef(l0), Self::OutputDef(r0)) => {
-                    l0.expression == r0.expression && l0.pattern == r0.pattern
+                    l0.expr == r0.expr && l0.pattern == r0.pattern
                 }
                 (Self::Match(l0), Self::Match(r0)) => {
-                    l0.expression == r0.expression
+                    l0.expr == r0.expr
                         && l0.arms.iter().zip(r0.arms.iter()).all(|(l0, r0)| {
                             l0.pattern == r0.pattern
                                 && l0.guard == r0.guard
@@ -379,16 +379,16 @@ mod parse_equation {
                 Self::LocalDef(arg0) => f
                     .debug_tuple("LocalDef")
                     .field(&arg0.typed_pattern)
-                    .field(&arg0.expression)
+                    .field(&arg0.expr)
                     .finish(),
                 Self::OutputDef(arg0) => f
                     .debug_tuple("OutputDef")
                     .field(&arg0.pattern)
-                    .field(&arg0.expression)
+                    .field(&arg0.expr)
                     .finish(),
                 Self::Match(arg0) => f
                     .debug_tuple("Match")
-                    .field(&arg0.expression)
+                    .field(&arg0.expr)
                     .field(
                         &arg0
                             .arms
@@ -411,13 +411,13 @@ mod parse_equation {
         fn eq(&self, other: &Self) -> bool {
             match (self, other) {
                 (Self::LocalDef(l0), Self::LocalDef(r0)) => {
-                    l0.expression == r0.expression && l0.typed_pattern == r0.typed_pattern
+                    l0.expr == r0.expr && l0.typed_pattern == r0.typed_pattern
                 }
                 (Self::OutputDef(l0), Self::OutputDef(r0)) => {
-                    l0.expression == r0.expression && l0.pattern == r0.pattern
+                    l0.expr == r0.expr && l0.pattern == r0.pattern
                 }
                 (Self::Match(l0), Self::Match(r0)) => {
-                    l0.expression == r0.expression
+                    l0.expr == r0.expr
                         && l0.arms.iter().zip(r0.arms.iter()).all(|(l0, r0)| {
                             l0.pattern == r0.pattern
                                 && l0.guard == r0.guard
@@ -441,16 +441,16 @@ mod parse_equation {
                 Self::LocalDef(arg0) => f
                     .debug_tuple("LocalDef")
                     .field(&arg0.typed_pattern)
-                    .field(&arg0.expression)
+                    .field(&arg0.expr)
                     .finish(),
                 Self::OutputDef(arg0) => f
                     .debug_tuple("OutputDef")
                     .field(&arg0.pattern)
-                    .field(&arg0.expression)
+                    .field(&arg0.expr)
                     .finish(),
                 Self::Match(arg0) => f
                     .debug_tuple("Match")
-                    .field(&arg0.expression)
+                    .field(&arg0.expr)
                     .field(
                         &arg0
                             .arms
@@ -490,7 +490,7 @@ mod parse_equation {
         let control = ReactEq::out_def(Instantiation {
             pattern: parse_quote! {o},
             eq_token: parse_quote! {=},
-            expression: stream::ReactExpr::expr(stream::Expr::ite(IfThenElse::new(
+            expr: stream::ReactExpr::expr(stream::Expr::ite(IfThenElse::new(
                 stream::Expr::ident("res"),
                 stream::Expr::cst(Constant::int(parse_quote! {0})),
                 stream::Expr::binop(Binop::new(
@@ -518,7 +518,7 @@ mod parse_equation {
                 parse_quote! {o2},
             ])),
             eq_token: parse_quote! {=},
-            expression: stream::ReactExpr::expr(stream::Expr::ite(IfThenElse::new(
+            expr: stream::ReactExpr::expr(stream::Expr::ite(IfThenElse::new(
                 stream::Expr::ident("res"),
                 stream::Expr::tuple(Tuple::new(vec![
                     stream::Expr::cst(Constant::int(parse_quote! {0})),

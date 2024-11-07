@@ -41,7 +41,7 @@ pub struct Pattern {
     /// Pattern type.
     pub typing: Option<Typ>,
     /// Pattern location.
-    pub location: Location,
+    pub loc: Location,
 }
 
 /// Constructs pattern.
@@ -51,7 +51,7 @@ pub fn init(kind: Kind) -> Pattern {
     Pattern {
         kind,
         typing: None,
-        location: Location::default(),
+        loc: Location::default(),
     }
 }
 
@@ -92,18 +92,18 @@ pub struct Stmt<E> {
     /// Pattern of elements.
     pub pattern: Pattern,
     /// The expression defining the element.
-    pub expression: E,
+    pub expr: E,
     /// Stmt location.
-    pub location: Location,
+    pub loc: Location,
 }
 
 impl hir::stream::Stmt {
     /// Tell if it is in normal form.
     pub fn is_normal_form(&self) -> bool {
-        self.expression.is_normal_form()
+        self.expr.is_normal_form()
     }
     /// Tell if there is no node application.
     pub fn no_component_application(&self) -> bool {
-        self.expression.no_component_application()
+        self.expr.no_component_application()
     }
 }

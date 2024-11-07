@@ -75,13 +75,13 @@ impl Memory {
                         | Either::Right(stream::Expr {
                             kind:
                                 stream::Kind::Expression {
-                                    expression: hir::expr::Kind::Identifier { id: new_id },
+                                    expr: hir::expr::Kind::Identifier { id: new_id },
                                 },
                             ..
                         }) => {
                             let new_name = symbol_table.get_name(*new_id);
                             new_buffer.id = *new_id;
-                            new_buffer.identifier = new_name.clone();
+                            new_buffer.ident = new_name.clone();
                             (new_name.clone(), new_buffer)
                         }
                         Either::Right(_) => unreachable!(),
@@ -102,7 +102,7 @@ impl Memory {
                         | Either::Right(stream::Expr {
                             kind:
                                 stream::Kind::Expression {
-                                    expression: hir::expr::Kind::Identifier { id: new_id },
+                                    expr: hir::expr::Kind::Identifier { id: new_id },
                                 },
                             ..
                         }) => (new_id.clone(), called_node.clone()),
@@ -138,11 +138,11 @@ pub struct Buffer {
     /// Buffered id.
     pub id: usize,
     /// Buffered identifier.
-    pub identifier: String,
+    pub ident: String,
     /// Buffer type.
     pub typing: Typ,
     /// Buffer initial value.
-    pub initial_expression: hir::stream::Expr,
+    pub init: hir::stream::Expr,
 }
 
 /// Called unitary node' name.
@@ -175,14 +175,14 @@ impl Memory {
     pub fn add_buffer(
         &mut self,
         id: usize,
-        name: String,
+        ident: String,
         typing: Typ,
         constant: hir::stream::Expr,
     ) {
         if let Some(Buffer {
-            initial_expression: other_constant,
+            init: other_constant,
             ..
-        }) = self.buffers.get_mut(&name)
+        }) = self.buffers.get_mut(&ident)
         {
             let default_cst = hir::stream::Kind::expr(hir::expr::Kind::constant(Constant::Default));
             if other_constant.kind == default_cst {
@@ -193,12 +193,12 @@ impl Memory {
             }
         } else {
             self.buffers.insert(
-                name.clone(),
+                ident.clone(),
                 Buffer {
                     id,
-                    identifier: name,
+                    ident: ident,
                     typing,
-                    initial_expression: constant,
+                    init: constant,
                 },
             );
         }

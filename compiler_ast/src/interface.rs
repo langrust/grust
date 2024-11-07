@@ -7,7 +7,7 @@ pub struct Sample {
     pub sample_token: keyword::sample,
     pub paren_token: token::Paren,
     /// Input expression.
-    pub flow_expression: Box<FlowExpression>,
+    pub expr: Box<FlowExpression>,
     pub comma_token: Token![,],
     /// Sampling period in milliseconds.
     pub period_ms: LitInt,
@@ -22,14 +22,14 @@ impl Parse for Sample {
         let sample_token: keyword::sample = input.parse()?;
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
-        let flow_expression: FlowExpression = content.parse()?;
+        let expr: FlowExpression = content.parse()?;
         let comma_token: Token![,] = content.parse()?;
         let period_ms: LitInt = content.parse()?;
         if content.is_empty() {
             Ok(Sample::new(
                 sample_token,
                 paren_token,
-                flow_expression,
+                expr,
                 comma_token,
                 period_ms,
             ))
@@ -42,7 +42,7 @@ mk_new! { impl Sample =>
     new {
         sample_token: keyword::sample,
         paren_token: token::Paren,
-        flow_expression: FlowExpression = flow_expression.into(),
+        expr: FlowExpression = expr.into(),
         comma_token: Token![,],
         period_ms: LitInt,
     }
@@ -53,7 +53,7 @@ pub struct Scan {
     pub scan_token: keyword::scan,
     pub paren_token: token::Paren,
     /// Input expression.
-    pub flow_expression: Box<FlowExpression>,
+    pub expr: Box<FlowExpression>,
     pub comma_token: Token![,],
     /// Scanning period in milliseconds.
     pub period_ms: LitInt,
@@ -68,14 +68,14 @@ impl Parse for Scan {
         let scan_token: keyword::scan = input.parse()?;
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
-        let flow_expression: FlowExpression = content.parse()?;
+        let expr: FlowExpression = content.parse()?;
         let comma_token: Token![,] = content.parse()?;
         let period_ms: LitInt = content.parse()?;
         if content.is_empty() {
             Ok(Scan::new(
                 scan_token,
                 paren_token,
-                flow_expression,
+                expr,
                 comma_token,
                 period_ms,
             ))
@@ -88,7 +88,7 @@ mk_new! { impl Scan =>
     new {
         scan_token: keyword::scan,
         paren_token: token::Paren,
-        flow_expression: FlowExpression = flow_expression.into(),
+        expr: FlowExpression = expr.into(),
         comma_token: Token![,],
         period_ms: LitInt,
     }
@@ -99,7 +99,7 @@ pub struct Timeout {
     pub timeout_token: keyword::timeout,
     pub paren_token: token::Paren,
     /// Input expression.
-    pub flow_expression: Box<FlowExpression>,
+    pub expr: Box<FlowExpression>,
     pub comma_token: Token![,],
     /// Deadline in milliseconds.
     pub deadline: LitInt,
@@ -114,14 +114,14 @@ impl Parse for Timeout {
         let timeout_token: keyword::timeout = input.parse()?;
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
-        let flow_expression: FlowExpression = content.parse()?;
+        let expr: FlowExpression = content.parse()?;
         let comma_token: Token![,] = content.parse()?;
         let deadline: LitInt = content.parse()?;
         if content.is_empty() {
             Ok(Timeout::new(
                 timeout_token,
                 paren_token,
-                flow_expression,
+                expr,
                 comma_token,
                 deadline,
             ))
@@ -134,7 +134,7 @@ mk_new! { impl Timeout =>
     new {
         timeout_token: keyword::timeout,
         paren_token: token::Paren,
-        flow_expression: FlowExpression = flow_expression.into(),
+        expr: FlowExpression = expr.into(),
         comma_token: Token![,],
         deadline: LitInt,
     }
@@ -145,7 +145,7 @@ pub struct Throttle {
     pub throttle_token: keyword::throttle,
     pub paren_token: token::Paren,
     /// Input expression.
-    pub flow_expression: Box<FlowExpression>,
+    pub expr: Box<FlowExpression>,
     pub comma_token: Token![,],
     /// Variation that will update the signal.
     pub delta: Constant,
@@ -160,14 +160,14 @@ impl Parse for Throttle {
         let throttle_token: keyword::throttle = input.parse()?;
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
-        let flow_expression: FlowExpression = content.parse()?;
+        let expr: FlowExpression = content.parse()?;
         let comma_token: Token![,] = content.parse()?;
         let delta: Constant = content.parse()?;
         if content.is_empty() {
             Ok(Throttle::new(
                 throttle_token,
                 paren_token,
-                flow_expression,
+                expr,
                 comma_token,
                 delta,
             ))
@@ -180,7 +180,7 @@ mk_new! { impl Throttle =>
     new {
         throttle_token: keyword::throttle,
         paren_token: token::Paren,
-        flow_expression: FlowExpression = flow_expression.into(),
+        expr: FlowExpression = expr.into(),
         comma_token: Token![,],
         delta: Constant,
     }
@@ -192,7 +192,7 @@ pub struct OnChange {
     pub on_change_token: keyword::on_change,
     pub paren_token: token::Paren,
     /// Input expression.
-    pub flow_expression: Box<FlowExpression>,
+    pub expr: Box<FlowExpression>,
 }
 impl OnChange {
     pub fn peek(input: ParseStream) -> bool {
@@ -204,9 +204,9 @@ impl Parse for OnChange {
         let on_change_token: keyword::on_change = input.parse()?;
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
-        let flow_expression: FlowExpression = content.parse()?;
+        let expr: FlowExpression = content.parse()?;
         if content.is_empty() {
-            Ok(OnChange::new(on_change_token, paren_token, flow_expression))
+            Ok(OnChange::new(on_change_token, paren_token, expr))
         } else {
             Err(content.error("expected one input expression"))
         }
@@ -216,7 +216,7 @@ mk_new! { impl OnChange =>
     new {
         on_change_token: keyword::on_change,
         paren_token: token::Paren,
-        flow_expression: FlowExpression = flow_expression.into(),
+        expr: FlowExpression = expr.into(),
     }
 
 }
@@ -226,9 +226,9 @@ pub struct Merge {
     pub merge_token: keyword::merge,
     pub paren_token: token::Paren,
     /// Input expressions.
-    pub flow_expression_1: Box<FlowExpression>,
+    pub expr_1: Box<FlowExpression>,
     pub comma_token: Token![,],
-    pub flow_expression_2: Box<FlowExpression>,
+    pub expr_2: Box<FlowExpression>,
 }
 impl Merge {
     pub fn peek(input: ParseStream) -> bool {
@@ -240,16 +240,16 @@ impl Parse for Merge {
         let merge_token: keyword::merge = input.parse()?;
         let content;
         let paren_token: token::Paren = parenthesized!(content in input);
-        let flow_expression_1: FlowExpression = content.parse()?;
+        let expr_1: FlowExpression = content.parse()?;
         let comma_token = content.parse()?;
-        let flow_expression_2: FlowExpression = content.parse()?;
+        let expr_2: FlowExpression = content.parse()?;
         if content.is_empty() {
             Ok(Merge::new(
                 merge_token,
                 paren_token,
-                flow_expression_1,
+                expr_1,
                 comma_token,
-                flow_expression_2,
+                expr_2,
             ))
         } else {
             Err(content.error("expected two input expressions"))
@@ -260,9 +260,9 @@ mk_new! { impl Merge =>
     new {
         merge_token: keyword::merge,
         paren_token: token::Paren,
-        flow_expression_1: FlowExpression = flow_expression_1.into(),
+        expr_1: FlowExpression = expr_1.into(),
         comma_token: Token![,],
-        flow_expression_2: FlowExpression = flow_expression_2.into(),
+        expr_2: FlowExpression = expr_2.into(),
     }
 
 }
@@ -433,7 +433,7 @@ pub struct FlowDeclaration {
     pub typed_pattern: FlowPattern,
     pub eq_token: Token![=],
     /// The expression defining the flow.
-    pub flow_expression: FlowExpression,
+    pub expr: FlowExpression,
     pub semi_token: Token![;],
 }
 impl FlowDeclaration {
@@ -446,13 +446,13 @@ impl Parse for FlowDeclaration {
         let let_token: Token![let] = input.parse()?;
         let typed_pattern: FlowPattern = input.parse()?;
         let eq_token: Token![=] = input.parse()?;
-        let flow_expression: FlowExpression = input.parse()?;
+        let expr: FlowExpression = input.parse()?;
         let semi_token: Token![;] = input.parse()?;
         Ok(FlowDeclaration {
             let_token,
             typed_pattern,
             eq_token,
-            flow_expression,
+            expr,
             semi_token,
         })
     }
@@ -464,7 +464,7 @@ pub struct FlowInstantiation {
     pub pattern: FlowPattern,
     pub eq_token: Token![=],
     /// The expression defining the flow.
-    pub flow_expression: FlowExpression,
+    pub expr: FlowExpression,
     pub semi_token: Token![;],
 }
 impl FlowInstantiation {
@@ -480,12 +480,12 @@ impl Parse for FlowInstantiation {
     fn parse(input: ParseStream) -> syn::Res<Self> {
         let pattern: FlowPattern = input.parse()?;
         let eq_token: Token![=] = input.parse()?;
-        let flow_expression: FlowExpression = input.parse()?;
+        let expr: FlowExpression = input.parse()?;
         let semi_token: Token![;] = input.parse()?;
         Ok(FlowInstantiation {
             pattern,
             eq_token,
-            flow_expression,
+            expr,
             semi_token,
         })
     }

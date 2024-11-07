@@ -146,9 +146,9 @@ pub fn memory_state_elements(
     for (
         _,
         Buffer {
-            identifier: ident,
+            ident,
             typing,
-            initial_expression,
+            init,
             id,
             ..
         },
@@ -159,7 +159,7 @@ pub fn memory_state_elements(
         elements.push(StateElmInfo::buffer(&mem_ident, typing));
         inits.push(StateElmInit::buffer(
             &mem_ident,
-            initial_expression.into_lir(symbol_table),
+            init.into_lir(symbol_table),
         ));
         steps.push(StateElmStep::new(
             mem_ident,

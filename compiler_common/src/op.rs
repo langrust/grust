@@ -165,21 +165,21 @@ impl std::fmt::Display for BOp {
     }
 }
 impl BOp {
-    fn numerical_operator(mut input_types: Vec<Typ>, location: Location) -> Res<Typ> {
+    fn numerical_operator(mut input_types: Vec<Typ>, loc: Location) -> Res<Typ> {
         if input_types.len() == 2 {
             let type_2 = input_types.pop().unwrap();
             let type_1 = input_types.pop().unwrap();
             if type_1 != Typ::float() && type_1 != Typ::int() {
                 let error = Error::ExpectNumber {
                     given_type: type_1,
-                    location,
+                    loc,
                 };
                 return Err(error);
             };
             if type_2 != Typ::float() && type_2 != Typ::int() {
                 let error = Error::ExpectNumber {
                     given_type: type_2,
-                    location,
+                    loc,
                 };
                 return Err(error);
             };
@@ -187,7 +187,7 @@ impl BOp {
                 let error = Error::IncompatibleType {
                     given_type: type_2,
                     expected_type: type_1,
-                    location,
+                    loc,
                 };
                 return Err(error);
             };
@@ -196,27 +196,27 @@ impl BOp {
             let error = Error::ArityMismatch {
                 input_count: input_types.len(),
                 arity: 2,
-                location,
+                loc,
             };
             Err(error)
         }
     }
 
-    fn numerical_comparison(mut input_types: Vec<Typ>, location: Location) -> Res<Typ> {
+    fn numerical_comparison(mut input_types: Vec<Typ>, loc: Location) -> Res<Typ> {
         if input_types.len() == 2 {
             let type_2 = input_types.pop().unwrap();
             let type_1 = input_types.pop().unwrap();
             if type_1 != Typ::float() && type_1 != Typ::int() {
                 let error = Error::ExpectNumber {
                     given_type: type_1,
-                    location,
+                    loc,
                 };
                 return Err(error);
             };
             if type_2 != Typ::float() && type_2 != Typ::int() {
                 let error = Error::ExpectNumber {
                     given_type: type_2,
-                    location,
+                    loc,
                 };
                 return Err(error);
             };
@@ -224,7 +224,7 @@ impl BOp {
                 let error = Error::IncompatibleType {
                     given_type: type_2,
                     expected_type: type_1,
-                    location,
+                    loc,
                 };
                 return Err(error);
             };
@@ -233,13 +233,13 @@ impl BOp {
             let error = Error::ArityMismatch {
                 input_count: input_types.len(),
                 arity: 2,
-                location,
+                loc,
             };
             Err(error)
         }
     }
 
-    fn equality(mut input_types: Vec<Typ>, location: Location) -> Res<Typ> {
+    fn equality(mut input_types: Vec<Typ>, loc: Location) -> Res<Typ> {
         if input_types.len() == 2 {
             let type_2 = input_types.pop().unwrap();
             let type_1 = input_types.pop().unwrap();
@@ -249,7 +249,7 @@ impl BOp {
                 let error = Error::IncompatibleType {
                     given_type: type_2,
                     expected_type: type_1,
-                    location,
+                    loc,
                 };
                 Err(error)
             }
@@ -257,7 +257,7 @@ impl BOp {
             let error = Error::ArityMismatch {
                 input_count: input_types.len(),
                 arity: 2,
-                location,
+                loc,
             };
             Err(error)
         }
@@ -342,7 +342,7 @@ impl std::fmt::Display for UOp {
     }
 }
 impl UOp {
-    fn numerical_negation(mut input_types: Vec<Typ>, location: Location) -> Res<Typ> {
+    fn numerical_negation(mut input_types: Vec<Typ>, loc: Location) -> Res<Typ> {
         if input_types.len() == 1 {
             let type_1 = input_types.pop().unwrap();
             if type_1 == Typ::float() || type_1 == Typ::int() {
@@ -350,7 +350,7 @@ impl UOp {
             } else {
                 let error = Error::ExpectNumber {
                     given_type: type_1,
-                    location,
+                    loc,
                 };
                 Err(error)
             }
@@ -358,7 +358,7 @@ impl UOp {
             let error = Error::ArityMismatch {
                 input_count: input_types.len(),
                 arity: 1,
-                location,
+                loc,
             };
             Err(error)
         }
@@ -403,7 +403,7 @@ impl std::fmt::Display for OtherOp {
     }
 }
 impl OtherOp {
-    fn if_then_else(mut input_types: Vec<Typ>, location: Location) -> Res<Typ> {
+    fn if_then_else(mut input_types: Vec<Typ>, loc: Location) -> Res<Typ> {
         if input_types.len() == 3 {
             let type_3 = input_types.pop().unwrap();
             let type_2 = input_types.pop().unwrap();
@@ -412,7 +412,7 @@ impl OtherOp {
                 let error = Error::IncompatibleType {
                     given_type: type_1,
                     expected_type: Typ::bool(),
-                    location,
+                    loc,
                 };
                 return Err(error);
             };
@@ -420,7 +420,7 @@ impl OtherOp {
                 let error = Error::IncompatibleType {
                     given_type: type_3,
                     expected_type: type_2,
-                    location,
+                    loc,
                 };
                 return Err(error);
             };
@@ -429,7 +429,7 @@ impl OtherOp {
             let error = Error::ArityMismatch {
                 input_count: input_types.len(),
                 arity: 1,
-                location,
+                loc,
             };
             Err(error)
         }
@@ -441,8 +441,8 @@ impl OtherOp {
     ///
     /// ```rust
     /// # compiler_common::prelude! {}
-    /// let ifthenelse_type = OtherOp::IfThenElse.get_type();
-    /// assert!(ifthenelse_type.is_polymorphic());
+    /// let if_then_else_type = OtherOp::IfThenElse.get_type();
+    /// assert!(if_then_else_type.is_polymorphic());
     /// ```
     pub fn get_type(&self) -> Typ {
         match self {
@@ -480,7 +480,7 @@ mod to_string {
         assert_eq!(" + ", BOp::Add.to_string());
     }
     #[test]
-    fn should_convert_substraction_operator_to_string() {
+    fn should_convert_subtraction_operator_to_string() {
         assert_eq!(" - ", BOp::Sub.to_string());
     }
     #[test]
@@ -517,7 +517,7 @@ mod to_string {
     }
 
     #[test]
-    fn should_convert_ifthenelse_operator_to_string() {
+    fn should_convert_if_then_else_operator_to_string() {
         assert_eq!("if_then_else", OtherOp::IfThenElse.to_string());
     }
 }

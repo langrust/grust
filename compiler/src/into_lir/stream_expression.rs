@@ -33,8 +33,8 @@ impl IntoLir<&'_ SymbolTable> for hir::stream::Expr {
                     input_fields,
                 }
             }
-            Kind::Expression { expression } => expression.into_lir(symbol_table),
-            Kind::SomeEvent { expression } => lir::Expr::some(expression.into_lir(symbol_table)),
+            Kind::Expression { expr } => expr.into_lir(symbol_table),
+            Kind::SomeEvent { expr } => lir::Expr::some(expr.into_lir(symbol_table)),
             Kind::NoneEvent => lir::Expr::none(),
             Kind::FollowedBy { id, .. } => {
                 let name = symbol_table.get_name(id).clone();
@@ -50,7 +50,7 @@ impl IntoLir<&'_ SymbolTable> for hir::stream::Expr {
 
     fn is_if_then_else(&self, symbol_table: &SymbolTable) -> bool {
         match &self.kind {
-            Kind::Expression { expression } => expression.is_if_then_else(symbol_table),
+            Kind::Expression { expr } => expr.is_if_then_else(symbol_table),
             _ => false,
         }
     }

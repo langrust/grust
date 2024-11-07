@@ -191,7 +191,7 @@ pub struct Step {
     /// The update of the node's state.
     pub state_elements_step: Vec<StateElmStep>,
     /// The output expression.
-    pub output_expression: Expr,
+    pub output: Expr,
     /// The contract to prove.
     pub contract: Contract,
 }
@@ -202,7 +202,7 @@ mk_new! { impl Step =>
         output_type: Typ,
         body: Vec<Stmt>,
         state_elements_step: Vec<StateElmStep>,
-        output_expression: Expr,
+        output: Expr,
         contract: Contract,
     }
 }
@@ -269,10 +269,7 @@ impl Step {
                 vec.push(parse_quote! { self.#id = #expr; })
             }
 
-            vec.push(syn::Stmt::Expr(
-                self.output_expression.into_syn(crates),
-                None,
-            ));
+            vec.push(syn::Stmt::Expr(self.output.into_syn(crates), None));
 
             vec
         };
@@ -438,14 +435,11 @@ mod test {
             body: vec![
                 Stmt::Let {
                     pattern: Pattern::ident("o"),
-                    expression: Expr::field_access(
-                        Expr::ident("self"),
-                        FieldIdentifier::named("mem_i"),
-                    ),
+                    expr: Expr::field_access(Expr::ident("self"), FieldIdentifier::named("mem_i")),
                 },
                 Stmt::Let {
                     pattern: Pattern::ident("y"),
-                    expression: Expr::node_call(
+                    expr: Expr::node_call(
                         "called_node_state",
                         "called_node",
                         "CalledNodeInput",
@@ -464,7 +458,7 @@ mod test {
                 ),
                 StateElmStep::new("called_node_state", Expr::ident("new_called_node_state")),
             ],
-            output_expression: Expr::binop(BOp::Add, Expr::ident("o"), Expr::ident("y")),
+            output: Expr::binop(BOp::Add, Expr::ident("o"), Expr::ident("y")),
         };
 
         let control = parse_quote! {

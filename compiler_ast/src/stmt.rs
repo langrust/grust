@@ -101,7 +101,7 @@ pub struct LetDecl<E> {
     pub typed_pattern: Pattern,
     pub eq_token: Token![=],
     /// The stream expression defining the signal.
-    pub expression: E,
+    pub expr: E,
     pub semi_token: Token![;],
 }
 
@@ -110,7 +110,7 @@ mk_new! { impl{E} LetDecl<E> =>
         let_token: Token![let],
         typed_pattern: Pattern,
         eq_token: Token![=],
-        expression: E,
+        expr: E,
         semi_token: Token![;],
     }
 }
@@ -123,14 +123,14 @@ where
         let let_token: Token![let] = input.parse()?;
         let typed_pattern: Pattern = input.parse()?;
         let eq_token: Token![=] = input.parse()?;
-        let expression: E = input.parse()?;
+        let expr: E = input.parse()?;
         let semi_token: Token![;] = input.parse()?;
 
         Ok(LetDecl {
             let_token,
             typed_pattern,
             eq_token,
-            expression,
+            expr,
             semi_token,
         })
     }

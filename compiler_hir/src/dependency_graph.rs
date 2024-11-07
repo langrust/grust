@@ -236,7 +236,7 @@ impl ComponentDefinition {
         // add [self]->[called_nodes] as edges in graph
         self.statements.iter().for_each(|statement| {
             statement
-                .expression
+                .expr
                 .get_called_nodes()
                 .into_iter()
                 .for_each(|id| {
@@ -440,40 +440,27 @@ impl stream::ExprKind {
     pub fn get_called_nodes(&self) -> Vec<usize> {
         match &self {
             Self::Constant { .. } | Self::Identifier { .. } | Self::Enumeration { .. } => vec![],
-            Self::Application {
-                function_expression,
-                inputs,
-            } => {
+            Self::Application { fun, inputs } => {
                 let mut nodes = inputs
                     .iter()
                     .flat_map(|expression| expression.get_called_nodes())
                     .collect::<Vec<_>>();
-                let mut other_nodes = function_expression.get_called_nodes();
+                let mut other_nodes = fun.get_called_nodes();
                 nodes.append(&mut other_nodes);
                 nodes
             }
-            Self::Abstraction { expression, .. } | Self::UnOp { expression, .. } => {
-                expression.get_called_nodes()
-            }
-            Self::Binop {
-                left_expression,
-                right_expression,
-                ..
-            } => {
-                let mut nodes = left_expression.get_called_nodes();
-                let mut other_nodes = right_expression.get_called_nodes();
+            Self::Abstraction { expr, .. } | Self::UnOp { expr, .. } => expr.get_called_nodes(),
+            Self::BinOp { lft, rgt, .. } => {
+                let mut nodes = lft.get_called_nodes();
+                let mut other_nodes = rgt.get_called_nodes();
                 nodes.append(&mut other_nodes);
                 nodes
             }
-            Self::IfThenElse {
-                expression,
-                true_expression,
-                false_expression,
-            } => {
-                let mut nodes = expression.get_called_nodes();
-                let mut other_nodes = true_expression.get_called_nodes();
+            Self::IfThenElse { cnd, thn, els } => {
+                let mut nodes = cnd.get_called_nodes();
+                let mut other_nodes = thn.get_called_nodes();
                 nodes.append(&mut other_nodes);
-                let mut other_nodes = false_expression.get_called_nodes();
+                let mut other_nodes = els.get_called_nodes();
                 nodes.append(&mut other_nodes);
                 nodes
             }
@@ -489,21 +476,21 @@ impl stream::ExprKind {
                 .iter()
                 .flat_map(|expression| expression.get_called_nodes())
                 .collect::<Vec<_>>(),
-            Self::Match { expression, arms } => {
-                let mut nodes = expression.get_called_nodes();
+            Self::Match { expr, arms } => {
+                let mut nodes = expr.get_called_nodes();
                 let mut other_nodes = arms
                     .iter()
-                    .flat_map(|(_, bound, body, expression)| {
+                    .flat_map(|(_, bound, body, expr)| {
                         let mut nodes = vec![];
                         body.iter().for_each(|statement| {
-                            let mut other_nodes = statement.expression.get_called_nodes();
+                            let mut other_nodes = statement.expr.get_called_nodes();
                             nodes.append(&mut other_nodes);
                         });
-                        let mut other_nodes = expression.get_called_nodes();
+                        let mut other_nodes = expr.get_called_nodes();
                         nodes.append(&mut other_nodes);
                         let mut other_nodes = bound
                             .as_ref()
-                            .map_or(vec![], |expression| expression.get_called_nodes());
+                            .map_or(vec![], |expr| expr.get_called_nodes());
                         nodes.append(&mut other_nodes);
                         nodes
                     })
@@ -511,41 +498,31 @@ impl stream::ExprKind {
                 nodes.append(&mut other_nodes);
                 nodes
             }
-            Self::FieldAccess { expression, .. } => expression.get_called_nodes(),
-            Self::TupleElementAccess { expression, .. } => expression.get_called_nodes(),
-            Self::Map {
-                expression,
-                function_expression,
-            } => {
-                let mut nodes = expression.get_called_nodes();
-                let mut other_nodes = function_expression.get_called_nodes();
+            Self::FieldAccess { expr, .. } => expr.get_called_nodes(),
+            Self::TupleElementAccess { expr, .. } => expr.get_called_nodes(),
+            Self::Map { expr, fun } => {
+                let mut nodes = expr.get_called_nodes();
+                let mut other_nodes = fun.get_called_nodes();
                 nodes.append(&mut other_nodes);
                 nodes
             }
-            Self::Fold {
-                expression,
-                initialization_expression,
-                function_expression,
-            } => {
-                let mut nodes = expression.get_called_nodes();
-                let mut other_nodes = initialization_expression.get_called_nodes();
+            Self::Fold { array, init, fun } => {
+                let mut nodes = array.get_called_nodes();
+                let mut other_nodes = init.get_called_nodes();
                 nodes.append(&mut other_nodes);
-                let mut other_nodes = function_expression.get_called_nodes();
+                let mut other_nodes = fun.get_called_nodes();
                 nodes.append(&mut other_nodes);
                 nodes
             }
-            Self::Sort {
-                expression,
-                function_expression,
-            } => {
-                let mut nodes = expression.get_called_nodes();
-                let mut other_nodes = function_expression.get_called_nodes();
+            Self::Sort { expr, fun } => {
+                let mut nodes = expr.get_called_nodes();
+                let mut other_nodes = fun.get_called_nodes();
                 nodes.append(&mut other_nodes);
                 nodes
             }
             Self::Zip { arrays } => arrays
                 .iter()
-                .flat_map(|expression| expression.get_called_nodes())
+                .flat_map(|expr| expr.get_called_nodes())
                 .collect::<Vec<_>>(),
         }
     }
@@ -573,35 +550,19 @@ impl stream::ExprKind {
             Identifier { id, .. } => Self::ident_deps(ctx.symbol_table, *id),
             Abstraction { .. } => Self::abstraction_deps(),
             Enumeration { .. } => Self::enumeration_deps(),
-            UnOp { expression, .. } => Self::unop_deps(ctx, expression),
-            Binop {
-                left_expression,
-                right_expression,
-                ..
-            } => Self::binop_deps(ctx, left_expression, right_expression),
-            IfThenElse {
-                expression,
-                true_expression,
-                false_expression,
-            } => Self::ite_deps(ctx, expression, true_expression, false_expression),
-            Application {
-                function_expression,
-                inputs,
-                ..
-            } => Self::fun_app_deps(ctx, function_expression, inputs),
+            UnOp { expr, .. } => Self::unop_deps(ctx, expr),
+            BinOp { lft, rgt, .. } => Self::binop_deps(ctx, lft, rgt),
+            IfThenElse { cnd, thn, els } => Self::ite_deps(ctx, cnd, thn, els),
+            Application { fun, inputs, .. } => Self::fun_app_deps(ctx, fun, inputs),
             Structure { fields, .. } => Self::structure_deps(ctx, fields),
             Array { elements } => Self::array_deps(ctx, elements),
             Tuple { elements } => Self::tuple_deps(ctx, elements),
-            Match { expression, arms } => Self::match_deps(&self, ctx, expression, arms),
-            FieldAccess { expression, .. } => Self::field_access_deps(&self, ctx, expression),
-            TupleElementAccess { expression, .. } => Self::tuple_access_deps(ctx, expression),
-            Map { expression, .. } => Self::map_deps(ctx, expression),
-            Fold {
-                expression,
-                initialization_expression,
-                ..
-            } => Self::fold_deps(ctx, expression, initialization_expression),
-            Sort { expression, .. } => Self::sort_deps(&self, ctx, expression),
+            Match { expr, arms } => Self::match_deps(&self, ctx, expr, arms),
+            FieldAccess { expr, .. } => Self::field_access_deps(&self, ctx, expr),
+            TupleElementAccess { expr, .. } => Self::tuple_access_deps(ctx, expr),
+            Map { expr, .. } => Self::map_deps(ctx, expr),
+            Fold { array, init, .. } => Self::fold_deps(ctx, array, init),
+            Sort { expr, .. } => Self::sort_deps(&self, ctx, expr),
             Zip { arrays } => Self::zip_deps(ctx, arrays),
         }
     }
@@ -644,11 +605,11 @@ impl stream::ExprKind {
     /// Compute dependencies of an array stream expression.
     pub fn array_deps(
         ctx: &mut GraphProcCtx,
-        elems: &Vec<stream::Expr>,
+        elms: &Vec<stream::Expr>,
     ) -> TRes<Vec<(usize, Label)>> {
-        let mut res = Vec::with_capacity(elems.len());
+        let mut res = Vec::with_capacity(elms.len());
         // propagate dependencies computation
-        for e in elems.iter() {
+        for e in elms.iter() {
             e.compute_dependencies(ctx)?;
             res.extend(e.get_dependencies().iter().cloned());
         }
@@ -708,21 +669,21 @@ impl stream::ExprKind {
         }
     }
 
-    /// Compute dependencies of a ifthenelse stream expression.
+    /// Compute dependencies of a if-then-else stream expression.
     pub fn ite_deps(
         ctx: &mut GraphProcCtx,
-        c: &stream::Expr,
-        t: &stream::Expr,
-        e: &stream::Expr,
+        cnd: &stream::Expr,
+        thn: &stream::Expr,
+        els: &stream::Expr,
     ) -> TRes<Vec<(usize, Label)>> {
-        // dependencies of ifthenelse are dependencies of the expressions
-        c.compute_dependencies(ctx)?;
-        t.compute_dependencies(ctx)?;
-        e.compute_dependencies(ctx)?;
+        // dependencies of if-then-else are dependencies of the expressions
+        cnd.compute_dependencies(ctx)?;
+        thn.compute_dependencies(ctx)?;
+        els.compute_dependencies(ctx)?;
 
-        let mut deps = c.get_dependencies().clone();
-        deps.extend(t.get_dependencies().iter().cloned());
-        deps.extend(e.get_dependencies().iter().cloned());
+        let mut deps = cnd.get_dependencies().clone();
+        deps.extend(thn.get_dependencies().iter().cloned());
+        deps.extend(els.get_dependencies().iter().cloned());
 
         Ok(deps)
     }
@@ -763,7 +724,7 @@ impl stream::ExprKind {
 
             for statement in body {
                 statement.add_dependencies(ctx)?;
-                add_deps!(statement.expression.get_dependencies().iter());
+                add_deps!(statement.expr.get_dependencies().iter());
             }
 
             // get arm expression dependencies
@@ -823,11 +784,11 @@ impl stream::ExprKind {
     /// Compute dependencies of an tuple stream expression.
     pub fn tuple_deps(
         ctx: &mut GraphProcCtx,
-        elems: &Vec<stream::Expr>,
+        elms: &Vec<stream::Expr>,
     ) -> TRes<Vec<(usize, Label)>> {
         let mut deps = Vec::with_capacity(25);
         // propagate dependencies computation
-        for e in elems.iter() {
+        for e in elms.iter() {
             e.compute_dependencies(ctx)?;
             deps.extend(e.get_dependencies().iter().cloned())
         }
@@ -866,7 +827,7 @@ impl File {
     ) -> TRes<()> {
         let File { components, .. } = self;
 
-        // initialize dictionariy for reduced graphs
+        // initialize dictionary for reduced graphs
         let mut nodes_reduced_graphs = HashMap::new();
 
         // create graph of nodes
@@ -879,7 +840,7 @@ impl File {
         let sorted_nodes = toposort(&nodes_graph, None).map_err(|component| {
             let error = Error::NotCausalNode {
                 node: symbol_table.get_name(component.node_id()).clone(),
-                location: self.location.clone(),
+                loc: self.loc.clone(),
             };
             errors.push(error);
             TerminationError
@@ -938,11 +899,7 @@ impl hir::stream::Stmt {
     /// }
     /// ```
     pub fn add_signal_dependencies(&self, signal: usize, ctx: &mut GraphProcCtx) -> TRes<()> {
-        let hir::Stmt {
-            expression,
-            location,
-            ..
-        } = self;
+        let hir::Stmt { expr, loc, .. } = self;
 
         // get signal's color
         let color = ctx
@@ -957,19 +914,16 @@ impl hir::stream::Stmt {
                 *color = Color::Grey;
 
                 // compute and get dependencies
-                if expression.dependencies.get().is_none() {
-                    expression.compute_dependencies(ctx)?;
+                if expr.dependencies.get().is_none() {
+                    expr.compute_dependencies(ctx)?;
                 }
 
                 // add dependencies as graph's edges:
                 // s = e depends on s' <=> s -> s'
-                expression
-                    .get_dependencies()
-                    .iter()
-                    .for_each(|(id, label)| {
-                        // if there was another edge, keep the most important label
-                        add_edge(ctx.graph, signal, *id, label.clone())
-                    });
+                expr.get_dependencies().iter().for_each(|(id, label)| {
+                    // if there was another edge, keep the most important label
+                    add_edge(ctx.graph, signal, *id, label.clone())
+                });
 
                 // get signal's color
                 let color = ctx
@@ -985,7 +939,7 @@ impl hir::stream::Stmt {
             Color::Grey => {
                 let error = Error::NotCausalSignal {
                     signal: ctx.symbol_table.get_name(signal).clone(),
-                    location: location.clone(),
+                    loc: loc.clone(),
                 };
                 ctx.errors.push(error);
                 Err(TerminationError)
@@ -1000,9 +954,9 @@ impl stream::Expr {
     /// Get nodes applications identifiers.
     pub fn get_called_nodes(&self) -> Vec<usize> {
         match &self.kind {
-            stream::Kind::Expression { expression } => expression.get_called_nodes(),
-            stream::Kind::SomeEvent { expression } | stream::Kind::RisingEdge { expression } => {
-                expression.get_called_nodes()
+            stream::Kind::Expression { expr } => expr.get_called_nodes(),
+            stream::Kind::SomeEvent { expr } | stream::Kind::RisingEdge { expr } => {
+                expr.get_called_nodes()
             }
             stream::Kind::FollowedBy { .. } | stream::Kind::NoneEvent => vec![],
             stream::Kind::NodeApplication {
@@ -1012,7 +966,7 @@ impl stream::Expr {
             } => {
                 let mut nodes = inputs
                     .iter()
-                    .flat_map(|(_, expression)| expression.get_called_nodes())
+                    .flat_map(|(_, expr)| expr.get_called_nodes())
                     .collect::<Vec<_>>();
                 nodes.push(*called_node_id);
                 nodes
@@ -1047,17 +1001,17 @@ impl stream::Expr {
                 self.dependencies.set(vec![(*id, Label::Weight(1))]);
                 Ok(())
             }
-            stream::Kind::RisingEdge { ref expression } => {
+            stream::Kind::RisingEdge { ref expr } => {
                 // propagate dependencies computation in expression
-                expression.compute_dependencies(ctx)?;
+                expr.compute_dependencies(ctx)?;
                 // dependencies with the memory delay
-                let mut dependencies = expression
+                let mut dependencies = expr
                     .get_dependencies()
                     .iter()
                     .map(|(id, label)| (*id, label.increment()))
                     .collect::<Vec<_>>();
                 // rising edge depends on current value and memory
-                dependencies.extend(expression.get_dependencies());
+                dependencies.extend(expr.get_dependencies());
                 self.dependencies.set(dependencies);
                 Ok(())
             }
@@ -1108,14 +1062,14 @@ impl stream::Expr {
 
                 Ok(())
             }
-            stream::Kind::Expression { expression } => {
-                self.dependencies.set(expression.compute_dependencies(ctx)?);
+            stream::Kind::Expression { expr } => {
+                self.dependencies.set(expr.compute_dependencies(ctx)?);
                 Ok(())
             }
-            stream::Kind::SomeEvent { expression } => {
+            stream::Kind::SomeEvent { expr } => {
                 // propagate dependencies computation in expression
-                expression.compute_dependencies(ctx)?;
-                self.dependencies.set(expression.get_dependencies().clone());
+                expr.compute_dependencies(ctx)?;
+                self.dependencies.set(expr.get_dependencies().clone());
                 Ok(())
             }
             stream::Kind::NoneEvent => {

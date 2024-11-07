@@ -92,14 +92,14 @@ pub struct Term {
     /// The type of the term
     pub typing: Option<Typ>,
     /// The location in source code
-    pub location: Location,
+    pub loc: Location,
 }
 
 mk_new! { impl Term =>
     new {
         kind: Kind,
         typing: Option<Typ>,
-        location: Location,
+        loc: Location,
     }
 }
 
@@ -142,7 +142,7 @@ impl Term {
 }
 
 impl Term {
-    /// Substitude an identifier with another one.
+    /// Substitute an identifier with another one.
     pub fn substitution(&mut self, old_id: usize, new_id: usize) {
         match &mut self.kind {
             Kind::Constant { .. } | Kind::Enumeration { .. } => (),

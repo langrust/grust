@@ -33,8 +33,8 @@ impl Component {
     }
     pub fn get_location(&self) -> &Location {
         match self {
-            Component::Definition(comp_def) => &comp_def.location,
-            Component::Import(comp_import) => &comp_import.location,
+            Component::Definition(comp_def) => &comp_def.loc,
+            Component::Import(comp_import) => &comp_import.loc,
         }
     }
 
@@ -86,7 +86,7 @@ impl Component {
         let _ = graph::toposort(&subgraph, None).map_err(|signal| {
             let error = Error::NotCausalSignal {
                 signal: symbol_table.get_name(signal.node_id()).clone(),
-                location: self.get_location().clone(),
+                loc: self.get_location().clone(),
             };
             errors.push(error);
             TerminationError
@@ -123,7 +123,7 @@ impl Component {
     ///         mem: int = 0 fby v;
     ///     },
     ///     called_nodes: {
-    ///         memmy_node_o_: (my_node, o);
+    ///         mem_my_node_o_: (my_node, o);
     ///     },
     /// }
     /// ```
@@ -301,7 +301,7 @@ pub struct ComponentDefinition {
     /// Component's contract.
     pub contract: hir::Contract,
     /// Component location.
-    pub location: Location,
+    pub loc: Location,
     /// Component dependency graph.
     pub graph: DiGraphMap<usize, Label>,
     /// Component reduced dependency graph.
@@ -315,7 +315,7 @@ impl PartialEq for ComponentDefinition {
         self.id == other.id
             && self.statements == other.statements
             && self.contract == other.contract
-            && self.location == other.location
+            && self.loc == other.loc
             && self.eq_graph(other)
     }
 }
@@ -388,7 +388,7 @@ impl ComponentDefinition {
     ///         mem: int = 0 fby v;
     ///     },
     ///     called_nodes: {
-    ///         memmy_node_o_: (my_node, o);
+    ///         mem_my_node_o_: (my_node, o);
     ///     },
     /// }
     /// ```
@@ -683,8 +683,8 @@ impl ComponentDefinition {
         // sort statements
         self.statements.sort_by_key(compare);
         self.statements.iter_mut().for_each(|statement| {
-            match &mut statement.expression.kind {
-                stream::Kind::Expression { expression } => match expression {
+            match &mut statement.expr.kind {
+                stream::Kind::Expression { expr } => match expr {
                     hir::expr::Kind::Match { arms, .. } => arms
                         .iter_mut()
                         .for_each(|(_, _, statements, _)| statements.sort_by_key(compare)),
@@ -704,14 +704,14 @@ pub struct ComponentImport {
     /// Component path.
     pub path: syn::Path,
     /// Component location.
-    pub location: Location,
+    pub loc: Location,
     /// Component dependency graph.
     pub graph: DiGraphMap<usize, Label>,
 }
 
 impl PartialEq for ComponentImport {
     fn eq(&self, other: &Self) -> bool {
-        self.id == other.id && self.location == other.location && self.eq_graph(other)
+        self.id == other.id && self.loc == other.loc && self.eq_graph(other)
     }
 }
 

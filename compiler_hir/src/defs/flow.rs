@@ -13,41 +13,41 @@ pub enum Kind {
     /// GReact `sample` operator.
     Sample {
         /// Input expression.
-        flow_expression: Box<Expr>,
+        expr: Box<Expr>,
         /// Sampling period in milliseconds.
         period_ms: u64,
     },
     /// GReact `scan` operator.
     Scan {
         /// Input expression.
-        flow_expression: Box<Expr>,
-        /// Scaning period in milliseconds.
+        expr: Box<Expr>,
+        /// Scanning period in milliseconds.
         period_ms: u64,
     },
     /// GReact `timeout` operator.
     Timeout {
         /// Input expression.
-        flow_expression: Box<Expr>,
-        /// Dealine in milliseconds.
+        expr: Box<Expr>,
+        /// Deadline in milliseconds.
         deadline: u64,
     },
     /// GReact `throttle` operator.
     Throttle {
         /// Input expression.
-        flow_expression: Box<Expr>,
+        expr: Box<Expr>,
         /// Variation that will update the signal.
         delta: Constant,
     },
     /// GReact `on_change` operator.
     OnChange {
         /// Input expression.
-        flow_expression: Box<Expr>,
+        expr: Box<Expr>,
     },
     /// GReact `merge` operator.
     Merge {
         /// Input expressions.
-        flow_expression_1: Box<Expr>,
-        flow_expression_2: Box<Expr>,
+        expr_1: Box<Expr>,
+        expr_2: Box<Expr>,
     },
     /// Component call.
     ComponentCall {
@@ -66,7 +66,7 @@ pub struct Expr {
     /// Flow expression type.
     pub typing: Option<Typ>,
     /// Flow expression location.
-    pub location: Location,
+    pub loc: Location,
 }
 impl Expr {
     pub fn get_type(&self) -> Option<&Typ> {
@@ -76,30 +76,19 @@ impl Expr {
     pub fn get_dependencies(&self) -> Vec<usize> {
         match &self.kind {
             Kind::Ident { id } => vec![*id],
-            Kind::Sample {
-                flow_expression, ..
-            }
-            | Kind::Scan {
-                flow_expression, ..
-            }
-            | Kind::Timeout {
-                flow_expression, ..
-            }
-            | Kind::Throttle {
-                flow_expression, ..
-            }
-            | Kind::OnChange { flow_expression } => flow_expression.get_dependencies(),
-            Kind::Merge {
-                flow_expression_1,
-                flow_expression_2,
-            } => {
-                let mut dependencies = flow_expression_1.get_dependencies();
-                dependencies.extend(flow_expression_2.get_dependencies());
+            Kind::Sample { expr, .. }
+            | Kind::Scan { expr, .. }
+            | Kind::Timeout { expr, .. }
+            | Kind::Throttle { expr, .. }
+            | Kind::OnChange { expr } => expr.get_dependencies(),
+            Kind::Merge { expr_1, expr_2 } => {
+                let mut dependencies = expr_1.get_dependencies();
+                dependencies.extend(expr_2.get_dependencies());
                 dependencies
             }
             Kind::ComponentCall { inputs, .. } => inputs
                 .iter()
-                .flat_map(|(_, flow_expression)| flow_expression.get_dependencies())
+                .flat_map(|(_, expr)| expr.get_dependencies())
                 .collect(),
         }
     }
@@ -107,26 +96,15 @@ impl Expr {
     pub fn is_normal(&self) -> bool {
         match &self.kind {
             flow::Kind::Ident { .. } => true,
-            flow::Kind::Sample {
-                flow_expression, ..
+            flow::Kind::Sample { expr, .. }
+            | flow::Kind::Scan { expr, .. }
+            | flow::Kind::Timeout { expr, .. }
+            | flow::Kind::Throttle { expr, .. }
+            | flow::Kind::OnChange { expr } => expr.is_ident(),
+            flow::Kind::Merge { expr_1, expr_2 } => expr_1.is_ident() && expr_2.is_ident(),
+            flow::Kind::ComponentCall { inputs, .. } => {
+                inputs.iter().all(|(_, expr)| expr.is_ident())
             }
-            | flow::Kind::Scan {
-                flow_expression, ..
-            }
-            | flow::Kind::Timeout {
-                flow_expression, ..
-            }
-            | flow::Kind::Throttle {
-                flow_expression, ..
-            }
-            | flow::Kind::OnChange { flow_expression } => flow_expression.is_ident(),
-            flow::Kind::Merge {
-                flow_expression_1,
-                flow_expression_2,
-            } => flow_expression_1.is_ident() && flow_expression_2.is_ident(),
-            flow::Kind::ComponentCall { inputs, .. } => inputs
-                .iter()
-                .all(|(_, flow_expression)| flow_expression.is_ident()),
         }
     }
 
@@ -167,34 +145,25 @@ impl Expr {
     ) -> Vec<interface::FlowStatement> {
         match &mut self.kind {
             flow::Kind::Ident { .. } => vec![],
-            flow::Kind::Sample {
-                flow_expression, ..
-            } => flow_expression.into_flow_call(identifier_creator, symbol_table),
-            flow::Kind::Scan {
-                flow_expression, ..
-            } => flow_expression.into_flow_call(identifier_creator, symbol_table),
-            flow::Kind::Timeout {
-                flow_expression, ..
-            } => flow_expression.into_flow_call(identifier_creator, symbol_table),
-            flow::Kind::Throttle {
-                flow_expression, ..
-            } => flow_expression.into_flow_call(identifier_creator, symbol_table),
-            flow::Kind::OnChange { flow_expression } => {
-                flow_expression.into_flow_call(identifier_creator, symbol_table)
+            flow::Kind::Sample { expr, .. } => {
+                expr.into_flow_call(identifier_creator, symbol_table)
             }
-            flow::Kind::Merge {
-                flow_expression_1,
-                flow_expression_2,
-            } => {
-                let mut stmts = flow_expression_1.into_flow_call(identifier_creator, symbol_table);
-                stmts.extend(flow_expression_2.into_flow_call(identifier_creator, symbol_table));
+            flow::Kind::Scan { expr, .. } => expr.into_flow_call(identifier_creator, symbol_table),
+            flow::Kind::Timeout { expr, .. } => {
+                expr.into_flow_call(identifier_creator, symbol_table)
+            }
+            flow::Kind::Throttle { expr, .. } => {
+                expr.into_flow_call(identifier_creator, symbol_table)
+            }
+            flow::Kind::OnChange { expr } => expr.into_flow_call(identifier_creator, symbol_table),
+            flow::Kind::Merge { expr_1, expr_2 } => {
+                let mut stmts = expr_1.into_flow_call(identifier_creator, symbol_table);
+                stmts.extend(expr_2.into_flow_call(identifier_creator, symbol_table));
                 stmts
             }
             flow::Kind::ComponentCall { inputs, .. } => inputs
                 .iter_mut()
-                .flat_map(|(_, flow_expression)| {
-                    flow_expression.into_flow_call(identifier_creator, symbol_table)
-                })
+                .flat_map(|(_, expr)| expr.into_flow_call(identifier_creator, symbol_table))
                 .collect(),
         }
     }
@@ -227,10 +196,10 @@ impl Expr {
                         pattern: hir::stmt::Pattern {
                             kind: hir::stmt::Kind::Identifier { id: fresh_id },
                             typing: Some(typing.clone()),
-                            location: self.location.clone(),
+                            loc: self.loc.clone(),
                         },
                         eq_token: Default::default(),
-                        flow_expression: self.clone(),
+                        expr: self.clone(),
                         semi_token: Default::default(),
                     });
                 statements.push(new_statement);

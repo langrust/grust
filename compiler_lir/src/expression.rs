@@ -18,7 +18,7 @@ pub enum Expr {
     /// Some expression: `Some(x`.
     Some {
         /// The expression.
-        expression: Box<Self>,
+        expr: Box<Self>,
     },
     /// None value: `None`.
     None,
@@ -27,25 +27,25 @@ pub enum Expr {
         /// The operator.
         op: UOp,
         /// The expression.
-        expression: Box<Self>,
+        expr: Box<Self>,
     },
     /// A binary operation: `x + y`.
-    Binop {
+    BinOp {
         /// The operator.
         op: BOp,
         /// The left expression.
-        left_expression: Box<Self>,
+        lft: Box<Self>,
         /// The right expression.
-        right_expression: Box<Self>,
+        rgt: Box<Self>,
     },
     /// An if_then_else expression: `if test { "ok" } else { "oh no" }`.
     IfThenElse {
-        /// The test expression.
-        condition: Box<Self>,
-        /// The `true` block.
-        then_branch: Block,
-        /// The `false` block.
-        else_branch: Block,
+        /// Condition.
+        cnd: Box<Self>,
+        /// `then` branch.
+        thn: Block,
+        /// `else` branch.
+        els: Block,
     },
     /// A memory access: `self.i_mem`.
     MemoryAccess {
@@ -107,7 +107,7 @@ pub enum Expr {
     /// A named or unnamed field access: `my_point.x`.
     FieldAccess {
         /// The structure or tuple typed expression.
-        expression: Box<Self>,
+        expr: Box<Self>,
         /// The identifier of the field.
         field: FieldIdentifier,
     },
@@ -163,22 +163,22 @@ impl Expr {
         Literal: lit { literal: Constant }
         Identifier: ident { identifier: impl Into<String> = identifier.into() }
         Some: some {
-            expression: Self = Box::new(expression),
+            expr: Self = Box::new(expr),
         }
         None: none ()
         UnOp: unop {
             op: UOp,
-            expression: Self = Box::new(expression),
+            expr: Self = Box::new(expr),
         }
-        Binop: binop {
+        BinOp: binop {
             op: BOp,
-            left_expression: Self = left_expression.into(),
-            right_expression: Self = right_expression.into(),
+            lft: Self = lft.into(),
+            rgt: Self = rgt.into(),
         }
         IfThenElse: ite {
-            condition: Self = Box::new(condition),
-            then_branch: Block,
-            else_branch: Block,
+            cnd: Self = Box::new(cnd),
+            thn: Block,
+            els: Block,
         }
         MemoryAccess: memory_access { identifier: impl Into<String> = identifier.into() }
         InputAccess: input_access { identifier: impl Into<String> = identifier.into() }
@@ -204,7 +204,7 @@ impl Expr {
             input_fields: Vec<(String, Self)>,
         }
         FieldAccess: field_access {
-            expression: Self = expression.into(),
+            expr: Self = expr.into(),
             field: FieldIdentifier
         }
         Lambda: lambda {
@@ -251,7 +251,7 @@ impl Expr {
             | Block { .. }
             | FieldAccess { .. } => false,
             UnOp { .. }
-            | Binop { .. }
+            | BinOp { .. }
             | IfThenElse { .. }
             | Structure { .. }
             | FunctionCall { .. }
@@ -269,7 +269,7 @@ impl Expr {
     pub fn as_op_arg_requires_parens(&self) -> bool {
         use Expr::*;
         match self {
-            Binop { .. } | IfThenElse { .. } | Lambda { .. } => true,
+            BinOp { .. } | IfThenElse { .. } | Lambda { .. } => true,
             Literal { .. }
             | Identifier { .. }
             | UnOp { .. }
@@ -300,8 +300,8 @@ impl Expr {
                 let identifier = Ident::new(&identifier, Span::call_site());
                 parse_quote! { #identifier }
             }
-            Self::Some { expression } => {
-                let syn_expr = expression.into_syn(crates);
+            Self::Some { expr } => {
+                let syn_expr = expr.into_syn(crates);
                 parse_quote! { Some(#syn_expr) }
             }
             Self::None => parse_quote! { None },
@@ -316,10 +316,10 @@ impl Expr {
             Self::Structure { name, fields } => {
                 let fields: Vec<syn::FieldValue> = fields
                     .into_iter()
-                    .map(|(name, expression)| {
+                    .map(|(name, expr)| {
                         let name = format_ident!("{name}");
-                        let expression = expression.into_syn(crates);
-                        parse_quote!(#name : #expression)
+                        let expr = expr.into_syn(crates);
+                        parse_quote!(#name : #expr)
                     })
                     .collect();
                 let name = format_ident!("{name}");
@@ -329,15 +329,11 @@ impl Expr {
                 syn::parse_str(&format!("{name}::{element}")).unwrap()
             }
             Self::Array { elements } => {
-                let elements = elements
-                    .into_iter()
-                    .map(|expression| expression.into_syn(crates));
+                let elements = elements.into_iter().map(|expr| expr.into_syn(crates));
                 parse_quote! { [#(#elements),*]}
             }
             Self::Tuple { elements } => {
-                let elements = elements
-                    .into_iter()
-                    .map(|expression| expression.into_syn(crates));
+                let elements = elements.into_iter().map(|expr| expr.into_syn(crates));
                 parse_quote! { (#(#elements),*) }
             }
             Self::Block { block } => syn::Expr::Block(syn::ExprBlock {
@@ -351,36 +347,30 @@ impl Expr {
             } => {
                 let function_parens = function.as_function_requires_parens();
                 let function = function.into_syn(crates);
-                let arguments = arguments
-                    .into_iter()
-                    .map(|expression| expression.into_syn(crates));
+                let arguments = arguments.into_iter().map(|expr| expr.into_syn(crates));
                 if function_parens {
                     parse_quote! { (#function)(#(#arguments),*) }
                 } else {
                     parse_quote! { #function(#(#arguments),*) }
                 }
             }
-            Self::UnOp { op, expression } => {
+            Self::UnOp { op, expr } => {
                 let op = op.into_syn();
-                let expr = expression.into_syn(crates);
+                let expr = expr.into_syn(crates);
                 syn::Expr::Unary(parse_quote! { #op (#expr) })
             }
-            Self::Binop {
-                op,
-                left_expression,
-                right_expression,
-            } => {
-                let left = if left_expression.as_op_arg_requires_parens() {
-                    let expr = left_expression.into_syn(crates);
+            Self::BinOp { op, lft, rgt } => {
+                let left = if lft.as_op_arg_requires_parens() {
+                    let expr = lft.into_syn(crates);
                     parse_quote! { (#expr) }
                 } else {
-                    left_expression.into_syn(crates)
+                    lft.into_syn(crates)
                 };
-                let right = if right_expression.as_op_arg_requires_parens() {
-                    let expr = right_expression.into_syn(crates);
+                let right = if rgt.as_op_arg_requires_parens() {
+                    let expr = rgt.into_syn(crates);
                     parse_quote! { (#expr) }
                 } else {
-                    right_expression.into_syn(crates)
+                    rgt.into_syn(crates)
                 };
                 let binary = op.into_syn();
                 syn::Expr::Binary(parse_quote! { #left #binary #right })
@@ -395,9 +385,9 @@ impl Expr {
                 let receiver: syn::ExprField = parse_quote! { self.#ident};
                 let input_fields: Vec<syn::FieldValue> = input_fields
                     .into_iter()
-                    .map(|(name, expression)| {
+                    .map(|(name, expr)| {
                         let id = Ident::new(&name, Span::call_site());
-                        let expr = expression.into_syn(crates);
+                        let expr = expr.into_syn(crates);
                         parse_quote! { #id : #expr }
                     })
                     .collect();
@@ -407,16 +397,16 @@ impl Expr {
 
                 syn::Expr::MethodCall(parse_quote! { #receiver.step (#argument) })
             }
-            Self::FieldAccess { expression, field } => {
-                let expression = expression.into_syn(crates);
+            Self::FieldAccess { expr, field } => {
+                let expr = expr.into_syn(crates);
                 match field {
                     FieldIdentifier::Named(name) => {
                         let name = Ident::new(&name, Span::call_site());
-                        parse_quote!(#expression.#name)
+                        parse_quote!(#expr.#name)
                     }
                     FieldIdentifier::Unnamed(number) => {
                         let number: TokenStream2 = format!("{number}").parse().unwrap();
-                        parse_quote!(#expression.#number)
+                        parse_quote!(#expr.#number)
                     }
                 }
             }
@@ -461,22 +451,18 @@ impl Expr {
                 };
                 syn::Expr::Closure(closure)
             }
-            Self::IfThenElse {
-                condition,
-                then_branch,
-                else_branch,
-            } => {
-                let condition = Box::new(condition.into_syn(crates));
-                let then_branch = then_branch.into_syn(crates);
-                let else_branch = else_branch.into_syn(crates);
-                let else_branch = parse_quote! { #else_branch };
-                let else_branch = Some((Default::default(), Box::new(else_branch)));
+            Self::IfThenElse { cnd, thn, els } => {
+                let cnd = Box::new(cnd.into_syn(crates));
+                let thn = thn.into_syn(crates);
+                let els = els.into_syn(crates);
+                let els = parse_quote! { #els };
+                let els = Some((Default::default(), Box::new(els)));
                 syn::Expr::If(syn::ExprIf {
                     attrs: Vec::new(),
                     if_token: Default::default(),
-                    cond: condition,
-                    then_branch,
-                    else_branch,
+                    cond: cnd,
+                    then_branch: thn,
+                    else_branch: els,
                 })
             }
             Self::Match { matched, arms } => {
@@ -660,10 +646,10 @@ mod test {
             statements: vec![
                 Stmt::Let {
                     pattern: Pattern::ident("x"),
-                    expression: Expr::lit(Constant::Integer(parse_quote!(1i64))),
+                    expr: Expr::lit(Constant::Integer(parse_quote!(1i64))),
                 },
                 Stmt::ExprLast {
-                    expression: Expr::ident("x"),
+                    expr: Expr::ident("x"),
                 },
             ],
         });

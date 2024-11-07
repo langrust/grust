@@ -25,65 +25,36 @@ where
                     }
                 }
             }
-            Self::UnOp { op, expression } => {
-                let expression = expression.into_lir(symbol_table);
-                lir::Expr::UnOp {
-                    op,
-                    expression: Box::new(expression),
-                }
+            Self::UnOp { op, expr } => {
+                let expr = expr.into_lir(symbol_table);
+                lir::Expr::unop(op, expr)
             }
-            Self::Binop {
-                op,
-                left_expression,
-                right_expression,
-            } => {
-                let left_expression = left_expression.into_lir(symbol_table);
-                let right_expression = right_expression.into_lir(symbol_table);
-                lir::Expr::Binop {
-                    op,
-                    left_expression: Box::new(left_expression),
-                    right_expression: Box::new(right_expression),
-                }
+            Self::BinOp { op, lft, rgt } => {
+                let lft = lft.into_lir(symbol_table);
+                let rgt = rgt.into_lir(symbol_table);
+                lir::Expr::binop(op, lft, rgt)
             }
-            Self::IfThenElse {
-                expression,
-                true_expression,
-                false_expression,
-            } => {
-                let condition = expression.into_lir(symbol_table);
-                let then_branch = true_expression.into_lir(symbol_table);
-                let else_branch = false_expression.into_lir(symbol_table);
-                lir::Expr::IfThenElse {
-                    condition: Box::new(condition),
-                    then_branch: Block {
-                        statements: vec![Stmt::ExprLast {
-                            expression: then_branch,
-                        }],
-                    },
-                    else_branch: Block {
-                        statements: vec![Stmt::ExprLast {
-                            expression: else_branch,
-                        }],
-                    },
-                }
+            Self::IfThenElse { cnd, thn, els } => {
+                let cnd = cnd.into_lir(symbol_table);
+                let thn = thn.into_lir(symbol_table);
+                let els = els.into_lir(symbol_table);
+                lir::Expr::ite(
+                    cnd,
+                    Block::new(vec![Stmt::ExprLast { expr: thn }]),
+                    Block::new(vec![Stmt::ExprLast { expr: els }]),
+                )
             }
-            Self::Application {
-                function_expression,
-                inputs,
-                ..
-            } => {
+            Self::Application { fun, inputs, .. } => {
                 let arguments = inputs
                     .into_iter()
                     .map(|input| input.into_lir(symbol_table))
                     .collect();
                 lir::Expr::FunctionCall {
-                    function: Box::new(function_expression.into_lir(symbol_table)),
+                    function: Box::new(fun.into_lir(symbol_table)),
                     arguments,
                 }
             }
-            Self::Abstraction {
-                inputs, expression, ..
-            } => {
+            Self::Abstraction { inputs, expr, .. } => {
                 let inputs = inputs
                     .iter()
                     .map(|id| {
@@ -93,14 +64,14 @@ where
                         )
                     })
                     .collect();
-                let output = expression.get_type().expect("it should be typed").clone();
+                let output = expr.get_type().expect("it should be typed").clone();
                 lir::Expr::Lambda {
                     inputs,
                     output,
                     body: Box::new(lir::Expr::Block {
                         block: Block {
                             statements: vec![Stmt::ExprLast {
-                                expression: expression.into_lir(symbol_table),
+                                expr: expr.into_lir(symbol_table),
                             }],
                         },
                     }),
@@ -110,10 +81,10 @@ where
                 name: symbol_table.get_name(id).clone(),
                 fields: fields
                     .into_iter()
-                    .map(|(id, expression)| {
+                    .map(|(id, expr)| {
                         (
                             symbol_table.get_name(id).clone(),
-                            expression.into_lir(symbol_table),
+                            expr.into_lir(symbol_table),
                         )
                     })
                     .collect(),
@@ -134,25 +105,23 @@ where
                     .map(|element| element.into_lir(symbol_table))
                     .collect(),
             },
-            Self::Match {
-                expression, arms, ..
-            } => lir::Expr::Match {
-                matched: Box::new(expression.into_lir(symbol_table)),
+            Self::Match { expr, arms, .. } => lir::Expr::Match {
+                matched: Box::new(expr.into_lir(symbol_table)),
                 arms: arms
                     .into_iter()
-                    .map(|(pattern, guard, body, expression)| {
+                    .map(|(pattern, guard, body, expr)| {
                         (
                             pattern.into_lir(symbol_table),
-                            guard.map(|expression| expression.into_lir(symbol_table)),
+                            guard.map(|expr| expr.into_lir(symbol_table)),
                             if body.is_empty() {
-                                expression.into_lir(symbol_table)
+                                expr.into_lir(symbol_table)
                             } else {
                                 let mut statements = body
                                     .into_iter()
                                     .map(|statement| statement.into_lir(symbol_table))
                                     .collect::<Vec<_>>();
                                 statements.push(Stmt::ExprLast {
-                                    expression: expression.into_lir(symbol_table),
+                                    expr: expr.into_lir(symbol_table),
                                 });
                                 lir::Expr::Block {
                                     block: Block { statements },
@@ -162,45 +131,32 @@ where
                     })
                     .collect(),
             },
-            Self::FieldAccess {
-                expression, field, ..
-            } => lir::Expr::FieldAccess {
-                expression: Box::new(expression.into_lir(symbol_table)),
+            Self::FieldAccess { expr, field, .. } => lir::Expr::FieldAccess {
+                expr: Box::new(expr.into_lir(symbol_table)),
                 field: FieldIdentifier::Named(field),
             },
             Self::TupleElementAccess {
-                expression,
+                expr,
                 element_number,
                 ..
             } => lir::Expr::FieldAccess {
-                expression: Box::new(expression.into_lir(symbol_table)),
+                expr: Box::new(expr.into_lir(symbol_table)),
                 field: FieldIdentifier::Unnamed(element_number),
             },
-            Self::Map {
-                expression,
-                function_expression,
-                ..
-            } => lir::Expr::Map {
-                mapped: Box::new(expression.into_lir(symbol_table)),
-                function: Box::new(function_expression.into_lir(symbol_table)),
+            Self::Map { expr, fun, .. } => lir::Expr::Map {
+                mapped: Box::new(expr.into_lir(symbol_table)),
+                function: Box::new(fun.into_lir(symbol_table)),
             },
             Self::Fold {
-                expression,
-                initialization_expression,
-                function_expression,
-                ..
-            } => lir::Expr::Fold {
-                folded: Box::new(expression.into_lir(symbol_table)),
-                initialization: Box::new(initialization_expression.into_lir(symbol_table)),
-                function: Box::new(function_expression.into_lir(symbol_table)),
-            },
-            Self::Sort {
-                expression,
-                function_expression,
-                ..
-            } => lir::Expr::Sort {
-                sorted: Box::new(expression.into_lir(symbol_table)),
-                function: Box::new(function_expression.into_lir(symbol_table)),
+                array, init, fun, ..
+            } => lir::Expr::fold(
+                array.into_lir(symbol_table),
+                init.into_lir(symbol_table),
+                fun.into_lir(symbol_table),
+            ),
+            Self::Sort { expr, fun, .. } => lir::Expr::Sort {
+                sorted: Box::new(expr.into_lir(symbol_table)),
+                function: Box::new(fun.into_lir(symbol_table)),
             },
             Self::Zip { arrays, .. } => lir::Expr::Zip {
                 arrays: arrays
