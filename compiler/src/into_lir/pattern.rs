@@ -42,11 +42,11 @@ impl IntoLir<&'_ SymbolTable> for Pattern {
             },
             Kind::None => lir::Pattern::None,
             Kind::Default => lir::Pattern::Default,
-            Kind::PresentEvent { event_id, pattern } => match symbol_table.get_type(event_id) {
+            Kind::PresentEvent { event_id, pattern } => match symbol_table.get_typ(event_id) {
                 Typ::SMEvent { .. } => lir::Pattern::some(pattern.into_lir(symbol_table)),
                 _ => unreachable!(),
             },
-            Kind::NoEvent { event_id } => match symbol_table.get_type(event_id) {
+            Kind::NoEvent { event_id } => match symbol_table.get_typ(event_id) {
                 Typ::SMEvent { .. } => lir::Pattern::none(),
                 _ => unreachable!(),
             },
@@ -62,11 +62,11 @@ impl IntoLir<&'_ SymbolTable> for hir::stmt::Pattern {
             hir::stmt::Kind::Identifier { id } => lir::Pattern::Identifier {
                 name: symbol_table.get_name(id).clone(),
             },
-            hir::stmt::Kind::Typed { id, typing } => lir::Pattern::Typed {
+            hir::stmt::Kind::Typed { id, typ } => lir::Pattern::Typed {
                 pattern: Box::new(lir::Pattern::Identifier {
                     name: symbol_table.get_name(id).clone(),
                 }),
-                typing,
+                typ,
             },
             hir::stmt::Kind::Tuple { elements } => lir::Pattern::Tuple {
                 elements: elements

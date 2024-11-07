@@ -44,8 +44,8 @@ impl IntoLir<&'_ SymbolTable> for hir::stream::Expr {
         }
     }
 
-    fn get_type(&self) -> Option<&Typ> {
-        self.typing.as_ref()
+    fn get_typ(&self) -> Option<&Typ> {
+        self.typ.as_ref()
     }
 
     fn is_if_then_else(&self, symbol_table: &SymbolTable) -> bool {

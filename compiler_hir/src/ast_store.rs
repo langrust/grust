@@ -26,7 +26,7 @@ mod component {
                 || self
                     .args
                     .iter()
-                    .any(|Colon { right: typing, .. }| typing.is_event());
+                    .any(|Colon { right: typ, .. }| typ.is_event());
 
             // store input signals and get their ids
             let inputs = self
@@ -35,15 +35,15 @@ mod component {
                 .map(
                     |Colon {
                          left: ident,
-                         right: typing,
+                         right: typ,
                          ..
                      }| {
                         let name = ident.to_string();
-                        let typing = typing.clone().into_hir(ctx)?;
+                        let typ = typ.clone().into_hir(ctx)?;
                         let id = ctx.symbols.insert_signal(
                             name,
                             Scope::Input,
-                            Some(typing),
+                            Some(typ),
                             true,
                             location.clone(),
                             ctx.errors,
@@ -60,15 +60,15 @@ mod component {
                 .map(
                     |Colon {
                          left: ident,
-                         right: typing,
+                         right: typ,
                          ..
                      }| {
                         let name = ident.to_string();
-                        let typing = typing.clone().into_hir(ctx)?;
+                        let typ = typ.clone().into_hir(ctx)?;
                         let id = ctx.symbols.insert_signal(
                             name.clone(),
                             Scope::Output,
-                            Some(typing),
+                            Some(typ),
                             true,
                             ctx.loc.clone(),
                             ctx.errors,
@@ -126,7 +126,7 @@ mod component {
                 || self
                     .args
                     .iter()
-                    .any(|Colon { right: typing, .. }| typing.is_event());
+                    .any(|Colon { right: typ, .. }| typ.is_event());
 
             // store input signals and get their ids
             let inputs = self
@@ -135,15 +135,15 @@ mod component {
                 .map(
                     |Colon {
                          left: ident,
-                         right: typing,
+                         right: typ,
                          ..
                      }| {
                         let name = ident.to_string();
-                        let typing = typing.clone().into_hir(ctx)?;
+                        let typ = typ.clone().into_hir(ctx)?;
                         let id = ctx.symbols.insert_signal(
                             name,
                             Scope::Input,
-                            Some(typing),
+                            Some(typ),
                             true,
                             location.clone(),
                             ctx.errors,
@@ -160,15 +160,15 @@ mod component {
                 .map(
                     |Colon {
                          left: ident,
-                         right: typing,
+                         right: typ,
                          ..
                      }| {
                         let name = ident.to_string();
-                        let typing = typing.clone().into_hir(ctx)?;
+                        let typ = typ.clone().into_hir(ctx)?;
                         let id = ctx.symbols.insert_signal(
                             name.clone(),
                             Scope::Output,
-                            Some(typing),
+                            Some(typ),
                             true,
                             location.clone(),
                             ctx.errors,
@@ -430,14 +430,14 @@ impl AstStore for ast::Function {
             .map(
                 |ast::Colon {
                      left: ident,
-                     right: typing,
+                     right: typ,
                      ..
                  }| {
                     let name = ident.to_string();
-                    let typing = typing.clone().into_hir(ctx)?;
+                    let typ = typ.clone().into_hir(ctx)?;
                     let id = ctx.symbols.insert_identifier(
                         name.clone(),
-                        Some(typing),
+                        Some(typ),
                         true,
                         location.clone(),
                         ctx.errors,
@@ -615,10 +615,10 @@ mod stmt_pattern {
                             errors,
                         )?;
                         // outputs should be already typed
-                        let typing = symbol_table.get_type(id).clone();
+                        let typ = symbol_table.get_typ(id).clone();
                         let id = symbol_table.insert_identifier(
                             name.clone(),
-                            Some(typing),
+                            Some(typ),
                             true,
                             location.clone(),
                             errors,
@@ -626,16 +626,16 @@ mod stmt_pattern {
                         Ok(vec![(name, id)])
                     }
                 }
-                Pattern::Typed(Typed { ident, typing, .. }) => {
+                Pattern::Typed(Typed { ident, typ, .. }) => {
                     if is_declaration {
-                        let typing = typing.clone().into_hir(&mut hir::ctx::Loc::new(
+                        let typ = typ.clone().into_hir(&mut hir::ctx::Loc::new(
                             &location,
                             symbol_table,
                             errors,
                         ))?;
                         let id = symbol_table.insert_identifier(
                             ident.to_string(),
-                            Some(typing),
+                            Some(typ),
                             true,
                             location.clone(),
                             errors,
@@ -693,7 +693,7 @@ mod stmt_pattern {
                             Location::default(),
                             errors,
                         )?;
-                        if symbol_table.get_type(id).is_event() {
+                        if symbol_table.get_typ(id).is_event() {
                             hir::stream::Kind::none_event()
                         } else {
                             hir::stream::Kind::fby(
@@ -705,7 +705,7 @@ mod stmt_pattern {
                         }
                     }
                 }
-                Pattern::Typed(Typed { ident, typing, .. }) => {
+                Pattern::Typed(Typed { ident, typ, .. }) => {
                     let name = ident.to_string();
                     if let Some(id) = defined_signals.get(&name) {
                         hir::stream::Kind::expr(hir::expr::Kind::ident(*id))
@@ -716,7 +716,7 @@ mod stmt_pattern {
                             Location::default(),
                             errors,
                         )?;
-                        if typing.is_event() {
+                        if typ.is_event() {
                             hir::stream::Kind::none_event()
                         } else {
                             hir::stream::Kind::fby(

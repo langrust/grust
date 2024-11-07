@@ -261,11 +261,11 @@ mod interface_impl {
                         loc.clone(),
                         ctx.errors,
                     )?;
-                    let typing = ctx.symbols.get_type(id);
+                    let typ = ctx.symbols.get_typ(id);
 
                     Ok(hir::stmt::Pattern {
                         kind: hir::stmt::Kind::Identifier { id },
-                        typing: Some(typing.clone()),
+                        typ: Some(typ.clone()),
                         loc,
                     })
                 }
@@ -273,7 +273,7 @@ mod interface_impl {
                     kind, ident, ty, ..
                 } => {
                     let inner = ty.into_hir(&mut ctx.add_loc(&loc))?;
-                    let flow_typing = match kind {
+                    let flow_typ = match kind {
                         FlowKind::Signal(_) => Typ::signal(inner),
                         FlowKind::Event(_) => Typ::event(inner),
                     };
@@ -281,7 +281,7 @@ mod interface_impl {
                         ident.to_string(),
                         None,
                         kind,
-                        flow_typing.clone(),
+                        flow_typ.clone(),
                         true,
                         loc.clone(),
                         ctx.errors,
@@ -290,9 +290,9 @@ mod interface_impl {
                     Ok(hir::stmt::Pattern {
                         kind: hir::stmt::Kind::Typed {
                             id,
-                            typing: flow_typing.clone(),
+                            typ: flow_typ.clone(),
                         },
-                        typing: Some(flow_typing),
+                        typ: Some(flow_typ),
                         loc,
                     })
                 }
@@ -304,16 +304,16 @@ mod interface_impl {
 
                     let mut types = elements
                         .iter()
-                        .map(|pattern| pattern.typing.as_ref().unwrap().clone())
+                        .map(|pattern| pattern.typ.as_ref().unwrap().clone())
                         .collect::<Vec<_>>();
-                    let ty = if types.len() == 1 {
+                    let typ = if types.len() == 1 {
                         types.pop().unwrap()
                     } else {
                         Typ::tuple(types)
                     };
                     Ok(hir::stmt::Pattern {
                         kind: hir::stmt::Kind::Tuple { elements },
-                        typing: Some(ty),
+                        typ: Some(typ),
                         loc,
                     })
                 }
@@ -584,7 +584,7 @@ mod flow_expr_impl {
             };
             Ok(flow::Expr {
                 kind,
-                typing: None,
+                typ: None,
                 loc: ctx.loc.clone(),
             })
         }
@@ -1786,8 +1786,8 @@ mod stmt_pattern_impl {
                 ctx.loc.clone(),
                 ctx.errors,
             )?;
-            let typing = self.typing.into_hir(ctx)?;
-            Ok(hir::stmt::Kind::Typed { id, typing })
+            let typ = self.typ.into_hir(ctx)?;
+            Ok(hir::stmt::Kind::Typed { id, typ })
         }
     }
 
@@ -1825,7 +1825,7 @@ mod stmt_pattern_impl {
 
             Ok(hir::stmt::Pattern {
                 kind,
-                typing: None,
+                typ: None,
                 loc: ctx.loc.clone(),
             })
         }
@@ -2066,7 +2066,7 @@ mod stream_impl {
             };
             Ok(hir::stream::Expr {
                 kind,
-                typing: None,
+                typ: None,
                 loc: ctx.loc.clone(),
                 dependencies: hir::Dependencies::new(),
             })
@@ -2085,7 +2085,7 @@ mod stream_impl {
                     let kind = expr.into_hir(ctx)?;
                     Ok(hir::stream::Expr {
                         kind,
-                        typing: None,
+                        typ: None,
                         loc: ctx.loc.clone(),
                         dependencies: hir::Dependencies::new(),
                     })

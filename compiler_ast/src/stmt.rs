@@ -10,13 +10,13 @@ pub struct Typed {
     /// The colon token.
     pub colon_token: Token![:],
     /// The type.
-    pub typing: Typ,
+    pub typ: Typ,
 }
 mk_new! { impl Typed =>
     new {
         ident: Ident = ident,
         colon_token: Token![:],
-        typing: Typ,
+        typ: Typ,
     }
 }
 impl Typed {
@@ -26,11 +26,11 @@ impl Typed {
 
     pub fn parse(ident: Ident, input: ParseStream) -> syn::Res<Self> {
         let colon_token: Token![:] = input.parse()?;
-        let typing = input.parse()?;
+        let typ = input.parse()?;
         Ok(Typed {
             ident,
             colon_token,
-            typing,
+            typ,
         })
     }
 }

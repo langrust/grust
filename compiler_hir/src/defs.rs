@@ -40,7 +40,7 @@ pub fn from_ast(ast: Ast, symbols: &mut SymbolTable) -> Result<File, Vec<Error>>
         {} => { if !errors.is_empty() { return Err(errors_data); } }
     }
     check_errors!();
-    unwrap("HIR type-checking", hir.typing(symbols, errors));
+    unwrap("HIR type-checking", hir.typ_check(symbols, errors));
     check_errors!();
     unwrap(
         "HIR dependency graph generation",

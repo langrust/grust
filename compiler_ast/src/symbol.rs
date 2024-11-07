@@ -262,7 +262,7 @@ impl SymbolTable {
                 kind: SymbolKind::Function {
                     inputs: vec![],
                     output_type: None,
-                    typing: Some(op.get_type()),
+                    typing: Some(op.get_typ()),
                 },
                 name: op.to_string(),
             };
@@ -275,7 +275,7 @@ impl SymbolTable {
                 kind: SymbolKind::Function {
                     inputs: vec![],
                     output_type: None,
-                    typing: Some(op.get_type()),
+                    typing: Some(op.get_typ()),
                 },
                 name: op.to_string(),
             };
@@ -288,7 +288,7 @@ impl SymbolTable {
                 kind: SymbolKind::Function {
                     inputs: vec![],
                     output_type: None,
-                    typing: Some(op.get_type()),
+                    typing: Some(op.get_typ()),
                 },
                 name: op.to_string(),
             };
@@ -739,7 +739,7 @@ impl SymbolTable {
     }
 
     /// Get type from identifier.
-    pub fn get_type(&self, id: usize) -> &Typ {
+    pub fn get_typ(&self, id: usize) -> &Typ {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
@@ -785,7 +785,7 @@ impl SymbolTable {
         let inputs_type = match &symbol.kind {
             SymbolKind::Function { ref inputs, .. } => inputs
                 .iter()
-                .map(|id| self.get_type(*id).clone())
+                .map(|id| self.get_typ(*id).clone())
                 .collect::<Vec<_>>(),
             _ => unreachable!(),
         };
@@ -826,7 +826,7 @@ impl SymbolTable {
     //         .get_symbol(id)
     //         .expect(&format!("expect symbol for {id}"));
     //     match symbol.kind() {
-    //         SymbolKind::UnitaryNode { output, .. } => self.get_type(*output),
+    //         SymbolKind::UnitaryNode { output, .. } => self.get_typ(*output),
     //         _ => unreachable!(),
     //     }
     // }

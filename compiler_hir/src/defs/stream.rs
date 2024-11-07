@@ -193,8 +193,8 @@ impl Stmt {
             let scope = symbol_table.get_scope(signal_id).clone();
             let fresh_name = identifier_creator.new_identifier(name);
             if Scope::Output != scope && &fresh_name != name {
-                let typing = Some(symbol_table.get_type(signal_id).clone());
-                let fresh_id = symbol_table.insert_fresh_signal(fresh_name, scope, typing);
+                let typ = Some(symbol_table.get_typ(signal_id).clone());
+                let fresh_id = symbol_table.insert_fresh_signal(fresh_name, scope, typ);
                 let _unique = context_map.insert(signal_id, Either::Left(fresh_id));
                 debug_assert!(_unique.is_none());
             }
@@ -977,7 +977,7 @@ pub struct Expr {
     /// Stream expression kind.
     pub kind: Kind,
     /// Stream expression type.
-    pub typing: Option<Typ>,
+    pub typ: Option<Typ>,
     /// Stream expression location.
     pub loc: Location,
     /// Stream expression dependencies.
@@ -990,7 +990,7 @@ pub struct Expr {
 pub fn expr(kind: Kind) -> Expr {
     Expr {
         kind,
-        typing: None,
+        typ: None,
         loc: Location::default(),
         dependencies: Dependencies::new(),
     }
@@ -999,11 +999,11 @@ pub fn expr(kind: Kind) -> Expr {
 impl Expr {
     /// Get stream expression's type.
     pub fn get_type(&self) -> Option<&Typ> {
-        self.typing.as_ref()
+        self.typ.as_ref()
     }
     /// Get stream expression's mutable type.
     pub fn get_type_mut(&mut self) -> Option<&mut Typ> {
-        self.typing.as_mut()
+        self.typ.as_mut()
     }
     /// Get stream expression's dependencies.
     pub fn get_dependencies(&self) -> &Vec<(usize, Label)> {
@@ -1093,8 +1093,8 @@ impl Expr {
             stream::Kind::FollowedBy { id, constant } => {
                 // add buffer to memory
                 let name = symbol_table.get_name(*id);
-                let typing = symbol_table.get_type(*id);
-                memory.add_buffer(*id, name.clone(), typing.clone(), *constant.clone());
+                let typ = symbol_table.get_typ(*id);
+                memory.add_buffer(*id, name.clone(), typ.clone(), *constant.clone());
             }
             stream::Kind::NodeApplication {
                 called_node_id,
@@ -1161,19 +1161,19 @@ impl Expr {
                         kind: stream::Kind::expr(expr::Kind::constant(Constant::bool(
                             syn::LitBool::new(false, macro2::Span::call_site()),
                         ))),
-                        typing: Some(Typ::Boolean(Default::default())),
+                        typ: Some(Typ::Boolean(Default::default())),
                         loc: Default::default(),
                         dependencies: Dependencies::from(vec![]),
                     };
                     let mem = stream::Expr {
                         kind: stream::Kind::fby(id, constant),
-                        typing: Some(Typ::Boolean(Default::default())),
+                        typ: Some(Typ::Boolean(Default::default())),
                         loc: Default::default(),
                         dependencies: fby_dependencies.clone(),
                     };
                     let not_mem = stream::Expr {
                         kind: stream::Kind::expr(expr::Kind::unop(UOp::Not, mem)),
-                        typing: Some(Typ::Boolean(Default::default())),
+                        typ: Some(Typ::Boolean(Default::default())),
                         loc: Default::default(),
                         dependencies: fby_dependencies,
                     };
@@ -1232,15 +1232,15 @@ impl Expr {
                 // create fresh identifier for the new statement
                 let fresh_name = identifier_creator
                     .fresh_identifier("comp_app", symbol_table.get_name(called_node_id));
-                let typing = self.get_type().cloned();
+                let typ = self.get_type().cloned();
                 let fresh_id =
-                    symbol_table.insert_fresh_signal(fresh_name, Scope::Local, typing.clone());
+                    symbol_table.insert_fresh_signal(fresh_name, Scope::Local, typ.clone());
 
                 // create statement for node call
                 let node_application_statement = Stmt {
                     pattern: hir::stmt::Pattern {
                         kind: hir::stmt::Kind::Identifier { id: fresh_id },
-                        typing,
+                        typ,
                         loc: self.loc.clone(),
                     },
                     expr: self.clone(),
@@ -1304,15 +1304,15 @@ impl Expr {
 
                 // create fresh identifier for the new statement
                 let fresh_name = identifier_creator.fresh_identifier("", "x");
-                let typing = self.get_type();
+                let typ = self.get_type();
                 let fresh_id =
-                    symbol_table.insert_fresh_signal(fresh_name, Scope::Local, typing.cloned());
+                    symbol_table.insert_fresh_signal(fresh_name, Scope::Local, typ.cloned());
 
                 // create statement for the expression
                 let new_statement = Stmt {
                     pattern: hir::stmt::Pattern {
                         kind: hir::stmt::Kind::Identifier { id: fresh_id },
-                        typing: typing.cloned(),
+                        typ: typ.cloned(),
                         loc: self.loc.clone(),
                     },
                     loc: self.loc.clone(),

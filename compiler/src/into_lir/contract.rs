@@ -65,7 +65,7 @@ mod term {
                 ),
                 Kind::ForAll { id, term } => {
                     let name = symbol_table.get_name(id);
-                    let ty = symbol_table.get_type(id).clone();
+                    let ty = symbol_table.get_typ(id).clone();
                     let term = term.into_lir(symbol_table);
                     lir::contract::Term::forall(name, ty, term)
                 }
@@ -73,7 +73,7 @@ mod term {
                     left.into_lir(symbol_table),
                     right.into_lir(symbol_table),
                 ),
-                Kind::PresentEvent { event_id, pattern } => match symbol_table.get_type(event_id) {
+                Kind::PresentEvent { event_id, pattern } => match symbol_table.get_typ(event_id) {
                     Typ::SMEvent { .. } => lir::contract::Term::some(lir::contract::Term::ident(
                         symbol_table.get_name(pattern),
                     )),

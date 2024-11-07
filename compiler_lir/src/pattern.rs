@@ -20,7 +20,7 @@ pub enum Pattern {
         /// The pattern.
         pattern: Box<Pattern>,
         /// The type.
-        typing: Typ,
+        typ: Typ,
     },
     /// Structure pattern that matches the structure and its fields.
     Structure {
@@ -66,7 +66,7 @@ mk_new! { impl Pattern =>
     Literal: literal {literal: Constant }
     Typed: typed {
         pattern: Self = Box::new(pattern),
-        typing: Typ
+        typ: Typ
     }
     Structure: structure {
         name: impl Into<String> = name.into(),

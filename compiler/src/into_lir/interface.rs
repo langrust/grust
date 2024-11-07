@@ -823,7 +823,7 @@ mod service_handler {
         } else if ctx.symbols().is_timeout(flow_id) {
             ArrivingFlow::ServiceTimeout(flow_name)
         } else {
-            let flow_type = ctx.symbols().get_type(flow_id).clone();
+            let flow_type = ctx.symbols().get_typ(flow_id).clone();
             let path = ctx.symbols().get_path(flow_id).clone();
             ArrivingFlow::Channel(flow_name, flow_type, path)
         };
@@ -1075,7 +1075,7 @@ mod flow_instr {
                                 // add new event into the identifier creator
                                 let fresh_name =
                                     identifier_creator.new_identifier_with("", &event_name, "old");
-                                let typing = symbols.get_type(flow_event_id).clone();
+                                let typing = symbols.get_typ(flow_event_id).clone();
                                 let kind = symbols.get_flow_kind(flow_event_id).clone();
                                 let fresh_id = symbols.insert_fresh_flow(
                                     fresh_name.clone(),
