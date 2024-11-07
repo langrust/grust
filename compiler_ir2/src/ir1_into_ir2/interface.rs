@@ -383,8 +383,8 @@ mod isles {
         pub fn trace_event(&mut self, event: usize) {
             if let Some(stmts_ids) = self.event_to_stmts.get(&event) {
                 debug_assert!(self.stack.is_empty());
-                // order does not matter that much, we can't be sure to push in the proper order and the
-                // finalization in `Self::into_isles` sorts statements anyways
+                // order does not matter that much, we can't be sure to push in the proper order and
+                // the finalization in `Self::into_isles` sorts statements anyways
                 self.stack
                     .extend(stmts_ids.iter().map(|stmt_id| (*stmt_id, true)));
             } else {
@@ -522,7 +522,8 @@ mod triggered {
                 .map_or(false, FlowStatement::is_comp_call)
         }
 
-        /// Adds the directed dependencies between 'node' and other existing nodes of the 'trig_graph'.
+        /// Adds the directed dependencies between 'node' and other existing nodes of the
+        /// `trig_graph`.
         fn add_nodes_deps(&self, trig_graph: &mut DiGraphMap<usize, ()>, node: usize) {
             for (from, to, ()) in self.graph.edges_directed(node, graph::Direction::Incoming) {
                 debug_assert_eq!(node, to);

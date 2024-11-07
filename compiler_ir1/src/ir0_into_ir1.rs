@@ -842,7 +842,8 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Eq {
                                     })
                                     .collect::<TRes<()>>()?;
 
-                                // transform pattern guard and equations into [ir1] with local context
+                                // transform pattern guard and equations into [ir1] with local
+                                // context
                                 let pattern = pattern.into_ir1(&mut ctx.add_loc(&loc))?;
                                 let guard = guard
                                     .map(|(_, expression)| {
@@ -989,7 +990,8 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                                     })
                                     .collect::<TRes<()>>()?;
 
-                                // transform pattern guard and equations into [ir1] with local context
+                                // transform pattern guard and equations into [ir1] with local
+                                // context
                                 let pattern = pattern.into_ir1(&mut ctx.add_loc(&loc))?;
                                 let guard = guard
                                     .map(|(_, expr)| {

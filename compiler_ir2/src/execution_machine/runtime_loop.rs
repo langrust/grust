@@ -43,10 +43,13 @@ impl RuntimeLoop {
                         );
                         let ident = Ident::new(flow_name.as_str(), Span::call_site());
                         let function_name: Ident = format_ident!("handle_{flow_name}");
-                        let call_services_handlers = services.iter().map(|service_name| -> syn::Stmt {
-                            let service_name = Ident::new(service_name, Span::call_site());
-                            parse_quote! { runtime.#service_name.#function_name(instant, #ident).await?; }
-                        });
+                        let call_services_handlers =
+                            services.iter().map(|service_name| -> syn::Stmt {
+                                let service_name = Ident::new(service_name, Span::call_site());
+                                parse_quote! {
+                                    runtime.#service_name.#function_name(instant, #ident).await?;
+                                }
+                            });
                         input_arms.push(parse_quote! {
                             I::#enum_ident(#ident, instant) => {
                                 #(#call_services_handlers)*
@@ -62,10 +65,13 @@ impl RuntimeLoop {
                             Span::call_site(),
                         );
                         let function_name: Ident = format_ident!("handle_{time_flow_name}");
-                        let call_services_handlers = services.iter().map(|service_name| -> syn::Stmt {
-                            let service_name = Ident::new(service_name, Span::call_site());
-                            parse_quote! { runtime.#service_name.#function_name(instant).await?; }
-                        });
+                        let call_services_handlers =
+                            services.iter().map(|service_name| -> syn::Stmt {
+                                let service_name = Ident::new(service_name, Span::call_site());
+                                parse_quote! {
+                                    runtime.#service_name.#function_name(instant).await?;
+                                }
+                            });
                         input_arms.push(parse_quote! {
                             I::Timer(T::#enum_ident, instant) => {
                                 #(#call_services_handlers)*
@@ -86,7 +92,9 @@ impl RuntimeLoop {
 
         // `run_loop` function
         syn::ImplItem::Fn(parse_quote! {
-            pub async fn run_loop(self, init_instant: std::time::Instant, input: impl futures::Stream<Item = I>) -> Result<(), futures::channel::mpsc::SendError> {
+            pub async fn run_loop(
+                self, init_instant: std::time::Instant, input: impl futures::Stream<Item = I>
+            ) -> Result<(), futures::channel::mpsc::SendError> {
                 futures::pin_mut!(input);
                 let mut runtime = self;
                 #(#init_timers)*

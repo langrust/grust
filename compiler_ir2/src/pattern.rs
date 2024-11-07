@@ -207,8 +207,7 @@ mod test {
     }
 
     #[test]
-    fn should_create_a_rust_ast_identifier_pattern_owned_and_immutable_from_a_ir2_identifier_pattern(
-    ) {
+    fn should_create_a_rust_ast_ident_pattern_owned_and_immutable_from_a_ir2_ident_pattern() {
         let pattern = Pattern::ident("x");
 
         let control = parse_quote! { x };

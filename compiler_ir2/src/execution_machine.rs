@@ -71,9 +71,9 @@ impl ExecutionMachine {
                 );
                 let ty = typ.into_syn();
                 input_variants.push(parse_quote! { #enum_ident(#ty, std::time::Instant) });
-                input_eq_arms.push(
-                    parse_quote! { (I::#enum_ident(this, _), I::#enum_ident(other, _)) => this.eq(other) },
-                );
+                input_eq_arms.push(parse_quote! {
+                    (I::#enum_ident(this, _), I::#enum_ident(other, _)) => this.eq(other)
+                });
                 input_get_instant_arms
                     .push(parse_quote! { I::#enum_ident(_, instant) => *instant });
             }
@@ -185,27 +185,33 @@ impl ExecutionMachine {
             (runtime_items, field_values)
         };
 
-        // function that creates a new runtime
+        // create a new runtime
         let new_runtime = {
             let nb_services = self.services_handlers.len();
             let is_last = |idx| idx < nb_services - 1;
-            // initializes services
-            let services_init = self.services_handlers.iter().enumerate().map(|(idx, service_handler)| {
-            let service_name = &service_handler.service;
-            let service_path = format_ident!("{}_service", service_name);
-            let service_state_struct =
-                format_ident!("{}", to_camel_case(&format!("{}Service", service_name)));
-            let service_name = format_ident!("{}", service_name);
-            let output_channel: syn::Expr = if is_last(idx) {
-                parse_quote! { output.clone() }
-            } else {
-                parse_quote! { output }
-            };
-            let state: syn::Stmt = parse_quote! {
-                let #service_name = #service_path::#service_state_struct::init(#output_channel, timer.clone());
-            };
-            state
-        });
+            // initialize services
+            let services_init =
+                self.services_handlers
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, service_handler)| {
+                        let service_name = &service_handler.service;
+                        let service_path = format_ident!("{}_service", service_name);
+                        let service_state_struct =
+                            format_ident!("{}", to_camel_case(&format!("{}Service", service_name)));
+                        let service_name = format_ident!("{}", service_name);
+                        let output_channel: syn::Expr = if is_last(idx) {
+                            parse_quote! { output.clone() }
+                        } else {
+                            parse_quote! { output }
+                        };
+                        let state: syn::Stmt = parse_quote! {
+                            let #service_name = #service_path::#service_state_struct::init(
+                                #output_channel, timer.clone()
+                            );
+                        };
+                        state
+                    });
             // parse the function that creates a new runtime
             syn::ImplItem::Fn(parse_quote! {
                 pub fn new(
@@ -244,7 +250,9 @@ impl ExecutionMachine {
                     #new_runtime
 
                     #[inline]
-                    pub async fn send_timer(&mut self, timer: T, instant: std::time::Instant) -> Result<(), futures::channel::mpsc::SendError> {
+                    pub async fn send_timer(
+                        &mut self, timer: T, instant: std::time::Instant
+                    ) -> Result<(), futures::channel::mpsc::SendError> {
                         self.timer.send((timer, instant)).await?;
                         Ok(())
                     }
