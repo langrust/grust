@@ -16,7 +16,6 @@ pub mod item;
 pub mod project;
 pub mod state_machine;
 
-pub use prelude::{
-    Block, Contract, Enumeration, ExecutionMachine, Expr, FieldIdentifier, Function, Import, Item,
-    Pattern, Project, StateMachine, Stmt, Structure,
-};
+pub mod import {
+    pub use crate::prelude::lir;
+}

@@ -1,5 +1,5 @@
 prelude! {
-    execution_machine::{flows_context::FlowsContext, ArrivingFlow},
+    execution_machine::ArrivingFlow,
 }
 
 #[derive(Debug, PartialEq)]
@@ -11,14 +11,14 @@ pub struct ServiceHandler {
     /// The flows handling.
     pub flows_handling: Vec<FlowHandler>,
     /// The signals context from where components will get their inputs.
-    pub flows_context: FlowsContext,
+    pub flows_context: hir::ctx::Flows,
 }
 
 mk_new! { impl ServiceHandler => new {
     service: impl Into<String> = service.into(),
     components: Vec<String>,
     flows_handling: Vec<FlowHandler>,
-    flows_context: FlowsContext,
+    flows_context: hir::ctx::Flows,
 } }
 
 impl ServiceHandler {

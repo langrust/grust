@@ -1,10 +1,6 @@
-use std::{
-    collections::{BTreeMap, HashMap},
-    hash::Hash,
-};
-
-use petgraph::graphmap::{DiGraphMap, NodeTrait};
-use serde::Serialize;
+prelude! {
+    graph::{DiGraphMap, NodeTrait}
+}
 
 /// To use with serde's `serialize_with` attribute.
 pub fn ordered_graph<S, K, V>(value: &DiGraphMap<K, V>, serializer: S) -> Result<S::Ok, S::Error>

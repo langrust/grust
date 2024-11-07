@@ -31,3 +31,7 @@ pub mod keyword;
 pub mod op;
 pub mod serialize;
 pub mod synced;
+
+pub mod import {
+    pub use crate::prelude::*;
+}

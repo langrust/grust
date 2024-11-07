@@ -1,10 +1,8 @@
 [package]
-name = "compiler"
+name = "compiler_hir"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 compiler_common = { path = "../compiler_common" }
 compiler_ast = { path = "../compiler_ast" }
-compiler_lir = { path = "../compiler_lir" }
-compiler_hir = { path = "../compiler_hir" }

@@ -29,22 +29,22 @@ impl RisingEdgesState {
         };
         let x_3 = input.v < 40i64;
         let x_2 = input.v > 50i64;
-        let (z, y, x) = match (input.a, input.b) {
+        let (y, z, x) = match (input.a, input.b) {
             (Some(a), Some(e)) if x_2 && !(self.last_x_2) => {
-                let y = Some(());
                 let z = if input.v > 80i64 { e } else { a };
-                (z, y, None)
+                let y = Some(());
+                (y, z, None)
             }
             (Some(a), _) if (a != 0i64) && (x_3 && !(self.last_x_3)) => {
                 let x = Some(2i64);
                 let z = 2i64;
-                (z, None, x)
+                (None, z, x)
             }
             (_, Some(e)) if e < 20i64 => {
                 let x = Some(2i64);
-                (self.last_z, None, x)
+                (None, self.last_z, x)
             }
-            (_, _) => (self.last_z, None, None),
+            (_, _) => (None, self.last_z, None),
         };
         let d = match (y) {
             (Some(_)) => 0.1f64,

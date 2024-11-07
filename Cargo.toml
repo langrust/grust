@@ -10,6 +10,7 @@ members = [
     "compiler_ast",
     "compiler_common",
     "compiler_lir",
+    "compiler_hir",
     "priority_stream",
     "timer_stream",
     "json",

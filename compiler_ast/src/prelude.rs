@@ -11,18 +11,22 @@ macro_rules! prelude {
     };
 }
 
-pub use compiler_common::prelude::{mk_new, *};
+pub use compiler_common::import::*;
 
-pub use crate::{
-    component::{Component, ComponentImport},
-    contract::{self, Contract},
-    equation::{self, Eq, ReactEq},
-    expr::{self, Expr},
-    function::Function,
-    interface::{self, Constrains, FlowExport, FlowImport, Service},
-    stmt::{self, Stmt},
-    stream,
-    symbol::{self, SymbolTable},
-    typedef::Typedef,
-    Ast, Colon, Item,
-};
+pub mod ast {
+    pub use crate::{
+        component::{Component, ComponentImport},
+        contract::{self, Contract},
+        equation::{self, Eq, ReactEq},
+        expr::{self, Expr},
+        function::Function,
+        interface::{self, Constrains, FlowExport, FlowImport, Service},
+        stmt::{self, Stmt},
+        stream,
+        symbol::{self, SymbolTable},
+        typedef::Typedef,
+        Ast, Colon, Item,
+    };
+}
+
+pub use ast::*;

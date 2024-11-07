@@ -327,344 +327,382 @@ impl Error {
         match self {
             Error::UnknownElement { name, location } => Diagnostic::error()
                 .with_message("unknown element")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("unknown")
-                ])
-                .with_notes(vec![
-                    format!("element '{name}' is not defined")
-                ]
-            ),
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("unknown")])
+                .with_notes(vec![format!("element '{name}' is not defined")]),
             Error::UnknownSignal { name, location } => Diagnostic::error()
                 .with_message("unknown signal")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("unknown")
-                ])
-                .with_notes(vec![
-                    format!("signal '{name}' is not defined")
-                ]
-            ),
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("unknown")])
+                .with_notes(vec![format!("signal '{name}' is not defined")]),
             Error::UnknownNode { name, location } => Diagnostic::error()
                 .with_message("unknown node")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("unknown")
-                ])
-                .with_notes(vec![
-                    format!("node '{name}' is not defined")
-                ]
-            ),
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("unknown")])
+                .with_notes(vec![format!("node '{name}' is not defined")]),
             Error::UnknownInterface { name, location } => Diagnostic::error()
                 .with_message("unknown interface")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("unknown")
-                ])
-                .with_notes(vec![
-                    format!("interface '{name}' is not defined")
-                ]
-            ),
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("unknown")])
+                .with_notes(vec![format!("interface '{name}' is not defined")]),
             Error::UnknownType { name, location } => Diagnostic::error()
                 .with_message("unknown type")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("unknown")
-                ])
-                .with_notes(vec![
-                    format!("type '{name}' is not defined")
-                ]
-            ),
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("unknown")])
+                .with_notes(vec![format!("type '{name}' is not defined")]),
             Error::UnknownEnumeration { name, location } => Diagnostic::error()
                 .with_message("unknown enumeration")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("unknown")
-                ])
-                .with_notes(vec![
-                    format!("enumeration '{name}' is not defined")
-                ]
-            ),
-            Error::UnknownField { structure_name, field_name, location } => Diagnostic::error()
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("unknown")])
+                .with_notes(vec![format!("enumeration '{name}' is not defined")]),
+            Error::UnknownField {
+                structure_name,
+                field_name,
+                location,
+            } => Diagnostic::error()
                 .with_message("unknown field")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("unknown")
-                ])
-                .with_notes(vec![
-                    format!("field '{field_name}' is not defined in structure '{structure_name}'")
-                ]
-            ),
-            Error::MissingField { structure_name, field_name, location } => Diagnostic::error()
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("unknown")])
+                .with_notes(vec![format!(
+                    "field '{field_name}' is not defined in structure '{structure_name}'"
+                )]),
+            Error::MissingField {
+                structure_name,
+                field_name,
+                location,
+            } => Diagnostic::error()
                 .with_message("missing field")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                ])
-                .with_notes(vec![
-                    format!("field '{field_name}' is missing in structure '{structure_name}' instantiation")
-                ]
-            ),
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )])
+                .with_notes(vec![format!(
+                    "field '{field_name}' is missing in structure '{structure_name}' instantiation"
+                )]),
             Error::IndexOutOfBounds { location } => Diagnostic::error()
                 .with_message("index out of bounds")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                ])
-                .with_notes(vec![
-                    format!("the index is out of bounds")
-                ]
-            ),
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )])
+                .with_notes(vec![format!("the index is out of bounds")]),
             Error::AlreadyDefinedElement { name, location } => Diagnostic::error()
                 .with_message("duplicated element")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("already defined")
-                ])
-                .with_notes(vec![
-                    format!("element '{name}' is already defined, please choose another name")
-                ]
-            ),
-            Error::IncompatibleType { given_type, expected_type, location } => Diagnostic::error()
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("already defined")])
+                .with_notes(vec![format!(
+                    "element '{name}' is already defined, please choose another name"
+                )]),
+            Error::IncompatibleType {
+                given_type,
+                expected_type,
+                location,
+            } => Diagnostic::error()
                 .with_message("incompatible type")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("wrong type")
-                ])
-                .with_notes(vec![
-                    format!("expected '{expected_type}' but '{given_type}' was given")
-                ]
-            ),
-            Error::IncompatibleTuple {  location } => Diagnostic::error()
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("wrong type")])
+                .with_notes(vec![format!(
+                    "expected '{expected_type}' but '{given_type}' was given"
+                )]),
+            Error::IncompatibleTuple { location } => Diagnostic::error()
                 .with_message("incompatible type")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("incompatible tuple type")
-                ]),
-            Error::IncompatibleMatchStatements { expected, received, location } => Diagnostic::error()
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("incompatible tuple type")]),
+            Error::IncompatibleMatchStatements {
+                expected,
+                received,
+                location,
+            } => Diagnostic::error()
                 .with_message("incompatible number of statements in 'match'")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("incompatible statements")
-                ])
-                .with_notes(vec![
-                    format!(
-                        "expected {expected} statement{} but {received} statement{} {} given",
-                        if expected < &2 {""} else {"s"},
-                        if received < &2 {""} else {"s"},
-                        if received < &2 {"was"} else {"were"}
-                    )
-                ]
-            ),
-            Error::MissingMatchStatement { identifier, location } => Diagnostic::error()
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("incompatible statements")])
+                .with_notes(vec![format!(
+                    "expected {expected} statement{} but {received} statement{} {} given",
+                    if expected < &2 { "" } else { "s" },
+                    if received < &2 { "" } else { "s" },
+                    if received < &2 { "was" } else { "were" }
+                )]),
+            Error::MissingMatchStatement {
+                identifier,
+                location,
+            } => Diagnostic::error()
                 .with_message("missing statement in 'match'")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("missing statement")
-                ])
-                .with_notes(vec![
-                    format!(
-                        "expected '{identifier}' to be defined in the match arm"
-                    )
-                ]
-            ),
-            Error::NotStatementPattern {  location } => Diagnostic::error()
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("missing statement")])
+                .with_notes(vec![format!(
+                    "expected '{identifier}' to be defined in the match arm"
+                )]),
+            Error::NotStatementPattern { location } => Diagnostic::error()
                 .with_message("pattern error")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("not a statement pattern")
-                ]),
-            Error::ArityMismatch { input_count, arity, location } => Diagnostic::error()
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("not a statement pattern")]),
+            Error::ArityMismatch {
+                input_count,
+                arity,
+                location,
+            } => Diagnostic::error()
                 .with_message("incompatible number of inputs")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("wrong number of inputs")
-                ])
-                .with_notes(vec![
-                    format!(
-                        "expected {arity} input{} but {input_count} input{} {} given",
-                        if arity < &2 {""} else {"s"},
-                        if input_count < &2 {""} else {"s"},
-                        if input_count < &2 {"was"} else {"were"}
-                    )
-                ]
-            ),
-            Error::UnknownOuputSignal { node_name, signal_name, location } => Diagnostic::error()
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("wrong number of inputs")])
+                .with_notes(vec![format!(
+                    "expected {arity} input{} but {input_count} input{} {} given",
+                    if arity < &2 { "" } else { "s" },
+                    if input_count < &2 { "" } else { "s" },
+                    if input_count < &2 { "was" } else { "were" }
+                )]),
+            Error::UnknownOuputSignal {
+                node_name,
+                signal_name,
+                location,
+            } => Diagnostic::error()
                 .with_message("unknown output signal")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("unknown")
-                ])
-                .with_notes(vec![
-                    format!("signal '{signal_name}' is not an output of '{node_name}'")
-                ]
-            ),
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("unknown")])
+                .with_notes(vec![format!(
+                    "signal '{signal_name}' is not an output of '{node_name}'"
+                )]),
             Error::ExpectConstant { location } => Diagnostic::error()
                 .with_message("incompatible expression")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("not constant")
-                ])
-                .with_notes(vec![
-                    format!("expected a constant expression")
-                ]
-            ),
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("not constant")])
+                .with_notes(vec![format!("expected a constant expression")]),
             Error::ExpectInput { location } => Diagnostic::error()
                 .with_message("missing inputs")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("empty")
-                ])
-                .with_notes(vec![
-                    format!("expected at least one input")
-                ]
-            ),
-            Error::ExpectNumber { given_type, location } => Diagnostic::error()
-                .with_message("incompatible type")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("wrong type")
-                ])
-                .with_notes(vec![
-                    format!("expected 'int' or 'float' but '{given_type}' was given")
-                ]
-            ),
-            Error::ExpectAbstraction { input_types, given_type, location } => Diagnostic::error()
-                .with_message("incompatible type")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("wrong type")
-                ])
-                .with_notes(vec![
-                    format!("expected function type of the form '({}) -> t' but '{given_type}' was given",
-                    input_types.into_iter().map(|input_type| input_type.to_string()).collect::<Vec<_>>().join(", ")
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
                 )
-                ]
-            ),
-            Error::ExpectOption { given_type, location } => Diagnostic::error()
+                .with_message("empty")])
+                .with_notes(vec![format!("expected at least one input")]),
+            Error::ExpectNumber {
+                given_type,
+                location,
+            } => Diagnostic::error()
                 .with_message("incompatible type")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("wrong type")
-                ])
-                .with_notes(vec![
-                    format!("expected option type of the form 't?' but '{given_type}' was given")
-                ]
-            ),
-            Error::ExpectStructure { given_type, location } => Diagnostic::error()
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("wrong type")])
+                .with_notes(vec![format!(
+                    "expected 'int' or 'float' but '{given_type}' was given"
+                )]),
+            Error::ExpectAbstraction {
+                input_types,
+                given_type,
+                location,
+            } => Diagnostic::error()
                 .with_message("incompatible type")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("wrong type")
-                ])
-                .with_notes(vec![
-                    format!("expected structure type but '{given_type}' was given")
-                ]
-            ),
-            Error::ExpectTuple { given_type, location } => Diagnostic::error()
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("wrong type")])
+                .with_notes(vec![format!(
+                    "expected function type of the form '({}) -> t' but '{given_type}' was given",
+                    input_types
+                        .into_iter()
+                        .map(|input_type| input_type.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )]),
+            Error::ExpectOption {
+                given_type,
+                location,
+            } => Diagnostic::error()
                 .with_message("incompatible type")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("wrong type")
-                ])
-                .with_notes(vec![
-                    format!("expected tuple type but '{given_type}' was given")
-                ]
-            ),
-            Error::ExpectArray { given_type, location } => Diagnostic::error()
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("wrong type")])
+                .with_notes(vec![format!(
+                    "expected option type of the form 't?' but '{given_type}' was given"
+                )]),
+            Error::ExpectStructure {
+                given_type,
+                location,
+            } => Diagnostic::error()
                 .with_message("incompatible type")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("wrong type")
-                ])
-                .with_notes(vec![
-                    format!("expected array type but '{given_type}' was given")
-                ]
-            ),
-            Error::ExpectEvent { given_type, location } => Diagnostic::error()
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("wrong type")])
+                .with_notes(vec![format!(
+                    "expected structure type but '{given_type}' was given"
+                )]),
+            Error::ExpectTuple {
+                given_type,
+                location,
+            } => Diagnostic::error()
                 .with_message("incompatible type")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("wrong type")
-                ])
-                .with_notes(vec![
-                    format!("expected event type but '{given_type}' was given")
-                ]
-            ),
-            Error::ExpectSignal { given_type, location } => Diagnostic::error()
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("wrong type")])
+                .with_notes(vec![format!(
+                    "expected tuple type but '{given_type}' was given"
+                )]),
+            Error::ExpectArray {
+                given_type,
+                location,
+            } => Diagnostic::error()
                 .with_message("incompatible type")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("wrong type")
-                ])
-                .with_notes(vec![
-                    format!("expected signal type but '{given_type}' was given")
-                ]
-            ),
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("wrong type")])
+                .with_notes(vec![format!(
+                    "expected array type but '{given_type}' was given"
+                )]),
+            Error::ExpectEvent {
+                given_type,
+                location,
+            } => Diagnostic::error()
+                .with_message("incompatible type")
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("wrong type")])
+                .with_notes(vec![format!(
+                    "expected event type but '{given_type}' was given"
+                )]),
+            Error::ExpectSignal {
+                given_type,
+                location,
+            } => Diagnostic::error()
+                .with_message("incompatible type")
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("wrong type")])
+                .with_notes(vec![format!(
+                    "expected signal type but '{given_type}' was given"
+                )]),
             Error::ExpectOptionPattern { location } => Diagnostic::error()
                 .with_message("incompatible pattern")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("wrong pattern")
-                ])
-                .with_notes(vec![
-                    format!("expected option pattern of the form 'some(p)'")
-                ]
-            ),
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("wrong pattern")])
+                .with_notes(vec![format!(
+                    "expected option pattern of the form 'some(p)'"
+                )]),
             Error::ExpectTuplePattern { location } => Diagnostic::error()
                 .with_message("incompatible pattern")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("wrong pattern")
-                ])
-                .with_notes(vec![
-                    format!("expected tuple pattern of the form '(p1, p2, ...)'")
-                ]
-            ),
-            Error::IncompatibleLength { given_length, expected_length, location } => Diagnostic::error()
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("wrong pattern")])
+                .with_notes(vec![format!(
+                    "expected tuple pattern of the form '(p1, p2, ...)'"
+                )]),
+            Error::IncompatibleLength {
+                given_length,
+                expected_length,
+                location,
+            } => Diagnostic::error()
                 .with_message("incompatible array lenght")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                        .with_message("wrong length")
-                ])
-                .with_notes(vec![
-                    format!("expected array of length '{expected_length}' but an array of length '{given_length}' was given")
-                ]
-            ),
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )
+                .with_message("wrong length")])
+                .with_notes(vec![format!(
+                    "\
+                        expected array of length '{expected_length}' \
+                        but an array of length '{given_length}' was given\
+                    "
+                )]),
             Error::NoTypeInference { location } => Diagnostic::error()
                 .with_message("can not infere type")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                ])
-                .with_notes(vec![
-                    format!("please explicit type")
-                ]
-            ),
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )])
+                .with_notes(vec![format!("please explicit type")]),
             Error::NotCausalSignal { signal, location } => Diagnostic::error()
                 .with_message("not causal")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                ])
-                .with_notes(vec![
-                    format!("signal '{signal}' depends on itself")
-                ]
-            ),
-            Error::NotCausalNode { node,  location } => Diagnostic::error()
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )])
+                .with_notes(vec![format!("signal '{signal}' depends on itself")]),
+            Error::NotCausalNode { node, location } => Diagnostic::error()
                 .with_message("not causal")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                ])
-                .with_notes(vec![
-                    format!("node '{node}' depends on itself")
-                ]
-            ),
-            Error::UnusedSignal { node, signal, location } => Diagnostic::error()
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )])
+                .with_notes(vec![format!("node '{node}' depends on itself")]),
+            Error::UnusedSignal {
+                node,
+                signal,
+                location,
+            } => Diagnostic::error()
                 .with_message("unused signal")
-                .with_labels(vec![
-                    Label::primary(location.file_id, location.range.clone())
-                ])
-                .with_notes(vec![
-                    format!("signal '{signal}' in node '{node}' in not used")
-                ]
-            ),
+                .with_labels(vec![Label::primary(
+                    location.file_id,
+                    location.range.clone(),
+                )])
+                .with_notes(vec![format!(
+                    "signal '{signal}' in node '{node}' in not used"
+                )]),
         }
     }
 
