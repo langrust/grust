@@ -36,7 +36,8 @@ impl Memory {
             let name = symbol_table.get_name(*memory_id);
             let fresh_name = identifier_creator.new_identifier(name);
             if &fresh_name != name {
-                let scope = symbol_table.get_scope(*memory_id).clone(); // supposed to be Scope::Local
+                // supposed to be Scope::Local
+                let scope = symbol_table.get_scope(*memory_id).clone();
                 debug_assert_eq!(scope, Scope::Local);
                 let typing = None;
                 let fresh_id = symbol_table.insert_fresh_signal(fresh_name, scope, typing);

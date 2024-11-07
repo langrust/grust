@@ -237,7 +237,8 @@ mod term {
                     let name = symbol_table.get_name(id);
                     match symbol_table.get_scope(id) {
                         Scope::Input => contract::Term::input(name),
-                        Scope::Output => contract::Term::ident("result"), // todo: this will broke for components with multiple outputs
+                        // todo: this will broke for components with multiple outputs
+                        Scope::Output => contract::Term::ident("result"),
                         Scope::Local => contract::Term::ident(name),
                         Scope::VeryLocal => unreachable!("you should not do that with this ident"),
                     }

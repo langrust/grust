@@ -265,7 +265,8 @@ impl Expr {
         }
     }
 
-    /// True on expressions that require parens to be used as a argument to unary or binary operations.
+    /// True on expressions that require parens to be used as a argument to unary or binary
+    /// operations.
     pub fn as_op_arg_requires_parens(&self) -> bool {
         use Expr::*;
         match self {

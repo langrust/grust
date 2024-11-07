@@ -18,11 +18,17 @@ prelude! {
 /// - [Typ::Unit] is the unit type, if `u = ()` then `u: unit`
 /// - [Typ::Array] is the array type, if `a = [1, 2, 3]` then `a: [int; 3]`
 /// - [Typ::SMEvent] is the event type for StateMachine, noted `n: int?`
-/// - [Typ::Enumeration] is an user defined enumeration, if `c = Color.Yellow` then `c: Enumeration(Color)`
-/// - [Typ::Structure] is an user defined structure, if `p = Point { x: 1, y: 0}` then `p: Structure(Point)`
+/// - [Typ::Enumeration] is a user-defined enumeration:
+///   - if `c = Color.Yellow`,
+///   - then `c: Enumeration(Color)`.
+/// - [Typ::Structure] is a user-defined structure:
+///   - if `p = Point { x: 1, y: 0}`,
+///   - then `p: Structure(Point)`.
 /// - [Typ::NotDefinedYet] is not defined yet, if `x: Color` then `x: NotDefinedYet(Color)`
 /// - [Typ::Abstract] are functions types, if `f = |x| x+1` then `f: int -> int`
-/// - [Typ::Polymorphism] is an inferable function type, if `add = |x, y| x+y` then `add: 't -> 't -> 't` with `'t` in `{int, float}`
+/// - [Typ::Polymorphism] is an inferable function type:
+///   - if `add = |x, y| x+y`,
+///   - then `add: 't -> 't -> 't` with `'t` in `{int, float}`.
 #[derive(Debug, Eq, Hash, Clone)]
 pub enum Typ {
     /// [i64] integers, if `n = 1` then `n: int`

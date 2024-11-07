@@ -72,7 +72,8 @@ impl Parse for Item {
             Ok(Item::Export(input.parse()?))
         } else {
             Err(input.error(
-                "expected flow import or export, type, component definition or import, function or service definition",
+                "expected either a flow import/export, a type, a component definition/import, \
+                or a function/service definition",
             ))
         }
     }

@@ -22,7 +22,12 @@ impl Enumeration {
     /// Transform [ir2] enumeration into RustAST enumeration.
     pub fn into_syn(self) -> syn::ItemEnum {
         let attribute: syn::Attribute = if conf::greusot() {
-            // todo: when v0.1.1 then parse_quote!(#[derive(prelude::Clone, Copy, prelude::PartialEq, prelude::Default, DeepModel)])
+            // todo: when v0.1.1 then
+            // ```
+            // parse_quote!(
+            //     #[derive(prelude::Clone, Copy, prelude::PartialEq, prelude::Default, DeepModel)]
+            // )
+            // ```
             parse_quote!(
                 #[derive(prelude::Clone, Copy, prelude::PartialEq, prelude::Default, DeepModel)]
             )
