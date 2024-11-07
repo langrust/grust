@@ -11,5 +11,5 @@ mod ast_typing;
 mod dependency_graph;
 
 pub mod import {
-    pub use crate::prelude::hir::{self, AstStore, IntoHir, Typing};
+    pub use crate::prelude::hir::{self, AstIntoHir, AstStore, Typing};
 }

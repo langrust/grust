@@ -17,7 +17,7 @@ pub use compiler_ast::import::*;
 
 pub mod hir {
     pub use crate::{
-        ast_into_hir::IntoHir,
+        ast_into_hir::AstIntoHir,
         ast_store::{
             AstStore, AstStoreEventPattern, AstStorePattern, AstStoreSignals, AstStoreStmtPattern,
         },
