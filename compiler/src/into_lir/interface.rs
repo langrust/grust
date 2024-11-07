@@ -7,23 +7,19 @@ prelude! {
 
 impl IntoLir<&mut SymbolTable> for Interface {
     type Lir = ExecutionMachine;
-    fn into_lir(self, symbol_table: &mut SymbolTable) -> ExecutionMachine {
+    fn into_lir(mut self, symbol_table: &mut SymbolTable) -> ExecutionMachine {
         if self.services.is_empty() {
             return Default::default();
         }
-        let Interface {
-            mut imports,
-            exports,
-            services,
-        } = self;
         let mut timing_events = vec![];
 
-        let services_handlers: Vec<ServiceHandler> = services
+        let services_handlers: Vec<ServiceHandler> = self
+            .services
             .into_iter()
             .map(|service| {
                 service.into_lir(hir::ctx::Full::new(
-                    &mut imports,
-                    &exports,
+                    &mut self.imports,
+                    &self.exports,
                     &mut timing_events,
                     symbol_table,
                 ))
@@ -41,11 +37,13 @@ impl IntoLir<&mut SymbolTable> for Interface {
                         .push(service_handler.service.clone())
                 })
         });
-        let input_flows = imports
+        let input_flows = self
+            .imports
             .into_values()
             .filter_map(|import| import.into_lir(symbol_table))
             .collect();
-        let output_flows = exports
+        let output_flows = self
+            .exports
             .into_values()
             .map(|export| export.into_lir(symbol_table))
             .collect();
@@ -74,20 +72,13 @@ impl IntoLir<&'_ SymbolTable> for FlowImport {
     type Lir = Option<InterfaceFlow>;
 
     fn into_lir(self, symbol_table: &SymbolTable) -> Self::Lir {
-        let FlowImport {
-            id,
-            path,
-            flow_type,
-            ..
-        } = self;
-
-        if flow_type.eq(&Typ::event(Typ::unit())) {
+        if self.flow_type.eq(&Typ::event(Typ::unit())) {
             None
         } else {
             Some(InterfaceFlow {
-                path,
-                identifier: symbol_table.get_name(id).clone(),
-                typ: flow_type,
+                path: self.path,
+                identifier: symbol_table.get_name(self.id).clone(),
+                typ: self.flow_type,
             })
         }
     }
@@ -97,17 +88,10 @@ impl IntoLir<&'_ SymbolTable> for FlowExport {
     type Lir = InterfaceFlow;
 
     fn into_lir(self, symbol_table: &SymbolTable) -> Self::Lir {
-        let FlowExport {
-            id,
-            path,
-            flow_type,
-            ..
-        } = self;
-
         InterfaceFlow {
-            path,
-            identifier: symbol_table.get_name(id).clone(),
-            typ: flow_type,
+            path: self.path,
+            identifier: symbol_table.get_name(self.id).clone(),
+            typ: self.flow_type,
         }
     }
 }

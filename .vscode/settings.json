@@ -30,6 +30,7 @@
         "onevent",
         "petgraph",
         "Prec",
+        "prio",
         "propag",
         "punct",
         "qself",

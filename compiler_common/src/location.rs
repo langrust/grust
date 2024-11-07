@@ -8,6 +8,17 @@ pub struct Location {
     /// The range in which the element is located.
     pub range: Range<usize>,
 }
+
+impl Location {
+    pub const DUMMY: Self = Self {
+        file_id: 0,
+        range: 0..0,
+    };
+    pub fn dummy() -> &'static Self {
+        &Self::DUMMY
+    }
+}
+
 impl Default for Location {
     fn default() -> Self {
         Location {

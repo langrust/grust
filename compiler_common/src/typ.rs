@@ -435,7 +435,7 @@ impl Typ {
                         .iter()
                         .zip(inputs)
                         .map(|(given_type, expected_type)| {
-                            given_type.eq_check(expected_type, loc.clone(), errors)
+                            given_type.eq_check_at(expected_type, errors, &loc)
                         })
                         .collect::<TRes<()>>()?;
                     Ok((**output).clone())
@@ -475,7 +475,9 @@ impl Typ {
         }
     }
 
-    /// Check if `self` matches the expected [Typ]
+    /// Check if `self` matches the expected [Typ].
+    ///
+    /// See also [`Self::eq_check`].
     ///
     /// # Example
     ///
@@ -486,14 +488,14 @@ impl Typ {
     /// let given_type = Typ::int();
     /// let expected_type = Typ::int();
     ///
-    /// given_type.eq_check(&expected_type, Location::default(), &mut errors).unwrap();
+    /// given_type.eq_check_at(&expected_type, &mut errors, Location::dummy()).unwrap();
     /// assert!(errors.is_empty());
     /// ```
-    pub fn eq_check(
+    pub fn eq_check_at(
         &self,
         expected_type: &Typ,
-        loc: Location,
         errors: &mut Vec<Error>,
+        loc: &Location,
     ) -> TRes<()> {
         if self.eq(expected_type) {
             Ok(())
@@ -501,11 +503,16 @@ impl Typ {
             let error = Error::IncompatibleType {
                 given_type: self.clone(),
                 expected_type: expected_type.clone(),
-                loc,
+                loc: loc.clone(),
             };
             errors.push(error);
             Err(TerminationError)
         }
+    }
+
+    /// Alias for [`Self::eq_check_at`] with a dummy position.
+    pub fn eq_check(&self, expected_type: &Typ, errors: &mut Vec<Error>) -> TRes<()> {
+        self.eq_check_at(expected_type, errors, Location::dummy())
     }
 
     /// Get inputs from abstraction type.

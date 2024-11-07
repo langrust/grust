@@ -6,6 +6,12 @@ prelude! {
 
 pub type Stmt = hir::Stmt<Expr>;
 
+mk_new! { impl Stmt => new {
+    pattern: hir::stmt::Pattern,
+    expr: Expr,
+    loc: Location,
+} }
+
 impl Stmt {
     pub fn get_identifiers(&self) -> Vec<usize> {
         let mut identifiers = match &self.expr.kind {
@@ -74,19 +80,13 @@ impl Stmt {
     /// x: int = 1 + x_2;
     /// ```
     pub fn normal_form(
-        self,
+        mut self,
         nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
         identifier_creator: &mut IdentifierCreator,
         symbol_table: &mut SymbolTable,
     ) -> Vec<stream::Stmt> {
-        let Stmt {
-            pattern,
-            mut expr,
-            loc,
-        } = self;
-
         // change expression into normal form and get additional statements
-        let mut statements = match expr.kind {
+        let mut statements = match self.expr.kind {
             stream::Kind::NodeApplication {
                 called_node_id,
                 ref mut inputs,
@@ -105,7 +105,7 @@ impl Stmt {
 
                 // change dependencies to be the sum of inputs dependencies
                 let reduced_graph = nodes_reduced_graphs.get(&called_node_id).unwrap();
-                expr.dependencies = Dependencies::from(
+                self.expr.dependencies = Dependencies::from(
                     inputs
                         .iter()
                         .flat_map(|(input_id, expr)| {
@@ -130,12 +130,14 @@ impl Stmt {
 
                 new_statements
             }
-            _ => expr.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table),
+            _ => self
+                .expr
+                .normal_form(nodes_reduced_graphs, identifier_creator, symbol_table),
         };
 
         // recreate the new statement with modified expression
         // todo: isn't it equal to self?
-        let normal_formed_statement = Stmt { pattern, expr, loc };
+        let normal_formed_statement = Stmt::new(self.pattern, self.expr, self.loc);
 
         // push normal_formed statement in the statements storage (in scheduling order)
         statements.push(normal_formed_statement);
@@ -145,10 +147,9 @@ impl Stmt {
     }
 
     pub fn add_to_graph(&self, graph: &mut DiGraphMap<usize, Label>) {
-        let Stmt { pattern, expr, .. } = self;
-        let signals = pattern.identifiers();
+        let signals = self.pattern.identifiers();
         for from in signals.iter() {
-            for (to, label) in expr.get_dependencies() {
+            for (to, label) in self.expr.get_dependencies() {
                 graph::add_edge(graph, *from, *to, label.clone());
             }
         }

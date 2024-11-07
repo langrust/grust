@@ -353,8 +353,6 @@ impl ComponentDefinition {
         ctx: &mut Ctx,
         process_manager: &mut HashMap<usize, Color>,
     ) {
-        let ComponentDefinition { id: node, .. } = self;
-
         // get signal's color
         let color = process_manager.get_mut(&signal).expect(&format!(
             "signal '{}' should be in process manager",
@@ -377,7 +375,7 @@ impl ComponentDefinition {
 
                     if is_input {
                         // get node's reduced graph (borrow checker)
-                        let reduced_graph = ctx.reduced_graphs.get_mut(node).unwrap();
+                        let reduced_graph = ctx.reduced_graphs.get_mut(&self.id).unwrap();
                         // if input then add neighbor to reduced graph
                         add_edge(reduced_graph, signal, neighbor_id, label1.clone());
                         // and add its input dependencies (contract dependencies)
@@ -391,7 +389,7 @@ impl ComponentDefinition {
                         self.add_signal_dependencies_over_inputs(neighbor_id, ctx, process_manager);
 
                         // get node's reduced graph (borrow checker)
-                        let reduced_graph = ctx.reduced_graphs.get_mut(node).unwrap();
+                        let reduced_graph = ctx.reduced_graphs.get_mut(&self.id).unwrap();
                         let neighbor_edges = reduced_graph
                             .edges(neighbor_id)
                             .map(|(_, input_id, label)| (input_id, label.clone()))
@@ -825,14 +823,12 @@ impl File {
         symbol_table: &SymbolTable,
         errors: &mut Vec<Error>,
     ) -> TRes<()> {
-        let File { components, .. } = self;
-
         // initialize dictionary for reduced graphs
         let mut nodes_reduced_graphs = HashMap::new();
 
         // create graph of nodes
         let mut nodes_graph = DiGraphMap::new();
-        components
+        self.components
             .iter()
             .for_each(|component| component.add_node_dependencies(&mut nodes_graph));
 
@@ -845,7 +841,7 @@ impl File {
             errors.push(error);
             TerminationError
         })?;
-        components.sort_by(|c1, c2| {
+        self.components.sort_by(|c1, c2| {
             let index1 = sorted_nodes
                 .iter()
                 .position(|id| *id == c1.get_id())
@@ -860,7 +856,7 @@ impl File {
 
         // ordered nodes complete their dependency graphs
         let mut ctx = Ctx::new(symbol_table, &mut nodes_reduced_graphs, errors);
-        components
+        self.components
             .iter_mut()
             .map(|component| component.compute_dependencies(&mut ctx))
             .collect::<TRes<()>>()?;
@@ -899,8 +895,6 @@ impl hir::stream::Stmt {
     /// }
     /// ```
     pub fn add_signal_dependencies(&self, signal: usize, ctx: &mut GraphProcCtx) -> TRes<()> {
-        let hir::Stmt { expr, loc, .. } = self;
-
         // get signal's color
         let color = ctx
             .proc_manager
@@ -914,13 +908,13 @@ impl hir::stream::Stmt {
                 *color = Color::Grey;
 
                 // compute and get dependencies
-                if expr.dependencies.get().is_none() {
-                    expr.compute_dependencies(ctx)?;
+                if self.expr.dependencies.get().is_none() {
+                    self.expr.compute_dependencies(ctx)?;
                 }
 
                 // add dependencies as graph's edges:
                 // s = e depends on s' <=> s -> s'
-                expr.get_dependencies().iter().for_each(|(id, label)| {
+                self.expr.get_dependencies().iter().for_each(|(id, label)| {
                     // if there was another edge, keep the most important label
                     add_edge(ctx.graph, signal, *id, label.clone())
                 });
@@ -939,7 +933,7 @@ impl hir::stream::Stmt {
             Color::Grey => {
                 let error = Error::NotCausalSignal {
                     signal: ctx.symbol_table.get_name(signal).clone(),
-                    loc: loc.clone(),
+                    loc: self.loc.clone(),
                 };
                 ctx.errors.push(error);
                 Err(TerminationError)
