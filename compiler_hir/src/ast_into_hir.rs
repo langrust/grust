@@ -3,7 +3,7 @@ prelude! {
 }
 
 /// AST transformation into HIR.
-pub trait IntoHir<Ctx> {
+pub trait AstIntoHir<Ctx> {
     /// Corresponding HIR construct.
     type Hir;
 
@@ -11,7 +11,7 @@ pub trait IntoHir<Ctx> {
     fn into_hir(self, ctx: &mut Ctx) -> TRes<Self::Hir>;
 }
 
-impl IntoHir<hir::ctx::Simple<'_>> for Ast {
+impl AstIntoHir<hir::ctx::Simple<'_>> for Ast {
     type Hir = hir::File;
 
     fn into_hir(self, ctx: &mut hir::ctx::Simple) -> TRes<Self::Hir> {
@@ -87,7 +87,7 @@ mod interface_impl {
         },
     }
 
-    impl<'a> IntoHir<hir::ctx::Simple<'a>> for Service {
+    impl<'a> AstIntoHir<hir::ctx::Simple<'a>> for Service {
         type Hir = hir::Service;
 
         fn into_hir(self, ctx: &mut hir::ctx::Simple<'a>) -> TRes<Self::Hir> {
@@ -126,7 +126,7 @@ mod interface_impl {
         }
     }
 
-    impl<'a> IntoHir<hir::ctx::Simple<'a>> for FlowImport {
+    impl<'a> AstIntoHir<hir::ctx::Simple<'a>> for FlowImport {
         type Hir = HIRFlowImport;
 
         fn into_hir(mut self, ctx: &mut hir::ctx::Simple<'a>) -> TRes<Self::Hir> {
@@ -164,7 +164,7 @@ mod interface_impl {
         }
     }
 
-    impl<'a> IntoHir<hir::ctx::Simple<'a>> for FlowExport {
+    impl<'a> AstIntoHir<hir::ctx::Simple<'a>> for FlowExport {
         type Hir = HIRFlowExport;
 
         fn into_hir(mut self, ctx: &mut hir::ctx::Simple<'a>) -> TRes<Self::Hir> {
@@ -202,7 +202,7 @@ mod interface_impl {
         }
     }
 
-    impl<'a> IntoHir<hir::ctx::Simple<'a>> for FlowStatement {
+    impl<'a> AstIntoHir<hir::ctx::Simple<'a>> for FlowStatement {
         type Hir = HIRFlowStatement;
 
         fn into_hir(self, ctx: &mut hir::ctx::Simple<'a>) -> TRes<Self::Hir> {
@@ -247,7 +247,7 @@ mod interface_impl {
         }
     }
 
-    impl<'a> IntoHir<hir::ctx::Simple<'a>> for FlowPattern {
+    impl<'a> AstIntoHir<hir::ctx::Simple<'a>> for FlowPattern {
         type Hir = hir::stmt::Pattern;
 
         fn into_hir(self, ctx: &mut hir::ctx::Simple<'a>) -> TRes<Self::Hir> {
@@ -322,7 +322,7 @@ mod interface_impl {
     }
 }
 
-impl IntoHir<ctx::Simple<'_>> for ast::Function {
+impl AstIntoHir<ctx::Simple<'_>> for ast::Function {
     type Hir = Function;
 
     // pre-condition: function and its inputs are already stored in symbol table
@@ -380,7 +380,7 @@ impl IntoHir<ctx::Simple<'_>> for ast::Function {
     }
 }
 
-impl IntoHir<ctx::Simple<'_>> for ast::Component {
+impl AstIntoHir<ctx::Simple<'_>> for ast::Component {
     type Hir = hir::Component;
 
     // pre-condition: node and its signals are already stored in symbol table
@@ -417,7 +417,7 @@ impl IntoHir<ctx::Simple<'_>> for ast::Component {
     }
 }
 
-impl IntoHir<ctx::Simple<'_>> for ast::ComponentImport {
+impl AstIntoHir<ctx::Simple<'_>> for ast::ComponentImport {
     type Hir = hir::Component;
 
     // pre-condition: node and its signals are already stored in symbol table
@@ -450,7 +450,7 @@ mod flow_expr_impl {
         hir::flow,
     }
 
-    impl<'a> IntoHir<hir::ctx::Loc<'a>> for ast::interface::Sample {
+    impl<'a> AstIntoHir<hir::ctx::Loc<'a>> for ast::interface::Sample {
         type Hir = hir::flow::Kind;
 
         /// Transforms AST into HIR and check identifiers good use.
@@ -462,7 +462,7 @@ mod flow_expr_impl {
         }
     }
 
-    impl<'a> IntoHir<hir::ctx::Loc<'a>> for Scan {
+    impl<'a> AstIntoHir<hir::ctx::Loc<'a>> for Scan {
         type Hir = hir::flow::Kind;
 
         /// Transforms AST into HIR and check identifiers good use.
@@ -474,7 +474,7 @@ mod flow_expr_impl {
         }
     }
 
-    impl<'a> IntoHir<hir::ctx::Loc<'a>> for Timeout {
+    impl<'a> AstIntoHir<hir::ctx::Loc<'a>> for Timeout {
         type Hir = hir::flow::Kind;
 
         /// Transforms AST into HIR and check identifiers good use.
@@ -486,7 +486,7 @@ mod flow_expr_impl {
         }
     }
 
-    impl<'a> IntoHir<hir::ctx::Loc<'a>> for Throttle {
+    impl<'a> AstIntoHir<hir::ctx::Loc<'a>> for Throttle {
         type Hir = hir::flow::Kind;
 
         /// Transforms AST into HIR and check identifiers good use.
@@ -498,7 +498,7 @@ mod flow_expr_impl {
         }
     }
 
-    impl<'a> IntoHir<hir::ctx::Loc<'a>> for OnChange {
+    impl<'a> AstIntoHir<hir::ctx::Loc<'a>> for OnChange {
         type Hir = hir::flow::Kind;
 
         /// Transforms AST into HIR and check identifiers good use.
@@ -509,7 +509,7 @@ mod flow_expr_impl {
         }
     }
 
-    impl<'a> IntoHir<hir::ctx::Loc<'a>> for Merge {
+    impl<'a> AstIntoHir<hir::ctx::Loc<'a>> for Merge {
         type Hir = hir::flow::Kind;
 
         /// Transforms AST into HIR and check identifiers good use.
@@ -521,7 +521,7 @@ mod flow_expr_impl {
         }
     }
 
-    impl<'a> IntoHir<hir::ctx::Loc<'a>> for ComponentCall {
+    impl<'a> AstIntoHir<hir::ctx::Loc<'a>> for ComponentCall {
         type Hir = hir::flow::Kind;
 
         /// Transforms AST into HIR and check identifiers good use.
@@ -561,7 +561,7 @@ mod flow_expr_impl {
         }
     }
 
-    impl<'a> IntoHir<hir::ctx::Loc<'a>> for FlowExpression {
+    impl<'a> AstIntoHir<hir::ctx::Loc<'a>> for FlowExpression {
         type Hir = flow::Expr;
 
         // pre-condition: identifiers are stored in symbol table
@@ -591,7 +591,7 @@ mod flow_expr_impl {
     }
 }
 
-impl IntoHir<ctx::Simple<'_>> for ast::Contract {
+impl AstIntoHir<ctx::Simple<'_>> for ast::Contract {
     type Hir = Contract;
 
     fn into_hir(self, ctx: &mut ctx::Simple) -> TRes<Self::Hir> {
@@ -617,7 +617,7 @@ impl IntoHir<ctx::Simple<'_>> for ast::Contract {
     }
 }
 
-impl<'a> IntoHir<ctx::Simple<'a>> for ast::contract::Term {
+impl<'a> AstIntoHir<ctx::Simple<'a>> for ast::contract::Term {
     type Hir = hir::contract::Term;
 
     fn into_hir(self, ctx: &mut ctx::Simple<'a>) -> TRes<Self::Hir> {
@@ -772,7 +772,7 @@ impl<'a> IntoHir<ctx::Simple<'a>> for ast::contract::Term {
     }
 }
 
-impl IntoHir<ctx::Simple<'_>> for ast::Eq {
+impl AstIntoHir<ctx::Simple<'_>> for ast::Eq {
     type Hir = hir::stream::Stmt;
 
     /// Pre-condition: equation's signal is already stored in symbol table.
@@ -918,7 +918,7 @@ impl IntoHir<ctx::Simple<'_>> for ast::Eq {
     }
 }
 
-impl IntoHir<ctx::Simple<'_>> for ast::ReactEq {
+impl AstIntoHir<ctx::Simple<'_>> for ast::ReactEq {
     type Hir = stream::Stmt;
 
     /// Pre-condition: equation's signal is already stored in symbol table.
@@ -1235,9 +1235,9 @@ impl IntoHir<ctx::Simple<'_>> for ast::ReactEq {
     }
 }
 
-impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for ast::expr::UnOp<E>
+impl<'a, E> AstIntoHir<hir::ctx::PatLoc<'a>> for ast::expr::UnOp<E>
 where
-    E: IntoHir<hir::ctx::PatLoc<'a>>,
+    E: AstIntoHir<hir::ctx::PatLoc<'a>>,
 {
     type Hir = expr::Kind<E::Hir>;
 
@@ -1249,9 +1249,9 @@ where
     }
 }
 
-impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for ast::expr::Binop<E>
+impl<'a, E> AstIntoHir<hir::ctx::PatLoc<'a>> for ast::expr::Binop<E>
 where
-    E: IntoHir<hir::ctx::PatLoc<'a>>,
+    E: AstIntoHir<hir::ctx::PatLoc<'a>>,
 {
     type Hir = expr::Kind<E::Hir>;
 
@@ -1267,9 +1267,9 @@ where
     }
 }
 
-impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for ast::expr::IfThenElse<E>
+impl<'a, E> AstIntoHir<hir::ctx::PatLoc<'a>> for ast::expr::IfThenElse<E>
 where
-    E: IntoHir<hir::ctx::PatLoc<'a>>,
+    E: AstIntoHir<hir::ctx::PatLoc<'a>>,
 {
     type Hir = expr::Kind<E::Hir>;
 
@@ -1285,9 +1285,9 @@ where
     }
 }
 
-impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for ast::expr::Application<E>
+impl<'a, E> AstIntoHir<hir::ctx::PatLoc<'a>> for ast::expr::Application<E>
 where
-    E: IntoHir<hir::ctx::PatLoc<'a>>,
+    E: AstIntoHir<hir::ctx::PatLoc<'a>>,
 {
     type Hir = expr::Kind<E::Hir>;
 
@@ -1305,9 +1305,9 @@ where
     }
 }
 
-impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for ast::expr::Structure<E>
+impl<'a, E> AstIntoHir<hir::ctx::PatLoc<'a>> for ast::expr::Structure<E>
 where
-    E: IntoHir<hir::ctx::PatLoc<'a>>,
+    E: AstIntoHir<hir::ctx::PatLoc<'a>>,
 {
     type Hir = expr::Kind<E::Hir>;
 
@@ -1370,16 +1370,16 @@ mod simple_expr_impl {
         ast::expr::*,
     }
 
-    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for Enumeration<E>
+    impl<'a, E> AstIntoHir<hir::ctx::PatLoc<'a>> for Enumeration<E>
     where
-        E: IntoHir<hir::ctx::PatLoc<'a>>,
+        E: AstIntoHir<hir::ctx::PatLoc<'a>>,
     {
         type Hir = expr::Kind<E::Hir>;
 
         /// Transforms AST into HIR and check identifiers good use.
         fn into_hir(self, ctx: &mut hir::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Hir>>
         where
-            E: IntoHir<hir::ctx::PatLoc<'a>>,
+            E: AstIntoHir<hir::ctx::PatLoc<'a>>,
         {
             // pre-condition: identifiers are stored in symbol table
             // post-condition: construct HIR expression kind and check identifiers good use
@@ -1398,9 +1398,9 @@ mod simple_expr_impl {
         }
     }
 
-    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for Array<E>
+    impl<'a, E> AstIntoHir<hir::ctx::PatLoc<'a>> for Array<E>
     where
-        E: IntoHir<hir::ctx::PatLoc<'a>>,
+        E: AstIntoHir<hir::ctx::PatLoc<'a>>,
     {
         type Hir = expr::Kind<E::Hir>;
 
@@ -1418,9 +1418,9 @@ mod simple_expr_impl {
         }
     }
 
-    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for Tuple<E>
+    impl<'a, E> AstIntoHir<hir::ctx::PatLoc<'a>> for Tuple<E>
     where
-        E: IntoHir<hir::ctx::PatLoc<'a>>,
+        E: AstIntoHir<hir::ctx::PatLoc<'a>>,
     {
         type Hir = expr::Kind<E::Hir>;
 
@@ -1437,9 +1437,9 @@ mod simple_expr_impl {
         }
     }
 
-    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for Match<E>
+    impl<'a, E> AstIntoHir<hir::ctx::PatLoc<'a>> for Match<E>
     where
-        E: IntoHir<hir::ctx::PatLoc<'a>>,
+        E: AstIntoHir<hir::ctx::PatLoc<'a>>,
     {
         type Hir = expr::Kind<E::Hir>;
 
@@ -1465,9 +1465,9 @@ mod simple_expr_impl {
         }
     }
 
-    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for FieldAccess<E>
+    impl<'a, E> AstIntoHir<hir::ctx::PatLoc<'a>> for FieldAccess<E>
     where
-        E: IntoHir<hir::ctx::PatLoc<'a>>,
+        E: AstIntoHir<hir::ctx::PatLoc<'a>>,
     {
         type Hir = expr::Kind<E::Hir>;
 
@@ -1482,9 +1482,9 @@ mod simple_expr_impl {
         }
     }
 
-    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for TupleElementAccess<E>
+    impl<'a, E> AstIntoHir<hir::ctx::PatLoc<'a>> for TupleElementAccess<E>
     where
-        E: IntoHir<hir::ctx::PatLoc<'a>>,
+        E: AstIntoHir<hir::ctx::PatLoc<'a>>,
     {
         type Hir = expr::Kind<E::Hir>;
 
@@ -1499,9 +1499,9 @@ mod simple_expr_impl {
         }
     }
 
-    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for Map<E>
+    impl<'a, E> AstIntoHir<hir::ctx::PatLoc<'a>> for Map<E>
     where
-        E: IntoHir<hir::ctx::PatLoc<'a>>,
+        E: AstIntoHir<hir::ctx::PatLoc<'a>>,
     {
         type Hir = expr::Kind<E::Hir>;
 
@@ -1516,9 +1516,9 @@ mod simple_expr_impl {
         }
     }
 
-    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for Fold<E>
+    impl<'a, E> AstIntoHir<hir::ctx::PatLoc<'a>> for Fold<E>
     where
-        E: IntoHir<hir::ctx::PatLoc<'a>>,
+        E: AstIntoHir<hir::ctx::PatLoc<'a>>,
     {
         type Hir = expr::Kind<E::Hir>;
 
@@ -1534,9 +1534,9 @@ mod simple_expr_impl {
         }
     }
 
-    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for Sort<E>
+    impl<'a, E> AstIntoHir<hir::ctx::PatLoc<'a>> for Sort<E>
     where
-        E: IntoHir<hir::ctx::PatLoc<'a>>,
+        E: AstIntoHir<hir::ctx::PatLoc<'a>>,
     {
         type Hir = expr::Kind<E::Hir>;
 
@@ -1551,9 +1551,9 @@ mod simple_expr_impl {
         }
     }
 
-    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for Zip<E>
+    impl<'a, E> AstIntoHir<hir::ctx::PatLoc<'a>> for Zip<E>
     where
-        E: IntoHir<hir::ctx::PatLoc<'a>>,
+        E: AstIntoHir<hir::ctx::PatLoc<'a>>,
     {
         type Hir = expr::Kind<E::Hir>;
 
@@ -1570,9 +1570,9 @@ mod simple_expr_impl {
         }
     }
 
-    impl<'a, E> IntoHir<hir::ctx::PatLoc<'a>> for TypedAbstraction<E>
+    impl<'a, E> AstIntoHir<hir::ctx::PatLoc<'a>> for TypedAbstraction<E>
     where
-        E: IntoHir<hir::ctx::PatLoc<'a>>,
+        E: AstIntoHir<hir::ctx::PatLoc<'a>>,
     {
         type Hir = expr::Kind<E::Hir>;
 
@@ -1602,7 +1602,7 @@ mod simple_expr_impl {
         }
     }
 
-    impl<'a> IntoHir<hir::ctx::PatLoc<'a>> for ast::Expr {
+    impl<'a> AstIntoHir<hir::ctx::PatLoc<'a>> for ast::Expr {
         type Hir = hir::Expr;
 
         // pre-condition: identifiers are stored in symbol table
@@ -1653,7 +1653,7 @@ mod expr_pattern_impl {
         ast::expr::{PatEnumeration, PatStructure, PatTuple},
     }
 
-    impl IntoHir<hir::ctx::Loc<'_>> for PatStructure {
+    impl AstIntoHir<hir::ctx::Loc<'_>> for PatStructure {
         type Hir = hir::pattern::Kind;
 
         fn into_hir(self, ctx: &mut hir::ctx::Loc) -> TRes<hir::pattern::Kind> {
@@ -1711,7 +1711,7 @@ mod expr_pattern_impl {
         }
     }
 
-    impl IntoHir<hir::ctx::Loc<'_>> for PatEnumeration {
+    impl AstIntoHir<hir::ctx::Loc<'_>> for PatEnumeration {
         type Hir = hir::pattern::Kind;
 
         fn into_hir(self, ctx: &mut hir::ctx::Loc) -> TRes<hir::pattern::Kind> {
@@ -1729,7 +1729,7 @@ mod expr_pattern_impl {
         }
     }
 
-    impl IntoHir<hir::ctx::Loc<'_>> for PatTuple {
+    impl AstIntoHir<hir::ctx::Loc<'_>> for PatTuple {
         type Hir = hir::pattern::Kind;
 
         fn into_hir(self, ctx: &mut hir::ctx::Loc) -> TRes<hir::pattern::Kind> {
@@ -1742,7 +1742,7 @@ mod expr_pattern_impl {
         }
     }
 
-    impl IntoHir<hir::ctx::Loc<'_>> for ast::expr::Pattern {
+    impl AstIntoHir<hir::ctx::Loc<'_>> for ast::expr::Pattern {
         type Hir = hir::Pattern;
 
         fn into_hir(self, ctx: &mut hir::ctx::Loc) -> TRes<Self::Hir> {
@@ -1776,7 +1776,7 @@ mod stmt_pattern_impl {
         ast::stmt::{Typed, Tuple},
     }
 
-    impl IntoHir<hir::ctx::Loc<'_>> for Typed {
+    impl AstIntoHir<hir::ctx::Loc<'_>> for Typed {
         type Hir = hir::stmt::Kind;
 
         fn into_hir(self, ctx: &mut hir::ctx::Loc) -> TRes<hir::stmt::Kind> {
@@ -1791,7 +1791,7 @@ mod stmt_pattern_impl {
         }
     }
 
-    impl IntoHir<hir::ctx::Loc<'_>> for Tuple {
+    impl AstIntoHir<hir::ctx::Loc<'_>> for Tuple {
         type Hir = hir::stmt::Kind;
 
         fn into_hir(self, ctx: &mut hir::ctx::Loc) -> TRes<hir::stmt::Kind> {
@@ -1804,7 +1804,7 @@ mod stmt_pattern_impl {
         }
     }
 
-    impl IntoHir<hir::ctx::Loc<'_>> for ast::stmt::Pattern {
+    impl AstIntoHir<hir::ctx::Loc<'_>> for ast::stmt::Pattern {
         type Hir = hir::stmt::Pattern;
 
         fn into_hir(self, ctx: &mut hir::ctx::Loc) -> TRes<Self::Hir> {
@@ -1832,7 +1832,7 @@ mod stmt_pattern_impl {
     }
 }
 
-impl IntoHir<hir::ctx::Simple<'_>> for ast::stmt::LetDecl<ast::Expr> {
+impl AstIntoHir<hir::ctx::Simple<'_>> for ast::stmt::LetDecl<ast::Expr> {
     type Hir = hir::Stmt<hir::Expr>;
 
     // pre-condition: NOTHING is in symbol table
@@ -1857,7 +1857,7 @@ mod stream_impl {
         itertools::Itertools,
     }
 
-    impl IntoHir<hir::ctx::PatLoc<'_>> for stream::When {
+    impl AstIntoHir<hir::ctx::PatLoc<'_>> for stream::When {
         type Hir = hir::stream::Kind;
 
         /// Transforms AST into HIR and check identifiers good use.
@@ -1961,7 +1961,7 @@ mod stream_impl {
         }
     }
 
-    impl IntoHir<hir::ctx::PatLoc<'_>> for ast::stream::Expr {
+    impl AstIntoHir<hir::ctx::PatLoc<'_>> for ast::stream::Expr {
         type Hir = hir::stream::Expr;
 
         // pre-condition: identifiers are stored in symbol table
@@ -2073,7 +2073,7 @@ mod stream_impl {
         }
     }
 
-    impl IntoHir<hir::ctx::PatLoc<'_>> for stream::ReactExpr {
+    impl AstIntoHir<hir::ctx::PatLoc<'_>> for stream::ReactExpr {
         type Hir = hir::stream::Expr;
 
         // pre-condition: identifiers are stored in symbol table
@@ -2095,7 +2095,7 @@ mod stream_impl {
     }
 }
 
-impl IntoHir<hir::ctx::Loc<'_>> for Typ {
+impl AstIntoHir<hir::ctx::Loc<'_>> for Typ {
     type Hir = Typ;
 
     /// Transforms AST into HIR and check identifiers good use.
@@ -2165,7 +2165,7 @@ impl IntoHir<hir::ctx::Loc<'_>> for Typ {
     }
 }
 
-impl IntoHir<hir::ctx::Simple<'_>> for ast::Typedef {
+impl AstIntoHir<hir::ctx::Simple<'_>> for ast::Typedef {
     type Hir = hir::Typedef;
 
     // pre-condition: typedefs are already stored in symbol table
