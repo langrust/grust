@@ -18,7 +18,7 @@ where
 
 /// To use with serde's `serialize_with` attribute.
 pub fn ordered_hashmap<S, K, V, HMS>(
-    value: &HashMap<K, V, HMS>,
+    value: &std::collections::HashMap<K, V, HMS>,
     serializer: S,
 ) -> Result<S::Ok, S::Error>
 where

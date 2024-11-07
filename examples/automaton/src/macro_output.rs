@@ -47,12 +47,12 @@ impl AutomatonState {
     }
     pub fn step(&mut self, input: AutomatonInput) -> i64 {
         let state = self.last_next_state;
-        let (x, next_state, o) = match state {
+        let (next_state, x, o) = match state {
             State::Off => {
                 let next_state = if input.switch { State::On } else { state };
                 let x = self.last_x;
                 let o = 0i64;
-                (x, next_state, o)
+                (next_state, x, o)
             }
             State::On => {
                 let next_state = if input.switch { State::Off } else { state };
@@ -61,7 +61,7 @@ impl AutomatonState {
                     i: input.i,
                 });
                 let o = 10i64 * x;
-                (x, next_state, o)
+                (next_state, x, o)
             }
         };
         self.last_next_state = next_state;
