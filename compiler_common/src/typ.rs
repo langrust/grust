@@ -355,7 +355,7 @@ mk_new! { impl Typ =>
 }
 
 impl Typ {
-    /// Transform LIR type into RustAST type.
+    /// Conversion to [syn].
     pub fn into_syn(&self) -> syn::Type {
         match self {
             Typ::Integer(_) => parse_quote!(i64),
@@ -796,28 +796,28 @@ mod test {
     }
 
     #[test]
-    fn should_create_i64_from_lir_integer() {
+    fn should_create_i64_from_ir2_integer() {
         let typ = Typ::int();
         let control = parse_quote! { i64 };
         assert_eq!(typ.into_syn(), control)
     }
 
     #[test]
-    fn should_create_f64_from_lir_float() {
+    fn should_create_f64_from_ir2_float() {
         let typ = Typ::float();
         let control = parse_quote! { f64 };
         assert_eq!(typ.into_syn(), control)
     }
 
     #[test]
-    fn should_create_bool_from_lir_boolean() {
+    fn should_create_bool_from_ir2_boolean() {
         let typ = Typ::bool();
         let control = parse_quote! { bool };
         assert_eq!(typ.into_syn(), control)
     }
 
     #[test]
-    fn should_create_unit_from_lir_unit() {
+    fn should_create_unit_from_ir2_unit() {
         let typ = Typ::unit();
         let control = parse_quote! { () };
 
@@ -825,7 +825,7 @@ mod test {
     }
 
     #[test]
-    fn should_create_structure_from_lir_structure() {
+    fn should_create_structure_from_ir2_structure() {
         let typ = Typ::structure_str("Point", 0);
         let control = parse_quote! { Point };
 
@@ -833,7 +833,7 @@ mod test {
     }
 
     #[test]
-    fn should_create_enumeration_from_lir_enumeration() {
+    fn should_create_enumeration_from_ir2_enumeration() {
         let typ = Typ::enumeration_str("Color", 0);
         let control = parse_quote! { Color };
 
@@ -841,7 +841,7 @@ mod test {
     }
 
     #[test]
-    fn should_create_array_from_lir_array() {
+    fn should_create_array_from_ir2_array() {
         let typ = Typ::array(Typ::float(), 5);
         let control = parse_quote! { [f64; 5usize] };
 
@@ -849,14 +849,14 @@ mod test {
     }
 
     #[test]
-    fn should_create_option_from_lir_state_machine_event() {
+    fn should_create_option_from_ir2_state_machine_event() {
         let typ = Typ::sm_event(Typ::float());
         let control = parse_quote!(Option<f64>);
         assert_eq!(typ.into_syn(), control)
     }
 
     #[test]
-    fn should_create_closure_from_lir_abstract() {
+    fn should_create_closure_from_ir2_abstract() {
         let typ = Typ::function(vec![Typ::int()], Typ::float());
         let control = parse_quote!(impl Fn(i64) -> f64);
 

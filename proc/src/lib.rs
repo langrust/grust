@@ -1,7 +1,7 @@
 //! This crate provides the [grust!] macro for generating Rust code
 //! from GRust programs.
 
-use compiler::{handle_tokens, TokenStream};
+use compiler_top::{handle_tokens, TokenStream};
 
 /// The GRust compiler as an integrated Rust macro.
 ///
