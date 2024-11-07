@@ -10,10 +10,8 @@ pub struct RuntimeLoop {
 impl RuntimeLoop {
     /// Transform LIR run-loop into an async function performing a loop over events.
     pub fn into_syn(self) -> syn::ImplItem {
-        let RuntimeLoop { input_handlers } = self;
-
         // init timers
-        let init_timers = input_handlers
+        let init_timers = self.input_handlers
         .iter()
         .filter_map(|input_flow| -> Option<syn::Stmt> {
             match &input_flow.arriving_flow {
@@ -35,7 +33,7 @@ impl RuntimeLoop {
             for InputHandler {
                 arriving_flow,
                 services,
-            } in input_handlers.iter()
+            } in self.input_handlers.iter()
             {
                 match arriving_flow {
                     ArrivingFlow::Channel(flow_name, _, _) => {

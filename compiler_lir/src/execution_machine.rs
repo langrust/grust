@@ -23,14 +23,6 @@ pub struct ExecutionMachine {
 impl ExecutionMachine {
     /// Transform LIR execution-machine into a runtime module.
     pub fn into_syn(self) -> syn::Item {
-        let ExecutionMachine {
-            input_flows,
-            output_flows,
-            timing_events,
-            runtime_loop,
-            services_handlers,
-        } = self;
-
         let (runtime_items, field_values) = {
             let mut runtime_items = vec![];
 
@@ -45,7 +37,7 @@ impl ExecutionMachine {
             let mut runtime_fields: Vec<syn::Field> = vec![];
             let mut field_values: Vec<syn::FieldValue> = vec![];
 
-            for TimingEvent { identifier, kind } in timing_events.iter() {
+            for TimingEvent { identifier, kind } in self.timing_events.iter() {
                 let enum_ident = Ident::new(
                     to_camel_case(identifier.as_str()).as_str(),
                     Span::call_site(),
@@ -71,7 +63,7 @@ impl ExecutionMachine {
 
             for InterfaceFlow {
                 identifier, typ, ..
-            } in input_flows.iter()
+            } in self.input_flows.iter()
             {
                 let enum_ident = Ident::new(
                     to_camel_case(identifier.as_str()).as_str(),
@@ -88,7 +80,7 @@ impl ExecutionMachine {
 
             for InterfaceFlow {
                 identifier, typ, ..
-            } in output_flows.into_iter()
+            } in self.output_flows.into_iter()
             {
                 let enum_ident = Ident::new(
                     to_camel_case(identifier.as_str()).as_str(),
@@ -169,7 +161,7 @@ impl ExecutionMachine {
                     #(#output_variants),*
                 }
             }));
-            services_handlers.iter().for_each(|service_handler| {
+            self.services_handlers.iter().for_each(|service_handler| {
                 let service_name = &service_handler.service;
                 let service_path = format_ident!("{}_service", service_name);
                 let service_state_struct =
@@ -195,10 +187,10 @@ impl ExecutionMachine {
 
         // function that creates a new runtime
         let new_runtime = {
-            let nb_services = services_handlers.len();
+            let nb_services = self.services_handlers.len();
             let is_last = |idx| idx < nb_services - 1;
             // initializes services
-            let services_init = services_handlers.iter().enumerate().map(|(idx, service_handler)| {
+            let services_init = self.services_handlers.iter().enumerate().map(|(idx, service_handler)| {
             let service_name = &service_handler.service;
             let service_path = format_ident!("{}_service", service_name);
             let service_state_struct =
@@ -214,7 +206,7 @@ impl ExecutionMachine {
             };
             state
         });
-            // parse the funtion that creates a new runtime
+            // parse the function that creates a new runtime
             syn::ImplItem::Fn(parse_quote! {
                 pub fn new(
                     output: futures::channel::mpsc::Sender<O>,
@@ -229,10 +221,11 @@ impl ExecutionMachine {
         };
 
         // create the runtime loop
-        let run_loop = runtime_loop.into_syn();
+        let run_loop = self.runtime_loop.into_syn();
 
         // create the services handlers
-        let handlers = services_handlers
+        let handlers = self
+            .services_handlers
             .into_iter()
             .map(|handler| handler.into_syn());
 

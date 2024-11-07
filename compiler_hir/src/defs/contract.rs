@@ -208,19 +208,13 @@ impl Contract {
 
     /// Add dependencies of a contract to the graph.
     pub fn add_dependencies(&self, node_graph: &mut DiGraphMap<usize, Label>) {
-        let Contract {
-            requires,
-            ensures,
-            invariant,
-        } = self;
-
-        requires
+        self.requires
             .iter()
             .for_each(|term| term.add_term_dependencies(node_graph));
-        ensures
+        self.ensures
             .iter()
             .for_each(|term| term.add_term_dependencies(node_graph));
-        invariant
+        self.invariant
             .iter()
             .for_each(|term| term.add_term_dependencies(node_graph));
     }

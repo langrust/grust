@@ -7,10 +7,9 @@ where
     type Lir = lir::Stmt;
 
     fn into_lir(self, symbol_table: &'a SymbolTable) -> Self::Lir {
-        let Stmt { pattern, expr, .. } = self;
         lir::Stmt::Let {
-            pattern: pattern.into_lir(symbol_table),
-            expr: expr.into_lir(symbol_table),
+            pattern: self.pattern.into_lir(symbol_table),
+            expr: self.expr.into_lir(symbol_table),
         }
     }
 }

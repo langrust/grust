@@ -7,20 +7,12 @@ impl IntoLir<&'_ SymbolTable> for Function {
     type Lir = LIRFunction;
 
     fn into_lir(self, symbol_table: &SymbolTable) -> Self::Lir {
-        let Function {
-            id,
-            contract,
-            statements,
-            returned,
-            ..
-        } = self;
-
         // get function name
-        let name = symbol_table.get_name(id).clone();
+        let name = symbol_table.get_name(self.id).clone();
 
         // get function inputs
         let inputs = symbol_table
-            .get_function_input(id)
+            .get_function_input(self.id)
             .into_iter()
             .map(|id| {
                 (
@@ -31,19 +23,20 @@ impl IntoLir<&'_ SymbolTable> for Function {
             .collect::<Vec<_>>();
 
         // get function output type
-        let output = symbol_table.get_function_output_type(id).clone();
+        let output = symbol_table.get_function_output_type(self.id).clone();
 
         // Transforms into LIR statements
-        let mut statements = statements
+        let mut statements = self
+            .statements
             .into_iter()
             .map(|statement| statement.into_lir(symbol_table))
             .collect::<Vec<_>>();
         statements.push(Stmt::ExprLast {
-            expr: returned.into_lir(symbol_table),
+            expr: self.returned.into_lir(symbol_table),
         });
 
         // transform contract
-        let contract = contract.into_lir(symbol_table);
+        let contract = self.contract.into_lir(symbol_table);
 
         LIRFunction {
             name,

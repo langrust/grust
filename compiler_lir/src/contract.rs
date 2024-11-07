@@ -230,22 +230,17 @@ mk_new! { impl Contract => new {
 
 impl Contract {
     pub fn into_syn(self, function_like: bool) -> Vec<syn::Attribute> {
-        let Self {
-            requires,
-            ensures,
-            invariant,
-        } = self;
         let mut attributes =
-            Vec::with_capacity(requires.len() + ensures.len() + 2 * invariant.len());
-        for term in requires {
+            Vec::with_capacity(self.requires.len() + self.ensures.len() + 2 * self.invariant.len());
+        for term in self.requires {
             let ts = term.to_token_stream(false, function_like);
             attributes.push(parse_quote!(#[requires(#ts)]))
         }
-        for term in ensures {
+        for term in self.ensures {
             let ts = term.to_token_stream(false, function_like);
             attributes.push(parse_quote!(#[ensures(#ts)]))
         }
-        for term in invariant {
+        for term in self.invariant {
             let ts_pre = term.clone().to_token_stream(false, function_like);
             let ts_cur = term.clone().to_token_stream(true, function_like);
             attributes.push(parse_quote!(#[requires(#ts_pre)]));

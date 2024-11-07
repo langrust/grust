@@ -470,9 +470,8 @@ impl ComponentDefinition {
         let mut identifier_creator = IdentifierCreator::from(self.get_signals_names(symbol_table));
         symbol_table.local();
 
-        let ComponentDefinition { statements, .. } = self;
-
-        *statements = statements
+        self.statements = self
+            .statements
             .clone()
             .into_iter()
             .flat_map(|equation| {

@@ -7,22 +7,19 @@ impl IntoLir<&'_ SymbolTable> for Contract {
     type Lir = LIRContract;
 
     fn into_lir(self, symbol_table: &SymbolTable) -> Self::Lir {
-        let Contract {
-            requires,
-            ensures,
-            invariant,
-        } = self;
-
         LIRContract {
-            requires: requires
+            requires: self
+                .requires
                 .into_iter()
                 .map(|term| term.into_lir(symbol_table))
                 .collect(),
-            ensures: ensures
+            ensures: self
+                .ensures
                 .into_iter()
                 .map(|term| term.into_lir(symbol_table))
                 .collect(),
-            invariant: invariant
+            invariant: self
+                .invariant
                 .into_iter()
                 .map(|term| term.into_lir(symbol_table))
                 .collect(),
