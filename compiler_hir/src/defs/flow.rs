@@ -64,13 +64,13 @@ pub struct Expr {
     /// Flow expression's kind.
     pub kind: Kind,
     /// Flow expression type.
-    pub typing: Option<Typ>,
+    pub typ: Option<Typ>,
     /// Flow expression location.
     pub loc: Location,
 }
 impl Expr {
     pub fn get_type(&self) -> Option<&Typ> {
-        self.typing.as_ref()
+        self.typ.as_ref()
     }
 
     pub fn get_dependencies(&self) -> Vec<usize> {
@@ -180,14 +180,14 @@ impl Expr {
 
                 // create fresh identifier for the new statement
                 let fresh_name = identifier_creator.fresh_identifier("", "x");
-                let typing = self.get_type().unwrap();
-                let kind = match typing {
+                let typ = self.get_type().unwrap();
+                let kind = match typ {
                     Typ::Signal { .. } => ast::interface::FlowKind::Signal(Default::default()),
                     Typ::Event { .. } => ast::interface::FlowKind::Event(Default::default()),
                     Typ::Tuple { .. } => panic!("tuple of flows can not be converted into flow"),
                     _ => unreachable!(),
                 };
-                let fresh_id = symbol_table.insert_fresh_flow(fresh_name, kind, typing.clone());
+                let fresh_id = symbol_table.insert_fresh_flow(fresh_name, kind, typ.clone());
 
                 // create statement for the expression
                 let new_statement =
@@ -195,7 +195,7 @@ impl Expr {
                         let_token: Default::default(),
                         pattern: hir::stmt::Pattern {
                             kind: hir::stmt::Kind::Identifier { id: fresh_id },
-                            typing: Some(typing.clone()),
+                            typ: Some(typ.clone()),
                             loc: self.loc.clone(),
                         },
                         eq_token: Default::default(),

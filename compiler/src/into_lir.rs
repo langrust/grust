@@ -31,7 +31,7 @@ pub trait IntoLir<Ctx> {
     fn into_lir(self, ctx: Ctx) -> Self::Lir;
 
     /// Get type from LIR.
-    fn get_type(&self) -> Option<&Typ> {
+    fn get_typ(&self) -> Option<&Typ> {
         None
     }
 

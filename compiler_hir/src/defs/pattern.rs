@@ -103,11 +103,11 @@ pub fn init(kind: Kind) -> Pattern {
 
 impl Pattern {
     /// Get pattern's type.
-    pub fn get_type(&self) -> Option<&Typ> {
+    pub fn get_typ(&self) -> Option<&Typ> {
         self.typing.as_ref()
     }
     /// Get pattern's mutable type.
-    pub fn get_type_mut(&mut self) -> Option<&mut Typ> {
+    pub fn get_typ_mut(&mut self) -> Option<&mut Typ> {
         self.typing.as_mut()
     }
     /// Get pattern's identifiers.

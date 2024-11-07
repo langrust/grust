@@ -79,7 +79,7 @@ impl Constant {
     }
 
     /// Get the [Typ] of the constant.
-    pub fn get_type(&self) -> Typ {
+    pub fn get_typ(&self) -> Typ {
         match self {
             Constant::Integer(lit) => Typ::Integer(keyword::int { span: lit.span() }),
             Constant::Float(lit) => Typ::Float(keyword::float { span: lit.span() }),

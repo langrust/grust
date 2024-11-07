@@ -183,7 +183,7 @@ impl ComponentDefinition {
         symbol_table
             .get_node_inputs(self.id)
             .into_iter()
-            .filter(|id| !symbol_table.get_type(**id).is_event()) // todo: is this important
+            .filter(|id| !symbol_table.get_typ(**id).is_event()) // todo: is this important
             .for_each(|input| {
                 graph.add_node(*input);
             });
@@ -212,7 +212,7 @@ impl ComponentDefinition {
         symbol_table
             .get_node_inputs(self.id)
             .into_iter()
-            .filter(|id| !symbol_table.get_type(**id).is_event())
+            .filter(|id| !symbol_table.get_typ(**id).is_event())
             .for_each(|input| {
                 hash.insert(*input, Color::White);
             });
@@ -306,7 +306,7 @@ impl ComponentDefinition {
         ctx.symbol_table
             .get_node_inputs(self.id)
             .iter()
-            .filter(|id| !ctx.symbol_table.get_type(**id).is_event()) // why?
+            .filter(|id| !ctx.symbol_table.get_typ(**id).is_event()) // why?
             .for_each(|signal| {
                 // get signal's color
                 let color = process_manager

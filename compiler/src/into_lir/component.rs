@@ -35,7 +35,7 @@ impl IntoLir<&'_ SymbolTable> for ComponentDefinition {
             .map(|id| {
                 (
                     symbol_table.get_name(*id).clone(),
-                    symbol_table.get_type(*id).clone(),
+                    symbol_table.get_typ(*id).clone(),
                 )
             })
             .collect::<Vec<_>>();
@@ -45,7 +45,7 @@ impl IntoLir<&'_ SymbolTable> for ComponentDefinition {
         let output_type = {
             let mut types = outputs
                 .iter()
-                .map(|(_, output_id)| symbol_table.get_type(*output_id).clone())
+                .map(|(_, output_id)| symbol_table.get_typ(*output_id).clone())
                 .collect::<Vec<_>>();
             if types.len() == 1 {
                 types.pop().unwrap()

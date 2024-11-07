@@ -269,10 +269,10 @@ impl BOp {
     ///
     /// ```rust
     /// # compiler_common::prelude! {}
-    /// let add_type = BOp::Add.get_type();
+    /// let add_type = BOp::Add.get_typ();
     /// assert!(add_type.is_polymorphic());
     /// ```
-    pub fn get_type(&self) -> Typ {
+    pub fn get_typ(&self) -> Typ {
         match self {
             // If self is an operator over numbers then its type can either be `int -> int -> int`
             // or `float -> float -> float` then it is a [Typ::Polymorphism]
@@ -370,10 +370,10 @@ impl UOp {
     ///
     /// ```rust
     /// # compiler_common::prelude! {}
-    /// let neg_type = UOp::Neg.get_type();
+    /// let neg_type = UOp::Neg.get_typ();
     /// assert!(neg_type.is_polymorphic());
     /// ```
-    pub fn get_type(&self) -> Typ {
+    pub fn get_typ(&self) -> Typ {
         match self {
             // If self is the numerical negation then its type can either
             // be `int -> int` or `float -> float`
@@ -441,10 +441,10 @@ impl OtherOp {
     ///
     /// ```rust
     /// # compiler_common::prelude! {}
-    /// let if_then_else_type = OtherOp::IfThenElse.get_type();
+    /// let if_then_else_type = OtherOp::IfThenElse.get_typ();
     /// assert!(if_then_else_type.is_polymorphic());
     /// ```
-    pub fn get_type(&self) -> Typ {
+    pub fn get_typ(&self) -> Typ {
         match self {
             // If self is "if _ then _ else _" its type can be
             // `bool -> t -> t` for any type t

@@ -399,7 +399,7 @@ impl FlowStatement {
 
                         // push in signals context
                         let flow_name = symbol_table.get_name(pattern_id).clone();
-                        let ty = symbol_table.get_type(pattern_id);
+                        let ty = symbol_table.get_typ(pattern_id);
                         flows_context.add_element(flow_name, ty);
                     }
                     flow::Kind::Sample { expr, .. } => {
@@ -417,7 +417,7 @@ impl FlowStatement {
                         // push in signals context
                         let source_name = symbol_table.get_name(id).clone();
                         let flow_name = symbol_table.get_name(pattern_id).clone();
-                        let ty = Typ::sm_event(symbol_table.get_type(id).clone());
+                        let ty = Typ::sm_event(symbol_table.get_typ(id).clone());
                         flows_context.add_element(source_name, &ty);
                         flows_context.add_element(flow_name, &ty);
                     }
@@ -431,7 +431,7 @@ impl FlowStatement {
 
                         // push in signals context
                         let source_name = symbol_table.get_name(id).clone();
-                        let ty = symbol_table.get_type(id);
+                        let ty = symbol_table.get_typ(id);
                         flows_context.add_element(source_name, ty);
                     }
                     flow::Kind::ComponentCall { inputs, .. } => {
@@ -441,7 +441,7 @@ impl FlowStatement {
                         // store output signals in flows_context
                         for output_id in outputs_ids.iter() {
                             let output_name = symbol_table.get_name(*output_id);
-                            let output_type = symbol_table.get_type(*output_id);
+                            let output_type = symbol_table.get_typ(*output_id);
                             flows_context.add_element(output_name.clone(), output_type)
                         }
 
@@ -451,7 +451,7 @@ impl FlowStatement {
                                 // normalization)
                                 flow::Kind::Ident { id: flow_id } => {
                                     let flow_name = symbol_table.get_name(*flow_id).clone();
-                                    let ty = symbol_table.get_type(*flow_id);
+                                    let ty = symbol_table.get_typ(*flow_id);
                                     if !ty.is_event() {
                                         // push in context
                                         flows_context.add_element(flow_name, ty);

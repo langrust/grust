@@ -15,7 +15,7 @@ impl IntoLir<&'_ SymbolTable> for hir::Typedef {
                     .map(|id| {
                         (
                             symbol_table.get_name(id).clone(),
-                            symbol_table.get_type(id).clone(),
+                            symbol_table.get_typ(id).clone(),
                         )
                     })
                     .collect(),

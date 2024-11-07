@@ -60,11 +60,11 @@ where
                     .map(|id| {
                         (
                             symbol_table.get_name(*id).clone(),
-                            symbol_table.get_type(*id).clone(),
+                            symbol_table.get_typ(*id).clone(),
                         )
                     })
                     .collect();
-                let output = expr.get_type().expect("it should be typed").clone();
+                let output = expr.get_typ().expect("it should be typed").clone();
                 lir::Expr::Lambda {
                     inputs,
                     output,
@@ -183,7 +183,7 @@ impl IntoLir<&'_ SymbolTable> for hir::Expr {
     fn into_lir(self, symbol_table: &SymbolTable) -> Self::Lir {
         self.kind.into_lir(symbol_table)
     }
-    fn get_type(&self) -> Option<&Typ> {
+    fn get_typ(&self) -> Option<&Typ> {
         self.typing.as_ref()
     }
 

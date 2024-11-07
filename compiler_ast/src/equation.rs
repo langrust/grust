@@ -555,7 +555,7 @@ mod parse_equation {
             stmt::Pattern::typed(stmt::Typed {
                 ident: parse_quote!(o),
                 colon_token: parse_quote!(:),
-                typing: Typ::int(),
+                typ: Typ::int(),
             }),
             parse_quote!(=),
             stream::ReactExpr::expr(stream::Expr::ite(IfThenElse::new(
@@ -584,12 +584,12 @@ mod parse_equation {
                 stmt::Pattern::Typed(stmt::Typed {
                     ident: parse_quote!(o1),
                     colon_token: parse_quote!(:),
-                    typing: Typ::int(),
+                    typ: Typ::int(),
                 }),
                 stmt::Pattern::Typed(stmt::Typed {
                     ident: parse_quote!(o2),
                     colon_token: parse_quote!(:),
-                    typing: Typ::int(),
+                    typ: Typ::int(),
                 }),
             ])),
             parse_quote!(=),

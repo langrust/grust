@@ -15,7 +15,7 @@ pub enum Kind {
         /// Identifier.
         id: usize,
         /// The type.
-        typing: Typ,
+        typ: Typ,
     },
     /// Tuple pattern that matches tuples.
     Tuple {
@@ -28,7 +28,7 @@ mk_new! { impl Kind =>
     Identifier: ident { id: usize }
     Typed: typed {
         id: usize,
-        typing: Typ,
+        typ: Typ,
     }
     Tuple: tuple { elements: Vec<Pattern> }
 }
@@ -39,7 +39,7 @@ pub struct Pattern {
     /// Pattern kind.
     pub kind: Kind,
     /// Pattern type.
-    pub typing: Option<Typ>,
+    pub typ: Option<Typ>,
     /// Pattern location.
     pub loc: Location,
 }
@@ -50,7 +50,7 @@ pub struct Pattern {
 pub fn init(kind: Kind) -> Pattern {
     Pattern {
         kind,
-        typing: None,
+        typ: None,
         loc: Location::default(),
     }
 }
@@ -58,11 +58,11 @@ pub fn init(kind: Kind) -> Pattern {
 impl Pattern {
     /// Get pattern's type.
     pub fn get_type(&self) -> Option<&Typ> {
-        self.typing.as_ref()
+        self.typ.as_ref()
     }
     /// Get pattern's mutable type.
     pub fn get_type_mut(&mut self) -> Option<&mut Typ> {
-        self.typing.as_mut()
+        self.typ.as_mut()
     }
     /// Get pattern's identifiers.
     pub fn identifiers(&self) -> Vec<usize> {
