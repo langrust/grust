@@ -1,4 +1,4 @@
-//! [Component](crate::ir1::node::Component) module.
+//! [Component] module.
 
 prelude! {
     graph::*,

@@ -4,7 +4,7 @@ prelude! {
 
 /// Configuration items in the AST.
 ///
-/// They set the static [Conf](conf::Conf).
+/// They set the static [conf::Conf].
 pub struct ConfigItem;
 impl Parse for ConfigItem {
     fn parse(input: ParseStream) -> Res<Self> {

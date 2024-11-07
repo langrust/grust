@@ -687,10 +687,7 @@ mod service_handler {
         },
         synced::{Builder, Synced},
     }
-
-    use super::clean_synced;
-
-    use super::{flow_instr, from_synced, triggered::TriggersGraph};
+    use super::{clean_synced, flow_instr, from_synced, triggered::TriggersGraph};
 
     /// Compute the instruction propagating the changes of the input flow.
     fn propagate<'a>(
@@ -907,8 +904,7 @@ mod flow_instr {
     impl<'a> Builder<'a> {
         /// Create a Builder.
         ///
-        /// After creating the builder, you only need to [propagate](Self::propagate) the input flows.
-        /// This will create the instructions to run when the input flow arrives.
+        /// After creating the builder, you only need to [super::service_handler::build].
         pub fn new(
             service: &'a mut Service,
             symbols: &'a mut SymbolTable,
