@@ -8,41 +8,38 @@ pub enum Stmt {
         /// The variables created.
         pattern: Pattern,
         /// The expression associated to the variable.
-        expression: Expr,
+        expr: Expr,
     },
     /// A returned expression.
     ExprLast {
         /// The returned expression.
-        expression: Expr,
+        expr: Expr,
     },
 }
 
 mk_new! { impl Stmt =>
     Let: let_binding {
         pattern: Pattern,
-        expression: Expr,
+        expr: Expr,
     }
-    ExprLast: expression_last { expression: Expr }
+    ExprLast: expression_last { expr: Expr }
 }
 
 impl Stmt {
     pub fn into_syn(self, crates: &mut BTreeSet<String>) -> syn::Stmt {
         match self {
-            Self::Let {
-                pattern,
-                expression,
-            } => syn::Stmt::Local(syn::Local {
+            Self::Let { pattern, expr } => syn::Stmt::Local(syn::Local {
                 attrs: vec![],
                 let_token: Default::default(),
                 pat: pattern.into_syn(),
                 init: Some(syn::LocalInit {
                     eq_token: Default::default(),
-                    expr: Box::new(expression.into_syn(crates)),
+                    expr: Box::new(expr.into_syn(crates)),
                     diverge: None,
                 }),
                 semi_token: Default::default(),
             }),
-            Stmt::ExprLast { expression } => syn::Stmt::Expr(expression.into_syn(crates), None),
+            Stmt::ExprLast { expr } => syn::Stmt::Expr(expr.into_syn(crates), None),
         }
     }
 }

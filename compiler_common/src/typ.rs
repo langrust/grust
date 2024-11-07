@@ -415,7 +415,7 @@ impl Typ {
     pub fn apply(
         &mut self,
         input_types: Vec<Typ>,
-        location: Location,
+        loc: Location,
         errors: &mut Vec<Error>,
     ) -> TRes<Typ> {
         match self {
@@ -427,7 +427,7 @@ impl Typ {
                         .iter()
                         .zip(inputs)
                         .map(|(given_type, expected_type)| {
-                            given_type.eq_check(expected_type, location.clone(), errors)
+                            given_type.eq_check(expected_type, loc.clone(), errors)
                         })
                         .collect::<TRes<()>>()?;
                     Ok((**output).clone())
@@ -435,7 +435,7 @@ impl Typ {
                     let error = Error::ArityMismatch {
                         input_count: input_types.len(),
                         arity: inputs.len(),
-                        location,
+                        loc,
                     };
                     errors.push(error);
                     Err(TerminationError)
@@ -446,11 +446,11 @@ impl Typ {
             // type
             Typ::Polymorphism(fn_type) => {
                 let mut function_type =
-                    fn_type(input_types.clone(), location.clone()).map_err(|error| {
+                    fn_type(input_types.clone(), loc.clone()).map_err(|error| {
                         errors.push(error);
                         TerminationError
                     })?;
-                let result = function_type.apply(input_types.clone(), location, errors)?;
+                let result = function_type.apply(input_types.clone(), loc, errors)?;
 
                 *self = function_type;
                 Ok(result)
@@ -459,7 +459,7 @@ impl Typ {
                 let error = Error::ExpectAbstraction {
                     input_types,
                     given_type: self.clone(),
-                    location,
+                    loc,
                 };
                 errors.push(error);
                 Err(TerminationError)
@@ -484,7 +484,7 @@ impl Typ {
     pub fn eq_check(
         &self,
         expected_type: &Typ,
-        location: Location,
+        loc: Location,
         errors: &mut Vec<Error>,
     ) -> TRes<()> {
         if self.eq(expected_type) {
@@ -493,7 +493,7 @@ impl Typ {
             let error = Error::IncompatibleType {
                 given_type: self.clone(),
                 expected_type: expected_type.clone(),
-                location,
+                loc,
             };
             errors.push(error);
             Err(TerminationError)
@@ -550,7 +550,7 @@ impl Typ {
     /// }
     ///
     ///
-    /// interface exemple {
+    /// interface example {
     ///     import signal int  s;
     ///     import event  bool e;
     ///
@@ -604,10 +604,10 @@ impl Typ {
     pub fn is_polymorphic(&self) -> bool {
         use Typ::*;
         let mut stack = vec![];
-        let mut curr = self;
+        let mut current = self;
 
         'go_down: loop {
-            match curr {
+            match current {
                 // early return, bypass the whole stack
                 Polymorphism { .. } | NotDefinedYet(_) => return true,
                 // leaves that don't require going down
@@ -620,20 +620,20 @@ impl Typ {
                 | Any => (),
                 // nodes we need to go down into
                 Array { ty, .. } | SMEvent { ty, .. } | Signal { ty, .. } | Event { ty, .. } => {
-                    curr = ty;
+                    current = ty;
                     continue 'go_down;
                 }
                 Abstract { inputs, output, .. } => {
                     for ty in inputs {
                         stack.push(ty);
                     }
-                    curr = output;
+                    current = output;
                     continue 'go_down;
                 }
                 Tuple { elements, .. } => {
                     let mut tys = elements.iter();
                     if let Some(ty) = tys.next() {
-                        curr = ty;
+                        current = ty;
                         for ty in tys {
                             stack.push(ty);
                         }
@@ -644,7 +644,7 @@ impl Typ {
             }
 
             if let Some(next) = stack.pop() {
-                curr = next;
+                current = next;
                 continue 'go_down;
             } else {
                 debug_assert!(stack.is_empty());
@@ -658,7 +658,7 @@ impl Typ {
 mod test {
     use super::*;
 
-    fn equality(mut input_types: Vec<Typ>, location: Location) -> Res<Typ> {
+    fn equality(mut input_types: Vec<Typ>, loc: Location) -> Res<Typ> {
         if input_types.len() == 2 {
             let type_2 = input_types.pop().unwrap();
             let type_1 = input_types.pop().unwrap();
@@ -668,7 +668,7 @@ mod test {
                 let error = Error::IncompatibleType {
                     given_type: type_2,
                     expected_type: type_1,
-                    location,
+                    loc,
                 };
                 Err(error)
             }
@@ -676,7 +676,7 @@ mod test {
             let error = Error::ArityMismatch {
                 input_count: input_types.len(),
                 arity: 2,
-                location,
+                loc,
             };
             Err(error)
         }
@@ -711,7 +711,7 @@ mod test {
     }
 
     #[test]
-    fn should_return_nonpolymorphic() {
+    fn should_return_non_polymorphic() {
         let mut errors = vec![];
 
         let mut polymorphic_type = Typ::poly(equality);
@@ -745,7 +745,7 @@ mod test {
     }
 
     #[test]
-    fn should_modify_polymorphic_type_to_nonpolymorphic() {
+    fn should_modify_polymorphic_type_to_non_polymorphic() {
         let mut errors = vec![];
 
         let mut polymorphic_type = Typ::poly(equality);
@@ -834,7 +834,7 @@ mod test {
     }
 
     #[test]
-    fn should_create_option_from_lir_statemachine_event() {
+    fn should_create_option_from_lir_state_machine_event() {
         let typ = Typ::sm_event(Typ::float());
         let control = parse_quote!(Option<f64>);
         assert_eq!(typ.into_syn(), control)

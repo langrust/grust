@@ -117,7 +117,7 @@ impl IntoLir<hir::ctx::Full<'_, TimingEvent>> for Service {
     fn into_lir(mut self, ctx: hir::ctx::Full<TimingEvent>) -> ServiceHandler {
         let flows_context = self.get_flows_context(ctx.symbols);
         ctx.symbols.local();
-        let ctxt: flow_instr::Builder<'_> = flow_instr::Builder::new(
+        let builder: flow_instr::Builder<'_> = flow_instr::Builder::new(
             &mut self,
             ctx.symbols,
             flows_context,
@@ -125,7 +125,7 @@ impl IntoLir<hir::ctx::Full<'_, TimingEvent>> for Service {
             ctx.exports,
             ctx.timings,
         );
-        let service_handler = service_handler::build(ctxt);
+        let service_handler = service_handler::build(builder);
         ctx.symbols.global();
         service_handler
     }
@@ -710,29 +710,29 @@ mod service_handler {
 
     /// Compute the instruction propagating the changes of the input flow.
     fn propagate<'a>(
-        ctxt: &mut flow_instr::Builder<'a>,
+        ctx: &mut flow_instr::Builder<'a>,
         stmt_id: usize,
         flow_id: usize,
     ) -> FlowInstruction {
-        if ctxt.symbols().is_delay(flow_id) {
-            propagate_input_store(ctxt, flow_id)
+        if ctx.symbols().is_delay(flow_id) {
+            propagate_input_store(ctx, flow_id)
         } else {
-            ctxt.set_multiple_inputs(false);
-            flow_instruction(ctxt, std::iter::once(stmt_id))
+            ctx.set_multiple_inputs(false);
+            flow_instruction(ctx, std::iter::once(stmt_id))
         }
     }
 
     /// Compute the instruction propagating the changes of the input store.
     fn propagate_input_store<'a>(
-        ctxt: &mut flow_instr::Builder<'a>,
+        ctx: &mut flow_instr::Builder<'a>,
         delay_id: usize,
     ) -> FlowInstruction {
-        debug_assert!(ctxt.is_clear());
-        debug_assert!(ctxt.symbols().is_delay(delay_id));
-        let symbols = ctxt.symbols();
+        debug_assert!(ctx.is_clear());
+        debug_assert!(ctx.symbols().is_delay(delay_id));
+        let symbols = ctx.symbols();
 
         // this is an ORDERED list of the input flows
-        let inputs = ctxt.inputs().collect::<Vec<_>>();
+        let inputs = ctx.inputs().collect::<Vec<_>>();
         let flows_names = inputs
             .iter()
             .map(|(_, import_id)| symbols.get_name(*import_id).clone());
@@ -773,8 +773,8 @@ mod service_handler {
                 })
                 .collect();
             // compute the instruction that will propagate changes
-            ctxt.set_multiple_inputs(true);
-            let instr = flow_instruction(ctxt, imports.into_iter());
+            ctx.set_multiple_inputs(true);
+            let instr = flow_instruction(ctx, imports.into_iter());
             MatchArm::new(patterns, instr)
         });
 
@@ -783,12 +783,12 @@ mod service_handler {
 
     /// Compute the instruction propagating the changes of the input flows.
     fn flow_instruction<'a>(
-        ctxt: &mut flow_instr::Builder<'a>,
+        ctx: &mut flow_instr::Builder<'a>,
         imports: impl Iterator<Item = usize>,
     ) -> FlowInstruction {
-        debug_assert!(ctxt.is_clear());
+        debug_assert!(ctx.is_clear());
         // construct subgraph representing the propagation of 'imports'
-        let subgraph = &ctxt.graph().subgraph(imports);
+        let subgraph = &ctx.graph().subgraph(imports);
 
         let synced = if conf::para() {
             // if config is 'para' then build 'synced' with //-algo
@@ -796,51 +796,51 @@ mod service_handler {
                 return FlowInstruction::seq(vec![]);
             }
             let builder = Builder::<flow_instr::Builder, ()>::new(subgraph);
-            builder.run(ctxt).expect("oh no")
+            builder.run(ctx).expect("oh no")
         } else {
-            // else, construct an ordered sequence of the instrs
+            // else, construct an ordered sequence of instructions
             let ord_instrs = graph::toposort(subgraph, None).expect("no cycle expected");
             let seq: Vec<_> = ord_instrs
                 .into_iter()
-                .map(|i| Synced::instr(i, ctxt))
+                .map(|i| Synced::instr(i, ctx))
                 .collect();
             if seq.is_empty() {
                 return FlowInstruction::seq(vec![]);
             }
-            Synced::seq(seq, ctxt)
+            Synced::seq(seq, ctx)
         };
 
         // puts the exports out of parallel instructions
-        let synced = clean_synced::run(ctxt, synced);
+        let synced = clean_synced::run(ctx, synced);
         // produce the corresponding LIR instruction
-        let instr = from_synced::run(ctxt, synced);
+        let instr = from_synced::run(ctx, synced);
 
-        ctxt.clear();
+        ctx.clear();
         instr
     }
 
     /// Compute the input flow's handler.
     fn flow_handler<'a>(
-        ctxt: &mut flow_instr::Builder<'a>,
+        ctx: &mut flow_instr::Builder<'a>,
         stmt_id: usize,
         flow_id: usize,
     ) -> FlowHandler {
         // construct the instruction to perform
-        let instruction = propagate(ctxt, stmt_id, flow_id);
+        let instruction = propagate(ctx, stmt_id, flow_id);
 
-        let flow_name = ctxt.symbols().get_name(flow_id).clone();
-        // determine weither this arriving flow is a timing event
-        let arriving_flow = if ctxt.symbols().is_delay(flow_id) {
+        let flow_name = ctx.symbols().get_name(flow_id).clone();
+        // determine whether this arriving flow is a timing event
+        let arriving_flow = if ctx.symbols().is_delay(flow_id) {
             ArrivingFlow::ServiceDelay(flow_name)
-        } else if ctxt.symbols().is_period(flow_id) {
+        } else if ctx.symbols().is_period(flow_id) {
             ArrivingFlow::Period(flow_name)
-        } else if ctxt.symbols().is_deadline(flow_id) {
+        } else if ctx.symbols().is_deadline(flow_id) {
             ArrivingFlow::Deadline(flow_name)
-        } else if ctxt.symbols().is_timeout(flow_id) {
+        } else if ctx.symbols().is_timeout(flow_id) {
             ArrivingFlow::ServiceTimeout(flow_name)
         } else {
-            let flow_type = ctxt.symbols().get_type(flow_id).clone();
-            let path = ctxt.symbols().get_path(flow_id).clone();
+            let flow_type = ctx.symbols().get_type(flow_id).clone();
+            let path = ctx.symbols().get_path(flow_id).clone();
             ArrivingFlow::Channel(flow_name, flow_type, path)
         };
 
@@ -851,16 +851,16 @@ mod service_handler {
     }
 
     /// Compute the service handler.
-    pub fn build<'a>(mut ctxt: flow_instr::Builder<'a>) -> ServiceHandler {
+    pub fn build<'a>(mut ctx: flow_instr::Builder<'a>) -> ServiceHandler {
         // get service's name
-        let service = ctxt.service_name();
-        // create flow handlers according to propagations of every incomming flows
-        let flows_handling: Vec<_> = ctxt
+        let service = ctx.service_name();
+        // create flow handlers according to propagations of every incoming flows
+        let flows_handling: Vec<_> = ctx
             .service_imports()
-            .map(|(stmt_id, import_id)| flow_handler(&mut ctxt, stmt_id, import_id))
+            .map(|(stmt_id, import_id)| flow_handler(&mut ctx, stmt_id, import_id))
             .collect();
-        // destroy 'ctxt'
-        let (flows_context, components) = ctxt.destroy();
+        // destroy 'ctx'
+        let (flows_context, components) = ctx.destroy();
 
         ServiceHandler {
             service,
@@ -1075,17 +1075,9 @@ mod flow_instr {
             service.statements.iter().for_each(|(stmt_id, statement)| {
                 let stmt_id = *stmt_id;
                 match statement {
-                    FlowStatement::Declaration(FlowDeclaration {
-                        pattern,
-                        flow_expression,
-                        ..
-                    })
-                    | FlowStatement::Instantiation(FlowInstantiation {
-                        pattern,
-                        flow_expression,
-                        ..
-                    }) => {
-                        match &flow_expression.kind {
+                    FlowStatement::Declaration(FlowDeclaration { pattern, expr, .. })
+                    | FlowStatement::Instantiation(FlowInstantiation { pattern, expr, .. }) => {
+                        match &expr.kind {
                             flow::Kind::Ident { .. }
                             | flow::Kind::Throttle { .. }
                             | flow::Kind::Merge { .. } => (),
@@ -1358,10 +1350,10 @@ mod flow_instr {
             &mut self,
             stmt_id: usize,
             pattern: &hir::stmt::Pattern,
-            flow_expression: &flow::Expr,
+            expr: &flow::Expr,
         ) -> FlowInstruction {
-            let dependencies = flow_expression.get_dependencies();
-            match &flow_expression.kind {
+            let dependencies = expr.get_dependencies();
+            match &expr.kind {
                 flow::Kind::Ident { id } => self.handle_ident(pattern, *id),
                 flow::Kind::Sample { .. } => self.handle_sample(stmt_id, pattern, dependencies),
                 flow::Kind::Scan { .. } => self.handle_scan(stmt_id, pattern, dependencies),
@@ -1497,7 +1489,7 @@ mod flow_instr {
 
             let timer_id = self.stmts_timers[&stmt_id].clone();
 
-            let occurences = (
+            let occurrences = (
                 self.events.contains(&id_source),
                 self.events.contains(&timer_id),
             );
@@ -1514,7 +1506,7 @@ mod flow_instr {
                 let reset = self.reset_timer(timer_id, import_flow);
                 FlowInstruction::seq(vec![def, reset])
             };
-            match occurences {
+            match occurrences {
                 (true, true) => source_instr(Some(timer_instr())),
                 (true, false) => source_instr(None),
                 (false, true) => timer_instr(),
@@ -1829,11 +1821,11 @@ mod from_synced {
     use super::flow_instr;
 
     pub trait FromSynced<Ctx: CtxSpec + ?Sized>: Sized {
-        fn prefix(ctxt: &mut Ctx) -> Self;
-        fn suffix(ctxt: &mut Ctx) -> Self;
-        fn from_instr(ctxt: &mut Ctx, instr: Ctx::Instr) -> Self;
-        fn from_seq(ctxt: &mut Ctx, seq: Vec<Self>) -> Self;
-        fn from_para(ctxt: &mut Ctx, para: Map<ParaMethod, Vec<Self>>) -> Self;
+        fn prefix(ctx: &mut Ctx) -> Self;
+        fn suffix(ctx: &mut Ctx) -> Self;
+        fn from_instr(ctx: &mut Ctx, instr: Ctx::Instr) -> Self;
+        fn from_seq(ctx: &mut Ctx, seq: Vec<Self>) -> Self;
+        fn from_para(ctx: &mut Ctx, para: Map<ParaMethod, Vec<Self>>) -> Self;
     }
 
     pub trait IntoParaMethod {
@@ -1887,7 +1879,7 @@ mod from_synced {
         }
     }
 
-    pub fn run<Ctx, Instr>(ctxt: &mut Ctx, synced: Synced<Ctx>) -> Instr
+    pub fn run<Ctx, Instr>(ctx: &mut Ctx, synced: Synced<Ctx>) -> Instr
     where
         Ctx: CtxSpec + ?Sized,
         Ctx::Cost: IntoParaMethod,
@@ -1895,15 +1887,15 @@ mod from_synced {
     {
         let mut stack: Stack<Ctx, Instr> = Stack::new();
         let mut acc = None;
-        let mut curr = synced;
+        let mut current = synced;
 
         'go_down: loop {
             debug_assert!(acc.is_none());
-            match curr {
-                Synced::Instr(instr, _) => acc = Some(Instr::from_instr(ctxt, instr)),
+            match current {
+                Synced::Instr(instr, _) => acc = Some(Instr::from_instr(ctx, instr)),
                 Synced::Seq(mut todo, _) => {
                     todo.reverse();
-                    curr = todo
+                    current = todo
                         .pop()
                         .expect("there should be a synced in this sequence");
                     stack.push(Frame::Seq { done: vec![], todo });
@@ -1912,8 +1904,8 @@ mod from_synced {
                 Synced::Para(mut todo, _) => {
                     let (cost, mut cost_todo) = todo
                         .pop_first()
-                        .expect("there should be synceds in this parallel execution");
-                    curr = cost_todo
+                        .expect("there should be synced elements in this parallel execution");
+                    current = cost_todo
                         .pop()
                         .expect("there should be a synced in this parallel execution");
                     if !cost_todo.is_empty() {
@@ -1933,10 +1925,10 @@ mod from_synced {
                 match stack.pop() {
                     None => {
                         // prefix ; acc ; suffix
-                        let prefix = Instr::prefix(ctxt);
+                        let prefix = Instr::prefix(ctx);
                         let instr = acc.expect("there should be an instruction to return");
-                        let suffix = Instr::suffix(ctxt);
-                        return Instr::from_seq(ctxt, vec![prefix, instr, suffix]);
+                        let suffix = Instr::suffix(ctx);
+                        return Instr::from_seq(ctx, vec![prefix, instr, suffix]);
                     }
                     Some(Frame::Para {
                         mut done,
@@ -1947,7 +1939,7 @@ mod from_synced {
                             .expect("there should be an instruction to parallelize");
                         done.entry(method).or_insert_with(Vec::new).push(instr);
                         if let Some((cost, mut cost_todo)) = todo.pop_first() {
-                            curr = cost_todo
+                            current = cost_todo
                                 .pop()
                                 .expect("impossible: `if !cost_todo.is_empty() {`");
                             if !cost_todo.is_empty() {
@@ -1960,7 +1952,7 @@ mod from_synced {
                             });
                             continue 'go_down;
                         } else {
-                            acc = Some(Instr::from_para(ctxt, done));
+                            acc = Some(Instr::from_para(ctx, done));
                             continue 'go_up;
                         }
                     }
@@ -1968,12 +1960,12 @@ mod from_synced {
                         let instr = std::mem::take(&mut acc)
                             .expect("there should be an instruction to sequence");
                         done.push(instr);
-                        if let Some(curr_todo) = todo.pop() {
-                            curr = curr_todo;
+                        if let Some(current_todo) = todo.pop() {
+                            current = current_todo;
                             stack.push(Frame::Seq { done, todo });
                             continue 'go_down;
                         } else {
-                            acc = Some(Instr::from_seq(ctxt, done));
+                            acc = Some(Instr::from_seq(ctx, done));
                             continue 'go_up;
                         }
                     }
@@ -2006,51 +1998,45 @@ mod from_synced {
     }
     impl<'a> FromSynced<flow_instr::Builder<'a>> for FlowInstruction {
         fn from_instr(
-            ctxt: &mut flow_instr::Builder,
+            ctx: &mut flow_instr::Builder,
             instr: <flow_instr::Builder as CtxSpec>::Instr,
         ) -> Self {
             // get flow statement related to instr
-            if let Some(flow_statement) = ctxt.get_stmt(instr) {
+            if let Some(flow_statement) = ctx.get_stmt(instr) {
                 match flow_statement.clone() {
-                    FlowStatement::Declaration(FlowDeclaration {
-                        pattern,
-                        flow_expression,
-                        ..
-                    })
-                    | FlowStatement::Instantiation(FlowInstantiation {
-                        pattern,
-                        flow_expression,
-                        ..
-                    }) => ctxt.handle_expr(instr, &pattern, &flow_expression),
+                    FlowStatement::Declaration(FlowDeclaration { pattern, expr, .. })
+                    | FlowStatement::Instantiation(FlowInstantiation { pattern, expr, .. }) => {
+                        ctx.handle_expr(instr, &pattern, &expr)
+                    }
                 }
             } else
             // get flow export related to instr
-            if let Some(export) = ctxt.get_export(instr) {
-                ctxt.send(instr, export.id)
+            if let Some(export) = ctx.get_export(instr) {
+                ctx.send(instr, export.id)
             } else
             // get flow import related to instr
-            if let Some(import) = ctxt.get_import(instr) {
-                ctxt.handle_import(import.id)
+            if let Some(import) = ctx.get_import(instr) {
+                ctx.handle_import(import.id)
             } else {
                 unreachable!()
             }
         }
 
-        fn from_seq(_ctxt: &mut flow_instr::Builder, seq: Vec<Self>) -> Self {
+        fn from_seq(_ctx: &mut flow_instr::Builder, seq: Vec<Self>) -> Self {
             FlowInstruction::seq(seq)
         }
 
-        fn from_para(_ctxt: &mut flow_instr::Builder, para: Map<ParaMethod, Vec<Self>>) -> Self {
+        fn from_para(_ctx: &mut flow_instr::Builder, para: Map<ParaMethod, Vec<Self>>) -> Self {
             FlowInstruction::para(para)
         }
 
-        fn prefix(ctxt: &mut flow_instr::Builder<'a>) -> Self {
+        fn prefix(ctx: &mut flow_instr::Builder<'a>) -> Self {
             // init events that should be declared as &mut.
-            let init_events = ctxt.init_events().collect::<Vec<_>>();
+            let init_events = ctx.init_events().collect::<Vec<_>>();
             FlowInstruction::seq(init_events)
         }
 
-        fn suffix(_ctxt: &mut flow_instr::Builder<'a>) -> Self {
+        fn suffix(_ctx: &mut flow_instr::Builder<'a>) -> Self {
             FlowInstruction::seq(vec![])
         }
     }
@@ -2065,7 +2051,7 @@ mod clean_synced {
     }
 
     pub trait IsExport: CtxSpec {
-        fn is_export(ctxt: &Self, instr: Self::Instr) -> bool;
+        fn is_export(ctx: &Self, instr: Self::Instr) -> bool;
     }
 
     enum Frame<Ctx>
@@ -2105,28 +2091,28 @@ mod clean_synced {
     }
 
     /// Puts the exports out of parallel instructions.
-    pub fn run<Ctx>(ctxt: &Ctx, synced: Synced<Ctx>) -> Synced<Ctx>
+    pub fn run<Ctx>(ctx: &Ctx, synced: Synced<Ctx>) -> Synced<Ctx>
     where
         Ctx: CtxSpec + IsExport + ?Sized,
     {
         let mut stack: Stack<Ctx> = Stack::new();
         let mut acc = None;
-        let mut curr = synced;
+        let mut current = synced;
 
         'go_down: loop {
             debug_assert!(acc.is_none());
-            match curr {
-                Synced::Instr(_, _) => acc = Some(curr),
+            match current {
+                Synced::Instr(_, _) => acc = Some(current),
                 Synced::Seq(mut todo, _) => {
                     todo.reverse();
-                    curr = todo
+                    current = todo
                         .pop()
                         .expect("there should be a synced in this sequence");
                     stack.push(Frame::Seq { done: vec![], todo });
                     continue 'go_down;
                 }
                 Synced::Para(_, _) => {
-                    acc = Some(extract_exports(ctxt, curr));
+                    acc = Some(extract_exports(ctx, current));
                 }
             }
 
@@ -2141,12 +2127,12 @@ mod clean_synced {
                         let instr = std::mem::take(&mut acc)
                             .expect("there should be an instruction to sequence");
                         done.push(instr);
-                        if let Some(curr_todo) = todo.pop() {
-                            curr = curr_todo;
+                        if let Some(current_todo) = todo.pop() {
+                            current = current_todo;
                             stack.push(Frame::Seq { done, todo });
                             continue 'go_down;
                         } else {
-                            acc = Some(Synced::seq(done, ctxt));
+                            acc = Some(Synced::seq(done, ctx));
                             continue 'go_up;
                         }
                     }
@@ -2199,28 +2185,28 @@ mod clean_synced {
     ///
     /// Returns a tuple `(new_synced, exports)` where `new_synced` is a copy
     /// of input `synced` without exports, which are in `exports`.
-    fn extract_exports<Ctx>(ctxt: &Ctx, synced: Synced<Ctx>) -> Synced<Ctx>
+    fn extract_exports<Ctx>(ctx: &Ctx, synced: Synced<Ctx>) -> Synced<Ctx>
     where
         Ctx: CtxSpec + IsExport + ?Sized,
     {
         let mut stack: ExtractStack<Ctx> = ExtractStack::new();
         let mut acc = None;
         let mut exports = vec![];
-        let mut curr = synced;
+        let mut current = synced;
 
         'go_down: loop {
             debug_assert!(acc.is_none());
-            match curr {
+            match current {
                 Synced::Instr(instr, _) => {
-                    if IsExport::is_export(ctxt, instr) {
-                        exports.push(curr)
+                    if IsExport::is_export(ctx, instr) {
+                        exports.push(current)
                     } else {
-                        acc = Some(curr)
+                        acc = Some(current)
                     }
                 }
                 Synced::Seq(mut todo, _) => {
                     todo.reverse();
-                    curr = todo
+                    current = todo
                         .pop()
                         .expect("there should be a synced in this sequence");
                     stack.push(ExtractFrame::Seq { done: vec![], todo });
@@ -2229,8 +2215,8 @@ mod clean_synced {
                 Synced::Para(mut todo, _) => {
                     let (cost, mut cost_todo) = todo
                         .pop_first()
-                        .expect("there should be synceds in this parallel execution");
-                    curr = cost_todo
+                        .expect("there should be synced elements in this parallel execution");
+                    current = cost_todo
                         .pop()
                         .expect("there should be a synced in this parallel execution");
                     if !cost_todo.is_empty() {
@@ -2252,15 +2238,15 @@ mod clean_synced {
                             if exports.is_empty() {
                                 return para;
                             } else {
-                                let exports = Synced::seq(exports, ctxt);
-                                return Synced::seq(vec![para, exports], ctxt);
+                                let exports = Synced::seq(exports, ctx);
+                                return Synced::seq(vec![para, exports], ctx);
                             }
                         } else {
                             debug_assert!(
                                 !exports.is_empty(),
                                 "otherwise, the input 'synced' is empty"
                             );
-                            return Synced::seq(exports, ctxt);
+                            return Synced::seq(exports, ctx);
                         }
                     }
                     Some(ExtractFrame::Para {
@@ -2272,7 +2258,7 @@ mod clean_synced {
                             done.entry(cost).or_insert_with(Vec::new).push(instr);
                         }
                         if let Some((cost, mut cost_todo)) = todo.pop_first() {
-                            curr = cost_todo
+                            current = cost_todo
                                 .pop()
                                 .expect("impossible: `if !cost_todo.is_empty() {`");
                             if !cost_todo.is_empty() {
@@ -2283,7 +2269,7 @@ mod clean_synced {
                         } else if done.is_empty() {
                             continue 'go_up;
                         } else {
-                            acc = Some(Synced::para(done, ctxt));
+                            acc = Some(Synced::para(done, ctx));
                             continue 'go_up;
                         }
                     }
@@ -2291,14 +2277,14 @@ mod clean_synced {
                         if let Some(instr) = std::mem::take(&mut acc) {
                             done.push(instr);
                         }
-                        if let Some(curr_todo) = todo.pop() {
-                            curr = curr_todo;
+                        if let Some(current_todo) = todo.pop() {
+                            current = current_todo;
                             stack.push(ExtractFrame::Seq { done, todo });
                             continue 'go_down;
                         } else if done.is_empty() {
                             continue 'go_up;
                         } else {
-                            acc = Some(Synced::seq(done, ctxt));
+                            acc = Some(Synced::seq(done, ctx));
                             continue 'go_up;
                         }
                     }
@@ -2308,8 +2294,8 @@ mod clean_synced {
     }
 
     impl<'a> IsExport for flow_instr::Builder<'a> {
-        fn is_export(ctxt: &Self, instr: Self::Instr) -> bool {
-            ctxt.get_export(instr).is_some()
+        fn is_export(ctx: &Self, instr: Self::Instr) -> bool {
+            ctx.get_export(instr).is_some()
         }
     }
 }

@@ -213,7 +213,7 @@ pub struct FlowDeclaration {
     pub pattern: hir::stmt::Pattern,
     pub eq_token: Token![=],
     /// The expression defining the flow.
-    pub flow_expression: hir::flow::Expr,
+    pub expr: hir::flow::Expr,
     pub semi_token: Token![;],
 }
 /// Flow statement HIR.
@@ -223,7 +223,7 @@ pub struct FlowInstantiation {
     pub pattern: hir::stmt::Pattern,
     pub eq_token: Token![=],
     /// The expression defining the flow.
-    pub flow_expression: hir::flow::Expr,
+    pub expr: hir::flow::Expr,
     pub semi_token: Token![;],
 }
 /// Flow statement HIR.
@@ -260,7 +260,7 @@ impl FlowStatement {
         use FlowStatement::*;
         match self {
             Declaration(FlowDeclaration {
-                flow_expression:
+                expr:
                     hir::flow::Expr {
                         kind:
                             hir::flow::Kind::ComponentCall {
@@ -272,7 +272,7 @@ impl FlowStatement {
                 ..
             })
             | Instantiation(FlowInstantiation {
-                flow_expression:
+                expr:
                     hir::flow::Expr {
                         kind:
                             hir::flow::Kind::ComponentCall {
@@ -292,7 +292,7 @@ impl FlowStatement {
         use FlowStatement::*;
         match self {
             Declaration(FlowDeclaration {
-                flow_expression:
+                expr:
                     hir::flow::Expr {
                         kind: hir::flow::Kind::ComponentCall { .. },
                         ..
@@ -300,7 +300,7 @@ impl FlowStatement {
                 ..
             })
             | Instantiation(FlowInstantiation {
-                flow_expression:
+                expr:
                     hir::flow::Expr {
                         kind: hir::flow::Kind::ComponentCall { .. },
                         ..
@@ -323,12 +323,10 @@ impl FlowStatement {
     /// Retrieves the statement's dependencies.
     pub fn get_dependencies(&self) -> Vec<usize> {
         match self {
-            FlowStatement::Declaration(FlowDeclaration {
-                flow_expression, ..
-            })
-            | FlowStatement::Instantiation(FlowInstantiation {
-                flow_expression, ..
-            }) => flow_expression.get_dependencies(),
+            FlowStatement::Declaration(FlowDeclaration { expr, .. })
+            | FlowStatement::Instantiation(FlowInstantiation { expr, .. }) => {
+                expr.get_dependencies()
+            }
         }
     }
 
@@ -339,14 +337,10 @@ impl FlowStatement {
         graph: &mut DiGraphMap<usize, ()>,
     ) {
         match self {
-            FlowStatement::Declaration(FlowDeclaration {
-                flow_expression, ..
-            })
-            | FlowStatement::Instantiation(FlowInstantiation {
-                flow_expression, ..
-            }) => {
-                debug_assert!(flow_expression.is_normal());
-                let dependencies = flow_expression.get_dependencies();
+            FlowStatement::Declaration(FlowDeclaration { expr, .. })
+            | FlowStatement::Instantiation(FlowInstantiation { expr, .. }) => {
+                debug_assert!(expr.is_normal());
+                let dependencies = expr.get_dependencies();
                 dependencies.iter().for_each(|flow_id| {
                     let dep_id = flows_statements.get(flow_id).expect("should be there");
                     graph.add_edge(*dep_id, stmt_id, ());
@@ -384,109 +378,95 @@ impl FlowStatement {
         symbol_table: &mut SymbolTable,
     ) -> Vec<FlowStatement> {
         let mut new_statements = match &mut self {
-            FlowStatement::Declaration(FlowDeclaration {
-                ref mut flow_expression,
-                ..
-            })
-            | FlowStatement::Instantiation(FlowInstantiation {
-                ref mut flow_expression,
-                ..
-            }) => flow_expression.normal_form(identifier_creator, symbol_table),
+            FlowStatement::Declaration(FlowDeclaration { ref mut expr, .. })
+            | FlowStatement::Instantiation(FlowInstantiation { ref mut expr, .. }) => {
+                expr.normal_form(identifier_creator, symbol_table)
+            }
         };
         new_statements.push(self);
         new_statements
     }
     fn add_flows_context(&self, flows_context: &mut ctx::Flows, symbol_table: &SymbolTable) {
         match self {
-            FlowStatement::Declaration(FlowDeclaration {
-                pattern,
-                flow_expression,
-                ..
-            })
-            | FlowStatement::Instantiation(FlowInstantiation {
-                pattern,
-                flow_expression,
-                ..
-            }) => match &flow_expression.kind {
-                flow::Kind::Throttle { .. } => {
-                    // get the id of pattern's flow (and check their is only one flow)
-                    let mut ids = pattern.identifiers();
-                    debug_assert!(ids.len() == 1);
-                    let pattern_id = ids.pop().unwrap();
+            FlowStatement::Declaration(FlowDeclaration { pattern, expr, .. })
+            | FlowStatement::Instantiation(FlowInstantiation { pattern, expr, .. }) => {
+                match &expr.kind {
+                    flow::Kind::Throttle { .. } => {
+                        // get the id of pattern's flow (and check their is only one flow)
+                        let mut ids = pattern.identifiers();
+                        debug_assert!(ids.len() == 1);
+                        let pattern_id = ids.pop().unwrap();
 
-                    // push in signals context
-                    let flow_name = symbol_table.get_name(pattern_id).clone();
-                    let ty = symbol_table.get_type(pattern_id);
-                    flows_context.add_element(flow_name, ty);
-                }
-                flow::Kind::Sample {
-                    flow_expression, ..
-                } => {
-                    // get the id of flow_expression (and check it is an identifier, from
-                    // normalization)
-                    let id = match &flow_expression.kind {
-                        flow::Kind::Ident { id } => *id,
-                        _ => unreachable!(),
-                    };
-                    // get pattern's id
-                    let mut ids = pattern.identifiers();
-                    assert!(ids.len() == 1);
-                    let pattern_id = ids.pop().unwrap();
-
-                    // push in signals context
-                    let source_name = symbol_table.get_name(id).clone();
-                    let flow_name = symbol_table.get_name(pattern_id).clone();
-                    let ty = Typ::sm_event(symbol_table.get_type(id).clone());
-                    flows_context.add_element(source_name, &ty);
-                    flows_context.add_element(flow_name, &ty);
-                }
-                flow::Kind::Scan {
-                    flow_expression, ..
-                } => {
-                    // get the id of flow_expression (and check it is an identifier, from
-                    // normalization)
-                    let id = match &flow_expression.kind {
-                        flow::Kind::Ident { id } => *id,
-                        _ => unreachable!(),
-                    };
-
-                    // push in signals context
-                    let source_name = symbol_table.get_name(id).clone();
-                    let ty = symbol_table.get_type(id);
-                    flows_context.add_element(source_name, ty);
-                }
-                flow::Kind::ComponentCall { inputs, .. } => {
-                    // get outputs' ids
-                    let outputs_ids = pattern.identifiers();
-
-                    // store output signals in flows_context
-                    for output_id in outputs_ids.iter() {
-                        let output_name = symbol_table.get_name(*output_id);
-                        let output_type = symbol_table.get_type(*output_id);
-                        flows_context.add_element(output_name.clone(), output_type)
+                        // push in signals context
+                        let flow_name = symbol_table.get_name(pattern_id).clone();
+                        let ty = symbol_table.get_type(pattern_id);
+                        flows_context.add_element(flow_name, ty);
                     }
-
-                    inputs.iter().for_each(|(_, flow_expression)| {
-                        match &flow_expression.kind {
-                            // get the id of flow_expression (and check it is an identifier, from
-                            // normalization)
-                            flow::Kind::Ident { id: flow_id } => {
-                                let flow_name = symbol_table.get_name(*flow_id).clone();
-                                let ty = symbol_table.get_type(*flow_id);
-                                if !ty.is_event() {
-                                    // push in context
-                                    flows_context.add_element(flow_name, ty);
-                                }
-                            }
+                    flow::Kind::Sample { expr, .. } => {
+                        // get the id of expr (and check it is an identifier, from
+                        // normalization)
+                        let id = match &expr.kind {
+                            flow::Kind::Ident { id } => *id,
                             _ => unreachable!(),
+                        };
+                        // get pattern's id
+                        let mut ids = pattern.identifiers();
+                        assert!(ids.len() == 1);
+                        let pattern_id = ids.pop().unwrap();
+
+                        // push in signals context
+                        let source_name = symbol_table.get_name(id).clone();
+                        let flow_name = symbol_table.get_name(pattern_id).clone();
+                        let ty = Typ::sm_event(symbol_table.get_type(id).clone());
+                        flows_context.add_element(source_name, &ty);
+                        flows_context.add_element(flow_name, &ty);
+                    }
+                    flow::Kind::Scan { expr, .. } => {
+                        // get the id of expr (and check it is an identifier, from
+                        // normalization)
+                        let id = match &expr.kind {
+                            flow::Kind::Ident { id } => *id,
+                            _ => unreachable!(),
+                        };
+
+                        // push in signals context
+                        let source_name = symbol_table.get_name(id).clone();
+                        let ty = symbol_table.get_type(id);
+                        flows_context.add_element(source_name, ty);
+                    }
+                    flow::Kind::ComponentCall { inputs, .. } => {
+                        // get outputs' ids
+                        let outputs_ids = pattern.identifiers();
+
+                        // store output signals in flows_context
+                        for output_id in outputs_ids.iter() {
+                            let output_name = symbol_table.get_name(*output_id);
+                            let output_type = symbol_table.get_type(*output_id);
+                            flows_context.add_element(output_name.clone(), output_type)
                         }
-                    });
+
+                        inputs.iter().for_each(|(_, expr)| {
+                            match &expr.kind {
+                                // get the id of expr (and check it is an identifier, from
+                                // normalization)
+                                flow::Kind::Ident { id: flow_id } => {
+                                    let flow_name = symbol_table.get_name(*flow_id).clone();
+                                    let ty = symbol_table.get_type(*flow_id);
+                                    if !ty.is_event() {
+                                        // push in context
+                                        flows_context.add_element(flow_name, ty);
+                                    }
+                                }
+                                _ => unreachable!(),
+                            }
+                        });
+                    }
+                    flow::Kind::Ident { .. }
+                    | flow::Kind::OnChange { .. }
+                    | flow::Kind::Timeout { .. }
+                    | flow::Kind::Merge { .. } => (),
                 }
-                flow::Kind::Ident { .. }
-                | flow::Kind::OnChange { .. }
-                | flow::Kind::Timeout { .. }
-                | flow::Kind::Merge { .. } => (),
-            },
+            }
         }
     }
 }

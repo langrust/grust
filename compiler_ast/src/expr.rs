@@ -21,13 +21,13 @@ pub struct UnOp<E> {
     /// The unary operator.
     pub op: UOp,
     /// The input expression.
-    pub expression: Box<E>,
+    pub expr: Box<E>,
 }
 
 mk_new! { impl{E} UnOp<E> =>
     new {
         op : UOp,
-        expression: impl Into<Box<E>> = expression.into(),
+        expr: impl Into<Box<E>> = expr.into(),
     }
 
 }
@@ -46,8 +46,8 @@ where
 {
     fn parse(input: ParseStream) -> syn::Res<Self> {
         let op = input.parse()?;
-        let expression = Box::new(E::parse_term(input)?);
-        Ok(UnOp { op, expression })
+        let expr = Box::new(E::parse_term(input)?);
+        Ok(UnOp { op, expr })
     }
 }
 
@@ -59,16 +59,16 @@ pub struct Binop<E> {
     /// The unary operator.
     pub op: BOp,
     /// The left expression.
-    pub left_expression: Box<E>,
+    pub lft: Box<E>,
     /// The right expression.
-    pub right_expression: Box<E>,
+    pub rgt: Box<E>,
 }
 
 mk_new! { impl{E} Binop<E> =>
     new {
         op : BOp,
-        left_expression: impl Into<Box<E>> = left_expression.into(),
-        right_expression: impl Into<Box<E>> = right_expression.into(),
+        lft: impl Into<Box<E>> = lft.into(),
+        rgt: impl Into<Box<E>> = rgt.into(),
     }
 
 }
@@ -105,19 +105,19 @@ where
 /// IfThenElse expression.
 #[derive(Debug, PartialEq, Clone)]
 pub struct IfThenElse<E> {
-    /// The test expression.
-    pub expression: Box<E>,
-    /// The 'true' expression.
-    pub true_expression: Box<E>,
-    /// The 'false' expression.
-    pub false_expression: Box<E>,
+    /// Condition.
+    pub cnd: Box<E>,
+    /// `then` branch.
+    pub thn: Box<E>,
+    /// `else` branch.
+    pub els: Box<E>,
 }
 
 mk_new! { impl{E} IfThenElse<E> =>
     new {
-        expression: impl Into<Box<E>> = expression.into(),
-        true_expression: impl Into<Box<E>> = true_expression.into(),
-        false_expression: impl Into<Box<E>> = false_expression.into()
+        cnd: impl Into<Box<E>> = cnd.into(),
+        thn: impl Into<Box<E>> = thn.into(),
+        els: impl Into<Box<E>> = els.into()
     }
 }
 
@@ -135,16 +135,12 @@ where
 {
     fn parse(input: ParseStream) -> syn::Res<Self> {
         let _: Token![if] = input.parse()?;
-        let expression = Box::new(input.parse()?);
+        let cnd = Box::new(input.parse()?);
         let _: keyword::then = input.parse()?;
-        let true_expression = Box::new(input.parse()?);
+        let thn = Box::new(input.parse()?);
         let _: Token![else] = input.parse()?;
-        let false_expression = Box::new(input.parse()?);
-        Ok(IfThenElse {
-            expression,
-            true_expression,
-            false_expression,
-        })
+        let els = Box::new(input.parse()?);
+        Ok(IfThenElse { cnd, thn, els })
     }
 }
 
@@ -152,14 +148,14 @@ where
 #[derive(Debug, PartialEq, Clone)]
 pub struct Application<E> {
     /// The expression applied.
-    pub function_expression: Box<E>,
+    pub fun: Box<E>,
     /// The inputs to the expression.
     pub inputs: Vec<E>,
 }
 
 mk_new! { impl{E} Application<E> =>
     new {
-        function_expression: impl Into<Box<E>> = function_expression.into(),
+        fun: impl Into<Box<E>> = fun.into(),
         inputs: Vec<E>,
     }
 }
@@ -198,13 +194,13 @@ pub struct TypedAbstraction<E> {
     /// The inputs to the abstraction.
     pub inputs: Vec<(String, Typ)>,
     /// The expression abstracted.
-    pub expression: Box<E>,
+    pub expr: Box<E>,
 }
 
 mk_new! { impl{E} TypedAbstraction<E> =>
     new {
         inputs: Vec<(String, Typ)>,
-        expression: impl Into<Box<E>> = expression.into(),
+        expr: impl Into<Box<E>> = expr.into(),
     }
 }
 
@@ -682,21 +678,21 @@ pub struct Arm<E> {
     /// The optional guard.
     pub guard: Option<E>,
     /// The expression.
-    pub expression: E,
+    pub expr: E,
 }
 
 mk_new! { impl{E} Arm<E> =>
     new_with_guard {
         pattern: Pattern,
-        expression: E,
+        expr: E,
         guard: Option<E>,
     }
 }
 impl<E> Arm<E> {
-    pub fn new(pattern: Pattern, expression: E) -> Self {
+    pub fn new(pattern: Pattern, expr: E) -> Self {
         Self {
             pattern,
-            expression,
+            expr,
             guard: None,
         }
     }
@@ -718,11 +714,11 @@ where
             }
         };
         let _: Token![=>] = input.parse()?;
-        let expression = input.parse()?;
+        let expr = input.parse()?;
         Ok(Arm {
             pattern,
             guard,
-            expression,
+            expr,
         })
     }
 }
@@ -731,14 +727,14 @@ where
 #[derive(Debug, PartialEq, Clone)]
 pub struct Match<E> {
     /// The expression to match.
-    pub expression: Box<E>,
+    pub expr: Box<E>,
     /// The different matching cases.
     pub arms: Vec<Arm<E>>,
 }
 
 mk_new! { impl{E} Match<E> =>
     new {
-        expression: impl Into<Box<E>> = expression.into(),
+        expr: impl Into<Box<E>> = expr.into(),
         arms: Vec<Arm<E>>,
     }
 }
@@ -869,13 +865,13 @@ pub struct Map<E> {
     /// The array expression.
     pub expression: Box<E>,
     /// The function expression.
-    pub function_expression: Box<E>,
+    pub fun: Box<E>,
 }
 
 mk_new! { impl{E} Map<E> =>
     new {
         expression: impl Into<Box<E>> = expression.into(),
-        function_expression: impl Into<Box<E>> = function_expression.into(),
+        fun: impl Into<Box<E>> = fun.into(),
     }
 }
 
@@ -896,9 +892,9 @@ where
         let _: keyword::map = input.parse()?;
         let content;
         let _ = parenthesized!(content in input);
-        let function_expression: E = content.parse()?;
+        let fun: E = content.parse()?;
         if content.is_empty() {
-            Ok(Self::new(expression, function_expression))
+            Ok(Self::new(expression, fun))
         } else {
             Err(input.error("expected only one expression"))
         }
@@ -914,9 +910,9 @@ where
         let _: keyword::map = input.parse()?;
         let content;
         let _ = parenthesized!(content in input);
-        let function_expression: E = content.parse()?;
+        let fun: E = content.parse()?;
         if content.is_empty() {
-            Ok(Self::new(expression, function_expression))
+            Ok(Self::new(expression, fun))
         } else {
             Err(input.error("expected only one expression"))
         }
@@ -927,18 +923,18 @@ where
 #[derive(Debug, PartialEq, Clone)]
 pub struct Fold<E> {
     /// The array expression.
-    pub expression: Box<E>,
+    pub array: Box<E>,
     /// The initialization expression.
-    pub initialization_expression: Box<E>,
+    pub init: Box<E>,
     /// The function expression.
-    pub function_expression: Box<E>,
+    pub fun: Box<E>,
 }
 
 mk_new! { impl{E} Fold<E> =>
     new {
-        expression: impl Into<Box<E>> = expression.into(),
-        initialization_expression: impl Into<Box<E>> = initialization_expression.into(),
-        function_expression: impl Into<Box<E>> = function_expression.into(),
+        array: impl Into<Box<E>> = array.into(),
+        init: impl Into<Box<E>> = init.into(),
+        fun: impl Into<Box<E>> = fun.into(),
     }
 }
 
@@ -996,13 +992,13 @@ pub struct Sort<E> {
     /// The array expression.
     pub expression: Box<E>,
     /// The function expression.
-    pub function_expression: Box<E>,
+    pub fun: Box<E>,
 }
 
 mk_new! { impl{E} Sort<E> =>
     new {
         expression: impl Into<Box<E>> = expression.into(),
-        function_expression: impl Into<Box<E>> = function_expression.into(),
+        fun: impl Into<Box<E>> = fun.into(),
     }
 }
 
@@ -1023,9 +1019,9 @@ where
         let _: keyword::sort = input.parse()?;
         let content;
         let _ = parenthesized!(content in input);
-        let function_expression: E = content.parse()?;
+        let fun: E = content.parse()?;
         if content.is_empty() {
-            Ok(Self::new(expression, function_expression))
+            Ok(Self::new(expression, fun))
         } else {
             Err(input.error("expected only one expression"))
         }
@@ -1041,9 +1037,9 @@ where
         let _: keyword::sort = input.parse()?;
         let content;
         let _ = parenthesized!(content in input);
-        let function_expression: E = content.parse()?;
+        let fun: E = content.parse()?;
         if content.is_empty() {
-            Ok(Self::new(expression, function_expression))
+            Ok(Self::new(expression, fun))
         } else {
             Err(input.error("expected only one expression"))
         }

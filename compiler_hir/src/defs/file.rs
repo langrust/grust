@@ -14,7 +14,7 @@ pub struct File {
     /// Program interface. It represents the system.
     pub interface: hir::Interface,
     /// Program location.
-    pub location: Location,
+    pub loc: Location,
 }
 
 impl File {
@@ -118,7 +118,7 @@ impl File {
     ///         mem: int = 0 fby v;
     ///     },
     ///     called_nodes: {
-    ///         memmy_node_o_: (my_node, o);
+    ///         mem_my_node_o_: (my_node, o);
     ///     },
     /// }
     /// ```

@@ -191,7 +191,7 @@ impl Expr {
             | stream::Expr::Zip { .. }
             | stream::Expr::Last { .. } => {
                 let error = Error::ExpectConstant {
-                    location: Location::default(),
+                    loc: Location::default(),
                 };
                 errors.push(error);
                 Err(TerminationError)
@@ -207,38 +207,24 @@ impl Expr {
                     Ok(())
                 } else {
                     let error = Error::ExpectConstant {
-                        location: Location::default(),
+                        loc: Location::default(),
                     };
                     errors.push(error);
                     Err(TerminationError)
                 }
             }
-            stream::Expr::UnOp(UnOp { expression, .. }) => {
-                expression.check_is_constant(table, errors)
+            stream::Expr::UnOp(UnOp { expr, .. }) => expr.check_is_constant(table, errors),
+            stream::Expr::Binop(Binop { lft, rgt, .. }) => {
+                lft.check_is_constant(table, errors)?;
+                rgt.check_is_constant(table, errors)
             }
-            stream::Expr::Binop(Binop {
-                left_expression,
-                right_expression,
-                ..
-            }) => {
-                left_expression.check_is_constant(table, errors)?;
-                right_expression.check_is_constant(table, errors)
+            stream::Expr::IfThenElse(IfThenElse { cnd, thn, els, .. }) => {
+                cnd.check_is_constant(table, errors)?;
+                thn.check_is_constant(table, errors)?;
+                els.check_is_constant(table, errors)
             }
-            stream::Expr::IfThenElse(IfThenElse {
-                expression,
-                true_expression,
-                false_expression,
-                ..
-            }) => {
-                expression.check_is_constant(table, errors)?;
-                true_expression.check_is_constant(table, errors)?;
-                false_expression.check_is_constant(table, errors)
-            }
-            stream::Expr::Application(Application {
-                function_expression,
-                inputs,
-            }) => {
-                function_expression.check_is_constant(table, errors)?;
+            stream::Expr::Application(Application { fun, inputs }) => {
+                fun.check_is_constant(table, errors)?;
                 inputs
                     .iter()
                     .map(|expression| expression.check_is_constant(table, errors))
@@ -394,7 +380,7 @@ impl ReactExpr {
             stream::ReactExpr::Expr(expr) => expr.check_is_constant(table, errors),
             stream::ReactExpr::When { .. } => {
                 let error = Error::ExpectConstant {
-                    location: Location::default(),
+                    loc: Location::default(),
                 };
                 errors.push(error);
                 Err(TerminationError)
@@ -578,7 +564,7 @@ mod parse_stream_expression {
                         Expr::ident("f"),
                         vec![Expr::ident("x")],
                     ))),
-                    expression: Expr::cst(Constant::int(syn::parse_quote! {-1})),
+                    expr: Expr::cst(Constant::int(syn::parse_quote! {-1})),
                 },
                 Arm::new(
                     Pattern::Default,

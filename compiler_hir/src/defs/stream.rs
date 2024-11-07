@@ -8,8 +8,8 @@ pub type Stmt = hir::Stmt<Expr>;
 
 impl Stmt {
     pub fn get_identifiers(&self) -> Vec<usize> {
-        let mut identifiers = match &self.expression.kind {
-            stream::Kind::Expression { expression } => match expression {
+        let mut identifiers = match &self.expr.kind {
+            stream::Kind::Expression { expr } => match expr {
                 expr::Kind::Match { arms, .. } => arms
                     .iter()
                     .flat_map(|(pattern, _, statements, _)| {
@@ -49,7 +49,7 @@ impl Stmt {
         contract: &mut Contract,
         symbol_table: &mut SymbolTable,
     ) {
-        self.expression
+        self.expr
             .memorize(identifier_creator, memory, contract, symbol_table)
     }
 
@@ -81,12 +81,12 @@ impl Stmt {
     ) -> Vec<stream::Stmt> {
         let Stmt {
             pattern,
-            mut expression,
-            location,
+            mut expr,
+            loc,
         } = self;
 
         // change expression into normal form and get additional statements
-        let mut statements = match expression.kind {
+        let mut statements = match expr.kind {
             stream::Kind::NodeApplication {
                 called_node_id,
                 ref mut inputs,
@@ -94,8 +94,8 @@ impl Stmt {
             } => {
                 let new_statements = inputs
                     .iter_mut()
-                    .flat_map(|(_, expression)| {
-                        expression.into_signal_call(
+                    .flat_map(|(_, expr)| {
+                        expr.into_signal_call(
                             nodes_reduced_graphs,
                             identifier_creator,
                             symbol_table,
@@ -105,10 +105,10 @@ impl Stmt {
 
                 // change dependencies to be the sum of inputs dependencies
                 let reduced_graph = nodes_reduced_graphs.get(&called_node_id).unwrap();
-                expression.dependencies = Dependencies::from(
+                expr.dependencies = Dependencies::from(
                     inputs
                         .iter()
-                        .flat_map(|(input_id, expression)| {
+                        .flat_map(|(input_id, expr)| {
                             symbol_table
                                 .get_node_outputs(called_node_id)
                                 .iter()
@@ -116,8 +116,7 @@ impl Stmt {
                                     reduced_graph.edge_weight(*output_id, *input_id).map_or(
                                         vec![],
                                         |label1| {
-                                            expression
-                                                .get_dependencies()
+                                            expr.get_dependencies()
                                                 .clone()
                                                 .into_iter()
                                                 .map(|(id, label2)| (id, label1.add(&label2)))
@@ -131,16 +130,12 @@ impl Stmt {
 
                 new_statements
             }
-            _ => expression.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table),
+            _ => expr.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table),
         };
 
         // recreate the new statement with modified expression
         // todo: isn't it equal to self?
-        let normal_formed_statement = Stmt {
-            pattern,
-            expression,
-            location,
-        };
+        let normal_formed_statement = Stmt { pattern, expr, loc };
 
         // push normal_formed statement in the statements storage (in scheduling order)
         statements.push(normal_formed_statement);
@@ -150,19 +145,15 @@ impl Stmt {
     }
 
     pub fn add_to_graph(&self, graph: &mut DiGraphMap<usize, Label>) {
-        let Stmt {
-            pattern,
-            expression,
-            ..
-        } = self;
+        let Stmt { pattern, expr, .. } = self;
         let signals = pattern.identifiers();
         for from in signals.iter() {
-            for (to, label) in expression.get_dependencies() {
+            for (to, label) in expr.get_dependencies() {
                 graph::add_edge(graph, *from, *to, label.clone());
             }
         }
-        match &self.expression.kind {
-            stream::Kind::Expression { expression } => match expression {
+        match &self.expr.kind {
+            stream::Kind::Expression { expr } => match expr {
                 hir::expr::Kind::Match { arms, .. } => {
                     arms.iter().for_each(|(_, bound, statements, _)| {
                         if let Some(bound) = bound {
@@ -238,7 +229,7 @@ impl Stmt {
                     | Either::Right(stream::Expr {
                         kind:
                             stream::Kind::Expression {
-                                expression: hir::expr::Kind::Identifier { id: new_id },
+                                expr: hir::expr::Kind::Identifier { id: new_id },
                             },
                         ..
                     }) => {
@@ -250,7 +241,7 @@ impl Stmt {
         }
 
         // replace identifiers in statement's expression
-        new_statement.expression.replace_by_context(context_map);
+        new_statement.expr.replace_by_context(context_map);
 
         new_statement
     }
@@ -301,7 +292,7 @@ impl Stmt {
         symbol_table: &mut SymbolTable,
         nodes: &HashMap<usize, Component>,
     ) -> Vec<stream::Stmt> {
-        match &self.expression.kind {
+        match &self.expr.kind {
             stream::Kind::NodeApplication {
                 called_node_id,
                 inputs,
@@ -378,92 +369,64 @@ impl ExprKind {
             | Self::Identifier { .. }
             | Self::Abstraction { .. }
             | Self::Enumeration { .. } => (),
-            Self::UnOp { expression, .. } => {
-                expression.memorize(identifier_creator, memory, contract, symbol_table)
+            Self::UnOp { expr, .. } => {
+                expr.memorize(identifier_creator, memory, contract, symbol_table)
             }
-            Self::Binop {
-                left_expression,
-                right_expression,
-                ..
-            } => {
-                left_expression.memorize(identifier_creator, memory, contract, symbol_table);
-                right_expression.memorize(identifier_creator, memory, contract, symbol_table)
+            Self::BinOp { lft, rgt, .. } => {
+                lft.memorize(identifier_creator, memory, contract, symbol_table);
+                rgt.memorize(identifier_creator, memory, contract, symbol_table)
             }
-            Self::IfThenElse {
-                expression,
-                true_expression,
-                false_expression,
-            } => {
-                expression.memorize(identifier_creator, memory, contract, symbol_table);
-                true_expression.memorize(identifier_creator, memory, contract, symbol_table);
-                false_expression.memorize(identifier_creator, memory, contract, symbol_table)
+            Self::IfThenElse { cnd, thn, els } => {
+                cnd.memorize(identifier_creator, memory, contract, symbol_table);
+                thn.memorize(identifier_creator, memory, contract, symbol_table);
+                els.memorize(identifier_creator, memory, contract, symbol_table)
             }
-            Self::Application {
-                function_expression,
-                inputs,
-            } => {
-                function_expression.memorize(identifier_creator, memory, contract, symbol_table);
-                inputs.iter_mut().for_each(|expression| {
-                    expression.memorize(identifier_creator, memory, contract, symbol_table)
+            Self::Application { fun, inputs } => {
+                fun.memorize(identifier_creator, memory, contract, symbol_table);
+                inputs.iter_mut().for_each(|expr| {
+                    expr.memorize(identifier_creator, memory, contract, symbol_table)
                 })
             }
-            Self::Structure { fields, .. } => fields.iter_mut().for_each(|(_, expression)| {
-                expression.memorize(identifier_creator, memory, contract, symbol_table)
+            Self::Structure { fields, .. } => fields.iter_mut().for_each(|(_, expr)| {
+                expr.memorize(identifier_creator, memory, contract, symbol_table)
             }),
-            Self::Array { elements } | Self::Tuple { elements } => {
-                elements.iter_mut().for_each(|expression| {
-                    expression.memorize(identifier_creator, memory, contract, symbol_table)
-                })
-            }
-            Self::Match { expression, arms } => {
-                expression.memorize(identifier_creator, memory, contract, symbol_table);
-                arms.iter_mut().for_each(|(_, option, block, expression)| {
-                    option.as_mut().map(|expression| {
-                        expression.memorize(identifier_creator, memory, contract, symbol_table)
+            Self::Array { elements } | Self::Tuple { elements } => elements
+                .iter_mut()
+                .for_each(|expr| expr.memorize(identifier_creator, memory, contract, symbol_table)),
+            Self::Match { expr, arms } => {
+                expr.memorize(identifier_creator, memory, contract, symbol_table);
+                arms.iter_mut().for_each(|(_, option, block, expr)| {
+                    option.as_mut().map(|expr| {
+                        expr.memorize(identifier_creator, memory, contract, symbol_table)
                     });
                     block.iter_mut().for_each(|statement| {
                         statement.memorize(identifier_creator, memory, contract, symbol_table)
                     });
-                    expression.memorize(identifier_creator, memory, contract, symbol_table)
+                    expr.memorize(identifier_creator, memory, contract, symbol_table)
                 })
             }
-            Self::FieldAccess { expression, .. } => {
-                expression.memorize(identifier_creator, memory, contract, symbol_table)
+            Self::FieldAccess { expr, .. } => {
+                expr.memorize(identifier_creator, memory, contract, symbol_table)
             }
-            Self::TupleElementAccess { expression, .. } => {
-                expression.memorize(identifier_creator, memory, contract, symbol_table)
+            Self::TupleElementAccess { expr, .. } => {
+                expr.memorize(identifier_creator, memory, contract, symbol_table)
             }
-            Self::Map {
-                expression,
-                function_expression,
-            } => {
-                expression.memorize(identifier_creator, memory, contract, symbol_table);
-                function_expression.memorize(identifier_creator, memory, contract, symbol_table)
+            Self::Map { expr, fun } => {
+                expr.memorize(identifier_creator, memory, contract, symbol_table);
+                fun.memorize(identifier_creator, memory, contract, symbol_table)
             }
-            Self::Fold {
-                expression,
-                initialization_expression,
-                function_expression,
-            } => {
-                expression.memorize(identifier_creator, memory, contract, symbol_table);
-                initialization_expression.memorize(
-                    identifier_creator,
-                    memory,
-                    contract,
-                    symbol_table,
-                );
-                function_expression.memorize(identifier_creator, memory, contract, symbol_table)
+            Self::Fold { array, init, fun } => {
+                array.memorize(identifier_creator, memory, contract, symbol_table);
+                init.memorize(identifier_creator, memory, contract, symbol_table);
+                fun.memorize(identifier_creator, memory, contract, symbol_table)
             }
-            Self::Sort {
-                expression,
-                function_expression,
-            } => {
-                expression.memorize(identifier_creator, memory, contract, symbol_table);
-                function_expression.memorize(identifier_creator, memory, contract, symbol_table)
+            Self::Sort { expr, fun } => {
+                expr.memorize(identifier_creator, memory, contract, symbol_table);
+                fun.memorize(identifier_creator, memory, contract, symbol_table)
             }
-            Self::Zip { arrays } => arrays.iter_mut().for_each(|expression| {
-                expression.memorize(identifier_creator, memory, contract, symbol_table)
-            }),
+            Self::Zip { arrays } => arrays
+                .iter_mut()
+                .for_each(|expr| expr.memorize(identifier_creator, memory, contract, symbol_table)),
         }
     }
 
@@ -500,68 +463,48 @@ impl ExprKind {
             | Self::Abstraction { .. } => {
                 vec![]
             }
-            Self::UnOp { expression, .. } => {
+            Self::UnOp { expr, .. } => {
                 let new_statements =
-                    expression.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
+                    expr.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
 
-                *dependencies = Dependencies::from(expression.get_dependencies().clone());
-
-                new_statements
-            }
-
-            Self::Binop {
-                left_expression,
-                right_expression,
-                ..
-            } => {
-                let mut new_statements = left_expression.normal_form(
-                    nodes_reduced_graphs,
-                    identifier_creator,
-                    symbol_table,
-                );
-                let mut other_statements = right_expression.normal_form(
-                    nodes_reduced_graphs,
-                    identifier_creator,
-                    symbol_table,
-                );
-                new_statements.append(&mut other_statements);
-
-                let mut expression_dependencies = left_expression.get_dependencies().clone();
-                let mut other_dependencies = right_expression.get_dependencies().clone();
-                expression_dependencies.append(&mut other_dependencies);
-
-                *dependencies = Dependencies::from(expression_dependencies);
+                *dependencies = Dependencies::from(expr.get_dependencies().clone());
 
                 new_statements
             }
 
-            Self::IfThenElse {
-                expression,
-                true_expression,
-                false_expression,
-            } => {
+            Self::BinOp { lft, rgt, .. } => {
                 let mut new_statements =
-                    expression.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
-                let mut other_statements = true_expression.normal_form(
-                    nodes_reduced_graphs,
-                    identifier_creator,
-                    symbol_table,
-                );
-                new_statements.append(&mut other_statements);
-                let mut other_statements = false_expression.normal_form(
-                    nodes_reduced_graphs,
-                    identifier_creator,
-                    symbol_table,
-                );
+                    lft.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
+                let mut other_statements =
+                    rgt.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
                 new_statements.append(&mut other_statements);
 
-                let mut expression_dependencies = expression.get_dependencies().clone();
-                let mut other_dependencies = true_expression.get_dependencies().clone();
-                expression_dependencies.append(&mut other_dependencies);
-                let mut other_dependencies = false_expression.get_dependencies().clone();
+                let mut expression_dependencies = lft.get_dependencies().clone();
+                let mut other_dependencies = rgt.get_dependencies().clone();
                 expression_dependencies.append(&mut other_dependencies);
 
                 *dependencies = Dependencies::from(expression_dependencies);
+
+                new_statements
+            }
+
+            Self::IfThenElse { cnd, thn, els } => {
+                let mut new_statements =
+                    cnd.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
+                let mut other_statements =
+                    thn.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
+                new_statements.append(&mut other_statements);
+                let mut other_statements =
+                    els.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
+                new_statements.append(&mut other_statements);
+
+                let mut expr_dependencies = cnd.get_dependencies().clone();
+                let mut other_dependencies = thn.get_dependencies().clone();
+                expr_dependencies.append(&mut other_dependencies);
+                let mut other_dependencies = els.get_dependencies().clone();
+                expr_dependencies.append(&mut other_dependencies);
+
+                *dependencies = Dependencies::from(expr_dependencies);
 
                 new_statements
             }
@@ -569,19 +512,15 @@ impl ExprKind {
             Self::Application { ref mut inputs, .. } => {
                 let new_statements = inputs
                     .iter_mut()
-                    .flat_map(|expression| {
-                        expression.normal_form(
-                            nodes_reduced_graphs,
-                            identifier_creator,
-                            symbol_table,
-                        )
+                    .flat_map(|expr| {
+                        expr.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table)
                     })
                     .collect();
 
                 *dependencies = Dependencies::from(
                     inputs
                         .iter()
-                        .flat_map(|expression| expression.get_dependencies().clone())
+                        .flat_map(|expr| expr.get_dependencies().clone())
                         .collect(),
                 );
 
@@ -630,15 +569,13 @@ impl ExprKind {
 
                 new_statements
             }
-            Self::Match {
-                expression, arms, ..
-            } => {
+            Self::Match { expr, arms, .. } => {
                 let mut statements =
-                    expression.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
-                let mut expression_dependencies = expression.get_dependencies().clone();
+                    expr.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
+                let mut expr_dependencies = expr.get_dependencies().clone();
 
                 arms.iter_mut()
-                    .for_each(|(pattern, bound, body, matched_expression)| {
+                    .for_each(|(pattern, bound, body, matched_expr)| {
                         // get local signals defined in pattern
                         let local_signals = pattern.identifiers();
 
@@ -656,16 +593,15 @@ impl ExprKind {
 
                         // remove identifiers created by the pattern from the dependencies
                         let (mut bound_statements, mut bound_dependencies) =
-                            bound.as_mut().map_or((vec![], vec![]), |expression| {
-                                let stmts = expression.normal_form(
+                            bound.as_mut().map_or((vec![], vec![]), |expr| {
+                                let stmts = expr.normal_form(
                                     nodes_reduced_graphs,
                                     identifier_creator,
                                     symbol_table,
                                 );
                                 (
                                     stmts,
-                                    expression
-                                        .get_dependencies()
+                                    expr.get_dependencies()
                                         .clone()
                                         .into_iter()
                                         .filter(|(signal, _)| !local_signals.contains(signal))
@@ -673,81 +609,73 @@ impl ExprKind {
                                 )
                             });
                         statements.append(&mut bound_statements);
-                        expression_dependencies.append(&mut bound_dependencies);
+                        expr_dependencies.append(&mut bound_dependencies);
 
-                        let mut matched_expression_statements = matched_expression.normal_form(
+                        let mut matched_expr_statements = matched_expr.normal_form(
                             nodes_reduced_graphs,
                             identifier_creator,
                             symbol_table,
                         );
-                        let mut matched_expression_dependencies = matched_expression
+                        let mut matched_expr_dependencies = matched_expr
                             .get_dependencies()
                             .clone()
                             .into_iter()
                             .filter(|(signal, _)| !local_signals.contains(signal))
                             .collect();
-                        body.append(&mut matched_expression_statements);
-                        expression_dependencies.append(&mut matched_expression_dependencies)
+                        body.append(&mut matched_expr_statements);
+                        expr_dependencies.append(&mut matched_expr_dependencies)
                     });
 
-                *dependencies = Dependencies::from(expression_dependencies);
+                *dependencies = Dependencies::from(expr_dependencies);
 
                 statements
             }
-            Self::FieldAccess { expression, .. } => {
+            Self::FieldAccess { expr, .. } => {
                 let new_statements =
-                    expression.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
+                    expr.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
 
-                *dependencies = Dependencies::from(expression.get_dependencies().clone());
+                *dependencies = Dependencies::from(expr.get_dependencies().clone());
 
                 new_statements
             }
-            Self::TupleElementAccess { expression, .. } => {
+            Self::TupleElementAccess { expr, .. } => {
                 let new_statements =
-                    expression.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
+                    expr.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
 
-                *dependencies = Dependencies::from(expression.get_dependencies().clone());
+                *dependencies = Dependencies::from(expr.get_dependencies().clone());
 
                 new_statements
             }
-            Self::Map { expression, .. } => {
+            Self::Map { expr, .. } => {
                 let new_statements =
-                    expression.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
+                    expr.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
 
-                *dependencies = Dependencies::from(expression.get_dependencies().clone());
+                *dependencies = Dependencies::from(expr.get_dependencies().clone());
 
                 new_statements
             }
-            Self::Fold {
-                expression,
-                initialization_expression,
-                ..
-            } => {
+            Self::Fold { array, init, .. } => {
                 let mut new_statements =
-                    expression.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
-                let mut initialization_statements = initialization_expression.normal_form(
-                    nodes_reduced_graphs,
-                    identifier_creator,
-                    symbol_table,
-                );
+                    array.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
+                let mut initialization_statements =
+                    init.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
                 new_statements.append(&mut initialization_statements);
 
                 // get matched expressions dependencies
-                let mut expression_dependencies = expression.get_dependencies().clone();
-                let mut initialization_expression_dependencies =
-                    expression.get_dependencies().clone();
-                expression_dependencies.append(&mut initialization_expression_dependencies);
+                let mut expr_dependencies = array.get_dependencies().clone();
+                let mut init_dependencies = array.get_dependencies().clone();
+                expr_dependencies.append(&mut init_dependencies);
 
                 // push all dependencies in arms dependencies
-                *dependencies = Dependencies::from(expression_dependencies);
+                *dependencies = Dependencies::from(expr_dependencies);
 
                 new_statements
             }
-            Self::Sort { expression, .. } => {
+            Self::Sort { expr, .. } => {
                 let new_statements =
-                    expression.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
+                    expr.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
 
-                *dependencies = Dependencies::from(expression.get_dependencies().clone());
+                *dependencies = Dependencies::from(expr.get_dependencies().clone());
 
                 new_statements
             }
@@ -804,42 +732,34 @@ impl ExprKind {
                     None
                 }
             }
-            Self::UnOp { expression, .. } => {
-                expression.replace_by_context(context_map);
-                *dependencies = Dependencies::from(expression.get_dependencies().clone());
+            Self::UnOp { expr, .. } => {
+                expr.replace_by_context(context_map);
+                *dependencies = Dependencies::from(expr.get_dependencies().clone());
                 None
             }
-            Self::Binop {
-                left_expression,
-                right_expression,
-                ..
-            } => {
-                left_expression.replace_by_context(context_map);
-                right_expression.replace_by_context(context_map);
+            Self::BinOp { lft, rgt, .. } => {
+                lft.replace_by_context(context_map);
+                rgt.replace_by_context(context_map);
 
-                let mut expression_dependencies = left_expression.get_dependencies().clone();
-                let mut other_dependencies = right_expression.get_dependencies().clone();
+                let mut expression_dependencies = lft.get_dependencies().clone();
+                let mut other_dependencies = rgt.get_dependencies().clone();
                 expression_dependencies.append(&mut other_dependencies);
 
                 *dependencies = Dependencies::from(expression_dependencies);
                 None
             }
-            Self::IfThenElse {
-                expression,
-                true_expression,
-                false_expression,
-            } => {
-                expression.replace_by_context(context_map);
-                true_expression.replace_by_context(context_map);
-                false_expression.replace_by_context(context_map);
+            Self::IfThenElse { cnd, thn, els } => {
+                cnd.replace_by_context(context_map);
+                thn.replace_by_context(context_map);
+                els.replace_by_context(context_map);
 
-                let mut expression_dependencies = expression.get_dependencies().clone();
-                let mut other_dependencies = true_expression.get_dependencies().clone();
-                expression_dependencies.append(&mut other_dependencies);
-                let mut other_dependencies = false_expression.get_dependencies().clone();
-                expression_dependencies.append(&mut other_dependencies);
+                let mut expr_dependencies = cnd.get_dependencies().clone();
+                let mut other_dependencies = thn.get_dependencies().clone();
+                expr_dependencies.append(&mut other_dependencies);
+                let mut other_dependencies = els.get_dependencies().clone();
+                expr_dependencies.append(&mut other_dependencies);
 
-                *dependencies = Dependencies::from(expression_dependencies);
+                *dependencies = Dependencies::from(expr_dependencies);
                 None
             }
             Self::Application { ref mut inputs, .. } => {
@@ -882,15 +802,15 @@ impl ExprKind {
                 None
             }
             Self::Match {
-                ref mut expression,
+                ref mut expr,
                 ref mut arms,
                 ..
             } => {
-                expression.replace_by_context(context_map);
-                let mut expression_dependencies = expression.get_dependencies().clone();
+                expr.replace_by_context(context_map);
+                let mut expr_dependencies = expr.get_dependencies().clone();
 
                 arms.iter_mut()
-                    .for_each(|(pattern, bound, body, matched_expression)| {
+                    .for_each(|(pattern, bound, body, matched_expr)| {
                         let local_signals = pattern.identifiers();
 
                         // remove identifiers created by the pattern from the context
@@ -900,89 +820,79 @@ impl ExprKind {
                             .filter(|(key, _)| !local_signals.contains(key))
                             .collect();
 
-                        if let Some(expression) = bound.as_mut() {
-                            expression.replace_by_context(&context_map);
-                            let mut bound_dependencies = expression
+                        if let Some(expr) = bound.as_mut() {
+                            expr.replace_by_context(&context_map);
+                            let mut bound_dependencies = expr
                                 .get_dependencies()
                                 .clone()
                                 .into_iter()
                                 .filter(|(signal, _)| !local_signals.contains(signal))
                                 .collect();
-                            expression_dependencies.append(&mut bound_dependencies);
+                            expr_dependencies.append(&mut bound_dependencies);
                         };
 
-                        body.iter_mut().for_each(|statement| {
-                            statement.expression.replace_by_context(&context_map)
-                        });
+                        body.iter_mut()
+                            .for_each(|statement| statement.expr.replace_by_context(&context_map));
 
-                        matched_expression.replace_by_context(&context_map);
-                        let mut matched_expression_dependencies = matched_expression
+                        matched_expr.replace_by_context(&context_map);
+                        let mut matched_expr_dependencies = matched_expr
                             .get_dependencies()
                             .clone()
                             .into_iter()
                             .filter(|(signal, _)| !local_signals.contains(signal))
                             .collect::<Vec<(usize, Label)>>();
-                        expression_dependencies.append(&mut matched_expression_dependencies);
+                        expr_dependencies.append(&mut matched_expr_dependencies);
                     });
 
-                *dependencies = Dependencies::from(expression_dependencies);
+                *dependencies = Dependencies::from(expr_dependencies);
                 None
             }
-            Self::FieldAccess {
-                ref mut expression, ..
-            } => {
-                expression.replace_by_context(context_map);
+            Self::FieldAccess { ref mut expr, .. } => {
+                expr.replace_by_context(context_map);
                 // get matched expression dependencies
-                let expression_dependencies = expression.get_dependencies().clone();
+                let expr_dependencies = expr.get_dependencies().clone();
                 // push all dependencies in arms dependencies
-                *dependencies = Dependencies::from(expression_dependencies);
+                *dependencies = Dependencies::from(expr_dependencies);
                 None
             }
-            Self::TupleElementAccess {
-                ref mut expression, ..
-            } => {
-                expression.replace_by_context(context_map);
+            Self::TupleElementAccess { ref mut expr, .. } => {
+                expr.replace_by_context(context_map);
                 // get matched expression dependencies
-                let expression_dependencies = expression.get_dependencies().clone();
+                let expr_dependencies = expr.get_dependencies().clone();
                 // push all dependencies in arms dependencies
-                *dependencies = Dependencies::from(expression_dependencies);
+                *dependencies = Dependencies::from(expr_dependencies);
                 None
             }
-            Self::Map {
-                ref mut expression, ..
-            } => {
-                expression.replace_by_context(context_map);
+            Self::Map { ref mut expr, .. } => {
+                expr.replace_by_context(context_map);
                 // get matched expression dependencies
-                let expression_dependencies = expression.get_dependencies().clone();
+                let expr_dependencies = expr.get_dependencies().clone();
                 // push all dependencies in arms dependencies
-                *dependencies = Dependencies::from(expression_dependencies);
+                *dependencies = Dependencies::from(expr_dependencies);
                 None
             }
             Self::Fold {
-                ref mut expression,
-                ref mut initialization_expression,
+                ref mut array,
+                ref mut init,
                 ..
             } => {
-                expression.replace_by_context(context_map);
-                initialization_expression.replace_by_context(context_map);
+                array.replace_by_context(context_map);
+                init.replace_by_context(context_map);
                 // get matched expressions dependencies
-                let mut expression_dependencies = expression.get_dependencies().clone();
-                let mut initialization_expression_dependencies =
-                    expression.get_dependencies().clone();
-                expression_dependencies.append(&mut initialization_expression_dependencies);
+                let mut expr_dependencies = array.get_dependencies().clone();
+                let mut init_dependencies = array.get_dependencies().clone();
+                expr_dependencies.append(&mut init_dependencies);
 
                 // push all dependencies in arms dependencies
-                *dependencies = Dependencies::from(expression_dependencies);
+                *dependencies = Dependencies::from(expr_dependencies);
                 None
             }
-            Self::Sort {
-                ref mut expression, ..
-            } => {
-                expression.replace_by_context(context_map);
+            Self::Sort { ref mut expr, .. } => {
+                expr.replace_by_context(context_map);
                 // get matched expression dependencies
-                let expression_dependencies = expression.get_dependencies().clone();
+                let expr_dependencies = expr.get_dependencies().clone();
                 // push all dependencies in arms dependencies
-                *dependencies = Dependencies::from(expression_dependencies);
+                *dependencies = Dependencies::from(expr_dependencies);
                 None
             }
             Self::Zip { ref mut arrays, .. } => {
@@ -1008,7 +918,7 @@ pub enum Kind {
     /// Expression.
     Expression {
         /// The expression kind.
-        expression: expr::Kind<Expr>,
+        expr: expr::Kind<Expr>,
     },
     /// Initialized buffer stream expression.
     FollowedBy {
@@ -1029,19 +939,19 @@ pub enum Kind {
     /// Detect a rising edge of the expression.
     RisingEdge {
         /// The expression to detect the rising edge from.
-        expression: Box<Expr>,
+        expr: Box<Expr>,
     },
     /// Present event expression.
     SomeEvent {
         /// The expression of the event.
-        expression: Box<Expr>,
+        expr: Box<Expr>,
     },
     /// Absent event expression.
     NoneEvent,
 }
 
 mk_new! { impl Kind =>
-    Expression: expr { expression: expr::Kind<Expr> }
+    Expression: expr { expr: expr::Kind<Expr> }
     FollowedBy: fby {
         id: usize,
         constant: Expr = constant.into(),
@@ -1052,10 +962,10 @@ mk_new! { impl Kind =>
         inputs: Vec<(usize, Expr)>,
     }
     RisingEdge: rising_edge {
-        expression: Expr = expression.into(),
+        expr: Expr = expr.into(),
     }
     SomeEvent: some_event {
-        expression: Expr = expression.into(),
+        expr: Expr = expr.into(),
     }
     NoneEvent: none_event ()
 }
@@ -1068,7 +978,7 @@ pub struct Expr {
     /// Stream expression type.
     pub typing: Option<Typ>,
     /// Stream expression location.
-    pub location: Location,
+    pub loc: Location,
     /// Stream expression dependencies.
     pub dependencies: Dependencies,
 }
@@ -1080,7 +990,7 @@ pub fn expr(kind: Kind) -> Expr {
     Expr {
         kind,
         typing: None,
-        location: Location::default(),
+        loc: Location::default(),
         dependencies: Dependencies::new(),
     }
 }
@@ -1106,19 +1016,17 @@ impl Expr {
     /// - component application as root expression
     /// - no rising edge
     pub fn is_normal_form(&self) -> bool {
-        let predicate_expression = |expression: &Expr| {
-            expression.no_component_application() && expression.no_rising_edge()
-        };
-        let predicate_statement = |statement: &Stmt| statement.expression.is_normal_form();
+        let predicate_expr = |expr: &Expr| expr.no_component_application() && expr.no_rising_edge();
+        let predicate_statement = |statement: &Stmt| statement.expr.is_normal_form();
         match &self.kind {
-            Kind::Expression { expression } => {
-                expression.propagate_predicate(predicate_expression, predicate_statement)
+            Kind::Expression { expr } => {
+                expr.propagate_predicate(predicate_expr, predicate_statement)
             }
             Kind::FollowedBy { .. } => true,
-            Kind::NodeApplication { inputs, .. } => inputs
-                .iter()
-                .all(|(_, expression)| predicate_expression(expression)),
-            Kind::SomeEvent { expression } => predicate_expression(expression),
+            Kind::NodeApplication { inputs, .. } => {
+                inputs.iter().all(|(_, expr)| predicate_expr(expr))
+            }
+            Kind::SomeEvent { expr } => predicate_expr(expr),
             Kind::NoneEvent => true,
             Kind::RisingEdge { .. } => false,
         }
@@ -1127,30 +1035,30 @@ impl Expr {
     /// Tell if there is no component application.
     pub fn no_component_application(&self) -> bool {
         match &self.kind {
-            Kind::Expression { expression } => expression
+            Kind::Expression { expr } => expr
                 .propagate_predicate(Self::no_component_application, |statement| {
-                    statement.expression.no_component_application()
+                    statement.expr.no_component_application()
                 }),
             Kind::FollowedBy { .. } => true,
             Kind::NodeApplication { .. } => false,
-            Kind::SomeEvent { expression } => expression.no_component_application(),
+            Kind::SomeEvent { expr } => expr.no_component_application(),
             Kind::NoneEvent => true,
-            Kind::RisingEdge { expression } => expression.no_component_application(),
+            Kind::RisingEdge { expr } => expr.no_component_application(),
         }
     }
 
     /// Tell if there is no rising edge.
     pub fn no_rising_edge(&self) -> bool {
         match &self.kind {
-            Kind::Expression { expression } => expression
+            Kind::Expression { expr } => expr
                 .propagate_predicate(Self::no_rising_edge, |statement| {
-                    statement.expression.no_rising_edge()
+                    statement.expr.no_rising_edge()
                 }),
             Kind::FollowedBy { .. } => true,
-            Kind::NodeApplication { inputs, .. } => inputs
-                .iter()
-                .all(|(_, expression)| expression.no_rising_edge()),
-            Kind::SomeEvent { expression } => expression.no_rising_edge(),
+            Kind::NodeApplication { inputs, .. } => {
+                inputs.iter().all(|(_, expr)| expr.no_rising_edge())
+            }
+            Kind::SomeEvent { expr } => expr.no_rising_edge(),
             Kind::NoneEvent => true,
             Kind::RisingEdge { .. } => false,
         }
@@ -1178,8 +1086,8 @@ impl Expr {
         symbol_table: &mut SymbolTable,
     ) {
         match &mut self.kind {
-            stream::Kind::Expression { expression } => {
-                expression.memorize(identifier_creator, memory, contract, symbol_table)
+            stream::Kind::Expression { expr } => {
+                expr.memorize(identifier_creator, memory, contract, symbol_table)
             }
             stream::Kind::FollowedBy { id, constant } => {
                 // add buffer to memory
@@ -1201,8 +1109,8 @@ impl Expr {
                 // put the 'memory_id' of the called node
                 *node_memory_id = Some(memory_id);
             }
-            stream::Kind::SomeEvent { expression } => {
-                expression.memorize(identifier_creator, memory, contract, symbol_table);
+            stream::Kind::SomeEvent { expr } => {
+                expr.memorize(identifier_creator, memory, contract, symbol_table);
             }
             stream::Kind::NoneEvent => (),
             stream::Kind::RisingEdge { .. } => unreachable!(),
@@ -1240,15 +1148,12 @@ impl Expr {
                 debug_assert!(constant.is_normal_form());
                 vec![]
             }
-            stream::Kind::RisingEdge { ref mut expression } => {
-                let new_statements = expression.into_signal_call(
-                    nodes_reduced_graphs,
-                    identifier_creator,
-                    symbol_table,
-                );
+            stream::Kind::RisingEdge { ref mut expr } => {
+                let new_statements =
+                    expr.into_signal_call(nodes_reduced_graphs, identifier_creator, symbol_table);
                 if let stream::Kind::Expression {
-                    expression: expr::Kind::Identifier { id },
-                } = expression.kind
+                    expr: expr::Kind::Identifier { id },
+                } = expr.kind
                 {
                     let fby_dependencies = Dependencies::from(vec![(id, Label::weight(1))]);
                     let constant = stream::Expr {
@@ -1256,29 +1161,26 @@ impl Expr {
                             syn::LitBool::new(false, macro2::Span::call_site()),
                         ))),
                         typing: Some(Typ::Boolean(Default::default())),
-                        location: Default::default(),
+                        loc: Default::default(),
                         dependencies: Dependencies::from(vec![]),
                     };
                     let mem = stream::Expr {
                         kind: stream::Kind::fby(id, constant),
                         typing: Some(Typ::Boolean(Default::default())),
-                        location: Default::default(),
+                        loc: Default::default(),
                         dependencies: fby_dependencies.clone(),
                     };
                     let not_mem = stream::Expr {
                         kind: stream::Kind::expr(expr::Kind::unop(UOp::Not, mem)),
                         typing: Some(Typ::Boolean(Default::default())),
-                        location: Default::default(),
+                        loc: Default::default(),
                         dependencies: fby_dependencies,
                     };
 
                     self.dependencies =
                         Dependencies::from(vec![(id, Label::weight(0)), (id, Label::weight(1))]);
-                    self.kind = stream::Kind::expr(expr::Kind::binop(
-                        BOp::And,
-                        *expression.clone(),
-                        not_mem,
-                    ));
+                    self.kind =
+                        stream::Kind::expr(expr::Kind::binop(BOp::And, *expr.clone(), not_mem));
 
                     new_statements
                 } else {
@@ -1292,8 +1194,8 @@ impl Expr {
             } => {
                 let mut new_statements = inputs
                     .iter_mut()
-                    .flat_map(|(_, expression)| {
-                        expression.into_signal_call(
+                    .flat_map(|(_, expr)| {
+                        expr.into_signal_call(
                             nodes_reduced_graphs,
                             identifier_creator,
                             symbol_table,
@@ -1306,7 +1208,7 @@ impl Expr {
                 self.dependencies = Dependencies::from(
                     inputs
                         .iter()
-                        .flat_map(|(input_id, expression)| {
+                        .flat_map(|(input_id, expr)| {
                             symbol_table
                                 .get_node_outputs(called_node_id)
                                 .iter()
@@ -1314,8 +1216,7 @@ impl Expr {
                                     reduced_graph.edge_weight(*output_id, *input_id).map_or(
                                         vec![],
                                         |label1| {
-                                            expression
-                                                .get_dependencies()
+                                            expr.get_dependencies()
                                                 .clone()
                                                 .into_iter()
                                                 .map(|(id, label2)| (id, label1.add(&label2)))
@@ -1339,32 +1240,32 @@ impl Expr {
                     pattern: hir::stmt::Pattern {
                         kind: hir::stmt::Kind::Identifier { id: fresh_id },
                         typing,
-                        location: self.location.clone(),
+                        loc: self.loc.clone(),
                     },
-                    expression: self.clone(),
-                    location: self.location.clone(),
+                    expr: self.clone(),
+                    loc: self.loc.clone(),
                 };
                 new_statements.push(node_application_statement);
 
                 // change current expression be an identifier to the statement of the node call
                 self.kind = stream::Kind::Expression {
-                    expression: expr::Kind::Identifier { id: fresh_id },
+                    expr: expr::Kind::Identifier { id: fresh_id },
                 };
                 self.dependencies = Dependencies::from(vec![(fresh_id, Label::Weight(0))]);
 
                 // return new additional statements
                 new_statements
             }
-            stream::Kind::Expression { ref mut expression } => expression.normal_form(
+            stream::Kind::Expression { ref mut expr } => expr.normal_form(
                 &mut self.dependencies,
                 nodes_reduced_graphs,
                 identifier_creator,
                 symbol_table,
             ),
-            stream::Kind::SomeEvent { ref mut expression } => {
+            stream::Kind::SomeEvent { ref mut expr } => {
                 let new_statements =
-                    expression.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
-                self.dependencies = Dependencies::from(expression.get_dependencies().clone());
+                    expr.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
+                self.dependencies = Dependencies::from(expr.get_dependencies().clone());
                 new_statements
             }
             stream::Kind::NoneEvent => vec![],
@@ -1394,7 +1295,7 @@ impl Expr {
     ) -> Vec<stream::Stmt> {
         match self.kind {
             stream::Kind::Expression {
-                expression: expr::Kind::Identifier { .. },
+                expr: expr::Kind::Identifier { .. },
             } => vec![],
             _ => {
                 let mut statements =
@@ -1411,16 +1312,16 @@ impl Expr {
                     pattern: hir::stmt::Pattern {
                         kind: hir::stmt::Kind::Identifier { id: fresh_id },
                         typing: typing.cloned(),
-                        location: self.location.clone(),
+                        loc: self.loc.clone(),
                     },
-                    location: self.location.clone(),
-                    expression: self.clone(),
+                    loc: self.loc.clone(),
+                    expr: self.clone(),
                 };
                 statements.push(new_statement);
 
                 // change current expression be an identifier to the statement of the expression
                 self.kind = stream::Kind::Expression {
-                    expression: expr::Kind::Identifier { id: fresh_id },
+                    expr: expr::Kind::Identifier { id: fresh_id },
                 };
                 self.dependencies = Dependencies::from(vec![(fresh_id, Label::Weight(0))]);
 
@@ -1447,11 +1348,10 @@ impl Expr {
         context_map: &HashMap<usize, Either<usize, stream::Expr>>,
     ) {
         match self.kind {
-            stream::Kind::Expression { ref mut expression } => {
-                let option_new_expression =
-                    expression.replace_by_context(&mut self.dependencies, context_map);
-                if let Some(new_expression) = option_new_expression {
-                    *self = new_expression;
+            stream::Kind::Expression { ref mut expr } => {
+                let option_new_expr = expr.replace_by_context(&mut self.dependencies, context_map);
+                if let Some(new_expr) = option_new_expr {
+                    *self = new_expr;
                 }
             }
             stream::Kind::NodeApplication {
@@ -1466,7 +1366,7 @@ impl Expr {
                         | Either::Right(stream::Expr {
                             kind:
                                 stream::Kind::Expression {
-                                    expression: hir::expr::Kind::Identifier { id: new_id },
+                                    expr: hir::expr::Kind::Identifier { id: new_id },
                                 },
                             ..
                         }) => {
@@ -1478,21 +1378,21 @@ impl Expr {
 
                 inputs
                     .iter_mut()
-                    .for_each(|(_, expression)| expression.replace_by_context(context_map));
+                    .for_each(|(_, expr)| expr.replace_by_context(context_map));
 
                 // change dependencies to be the sum of inputs dependencies
                 self.dependencies = Dependencies::from(
                     inputs
                         .iter()
-                        .flat_map(|(_, expression)| expression.get_dependencies().clone())
+                        .flat_map(|(_, expr)| expr.get_dependencies().clone())
                         .collect(),
                 );
             }
-            stream::Kind::SomeEvent { ref mut expression } => {
-                expression.replace_by_context(context_map);
+            stream::Kind::SomeEvent { ref mut expr } => {
+                expr.replace_by_context(context_map);
 
                 // change dependencies to be the sum of inputs dependencies
-                self.dependencies = Dependencies::from(expression.get_dependencies().clone());
+                self.dependencies = Dependencies::from(expr.get_dependencies().clone());
             }
             stream::Kind::NoneEvent => (),
             stream::Kind::FollowedBy { ref mut id, .. } => {
@@ -1502,7 +1402,7 @@ impl Expr {
                         | Either::Right(stream::Expr {
                             kind:
                                 stream::Kind::Expression {
-                                    expression: hir::expr::Kind::Identifier { id: new_id },
+                                    expr: hir::expr::Kind::Identifier { id: new_id },
                                 },
                             ..
                         }) => {

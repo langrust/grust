@@ -43,7 +43,7 @@ impl Typing for Function {
         self.returned
             .get_type()
             .unwrap()
-            .eq_check(expected_type, self.location.clone(), errors)
+            .eq_check(expected_type, self.loc.clone(), errors)
     }
 }
 
@@ -94,7 +94,7 @@ impl Typing for contract::Term {
                 term.typing(symbol_table, errors)?;
                 let ty = term.typing.as_ref().unwrap().clone();
                 let mut unop_type = op.get_type();
-                unop_type.apply(vec![ty], self.location.clone(), errors)?
+                unop_type.apply(vec![ty], self.loc.clone(), errors)?
             }
             contract::Kind::Binary { op, left, right } => {
                 left.typing(symbol_table, errors)?;
@@ -102,21 +102,21 @@ impl Typing for contract::Term {
                 right.typing(symbol_table, errors)?;
                 let right_type = right.typing.as_ref().unwrap().clone();
                 let mut binop_type = op.get_type();
-                binop_type.apply(vec![left_type, right_type], self.location.clone(), errors)?
+                binop_type.apply(vec![left_type, right_type], self.loc.clone(), errors)?
             }
             contract::Kind::ForAll { term, .. } => {
                 term.typing(symbol_table, errors)?;
                 let ty = term.typing.as_ref().unwrap();
-                ty.eq_check(&Typ::bool(), self.location.clone(), errors)?;
+                ty.eq_check(&Typ::bool(), self.loc.clone(), errors)?;
                 Typ::bool()
             }
             contract::Kind::Implication { left, right } => {
                 left.typing(symbol_table, errors)?;
                 let ty = left.typing.as_ref().unwrap();
-                ty.eq_check(&Typ::bool(), self.location.clone(), errors)?;
+                ty.eq_check(&Typ::bool(), self.loc.clone(), errors)?;
                 right.typing(symbol_table, errors)?;
                 let ty = right.typing.as_ref().unwrap();
-                ty.eq_check(&Typ::bool(), self.location.clone(), errors)?;
+                ty.eq_check(&Typ::bool(), self.loc.clone(), errors)?;
                 ty.clone()
             }
             contract::Kind::PresentEvent { event_id, pattern } => {
@@ -141,25 +141,17 @@ impl Typing for interface::FlowStatement {
     fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         use interface::*;
         match self {
-            FlowStatement::Declaration(FlowDeclaration {
-                pattern,
-                flow_expression,
-                ..
-            }) => {
+            FlowStatement::Declaration(FlowDeclaration { pattern, expr, .. }) => {
                 let expected_type = pattern.typing.as_ref().unwrap();
-                flow_expression.typing(symbol_table, errors)?;
-                let expression_type = flow_expression.get_type().unwrap();
+                expr.typing(symbol_table, errors)?;
+                let expression_type = expr.get_type().unwrap();
                 expression_type.eq_check(expected_type, Location::default(), errors)
             }
-            FlowStatement::Instantiation(FlowInstantiation {
-                pattern,
-                flow_expression,
-                ..
-            }) => {
+            FlowStatement::Instantiation(FlowInstantiation { pattern, expr, .. }) => {
                 pattern.typing(symbol_table, errors)?;
                 let expected_type = pattern.typing.as_ref().unwrap();
-                flow_expression.typing(symbol_table, errors)?;
-                let expression_type = flow_expression.get_type().unwrap();
+                expr.typing(symbol_table, errors)?;
+                let expression_type = expr.get_type().unwrap();
                 expression_type.eq_check(expected_type, Location::default(), errors)
             }
         }
@@ -168,7 +160,7 @@ impl Typing for interface::FlowStatement {
 
 impl Typing for flow::Expr {
     fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
-        let location = Location::default();
+        let loc = Location::default();
 
         match &mut self.kind {
             flow::Kind::Ident { id } => {
@@ -176,12 +168,10 @@ impl Typing for flow::Expr {
                 self.typing = Some(typing.clone());
                 Ok(())
             }
-            flow::Kind::Sample {
-                flow_expression, ..
-            } => {
-                flow_expression.typing(symbol_table, errors)?;
+            flow::Kind::Sample { expr, .. } => {
+                expr.typing(symbol_table, errors)?;
                 // get expression type
-                let typing = flow_expression.get_type().unwrap();
+                let typing = expr.get_type().unwrap();
                 match typing {
                     Typ::Event { ty: typing, .. } => {
                         // set typing
@@ -191,19 +181,17 @@ impl Typing for flow::Expr {
                     given_type => {
                         let error = Error::ExpectEvent {
                             given_type: given_type.clone(),
-                            location: location,
+                            loc: loc,
                         };
                         errors.push(error);
                         Err(TerminationError)
                     }
                 }
             }
-            flow::Kind::Scan {
-                flow_expression, ..
-            } => {
-                flow_expression.typing(symbol_table, errors)?;
+            flow::Kind::Scan { expr, .. } => {
+                expr.typing(symbol_table, errors)?;
                 // get expression type
-                let typing = flow_expression.get_type().unwrap();
+                let typing = expr.get_type().unwrap();
                 match typing {
                     Typ::Signal { ty: typing, .. } => {
                         // set typing
@@ -213,24 +201,22 @@ impl Typing for flow::Expr {
                     given_type => {
                         let error = Error::ExpectSignal {
                             given_type: given_type.clone(),
-                            location: location,
+                            loc: loc,
                         };
                         errors.push(error);
                         Err(TerminationError)
                     }
                 }
             }
-            flow::Kind::Timeout {
-                flow_expression, ..
-            } => {
-                flow_expression.typing(symbol_table, errors)?;
+            flow::Kind::Timeout { expr, .. } => {
+                expr.typing(symbol_table, errors)?;
                 // get expression type
-                match flow_expression.get_type().unwrap() {
+                match expr.get_type().unwrap() {
                     Typ::Event { .. } => (),
                     given_type => {
                         let error = Error::ExpectEvent {
                             given_type: given_type.clone(),
-                            location: location,
+                            loc: loc,
                         };
                         errors.push(error);
                         return Err(TerminationError);
@@ -240,17 +226,14 @@ impl Typing for flow::Expr {
                 self.typing = Some(Typ::event(Typ::unit()));
                 Ok(())
             }
-            flow::Kind::Throttle {
-                flow_expression,
-                delta,
-            } => {
-                flow_expression.typing(symbol_table, errors)?;
+            flow::Kind::Throttle { expr, delta } => {
+                expr.typing(symbol_table, errors)?;
                 // get expression type
-                let typing = flow_expression.get_type().unwrap();
+                let typing = expr.get_type().unwrap();
                 match typing {
                     Typ::Signal { ty: typing, .. } => {
                         let delta_ty = delta.get_type();
-                        typing.eq_check(&delta_ty, location, errors)?;
+                        typing.eq_check(&delta_ty, loc, errors)?;
                         // set typing
                         self.typing = Some(Typ::signal((**typing).clone()));
                         Ok(())
@@ -258,17 +241,17 @@ impl Typing for flow::Expr {
                     given_type => {
                         let error = Error::ExpectSignal {
                             given_type: given_type.clone(),
-                            location: location,
+                            loc: loc,
                         };
                         errors.push(error);
                         Err(TerminationError)
                     }
                 }
             }
-            flow::Kind::OnChange { flow_expression } => {
-                flow_expression.typing(symbol_table, errors)?;
+            flow::Kind::OnChange { expr } => {
+                expr.typing(symbol_table, errors)?;
                 // get expression type
-                let typing = flow_expression.get_type().unwrap();
+                let typing = expr.get_type().unwrap();
                 match typing {
                     Typ::Signal { ty: typing, .. } => {
                         // set typing
@@ -278,26 +261,22 @@ impl Typing for flow::Expr {
                     given_type => {
                         let error = Error::ExpectSignal {
                             given_type: given_type.clone(),
-                            location: location,
+                            loc: loc,
                         };
                         errors.push(error);
                         Err(TerminationError)
                     }
                 }
             }
-            flow::Kind::Merge {
-                flow_expression_1,
-                flow_expression_2,
-                ..
-            } => {
-                flow_expression_1.typing(symbol_table, errors)?;
-                flow_expression_2.typing(symbol_table, errors)?;
+            flow::Kind::Merge { expr_1, expr_2, .. } => {
+                expr_1.typing(symbol_table, errors)?;
+                expr_2.typing(symbol_table, errors)?;
                 // get expression type
-                match flow_expression_1.get_type().unwrap() {
+                match expr_1.get_type().unwrap() {
                     Typ::Event { ty: typing_1, .. } => {
-                        match flow_expression_2.get_type().unwrap() {
+                        match expr_2.get_type().unwrap() {
                             Typ::Event { ty: typing_2, .. } => {
-                                typing_2.eq_check(typing_1.as_ref(), location, errors)?;
+                                typing_2.eq_check(typing_1.as_ref(), loc, errors)?;
                                 // set typing
                                 self.typing = Some(Typ::event((**typing_1).clone()));
                                 Ok(())
@@ -305,7 +284,7 @@ impl Typing for flow::Expr {
                             given_type => {
                                 let error = Error::ExpectEvent {
                                     given_type: given_type.clone(),
-                                    location: location,
+                                    loc: loc,
                                 };
                                 errors.push(error);
                                 Err(TerminationError)
@@ -315,7 +294,7 @@ impl Typing for flow::Expr {
                     given_type => {
                         let error = Error::ExpectEvent {
                             given_type: given_type.clone(),
-                            location: location,
+                            loc: loc,
                         };
                         errors.push(error);
                         Err(TerminationError)
@@ -334,7 +313,7 @@ impl Typing for flow::Expr {
                         input.typing(symbol_table, errors)?;
                         let input_type = input.get_type().unwrap().convert();
                         let expected_type = symbol_table.get_type(*id);
-                        input_type.eq_check(expected_type, self.location.clone(), errors)
+                        input_type.eq_check(expected_type, self.loc.clone(), errors)
                     })
                     .collect::<TRes<()>>()?;
 
@@ -383,7 +362,7 @@ impl Typing for stream::Expr {
                 // check it is equal to constant type
                 let id_type = symbol_table.get_type(id);
                 let constant_type = constant.get_type().unwrap();
-                id_type.eq_check(constant_type, self.location.clone(), errors)?;
+                id_type.eq_check(constant_type, self.loc.clone(), errors)?;
 
                 // check the scope is not 'very_local'
                 if let Scope::VeryLocal = symbol_table.get_scope(id) {
@@ -407,7 +386,7 @@ impl Typing for stream::Expr {
 
                         let input_type = input.typing.as_ref().unwrap();
                         let expected_type = symbol_table.get_type(*id);
-                        input_type.eq_check(expected_type, self.location.clone(), errors)
+                        input_type.eq_check(expected_type, self.loc.clone(), errors)
                     })
                     .collect::<TRes<()>>()?;
 
@@ -429,15 +408,15 @@ impl Typing for stream::Expr {
                 Ok(())
             }
 
-            stream::Kind::Expression { ref mut expression } => {
-                self.typing = Some(expression.typing(&self.location, symbol_table, errors)?);
+            stream::Kind::Expression { ref mut expr } => {
+                self.typing = Some(expr.typing(&self.loc, symbol_table, errors)?);
                 Ok(())
             }
 
-            stream::Kind::SomeEvent { ref mut expression } => {
-                expression.typing(symbol_table, errors)?;
-                let expression_type = expression.get_type().unwrap().clone();
-                self.typing = Some(Typ::sm_event(expression_type));
+            stream::Kind::SomeEvent { ref mut expr } => {
+                expr.typing(symbol_table, errors)?;
+                let expr_type = expr.get_type().unwrap().clone();
+                self.typing = Some(Typ::sm_event(expr_type));
                 Ok(())
             }
 
@@ -445,12 +424,12 @@ impl Typing for stream::Expr {
                 self.typing = Some(Typ::sm_event(Typ::Any));
                 Ok(())
             }
-            stream::Kind::RisingEdge { ref mut expression } => {
-                expression.typing(symbol_table, errors)?;
+            stream::Kind::RisingEdge { ref mut expr } => {
+                expr.typing(symbol_table, errors)?;
                 // check expr is a boolean
-                let expr_type = expression.get_type().unwrap().clone();
+                let expr_type = expr.get_type().unwrap().clone();
                 let expected = Typ::bool();
-                expr_type.eq_check(&expected, self.location.clone(), errors)?;
+                expr_type.eq_check(&expected, self.loc.clone(), errors)?;
                 // set the type
                 self.typing = Some(expected);
                 Ok(())
@@ -471,19 +450,15 @@ impl<E: Typing> Typing for Stmt<E> {
     // pre-condition: identifiers associated with statement is already typed
     // post-condition: expression associated with statement is typed and checked
     fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
-        let Stmt {
-            pattern,
-            expression,
-            location,
-        } = self;
+        let Stmt { pattern, expr, loc } = self;
 
         pattern.typing(symbol_table, errors)?;
         let expected_type = pattern.typing.as_ref().unwrap();
 
-        expression.typing(symbol_table, errors)?;
-        let expression_type = expression.get_type().unwrap();
+        expr.typing(symbol_table, errors)?;
+        let expr_type = expr.get_type().unwrap();
 
-        expression_type.eq_check(expected_type, location.clone(), errors)?;
+        expr_type.eq_check(expected_type, loc.clone(), errors)?;
 
         Ok(())
     }
@@ -501,7 +476,7 @@ impl Pattern {
         match self.kind {
             Kind::Constant { ref constant } => {
                 let pattern_type = constant.get_type();
-                pattern_type.eq_check(&expected_type, self.location.clone(), errors)?;
+                pattern_type.eq_check(&expected_type, self.loc.clone(), errors)?;
                 self.typing = Some(pattern_type);
                 Ok(())
             }
@@ -522,7 +497,7 @@ impl Pattern {
                             pattern.typing(&expected_type, symbol_table, errors)?;
                             // check pattern type
                             let pattern_type = pattern.get_type().unwrap();
-                            pattern_type.eq_check(&expected_type, self.location.clone(), errors)
+                            pattern_type.eq_check(&expected_type, self.loc.clone(), errors)
                         } else {
                             Ok(())
                         }
@@ -543,7 +518,7 @@ impl Pattern {
                 } => {
                     if elements.len() != types.len() {
                         let error = Error::IncompatibleTuple {
-                            location: self.location.clone(),
+                            loc: self.loc.clone(),
                         };
                         errors.push(error);
                         return Err(TerminationError);
@@ -566,7 +541,7 @@ impl Pattern {
                 }
                 _ => {
                     let error = Error::ExpectTuplePattern {
-                        location: self.location.clone(),
+                        loc: self.loc.clone(),
                     };
                     errors.push(error);
                     Err(TerminationError)
@@ -581,7 +556,7 @@ impl Pattern {
                 }
                 _ => {
                     let error = Error::ExpectOptionPattern {
-                        location: self.location.clone(),
+                        loc: self.loc.clone(),
                     };
                     errors.push(error);
                     Err(TerminationError)
@@ -600,7 +575,7 @@ impl Pattern {
                 ref mut pattern,
             } => {
                 let typing = symbol_table.get_type(event_id).clone();
-                expected_type.eq_check(&typing, self.location.clone(), errors)?;
+                expected_type.eq_check(&typing, self.loc.clone(), errors)?;
 
                 match &typing {
                     Typ::SMEvent { ty, .. } => pattern.typing(&ty, symbol_table, errors)?,
@@ -612,7 +587,7 @@ impl Pattern {
             }
             Kind::NoEvent { event_id } => {
                 let typing = symbol_table.get_type(event_id).clone();
-                expected_type.eq_check(&typing, self.location.clone(), errors)?;
+                expected_type.eq_check(&typing, self.loc.clone(), errors)?;
                 self.typing = Some(typing);
                 Ok(())
             }
@@ -656,7 +631,7 @@ impl stmt::Pattern {
 
 impl Typing for Expr {
     fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
-        self.typing = Some(self.kind.typing(&self.location, symbol_table, errors)?);
+        self.typing = Some(self.kind.typing(&self.loc, symbol_table, errors)?);
         Ok(())
     }
     fn get_type(&self) -> Option<&Typ> {
@@ -671,68 +646,39 @@ impl<E: Typing> expr::Kind<E> {
     /// Tries to type the given construct.
     fn typing(
         &mut self,
-        location: &Location,
+        loc: &Location,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> TRes<Typ> {
-        let mut typing = ExprTyping::new(location, symbol_table, errors);
+        let mut typing = ExprTyping::new(loc, symbol_table, errors);
         match self {
             expr::Kind::Constant { constant } => Ok(constant.get_type()),
             expr::Kind::Identifier { id } => {
                 let typing = symbol_table.get_type(*id);
                 Ok(typing.clone())
             }
-            expr::Kind::UnOp { op, expression } => typing.unop(op, expression.as_mut()),
-            expr::Kind::Binop {
-                op,
-                left_expression,
-                right_expression,
-            } => typing.binop(op, left_expression.as_mut(), right_expression.as_mut()),
-            expr::Kind::IfThenElse {
-                expression,
-                true_expression,
-                false_expression,
-            } => typing.if_then_else(
-                expression.as_mut(),
-                true_expression.as_mut(),
-                false_expression.as_mut(),
-            ),
-            expr::Kind::Application {
-                function_expression: f,
-                inputs,
-            } => typing.application(f.as_mut(), inputs),
-            expr::Kind::Abstraction { inputs, expression } => {
-                typing.abstraction(inputs, expression.as_mut())
+            expr::Kind::UnOp { op, expr } => typing.unop(op, expr.as_mut()),
+            expr::Kind::BinOp { op, lft, rgt } => typing.binop(op, lft.as_mut(), rgt.as_mut()),
+            expr::Kind::IfThenElse { cnd, thn, els } => {
+                typing.if_then_else(cnd.as_mut(), thn.as_mut(), els.as_mut())
             }
+            expr::Kind::Application { fun: f, inputs } => typing.application(f.as_mut(), inputs),
+            expr::Kind::Abstraction { inputs, expr } => typing.abstraction(inputs, expr.as_mut()),
             expr::Kind::Structure { id, fields } => typing.structure(*id, fields),
             expr::Kind::Array { elements } => typing.array(elements),
             expr::Kind::Tuple { elements } => typing.tuple(elements),
-            expr::Kind::Match { expression, arms } => typing.matching(expression.as_mut(), arms),
-            expr::Kind::FieldAccess { expression, field } => {
-                typing.field_access(expression.as_mut(), field)
+            expr::Kind::Match { expr, arms } => typing.matching(expr.as_mut(), arms),
+            expr::Kind::FieldAccess { expr, field } => typing.field_access(expr.as_mut(), field),
+            expr::Kind::Map { expr, fun } => typing.map(expr.as_mut(), fun.as_mut()),
+            expr::Kind::Fold { array, init, fun } => {
+                typing.fold(array.as_mut(), init.as_mut(), fun.as_mut())
             }
-            expr::Kind::Map {
-                expression,
-                function_expression,
-            } => typing.map(expression.as_mut(), function_expression.as_mut()),
-            expr::Kind::Fold {
-                expression,
-                initialization_expression,
-                function_expression,
-            } => typing.fold(
-                expression.as_mut(),
-                initialization_expression.as_mut(),
-                function_expression.as_mut(),
-            ),
-            expr::Kind::Sort {
-                expression,
-                function_expression,
-            } => typing.sort(expression.as_mut(), function_expression.as_mut()),
+            expr::Kind::Sort { expr, fun } => typing.sort(expr.as_mut(), fun.as_mut()),
             expr::Kind::Zip { arrays } => typing.zip(arrays),
             expr::Kind::TupleElementAccess {
-                expression,
+                expr,
                 element_number,
-            } => typing.tuple_element_access(expression.as_mut(), *element_number),
+            } => typing.tuple_element_access(expr.as_mut(), *element_number),
             expr::Kind::Enumeration { enum_id, .. } => typing.enumeration(*enum_id),
         }
     }
@@ -798,7 +744,7 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
     fn array(&mut self, elms: &mut Vec<E>) -> TRes<Typ> {
         if elms.len() == 0 {
             let error = Error::ExpectInput {
-                location: self.loc.clone(),
+                loc: self.loc.clone(),
             };
             self.errors.push(error);
             return Err(TerminationError);
@@ -866,7 +812,7 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
                             let error = Error::UnknownField {
                                 structure_name: name.to_string(),
                                 field_name: field.to_string(),
-                                location: self.loc(),
+                                loc: self.loc(),
                             };
                             self.errors.push(error);
                             Err(TerminationError)
@@ -878,7 +824,7 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
             given_type => {
                 let error = Error::ExpectStructure {
                     given_type: given_type.clone(),
-                    location: self.loc(),
+                    loc: self.loc(),
                 };
                 self.errors.push(error);
                 Err(TerminationError)
@@ -918,7 +864,7 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
             given_type => {
                 let error = Error::ExpectArray {
                     given_type: given_type.clone(),
-                    location: self.loc(),
+                    loc: self.loc(),
                 };
                 self.errors.push(error);
                 Err(TerminationError)
@@ -971,7 +917,7 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
             given_type => {
                 let error = Error::ExpectArray {
                     given_type: given_type.clone(),
-                    location: self.loc(),
+                    loc: self.loc(),
                 };
                 self.errors.push(error);
                 Err(TerminationError)
@@ -1068,7 +1014,7 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
             given_type => {
                 let error = Error::ExpectArray {
                     given_type: given_type.clone(),
-                    location: self.loc(),
+                    loc: self.loc(),
                 };
                 self.errors.push(error);
                 Err(TerminationError)
@@ -1103,9 +1049,7 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
                 if let Some(element_type) = option_element_type {
                     Ok(element_type.clone())
                 } else {
-                    let error = Error::IndexOutOfBounds {
-                        location: self.loc(),
-                    };
+                    let error = Error::IndexOutOfBounds { loc: self.loc() };
                     self.errors.push(error);
                     Err(TerminationError)
                 }
@@ -1113,7 +1057,7 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
             given_type => {
                 let error = Error::ExpectTuple {
                     given_type: given_type.clone(),
-                    location: self.loc(),
+                    loc: self.loc(),
                 };
                 self.errors.push(error);
                 Err(TerminationError)
@@ -1151,9 +1095,7 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
 
     fn zip(&mut self, arrays: &mut Vec<E>) -> TRes<Typ> {
         if arrays.len() == 0 {
-            let error = Error::ExpectInput {
-                location: self.loc(),
-            };
+            let error = Error::ExpectInput { loc: self.loc() };
             self.errors.push(error);
             return Err(TerminationError);
         }
@@ -1168,7 +1110,7 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
             ty => {
                 let error = Error::ExpectArray {
                     given_type: ty.clone(),
-                    location: self.loc(),
+                    loc: self.loc(),
                 };
                 self.errors.push(error);
                 Err(TerminationError)
@@ -1182,7 +1124,7 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
                     let error = Error::IncompatibleLength {
                         given_length: n.base10_parse().unwrap(),
                         expected_length: length.base10_parse().unwrap(),
-                        location: self.loc(),
+                        loc: self.loc(),
                     };
                     self.errors.push(error);
                     Err(TerminationError)
@@ -1190,7 +1132,7 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
                 ty => {
                     let error = Error::ExpectArray {
                         given_type: ty.clone(),
-                        location: self.loc(),
+                        loc: self.loc(),
                     };
                     self.errors.push(error);
                     Err(TerminationError)
