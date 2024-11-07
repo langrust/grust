@@ -76,9 +76,9 @@ pub mod runtime {
         }
     }
     pub enum RuntimeInput {
-        PedestrianR(f64, std::time::Instant),
         SpeedKmH(f64, std::time::Instant),
         PedestrianL(f64, std::time::Instant),
+        PedestrianR(f64, std::time::Instant),
         Timer(T, std::time::Instant),
     }
     impl priority_stream::Reset for RuntimeInput {
@@ -92,9 +92,9 @@ pub mod runtime {
     impl PartialEq for RuntimeInput {
         fn eq(&self, other: &Self) -> bool {
             match (self, other) {
-                (I::PedestrianR(this, _), I::PedestrianR(other, _)) => this.eq(other),
                 (I::SpeedKmH(this, _), I::SpeedKmH(other, _)) => this.eq(other),
                 (I::PedestrianL(this, _), I::PedestrianL(other, _)) => this.eq(other),
+                (I::PedestrianR(this, _), I::PedestrianR(other, _)) => this.eq(other),
                 (I::Timer(this, _), I::Timer(other, _)) => this.eq(other),
                 _ => false,
             }
@@ -103,9 +103,9 @@ pub mod runtime {
     impl RuntimeInput {
         pub fn get_instant(&self) -> std::time::Instant {
             match self {
-                I::PedestrianR(_, instant) => *instant,
                 I::SpeedKmH(_, instant) => *instant,
                 I::PedestrianL(_, instant) => *instant,
+                I::PedestrianR(_, instant) => *instant,
                 I::Timer(_, instant) => *instant,
             }
         }
@@ -144,14 +144,17 @@ pub mod runtime {
         ) -> Result<(), futures::channel::mpsc::SendError> {
             futures::pin_mut!(input);
             let mut runtime = self;
-            runtime.send_timer(T::TimeoutAeb, init_instant).await?;
             runtime
                 .send_timer(T::TimeoutTimeoutPedestrian, init_instant)
                 .await?;
+            runtime.send_timer(T::TimeoutAeb, init_instant).await?;
             while let Some(input) = input.next().await {
                 match input {
-                    I::SpeedKmH(speed_km_h, instant) => {
-                        runtime.aeb.handle_speed_km_h(instant, speed_km_h).await?;
+                    I::PedestrianL(pedestrian_l, instant) => {
+                        runtime
+                            .aeb
+                            .handle_pedestrian_l(instant, pedestrian_l)
+                            .await?;
                     }
                     I::PedestrianR(pedestrian_r, instant) => {
                         runtime
@@ -159,23 +162,20 @@ pub mod runtime {
                             .handle_pedestrian_r(instant, pedestrian_r)
                             .await?;
                     }
-                    I::PedestrianL(pedestrian_l, instant) => {
-                        runtime
-                            .aeb
-                            .handle_pedestrian_l(instant, pedestrian_l)
-                            .await?;
-                    }
-                    I::Timer(T::TimeoutAeb, instant) => {
-                        runtime.aeb.handle_timeout_aeb(instant).await?;
-                    }
-                    I::Timer(T::DelayAeb, instant) => {
-                        runtime.aeb.handle_delay_aeb(instant).await?;
-                    }
                     I::Timer(T::TimeoutTimeoutPedestrian, instant) => {
                         runtime
                             .aeb
                             .handle_timeout_timeout_pedestrian(instant)
                             .await?;
+                    }
+                    I::Timer(T::DelayAeb, instant) => {
+                        runtime.aeb.handle_delay_aeb(instant).await?;
+                    }
+                    I::SpeedKmH(speed_km_h, instant) => {
+                        runtime.aeb.handle_speed_km_h(instant, speed_km_h).await?;
+                    }
+                    I::Timer(T::TimeoutAeb, instant) => {
+                        runtime.aeb.handle_timeout_aeb(instant).await?;
                     }
                 }
             }
@@ -185,23 +185,6 @@ pub mod runtime {
     pub mod aeb_service {
         use super::*;
         use futures::{sink::SinkExt, stream::StreamExt};
-        #[derive(Clone, Copy, PartialEq, Default)]
-        pub struct SpeedKmH(f64, bool);
-        impl SpeedKmH {
-            fn set(&mut self, speed_km_h: f64) {
-                self.0 = speed_km_h;
-                self.1 = true;
-            }
-            fn get(&self) -> f64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
         #[derive(Clone, Copy, PartialEq, Default)]
         pub struct Brakes(Braking, bool);
         impl Brakes {
@@ -220,32 +203,49 @@ pub mod runtime {
             }
         }
         #[derive(Clone, Copy, PartialEq, Default)]
+        pub struct SpeedKmH(f64, bool);
+        impl SpeedKmH {
+            fn set(&mut self, speed_km_h: f64) {
+                self.0 = speed_km_h;
+                self.1 = true;
+            }
+            fn get(&self) -> f64 {
+                self.0
+            }
+            fn is_new(&self) -> bool {
+                self.1
+            }
+            fn reset(&mut self) {
+                self.1 = false;
+            }
+        }
+        #[derive(Clone, Copy, PartialEq, Default)]
         pub struct Context {
-            pub speed_km_h: SpeedKmH,
             pub brakes: Brakes,
+            pub speed_km_h: SpeedKmH,
         }
         impl Context {
             fn init() -> Context {
                 Default::default()
             }
             fn reset(&mut self) {
-                self.speed_km_h.reset();
                 self.brakes.reset();
+                self.speed_km_h.reset();
             }
         }
         #[derive(Default)]
         pub struct AebServiceStore {
             timeout_timeout_pedestrian: Option<((), std::time::Instant)>,
-            pedestrian_r: Option<(f64, std::time::Instant)>,
             speed_km_h: Option<(f64, std::time::Instant)>,
             pedestrian_l: Option<(f64, std::time::Instant)>,
+            pedestrian_r: Option<(f64, std::time::Instant)>,
         }
         impl AebServiceStore {
             pub fn not_empty(&self) -> bool {
                 self.timeout_timeout_pedestrian.is_some()
-                    || self.pedestrian_r.is_some()
                     || self.speed_km_h.is_some()
                     || self.pedestrian_l.is_some()
+                    || self.pedestrian_r.is_some()
             }
         }
         pub struct AebService {
@@ -312,41 +312,6 @@ pub mod runtime {
                 }
                 Ok(())
             }
-            pub async fn handle_pedestrian_r(
-                &mut self,
-                pedestrian_r_instant: std::time::Instant,
-                pedestrian_r: f64,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                if self.delayed {
-                    self.reset_time_constrains(pedestrian_r_instant).await?;
-                    self.context.reset();
-                    let pedestrian_r_ref = &mut None;
-                    let pedestrian_ref = &mut None;
-                    *pedestrian_r_ref = Some(pedestrian_r);
-                    if pedestrian_r_ref.is_some() {
-                        *pedestrian_ref = *pedestrian_r_ref;
-                    }
-                    if pedestrian_ref.is_some() {
-                        self.send_timer(T::TimeoutTimeoutPedestrian, pedestrian_r_instant)
-                            .await?;
-                    }
-                    let brakes = self.braking_state.step(BrakingStateInput {
-                        speed: self.context.speed_km_h.get(),
-                        pedest: *pedestrian_ref,
-                        timeout_pedestrian: None,
-                    });
-                    self.context.brakes.set(brakes);
-                    self.send_output(O::Brakes(self.context.brakes.get(), pedestrian_r_instant))
-                        .await?;
-                } else {
-                    let unique = self
-                        .input_store
-                        .pedestrian_r
-                        .replace((pedestrian_r, pedestrian_r_instant));
-                    assert!(unique.is_none(), "pedestrian_r changes too frequently");
-                }
-                Ok(())
-            }
             pub async fn handle_speed_km_h(
                 &mut self,
                 speed_km_h_instant: std::time::Instant,
@@ -365,6 +330,463 @@ pub mod runtime {
                 }
                 Ok(())
             }
+            pub async fn handle_delay_aeb(
+                &mut self,
+                instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.context.reset();
+                if self.input_store.not_empty() {
+                    self.reset_time_constrains(instant).await?;
+                    match (
+                        self.input_store.timeout_timeout_pedestrian.take(),
+                        self.input_store.speed_km_h.take(),
+                        self.input_store.pedestrian_l.take(),
+                        self.input_store.pedestrian_r.take(),
+                    ) {
+                        (None, None, None, None) => {}
+                        (Some(((), timeout_timeout_pedestrian_instant)), None, None, None) => {
+                            let timeout_pedestrian_ref = &mut None;
+                            *timeout_pedestrian_ref = Some(());
+                            self.send_timer(
+                                T::TimeoutTimeoutPedestrian,
+                                timeout_timeout_pedestrian_instant,
+                            )
+                            .await?;
+                            let brakes = self.braking_state.step(BrakingStateInput {
+                                speed: self.context.speed_km_h.get(),
+                                pedest: None,
+                                timeout_pedestrian: *timeout_pedestrian_ref,
+                            });
+                            self.context.brakes.set(brakes);
+                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
+                                .await?;
+                        }
+                        (None, Some((speed_km_h, speed_km_h_instant)), None, None) => {
+                            self.context.speed_km_h.set(speed_km_h);
+                        }
+                        (
+                            Some(((), timeout_timeout_pedestrian_instant)),
+                            Some((speed_km_h, speed_km_h_instant)),
+                            None,
+                            None,
+                        ) => {
+                            let timeout_pedestrian_ref = &mut None;
+                            self.context.speed_km_h.set(speed_km_h);
+                            *timeout_pedestrian_ref = Some(());
+                            self.send_timer(
+                                T::TimeoutTimeoutPedestrian,
+                                timeout_timeout_pedestrian_instant,
+                            )
+                            .await?;
+                            let brakes = self.braking_state.step(BrakingStateInput {
+                                speed: self.context.speed_km_h.get(),
+                                pedest: None,
+                                timeout_pedestrian: *timeout_pedestrian_ref,
+                            });
+                            self.context.brakes.set(brakes);
+                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
+                                .await?;
+                        }
+                        (None, None, Some((pedestrian_l, pedestrian_l_instant)), None) => {
+                            let pedestrian_l_ref = &mut None;
+                            let pedestrian_ref = &mut None;
+                            *pedestrian_l_ref = Some(pedestrian_l);
+                            if pedestrian_l_ref.is_some() {
+                                *pedestrian_ref = *pedestrian_l_ref;
+                            }
+                            if pedestrian_ref.is_some() {
+                                self.send_timer(T::TimeoutTimeoutPedestrian, pedestrian_l_instant)
+                                    .await?;
+                            }
+                            let brakes = self.braking_state.step(BrakingStateInput {
+                                speed: self.context.speed_km_h.get(),
+                                pedest: *pedestrian_ref,
+                                timeout_pedestrian: None,
+                            });
+                            self.context.brakes.set(brakes);
+                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
+                                .await?;
+                        }
+                        (
+                            Some(((), timeout_timeout_pedestrian_instant)),
+                            None,
+                            Some((pedestrian_l, pedestrian_l_instant)),
+                            None,
+                        ) => {
+                            let pedestrian_l_ref = &mut None;
+                            let pedestrian_ref = &mut None;
+                            let timeout_pedestrian_ref = &mut None;
+                            *pedestrian_l_ref = Some(pedestrian_l);
+                            if pedestrian_l_ref.is_some() {
+                                *pedestrian_ref = *pedestrian_l_ref;
+                            }
+                            if pedestrian_ref.is_some() {
+                                self.send_timer(
+                                    T::TimeoutTimeoutPedestrian,
+                                    timeout_timeout_pedestrian_instant,
+                                )
+                                .await?;
+                            } else {
+                                *timeout_pedestrian_ref = Some(());
+                                self.send_timer(
+                                    T::TimeoutTimeoutPedestrian,
+                                    timeout_timeout_pedestrian_instant,
+                                )
+                                .await?;
+                            }
+                            let brakes = self.braking_state.step(BrakingStateInput {
+                                speed: self.context.speed_km_h.get(),
+                                pedest: *pedestrian_ref,
+                                timeout_pedestrian: *timeout_pedestrian_ref,
+                            });
+                            self.context.brakes.set(brakes);
+                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
+                                .await?;
+                        }
+                        (
+                            None,
+                            Some((speed_km_h, speed_km_h_instant)),
+                            Some((pedestrian_l, pedestrian_l_instant)),
+                            None,
+                        ) => {
+                            let pedestrian_l_ref = &mut None;
+                            let pedestrian_ref = &mut None;
+                            *pedestrian_l_ref = Some(pedestrian_l);
+                            if pedestrian_l_ref.is_some() {
+                                *pedestrian_ref = *pedestrian_l_ref;
+                            }
+                            if pedestrian_ref.is_some() {
+                                self.send_timer(T::TimeoutTimeoutPedestrian, pedestrian_l_instant)
+                                    .await?;
+                            }
+                            self.context.speed_km_h.set(speed_km_h);
+                            let brakes = self.braking_state.step(BrakingStateInput {
+                                speed: self.context.speed_km_h.get(),
+                                pedest: *pedestrian_ref,
+                                timeout_pedestrian: None,
+                            });
+                            self.context.brakes.set(brakes);
+                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
+                                .await?;
+                        }
+                        (
+                            Some(((), timeout_timeout_pedestrian_instant)),
+                            Some((speed_km_h, speed_km_h_instant)),
+                            Some((pedestrian_l, pedestrian_l_instant)),
+                            None,
+                        ) => {
+                            let pedestrian_l_ref = &mut None;
+                            let pedestrian_ref = &mut None;
+                            let timeout_pedestrian_ref = &mut None;
+                            *pedestrian_l_ref = Some(pedestrian_l);
+                            if pedestrian_l_ref.is_some() {
+                                *pedestrian_ref = *pedestrian_l_ref;
+                            }
+                            self.context.speed_km_h.set(speed_km_h);
+                            if pedestrian_ref.is_some() {
+                                self.send_timer(
+                                    T::TimeoutTimeoutPedestrian,
+                                    timeout_timeout_pedestrian_instant,
+                                )
+                                .await?;
+                            } else {
+                                *timeout_pedestrian_ref = Some(());
+                                self.send_timer(
+                                    T::TimeoutTimeoutPedestrian,
+                                    timeout_timeout_pedestrian_instant,
+                                )
+                                .await?;
+                            }
+                            let brakes = self.braking_state.step(BrakingStateInput {
+                                speed: self.context.speed_km_h.get(),
+                                pedest: *pedestrian_ref,
+                                timeout_pedestrian: *timeout_pedestrian_ref,
+                            });
+                            self.context.brakes.set(brakes);
+                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
+                                .await?;
+                        }
+                        (None, None, None, Some((pedestrian_r, pedestrian_r_instant))) => {
+                            let pedestrian_r_ref = &mut None;
+                            let pedestrian_ref = &mut None;
+                            *pedestrian_r_ref = Some(pedestrian_r);
+                            if pedestrian_r_ref.is_some() {
+                                *pedestrian_ref = *pedestrian_r_ref;
+                            }
+                            if pedestrian_ref.is_some() {
+                                self.send_timer(T::TimeoutTimeoutPedestrian, pedestrian_r_instant)
+                                    .await?;
+                            }
+                            let brakes = self.braking_state.step(BrakingStateInput {
+                                speed: self.context.speed_km_h.get(),
+                                pedest: *pedestrian_ref,
+                                timeout_pedestrian: None,
+                            });
+                            self.context.brakes.set(brakes);
+                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
+                                .await?;
+                        }
+                        (
+                            Some(((), timeout_timeout_pedestrian_instant)),
+                            None,
+                            None,
+                            Some((pedestrian_r, pedestrian_r_instant)),
+                        ) => {
+                            let pedestrian_r_ref = &mut None;
+                            let pedestrian_ref = &mut None;
+                            let timeout_pedestrian_ref = &mut None;
+                            *pedestrian_r_ref = Some(pedestrian_r);
+                            if pedestrian_r_ref.is_some() {
+                                *pedestrian_ref = *pedestrian_r_ref;
+                            }
+                            if pedestrian_ref.is_some() {
+                                self.send_timer(
+                                    T::TimeoutTimeoutPedestrian,
+                                    timeout_timeout_pedestrian_instant,
+                                )
+                                .await?;
+                            } else {
+                                *timeout_pedestrian_ref = Some(());
+                                self.send_timer(
+                                    T::TimeoutTimeoutPedestrian,
+                                    timeout_timeout_pedestrian_instant,
+                                )
+                                .await?;
+                            }
+                            let brakes = self.braking_state.step(BrakingStateInput {
+                                speed: self.context.speed_km_h.get(),
+                                pedest: *pedestrian_ref,
+                                timeout_pedestrian: *timeout_pedestrian_ref,
+                            });
+                            self.context.brakes.set(brakes);
+                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
+                                .await?;
+                        }
+                        (
+                            None,
+                            Some((speed_km_h, speed_km_h_instant)),
+                            None,
+                            Some((pedestrian_r, pedestrian_r_instant)),
+                        ) => {
+                            let pedestrian_r_ref = &mut None;
+                            let pedestrian_ref = &mut None;
+                            *pedestrian_r_ref = Some(pedestrian_r);
+                            if pedestrian_r_ref.is_some() {
+                                *pedestrian_ref = *pedestrian_r_ref;
+                            }
+                            if pedestrian_ref.is_some() {
+                                self.send_timer(T::TimeoutTimeoutPedestrian, pedestrian_r_instant)
+                                    .await?;
+                            }
+                            self.context.speed_km_h.set(speed_km_h);
+                            let brakes = self.braking_state.step(BrakingStateInput {
+                                speed: self.context.speed_km_h.get(),
+                                pedest: *pedestrian_ref,
+                                timeout_pedestrian: None,
+                            });
+                            self.context.brakes.set(brakes);
+                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
+                                .await?;
+                        }
+                        (
+                            Some(((), timeout_timeout_pedestrian_instant)),
+                            Some((speed_km_h, speed_km_h_instant)),
+                            None,
+                            Some((pedestrian_r, pedestrian_r_instant)),
+                        ) => {
+                            let pedestrian_r_ref = &mut None;
+                            let pedestrian_ref = &mut None;
+                            let timeout_pedestrian_ref = &mut None;
+                            *pedestrian_r_ref = Some(pedestrian_r);
+                            if pedestrian_r_ref.is_some() {
+                                *pedestrian_ref = *pedestrian_r_ref;
+                            }
+                            self.context.speed_km_h.set(speed_km_h);
+                            if pedestrian_ref.is_some() {
+                                self.send_timer(
+                                    T::TimeoutTimeoutPedestrian,
+                                    timeout_timeout_pedestrian_instant,
+                                )
+                                .await?;
+                            } else {
+                                *timeout_pedestrian_ref = Some(());
+                                self.send_timer(
+                                    T::TimeoutTimeoutPedestrian,
+                                    timeout_timeout_pedestrian_instant,
+                                )
+                                .await?;
+                            }
+                            let brakes = self.braking_state.step(BrakingStateInput {
+                                speed: self.context.speed_km_h.get(),
+                                pedest: *pedestrian_ref,
+                                timeout_pedestrian: *timeout_pedestrian_ref,
+                            });
+                            self.context.brakes.set(brakes);
+                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
+                                .await?;
+                        }
+                        (
+                            None,
+                            None,
+                            Some((pedestrian_l, pedestrian_l_instant)),
+                            Some((pedestrian_r, pedestrian_r_instant)),
+                        ) => {
+                            let pedestrian_l_ref = &mut None;
+                            let pedestrian_r_ref = &mut None;
+                            let pedestrian_ref = &mut None;
+                            *pedestrian_r_ref = Some(pedestrian_r);
+                            *pedestrian_l_ref = Some(pedestrian_l);
+                            if pedestrian_r_ref.is_some() {
+                                *pedestrian_ref = *pedestrian_r_ref;
+                            } else {
+                                if pedestrian_l_ref.is_some() {
+                                    *pedestrian_ref = *pedestrian_l_ref;
+                                }
+                            }
+                            if pedestrian_ref.is_some() {
+                                self.send_timer(T::TimeoutTimeoutPedestrian, pedestrian_l_instant)
+                                    .await?;
+                            }
+                            let brakes = self.braking_state.step(BrakingStateInput {
+                                speed: self.context.speed_km_h.get(),
+                                pedest: *pedestrian_ref,
+                                timeout_pedestrian: None,
+                            });
+                            self.context.brakes.set(brakes);
+                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
+                                .await?;
+                        }
+                        (
+                            Some(((), timeout_timeout_pedestrian_instant)),
+                            None,
+                            Some((pedestrian_l, pedestrian_l_instant)),
+                            Some((pedestrian_r, pedestrian_r_instant)),
+                        ) => {
+                            let pedestrian_l_ref = &mut None;
+                            let pedestrian_r_ref = &mut None;
+                            let pedestrian_ref = &mut None;
+                            let timeout_pedestrian_ref = &mut None;
+                            *pedestrian_r_ref = Some(pedestrian_r);
+                            *pedestrian_l_ref = Some(pedestrian_l);
+                            if pedestrian_r_ref.is_some() {
+                                *pedestrian_ref = *pedestrian_r_ref;
+                            } else {
+                                if pedestrian_l_ref.is_some() {
+                                    *pedestrian_ref = *pedestrian_l_ref;
+                                }
+                            }
+                            if pedestrian_ref.is_some() {
+                                self.send_timer(
+                                    T::TimeoutTimeoutPedestrian,
+                                    timeout_timeout_pedestrian_instant,
+                                )
+                                .await?;
+                            } else {
+                                *timeout_pedestrian_ref = Some(());
+                                self.send_timer(
+                                    T::TimeoutTimeoutPedestrian,
+                                    timeout_timeout_pedestrian_instant,
+                                )
+                                .await?;
+                            }
+                            let brakes = self.braking_state.step(BrakingStateInput {
+                                speed: self.context.speed_km_h.get(),
+                                pedest: *pedestrian_ref,
+                                timeout_pedestrian: *timeout_pedestrian_ref,
+                            });
+                            self.context.brakes.set(brakes);
+                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
+                                .await?;
+                        }
+                        (
+                            None,
+                            Some((speed_km_h, speed_km_h_instant)),
+                            Some((pedestrian_l, pedestrian_l_instant)),
+                            Some((pedestrian_r, pedestrian_r_instant)),
+                        ) => {
+                            let pedestrian_l_ref = &mut None;
+                            let pedestrian_r_ref = &mut None;
+                            let pedestrian_ref = &mut None;
+                            *pedestrian_r_ref = Some(pedestrian_r);
+                            *pedestrian_l_ref = Some(pedestrian_l);
+                            if pedestrian_r_ref.is_some() {
+                                *pedestrian_ref = *pedestrian_r_ref;
+                            } else {
+                                if pedestrian_l_ref.is_some() {
+                                    *pedestrian_ref = *pedestrian_l_ref;
+                                }
+                            }
+                            if pedestrian_ref.is_some() {
+                                self.send_timer(T::TimeoutTimeoutPedestrian, pedestrian_l_instant)
+                                    .await?;
+                            }
+                            self.context.speed_km_h.set(speed_km_h);
+                            let brakes = self.braking_state.step(BrakingStateInput {
+                                speed: self.context.speed_km_h.get(),
+                                pedest: *pedestrian_ref,
+                                timeout_pedestrian: None,
+                            });
+                            self.context.brakes.set(brakes);
+                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
+                                .await?;
+                        }
+                        (
+                            Some(((), timeout_timeout_pedestrian_instant)),
+                            Some((speed_km_h, speed_km_h_instant)),
+                            Some((pedestrian_l, pedestrian_l_instant)),
+                            Some((pedestrian_r, pedestrian_r_instant)),
+                        ) => {
+                            let pedestrian_l_ref = &mut None;
+                            let pedestrian_r_ref = &mut None;
+                            let pedestrian_ref = &mut None;
+                            let timeout_pedestrian_ref = &mut None;
+                            *pedestrian_r_ref = Some(pedestrian_r);
+                            *pedestrian_l_ref = Some(pedestrian_l);
+                            if pedestrian_r_ref.is_some() {
+                                *pedestrian_ref = *pedestrian_r_ref;
+                            } else {
+                                if pedestrian_l_ref.is_some() {
+                                    *pedestrian_ref = *pedestrian_l_ref;
+                                }
+                            }
+                            self.context.speed_km_h.set(speed_km_h);
+                            if pedestrian_ref.is_some() {
+                                self.send_timer(
+                                    T::TimeoutTimeoutPedestrian,
+                                    timeout_timeout_pedestrian_instant,
+                                )
+                                .await?;
+                            } else {
+                                *timeout_pedestrian_ref = Some(());
+                                self.send_timer(
+                                    T::TimeoutTimeoutPedestrian,
+                                    timeout_timeout_pedestrian_instant,
+                                )
+                                .await?;
+                            }
+                            let brakes = self.braking_state.step(BrakingStateInput {
+                                speed: self.context.speed_km_h.get(),
+                                pedest: *pedestrian_ref,
+                                timeout_pedestrian: *timeout_pedestrian_ref,
+                            });
+                            self.context.brakes.set(brakes);
+                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
+                                .await?;
+                        }
+                    }
+                } else {
+                    self.delayed = true;
+                }
+                Ok(())
+            }
+            #[inline]
+            pub async fn reset_service_delay(
+                &mut self,
+                instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.timer.send((T::DelayAeb, instant)).await?;
+                Ok(())
+            }
             pub async fn handle_pedestrian_l(
                 &mut self,
                 pedestrian_l_instant: std::time::Instant,
@@ -373,8 +795,8 @@ pub mod runtime {
                 if self.delayed {
                     self.reset_time_constrains(pedestrian_l_instant).await?;
                     self.context.reset();
-                    let pedestrian_ref = &mut None;
                     let pedestrian_l_ref = &mut None;
+                    let pedestrian_ref = &mut None;
                     *pedestrian_l_ref = Some(pedestrian_l);
                     if pedestrian_l_ref.is_some() {
                         *pedestrian_ref = *pedestrian_l_ref;
@@ -424,461 +846,39 @@ pub mod runtime {
                 self.timer.send((T::TimeoutAeb, instant)).await?;
                 Ok(())
             }
-            pub async fn handle_delay_aeb(
+            pub async fn handle_pedestrian_r(
                 &mut self,
-                instant: std::time::Instant,
+                pedestrian_r_instant: std::time::Instant,
+                pedestrian_r: f64,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.context.reset();
-                if self.input_store.not_empty() {
-                    self.reset_time_constrains(instant).await?;
-                    match (
-                        self.input_store.timeout_timeout_pedestrian.take(),
-                        self.input_store.pedestrian_r.take(),
-                        self.input_store.speed_km_h.take(),
-                        self.input_store.pedestrian_l.take(),
-                    ) {
-                        (None, None, None, None) => {}
-                        (Some(((), timeout_timeout_pedestrian_instant)), None, None, None) => {
-                            let timeout_pedestrian_ref = &mut None;
-                            *timeout_pedestrian_ref = Some(());
-                            self.send_timer(
-                                T::TimeoutTimeoutPedestrian,
-                                timeout_timeout_pedestrian_instant,
-                            )
-                            .await?;
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                speed: self.context.speed_km_h.get(),
-                                pedest: None,
-                                timeout_pedestrian: *timeout_pedestrian_ref,
-                            });
-                            self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
-                        }
-                        (None, Some((pedestrian_r, pedestrian_r_instant)), None, None) => {
-                            let pedestrian_r_ref = &mut None;
-                            let pedestrian_ref = &mut None;
-                            *pedestrian_r_ref = Some(pedestrian_r);
-                            if pedestrian_r_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_r_ref;
-                            }
-                            if pedestrian_ref.is_some() {
-                                self.send_timer(T::TimeoutTimeoutPedestrian, pedestrian_r_instant)
-                                    .await?;
-                            }
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                speed: self.context.speed_km_h.get(),
-                                pedest: *pedestrian_ref,
-                                timeout_pedestrian: None,
-                            });
-                            self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
-                        }
-                        (
-                            Some(((), timeout_timeout_pedestrian_instant)),
-                            Some((pedestrian_r, pedestrian_r_instant)),
-                            None,
-                            None,
-                        ) => {
-                            let timeout_pedestrian_ref = &mut None;
-                            let pedestrian_r_ref = &mut None;
-                            let pedestrian_ref = &mut None;
-                            *pedestrian_r_ref = Some(pedestrian_r);
-                            if pedestrian_r_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_r_ref;
-                            }
-                            if pedestrian_ref.is_some() {
-                                self.send_timer(
-                                    T::TimeoutTimeoutPedestrian,
-                                    timeout_timeout_pedestrian_instant,
-                                )
-                                .await?;
-                            } else {
-                                *timeout_pedestrian_ref = Some(());
-                                self.send_timer(
-                                    T::TimeoutTimeoutPedestrian,
-                                    timeout_timeout_pedestrian_instant,
-                                )
-                                .await?;
-                            }
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                speed: self.context.speed_km_h.get(),
-                                pedest: *pedestrian_ref,
-                                timeout_pedestrian: *timeout_pedestrian_ref,
-                            });
-                            self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
-                        }
-                        (None, None, Some((speed_km_h, speed_km_h_instant)), None) => {
-                            self.context.speed_km_h.set(speed_km_h);
-                        }
-                        (
-                            Some(((), timeout_timeout_pedestrian_instant)),
-                            None,
-                            Some((speed_km_h, speed_km_h_instant)),
-                            None,
-                        ) => {
-                            let timeout_pedestrian_ref = &mut None;
-                            self.context.speed_km_h.set(speed_km_h);
-                            *timeout_pedestrian_ref = Some(());
-                            self.send_timer(
-                                T::TimeoutTimeoutPedestrian,
-                                timeout_timeout_pedestrian_instant,
-                            )
-                            .await?;
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                speed: self.context.speed_km_h.get(),
-                                pedest: None,
-                                timeout_pedestrian: *timeout_pedestrian_ref,
-                            });
-                            self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
-                        }
-                        (
-                            None,
-                            Some((pedestrian_r, pedestrian_r_instant)),
-                            Some((speed_km_h, speed_km_h_instant)),
-                            None,
-                        ) => {
-                            let pedestrian_r_ref = &mut None;
-                            let pedestrian_ref = &mut None;
-                            self.context.speed_km_h.set(speed_km_h);
-                            *pedestrian_r_ref = Some(pedestrian_r);
-                            if pedestrian_r_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_r_ref;
-                            }
-                            if pedestrian_ref.is_some() {
-                                self.send_timer(T::TimeoutTimeoutPedestrian, pedestrian_r_instant)
-                                    .await?;
-                            }
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                speed: self.context.speed_km_h.get(),
-                                pedest: *pedestrian_ref,
-                                timeout_pedestrian: None,
-                            });
-                            self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
-                        }
-                        (
-                            Some(((), timeout_timeout_pedestrian_instant)),
-                            Some((pedestrian_r, pedestrian_r_instant)),
-                            Some((speed_km_h, speed_km_h_instant)),
-                            None,
-                        ) => {
-                            let timeout_pedestrian_ref = &mut None;
-                            let pedestrian_r_ref = &mut None;
-                            let pedestrian_ref = &mut None;
-                            self.context.speed_km_h.set(speed_km_h);
-                            *pedestrian_r_ref = Some(pedestrian_r);
-                            if pedestrian_r_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_r_ref;
-                            }
-                            if pedestrian_ref.is_some() {
-                                self.send_timer(
-                                    T::TimeoutTimeoutPedestrian,
-                                    timeout_timeout_pedestrian_instant,
-                                )
-                                .await?;
-                            } else {
-                                *timeout_pedestrian_ref = Some(());
-                                self.send_timer(
-                                    T::TimeoutTimeoutPedestrian,
-                                    timeout_timeout_pedestrian_instant,
-                                )
-                                .await?;
-                            }
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                speed: self.context.speed_km_h.get(),
-                                pedest: *pedestrian_ref,
-                                timeout_pedestrian: *timeout_pedestrian_ref,
-                            });
-                            self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
-                        }
-                        (None, None, None, Some((pedestrian_l, pedestrian_l_instant))) => {
-                            let pedestrian_ref = &mut None;
-                            let pedestrian_l_ref = &mut None;
-                            *pedestrian_l_ref = Some(pedestrian_l);
-                            if pedestrian_l_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_l_ref;
-                            }
-                            if pedestrian_ref.is_some() {
-                                self.send_timer(T::TimeoutTimeoutPedestrian, pedestrian_l_instant)
-                                    .await?;
-                            }
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                speed: self.context.speed_km_h.get(),
-                                pedest: *pedestrian_ref,
-                                timeout_pedestrian: None,
-                            });
-                            self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
-                        }
-                        (
-                            Some(((), timeout_timeout_pedestrian_instant)),
-                            None,
-                            None,
-                            Some((pedestrian_l, pedestrian_l_instant)),
-                        ) => {
-                            let timeout_pedestrian_ref = &mut None;
-                            let pedestrian_ref = &mut None;
-                            let pedestrian_l_ref = &mut None;
-                            *pedestrian_l_ref = Some(pedestrian_l);
-                            if pedestrian_l_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_l_ref;
-                            }
-                            if pedestrian_ref.is_some() {
-                                self.send_timer(
-                                    T::TimeoutTimeoutPedestrian,
-                                    timeout_timeout_pedestrian_instant,
-                                )
-                                .await?;
-                            } else {
-                                *timeout_pedestrian_ref = Some(());
-                                self.send_timer(
-                                    T::TimeoutTimeoutPedestrian,
-                                    timeout_timeout_pedestrian_instant,
-                                )
-                                .await?;
-                            }
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                speed: self.context.speed_km_h.get(),
-                                pedest: *pedestrian_ref,
-                                timeout_pedestrian: *timeout_pedestrian_ref,
-                            });
-                            self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
-                        }
-                        (
-                            None,
-                            Some((pedestrian_r, pedestrian_r_instant)),
-                            None,
-                            Some((pedestrian_l, pedestrian_l_instant)),
-                        ) => {
-                            let pedestrian_r_ref = &mut None;
-                            let pedestrian_ref = &mut None;
-                            let pedestrian_l_ref = &mut None;
-                            *pedestrian_l_ref = Some(pedestrian_l);
-                            *pedestrian_r_ref = Some(pedestrian_r);
-                            if pedestrian_r_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_r_ref;
-                            } else {
-                                if pedestrian_l_ref.is_some() {
-                                    *pedestrian_ref = *pedestrian_l_ref;
-                                }
-                            }
-                            if pedestrian_ref.is_some() {
-                                self.send_timer(T::TimeoutTimeoutPedestrian, pedestrian_r_instant)
-                                    .await?;
-                            }
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                speed: self.context.speed_km_h.get(),
-                                pedest: *pedestrian_ref,
-                                timeout_pedestrian: None,
-                            });
-                            self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
-                        }
-                        (
-                            Some(((), timeout_timeout_pedestrian_instant)),
-                            Some((pedestrian_r, pedestrian_r_instant)),
-                            None,
-                            Some((pedestrian_l, pedestrian_l_instant)),
-                        ) => {
-                            let timeout_pedestrian_ref = &mut None;
-                            let pedestrian_r_ref = &mut None;
-                            let pedestrian_ref = &mut None;
-                            let pedestrian_l_ref = &mut None;
-                            *pedestrian_l_ref = Some(pedestrian_l);
-                            *pedestrian_r_ref = Some(pedestrian_r);
-                            if pedestrian_r_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_r_ref;
-                            } else {
-                                if pedestrian_l_ref.is_some() {
-                                    *pedestrian_ref = *pedestrian_l_ref;
-                                }
-                            }
-                            if pedestrian_ref.is_some() {
-                                self.send_timer(
-                                    T::TimeoutTimeoutPedestrian,
-                                    timeout_timeout_pedestrian_instant,
-                                )
-                                .await?;
-                            } else {
-                                *timeout_pedestrian_ref = Some(());
-                                self.send_timer(
-                                    T::TimeoutTimeoutPedestrian,
-                                    timeout_timeout_pedestrian_instant,
-                                )
-                                .await?;
-                            }
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                speed: self.context.speed_km_h.get(),
-                                pedest: *pedestrian_ref,
-                                timeout_pedestrian: *timeout_pedestrian_ref,
-                            });
-                            self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
-                        }
-                        (
-                            None,
-                            None,
-                            Some((speed_km_h, speed_km_h_instant)),
-                            Some((pedestrian_l, pedestrian_l_instant)),
-                        ) => {
-                            let pedestrian_ref = &mut None;
-                            let pedestrian_l_ref = &mut None;
-                            *pedestrian_l_ref = Some(pedestrian_l);
-                            if pedestrian_l_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_l_ref;
-                            }
-                            if pedestrian_ref.is_some() {
-                                self.send_timer(T::TimeoutTimeoutPedestrian, pedestrian_l_instant)
-                                    .await?;
-                            }
-                            self.context.speed_km_h.set(speed_km_h);
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                speed: self.context.speed_km_h.get(),
-                                pedest: *pedestrian_ref,
-                                timeout_pedestrian: None,
-                            });
-                            self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
-                        }
-                        (
-                            Some(((), timeout_timeout_pedestrian_instant)),
-                            None,
-                            Some((speed_km_h, speed_km_h_instant)),
-                            Some((pedestrian_l, pedestrian_l_instant)),
-                        ) => {
-                            let timeout_pedestrian_ref = &mut None;
-                            let pedestrian_ref = &mut None;
-                            let pedestrian_l_ref = &mut None;
-                            *pedestrian_l_ref = Some(pedestrian_l);
-                            if pedestrian_l_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_l_ref;
-                            }
-                            self.context.speed_km_h.set(speed_km_h);
-                            if pedestrian_ref.is_some() {
-                                self.send_timer(
-                                    T::TimeoutTimeoutPedestrian,
-                                    timeout_timeout_pedestrian_instant,
-                                )
-                                .await?;
-                            } else {
-                                *timeout_pedestrian_ref = Some(());
-                                self.send_timer(
-                                    T::TimeoutTimeoutPedestrian,
-                                    timeout_timeout_pedestrian_instant,
-                                )
-                                .await?;
-                            }
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                speed: self.context.speed_km_h.get(),
-                                pedest: *pedestrian_ref,
-                                timeout_pedestrian: *timeout_pedestrian_ref,
-                            });
-                            self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
-                        }
-                        (
-                            None,
-                            Some((pedestrian_r, pedestrian_r_instant)),
-                            Some((speed_km_h, speed_km_h_instant)),
-                            Some((pedestrian_l, pedestrian_l_instant)),
-                        ) => {
-                            let pedestrian_r_ref = &mut None;
-                            let pedestrian_ref = &mut None;
-                            let pedestrian_l_ref = &mut None;
-                            *pedestrian_l_ref = Some(pedestrian_l);
-                            self.context.speed_km_h.set(speed_km_h);
-                            *pedestrian_r_ref = Some(pedestrian_r);
-                            if pedestrian_r_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_r_ref;
-                            } else {
-                                if pedestrian_l_ref.is_some() {
-                                    *pedestrian_ref = *pedestrian_l_ref;
-                                }
-                            }
-                            if pedestrian_ref.is_some() {
-                                self.send_timer(T::TimeoutTimeoutPedestrian, pedestrian_r_instant)
-                                    .await?;
-                            }
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                speed: self.context.speed_km_h.get(),
-                                pedest: *pedestrian_ref,
-                                timeout_pedestrian: None,
-                            });
-                            self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
-                        }
-                        (
-                            Some(((), timeout_timeout_pedestrian_instant)),
-                            Some((pedestrian_r, pedestrian_r_instant)),
-                            Some((speed_km_h, speed_km_h_instant)),
-                            Some((pedestrian_l, pedestrian_l_instant)),
-                        ) => {
-                            let timeout_pedestrian_ref = &mut None;
-                            let pedestrian_r_ref = &mut None;
-                            let pedestrian_ref = &mut None;
-                            let pedestrian_l_ref = &mut None;
-                            *pedestrian_l_ref = Some(pedestrian_l);
-                            self.context.speed_km_h.set(speed_km_h);
-                            *pedestrian_r_ref = Some(pedestrian_r);
-                            if pedestrian_r_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_r_ref;
-                            } else {
-                                if pedestrian_l_ref.is_some() {
-                                    *pedestrian_ref = *pedestrian_l_ref;
-                                }
-                            }
-                            if pedestrian_ref.is_some() {
-                                self.send_timer(
-                                    T::TimeoutTimeoutPedestrian,
-                                    timeout_timeout_pedestrian_instant,
-                                )
-                                .await?;
-                            } else {
-                                *timeout_pedestrian_ref = Some(());
-                                self.send_timer(
-                                    T::TimeoutTimeoutPedestrian,
-                                    timeout_timeout_pedestrian_instant,
-                                )
-                                .await?;
-                            }
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                speed: self.context.speed_km_h.get(),
-                                pedest: *pedestrian_ref,
-                                timeout_pedestrian: *timeout_pedestrian_ref,
-                            });
-                            self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
-                        }
+                if self.delayed {
+                    self.reset_time_constrains(pedestrian_r_instant).await?;
+                    self.context.reset();
+                    let pedestrian_r_ref = &mut None;
+                    let pedestrian_ref = &mut None;
+                    *pedestrian_r_ref = Some(pedestrian_r);
+                    if pedestrian_r_ref.is_some() {
+                        *pedestrian_ref = *pedestrian_r_ref;
                     }
+                    if pedestrian_ref.is_some() {
+                        self.send_timer(T::TimeoutTimeoutPedestrian, pedestrian_r_instant)
+                            .await?;
+                    }
+                    let brakes = self.braking_state.step(BrakingStateInput {
+                        speed: self.context.speed_km_h.get(),
+                        pedest: *pedestrian_ref,
+                        timeout_pedestrian: None,
+                    });
+                    self.context.brakes.set(brakes);
+                    self.send_output(O::Brakes(self.context.brakes.get(), pedestrian_r_instant))
+                        .await?;
                 } else {
-                    self.delayed = true;
+                    let unique = self
+                        .input_store
+                        .pedestrian_r
+                        .replace((pedestrian_r, pedestrian_r_instant));
+                    assert!(unique.is_none(), "pedestrian_r changes too frequently");
                 }
-                Ok(())
-            }
-            #[inline]
-            pub async fn reset_service_delay(
-                &mut self,
-                instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.timer.send((T::DelayAeb, instant)).await?;
                 Ok(())
             }
             #[inline]
