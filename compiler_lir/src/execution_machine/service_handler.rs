@@ -24,40 +24,35 @@ mk_new! { impl ServiceHandler => new {
 impl ServiceHandler {
     /// Transform LIR run-loop into an async function performing a loop over events.
     pub fn into_syn(self) -> syn::Item {
-        let ServiceHandler {
-            service,
-            components,
-            flows_handling,
-            flows_context,
-        } = self;
-
         // result
-        let mut items = flows_context.into_syn().collect::<Vec<_>>();
+        let mut items = self.flows_context.into_syn().collect::<Vec<_>>();
 
         // store all inputs in a service_store
         let mut service_store_fields: Vec<syn::Field> = vec![];
-        let mut service_store_is_somes: Vec<syn::Expr> = vec![];
-        flows_handling
-            .iter()
-            .for_each(|FlowHandler { arriving_flow, .. }| match arriving_flow {
+        let mut service_store_is_some_s: Vec<syn::Expr> = vec![];
+        self.flows_handling.iter().for_each(
+            |FlowHandler { arriving_flow, .. }| match arriving_flow {
                 ArrivingFlow::Channel(flow_name, flow_type, _) => {
                     let ident = Ident::new(flow_name.as_str(), Span::call_site());
                     let ty = flow_type.into_syn();
                     service_store_fields
                         .push(parse_quote! { #ident: Option<(#ty, std::time::Instant)> });
-                    service_store_is_somes.push(parse_quote! { self.#ident.is_some() });
+                    service_store_is_some_s.push(parse_quote! { self.#ident.is_some() });
                 }
                 ArrivingFlow::Period(time_flow_name) | ArrivingFlow::Deadline(time_flow_name) => {
                     let ident = Ident::new(time_flow_name.as_str(), Span::call_site());
                     service_store_fields
                         .push(parse_quote! { #ident: Option<((), std::time::Instant)> });
-                    service_store_is_somes.push(parse_quote! { self.#ident.is_some() });
+                    service_store_is_some_s.push(parse_quote! { self.#ident.is_some() });
                 }
                 ArrivingFlow::ServiceDelay(_) | ArrivingFlow::ServiceTimeout(_) => (),
-            });
+            },
+        );
         // service store
-        let service_store_name =
-            format_ident!("{}", to_camel_case(&format!("{service}ServiceStore")));
+        let service_store_name = format_ident!(
+            "{}",
+            to_camel_case(&format!("{}ServiceStore", self.service))
+        );
         items.push(syn::Item::Struct(parse_quote! {
             #[derive(Default)]
             pub struct #service_store_name {
@@ -68,7 +63,7 @@ impl ServiceHandler {
         items.push(syn::Item::Impl(parse_quote! {
             impl #service_store_name {
                 pub fn not_empty(&self) -> bool {
-                    #(#service_store_is_somes)||*
+                    #(#service_store_is_some_s)||*
                 }
             }
         }));
@@ -85,7 +80,7 @@ impl ServiceHandler {
             parse_quote! { input_store },
         ];
         // with components states
-        components.iter().for_each(|component_name| {
+        self.components.iter().for_each(|component_name| {
             let component_state_struct =
                 format_ident!("{}", to_camel_case(&format!("{}State", component_name)));
             let component_name = format_ident!("{}", component_name);
@@ -98,7 +93,7 @@ impl ServiceHandler {
             .push(parse_quote! { timer: futures::channel::mpsc::Sender<(T, std::time::Instant)> });
         field_values.push(parse_quote! { output });
         field_values.push(parse_quote! { timer });
-        let service_name = format_ident!("{}", to_camel_case(&format!("{service}Service")));
+        let service_name = format_ident!("{}", to_camel_case(&format!("{}Service", self.service)));
         items.push(syn::Item::Struct(parse_quote! {
             pub struct #service_name {
                 #(#service_fields),*
@@ -109,7 +104,7 @@ impl ServiceHandler {
         let mut impl_items: Vec<syn::ImplItem> = vec![];
 
         // create components states
-        let components_states = components.into_iter().map(|component_name| {
+        let components_states = self.components.into_iter().map(|component_name| {
             let component_state_struct =
                 format_ident!("{}", to_camel_case(&format!("{}State", component_name)));
             let component_name = format_ident!("{}", component_name);
@@ -136,7 +131,7 @@ impl ServiceHandler {
         });
 
         // flows handler functions
-        flows_handling.into_iter().for_each(
+        self.flows_handling.into_iter().for_each(
             |FlowHandler {
                  arriving_flow,
                  instruction,
@@ -294,7 +289,7 @@ impl ServiceHandler {
         }));
 
         // service module
-        let module_name = format_ident!("{service}_service");
+        let module_name = format_ident!("{}_service", self.service);
         syn::Item::Mod(parse_quote! {
            pub mod #module_name {
                 use futures::{stream::StreamExt, sink::SinkExt};
@@ -470,7 +465,7 @@ impl FlowInstruction {
                 }
             }
             FlowInstruction::IfActivated(events, signals, then, els) => {
-                let actv_cond = events
+                let activation_cond = events
                     .iter()
                     .map(|e| -> syn::Expr {
                         let ident = format_ident!("{e}_ref");
@@ -488,7 +483,7 @@ impl FlowInstruction {
                     if let Some(instr) = els {
                         let els_instrs = instr.into_syn();
                         parse_quote! {
-                            if #(#actv_cond)||* {
+                            if #(#activation_cond)||* {
                                 #(#then_instrs)*
                             } else {
                                 #(#els_instrs)*
@@ -496,7 +491,7 @@ impl FlowInstruction {
                         }
                     } else {
                         parse_quote! {
-                            if #(#actv_cond)||* {
+                            if #(#activation_cond)||* {
                                 #(#then_instrs)*
                             }
                         }
@@ -620,7 +615,7 @@ mk_new! { impl ParaMethod =>
     Rayon: rayon ()
     Threads: threads ()
     Tokio: tokio ()
-    DoNotPara: dont_para ()
+    DoNotPara: no_para ()
 }
 
 #[derive(Debug, PartialEq)]
@@ -637,9 +632,8 @@ mk_new! { impl MatchArm =>
 
 impl MatchArm {
     fn into_syn(self) -> syn::Arm {
-        let MatchArm { patterns, instr } = self;
-        let syn_pats = patterns.into_iter().map(|pat| pat.into_syn());
-        let stmts = instr.into_syn();
+        let syn_pats = self.patterns.into_iter().map(|pat| pat.into_syn());
+        let stmts = self.instr.into_syn();
         parse_quote! {
             (#(#syn_pats),*) => {
                 #(#stmts)*
@@ -665,12 +659,12 @@ pub enum Expression {
         /// The identifier.
         identifier: String,
     },
-    /// A call from the context: `ctxt.s`.
+    /// A call from the context: `ctx.s`.
     InContext {
         /// The flow called.
         flow: String,
     },
-    /// A call from the context that will take the value: `ctxt.s.take()`.
+    /// A call from the context that will take the value: `ctx.s.take()`.
     TakeFromContext {
         /// The flow called.
         flow: String,

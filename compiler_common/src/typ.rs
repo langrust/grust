@@ -302,10 +302,18 @@ mk_new! { impl Typ =>
         size: usize = syn::LitInt::new(&format!("{size}"), Span::call_site()),
     }
     Enumeration: enumeration {
-        name: impl Into<String> = Ident::new(&name.into(), Span::call_site()),
+        name: Ident,
         id: usize,
     }
     Structure: structure {
+        name: Ident,
+        id: usize,
+    }
+    Enumeration: enumeration_str {
+        name: impl Into<String> = Ident::new(&name.into(), Span::call_site()),
+        id: usize,
+    }
+    Structure: structure_str {
         name: impl Into<String> = Ident::new(&name.into(), Span::call_site()),
         id: usize,
     }
@@ -811,7 +819,7 @@ mod test {
 
     #[test]
     fn should_create_structure_from_lir_structure() {
-        let typ = Typ::structure("Point", 0);
+        let typ = Typ::structure_str("Point", 0);
         let control = parse_quote! { Point };
 
         assert_eq!(typ.into_syn(), control)
@@ -819,7 +827,7 @@ mod test {
 
     #[test]
     fn should_create_enumeration_from_lir_enumeration() {
-        let typ = Typ::enumeration("Color", 0);
+        let typ = Typ::enumeration_str("Color", 0);
         let control = parse_quote! { Color };
 
         assert_eq!(typ.into_syn(), control)

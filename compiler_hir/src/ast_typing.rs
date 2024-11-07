@@ -3,7 +3,7 @@ prelude! {}
 /// Performs type analysis.
 pub trait Typing {
     /// Tries to type the given construct.
-    fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()>;
+    fn typing(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()>;
 
     /// Get type from construct.
     fn get_type(&self) -> Option<&Typ> {
@@ -17,16 +17,16 @@ pub trait Typing {
 }
 
 impl Typing for File {
-    fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    fn typing(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         for c in self.components.iter_mut() {
-            c.typing(symbol_table, errors)?;
+            c.typing(symbols, errors)?;
         }
         for f in self.functions.iter_mut() {
-            f.typing(symbol_table, errors)?;
+            f.typing(symbols, errors)?;
         }
         for s in self.interface.services.iter_mut() {
             for stmt in s.statements.values_mut() {
-                stmt.typing(symbol_table, errors)?
+                stmt.typing(symbols, errors)?
             }
         }
         Ok(())
@@ -34,12 +34,12 @@ impl Typing for File {
 }
 
 impl Typing for Function {
-    fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    fn typing(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         for stmt in self.statements.iter_mut() {
-            stmt.typing(symbol_table, errors)?;
+            stmt.typing(symbols, errors)?;
         }
-        self.returned.typing(symbol_table, errors)?;
-        let expected_type = symbol_table.get_function_output_type(self.id);
+        self.returned.typing(symbols, errors)?;
+        let expected_type = symbols.get_function_output_type(self.id);
         self.returned
             .get_type()
             .unwrap()
@@ -48,9 +48,9 @@ impl Typing for Function {
 }
 
 impl Typing for Component {
-    fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    fn typing(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         if let Component::Definition(comp_def) = self {
-            comp_def.typing(symbol_table, errors)
+            comp_def.typing(symbols, errors)
         } else {
             Ok(())
         }
@@ -58,72 +58,72 @@ impl Typing for Component {
 }
 
 impl Typing for ComponentDefinition {
-    fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    fn typing(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         for stmt in self.statements.iter_mut() {
-            stmt.typing(symbol_table, errors)?;
+            stmt.typing(symbols, errors)?;
         }
-        self.contract.typing(symbol_table, errors)
+        self.contract.typing(symbols, errors)
     }
 }
 
 impl Typing for Contract {
-    fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    fn typing(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         for term in self.requires.iter_mut() {
-            term.typing(symbol_table, errors)?
+            term.typing(symbols, errors)?
         }
         for term in self.ensures.iter_mut() {
-            term.typing(symbol_table, errors)?
+            term.typing(symbols, errors)?
         }
         for term in self.invariant.iter_mut() {
-            term.typing(symbol_table, errors)?
+            term.typing(symbols, errors)?
         }
         Ok(())
     }
 }
 
 impl Typing for contract::Term {
-    fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    fn typing(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         let ty = match &mut self.kind {
             contract::Kind::Constant { constant } => constant.get_type(),
-            contract::Kind::Identifier { id } => symbol_table.get_type(*id).clone(),
+            contract::Kind::Identifier { id } => symbols.get_type(*id).clone(),
             contract::Kind::Enumeration { enum_id, .. } => Typ::Enumeration {
-                name: Ident::new(symbol_table.get_name(*enum_id), Span::call_site()),
+                name: Ident::new(symbols.get_name(*enum_id), Span::call_site()),
                 id: *enum_id,
             },
             contract::Kind::Unary { op, term } => {
-                term.typing(symbol_table, errors)?;
+                term.typing(symbols, errors)?;
                 let ty = term.typing.as_ref().unwrap().clone();
                 let mut unop_type = op.get_type();
                 unop_type.apply(vec![ty], self.loc.clone(), errors)?
             }
             contract::Kind::Binary { op, left, right } => {
-                left.typing(symbol_table, errors)?;
+                left.typing(symbols, errors)?;
                 let left_type = left.typing.as_ref().unwrap().clone();
-                right.typing(symbol_table, errors)?;
+                right.typing(symbols, errors)?;
                 let right_type = right.typing.as_ref().unwrap().clone();
                 let mut binop_type = op.get_type();
                 binop_type.apply(vec![left_type, right_type], self.loc.clone(), errors)?
             }
             contract::Kind::ForAll { term, .. } => {
-                term.typing(symbol_table, errors)?;
+                term.typing(symbols, errors)?;
                 let ty = term.typing.as_ref().unwrap();
                 ty.eq_check(&Typ::bool(), self.loc.clone(), errors)?;
                 Typ::bool()
             }
             contract::Kind::Implication { left, right } => {
-                left.typing(symbol_table, errors)?;
+                left.typing(symbols, errors)?;
                 let ty = left.typing.as_ref().unwrap();
                 ty.eq_check(&Typ::bool(), self.loc.clone(), errors)?;
-                right.typing(symbol_table, errors)?;
+                right.typing(symbols, errors)?;
                 let ty = right.typing.as_ref().unwrap();
                 ty.eq_check(&Typ::bool(), self.loc.clone(), errors)?;
                 ty.clone()
             }
             contract::Kind::PresentEvent { event_id, pattern } => {
-                let typing = symbol_table.get_type(*event_id).clone();
+                let typing = symbols.get_type(*event_id).clone();
                 match &typing {
                     Typ::SMEvent { ty, .. } => {
-                        symbol_table.set_type(*pattern, *ty.clone());
+                        symbols.set_type(*pattern, *ty.clone());
                     }
                     _ => unreachable!(),
                 };
@@ -138,19 +138,19 @@ impl Typing for contract::Term {
 impl Typing for interface::FlowStatement {
     // pre-condition: identifiers associated with statement is already typed
     // post-condition: expression associated with statement is typed and checked
-    fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    fn typing(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         use interface::*;
         match self {
             FlowStatement::Declaration(FlowDeclaration { pattern, expr, .. }) => {
                 let expected_type = pattern.typing.as_ref().unwrap();
-                expr.typing(symbol_table, errors)?;
+                expr.typing(symbols, errors)?;
                 let expression_type = expr.get_type().unwrap();
                 expression_type.eq_check(expected_type, Location::default(), errors)
             }
             FlowStatement::Instantiation(FlowInstantiation { pattern, expr, .. }) => {
-                pattern.typing(symbol_table, errors)?;
+                pattern.typing(symbols, errors)?;
                 let expected_type = pattern.typing.as_ref().unwrap();
-                expr.typing(symbol_table, errors)?;
+                expr.typing(symbols, errors)?;
                 let expression_type = expr.get_type().unwrap();
                 expression_type.eq_check(expected_type, Location::default(), errors)
             }
@@ -159,17 +159,17 @@ impl Typing for interface::FlowStatement {
 }
 
 impl Typing for flow::Expr {
-    fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    fn typing(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         let loc = Location::default();
 
         match &mut self.kind {
             flow::Kind::Ident { id } => {
-                let typing = symbol_table.get_type(*id);
+                let typing = symbols.get_type(*id);
                 self.typing = Some(typing.clone());
                 Ok(())
             }
             flow::Kind::Sample { expr, .. } => {
-                expr.typing(symbol_table, errors)?;
+                expr.typing(symbols, errors)?;
                 // get expression type
                 let typing = expr.get_type().unwrap();
                 match typing {
@@ -189,7 +189,7 @@ impl Typing for flow::Expr {
                 }
             }
             flow::Kind::Scan { expr, .. } => {
-                expr.typing(symbol_table, errors)?;
+                expr.typing(symbols, errors)?;
                 // get expression type
                 let typing = expr.get_type().unwrap();
                 match typing {
@@ -209,7 +209,7 @@ impl Typing for flow::Expr {
                 }
             }
             flow::Kind::Timeout { expr, .. } => {
-                expr.typing(symbol_table, errors)?;
+                expr.typing(symbols, errors)?;
                 // get expression type
                 match expr.get_type().unwrap() {
                     Typ::Event { .. } => (),
@@ -227,7 +227,7 @@ impl Typing for flow::Expr {
                 Ok(())
             }
             flow::Kind::Throttle { expr, delta } => {
-                expr.typing(symbol_table, errors)?;
+                expr.typing(symbols, errors)?;
                 // get expression type
                 let typing = expr.get_type().unwrap();
                 match typing {
@@ -249,7 +249,7 @@ impl Typing for flow::Expr {
                 }
             }
             flow::Kind::OnChange { expr } => {
-                expr.typing(symbol_table, errors)?;
+                expr.typing(symbols, errors)?;
                 // get expression type
                 let typing = expr.get_type().unwrap();
                 match typing {
@@ -269,8 +269,8 @@ impl Typing for flow::Expr {
                 }
             }
             flow::Kind::Merge { expr_1, expr_2, .. } => {
-                expr_1.typing(symbol_table, errors)?;
-                expr_2.typing(symbol_table, errors)?;
+                expr_1.typing(symbols, errors)?;
+                expr_2.typing(symbols, errors)?;
                 // get expression type
                 match expr_1.get_type().unwrap() {
                     Typ::Event { ty: typing_1, .. } => {
@@ -310,19 +310,19 @@ impl Typing for flow::Expr {
                 inputs
                     .iter_mut()
                     .map(|(id, input)| {
-                        input.typing(symbol_table, errors)?;
+                        input.typing(symbols, errors)?;
                         let input_type = input.get_type().unwrap().convert();
-                        let expected_type = symbol_table.get_type(*id);
+                        let expected_type = symbols.get_type(*id);
                         input_type.eq_check(expected_type, self.loc.clone(), errors)
                     })
                     .collect::<TRes<()>>()?;
 
                 // get the outputs types of the called component
-                let mut outputs_types = symbol_table
+                let mut outputs_types = symbols
                     .get_node_outputs(*component_id)
                     .iter()
                     .map(|(_, output_id)| {
-                        let output_type = symbol_table.get_type(*output_id);
+                        let output_type = symbols.get_type(*output_id);
                         output_type.rev_convert()
                     })
                     .collect::<Vec<_>>();
@@ -350,22 +350,22 @@ impl Typing for flow::Expr {
 }
 
 impl Typing for stream::Expr {
-    fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    fn typing(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         match self.kind {
             stream::Kind::FollowedBy {
                 id,
                 ref mut constant,
             } => {
                 // type expressions
-                constant.typing(symbol_table, errors)?;
+                constant.typing(symbols, errors)?;
 
                 // check it is equal to constant type
-                let id_type = symbol_table.get_type(id);
+                let id_type = symbols.get_type(id);
                 let constant_type = constant.get_type().unwrap();
                 id_type.eq_check(constant_type, self.loc.clone(), errors)?;
 
                 // check the scope is not 'very_local'
-                if let Scope::VeryLocal = symbol_table.get_scope(id) {
+                if let Scope::VeryLocal = symbols.get_scope(id) {
                     return Err(TerminationError); // todo generate error
                 }
 
@@ -382,20 +382,20 @@ impl Typing for stream::Expr {
                 inputs
                     .iter_mut()
                     .map(|(id, input)| {
-                        input.typing(symbol_table, errors)?;
+                        input.typing(symbols, errors)?;
 
                         let input_type = input.typing.as_ref().unwrap();
-                        let expected_type = symbol_table.get_type(*id);
+                        let expected_type = symbols.get_type(*id);
                         input_type.eq_check(expected_type, self.loc.clone(), errors)
                     })
                     .collect::<TRes<()>>()?;
 
                 // get the called signal type
                 let node_application_type = {
-                    let mut outputs_types = symbol_table
+                    let mut outputs_types = symbols
                         .get_node_outputs(called_node_id)
                         .iter()
-                        .map(|(_, output_signal)| symbol_table.get_type(*output_signal).clone())
+                        .map(|(_, output_signal)| symbols.get_type(*output_signal).clone())
                         .collect::<Vec<_>>();
                     if outputs_types.len() == 1 {
                         outputs_types.pop().unwrap()
@@ -409,12 +409,12 @@ impl Typing for stream::Expr {
             }
 
             stream::Kind::Expression { ref mut expr } => {
-                self.typing = Some(expr.typing(&self.loc, symbol_table, errors)?);
+                self.typing = Some(expr.typing(&self.loc, symbols, errors)?);
                 Ok(())
             }
 
             stream::Kind::SomeEvent { ref mut expr } => {
-                expr.typing(symbol_table, errors)?;
+                expr.typing(symbols, errors)?;
                 let expr_type = expr.get_type().unwrap().clone();
                 self.typing = Some(Typ::sm_event(expr_type));
                 Ok(())
@@ -425,7 +425,7 @@ impl Typing for stream::Expr {
                 Ok(())
             }
             stream::Kind::RisingEdge { ref mut expr } => {
-                expr.typing(symbol_table, errors)?;
+                expr.typing(symbols, errors)?;
                 // check expr is a boolean
                 let expr_type = expr.get_type().unwrap().clone();
                 let expected = Typ::bool();
@@ -449,13 +449,13 @@ impl Typing for stream::Expr {
 impl<E: Typing> Typing for Stmt<E> {
     // pre-condition: identifiers associated with statement is already typed
     // post-condition: expression associated with statement is typed and checked
-    fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    fn typing(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         let Stmt { pattern, expr, loc } = self;
 
-        pattern.typing(symbol_table, errors)?;
+        pattern.typing(symbols, errors)?;
         let expected_type = pattern.typing.as_ref().unwrap();
 
-        expr.typing(symbol_table, errors)?;
+        expr.typing(symbols, errors)?;
         let expr_type = expr.get_type().unwrap();
 
         expr_type.eq_check(expected_type, loc.clone(), errors)?;
@@ -469,7 +469,7 @@ impl Pattern {
     pub fn typing(
         &mut self,
         expected_type: &Typ,
-        symbol_table: &mut SymbolTable,
+        symbols: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> TRes<()> {
         use pattern::Kind;
@@ -481,7 +481,7 @@ impl Pattern {
                 Ok(())
             }
             Kind::Identifier { id } => {
-                symbol_table.set_type(id, expected_type.clone());
+                symbols.set_type(id, expected_type.clone());
                 self.typing = Some(expected_type.clone());
                 Ok(())
             }
@@ -492,9 +492,9 @@ impl Pattern {
                 fields
                     .iter_mut()
                     .map(|(id, optional_pattern)| {
-                        let expected_type = symbol_table.get_type(*id).clone();
+                        let expected_type = symbols.get_type(*id).clone();
                         if let Some(pattern) = optional_pattern {
-                            pattern.typing(&expected_type, symbol_table, errors)?;
+                            pattern.typing(&expected_type, symbols, errors)?;
                             // check pattern type
                             let pattern_type = pattern.get_type().unwrap();
                             pattern_type.eq_check(&expected_type, self.loc.clone(), errors)
@@ -505,11 +505,11 @@ impl Pattern {
                     .collect::<Vec<TRes<()>>>()
                     .into_iter()
                     .collect::<TRes<()>>()?;
-                self.typing = Some(Typ::structure(symbol_table.get_name(*id), *id));
+                self.typing = Some(Typ::structure_str(symbols.get_name(*id), *id));
                 Ok(())
             }
             Kind::Enumeration { ref enum_id, .. } => {
-                self.typing = Some(Typ::enumeration(symbol_table.get_name(*enum_id), *enum_id));
+                self.typing = Some(Typ::enumeration_str(symbols.get_name(*enum_id), *enum_id));
                 Ok(())
             }
             Kind::Tuple { ref mut elements } => match expected_type {
@@ -527,7 +527,7 @@ impl Pattern {
                         .iter_mut()
                         .zip(types)
                         .map(|(pattern, expected_type)| {
-                            pattern.typing(expected_type, symbol_table, errors)
+                            pattern.typing(expected_type, symbols, errors)
                         })
                         .collect::<Vec<TRes<()>>>()
                         .into_iter()
@@ -549,7 +549,7 @@ impl Pattern {
             },
             Kind::Some { ref mut pattern } => match expected_type {
                 Typ::SMEvent { ty, .. } => {
-                    pattern.typing(ty, symbol_table, errors)?;
+                    pattern.typing(ty, symbols, errors)?;
                     let pattern_type = pattern.get_type().unwrap().clone();
                     self.typing = Some(Typ::sm_event(pattern_type));
                     Ok(())
@@ -574,11 +574,11 @@ impl Pattern {
                 event_id,
                 ref mut pattern,
             } => {
-                let typing = symbol_table.get_type(event_id).clone();
+                let typing = symbols.get_type(event_id).clone();
                 expected_type.eq_check(&typing, self.loc.clone(), errors)?;
 
                 match &typing {
-                    Typ::SMEvent { ty, .. } => pattern.typing(&ty, symbol_table, errors)?,
+                    Typ::SMEvent { ty, .. } => pattern.typing(&ty, symbols, errors)?,
                     _ => unreachable!(),
                 };
 
@@ -586,7 +586,7 @@ impl Pattern {
                 Ok(())
             }
             Kind::NoEvent { event_id } => {
-                let typing = symbol_table.get_type(event_id).clone();
+                let typing = symbols.get_type(event_id).clone();
                 expected_type.eq_check(&typing, self.loc.clone(), errors)?;
                 self.typing = Some(typing);
                 Ok(())
@@ -597,17 +597,17 @@ impl Pattern {
 
 impl stmt::Pattern {
     /// Tries to construct the type of the given construct.
-    pub fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    pub fn typing(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         match self.kind {
             stmt::Kind::Identifier { id } => {
-                let typing = symbol_table.get_type(id);
+                let typing = symbols.get_type(id);
                 self.typing = Some(typing.clone());
                 Ok(())
             }
             stmt::Kind::Typed { id, ref typing } => {
-                let expected_type = symbol_table.get_type(id);
+                let expected_type = symbols.get_type(id);
                 typing.eq_check(expected_type, Location::default(), errors)?;
-                // symbol_table.set_type(id, typing.clone());
+                // symbols.set_type(id, typing.clone());
                 self.typing = Some(typing.clone());
                 Ok(())
             }
@@ -615,7 +615,7 @@ impl stmt::Pattern {
                 let types = elements
                     .iter_mut()
                     .map(|pattern| {
-                        pattern.typing(symbol_table, errors)?;
+                        pattern.typing(symbols, errors)?;
                         Ok(pattern.typing.as_ref().unwrap().clone())
                     })
                     .collect::<Vec<TRes<_>>>()
@@ -630,8 +630,8 @@ impl stmt::Pattern {
 }
 
 impl Typing for Expr {
-    fn typing(&mut self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
-        self.typing = Some(self.kind.typing(&self.loc, symbol_table, errors)?);
+    fn typing(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+        self.typing = Some(self.kind.typing(&self.loc, symbols, errors)?);
         Ok(())
     }
     fn get_type(&self) -> Option<&Typ> {
@@ -647,14 +647,14 @@ impl<E: Typing> expr::Kind<E> {
     fn typing(
         &mut self,
         loc: &Location,
-        symbol_table: &mut SymbolTable,
+        symbols: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> TRes<Typ> {
-        let mut typing = ExprTyping::new(loc, symbol_table, errors);
+        let mut typing = ExprTyping::new(loc, symbols, errors);
         match self {
             expr::Kind::Constant { constant } => Ok(constant.get_type()),
             expr::Kind::Identifier { id } => {
-                let typing = symbol_table.get_type(*id);
+                let typing = symbols.get_type(*id);
                 Ok(typing.clone())
             }
             expr::Kind::UnOp { op, expr } => typing.unop(op, expr.as_mut()),

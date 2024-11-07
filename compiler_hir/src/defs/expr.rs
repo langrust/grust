@@ -170,11 +170,11 @@ mk_new! { impl{E} Kind<E> =>
         expr: E = expr.into(),
         arms: Vec<(hir::Pattern, Option<E>, Vec<hir::Stmt<E>>, E)>,
     }
-    FieldAccess: field {
+    FieldAccess: field_access {
         expr: E = expr.into(),
         field: String,
     }
-    TupleElementAccess: access {
+    TupleElementAccess: tuple_access {
         expr: E = expr.into(),
         element_number: usize,
     }
