@@ -47,14 +47,14 @@ pub struct When {
     pub guard: Option<Box<Expr>>,
     pub then_token: keyword::then,
     /// Action triggered by event.
-    pub expression: Box<Expr>,
+    pub expr: Box<Expr>,
 }
 mk_new! { impl When =>
     new {
         pattern: EventPattern,
         guard: Option<Expr> = guard.map(Expr::into),
         then_token: keyword::then,
-        expression: impl Into<Box<Expr >> = expression.into(),
+        expr: impl Into<Box<Expr >> = expr.into(),
     }
 }
 impl When {
