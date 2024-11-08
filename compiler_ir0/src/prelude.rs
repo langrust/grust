@@ -15,18 +15,18 @@ pub use compiler_common::import::*;
 
 pub mod ir0 {
     pub use crate::{
-        component::{Component, ComponentImport},
-        contract::{self, Contract},
-        equation::{self, Eq, ReactEq},
-        expr::{self, Expr},
-        function::Function,
-        interface::{self, FlowExport, FlowImport, Service, TimeRange},
-        stmt::{self, Stmt},
-        stream,
+        defs::{
+            contract::{self, Contract},
+            equation::{self, Eq, ReactEq},
+            expr::{self, Expr},
+            interface::{self, FlowExport, FlowImport, Service, TimeRange},
+            stmt::{self, Stmt},
+            stream, Ast, Colon, Component, ComponentImport, Config, ConfigItem, Function, Item,
+            Typedef,
+        },
         symbol::{self, SymbolTable},
-        typedef::Typedef,
-        Ast, Colon, Item,
     };
 }
 
+pub use crate::parsing::ParsePrec;
 pub use ir0::*;

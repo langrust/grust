@@ -1,0 +1,262 @@
+prelude! {
+    syn::{Punctuated, token, LitInt},
+}
+
+/// GReact `sample` operator.
+pub struct Sample {
+    pub sample_token: keyword::sample,
+    pub paren_token: token::Paren,
+    /// Input expression.
+    pub expr: Box<FlowExpression>,
+    pub comma_token: Token![,],
+    /// Sampling period in milliseconds.
+    pub period_ms: LitInt,
+}
+mk_new! { impl Sample =>
+    new {
+        sample_token: keyword::sample,
+        paren_token: token::Paren,
+        expr: FlowExpression = expr.into(),
+        comma_token: Token![,],
+        period_ms: LitInt,
+    }
+}
+
+/// GReact `scan` operator.
+pub struct Scan {
+    pub scan_token: keyword::scan,
+    pub paren_token: token::Paren,
+    /// Input expression.
+    pub expr: Box<FlowExpression>,
+    pub comma_token: Token![,],
+    /// Scanning period in milliseconds.
+    pub period_ms: LitInt,
+}
+mk_new! { impl Scan =>
+    new {
+        scan_token: keyword::scan,
+        paren_token: token::Paren,
+        expr: FlowExpression = expr.into(),
+        comma_token: Token![,],
+        period_ms: LitInt,
+    }
+}
+
+/// GReact `timeout` operator.
+pub struct Timeout {
+    pub timeout_token: keyword::timeout,
+    pub paren_token: token::Paren,
+    /// Input expression.
+    pub expr: Box<FlowExpression>,
+    pub comma_token: Token![,],
+    /// Deadline in milliseconds.
+    pub deadline: LitInt,
+}
+mk_new! { impl Timeout =>
+    new {
+        timeout_token: keyword::timeout,
+        paren_token: token::Paren,
+        expr: FlowExpression = expr.into(),
+        comma_token: Token![,],
+        deadline: LitInt,
+    }
+}
+
+/// GReact `throttle` operator.
+pub struct Throttle {
+    pub throttle_token: keyword::throttle,
+    pub paren_token: token::Paren,
+    /// Input expression.
+    pub expr: Box<FlowExpression>,
+    pub comma_token: Token![,],
+    /// Variation that will update the signal.
+    pub delta: Constant,
+}
+mk_new! { impl Throttle =>
+    new {
+        throttle_token: keyword::throttle,
+        paren_token: token::Paren,
+        expr: FlowExpression = expr.into(),
+        comma_token: Token![,],
+        delta: Constant,
+    }
+
+}
+
+/// GReact `on_change` operator.
+pub struct OnChange {
+    pub on_change_token: keyword::on_change,
+    pub paren_token: token::Paren,
+    /// Input expression.
+    pub expr: Box<FlowExpression>,
+}
+mk_new! { impl OnChange =>
+    new {
+        on_change_token: keyword::on_change,
+        paren_token: token::Paren,
+        expr: FlowExpression = expr.into(),
+    }
+
+}
+
+/// GReact `merge` operator.
+pub struct Merge {
+    pub merge_token: keyword::merge,
+    pub paren_token: token::Paren,
+    /// Input expressions.
+    pub expr_1: Box<FlowExpression>,
+    pub comma_token: Token![,],
+    pub expr_2: Box<FlowExpression>,
+}
+mk_new! { impl Merge =>
+    new {
+        merge_token: keyword::merge,
+        paren_token: token::Paren,
+        expr_1: FlowExpression = expr_1.into(),
+        comma_token: Token![,],
+        expr_2: FlowExpression = expr_2.into(),
+    }
+
+}
+
+/// Component call.
+pub struct ComponentCall {
+    /// Identifier to the component to call.
+    pub ident_component: Ident,
+    pub paren_token: token::Paren,
+    /// Input expressions.
+    pub inputs: Punctuated<FlowExpression, Token![,]>,
+}
+
+/// Flow expression kinds.
+pub enum FlowExpression {
+    /// GReact `sample` operator.
+    Sample(Sample),
+    /// GReact `scan` operator.
+    Scan(Scan),
+    /// GReact `timeout` operator.
+    Timeout(Timeout),
+    /// GReact `throttle` operator.
+    Throttle(Throttle),
+    /// GReact `on_change` operator.
+    OnChange(OnChange),
+    /// GReact `merge` operator.
+    Merge(Merge),
+    /// Component call.
+    ComponentCall(ComponentCall),
+    /// Identifier to flow.
+    Ident(String),
+}
+
+mk_new! { impl FlowExpression =>
+    Ident: ident (val: impl Into<String> = val.into())
+    Sample: sample (val: Sample = val)
+    Scan: scan (val: Scan = val)
+    Timeout: timeout (val: Timeout = val)
+    Throttle: throttle (val: Throttle = val)
+    OnChange: on_change (val: OnChange = val)
+    Merge: merge (val: Merge = val)
+    ComponentCall: comp_call (val: ComponentCall = val)
+}
+
+#[derive(Clone)]
+pub enum FlowKind {
+    Signal(keyword::signal),
+    Event(keyword::event),
+}
+impl FlowKind {
+    #[inline]
+    pub fn is_signal(&self) -> bool {
+        match self {
+            Self::Signal(_) => true,
+            Self::Event(_) => false,
+        }
+    }
+    #[inline]
+    pub fn is_event(&self) -> bool {
+        !self.is_signal()
+    }
+}
+
+pub enum FlowPattern {
+    Tuple {
+        paren_token: token::Paren,
+        patterns: Punctuated<FlowPattern, Token![,]>,
+    },
+    SingleTyped {
+        kind: FlowKind,
+        ident: Ident,
+        colon_token: Token![:],
+        ty: Typ,
+    },
+    Single {
+        ident: Ident,
+    },
+}
+
+/// Flow statement AST.
+pub struct FlowDeclaration {
+    pub let_token: Token![let],
+    /// Pattern of declared flows and their type.
+    pub typed_pattern: FlowPattern,
+    pub eq_token: Token![=],
+    /// The expression defining the flow.
+    pub expr: FlowExpression,
+    pub semi_token: Token![;],
+}
+
+/// Flow statement AST.
+pub struct FlowInstantiation {
+    /// Pattern of instantiated flows.
+    pub pattern: FlowPattern,
+    pub eq_token: Token![=],
+    /// The expression defining the flow.
+    pub expr: FlowExpression,
+    pub semi_token: Token![;],
+}
+
+/// Flow statement AST.
+pub struct FlowImport {
+    pub import_token: keyword::import,
+    /// Flow's kind.
+    pub kind: FlowKind,
+    /// Identifier of the flow and its type.
+    pub typed_path: Colon<syn::Path, Typ>,
+    pub semi_token: Token![;],
+}
+
+/// Flow statement AST.
+pub struct FlowExport {
+    pub export_token: keyword::export,
+    /// Flow's kind.
+    pub kind: FlowKind,
+    /// Identifier of the flow and its type.
+    pub typed_path: Colon<syn::Path, Typ>,
+    pub semi_token: Token![;],
+}
+
+pub enum FlowStatement {
+    Declaration(FlowDeclaration),
+    Instantiation(FlowInstantiation),
+}
+
+/// Service's time range.
+pub struct TimeRange {
+    pub at_token: Token![@],
+    pub bracket_token: token::Bracket,
+    pub min: LitInt,
+    pub comma_token: Token![,],
+    pub max: LitInt,
+}
+
+/// GRust service AST.
+pub struct Service {
+    pub service_token: keyword::service,
+    /// Service identifier.
+    pub ident: Ident,
+    /// Service's time range.
+    pub time_range: Option<TimeRange>,
+    pub brace: token::Brace,
+    /// Service's flow statements.
+    pub flow_statements: Vec<FlowStatement>,
+}
