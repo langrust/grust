@@ -17,16 +17,18 @@ pub use compiler_ir1::import::*;
 
 pub mod ir2 {
     pub use crate::{
-        block::Block,
-        contract::{self, Contract},
+        defs::{
+            block::Block,
+            contract::{self, Contract},
+            expression::*,
+            item::{self, Enumeration, Function, Import, Item, Structure},
+            pattern::Pattern,
+            project::Project,
+            stmt::Stmt,
+        },
         execution_machine::{self, ExecutionMachine},
-        expression::*,
         ir1_into_ir2::Ir1IntoIr2,
-        item::{self, Enumeration, Function, Import, Item, Structure},
-        pattern::Pattern,
-        project::Project,
         state_machine::{self, StateMachine},
-        stmt::Stmt,
     };
 }
 

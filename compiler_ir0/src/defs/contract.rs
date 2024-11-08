@@ -145,14 +145,6 @@ pub enum ClauseKind {
     Invariant(keyword::invariant),
     Assert(keyword::assert),
 }
-impl ClauseKind {
-    pub(crate) fn peek(input: ParseStream) -> bool {
-        input.peek(keyword::requires)
-            || input.peek(keyword::ensures)
-            || input.peek(keyword::invariant)
-            || input.peek(keyword::assert)
-    }
-}
 
 #[derive(Debug, PartialEq, Clone)]
 /// GRust clause.
@@ -161,7 +153,6 @@ pub struct Clause {
     pub brace: syn::token::Brace,
     pub term: Term,
 }
-
 mk_new! { impl Clause =>
     new {
         kind: ClauseKind,
@@ -176,7 +167,6 @@ pub struct Contract {
     /// Contract's clauses.
     pub clauses: Vec<Clause>,
 }
-
 mk_new! { impl Contract =>
     new {
         clauses: impl Into<Vec<Clause>> = clauses.into(),

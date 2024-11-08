@@ -5,7 +5,7 @@ mod defs;
 
 pub use defs::*;
 
-mod dependency_graph;
+mod dependencies;
 mod ir0_into_ir1;
 mod ir0_store;
 mod typing;

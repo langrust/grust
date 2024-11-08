@@ -1,16 +1,10 @@
 #[macro_use]
 pub mod prelude;
 
-mod block;
-mod expression;
-mod ir1_into_ir2;
-mod pattern;
-mod stmt;
+mod defs;
 
-pub mod contract;
 pub mod execution_machine;
-pub mod item;
-pub mod project;
+mod ir1_into_ir2;
 pub mod state_machine;
 
 pub mod import {
