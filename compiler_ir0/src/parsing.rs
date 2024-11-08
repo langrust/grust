@@ -2189,6 +2189,15 @@ mod parse_contract {
         }
     }
 
+    impl ClauseKind {
+        pub(crate) fn peek(input: ParseStream) -> bool {
+            input.peek(keyword::requires)
+                || input.peek(keyword::ensures)
+                || input.peek(keyword::invariant)
+                || input.peek(keyword::assert)
+        }
+    }
+
     impl Parse for Clause {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let kind = {

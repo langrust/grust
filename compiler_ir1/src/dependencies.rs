@@ -1,3 +1,5 @@
+//! Dependency graph.
+
 prelude! {
     graph::*,
 }
