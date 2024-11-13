@@ -50,13 +50,15 @@ pub fn dump_code(path_name: &str, tokens: &TokenStream2) {
     use std::{fs::OpenOptions, io::Write, path::Path, process::Command};
     let path = Path::new(path_name);
 
-    let mut file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(path)
-        .expect(&format!("failed to open `{path_name}`"));
-    writeln!(&mut file, "{}", tokens).expect(&format!("failed to write to `{path_name}`"));
+    {
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(path)
+            .expect(&format!("failed to open `{path_name}`"));
+        writeln!(&mut file, "{}", tokens).expect(&format!("failed to write to `{path_name}`"));
+    }
 
     let mut rustfmt = Command::new("rustfmt")
         .arg("--edition")
