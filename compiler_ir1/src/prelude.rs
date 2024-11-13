@@ -12,7 +12,6 @@ macro_rules! prelude {
 }
 
 pub use compiler_common::import::*;
-
 pub use compiler_ir0::import::*;
 
 pub mod ir1 {
