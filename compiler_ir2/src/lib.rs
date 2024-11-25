@@ -4,7 +4,7 @@ pub mod prelude;
 mod defs;
 
 pub mod execution_machine;
-mod ir1_into_ir2;
+pub mod ir1_into_ir2;
 pub mod state_machine;
 
 pub mod import {

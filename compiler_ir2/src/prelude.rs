@@ -27,7 +27,7 @@ pub mod ir2 {
             stmt::Stmt,
         },
         execution_machine::{self, ExecutionMachine},
-        ir1_into_ir2::Ir1IntoIr2,
+        ir1_into_ir2::{self, Ir1IntoIr2, TriggersGraph},
         state_machine::{self, StateMachine},
     };
 }
