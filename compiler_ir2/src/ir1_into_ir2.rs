@@ -1,6 +1,10 @@
 prelude! {}
 
 mod interface;
+mod isles;
+mod trigger;
+
+pub use self::{isles::*, trigger::*};
 
 /// Turns an [ir1] element in a [ir2] element, implemented for [ir1] types.
 pub trait Ir1IntoIr2<Ctx> {
