@@ -3,7 +3,7 @@
 prelude! {}
 
 /// Expressions.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
     /// A literal expression: `1` or `"hello world"`.
     Literal {
@@ -113,6 +113,8 @@ pub enum Expr {
     },
     /// A lambda expression: `|x, y| x * y`.
     Lambda {
+        /// If true, the closure is a `move` closure.
+        is_move: bool,
         /// The lambda inputs.
         inputs: Vec<(String, Typ)>,
         /// The output type.
@@ -208,6 +210,7 @@ impl Expr {
             field: FieldIdentifier
         }
         Lambda: lambda {
+            is_move: bool,
             inputs: Vec<(String, Typ)>,
             output: Typ,
             body: Self = body.into(),
@@ -412,6 +415,7 @@ impl Expr {
                 }
             }
             Self::Lambda {
+                is_move,
                 inputs,
                 output,
                 body,
@@ -435,13 +439,18 @@ impl Expr {
                         pattern
                     })
                     .collect();
+                let capture = if is_move {
+                    Some(syn::token::Move {
+                        span: Span::call_site(),
+                    })
+                } else {
+                    None
+                };
                 let closure = syn::ExprClosure {
                     attrs: Vec::new(),
                     asyncness: None,
                     movability: None,
-                    capture: Some(syn::token::Move {
-                        span: Span::call_site(),
-                    }),
+                    capture,
                     or1_token: Default::default(),
                     inputs,
                     or2_token: Default::default(),
@@ -569,7 +578,7 @@ impl Expr {
 }
 
 /// Field access member.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum FieldIdentifier {
     /// Named field access.
     Named(String),
@@ -705,6 +714,7 @@ mod test {
     #[test]
     fn should_create_rust_ast_closure_from_ir2_lambda() {
         let expression = Expr::lambda(
+            true,
             vec![("x".into(), Typ::int())],
             Typ::int(),
             Expr::block(Block {

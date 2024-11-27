@@ -85,7 +85,7 @@ impl Dependencies {
     /// - if the identifier is mapped to an expression, then replace all call to the identifier by
     ///   the dependencies of the expression
     ///
-    /// # Example
+    /// # Examples
     ///
     /// With a context `[x -> a, y -> b/2]`, the expression `x + y` which depends on `x` and `y`
     /// will depends on `a` and `b`.

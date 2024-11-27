@@ -99,12 +99,12 @@ pub fn add_edge(
 ///
 /// # Examples
 ///
-/// Weightless edges, generates a [`DiGraphMap<_, ()>`]:
+/// Weightless edges, generates a [`DiGraphMap<_, T>`] where `T: Default` (typically `T = ()`):
 ///
 /// ```rust
-/// # use compiler_common::new_graph;
+/// # compiler_common::prelude!{};
 /// let roots = [1, 3];
-/// let graph = new_graph! {
+/// let graph: graph::DiGraphMap<_, ()> = graph::new_graph! {
 ///     (roots[0]) -> 2
 ///     2 -> 4
 ///     (roots[1]) -> 4
@@ -145,13 +145,19 @@ pub fn add_edge(
 /// ```
 #[macro_export]
 macro_rules! new_graph {
+    // {@($graph:expr) $str:tt -> $tgt:tt $($tail:tt)*} => {
+    //     graph.add_edge($src, $tgt, Default::default());
+    // };
+    // {@($graph:expr) $str:tt -($label:expr)-> $tgt:tt $($tail:tt)*} => {
+    //     graph.add_edge($src, $tgt, $label);
+    // };
     {
         $( $src:tt -> $tgt:tt )*
     } => {{
         let mut graph = $crate::graph::DiGraphMap::new();
 
         $(
-            graph.add_edge($src, $tgt, ());
+            graph.add_edge($src, $tgt, Default::default());
         )*
 
         graph

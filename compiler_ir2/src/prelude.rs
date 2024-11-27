@@ -22,6 +22,7 @@ pub mod ir2 {
             contract::{self, Contract},
             expression::*,
             item::{self, Enumeration, Function, Import, Item, Structure},
+            para,
             pattern::Pattern,
             project::Project,
             stmt::Stmt,

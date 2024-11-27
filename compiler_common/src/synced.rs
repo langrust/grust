@@ -154,11 +154,16 @@ prelude! {
 /// Specifies instruction index/cost types, and how to retrieve costs.
 pub trait CtxSpec {
     /// Instruction index type.
-    type Instr: Copy + Ord + std::hash::Hash;
+    type Instr: Copy + Ord + Display + std::hash::Hash;
+    type Label;
 
     /// Needed by [`Synced`], used during compilation to use different parallelization strategies
     /// for different costs.
-    type Cost: Ord + Clone;
+    type Cost: Ord + Clone + Display;
+
+    fn ignore_edge(label: &Self::Label) -> bool;
+
+    const INVERTED_EDGES: bool = false;
 
     /// Yields the cost of an instruction, see [`CtxSpec::Cost`].
     fn instr_cost(&self, i: Self::Instr) -> Self::Cost;
@@ -304,9 +309,9 @@ impl<Ctx: CtxSpec + ?Sized> Synced<Ctx> {
     ///
     /// - `nodes` denotes the nodes of `graph` that are part of the sub-graph; all edges mentioning
     ///   nodes that are not in `nodes` will be ignored.
-    pub fn new_with<W>(
+    pub fn new_with(
         ctx: &Ctx,
-        graph: &DiGraphMap<Ctx::Instr, W>,
+        graph: &DiGraphMap<Ctx::Instr, Ctx::Label>,
         nodes: Set<Ctx::Instr>,
     ) -> Result<Self, String> {
         Builder::new_with(graph, nodes).run(ctx)
@@ -315,7 +320,7 @@ impl<Ctx: CtxSpec + ?Sized> Synced<Ctx> {
     /// Builds a [`Synced`] inductive structure for a full graph.
     ///
     /// See [`Synced::new_with`] for sub-graphs.
-    pub fn new<W>(ctx: &Ctx, graph: &DiGraphMap<Ctx::Instr, W>) -> Result<Self, String> {
+    pub fn new(ctx: &Ctx, graph: &DiGraphMap<Ctx::Instr, Ctx::Label>) -> Result<Self, String> {
         Builder::new(graph).run(ctx)
     }
 
@@ -605,89 +610,85 @@ impl<Ctx: CtxSpec + ?Sized> Stack<Ctx> {
     }
 }
 
-pub trait DebugSpec<'graph, Ctx: CtxSpec + ?Sized, W = ()> {
+pub trait DebugSpec<'graph, Ctx: CtxSpec + ?Sized> {
     fn debug_init(
-        builder: &Builder<'graph, Ctx, W>,
+        builder: &Builder<'graph, Ctx>,
         root_head: Ctx::Instr,
         root_tail: &Vec<Ctx::Instr>,
     );
 
-    fn find_readies(builder: &Builder<'graph, Ctx, W>);
-    fn find_readies_none(builder: &Builder<'graph, Ctx, W>);
-    fn find_readies_one(builder: &Builder<'graph, Ctx, W>, i: Ctx::Instr);
-    fn find_readies_many(builder: &Builder<'graph, Ctx, W>, i: Ctx::Instr, is: &Vec<Ctx::Instr>);
+    fn find_readies(builder: &Builder<'graph, Ctx>);
+    fn find_readies_none(builder: &Builder<'graph, Ctx>);
+    fn find_readies_one(builder: &Builder<'graph, Ctx>, i: Ctx::Instr);
+    fn find_readies_many(builder: &Builder<'graph, Ctx>, i: Ctx::Instr, is: &Vec<Ctx::Instr>);
 
-    fn unstack(builder: &Builder<'graph, Ctx, W>, s: &Synced<Ctx>);
-    fn unstack_empty(builder: &Builder<'graph, Ctx, W>);
-    fn unstack_empty_todo_nempty(builder: &Builder<'graph, Ctx, W>);
-    fn unstack_empty_todo_empty(builder: &Builder<'graph, Ctx, W>);
+    fn unstack(builder: &Builder<'graph, Ctx>, s: &Synced<Ctx>);
+    fn unstack_empty(builder: &Builder<'graph, Ctx>);
+    fn unstack_empty_todo_nempty(builder: &Builder<'graph, Ctx>);
+    fn unstack_empty_todo_empty(builder: &Builder<'graph, Ctx>);
     fn unstack_seq(
-        builder: &Builder<'graph, Ctx, W>,
+        builder: &Builder<'graph, Ctx>,
         acc: &Vec<Synced<Ctx>>,
         validated: &Set<Ctx::Instr>,
     );
     fn unstack_para_todo_nempty(
-        builder: &Builder<'graph, Ctx, W>,
+        builder: &Builder<'graph, Ctx>,
         acc: &Map<Ctx::Cost, Vec<Synced<Ctx>>>,
         next: Ctx::Instr,
         todo: &[Ctx::Instr],
         validated: &Set<Ctx::Instr>,
     );
     fn unstack_para_todo_empty(
-        builder: &Builder<'graph, Ctx, W>,
+        builder: &Builder<'graph, Ctx>,
         acc: &Map<Ctx::Cost, Vec<Synced<Ctx>>>,
         validated: &Set<Ctx::Instr>,
     );
 }
 
 struct NoDebug;
-impl<'graph, Ctx: CtxSpec + ?Sized, W> DebugSpec<'graph, Ctx, W> for NoDebug {
+impl<'graph, Ctx: CtxSpec + ?Sized> DebugSpec<'graph, Ctx> for NoDebug {
     fn debug_init(
-        _builder: &Builder<'graph, Ctx, W>,
+        _builder: &Builder<'graph, Ctx>,
         _root_head: Ctx::Instr,
         _root_tail: &Vec<Ctx::Instr>,
     ) {
         ()
     }
 
-    fn find_readies(_builder: &Builder<'graph, Ctx, W>) {
+    fn find_readies(_builder: &Builder<'graph, Ctx>) {
         ()
     }
-    fn find_readies_none(_builder: &Builder<'graph, Ctx, W>) {
+    fn find_readies_none(_builder: &Builder<'graph, Ctx>) {
         ()
     }
-    fn find_readies_one(_builder: &Builder<'graph, Ctx, W>, _i: Ctx::Instr) {
+    fn find_readies_one(_builder: &Builder<'graph, Ctx>, _i: Ctx::Instr) {
         ()
     }
-    fn find_readies_many(
-        _builder: &Builder<'graph, Ctx, W>,
-        _i: Ctx::Instr,
-        _is: &Vec<Ctx::Instr>,
-    ) {
+    fn find_readies_many(_builder: &Builder<'graph, Ctx>, _i: Ctx::Instr, _is: &Vec<Ctx::Instr>) {
         ()
     }
 
-    fn unstack(_builder: &Builder<'graph, Ctx, W>, _s: &Synced<Ctx>) {
+    fn unstack(_builder: &Builder<'graph, Ctx>, _s: &Synced<Ctx>) {
         ()
     }
-    fn unstack_empty(_builder: &Builder<'graph, Ctx, W>) {
+    fn unstack_empty(_builder: &Builder<'graph, Ctx>) {
         ()
     }
-    fn unstack_empty_todo_nempty(_builder: &Builder<'graph, Ctx, W>) {
+    fn unstack_empty_todo_nempty(_builder: &Builder<'graph, Ctx>) {
         ()
     }
-    fn unstack_empty_todo_empty(_builder: &Builder<'graph, Ctx, W>) {
+    fn unstack_empty_todo_empty(_builder: &Builder<'graph, Ctx>) {
         ()
     }
     fn unstack_seq(
-        _builder: &Builder<'graph, Ctx, W>,
+        _builder: &Builder<'graph, Ctx>,
         _acc: &Vec<Synced<Ctx>>,
         _validated: &Set<Ctx::Instr>,
     ) {
         ()
     }
     fn unstack_para_todo_nempty(
-        _builder: &Builder<'graph, Ctx, W>,
+        _builder: &Builder<'graph, Ctx>,
         _acc: &Map<Ctx::Cost, Vec<Synced<Ctx>>>,
         _next: Ctx::Instr,
         _todo: &[Ctx::Instr],
@@ -696,7 +697,7 @@ impl<'graph, Ctx: CtxSpec + ?Sized, W> DebugSpec<'graph, Ctx, W> for NoDebug {
         ()
     }
     fn unstack_para_todo_empty(
-        _builder: &Builder<'graph, Ctx, W>,
+        _builder: &Builder<'graph, Ctx>,
         _acc: &Map<Ctx::Cost, Vec<Synced<Ctx>>>,
         _validated: &Set<Ctx::Instr>,
     ) {
@@ -704,8 +705,8 @@ impl<'graph, Ctx: CtxSpec + ?Sized, W> DebugSpec<'graph, Ctx, W> for NoDebug {
     }
 }
 
-pub struct Builder<'graph, Ctx: CtxSpec + ?Sized, W = ()> {
-    graph: &'graph DiGraphMap<Ctx::Instr, W>,
+pub struct Builder<'graph, Ctx: CtxSpec + ?Sized> {
+    graph: &'graph DiGraphMap<Ctx::Instr, Ctx::Label>,
     /// Nodes to consider, allows to run on a sub-graph of `graph`.
     nodes: Set<Ctx::Instr>,
     /// Stack of frames, used in the usual go-down/go-up nested loops in [`Builder::run`].
@@ -720,9 +721,12 @@ pub struct Builder<'graph, Ctx: CtxSpec + ?Sized, W = ()> {
     validated: Set<Ctx::Instr>,
 }
 
-impl<'graph, Ctx: CtxSpec + ?Sized, W> Builder<'graph, Ctx, W> {
+impl<'graph, Ctx: CtxSpec + ?Sized> Builder<'graph, Ctx> {
     /// Constructor for the sub-graph of a graph.
-    pub fn new_with(graph: &'graph DiGraphMap<Ctx::Instr, W>, nodes: Set<Ctx::Instr>) -> Self {
+    pub fn new_with(
+        graph: &'graph DiGraphMap<Ctx::Instr, Ctx::Label>,
+        nodes: Set<Ctx::Instr>,
+    ) -> Self {
         let todo = nodes.clone();
         Self {
             graph,
@@ -735,7 +739,7 @@ impl<'graph, Ctx: CtxSpec + ?Sized, W> Builder<'graph, Ctx, W> {
     }
 
     /// Constructor for a state that will run on all the nodes in the graph.
-    pub fn new(graph: &'graph DiGraphMap<Ctx::Instr, W>) -> Self {
+    pub fn new(graph: &'graph DiGraphMap<Ctx::Instr, Ctx::Label>) -> Self {
         Self::new_with(graph, graph.nodes().collect())
     }
 
@@ -774,16 +778,25 @@ impl<'graph, Ctx: CtxSpec + ?Sized, W> Builder<'graph, Ctx, W> {
                 } else { res = Some(($e, vec![])) }
             };
         }
+        let direction = if Ctx::INVERTED_EDGES {
+            Direction::Outgoing
+        } else {
+            Direction::Incoming
+        };
 
         // look for instructions that are ready to run
         for i in self.todo.iter().cloned() {
             // `i` is *ready* if all its dependencies are
             if self
                 .graph
-                .edges_directed(i, Direction::Incoming)
-                .all(|(dep, _, _)|
+                .edges_directed(i, direction)
+                .all(|(src, tgt, w)| {
+                    let dep = if Ctx::INVERTED_EDGES { tgt } else { src };
+                    // ignore the edge?
+                    Ctx::ignore_edge(w) ||
                     // if `dep` is in the sub-graph, then it must be validated
-                    !self.nodes.contains(&dep) || self.is_validated(dep))
+                    !self.nodes.contains(&dep) || self.is_validated(dep)
+                })
             {
                 add!(i)
             }
@@ -831,7 +844,7 @@ impl<'graph, Ctx: CtxSpec + ?Sized, W> Builder<'graph, Ctx, W> {
     /// Use [`Builder::run`] instead.
     ///
     /// See [module-level documentation][self] for a full discussion of the algorithm.
-    pub fn just_run<D: DebugSpec<'graph, Ctx, W>>(
+    pub fn just_run<D: DebugSpec<'graph, Ctx>>(
         &mut self,
         ctx: &Ctx,
     ) -> Result<Synced<Ctx>, String> {
@@ -860,7 +873,7 @@ impl<'graph, Ctx: CtxSpec + ?Sized, W> Builder<'graph, Ctx, W> {
         //
         // By remembering the todo count each time the stack is empty, we can detect this by
         // checking that the count should be strictly decreasing any time the stack is empty.
-        let mut previous_todo_count_on_empty_stack = self.todo.len();
+        let mut previous_todo_count_on_empty_stack = self.todo.len() + 1;
 
         // start building a sequence starting with `root`
         self.seq_add(root, ctx);
@@ -921,7 +934,19 @@ impl<'graph, Ctx: CtxSpec + ?Sized, W> Builder<'graph, Ctx, W> {
                             // have we made any progress since the last time the stack was empty?
                             let todo_count = self.todo.len();
                             if !(todo_count < previous_todo_count_on_empty_stack) {
-                                return Err("ill-formed graph: cycle detected".into());
+                                let mut s = format!(
+                                    "ill-formed graph: cycle detected\n\
+                                    stack has {} element(s)\
+                                    \ntodo:",
+                                    self.seq.len(),
+                                );
+                                for elm in self.seq.iter() {
+                                    s = format!("{}\n- {}", s, elm);
+                                }
+                                for elm in self.todo.iter() {
+                                    s = format!("{}\n- {}", s, elm);
+                                }
+                                return Err(s);
                             }
                             previous_todo_count_on_empty_stack = todo_count;
                             // more to do after `synced`, `self.validated` is unchanged
@@ -989,15 +1014,15 @@ impl<'graph, Ctx: CtxSpec + ?Sized, W> Builder<'graph, Ctx, W> {
 }
 
 impl<Ctx: CtxSpec + ?Sized> Synced<Ctx> {
-    pub fn of_subgraph<W>(
-        graph: &DiGraphMap<Ctx::Instr, W>,
+    pub fn of_subgraph(
+        graph: &DiGraphMap<Ctx::Instr, Ctx::Label>,
         nodes: Set<Ctx::Instr>,
         ctx: &Ctx,
     ) -> Result<Self, String> {
         Builder::new_with(graph, nodes).run(ctx)
     }
 
-    pub fn of_graph<W>(graph: &DiGraphMap<Ctx::Instr, W>, ctx: &Ctx) -> Result<Self, String> {
+    pub fn of_graph(graph: &DiGraphMap<Ctx::Instr, Ctx::Label>, ctx: &Ctx) -> Result<Self, String> {
         Builder::new(graph).run(ctx)
     }
 }
@@ -1014,6 +1039,10 @@ pub mod test {
     impl CtxSpec for DummyCtx {
         type Instr = usize;
         type Cost = usize;
+        type Label = usize;
+        fn ignore_edge(label: &usize) -> bool {
+            *label > 0
+        }
         fn instr_cost(&self, i: Self::Instr) -> Self::Cost {
             (i % 3) + 1
         }
@@ -1029,21 +1058,22 @@ pub mod test {
         }
     }
 
-    impl<'graph> DebugSpec<'graph, DummyCtx, ()> for DummyCtx {
+    impl<'graph> DebugSpec<'graph, DummyCtx> for DummyCtx {
         fn debug_init(
-            builder: &Builder<'graph, DummyCtx, ()>,
+            builder: &Builder<'graph, DummyCtx>,
             root_head: <DummyCtx as CtxSpec>::Instr,
             root_tail: &Vec<<DummyCtx as CtxSpec>::Instr>,
         ) {
             println!(
-                "starting run with {} todos and {} root(s): {}, {:?}",
+                "starting run with {} todo(s) ({:?}) and {} root(s): ({} :: {:?})",
                 builder.todo.len(),
+                builder.todo,
                 root_tail.len() + 1,
                 root_head,
                 root_tail,
             );
         }
-        fn find_readies(builder: &Builder<'graph, DummyCtx, ()>) {
+        fn find_readies(builder: &Builder<'graph, DummyCtx>) {
             println!();
             println!("find_readies");
             println!("- seq: {:?}", builder.seq);
@@ -1053,24 +1083,21 @@ pub mod test {
                 println!("  - {}", frame)
             }
         }
-        fn find_readies_none(_builder: &Builder<'graph, DummyCtx, ()>) {
+        fn find_readies_none(_builder: &Builder<'graph, DummyCtx>) {
             println!("- no instruction is ready");
         }
-        fn find_readies_one(
-            _builder: &Builder<'graph, DummyCtx, ()>,
-            i: <DummyCtx as CtxSpec>::Instr,
-        ) {
+        fn find_readies_one(_builder: &Builder<'graph, DummyCtx>, i: <DummyCtx as CtxSpec>::Instr) {
             println!("- exactly one instruction is ready ({i}), augmenting `seq`")
         }
         fn find_readies_many(
-            _builder: &Builder<'graph, DummyCtx, ()>,
+            _builder: &Builder<'graph, DummyCtx>,
             i: <DummyCtx as CtxSpec>::Instr,
             is: &Vec<<DummyCtx as CtxSpec>::Instr>,
         ) {
             println!("- readies: {i}, {is:?}");
             println!("- exploring {i} under a parallel frame for the tail");
         }
-        fn unstack(builder: &Builder<'graph, DummyCtx, ()>, s: &Synced<DummyCtx>) {
+        fn unstack(builder: &Builder<'graph, DummyCtx>, s: &Synced<DummyCtx>) {
             println!();
             println!("unstacking");
             println!("- synced: {:?}", s);
@@ -1080,18 +1107,18 @@ pub mod test {
                 println!("  - {}", frame)
             }
         }
-        fn unstack_empty(_builder: &Builder<'graph, DummyCtx, ()>) {
+        fn unstack_empty(_builder: &Builder<'graph, DummyCtx>) {
             println!("- stack is empty")
         }
-        fn unstack_empty_todo_empty(_builder: &Builder<'graph, DummyCtx, ()>) {
+        fn unstack_empty_todo_empty(_builder: &Builder<'graph, DummyCtx>) {
             println!("- todo is empty, done")
         }
-        fn unstack_empty_todo_nempty(builder: &Builder<'graph, DummyCtx, ()>) {
+        fn unstack_empty_todo_nempty(builder: &Builder<'graph, DummyCtx>) {
             println!("- todo is not empty: {:?}", builder.todo);
             println!("- going back to finding readies to continue the sequence");
         }
         fn unstack_seq(
-            _builder: &Builder<'graph, DummyCtx, ()>,
+            _builder: &Builder<'graph, DummyCtx>,
             acc: &Vec<Synced<DummyCtx>>,
             validated: &BTreeSet<<DummyCtx as CtxSpec>::Instr>,
         ) {
@@ -1101,7 +1128,7 @@ pub mod test {
             )
         }
         fn unstack_para_todo_empty(
-            _builder: &Builder<'graph, DummyCtx, ()>,
+            _builder: &Builder<'graph, DummyCtx>,
             acc: &BTreeMap<<DummyCtx as CtxSpec>::Cost, Vec<Synced<DummyCtx>>>,
             validated: &BTreeSet<<DummyCtx as CtxSpec>::Instr>,
         ) {
@@ -1111,7 +1138,7 @@ pub mod test {
             println!("- adding `synced`, generating new para `synced` back to unstacking")
         }
         fn unstack_para_todo_nempty(
-            _builder: &Builder<'graph, DummyCtx, ()>,
+            _builder: &Builder<'graph, DummyCtx>,
             acc: &BTreeMap<<DummyCtx as CtxSpec>::Cost, Vec<Synced<DummyCtx>>>,
             next: <DummyCtx as CtxSpec>::Instr,
             todo: &[<DummyCtx as CtxSpec>::Instr],
@@ -1125,7 +1152,7 @@ pub mod test {
     }
 
     pub fn run(
-        graph: DiGraphMap<usize, ()>,
+        graph: DiGraphMap<usize, usize>,
         graph_pretty: &str,
         expected_pseudo_code: &str,
         sub_graph: Option<&Set<usize>>,
@@ -1167,7 +1194,7 @@ pub mod test {
     }
 
     pub fn run_ok(
-        graph: DiGraphMap<usize, ()>,
+        graph: DiGraphMap<usize, usize>,
         graph_pretty: &str,
         expected_pseudo_code: &str,
         sub_graph: Option<&Set<usize>>,
@@ -1183,7 +1210,7 @@ pub mod test {
     }
 
     pub fn run_synced0() {
-        let g: DiGraphMap<usize, ()> = new_graph! {
+        let g: DiGraphMap<usize, usize> = new_graph! {
             0 -> 1
             1 -> 2
             2 -> 3
@@ -1211,7 +1238,7 @@ instr#4;\
     }
 
     pub fn run_synced1() {
-        let g: DiGraphMap<usize, ()> = new_graph! {
+        let g: DiGraphMap<usize, usize> = new_graph! {
             0 -> 1
             0 -> 2
             1 -> 3
@@ -1245,7 +1272,7 @@ instr#3;\
     }
 
     pub fn run_synced2() {
-        let g: DiGraphMap<usize, ()> = new_graph! {
+        let g: DiGraphMap<usize, usize> = new_graph! {
             0 -> 1 0 -> 2
             1 -> 3
             3 -> 4 3 -> 5
@@ -1301,7 +1328,7 @@ instr#9;\
     }
 
     pub fn run_synced3() {
-        let g: DiGraphMap<usize, ()> = new_graph! {
+        let g: DiGraphMap<usize, usize> = new_graph! {
             0 -> 1 0 -> 2
             1 -> 3 2 -> 3
             3 -> 4 3 -> 5
@@ -1351,12 +1378,46 @@ instr#9;\
     }
 
     #[test]
+    fn synced_ignore() {
+        run_synced_ignore()
+    }
+
+    pub fn run_synced_ignore() {
+        let g: DiGraphMap<usize, usize> = new_graph! {
+            32 -(0)-> 23
+            24 -(0)-> 23
+            // 23 -(1)-> 32
+        };
+
+        let pretty = "\
+32 ----> 23
+24 -/
+and
+23 -(1)-> 32\
+        ";
+
+        let expected = "\
+join_blocks(
+  (1)-{
+    instr#24;
+  },
+  (3)-{
+    instr#32;
+  },
+);
+instr#23;\
+        ";
+
+        run_ok(g, pretty, expected, None)
+    }
+
+    #[test]
     fn synced_cycle() {
         run_synced_cycle()
     }
 
     pub fn run_synced_cycle() {
-        let g: DiGraphMap<usize, ()> = new_graph! {
+        let g: DiGraphMap<usize, usize> = new_graph! {
             0 -> 1
             1 -> 2
             2 -> 3
@@ -1403,8 +1464,8 @@ instr#9;\
 
         let err = "ill-formed graph: cycle detected";
         run(g, pretty, expected, None, |e| {
-            if e == err {
-                println!("\n\nsuccess: got the expected error `{err}`");
+            if e.starts_with(err) {
+                println!("\n\nsuccess: got the expected error `{e}`");
                 ()
             } else {
                 println!("\n\nexpected error `{err}`, got `{e}`");
@@ -1419,7 +1480,7 @@ instr#9;\
     }
 
     pub fn run_synced_sub() {
-        let g: DiGraphMap<usize, ()> = new_graph! {
+        let g: DiGraphMap<usize, usize> = new_graph! {
             0 -> 1 0 -> 2
             1 -> 3 2 -> 3
             3 -> 4 3 -> 5
