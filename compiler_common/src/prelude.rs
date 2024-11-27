@@ -41,7 +41,7 @@ pub mod syn {
 
 pub use either::{Either, IntoEither};
 pub use proc_macro2::{Span, TokenStream as TokenStream2};
-pub use quote::format_ident;
+pub use quote::{format_ident, ToTokens};
 pub use serde::{Deserialize, Serialize};
 pub use syn::{
     braced, bracketed, custom_keyword, parenthesized, parse_macro_input, parse_quote, Ident,

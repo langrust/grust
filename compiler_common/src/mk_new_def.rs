@@ -124,6 +124,6 @@ macro_rules! mk_new {
     };
     {} => {};
     { $($stuff:tt)+ } => {
-        compiler_error!("unexpected syntax")
+        compile_error!("unexpected syntax")
     }
 }

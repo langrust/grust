@@ -604,8 +604,8 @@ mod stmt_pattern {
             match self {
                 Pattern::Identifier(ident) => {
                     if is_declaration {
-                        debug_assert!(false, "error");
-                        Err(TerminationError)
+                        panic!("error in `Pattern`'s `store` for identifier `{}`", ident);
+                        // Err(TerminationError)
                     } else {
                         let name = ident.to_string();
                         let id = symbol_table.get_identifier_id(
@@ -642,8 +642,11 @@ mod stmt_pattern {
                         )?;
                         Ok(vec![(ident.to_string(), id)])
                     } else {
-                        debug_assert!(false, "error");
-                        Err(TerminationError)
+                        panic!(
+                            "error in `Pattern`'s store for identifier `{}` with type `{}`",
+                            ident, typ,
+                        );
+                        // Err(TerminationError)
                     }
                 }
                 Pattern::Tuple(Tuple { elements }) => Ok(elements

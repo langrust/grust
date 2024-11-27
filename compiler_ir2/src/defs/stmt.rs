@@ -1,7 +1,7 @@
 prelude! { Expr, Pattern }
 
 /// A statement declaration.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Stmt {
     /// A let-statement creating one variable: `let x = y + 1;`.
     Let {

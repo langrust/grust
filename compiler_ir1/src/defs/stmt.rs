@@ -43,6 +43,15 @@ pub struct Pattern {
     /// Pattern location.
     pub loc: Location,
 }
+impl Pattern {
+    pub fn of_many(elements: Vec<Self>) -> Self {
+        Self {
+            kind: Kind::Tuple { elements },
+            typ: None,
+            loc: Location::dummy().clone(),
+        }
+    }
+}
 
 /// Constructs pattern.
 ///

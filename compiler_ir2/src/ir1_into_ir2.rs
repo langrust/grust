@@ -45,6 +45,80 @@ impl Ir1IntoIr2<&'_ SymbolTable> for ir1::ComponentDefinition {
         // get node name
         let name = symbol_table.get_name(self.id);
 
+        if self.graph.edge_count() > 0 {
+            // let mut crates = BTreeSet::new();
+            // println!("running `of_ir1`");
+            // let stmts = match para::Stmts::of_ir1(&self.statements, symbol_table, &self.graph) {
+            //     Ok(stmts) => stmts,
+            //     Err(e) => panic!("failed to generate `Stmts` of `ir1`:\n{}", e),
+            // };
+            // println!("running `into_syn`");
+            // let syn = stmts.into_syn(&mut crates);
+            // println!("syn:");
+            // for stmt in syn {
+            //     use quote::ToTokens;
+            //     println!("\n{}", stmt.to_token_stream());
+            // }
+
+            // struct Ctx;
+            // impl CtxSpec for Ctx {
+            //     type Instr = usize;
+            //     type Cost = usize;
+            //     type Label = graph::Label;
+            //     const INVERTED_EDGES: bool = true;
+            //     fn ignore_edge(label: &Self::Label) -> bool {
+            //         match label {
+            //             graph::Label::Contract => true,
+            //             graph::Label::Weight(w) => *w > 0,
+            //         }
+            //     }
+            //     fn instr_cost(&self, _: usize) -> usize {
+            //         1
+            //     }
+            //     fn sync_seq_cost(&self, seq: &[Synced<Self>]) -> usize {
+            //         seq.len() + seq.iter().map(|s| s.cost()).sum::<usize>()
+            //     }
+            //     fn sync_para_cost(&self, map: &BTreeMap<usize, Vec<Synced<Self>>>) -> usize {
+            //         let (max, count) = map.iter().fold((0, 0), |(max, count), (key, branches)| {
+            //             (std::cmp::max(max, *key), count + branches.len())
+            //         });
+            //         max + count
+            //     }
+            // }
+            // type Graph = Synced<Ctx>;
+
+            // // macro_rules! find_stmt {
+            // //     { $id:expr } => {
+            // //         self.statements.
+            // //     }
+            // // }
+            // // self.statements.iter().find(|stmt| stmt.id)
+
+            // let mut log = format!(
+            //     "{} edge(s) in graph for `{}`\nstatements:",
+            //     self.graph.edge_count(),
+            //     name,
+            // );
+            // for (idx, stmt) in self.statements.iter().enumerate() {
+            //     log = format!("{}\n\n  {:0>3} | {:?}", log, idx, stmt);
+            // }
+            // log = format!("{}\nedges:", log);
+            // for (src, tgt, label) in self.graph.all_edges() {
+            //     log = format!("{}\n- {} ↦ {} | {:?}", log, src, tgt, label);
+            // }
+            // log = format!("{}\nreduced edges:", log);
+            // for (src, tgt, label) in self.reduced_graph.all_edges() {
+            //     log = format!("{}\n- {} ↦ {} | {:?}", log, src, tgt, label);
+            // }
+
+            // let graph = match Graph::new(&Ctx, &self.graph) {
+            //     Ok(g) => g,
+            //     Err(e) => panic!("failed to generate sync-graph\n- {}\n{}", e, log),
+            // };
+            // log = format!("{}\nsynced graph:\n{}", log, graph);
+            // println!("{log}");
+        }
+
         // get node inputs
         let inputs = symbol_table
             .get_node_inputs(self.id)
@@ -346,6 +420,7 @@ where
                     .collect();
                 let output = expr.try_get_typ().expect("it should be typed").clone();
                 Expr::Lambda {
+                    is_move: true,
                     inputs,
                     output,
                     body: Box::new(Expr::Block {

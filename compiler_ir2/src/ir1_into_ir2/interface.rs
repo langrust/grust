@@ -214,7 +214,7 @@ mod service_handler {
             if subgraph.node_count() == 0 {
                 return FlowInstruction::seq(vec![]);
             }
-            let builder = Builder::<flow_instr::Builder, ()>::new(subgraph);
+            let builder = Builder::<flow_instr::Builder>::new(subgraph);
             builder.run(ctx).expect("oh no")
         } else {
             // else, construct an ordered sequence of instructions
@@ -1393,6 +1393,10 @@ mod from_synced {
     impl<'a> CtxSpec for flow_instr::Builder<'a> {
         type Instr = usize;
         type Cost = usize;
+        type Label = ();
+        fn ignore_edge(_: &Self::Label) -> bool {
+            false
+        }
         fn instr_cost(&self, _i: Self::Instr) -> Self::Cost {
             1 // todo: nb of expressions used in component
         }

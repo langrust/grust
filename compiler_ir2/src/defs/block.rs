@@ -1,7 +1,7 @@
 prelude! {}
 
 /// A block declaration.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Block {
     /// The block's statements.
     pub statements: Vec<Stmt>,

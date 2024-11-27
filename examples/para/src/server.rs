@@ -1,9 +1,12 @@
 /// The system implements the following graph:
+///
+/// ```text
 ///        |    |--s2-->| C3 |--e2-->| C4 |--s4-->|    |
 /// --e0-->| C1 |                                 |    |
 ///        |    |--e1-->|    |--------s3--------->| C5 |--o-->
 ///                     | C2 |                    |    |
 ///                     |    |--------e3--------->|    |
+/// ```
 mod para {
     use grust::grust;
 
