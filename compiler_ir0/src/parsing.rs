@@ -120,6 +120,22 @@ mod parse_conf {
                     conf::set_para(true);
                     return Ok(ConfigItem);
                 }
+                "component_para_none" => {
+                    conf::set_component_para(conf::ComponentPara::None);
+                    return Ok(ConfigItem);
+                }
+                "component_para_threads" => {
+                    conf::set_component_para(conf::ComponentPara::Threads);
+                    return Ok(ConfigItem);
+                }
+                "component_para_rayon" => {
+                    conf::set_component_para(conf::ComponentPara::Rayon);
+                    return Ok(ConfigItem);
+                }
+                "component_para_mixed" => {
+                    conf::set_component_para(conf::ComponentPara::Mixed);
+                    return Ok(ConfigItem);
+                }
                 "pub" => {
                     conf::set_pub_components(true);
                     return Ok(ConfigItem);

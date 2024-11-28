@@ -187,7 +187,7 @@ pub struct Step {
     /// The output type.
     pub output_type: Typ,
     /// The body of the step function.
-    pub body: Vec<Stmt>,
+    pub body: para::Stmts,
     /// The update of the node's state.
     pub state_elements_step: Vec<StateElmStep>,
     /// The output expression.
@@ -200,7 +200,7 @@ mk_new! { impl Step =>
     new {
         node_name: impl Into<String> = node_name.into(),
         output_type: Typ,
-        body: Vec<Stmt>,
+        body: para::Stmts,
         state_elements_step: Vec<StateElmStep>,
         output: Expr,
         contract: Contract,
@@ -254,11 +254,9 @@ impl Step {
         };
 
         let statements = {
-            let mut vec = Vec::with_capacity(self.state_elements_step.len() + self.body.len());
+            let mut vec = Vec::with_capacity(self.state_elements_step.len() + 1);
 
-            for stmt in self.body {
-                vec.push(stmt.into_syn(crates))
-            }
+            self.body.extend_syn(&mut vec, crates);
             for StateElmStep {
                 identifier,
                 expression,
@@ -432,21 +430,21 @@ mod test {
             contract: Default::default(),
             node_name: format!("Node"),
             output_type: Typ::int(),
-            body: vec![
-                Stmt::Let {
-                    pattern: Pattern::ident("o"),
-                    expr: Expr::field_access(Expr::ident("self"), FieldIdentifier::named("mem_i")),
-                },
-                Stmt::Let {
-                    pattern: Pattern::ident("y"),
-                    expr: Expr::node_call(
+            body: para::Stmts::easy_seq(vec![
+                (
+                    "o",
+                    Expr::field_access(Expr::ident("self"), FieldIdentifier::named("mem_i")),
+                ),
+                (
+                    "y",
+                    Expr::node_call(
                         "called_node_state",
                         "called_node",
                         "CalledNodeInput",
                         vec![],
                     ),
-                },
-            ],
+                ),
+            ]),
             state_elements_step: vec![
                 StateElmStep::new(
                     "mem_i",

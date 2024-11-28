@@ -46,19 +46,19 @@ impl Ir1IntoIr2<&'_ SymbolTable> for ir1::ComponentDefinition {
         let name = symbol_table.get_name(self.id);
 
         if self.graph.edge_count() > 0 {
-            // let mut crates = BTreeSet::new();
-            // println!("running `of_ir1`");
-            // let stmts = match para::Stmts::of_ir1(&self.statements, symbol_table, &self.graph) {
-            //     Ok(stmts) => stmts,
-            //     Err(e) => panic!("failed to generate `Stmts` of `ir1`:\n{}", e),
-            // };
-            // println!("running `into_syn`");
-            // let syn = stmts.into_syn(&mut crates);
-            // println!("syn:");
-            // for stmt in syn {
-            //     use quote::ToTokens;
-            //     println!("\n{}", stmt.to_token_stream());
-            // }
+            let mut crates = BTreeSet::new();
+            println!("running `of_ir1`");
+            let stmts = match para::Stmts::of_ir1(&self.statements, symbol_table, &self.graph) {
+                Ok(stmts) => stmts,
+                Err(e) => panic!("failed to generate `Stmts` of `ir1`:\n{}", e),
+            };
+            println!("running `into_syn`");
+            let syn = stmts.into_syn(&mut crates);
+            println!("syn:");
+            for stmt in syn {
+                use quote::ToTokens;
+                println!("\n{}", stmt.to_token_stream());
+            }
 
             // struct Ctx;
             // impl CtxSpec for Ctx {
@@ -177,17 +177,24 @@ impl Ir1IntoIr2<&'_ SymbolTable> for ir1::ComponentDefinition {
         let init = Init::new(name, state_elements_init, invariant_initialization);
 
         // 'step' method
-        let step = Step::new(
-            name,
-            output_type,
-            self.statements
-                .into_iter()
-                .map(|equation| equation.into_ir2(symbol_table))
-                .collect(),
-            state_elements_step,
-            output_expression,
-            contract,
-        );
+        let step = {
+            let body = match para::Stmts::of_ir1(&self.statements, symbol_table, &self.graph) {
+                Ok(stmts) => stmts,
+                Err(e) => panic!(
+                    "failed to generate (step) synced body of component `{}`:\n{}",
+                    symbol_table.get_name(self.id),
+                    e
+                ),
+            };
+            Step::new(
+                name,
+                output_type,
+                body,
+                state_elements_step,
+                output_expression,
+                contract,
+            )
+        };
 
         // 'input' structure
         let input = Input {
