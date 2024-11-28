@@ -590,10 +590,12 @@ impl Stmts {
         }
         if dont_bind {
             let vars_expr = vars.as_expr().clone().into_syn(crates);
-            println!("- `seq_to_syn`, `vars_expr`, don't bind");
-            stmts.push(parse_quote! {
-                #vars_expr
-            });
+            println!(
+                "- `seq_to_syn`, `vars_expr`, don't bind\n  {}",
+                vars_expr.to_token_stream()
+            );
+            stmts.push(syn::Stmt::Expr(vars_expr, None));
+            println!("ok")
         }
     }
 
@@ -696,6 +698,7 @@ impl Stmts {
         // token_show!(tuple_unwrap, "tuple_unwrap:");
         parse_quote! {{
             let ( #(#ids),* ) = {
+                #[allow(unused_imports)]
                 use grust::rayon::prelude::*;
                 (0 .. #len_lit)
                     .into_par_iter()
