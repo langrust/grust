@@ -4,7 +4,7 @@ use grust::grust;
 mod macro_output;
 
 grust! {
-    #![dump = "examples/para_test/src/macro_output.rs"]
+    #![dump = "examples/para_test/src/macro_output.rs", component_para_threads]
 
     component test1(i: int) -> (next_o: int) {
         let i1: int = (i - 54) * 2;

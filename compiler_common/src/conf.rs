@@ -11,10 +11,32 @@ pub enum Propagation {
     OnChange,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum ComponentPara {
+    None,
+    Rayon,
+    Threads,
+    Mixed,
+}
+impl Default for ComponentPara {
+    fn default() -> Self {
+        Self::None
+    }
+}
+impl ComponentPara {
+    pub fn is_none(self) -> bool {
+        match self {
+            Self::None => true,
+            Self::Rayon | Self::Threads | Self::Mixed => false,
+        }
+    }
+}
+
 /// Stores all possible compiler's configurations.
 pub struct Conf {
     propagation: Propagation,
     para: bool,
+    component_para: ComponentPara,
     pub_components: bool,
     dump_code: Option<String>,
     greusot: bool,
@@ -24,8 +46,9 @@ pub struct Conf {
 impl Default for Conf {
     fn default() -> Self {
         Self {
-            propagation: Propagation::default(),
+            propagation: Default::default(),
             para: false,
+            component_para: Default::default(),
             pub_components: false,
             dump_code: None,
             greusot: false,
@@ -89,6 +112,12 @@ def! {
         para
         #[doc = "Set parallelization in configuration."]
         set_para
+    }
+    ComponentPara {
+        #[doc = "Specifies how to parallelize component code."]
+        component_para
+        #[doc = "Set component parallelization strategy."]
+        set_component_para
     }
     bool {
         #[doc = "Tells if the components are public."]

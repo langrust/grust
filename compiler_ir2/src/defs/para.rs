@@ -188,7 +188,7 @@ impl<'a> Env<'a> {
 
 pub type Bindings = ir1::stmt::Pattern;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Vars {
     bind: Pattern,
     expr: Expr,
@@ -217,6 +217,13 @@ impl Vars {
             (Pattern::tuple(bind_vec), Expr::tuple(expr_vec))
         };
         Self { bind, expr }
+    }
+
+    pub fn easy_var(id: &str) -> Self {
+        Self {
+            bind: Pattern::ident(id),
+            expr: Expr::ident(id),
+        }
     }
 
     pub fn from_ir1(pat: ir1::stmt::Pattern, syms: &SymbolTable) -> Self {
@@ -270,6 +277,112 @@ impl Vars {
     }
 }
 
+pub struct Schedule {
+    pub spawn: Option<Vec<syn::Stmt>>,
+    pub run: Option<Vec<syn::Stmt>>,
+    pub join: Option<Vec<syn::Stmt>>,
+    pub res: Vec<syn::Expr>,
+}
+mk_new! { impl Schedule => new {
+    spawn: Option<Vec<syn::Stmt>>,
+    run: Option<Vec<syn::Stmt>>,
+    join: Option<Vec<syn::Stmt>>,
+    res: Vec<syn::Expr>,
+} }
+impl Schedule {
+    pub fn empty() -> Schedule {
+        Self::new(None, None, None, vec![])
+    }
+    pub fn threads(spawn: Vec<syn::Stmt>, join: Vec<syn::Stmt>, res: syn::Expr) -> Schedule {
+        Self::new(Some(spawn), None, Some(join), vec![res])
+    }
+    pub fn sequence(seq: Vec<syn::Stmt>, res: syn::Expr) -> Schedule {
+        Self::new(None, Some(seq), None, vec![res])
+    }
+
+    pub fn next_spawn_index(&self) -> usize {
+        self.spawn.as_ref().map(|vec| vec.len()).unwrap_or(0)
+    }
+
+    fn scope_ident() -> syn::Ident {
+        syn::Ident::new("reserved_grust_thread_scope", Span::call_site())
+    }
+
+    fn merge_opt_vec<T>(lft: &mut Option<Vec<T>>, rgt: Option<Vec<T>>) {
+        match (lft.as_mut(), rgt) {
+            (_, None) => (),
+            (None, Some(vec)) => *lft = Some(vec),
+            (Some(lft), Some(rgt)) => lft.extend(rgt),
+        }
+    }
+    pub fn merge(&mut self, that: Self) {
+        Self::merge_opt_vec(&mut self.spawn, that.spawn);
+        Self::merge_opt_vec(&mut self.run, that.run);
+        Self::merge_opt_vec(&mut self.join, that.join);
+        self.res.extend(that.res);
+    }
+
+    pub fn into_syn(self, dont_bind: bool) -> syn::Stmt {
+        debug_assert!(
+            self.spawn.is_none() && self.join.is_none()
+                || self.spawn.is_some() && self.join.is_some()
+        );
+        assert!(!self.res.is_empty());
+        let Self {
+            spawn,
+            run,
+            join,
+            mut res,
+        } = self;
+        println!("spawn:");
+        for spawn in spawn.as_ref().into_iter().map(|v| v.into_iter()).flatten() {
+            println!("  {}", spawn.to_token_stream());
+        }
+        println!("run:");
+        for run in run.as_ref().into_iter().map(|v| v.into_iter()).flatten() {
+            println!("  {}", run.to_token_stream());
+        }
+        println!("join:");
+        for join in join.as_ref().into_iter().map(|v| v.into_iter()).flatten() {
+            println!("  {}", join.to_token_stream());
+        }
+        let run = run.unwrap_or_else(Vec::new);
+        let join = join.unwrap_or_else(Vec::new);
+        let res = if res.len() > 1 {
+            parse_quote! { ( #(#res),* ) }
+        } else {
+            res.pop().unwrap()
+        };
+        let body: syn::Expr = if let Some(spawn) = spawn {
+            let scope = Self::scope_ident();
+            parse_quote! {
+                std::thread::scope(|#scope| {
+                    #(#spawn)*
+                    #(#run)*
+                    #(#join)*
+                    #res
+                })
+            }
+        } else {
+            parse_quote! {
+                {
+                    #(#run)*
+                    #res
+                }
+            }
+        };
+        println!("    body: {}", body.to_token_stream());
+        if dont_bind {
+            syn::Stmt::Expr(body, None)
+        } else {
+            parse_quote! {
+                let #res = { #body };
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Stmts {
     Seq(Vars, Vec<Self>),
     Para(Vars, Vec<(ParaKind, Vars, Vec<Self>)>),
@@ -292,14 +405,36 @@ mk_new! { impl Stmts =>
 }
 
 impl Stmts {
+    pub fn easy_seq<'a>(bindings: impl IntoIterator<Item = (&'a str, Expr)>) -> Self {
+        Self::new_seq(
+            bindings
+                .into_iter()
+                .map(|(id, expr)| Stmts::stmt(Vars::easy_var(id), expr))
+                .collect(),
+        )
+    }
+
+    pub fn sequential(stmts: &Vec<ir1::stream::Stmt>, syms: &SymbolTable) -> Self {
+        Self::new_seq(
+            stmts
+                .iter()
+                .map(|stmt| Self::new_stmt(stmt, syms))
+                .collect(),
+        )
+    }
+
     pub fn of_ir1(
         stmts: &Vec<ir1::stream::Stmt>,
         syms: &SymbolTable,
         graph: &Graph,
     ) -> Result<Self, String> {
-        let env = Env::new(stmts, graph)?;
-        env.print(syms);
-        env.to_stmts(syms)
+        if conf::component_para().is_none() {
+            Ok(Self::sequential(stmts, syms))
+        } else {
+            let env = Env::new(stmts, graph)?;
+            env.print(syms);
+            env.to_stmts(syms)
+        }
     }
 
     pub fn new_seq(stmts: Vec<Self>) -> Self {
@@ -361,36 +496,33 @@ impl Stmts {
     }
 
     pub fn seq_to_syn(
+        stmts: &mut Vec<syn::Stmt>,
         dont_bind: bool,
         crates: &mut BTreeSet<String>,
         vars: Vars,
         subs: Vec<Stmts>,
-    ) -> Vec<syn::Stmt> {
-        let mut subs: Vec<_> = subs
-            .into_iter()
-            .map(|sub| sub.into_syn_aux(crates, false))
-            .flatten()
-            .collect();
+    ) {
+        for sub in subs {
+            sub.extend_syn_aux(stmts, crates, false)
+        }
         if dont_bind {
             let vars_expr = vars.as_expr().clone().into_syn(crates);
             println!("- `seq_to_syn`, `vars_expr`, don't bind");
-            subs.push(parse_quote! {
+            stmts.push(parse_quote! {
                 #vars_expr
             });
-            subs
-        } else {
-            subs
         }
     }
 
     pub fn stmt_to_syn(
+        stmts: &mut Vec<syn::Stmt>,
         dont_bind: bool,
         crates: &mut BTreeSet<String>,
         vars: Vars,
         expr: Expr,
-    ) -> syn::Stmt {
+    ) {
         let expr = expr.into_syn(crates);
-        let res = if dont_bind {
+        let stmt = if dont_bind {
             syn::Stmt::Expr(expr, None)
         } else {
             let pat = vars.bind.into_syn();
@@ -403,16 +535,16 @@ impl Stmts {
                 let #pat = #expr;
             }
         };
-        println!("stmt_to_syn({}, ..): {}", dont_bind, res.to_token_stream());
-        res
+        println!("stmt_to_syn({}, ..): {}", dont_bind, stmt.to_token_stream());
+        stmts.push(stmt);
     }
 
     pub fn para_branch_to_syn(
         kind: ParaKind,
-        vars: Vars,
-        stmts: impl IntoIterator<Item = syn::Stmt> + ExactSizeIterator,
-    ) -> (Vec<syn::Stmt>, syn::Stmt) {
-        let vars_pat = vars.bind.into_syn();
+        vars_expr: syn::Expr,
+        vars_pat: syn::Pat,
+        stmts: impl IntoIterator<Item = Vec<syn::Stmt>> + ExactSizeIterator,
+    ) -> Schedule {
         let ident = |n: usize| {
             syn::Ident::new(
                 &format!("reserved_grust_thread_kid_{}", n),
@@ -425,27 +557,30 @@ impl Stmts {
                     Vec::with_capacity(stmts.len()),
                     Vec::with_capacity(stmts.len()),
                 );
-                for (idx, stmt) in stmts.into_iter().enumerate() {
-                    use quote::ToTokens;
+                let scope = Schedule::scope_ident();
+                let mut idx = 0;
+                for stmt in stmts.into_iter() {
                     let id = ident(idx);
-                    println!("- `para_branch_to_syn`, sub-statements");
-                    println!("  id: {}", id);
-                    println!("  stmt: {}", stmt.to_token_stream());
-                    let blah: syn::Stmt = parse_quote! {
-                        let #id = std::thread::scope(move || #stmt);
+                    idx += 1;
+                    // println!("- `para_branch_to_syn`, sub-statements");
+                    // println!("  id: {}", id);
+                    // println!("  stmt: {}", stmt.to_token_stream());
+                    let spawn_let: syn::Stmt = parse_quote! {
+                        let #id = #scope . spawn(|| { #(#stmt)* });
                     };
                     println!("- `para_branch_to_syn`, return tuple element");
                     return_tuple.push(parse_quote! {
                         #id . join().expect("unexpected panic in sub-thread")
                     });
-                    stmt_vec.push(blah);
+                    stmt_vec.push(spawn_let);
                 }
                 println!("- `para_branch_to_syn`, return tuple");
-                (
+                Schedule::threads(
                     stmt_vec,
-                    parse_quote! {
+                    vec![parse_quote! {
                         let #vars_pat = (#(#return_tuple),*);
-                    },
+                    }],
+                    vars_expr,
                 )
             }
             _ => todo!("unsupported parallelization kind `{}`", kind),
@@ -453,59 +588,76 @@ impl Stmts {
     }
 
     pub fn para_to_syn(
+        stmts: &mut Vec<syn::Stmt>,
         dont_bind: bool,
         crates: &mut BTreeSet<String>,
         vars: Vars,
         data: Vec<(ParaKind, Vars, Vec<Stmts>)>,
-    ) -> Vec<syn::Stmt> {
+    ) {
         let vars_pat = vars.bind.into_syn();
         let vars_expr = vars.expr.into_syn(crates);
-        let (mut spawns, mut joins) = (
-            Vec::with_capacity(data.len()),
-            Vec::with_capacity(data.len()),
-        );
+        let mut schedule = Schedule::empty();
         for (kind, vars, subs) in data {
-            let subs = subs
-                .into_iter()
-                .map(|stmts| stmts.into_syn_aux(crates, true))
-                .flatten()
-                .collect::<Vec<_>>();
-            let (spawn, join) = Self::para_branch_to_syn(kind, vars, subs.into_iter());
-            spawns.extend(spawn);
-            joins.push(join);
+            let vars_expr = vars.expr.into_syn(crates);
+            let vars_pat = vars.bind.into_syn();
+            let subs = subs.into_iter().map(|sub| sub.into_syn_aux(crates, true));
+            let branch_schedule = Self::para_branch_to_syn(kind, vars_expr, vars_pat.clone(), subs);
+            schedule.merge(branch_schedule);
         }
         if dont_bind {
             println!("- `para_to_syn`, don't bind");
             println!("  spawns:");
-            for spawn in &spawns {
-                println!("    - {}", spawn.to_token_stream());
+            if let Some(spawns) = schedule.spawn.as_ref() {
+                for spawn in spawns {
+                    println!("    - {}", spawn.to_token_stream());
+                }
+            } else {
+                println!("  - none")
             }
             println!("  joins:");
-            for join in &joins {
-                println!("    {}", join.to_token_stream());
+            if let Some(joins) = schedule.join.as_ref() {
+                for join in joins {
+                    println!("    - {}", join.to_token_stream());
+                }
+            } else {
+                println!("  - none")
             }
             println!("  vars_expr: {}", vars_expr.to_token_stream());
-            spawns.extend(joins);
-            spawns.push(syn::Stmt::Expr(vars_expr, None));
-            spawns
+            let run = schedule.into_syn(false);
+            println!("  schedule: {}", run.to_token_stream());
+            stmts.push(run);
+            stmts.push(syn::Stmt::Expr(vars_expr, None));
         } else {
             println!("- `para_to_syn`, do bind");
-            vec![parse_quote! {
-                let #vars_pat = {
-                    #(#spawns)*
-                    #(#joins)*
-                    #vars_expr
-                };
-            }]
+            let run = schedule.into_syn(true);
+            println!("  schedule: {}", run.to_token_stream());
+            stmts.push(parse_quote! {
+                let #vars_pat = #run;
+            })
         }
     }
 
-    pub fn into_syn_aux(self, crates: &mut BTreeSet<String>, dont_bind: bool) -> Vec<syn::Stmt> {
+    fn extend_syn_aux(
+        self,
+        stmts: &mut Vec<syn::Stmt>,
+        crates: &mut BTreeSet<String>,
+        dont_bind: bool,
+    ) {
         match self {
-            Self::Seq(vars, subs) => Self::seq_to_syn(dont_bind, crates, vars, subs),
-            Self::Para(vars, subs) => Self::para_to_syn(dont_bind, crates, vars, subs),
-            Self::Stmt(vars, expr) => vec![Self::stmt_to_syn(dont_bind, crates, vars, expr)],
+            Self::Seq(vars, subs) => Self::seq_to_syn(stmts, dont_bind, crates, vars, subs),
+            Self::Para(vars, subs) => Self::para_to_syn(stmts, dont_bind, crates, vars, subs),
+            Self::Stmt(vars, expr) => Self::stmt_to_syn(stmts, dont_bind, crates, vars, expr),
         }
+    }
+
+    pub fn extend_syn(self, stmts: &mut Vec<syn::Stmt>, crates: &mut BTreeSet<String>) {
+        self.extend_syn_aux(stmts, crates, false)
+    }
+
+    fn into_syn_aux(self, crates: &mut BTreeSet<String>, dont_bind: bool) -> Vec<syn::Stmt> {
+        let mut vec = Vec::with_capacity(20);
+        self.extend_syn_aux(&mut vec, crates, dont_bind);
+        vec
     }
 
     pub fn into_syn(self, crates: &mut BTreeSet<String>) -> Vec<syn::Stmt> {
