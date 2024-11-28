@@ -4,8 +4,28 @@ prelude! {
     synced::Synced
 }
 
-pub struct Ctx;
-impl synced::CtxSpec for Ctx {
+#[allow(unused_macros)]
+macro_rules! token_show {
+    { $vec:expr, $($stuff:tt)* } => {
+        println!($($stuff)*);
+        for elm in $vec {
+            println!("- {}", elm.to_token_stream());
+        }
+    };
+}
+
+pub struct Ctx<'a> {
+    env: &'a Env<'a>,
+}
+impl<'a> Ctx<'a> {
+    pub fn new(env: &'a Env<'a>) -> Self {
+        Self { env }
+    }
+
+    const DONT_PARA_WEIGHT_UB: usize = 10;
+    const RAYON_PARA_WEIGHT_UB: usize = 20;
+}
+impl<'a> synced::CtxSpec for Ctx<'a> {
     type Instr = usize;
     type Cost = usize;
     type Label = graph::Label;
@@ -16,8 +36,27 @@ impl synced::CtxSpec for Ctx {
             graph::Label::Weight(w) => *w > 0,
         }
     }
-    fn instr_cost(&self, _: usize) -> usize {
-        1
+    fn instr_cost(&self, uid: usize) -> usize {
+        let stmt = self
+            .env
+            .repr_to_stmt
+            .get(&uid)
+            .expect("unknown instruction uid");
+        use ir1::stream::Kind;
+        match &stmt.expr.kind {
+            Kind::Expression { expr } => {
+                use ir1::expr::Kind;
+                match expr {
+                    Kind::Identifier { .. } => 0,
+                    _ => 10,
+                }
+            }
+            Kind::NodeApplication { .. } => 20,
+            Kind::RisingEdge { .. } => 10,
+            Kind::FollowedBy { .. } => 0,
+            Kind::NoneEvent => 0,
+            Kind::SomeEvent { .. } => 0,
+        }
     }
     fn sync_seq_cost(&self, seq: &[Synced<Self>]) -> usize {
         seq.len() + seq.iter().map(|s| s.cost()).sum::<usize>()
@@ -36,10 +75,12 @@ pub enum ParaKind {
     Rayon,
     Threads,
     TokioThreads,
+    None,
 }
 impl Display for ParaKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::None => "none".fmt(f),
             Self::RayonFast => "rayon_fast".fmt(f),
             Self::Rayon => "rayon".fmt(f),
             Self::Threads => "threads".fmt(f),
@@ -161,8 +202,9 @@ impl<'a> Env<'a> {
 
     pub fn to_stmts(&self, syms: &SymbolTable) -> Result<Stmts, String> {
         let subset = self.repr_to_stmt.keys().cloned().collect();
-        let synced = Synced::new_with(&Ctx, &self.graph, subset)?;
-        println!("synced:\n{}", synced);
+        let ctx = Ctx::new(self);
+        let synced = Synced::new_with(&ctx, &self.graph, subset)?;
+        // println!("synced:\n{}", synced);
         Stmts::of_synced(self, syms, synced)
     }
 
@@ -334,18 +376,18 @@ impl Schedule {
             join,
             mut res,
         } = self;
-        println!("spawn:");
-        for spawn in spawn.as_ref().into_iter().map(|v| v.into_iter()).flatten() {
-            println!("  {}", spawn.to_token_stream());
-        }
-        println!("run:");
-        for run in run.as_ref().into_iter().map(|v| v.into_iter()).flatten() {
-            println!("  {}", run.to_token_stream());
-        }
-        println!("join:");
-        for join in join.as_ref().into_iter().map(|v| v.into_iter()).flatten() {
-            println!("  {}", join.to_token_stream());
-        }
+        // token_show!(
+        //     spawn.as_ref().into_iter().map(|v| v.into_iter()).flatten(),
+        //     "spawn:"
+        // );
+        // token_show!(
+        //     run.as_ref().into_iter().map(|v| v.into_iter()).flatten(),
+        //     "run:"
+        // );
+        // token_show!(
+        //     join.as_ref().into_iter().map(|v| v.into_iter()).flatten(),
+        //     "join:"
+        // );
         let run = run.unwrap_or_else(Vec::new);
         let join = join.unwrap_or_else(Vec::new);
         let res = if res.len() > 1 {
@@ -477,20 +519,61 @@ impl Stmts {
                 Ok(Self::new_seq(seq))
             }
             Synced::Para(map, _) => {
-                let mut para = Vec::with_capacity(map.len());
-                let mut vars = Vec::with_capacity(map.len());
-                for (_, subs) in map {
+                println!("of_synced: para");
+                let mut no_para = Vec::with_capacity(map.len());
+                let mut no_para_vars = Vec::with_capacity(map.len());
+                let mut rayon = Vec::with_capacity(map.len());
+                let mut rayon_vars = Vec::with_capacity(map.len());
+                let mut threads = Vec::with_capacity(map.len());
+                let mut threads_vars = Vec::with_capacity(map.len());
+                for (weight, subs) in map {
+                    let para_mode = conf::component_para();
+                    println!(
+                        "para mode: {:?}, weight is {} ({})",
+                        para_mode,
+                        weight,
+                        para_mode.is_rayon(weight < Ctx::RAYON_PARA_WEIGHT_UB)
+                    );
+                    let (target, target_vars) = if weight < Ctx::DONT_PARA_WEIGHT_UB {
+                        (&mut no_para, &mut no_para_vars)
+                    } else if para_mode.is_rayon(weight < Ctx::RAYON_PARA_WEIGHT_UB) {
+                        (&mut rayon, &mut rayon_vars)
+                    } else {
+                        (&mut threads, &mut threads_vars)
+                    };
                     for sub in subs {
                         let sub = Self::of_synced(env, syms, sub)?;
-                        vars.push(sub.vars().clone());
-                        para.push(sub);
+                        target_vars.push(sub.vars().clone());
+                        target.push(sub);
                     }
                 }
-                Ok(Self::new_para(vec![(
-                    ParaKind::Threads,
-                    Vars::merge(vars.into_iter()),
-                    para,
-                )]))
+                println!("ping");
+                let mut paras = Vec::with_capacity(3);
+                if !no_para.is_empty() {
+                    println!("pushing {} no-para(s)", no_para.len());
+                    paras.push((
+                        ParaKind::None,
+                        Vars::merge(no_para_vars.into_iter()),
+                        no_para,
+                    ));
+                }
+                if !rayon.is_empty() {
+                    println!("pushing {} rayon(s)", rayon.len());
+                    paras.push((
+                        ParaKind::RayonFast,
+                        Vars::merge(rayon_vars.into_iter()),
+                        rayon,
+                    ));
+                }
+                if !threads.is_empty() {
+                    println!("pushing {} thread(s)", threads.len());
+                    paras.push((
+                        ParaKind::Threads,
+                        Vars::merge(threads_vars.into_iter()),
+                        threads,
+                    ));
+                }
+                Ok(Self::new_para(paras))
             }
         }
     }
@@ -539,6 +622,103 @@ impl Stmts {
         stmts.push(stmt);
     }
 
+    fn rayon_res(stmts: Vec<syn::Stmt>, idx: usize, len: usize) -> syn::Expr {
+        let expr: syn::Expr = parse_quote! { Some(#(#stmts)*) };
+        let pref = (0..idx).map::<syn::Expr, _>(|_| parse_quote!(None));
+        let suff = ((idx + 1)..len).map::<syn::Expr, _>(|_| parse_quote!(None));
+        parse_quote! {
+            (#(#pref ,)* #expr #(, #suff)*)
+        }
+    }
+
+    fn rayon_opt_ident_with(idx: usize, suff: impl Display) -> syn::Ident {
+        syn::Ident::new(
+            &format!("reserved_grust_rayon_opt_var_{}{}", idx, suff),
+            Span::call_site(),
+        )
+    }
+
+    fn rayon_opt_ident(idx: usize) -> syn::Ident {
+        Self::rayon_opt_ident_with(idx, "")
+    }
+
+    fn usize_lit(n: usize) -> syn::Lit {
+        syn::Lit::Int(syn::LitInt::new(&format!("{}usize", n), Span::call_site()))
+    }
+
+    fn rayon_branch(stmts: Vec<syn::Stmt>, idx: usize, len: usize) -> syn::Arm {
+        let pat = syn::Pat::Lit(syn::PatLit {
+            attrs: vec![],
+            lit: Self::usize_lit(idx),
+        });
+        let res = Self::rayon_res(stmts, idx, len);
+        parse_quote! {
+            #pat => #res,
+        }
+    }
+
+    fn rayon(exprs: impl IntoIterator<Item = Vec<syn::Stmt>> + ExactSizeIterator) -> syn::Stmt {
+        let len = exprs.len();
+        let len_lit = Self::usize_lit(len);
+        let mut ids = Vec::with_capacity(len);
+        let mut ids_rgt = Vec::with_capacity(len);
+        let mut branches = Vec::with_capacity(len);
+        let mut reduce_id: Vec<syn::Expr> = Vec::with_capacity(len);
+        let mut reduce_merge: Vec<syn::Expr> = Vec::with_capacity(len);
+        let mut tuple_unwrap: Vec<syn::Expr> = Vec::with_capacity(len);
+        for (idx, expr) in exprs.into_iter().enumerate() {
+            let id = Self::rayon_opt_ident(idx);
+            ids.push(id.clone());
+            let id_rgt = Self::rayon_opt_ident_with(idx, "_rgt");
+            ids_rgt.push(id_rgt.clone());
+            branches.push(Self::rayon_branch(expr, idx, len));
+            reduce_id.push(parse_quote!(None));
+            reduce_merge.push(parse_quote! {
+                match (#id, #id_rgt) {
+                    (None, None) => None,
+                    (Some(val), None) | (None, Some(val)) => Some(val),
+                    (Some(_), Some(_)) => unreachable!(
+                        "fatal error in rayon reduce operation, found two values"
+                    )
+                }
+            });
+            tuple_unwrap.push(parse_quote! {
+                #id . expect(
+                    "unreachable: fatal error in final rayon unwrap, unexpected `None` value"
+                )
+            });
+        }
+        // token_show!(ids, "ids:");
+        // token_show!(ids_rgt, "ids_rgt:");
+        // token_show!(branches, "branches:");
+        // token_show!(reduce_id, "reduce_id:");
+        // token_show!(reduce_merge, "reduce_merge:");
+        // token_show!(tuple_unwrap, "tuple_unwrap:");
+        parse_quote! {{
+            let ( #(#ids),* ) = {
+                use grust::rayon::prelude::*;
+                (0 .. #len_lit)
+                    .into_par_iter()
+                    .map(|idx: usize| match idx {
+                        #(#branches)*
+                        idx => unreachable!(
+                            "fatal error in rayon branches, illegal index `{}`",
+                            idx,
+                        ),
+                    })
+                    .reduce(
+                        || ( #(#reduce_id,)* ),
+                        |(#(#ids),*), (#(#ids_rgt),*)| (
+                            #(#reduce_merge),*
+                        )
+                    )
+            };
+            (
+                #(#tuple_unwrap),*
+            )
+        }}
+    }
+
     pub fn para_branch_to_syn(
         kind: ParaKind,
         vars_expr: syn::Expr,
@@ -552,7 +732,31 @@ impl Stmts {
             )
         };
         match kind {
+            ParaKind::None => {
+                println!("generating branch for `none`");
+                let stmts = stmts.into_iter();
+                Schedule::sequence(
+                    vec![parse_quote! {
+                        let #vars_pat = (#(
+                            #(#stmts)*
+                            ,
+                        )*);
+                    }],
+                    vars_expr,
+                )
+            }
+            ParaKind::RayonFast => {
+                println!("generating branch for `rayon-fast`");
+                let code = Self::rayon(stmts);
+                Schedule::sequence(
+                    vec![parse_quote! {
+                        let #vars_pat = #code;
+                    }],
+                    vars_expr,
+                )
+            }
             ParaKind::Threads => {
+                println!("generating branch for `threads`");
                 let (mut stmt_vec, mut return_tuple): (_, Vec<syn::Expr>) = (
                     Vec::with_capacity(stmts.len()),
                     Vec::with_capacity(stmts.len()),
