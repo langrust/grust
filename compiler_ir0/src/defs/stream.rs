@@ -157,16 +157,8 @@ mk_new! { impl Expr =>
 }
 
 impl Expr {
-    pub fn loc(&self) -> Loc {
-        use stream::Expr::*;
-        match self {
-            Constant(c) => c.loc(),
-            _ => todo!(),
-        }
-    }
-
-    pub fn check_is_constant(&self, table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
-        match self {
+    pub fn check_is_constant(&self, table: &SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+        match &self {
             // Constant by default
             stream::Expr::Constant { .. } | stream::Expr::Enumeration { .. } => Ok(()),
             // Not constant by default

@@ -1004,9 +1004,9 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
 
                 Ok(ir1::Stmt { pattern, expr, loc })
             }
-            ReactEq::MatchWhen(MatchWhen { arms, .. }) => {
-                // create the receiving pattern for the equation
-                let defined_pattern = {
+            ReactEq::MatchWhen(MatchWhen { init, arms, .. }) => {
+                // create the pattern defined by the equation
+                let def_eq_pat = {
                     let mut elements = defined_signals.into_values().collect::<Vec<_>>();
                     if elements.len() == 1 {
                         elements.pop().unwrap()
@@ -1016,10 +1016,10 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                 };
 
                 let (
+                    // default patterns for events detection
+                    dflt_event_elems,
                     // map from event_id to index in tuple pattern
                     events_indices,
-                    // default tuple pattern
-                    default_pattern,
                 ) = {
                     // create map from event_id to index in tuple pattern
                     let mut events_indices = HashMap::with_capacity(arms.len());
@@ -1036,27 +1036,50 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                         .collect::<TRes<()>>()?;
 
                     // default event_pattern tuple
-                    let default_pattern: Vec<_> =
+                    let dflt_event_elems: Vec<_> =
                         std::iter::repeat(pattern::init(pattern::Kind::default()))
                             .take(idx)
                             .collect();
 
-                    (events_indices, default_pattern)
+                    (dflt_event_elems, events_indices)
+                };
+
+                // signals initial values
+                let init_signal_vals = if let Some(ir0::equation::InitArmWhen {
+                    equations, ..
+                }) = init
+                {
+                    let mut map = HashMap::new();
+                    for eq in equations {
+                        match eq {
+                            ir0::Eq::LocalDef(ir0::stmt::LetDecl {
+                                typed_pattern: pattern,
+                                expr,
+                                ..
+                            })
+                            | ir0::Eq::OutputDef(ir0::equation::Instantiation {
+                                pattern,
+                                expr,
+                                ..
+                            }) => pattern.set_init_expr(expr, &mut map, ctx.symbols, ctx.errors)?,
+                            ir0::Eq::Match(_) => todo!("unsupported"),
+                        }
+                    }
+                    map
+                } else {
+                    HashMap::new()
                 };
 
                 // default arm
-                let default = {
+                let dflt_arm = {
                     // create tuple pattern
-                    let elements = default_pattern.clone();
+                    let elements = dflt_event_elems.clone();
                     let pattern = pattern::init(pattern::Kind::tuple(elements));
                     // transform guard and equations into [ir1] with local context
                     let guard = None;
                     // create the tuple expression
-                    let expression = defined_pattern.into_default_expr(
-                        &HashMap::new(),
-                        ctx.symbols,
-                        ctx.errors,
-                    )?;
+                    let expression =
+                        def_eq_pat.into_default_expr(&HashMap::new(), ctx.symbols, ctx.errors)?;
 
                     (pattern, guard, vec![], expression)
                 };
@@ -1076,7 +1099,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
 
                             // set local context + create matched pattern
                             let (matched_pattern, guard) = {
-                                let mut elements = default_pattern.clone();
+                                let mut elements = dflt_event_elems.clone();
                                 let opt_rising_edges = event_pattern.create_tuple_pattern(
                                     &mut elements,
                                     &events_indices,
@@ -1136,17 +1159,14 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                             ctx.symbols.global();
 
                             // create the tuple expression
-                            let expression = defined_pattern.into_default_expr(
-                                &signals,
-                                ctx.symbols,
-                                ctx.errors,
-                            )?;
+                            let expression =
+                                def_eq_pat.into_default_expr(&signals, ctx.symbols, ctx.errors)?;
 
                             Ok((matched_pattern, guard, statements, expression))
                         },
                     )
                     .collect::<TRes<Vec<_>>>()?;
-                match_arms.push(default);
+                match_arms.push(dflt_arm);
 
                 // construct the match expression
                 let match_expr = {
@@ -1166,7 +1186,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                     )))
                 };
 
-                let pattern = defined_pattern.into_ir1(&mut ctx.add_loc(loc))?;
+                let pattern = def_eq_pat.into_ir1(&mut ctx.add_loc(&loc))?;
 
                 Ok(ir1::Stmt {
                     pattern,
@@ -1696,9 +1716,158 @@ mod expr_pattern_impl {
     }
 }
 
+trait Helper: Sized {
+    fn set_init_expr(
+        self,
+        expr: ir0::stream::Expr,
+        init_map: &mut HashMap<Ident, ir0::stream::Expr>,
+        symbol_table: &SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> TRes<()>;
+
+    fn into_default_expr(
+        &self,
+        defined_signals: &HashMap<String, usize>,
+        symbol_table: &SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> TRes<ir1::stream::Expr>;
+}
+
 mod stmt_pattern_impl {
+    use super::Helper;
+
     prelude! {
-        ir0::stmt::{Typed, Tuple},
+        ir0::stmt::{Typed, Tuple}
+    }
+
+    impl Helper for ir0::stmt::Pattern {
+        fn into_default_expr(
+            &self,
+            defined_signals: &HashMap<String, usize>,
+            symbol_table: &SymbolTable,
+            errors: &mut Vec<Error>,
+        ) -> TRes<ir1::stream::Expr> {
+            let kind = match self {
+                ir0::stmt::Pattern::Identifier(ident) => {
+                    let name = ident.to_string();
+                    if let Some(id) = defined_signals.get(&name) {
+                        ir1::stream::Kind::expr(ir1::expr::Kind::ident(*id))
+                    } else {
+                        let id = symbol_table.get_identifier_id(
+                            &name,
+                            false,
+                            Location::default(),
+                            errors,
+                        )?;
+                        if symbol_table.get_typ(id).is_event() {
+                            ir1::stream::Kind::none_event()
+                        } else {
+                            ir1::stream::Kind::fby(
+                                id,
+                                ir1::stream::expr(ir1::stream::Kind::expr(
+                                    ir1::expr::Kind::constant(Constant::default()),
+                                )),
+                            )
+                        }
+                    }
+                }
+                ir0::stmt::Pattern::Typed(Typed { ident, typ, .. }) => {
+                    let name = ident.to_string();
+                    if let Some(id) = defined_signals.get(&name) {
+                        ir1::stream::Kind::expr(ir1::expr::Kind::ident(*id))
+                    } else {
+                        let id = symbol_table.get_identifier_id(
+                            &name,
+                            false,
+                            Location::default(),
+                            errors,
+                        )?;
+                        if typ.is_event() {
+                            ir1::stream::Kind::none_event()
+                        } else {
+                            ir1::stream::Kind::fby(
+                                id,
+                                ir1::stream::expr(ir1::stream::Kind::expr(
+                                    ir1::expr::Kind::constant(Constant::default()),
+                                )),
+                            )
+                        }
+                    }
+                }
+                ir0::stmt::Pattern::Tuple(Tuple { elements }) => {
+                    let elements = elements
+                        .iter()
+                        .map(|pat| pat.into_default_expr(defined_signals, symbol_table, errors))
+                        .collect::<TRes<_>>()?;
+                    ir1::stream::Kind::expr(ir1::expr::Kind::tuple(elements))
+                }
+            };
+            Ok(ir1::stream::expr(kind))
+        }
+
+        fn set_init_expr(
+            self,
+            expr: ir0::stream::Expr,
+            init_map: &mut HashMap<Ident, ir0::stream::Expr>,
+            symbol_table: &SymbolTable,
+            errors: &mut Vec<Error>,
+        ) -> TRes<()> {
+            match self {
+                ir0::stmt::Pattern::Identifier(ident) => {
+                    expr.check_is_constant(symbol_table, errors)?;
+                    let error = Error::AlreadyDefinedElement {
+                        name: ident.to_string(),
+                        loc: Location::default(),
+                    };
+                    let unique = init_map.insert(ident, expr);
+                    if unique.is_some() {
+                        errors.push(error);
+                        return Err(TerminationError);
+                    }
+                    Ok(())
+                }
+                ir0::stmt::Pattern::Typed(typed) => {
+                    expr.check_is_constant(symbol_table, errors)?;
+                    let error = Error::AlreadyDefinedElement {
+                        name: typed.ident.to_string(),
+                        loc: Location::default(),
+                    };
+                    let unique = init_map.insert(typed.ident, expr);
+                    if unique.is_some() {
+                        errors.push(error);
+                        return Err(TerminationError);
+                    }
+                    Ok(())
+                }
+                ir0::stmt::Pattern::Tuple(ir0::stmt::Tuple {
+                    elements: pat_elems,
+                }) => {
+                    if let ir0::stream::Expr::Tuple(ir0::expr::Tuple {
+                        elements: expr_elems,
+                    }) = expr
+                    {
+                        if expr_elems.len() != pat_elems.len() {
+                            let error = Error::IncompatibleTuple {
+                                loc: Location::default(),
+                            };
+                            errors.push(error);
+                            return Err(TerminationError);
+                        }
+                        for (pat, expr) in pat_elems.into_iter().zip(expr_elems) {
+                            pat.set_init_expr(expr, init_map, symbol_table, errors)?
+                        }
+                        Ok(())
+                    } else {
+                        let error = Error::ExpectTuple {
+                            given_type: Typ::Any,
+                            loc: Location::default(),
+                        };
+                        errors.push(error);
+                        Err(TerminationError)
+                    }
+                }
+            }
+        }
     }
 
     impl Ir0IntoIr1<ir1::ctx::WithLoc<'_>> for Typed {
