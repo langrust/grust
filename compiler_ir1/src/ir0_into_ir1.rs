@@ -1045,30 +1045,28 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                 };
 
                 // signals initial values
-                let init_signal_vals = if let Some(ir0::equation::InitArmWhen {
-                    equations, ..
-                }) = init
-                {
-                    let mut map = HashMap::new();
-                    for eq in equations {
-                        match eq {
-                            ir0::Eq::LocalDef(ir0::stmt::LetDecl {
-                                typed_pattern: pattern,
-                                expr,
-                                ..
-                            })
-                            | ir0::Eq::OutputDef(ir0::equation::Instantiation {
-                                pattern,
-                                expr,
-                                ..
-                            }) => pattern.set_init_expr(expr, &mut map, ctx.symbols, ctx.errors)?,
-                            ir0::Eq::Match(_) => todo!("unsupported"),
+                let init_signal_vals =
+                    if let Some(ir0::equation::InitArmWhen { equations, .. }) = init {
+                        let mut map = HashMap::new();
+                        for eq in equations {
+                            match eq {
+                                ir0::Eq::LocalDef(ir0::stmt::LetDecl {
+                                    typed_pattern: pattern,
+                                    expr,
+                                    ..
+                                })
+                                | ir0::Eq::OutputDef(ir0::equation::Instantiation {
+                                    pattern,
+                                    expr,
+                                    ..
+                                }) => pattern.set_init_expr(expr, &mut map, ctx)?,
+                                ir0::Eq::Match(_) => todo!("unsupported"),
+                            }
                         }
-                    }
-                    map
-                } else {
-                    HashMap::new()
-                };
+                        map
+                    } else {
+                        HashMap::new()
+                    };
 
                 // default arm
                 let dflt_arm = {
@@ -1079,7 +1077,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                     let guard = None;
                     // create the tuple expression
                     let expression =
-                        def_eq_pat.into_default_expr(&HashMap::new(), ctx.symbols, ctx.errors)?;
+                        def_eq_pat.into_default_expr(&HashMap::new(), &init_signal_vals, ctx)?;
 
                     (pattern, guard, vec![], expression)
                 };
@@ -1160,7 +1158,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
 
                             // create the tuple expression
                             let expression =
-                                def_eq_pat.into_default_expr(&signals, ctx.symbols, ctx.errors)?;
+                                def_eq_pat.into_default_expr(&signals, &init_signal_vals, ctx)?;
 
                             Ok((matched_pattern, guard, statements, expression))
                         },
@@ -1720,16 +1718,15 @@ trait Helper: Sized {
     fn set_init_expr(
         self,
         expr: ir0::stream::Expr,
-        init_map: &mut HashMap<Ident, ir0::stream::Expr>,
-        symbol_table: &SymbolTable,
-        errors: &mut Vec<Error>,
+        init_map: &mut HashMap<Ident, ir1::stream::Expr>,
+        ctx: &mut ctx::Simple,
     ) -> TRes<()>;
 
     fn into_default_expr(
         &self,
         defined_signals: &HashMap<String, usize>,
-        symbol_table: &SymbolTable,
-        errors: &mut Vec<Error>,
+        init_signal_vals: &HashMap<Ident, ir1::stream::Expr>,
+        ctx: &mut ctx::Simple,
     ) -> TRes<ir1::stream::Expr>;
 }
 
@@ -1744,8 +1741,8 @@ mod stmt_pattern_impl {
         fn into_default_expr(
             &self,
             defined_signals: &HashMap<String, usize>,
-            symbol_table: &SymbolTable,
-            errors: &mut Vec<Error>,
+            init_signal_vals: &HashMap<Ident, ir1::stream::Expr>,
+            ctx: &mut ctx::Simple,
         ) -> TRes<ir1::stream::Expr> {
             let kind = match self {
                 ir0::stmt::Pattern::Identifier(ident) => {
@@ -1753,21 +1750,16 @@ mod stmt_pattern_impl {
                     if let Some(id) = defined_signals.get(&name) {
                         ir1::stream::Kind::expr(ir1::expr::Kind::ident(*id))
                     } else {
-                        let id = symbol_table.get_identifier_id(
+                        let id = ctx.symbols.get_identifier_id(
                             &name,
                             false,
                             Location::default(),
-                            errors,
+                            ctx.errors,
                         )?;
-                        if symbol_table.get_typ(id).is_event() {
+                        if ctx.symbols.get_typ(id).is_event() {
                             ir1::stream::Kind::none_event()
                         } else {
-                            ir1::stream::Kind::fby(
-                                id,
-                                ir1::stream::expr(ir1::stream::Kind::expr(
-                                    ir1::expr::Kind::constant(Constant::default()),
-                                )),
-                            )
+                            ir1::stream::Kind::fby(id, init_signal_vals[ident].clone())
                         }
                     }
                 }
@@ -1776,28 +1768,23 @@ mod stmt_pattern_impl {
                     if let Some(id) = defined_signals.get(&name) {
                         ir1::stream::Kind::expr(ir1::expr::Kind::ident(*id))
                     } else {
-                        let id = symbol_table.get_identifier_id(
+                        let id = ctx.symbols.get_identifier_id(
                             &name,
                             false,
                             Location::default(),
-                            errors,
+                            ctx.errors,
                         )?;
                         if typ.is_event() {
                             ir1::stream::Kind::none_event()
                         } else {
-                            ir1::stream::Kind::fby(
-                                id,
-                                ir1::stream::expr(ir1::stream::Kind::expr(
-                                    ir1::expr::Kind::constant(Constant::default()),
-                                )),
-                            )
+                            ir1::stream::Kind::fby(id, init_signal_vals[ident].clone())
                         }
                     }
                 }
                 ir0::stmt::Pattern::Tuple(Tuple { elements }) => {
                     let elements = elements
                         .iter()
-                        .map(|pat| pat.into_default_expr(defined_signals, symbol_table, errors))
+                        .map(|pat| pat.into_default_expr(defined_signals, init_signal_vals, ctx))
                         .collect::<TRes<_>>()?;
                     ir1::stream::Kind::expr(ir1::expr::Kind::tuple(elements))
                 }
@@ -1808,33 +1795,38 @@ mod stmt_pattern_impl {
         fn set_init_expr(
             self,
             expr: ir0::stream::Expr,
-            init_map: &mut HashMap<Ident, ir0::stream::Expr>,
-            symbol_table: &SymbolTable,
-            errors: &mut Vec<Error>,
+            init_map: &mut HashMap<Ident, ir1::stream::Expr>,
+            ctx: &mut ctx::Simple,
         ) -> TRes<()> {
             match self {
                 ir0::stmt::Pattern::Identifier(ident) => {
-                    expr.check_is_constant(symbol_table, errors)?;
+                    expr.check_is_constant(ctx.symbols, ctx.errors)?;
                     let error = Error::AlreadyDefinedElement {
                         name: ident.to_string(),
                         loc: Location::default(),
                     };
-                    let unique = init_map.insert(ident, expr);
+                    let unique = init_map.insert(
+                        ident,
+                        expr.into_ir1(&mut ctx.add_pat_loc(None, &Location::default()))?,
+                    );
                     if unique.is_some() {
-                        errors.push(error);
+                        ctx.errors.push(error);
                         return Err(TerminationError);
                     }
                     Ok(())
                 }
                 ir0::stmt::Pattern::Typed(typed) => {
-                    expr.check_is_constant(symbol_table, errors)?;
+                    expr.check_is_constant(ctx.symbols, ctx.errors)?;
                     let error = Error::AlreadyDefinedElement {
                         name: typed.ident.to_string(),
                         loc: Location::default(),
                     };
-                    let unique = init_map.insert(typed.ident, expr);
+                    let unique = init_map.insert(
+                        typed.ident,
+                        expr.into_ir1(&mut ctx.add_pat_loc(None, &Location::default()))?,
+                    );
                     if unique.is_some() {
-                        errors.push(error);
+                        ctx.errors.push(error);
                         return Err(TerminationError);
                     }
                     Ok(())
@@ -1850,11 +1842,11 @@ mod stmt_pattern_impl {
                             let error = Error::IncompatibleTuple {
                                 loc: Location::default(),
                             };
-                            errors.push(error);
+                            ctx.errors.push(error);
                             return Err(TerminationError);
                         }
                         for (pat, expr) in pat_elems.into_iter().zip(expr_elems) {
-                            pat.set_init_expr(expr, init_map, symbol_table, errors)?
+                            pat.set_init_expr(expr, init_map, ctx)?
                         }
                         Ok(())
                     } else {
@@ -1862,7 +1854,7 @@ mod stmt_pattern_impl {
                             given_type: Typ::Any,
                             loc: Location::default(),
                         };
-                        errors.push(error);
+                        ctx.errors.push(error);
                         Err(TerminationError)
                     }
                 }
