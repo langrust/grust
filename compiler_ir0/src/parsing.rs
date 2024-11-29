@@ -810,6 +810,39 @@ mod parse_stream {
         }
     }
 
+    impl Parse for EventArmWhen {
+        fn parse(input: ParseStream) -> syn::Result<Self> {
+            let pattern = input.parse()?;
+            let guard = {
+                if input.peek(Token![if]) {
+                    let _if_token: Token![if] = input.parse()?;
+                    let guard = input.parse()?;
+                    Some(guard)
+                } else {
+                    None
+                }
+            };
+            let _arrow_token: Token![=>] = input.parse()?;
+            let expr = input.parse()?;
+            Ok(EventArmWhen::new(pattern, guard, expr))
+        }
+    }
+
+    impl InitArmWhen {
+        pub fn peek(input: ParseStream) -> bool {
+            input.peek(keyword::init)
+        }
+    }
+    impl Parse for InitArmWhen {
+        fn parse(input: ParseStream) -> syn::Result<Self> {
+            let init_token = input.parse()?;
+            let arrow_token = input.parse()?;
+            let expr = input.parse()?;
+            let _coma_token: Token![,] = input.parse()?;
+            Ok(InitArmWhen::new(init_token, arrow_token, expr))
+        }
+    }
+
     impl When {
         pub fn peek(input: ParseStream) -> bool {
             input.peek(keyword::when)
@@ -817,20 +850,19 @@ mod parse_stream {
     }
     impl Parse for When {
         fn parse(input: ParseStream) -> syn::Res<Self> {
-            let _: keyword::when = input.parse()?;
-            let pattern: equation::EventPattern = input.parse()?;
-            let guard = {
-                if input.fork().peek(Token![if]) {
-                    let _: Token![if] = input.parse()?;
-                    let guard = input.parse()?;
-                    Some(guard)
+            let when_token: keyword::when = input.parse()?;
+            let content;
+            let _ = braced!(content in input);
+            let init = {
+                if InitArmWhen::peek(&content) {
+                    let init = content.parse()?;
+                    Some(init)
                 } else {
                     None
                 }
             };
-            let then_token: keyword::then = input.parse()?;
-            let expression: stream::Expr = input.parse()?;
-            Ok(When::new(pattern, guard, then_token, expression))
+            let arms: Punctuated<EventArmWhen, Token![,]> = Punctuated::parse_terminated(&content)?;
+            Ok(When::new(when_token, init, arms.into_iter().collect()))
         }
     }
 
@@ -1437,7 +1469,7 @@ mod parse_expr {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let pattern = input.parse()?;
             let guard = {
-                if input.fork().peek(Token![if]) {
+                if input.peek(Token![if]) {
                     let _: Token![if] = input.parse()?;
                     let guard = input.parse()?;
                     Some(guard)
@@ -2547,40 +2579,80 @@ mod parsing_tests {
 
         #[test]
         fn should_parse_when() {
-            let expression: ReactExpr = syn::parse_quote! {when let d = p? then emit x};
+            let expression: ReactExpr = syn::parse_quote! { when {let d = p? => emit x} };
             let control = ReactExpr::when_match(When::new(
-                equation::EventPattern::Let(equation::LetEventPattern::new(
-                    Default::default(),
-                    expr::Pattern::ident("d"),
-                    Default::default(),
-                    format_ident!("p"),
-                    Default::default(),
-                )),
-                None,
                 Default::default(),
-                Expr::emit(Emit::new(Default::default(), Expr::test_ident("x"))),
+                None,
+                vec![stream::EventArmWhen::new(
+                    equation::EventPattern::Let(equation::LetEventPattern::new(
+                        Default::default(),
+                        expr::Pattern::ident("d"),
+                        Default::default(),
+                        format_ident!("p"),
+                        Default::default(),
+                    )),
+                    None,
+                    Expr::emit(Emit::new(Default::default(), Expr::ident("x"))),
+                )],
             ));
             assert_eq!(expression, control)
         }
 
         #[test]
         fn should_parse_when_with_guard() {
-            let expression: ReactExpr = syn::parse_quote! {when p? if p > 0 then emit x};
+            let expression: ReactExpr = syn::parse_quote! { when {p? if p > 0 => emit x} };
             let control = ReactExpr::when_match(When::new(
-                equation::EventPattern::Let(equation::LetEventPattern::new(
-                    Default::default(),
-                    expr::Pattern::ident("p"),
-                    Default::default(),
-                    format_ident!("p"),
-                    Default::default(),
-                )),
-                Some(Expr::binop(BinOp::new(
-                    BOp::Grt,
-                    Expr::test_ident("p"),
-                    Expr::cst(Constant::Integer(syn::parse_quote! {0})),
-                ))),
                 Default::default(),
-                Expr::emit(Emit::new(Default::default(), Expr::test_ident("x"))),
+                None,
+                vec![stream::EventArmWhen::new(
+                    equation::EventPattern::Let(equation::LetEventPattern::new(
+                        Default::default(),
+                        expr::Pattern::ident("p"),
+                        Default::default(),
+                        format_ident!("p"),
+                        Default::default(),
+                    )),
+                    Some(Box::new(Expr::binop(Binop::new(
+                        BOp::Grt,
+                        Expr::ident("p"),
+                        Expr::cst(Constant::Integer(syn::parse_quote! {0})),
+                    )))),
+                    Expr::emit(Emit::new(Default::default(), Expr::ident("x"))),
+                )],
+            ));
+            assert_eq!(expression, control)
+        }
+
+        #[test]
+        fn should_parse_when_with_init() {
+            let expression: ReactExpr = syn::parse_quote! {
+                when {
+                    init        => 0,
+                    p? if p > 0 => p
+                }
+            };
+            let control = ReactExpr::when_match(When::new(
+                Default::default(),
+                Some(stream::InitArmWhen::new(
+                    Default::default(),
+                    Default::default(),
+                    Expr::cst(Constant::Integer(syn::parse_quote! {0})),
+                )),
+                vec![stream::EventArmWhen::new(
+                    equation::EventPattern::Let(equation::LetEventPattern::new(
+                        Default::default(),
+                        expr::Pattern::ident("p"),
+                        Default::default(),
+                        format_ident!("p"),
+                        Default::default(),
+                    )),
+                    Some(Box::new(Expr::binop(Binop::new(
+                        BOp::Grt,
+                        Expr::ident("p"),
+                        Expr::cst(Constant::Integer(syn::parse_quote! {0})),
+                    )))),
+                    Expr::ident("p"),
+                )],
             ));
             assert_eq!(expression, control)
         }
