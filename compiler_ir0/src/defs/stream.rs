@@ -18,16 +18,48 @@ mk_new! { impl Last =>
     }
 }
 
-/// Pattern matching for event expression.
+/// Arm for when stream expression.
 #[derive(Debug, PartialEq, Clone)]
-pub struct When {
-    /// The pattern receiving the value of the event.
+pub struct EventArmWhen {
+    /// The event pattern to catch.
     pub pattern: EventPattern,
     /// The optional guard.
     pub guard: Option<Box<Expr>>,
-    pub then_token: keyword::then,
-    /// Action triggered by event.
-    pub expr: Box<Expr>,
+    /// The expression.
+    pub expr: Expr,
+}
+mk_new! { impl EventArmWhen =>
+    new {
+        pattern: EventPattern,
+        guard: Option<Box<Expr>>,
+        expr: Expr,
+    }
+}
+
+/// Init arm for when stream expression.
+#[derive(Debug, PartialEq, Clone)]
+pub struct InitArmWhen {
+    pub init_token: keyword::init,
+    pub arrow_token: Token![=>],
+    /// The initial expression.
+    pub expr: Expr,
+}
+mk_new! { impl InitArmWhen =>
+    new {
+        init_token: keyword::init,
+        arrow_token: Token![=>],
+        expr: Expr,
+    }
+}
+
+/// Pattern matching for event expression.
+#[derive(Debug, PartialEq, Clone)]
+pub struct When {
+    pub when_token: keyword::when,
+    /// The optional init arm.
+    pub init: Option<InitArmWhen>,
+    /// The different event cases.
+    pub arms: Vec<EventArmWhen>,
 }
 impl When {
     pub fn loc(&self) -> Loc {
@@ -36,10 +68,9 @@ impl When {
 }
 mk_new! { impl When =>
     new {
-        pattern: EventPattern,
-        guard: Option<Expr> = guard.map(Expr::into),
-        then_token: keyword::then,
-        expr: impl Into<Box<Expr >> = expr.into(),
+        when_token: keyword::when,
+        init: Option<InitArmWhen>,
+        arms: Vec<EventArmWhen>,
     }
 }
 
