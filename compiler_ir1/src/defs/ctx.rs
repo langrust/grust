@@ -61,6 +61,9 @@ impl<'a> PatLoc<'a> {
     pub fn remove_pat<'b>(&'b mut self) -> WithLoc {
         WithLoc::new(self.loc, self.symbols, self.errors)
     }
+    pub fn remove_pat_loc<'b>(&'b mut self) -> Simple<'b> {
+        Simple::new(self.symbols, self.errors)
+    }
     pub fn set_pat(
         &mut self,
         pat: Option<&'a ir0::stmt::Pattern>,
