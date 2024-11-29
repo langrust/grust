@@ -168,16 +168,37 @@ mk_new! { impl EventArmWhen =>
     }
 }
 
+/// Init arm for when stream expression.
+#[derive(Debug, PartialEq)]
+pub struct InitArmWhen {
+    pub init_token: keyword::init,
+    pub arrow_token: Token![=>],
+    pub brace_token: syn::token::Brace,
+    /// The initialequations.
+    pub equations: Vec<Eq>,
+}
+mk_new! { impl InitArmWhen =>
+    new {
+        init_token: keyword::init,
+        arrow_token: Token![=>],
+        brace_token: syn::token::Brace,
+        equations: Vec<Eq>,
+    }
+}
+
 pub struct MatchWhen {
     pub when_token: keyword::when,
     pub brace_token: syn::token::Brace,
-    /// The different matching cases.
+    /// The optional init arm.
+    pub init: Option<InitArmWhen>,
+    /// The different event cases.
     pub arms: Vec<EventArmWhen>,
 }
 mk_new! { impl MatchWhen =>
     new {
         when_token: keyword::when,
         brace_token: syn::token::Brace,
+        init: Option<InitArmWhen>,
         arms: Vec<EventArmWhen>,
     }
 }
