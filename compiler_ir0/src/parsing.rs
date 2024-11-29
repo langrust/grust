@@ -1990,17 +1990,46 @@ mod parse_equation {
         }
     }
 
+    impl InitArmWhen {
+        pub fn peek(input: ParseStream) -> bool {
+            input.peek(keyword::init)
+        }
+    }
+    impl Parse for InitArmWhen {
+        fn parse(input: ParseStream) -> syn::Result<Self> {
+            let init_token = input.parse()?;
+            let arrow_token = input.parse()?;
+            let content;
+            let brace = braced!(content in input);
+            let equations = {
+                let mut equations = Vec::new();
+                while !content.is_empty() {
+                    equations.push(content.parse()?);
+                }
+                equations
+            };
+            Ok(InitArmWhen::new(init_token, arrow_token, brace, equations))
+        }
+    }
+
     impl Parse for MatchWhen {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let when_token = input.parse()?;
             let content;
             let brace = braced!(content in input);
+            let init = {
+                if InitArmWhen::peek(&content) {
+                    let init = content.parse()?;
+                    Some(init)
+                } else {
+                    None
+                }
+            };
             let mut arms: Vec<EventArmWhen> = vec![];
             while !content.is_empty() {
                 arms.push(content.parse()?);
             }
-
-            Ok(MatchWhen::new(when_token, brace, arms))
+            Ok(MatchWhen::new(when_token, brace, init, arms))
         }
     }
 
