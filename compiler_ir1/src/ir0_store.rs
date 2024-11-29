@@ -578,13 +578,6 @@ pub trait Ir0StoreStmtPattern: Sized {
         symbol_table: &SymbolTable,
         errors: &mut Vec<Error>,
     ) -> TRes<Vec<(String, Self)>>;
-
-    fn into_default_expr(
-        &self,
-        defined_signals: &HashMap<String, usize>,
-        symbol_table: &SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> TRes<ir1::stream::Expr>;
 }
 
 mod stmt_pattern {
@@ -676,70 +669,6 @@ mod stmt_pattern {
                     .flatten()
                     .collect()),
             }
-        }
-
-        fn into_default_expr(
-            &self,
-            defined_signals: &HashMap<String, usize>,
-            symbol_table: &SymbolTable,
-            errors: &mut Vec<Error>,
-        ) -> TRes<ir1::stream::Expr> {
-            let kind = match self {
-                Pattern::Identifier(ident) => {
-                    let name = ident.to_string();
-                    if let Some(id) = defined_signals.get(&name) {
-                        ir1::stream::Kind::expr(ir1::expr::Kind::ident(*id))
-                    } else {
-                        let id = symbol_table.get_identifier_id(
-                            &name,
-                            false,
-                            Loc::mixed_site(),
-                            errors,
-                        )?;
-                        if symbol_table.get_typ(id).is_event() {
-                            ir1::stream::Kind::none_event()
-                        } else {
-                            ir1::stream::Kind::fby(
-                                id,
-                                ir1::stream::expr(ir1::stream::Kind::expr(
-                                    ir1::expr::Kind::constant(Constant::default()),
-                                )),
-                            )
-                        }
-                    }
-                }
-                Pattern::Typed(Typed { ident, typ, .. }) => {
-                    let name = ident.to_string();
-                    if let Some(id) = defined_signals.get(&name) {
-                        ir1::stream::Kind::expr(ir1::expr::Kind::ident(*id))
-                    } else {
-                        let id = symbol_table.get_identifier_id(
-                            &name,
-                            false,
-                            Loc::mixed_site(),
-                            errors,
-                        )?;
-                        if typ.is_event() {
-                            ir1::stream::Kind::none_event()
-                        } else {
-                            ir1::stream::Kind::fby(
-                                id,
-                                ir1::stream::expr(ir1::stream::Kind::expr(
-                                    ir1::expr::Kind::constant(Constant::default()),
-                                )),
-                            )
-                        }
-                    }
-                }
-                Pattern::Tuple(Tuple { elements }) => {
-                    let elements = elements
-                        .iter()
-                        .map(|pat| pat.into_default_expr(defined_signals, symbol_table, errors))
-                        .collect::<TRes<_>>()?;
-                    ir1::stream::Kind::expr(ir1::expr::Kind::tuple(elements))
-                }
-            };
-            Ok(ir1::stream::expr(kind))
         }
     }
 }
