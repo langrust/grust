@@ -9,6 +9,9 @@ fn should_compile_para() {
 
         component C1(e0: int?) -> (s2: int, e1: int?) {
             when {
+                init => {
+                    s2 = 0;
+                }
                 e0? if e0 > prev_s2 => {
                     s2 = e0;
                     e1 = emit e0 / (e0 - s2);
@@ -22,6 +25,9 @@ fn should_compile_para() {
 
         component C2(e1: int?) -> (s3: int, e3: int?) {
             when {
+                init => {
+                    s3 = 0;
+                }
                 e1? => {
                     s3 = e1;
                 }
@@ -34,15 +40,18 @@ fn should_compile_para() {
         }
 
         component C3(s2: int) -> (e2: int?) {
-            e2 = when s2 > 1 then emit s2;
+            e2 = when { s2 > 1 => emit s2 };
         }
 
         component C4(e2: int?) -> (s4: int) {
-            s4 = when e2? then e2;
+            s4 = when { init => 0, e2? => e2 };
         }
 
         component C5(s4: int, s3: int, e3: int?) -> (o: int) {
             when {
+                init => {
+                    o = 0;
+                }
                 e3? => {
                     o = e3;
                 }

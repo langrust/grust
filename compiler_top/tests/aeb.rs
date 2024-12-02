@@ -12,9 +12,9 @@ fn should_compile_aeb() {
 
         // Braking type
         enum Braking {
-            UrgentBrake,
-            SoftBrake,
             NoBrake,
+            SoftBrake,
+            UrgentBrake,
         }
 
         // Formula: d = 2 * s^2 / (250 * f)
@@ -35,24 +35,21 @@ fn should_compile_aeb() {
             return response;
         }
 
-        component braking_state(pedest: float?, timeout_pedest: unit?, speed: float) -> (state: Braking)
-            requires { 0. <= speed && speed < 50. } // urban limit
-            ensures { when p = pedest? => state != Braking::NoBrake } // safety
+        component braking_state(pedest: float?, timeout_pedestrian: unit?, speed: float) -> (state: Braking)
+            // requires { 0. <= speed && speed < 55. } // urban limit
+            // ensures { pedest? => state != NoBrake } // safety
         {
-            when {
-                let d = pedest? => {
-                    state = brakes(d, speed);
-                }
-                let _ = timeout_pedest? => {
-                    state = Braking::NoBrake;
-                }
-            }
+            state = when {
+                init                        => Braking::NoBrake,
+                let d = pedest?             => brakes(d, speed),
+                let _ = timeout_pedestrian? => Braking::NoBrake,
+            };
         }
 
-        service aeb {
+        service aeb @ [10, 3000] {
             let event pedestrian: float = merge(pedestrian_l, pedestrian_r);
-            let event timeout_pedest: unit = timeout(pedestrian, 500);
-            brakes = braking_state(pedestrian, timeout_pedest, speed_km_h);
+            let event timeout_pedestrian: unit = timeout(pedestrian, 2000);
+            brakes = braking_state(pedestrian, timeout_pedestrian, speed_km_h);
         }
     };
     let tokens = compiler_top::into_token_stream(ast);

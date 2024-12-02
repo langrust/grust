@@ -10,10 +10,13 @@ fn should_compile_rising_edges() {
             d: float,
             x: int?,
         ) {
-            c = when a? then a;
-            d = when let _ = y? then 0.1;
-            let w: int? = when v > 50 then emit v + (last c);
+            c = when { init => 0, a? => a };
+            d = when { init => 0., let _ = y? => 0.1 };
+            let w: int? = when { v > 50 => emit v + (last c) };
             when {
+                init => {
+                    let z: int = 0;
+                }
                 (a?, let e = b?, v > 50) => {
                     let z: int =  if v > 80 then e else a;
                     let y: unit? = emit ();

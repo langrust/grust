@@ -44,6 +44,9 @@ grust! {
         ensures  { when p = pedest? => state != Braking::NoBrake } // safety
     {
         when {
+            init => {
+                state = Braking::NoBrake;
+            }
             let d = pedest? => {
                 state = brakes(d, speed);
             }

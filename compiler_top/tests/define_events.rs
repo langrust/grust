@@ -11,17 +11,19 @@ fn should_compile_define_events() {
             x: int?,
         ) {
             c = z;
-            d = when let _ = y? then emit 0.1;
+            d = when { y? => emit 0.1 };
             when {
+                init             => {
+                    let z: int = 0;
+                }
                 (a?, let e = b?) => {
                     let z: int =  if v > 50 then e else a;
                     let y: unit? = emit ();
                 }
-                let _ = a? => {
-                    let z: int = 2;
+                let _ = a?       => {
                     x = emit 2;
                 }
-                let _ = b? => {
+                let _ = b?       => {
                     let z: int = if v > 50 then 3 else 4;
                     x = emit 2;
                 }

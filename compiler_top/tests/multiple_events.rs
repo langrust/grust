@@ -7,8 +7,11 @@ fn should_compile_multiple_events() {
 
         component multiple_events(a: int?, b: int?, v: int) -> (c: int, d: int) {
             c = z;
-            d = when (a?, b?) then 10 * a + b;
+            d = when { init => 0, (a?, b?) => 10 * a + b };
             when {
+                init => {
+                    let z: int = 0;
+                }
                 (let a = a?, let b = b?) if v > 50 => {
                     let z: int = 1;
                 }

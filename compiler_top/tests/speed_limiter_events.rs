@@ -107,11 +107,10 @@ fn should_compile_speed_limiter_events() {
         component process_set_speed(set_speed: float?) -> (v_set: float, v_update: bool) {
             let prev_v_set: float = last v_set;
             v_update = prev_v_set != v_set;
-            when {
-                let v = set_speed? => {
-                    v_set = threshold_set_speed(v);
-                }
-            }
+            v_set = when {
+                init => 0.,
+                let v = set_speed? => threshold_set_speed(v),
+            };
         }
 
         // Speed limiter state machine.
@@ -131,20 +130,13 @@ fn should_compile_speed_limiter_events() {
         ) @ 10 ms {
             let prev_state: SpeedLimiter = last state;
             let prev_on_state: SpeedLimiterOn = last on_state;
-            when {
-                let ActivationRequest::Off = activation_req? => {
-                    state = SpeedLimiter::Off;
-                }
-                let ActivationRequest::On = activation_req? if prev_state == SpeedLimiter::Off => {
-                    state = SpeedLimiter::On;
-                }
-                let Failure::Entering = failure? => {
-                    state = SpeedLimiter::Fail;
-                }
-                let Failure::Recovered = failure? if prev_state == SpeedLimiter::Fail => {
-                    state = SpeedLimiter::On;
-                }
-            }
+            state = when {
+                init => SpeedLimiter::Off,
+                activation_req? if activation_req == ActivationRequest::Off => SpeedLimiter::Off,
+                let ActivationRequest::On = activation_req? if prev_state == SpeedLimiter::Off => SpeedLimiter::On,
+                failure? if failure == Failure::Entering => SpeedLimiter::Fail,
+                let f = failure? if f == Failure::Recovered && prev_state == SpeedLimiter::Fail => SpeedLimiter::On,
+            };
             match state {
                 SpeedLimiter::On => {
                     (on_state, in_regulation, state_update) = speed_limiter_on(
@@ -176,14 +168,11 @@ fn should_compile_speed_limiter_events() {
             state_update = prev_on_state != on_state;
             let prev_hysterisis: Hysterisis = last hysterisis init new_hysterisis(0.0);
             in_reg = in_regulation(hysterisis);
-            when {
-                let Kickdown::Activated = kickdown? if prev_on_state == SpeedLimiterOn::Actif => {
-                    let kickdown_state: Kickdown = Kickdown::Activated;
-                }
-                let Kickdown::Deactivated = kickdown? => {
-                    let kickdown_state: Kickdown = Kickdown::Deactivated;
-                }
-            }
+            let kickdown_state: Kickdown = when {
+                init => Kickdown::Deactivated,
+                let Kickdown::Activated = kickdown? if prev_on_state == SpeedLimiterOn::Actif => Kickdown::Activated,
+                let Kickdown::Deactivated = kickdown? => Kickdown::Deactivated,
+            };
             match prev_on_state {
                 _ if kickdown_state == Kickdown::Activated => {
                     on_state = SpeedLimiterOn::OverrideVoluntary;
