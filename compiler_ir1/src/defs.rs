@@ -20,17 +20,16 @@ pub mod interface;
 
 prelude! {}
 
-fn unwrap<D: Display, T>(desc: D, res: TRes<T>) -> T {
-    if let Ok(res) = res {
-        res
-    } else {
-        panic!("fatal error during {}", desc)
+fn unwrap<D: Display, T>(desc: D, res: TRes<T>, errors: &Vec<Error>) -> T {
+    match res {
+        Ok(res) => res,
+        Err(_) => panic!("fatal error during {}: {:?}", desc, errors),
     }
 }
 
 pub fn raw_from_ast(ast: Ast, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> File {
     let mut ctx = ctx::Simple::new(symbols, errors);
-    unwrap("IR0 to IR1", ast.into_ir1(&mut ctx))
+    unwrap("IR0 to IR1", ast.into_ir1(&mut ctx), &ctx.errors)
 }
 
 pub fn from_ast(ast: Ast, symbols: &mut SymbolTable) -> Result<File, Vec<Error>> {
@@ -55,14 +54,18 @@ pub fn from_ast(ast: Ast, symbols: &mut SymbolTable) -> Result<File, Vec<Error>>
             }
         }};
     }
-    check_errors!("IR1 type-checking", ir1.typ_check(symbols, errors));
-    check_errors!(
+    check_errors!();
+    unwrap("IR1 type-checking", ir1.typ_check(symbols, errors), &errors);
+    check_errors!();
+    unwrap(
         "IR1 dependency graph generation",
         ir1.generate_dependency_graphs(symbols, errors),
+        &errors,
     );
     check_errors!(
         "IR1 causality analysis",
         ir1.causality_analysis(symbols, errors),
+        &errors,
     );
     ir1.normalize(symbols);
     debug_assert!(errors.is_empty());
