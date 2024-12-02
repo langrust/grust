@@ -28,19 +28,13 @@ pub struct BrakingStateState {
 impl BrakingStateState {
     pub fn init() -> BrakingStateState {
         BrakingStateState {
-            last_state: Default::default(),
+            last_state: Braking::NoBrake,
         }
     }
     pub fn step(&mut self, input: BrakingStateInput) -> Braking {
         let state = match (input.pedest, input.timeout_pedestrian) {
-            (Some(d), _) => {
-                let state = brakes(d, input.speed);
-                state
-            }
-            (_, Some(_)) => {
-                let state = Braking::NoBrake;
-                state
-            }
+            (Some(d), _) => brakes(d, input.speed),
+            (_, Some(_)) => Braking::NoBrake,
             (_, _) => self.last_state,
         };
         self.last_state = state;
@@ -309,24 +303,6 @@ pub mod runtime {
                         unique.is_none(),
                         "timeout_timeout_pedestrian changes too frequently"
                     );
-                }
-                Ok(())
-            }
-            pub async fn handle_speed_km_h(
-                &mut self,
-                speed_km_h_instant: std::time::Instant,
-                speed_km_h: f64,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                if self.delayed {
-                    self.reset_time_constraints(speed_km_h_instant).await?;
-                    self.context.reset();
-                    self.context.speed_km_h.set(speed_km_h);
-                } else {
-                    let unique = self
-                        .input_store
-                        .speed_km_h
-                        .replace((speed_km_h, speed_km_h_instant));
-                    assert!(unique.is_none(), "speed_km_h changes too frequently");
                 }
                 Ok(())
             }
@@ -787,6 +763,48 @@ pub mod runtime {
                 self.timer.send((T::DelayAeb, instant)).await?;
                 Ok(())
             }
+            pub async fn handle_speed_km_h(
+                &mut self,
+                speed_km_h_instant: std::time::Instant,
+                speed_km_h: f64,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                if self.delayed {
+                    self.reset_time_constraints(speed_km_h_instant).await?;
+                    self.context.reset();
+                    self.context.speed_km_h.set(speed_km_h);
+                } else {
+                    let unique = self
+                        .input_store
+                        .speed_km_h
+                        .replace((speed_km_h, speed_km_h_instant));
+                    assert!(unique.is_none(), "speed_km_h changes too frequently");
+                }
+                Ok(())
+            }
+            pub async fn handle_timeout_aeb(
+                &mut self,
+                timeout_aeb_instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.reset_time_constraints(timeout_aeb_instant).await?;
+                self.context.reset();
+                let brakes = self.braking_state.step(BrakingStateInput {
+                    speed: self.context.speed_km_h.get(),
+                    pedest: None,
+                    timeout_pedestrian: None,
+                });
+                self.context.brakes.set(brakes);
+                self.send_output(O::Brakes(self.context.brakes.get(), timeout_aeb_instant))
+                    .await?;
+                Ok(())
+            }
+            #[inline]
+            pub async fn reset_service_timeout(
+                &mut self,
+                instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.timer.send((T::TimeoutAeb, instant)).await?;
+                Ok(())
+            }
             pub async fn handle_pedestrian_l(
                 &mut self,
                 pedestrian_l_instant: std::time::Instant,
@@ -820,30 +838,6 @@ pub mod runtime {
                         .replace((pedestrian_l, pedestrian_l_instant));
                     assert!(unique.is_none(), "pedestrian_l changes too frequently");
                 }
-                Ok(())
-            }
-            pub async fn handle_timeout_aeb(
-                &mut self,
-                timeout_aeb_instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.reset_time_constraints(timeout_aeb_instant).await?;
-                self.context.reset();
-                let brakes = self.braking_state.step(BrakingStateInput {
-                    speed: self.context.speed_km_h.get(),
-                    pedest: None,
-                    timeout_pedestrian: None,
-                });
-                self.context.brakes.set(brakes);
-                self.send_output(O::Brakes(self.context.brakes.get(), timeout_aeb_instant))
-                    .await?;
-                Ok(())
-            }
-            #[inline]
-            pub async fn reset_service_timeout(
-                &mut self,
-                instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.timer.send((T::TimeoutAeb, instant)).await?;
                 Ok(())
             }
             pub async fn handle_pedestrian_r(

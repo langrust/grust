@@ -47,7 +47,7 @@ where
                             // if it is sleeping timer's kind then plan to abort `sleep`
                             if kind.do_reset() && kind.eq(sleeping_timer) {
                                 abort = true;
-                            } else 
+                            } else
                             // if urgent then plan to abort `sleep` and push current timer back into queue
                             if sleeping_deadline > &(pushed_instant + kind.get_duration()) {
                                 abort = true;

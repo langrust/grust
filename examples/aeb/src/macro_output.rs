@@ -28,7 +28,7 @@ pub struct BrakingStateState {
 impl BrakingStateState {
     pub fn init() -> BrakingStateState {
         BrakingStateState {
-            last_state: Default::default(),
+            last_state: Braking::NoBrake,
         }
     }
     pub fn step(&mut self, input: BrakingStateInput) -> Braking {

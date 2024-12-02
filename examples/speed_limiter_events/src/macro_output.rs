@@ -104,17 +104,12 @@ pub struct ProcessSetSpeedState {
 }
 impl ProcessSetSpeedState {
     pub fn init() -> ProcessSetSpeedState {
-        ProcessSetSpeedState {
-            last_v_set: Default::default(),
-        }
+        ProcessSetSpeedState { last_v_set: 0.0f64 }
     }
     pub fn step(&mut self, input: ProcessSetSpeedInput) -> (f64, bool) {
         let prev_v_set = self.last_v_set;
         let v_set = match (input.set_speed) {
-            (Some(v)) => {
-                let v_set = threshold_set_speed(v);
-                v_set
-            }
+            (Some(v)) => threshold_set_speed(v),
             (_) => self.last_v_set,
         };
         let v_update = prev_v_set != v_set;
@@ -137,20 +132,16 @@ impl SpeedLimiterOnState {
     pub fn init() -> SpeedLimiterOnState {
         SpeedLimiterOnState {
             last_hysterisis: new_hysterisis(0.0f64),
-            last_kickdown_state: Default::default(),
+            last_kickdown_state: Kickdown::Deactivated,
         }
     }
     pub fn step(&mut self, input: SpeedLimiterOnInput) -> (SpeedLimiterOn, bool, bool) {
         let prev_hysterisis = self.last_hysterisis;
         let kickdown_state = match (input.kickdown) {
             (Some(Kickdown::Activated)) if input.prev_on_state == SpeedLimiterOn::Actif => {
-                let kickdown_state = Kickdown::Activated;
-                kickdown_state
+                Kickdown::Activated
             }
-            (Some(Kickdown::Deactivated)) => {
-                let kickdown_state = Kickdown::Deactivated;
-                kickdown_state
-            }
+            (Some(Kickdown::Deactivated)) => Kickdown::Deactivated,
             (_) => self.last_kickdown_state,
         };
         let (hysterisis, on_state) = match input.prev_on_state {
@@ -212,7 +203,7 @@ impl SpeedLimiterState {
     pub fn init() -> SpeedLimiterState {
         SpeedLimiterState {
             last_on_state: Default::default(),
-            last_state: Default::default(),
+            last_state: SpeedLimiter::Off,
             speed_limiter_on: SpeedLimiterOnState::init(),
         }
     }
@@ -220,21 +211,13 @@ impl SpeedLimiterState {
         let prev_state = self.last_state;
         let prev_on_state = self.last_on_state;
         let state = match (input.activation_req, input.failure) {
-            (Some(ActivationRequest::Off), _) => {
-                let state = SpeedLimiter::Off;
-                state
+            (Some(activation_req), _) if activation_req == ActivationRequest::Off => {
+                SpeedLimiter::Off
             }
-            (Some(ActivationRequest::On), _) if prev_state == SpeedLimiter::Off => {
-                let state = SpeedLimiter::On;
-                state
-            }
-            (_, Some(Failure::Entering)) => {
-                let state = SpeedLimiter::Fail;
-                state
-            }
-            (_, Some(Failure::Recovered)) if prev_state == SpeedLimiter::Fail => {
-                let state = SpeedLimiter::On;
-                state
+            (Some(ActivationRequest::On), _) if prev_state == SpeedLimiter::Off => SpeedLimiter::On,
+            (_, Some(failure)) if failure == Failure::Entering => SpeedLimiter::Fail,
+            (_, Some(f)) if (f == Failure::Recovered) && (prev_state == SpeedLimiter::Fail) => {
+                SpeedLimiter::On
             }
             (_, _) => self.last_state,
         };
