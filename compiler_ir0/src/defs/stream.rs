@@ -63,8 +63,8 @@ pub enum Expr {
     Application(Application<Self>),
     /// UnOp expression.
     UnOp(UnOp<Self>),
-    /// Binop expression.
-    Binop(Binop<Self>),
+    /// BinOp expression.
+    BinOp(BinOp<Self>),
     /// IfThenElse expression.
     IfThenElse(IfThenElse<Self>),
     /// Abstraction expression with inputs types.
@@ -101,7 +101,7 @@ mk_new! { impl Expr =>
     Identifier: ident(arg : impl Into<String> = arg.into())
     Application: app(arg : Application<Self> = arg)
     UnOp: unop(arg: UnOp<Self> = arg)
-    Binop: binop(arg: Binop<Self> = arg)
+    BinOp: binop(arg: BinOp<Self> = arg)
     IfThenElse: ite(arg: IfThenElse<Self> = arg)
     TypedAbstraction: type_abstraction(arg: TypedAbstraction<Self> = arg)
     Structure: structure(arg: Structure<Self> = arg)
@@ -159,7 +159,7 @@ impl Expr {
                 }
             }
             stream::Expr::UnOp(UnOp { expr, .. }) => expr.check_is_constant(table, errors),
-            stream::Expr::Binop(Binop { lft, rgt, .. }) => {
+            stream::Expr::BinOp(BinOp { lft, rgt, .. }) => {
                 lft.check_is_constant(table, errors)?;
                 rgt.check_is_constant(table, errors)
             }

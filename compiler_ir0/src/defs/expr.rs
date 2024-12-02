@@ -17,11 +17,11 @@ mk_new! { impl{E} UnOp<E> =>
 
 }
 
-/// Binop expression.
+/// Binary operator.
 ///
 /// TODO: precedence
 #[derive(Debug, PartialEq, Clone)]
-pub struct Binop<E> {
+pub struct BinOp<E> {
     /// The unary operator.
     pub op: BOp,
     /// The left expression.
@@ -30,7 +30,7 @@ pub struct Binop<E> {
     pub rgt: Box<E>,
 }
 
-mk_new! { impl{E} Binop<E> =>
+mk_new! { impl{E} BinOp<E> =>
     new {
         op : BOp,
         lft: impl Into<Box<E>> = lft.into(),
@@ -367,8 +367,8 @@ pub enum Expr {
     Identifier(String),
     /// UnOp expression.
     UnOp(UnOp<Self>),
-    /// Binop expression.
-    Binop(Binop<Self>),
+    /// BinOp expression.
+    BinOp(BinOp<Self>),
     /// IfThenElse expression.
     IfThenElse(IfThenElse<Self>),
     /// Application expression.
@@ -404,7 +404,7 @@ mk_new! { impl Expr =>
     Constant: cst (val: Constant = val)
     Identifier: ident (val: impl Into<String> = val.into())
     UnOp: unop (val: UnOp<Self> = val)
-    Binop: binop (val: Binop<Self> = val)
+    BinOp: binop (val: BinOp<Self> = val)
     IfThenElse: ite (val: IfThenElse<Self> = val)
     Application: app (val: Application<Self> = val)
     TypedAbstraction: typed_abstraction (val: TypedAbstraction<Self> = val)
