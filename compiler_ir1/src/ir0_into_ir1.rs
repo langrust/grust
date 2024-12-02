@@ -2054,10 +2054,10 @@ mod stream_impl {
                             (matched, guard)
                         };
 
-                        ctx.symbols.global();
-
-                        // create the tuple expression
+                        // transform expression into [ir1] with local context
                         let expression = expr.into_ir1(ctx)?;
+
+                        ctx.symbols.global();
 
                         Ok((matched_pattern, guard, vec![], expression))
                     },
