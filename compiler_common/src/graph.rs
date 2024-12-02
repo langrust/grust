@@ -50,16 +50,24 @@ mod label {
         /// Add the two given labels.
         pub fn add(&self, other: &Label) -> Label {
             match (self, other) {
-                (Label::Contract, _) => Label::Contract,
-                (_, Label::Contract) => Label::Contract,
-                (Label::Weight(w1), Label::Weight(w2)) => Label::Weight(w1 + w2),
+                (Self::Contract, _) => Self::Contract,
+                (_, Self::Contract) => Self::Contract,
+                (Self::Weight(w1), Self::Weight(w2)) => Self::Weight(w1 + w2),
             }
         }
         /// Increment the given label.
         pub fn increment(&self) -> Label {
             match self {
-                Label::Contract => Label::Contract,
-                Label::Weight(w) => Label::Weight(w + 1),
+                Self::Contract => Self::Contract,
+                Self::Weight(w) => Self::Weight(w + 1),
+            }
+        }
+
+        /// True if `self` is `Self::Weight(n)`.
+        pub fn has_weight(self, n: usize) -> bool {
+            match self {
+                Self::Weight(w) => w == n,
+                Self::Contract => false,
             }
         }
     }

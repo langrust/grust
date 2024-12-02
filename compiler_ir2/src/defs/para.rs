@@ -31,10 +31,7 @@ impl<'a> synced::CtxSpec for Ctx<'a> {
     type Label = graph::Label;
     const INVERTED_EDGES: bool = true;
     fn ignore_edge(label: &Self::Label) -> bool {
-        match label {
-            graph::Label::Contract => true,
-            graph::Label::Weight(w) => *w > 0,
-        }
+        !label.has_weight(0)
     }
     fn instr_cost(&self, uid: usize) -> usize {
         let stmt = self
@@ -142,7 +139,7 @@ impl<'a> Env<'a> {
             while let Some(node) = todo.pop() {
                 for (_, tgt, label) in graph.edges_directed(node, graph::Direction::Outgoing) {
                     let is_new = known.insert(tgt);
-                    if is_new {
+                    if label.has_weight(0) && is_new {
                         res.add_edge(src, tgt, label.clone());
                         todo.push(tgt);
                     }
@@ -413,7 +410,7 @@ impl Schedule {
                 }
             }
         };
-        println!("    body: {}", body.to_token_stream());
+        // println!("    body: {}", body.to_token_stream());
         if dont_bind {
             syn::Stmt::Expr(body, None)
         } else {
@@ -474,7 +471,7 @@ impl Stmts {
             Ok(Self::sequential(stmts, syms))
         } else {
             let env = Env::new(stmts, graph)?;
-            env.print(syms);
+            // env.print(syms);
             env.to_stmts(syms)
         }
     }
@@ -519,7 +516,7 @@ impl Stmts {
                 Ok(Self::new_seq(seq))
             }
             Synced::Para(map, _) => {
-                println!("of_synced: para");
+                // println!("of_synced: para");
                 let mut no_para = Vec::with_capacity(map.len());
                 let mut no_para_vars = Vec::with_capacity(map.len());
                 let mut rayon = Vec::with_capacity(map.len());
@@ -528,12 +525,12 @@ impl Stmts {
                 let mut threads_vars = Vec::with_capacity(map.len());
                 for (weight, subs) in map {
                     let para_mode = conf::component_para();
-                    println!(
-                        "para mode: {:?}, weight is {} ({})",
-                        para_mode,
-                        weight,
-                        para_mode.is_rayon(weight < Ctx::RAYON_PARA_WEIGHT_UB)
-                    );
+                    // println!(
+                    //     "para mode: {:?}, weight is {} ({})",
+                    //     para_mode,
+                    //     weight,
+                    //     para_mode.is_rayon(weight < Ctx::RAYON_PARA_WEIGHT_UB)
+                    // );
                     let (target, target_vars) = if weight < Ctx::DONT_PARA_WEIGHT_UB {
                         (&mut no_para, &mut no_para_vars)
                     } else if para_mode.is_rayon(weight < Ctx::RAYON_PARA_WEIGHT_UB) {
@@ -547,10 +544,10 @@ impl Stmts {
                         target.push(sub);
                     }
                 }
-                println!("ping");
+                // println!("ping");
                 let mut paras = Vec::with_capacity(3);
                 if !no_para.is_empty() {
-                    println!("pushing {} no-para(s)", no_para.len());
+                    // println!("pushing {} no-para(s)", no_para.len());
                     paras.push((
                         ParaKind::None,
                         Vars::merge(no_para_vars.into_iter()),
@@ -558,7 +555,7 @@ impl Stmts {
                     ));
                 }
                 if !rayon.is_empty() {
-                    println!("pushing {} rayon(s)", rayon.len());
+                    // println!("pushing {} rayon(s)", rayon.len());
                     paras.push((
                         ParaKind::RayonFast,
                         Vars::merge(rayon_vars.into_iter()),
@@ -566,7 +563,7 @@ impl Stmts {
                     ));
                 }
                 if !threads.is_empty() {
-                    println!("pushing {} thread(s)", threads.len());
+                    // println!("pushing {} thread(s)", threads.len());
                     paras.push((
                         ParaKind::Threads,
                         Vars::merge(threads_vars.into_iter()),
@@ -590,12 +587,12 @@ impl Stmts {
         }
         if dont_bind {
             let vars_expr = vars.as_expr().clone().into_syn(crates);
-            println!(
-                "- `seq_to_syn`, `vars_expr`, don't bind\n  {}",
-                vars_expr.to_token_stream()
-            );
+            // println!(
+            //     "- `seq_to_syn`, `vars_expr`, don't bind\n  {}",
+            //     vars_expr.to_token_stream()
+            // );
             stmts.push(syn::Stmt::Expr(vars_expr, None));
-            println!("ok")
+            // println!("ok")
         }
     }
 
@@ -611,16 +608,16 @@ impl Stmts {
             syn::Stmt::Expr(expr, None)
         } else {
             let pat = vars.bind.into_syn();
-            println!(
-                "- `stmt_to_syn`, do bind\n  pat: {}\n  expr:{}",
-                pat.to_token_stream(),
-                expr.to_token_stream(),
-            );
+            // println!(
+            //     "- `stmt_to_syn`, do bind\n  pat: {}\n  expr:{}",
+            //     pat.to_token_stream(),
+            //     expr.to_token_stream(),
+            // );
             parse_quote! {
                 let #pat = #expr;
             }
         };
-        println!("stmt_to_syn({}, ..): {}", dont_bind, stmt.to_token_stream());
+        // println!("stmt_to_syn({}, ..): {}", dont_bind, stmt.to_token_stream());
         stmts.push(stmt);
     }
 
@@ -736,7 +733,7 @@ impl Stmts {
         };
         match kind {
             ParaKind::None => {
-                println!("generating branch for `none`");
+                // println!("generating branch for `none`");
                 let stmts = stmts.into_iter();
                 Schedule::sequence(
                     vec![parse_quote! {
@@ -749,7 +746,7 @@ impl Stmts {
                 )
             }
             ParaKind::RayonFast => {
-                println!("generating branch for `rayon-fast`");
+                // println!("generating branch for `rayon-fast`");
                 let code = Self::rayon(stmts);
                 Schedule::sequence(
                     vec![parse_quote! {
@@ -759,7 +756,7 @@ impl Stmts {
                 )
             }
             ParaKind::Threads => {
-                println!("generating branch for `threads`");
+                // println!("generating branch for `threads`");
                 let (mut stmt_vec, mut return_tuple): (_, Vec<syn::Expr>) = (
                     Vec::with_capacity(stmts.len()),
                     Vec::with_capacity(stmts.len()),
@@ -775,13 +772,13 @@ impl Stmts {
                     let spawn_let: syn::Stmt = parse_quote! {
                         let #id = #scope . spawn(|| { #(#stmt)* });
                     };
-                    println!("- `para_branch_to_syn`, return tuple element");
+                    // println!("- `para_branch_to_syn`, return tuple element");
                     return_tuple.push(parse_quote! {
                         #id . join().expect("unexpected panic in sub-thread")
                     });
                     stmt_vec.push(spawn_let);
                 }
-                println!("- `para_branch_to_syn`, return tuple");
+                // println!("- `para_branch_to_syn`, return tuple");
                 Schedule::threads(
                     stmt_vec,
                     vec![parse_quote! {
@@ -812,32 +809,32 @@ impl Stmts {
             schedule.merge(branch_schedule);
         }
         if dont_bind {
-            println!("- `para_to_syn`, don't bind");
-            println!("  spawns:");
-            if let Some(spawns) = schedule.spawn.as_ref() {
-                for spawn in spawns {
-                    println!("    - {}", spawn.to_token_stream());
-                }
-            } else {
-                println!("  - none")
-            }
-            println!("  joins:");
-            if let Some(joins) = schedule.join.as_ref() {
-                for join in joins {
-                    println!("    - {}", join.to_token_stream());
-                }
-            } else {
-                println!("  - none")
-            }
-            println!("  vars_expr: {}", vars_expr.to_token_stream());
+            // println!("- `para_to_syn`, don't bind");
+            // println!("  spawns:");
+            // if let Some(spawns) = schedule.spawn.as_ref() {
+            //     for spawn in spawns {
+            //         println!("    - {}", spawn.to_token_stream());
+            //     }
+            // } else {
+            //     println!("  - none")
+            // }
+            // println!("  joins:");
+            // if let Some(joins) = schedule.join.as_ref() {
+            //     for join in joins {
+            //         println!("    - {}", join.to_token_stream());
+            //     }
+            // } else {
+            //     println!("  - none")
+            // }
+            // println!("  vars_expr: {}", vars_expr.to_token_stream());
             let run = schedule.into_syn(false);
-            println!("  schedule: {}", run.to_token_stream());
+            // println!("  schedule: {}", run.to_token_stream());
             stmts.push(run);
             stmts.push(syn::Stmt::Expr(vars_expr, None));
         } else {
-            println!("- `para_to_syn`, do bind");
+            // println!("- `para_to_syn`, do bind");
             let run = schedule.into_syn(true);
-            println!("  schedule: {}", run.to_token_stream());
+            // println!("  schedule: {}", run.to_token_stream());
             stmts.push(parse_quote! {
                 let #vars_pat = #run;
             })
