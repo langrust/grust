@@ -14,18 +14,18 @@ pub struct RisingEdgesState {
 impl RisingEdgesState {
     pub fn init() -> RisingEdgesState {
         RisingEdgesState {
-            last_c: Default::default(),
-            last_d: Default::default(),
+            last_c: 0i64,
+            last_d: 0.0f64,
             last_x_1: false,
             last_x_2: false,
             last_x_3: false,
-            last_z: Default::default(),
+            last_z: 0i64,
         }
     }
     pub fn step(&mut self, input: RisingEdgesInput) -> (i64, f64, Option<i64>) {
         let c = match (input.a) {
             (Some(a)) => a,
-            _ => self.last_c,
+            (_) => self.last_c,
         };
         let x_3 = input.v < 40i64;
         let x_2 = input.v > 50i64;
@@ -48,12 +48,12 @@ impl RisingEdgesState {
         };
         let d = match (y) {
             (Some(_)) => 0.1f64,
-            _ => self.last_d,
+            (_) => self.last_d,
         };
         let x_1 = input.v > 50i64;
         let w = match () {
             () if x_1 && !(self.last_x_1) => Some(input.v + self.last_c),
-            _ => None,
+            () => None,
         };
         self.last_c = c;
         self.last_d = d;

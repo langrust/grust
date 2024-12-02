@@ -33,7 +33,7 @@ pub struct BrakingStateState {
 impl BrakingStateState {
     pub fn init() -> BrakingStateState {
         BrakingStateState {
-            last_state: Default::default(),
+            last_state: Braking::NoBrake,
         }
     }
     #[requires(0i64 <= input.speed && input.speed < 50i64)]

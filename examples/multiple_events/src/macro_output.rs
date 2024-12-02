@@ -13,11 +13,11 @@ pub struct MultipleEventsState {
 impl MultipleEventsState {
     pub fn init() -> MultipleEventsState {
         MultipleEventsState {
-            last_aux1: Default::default(),
-            last_aux2: Default::default(),
-            last_aux3: Default::default(),
+            last_aux1: 0i64,
+            last_aux2: 0i64,
+            last_aux3: 0i64,
             last_x: false,
-            last_z: Default::default(),
+            last_z: 0i64,
         }
     }
     pub fn step(&mut self, input: MultipleEventsInput) -> i64 {
@@ -25,7 +25,7 @@ impl MultipleEventsState {
         let x = input.v > 50i64;
         let y = match () {
             () if x && !(self.last_x) => Some(()),
-            _ => None,
+            () => None,
         };
         let (aux2, z, aux3, aux1) = match (input.a, input.b, y) {
             (Some(a), Some(b), _) => {
@@ -69,8 +69,8 @@ pub struct DefineEventsState {
 impl DefineEventsState {
     pub fn init() -> DefineEventsState {
         DefineEventsState {
-            last_d: Default::default(),
-            last_z: Default::default(),
+            last_d: 0.0f64,
+            last_z: 0i64,
         }
     }
     pub fn step(&mut self, input: DefineEventsInput) -> (i64, f64, Option<i64>) {
@@ -95,7 +95,7 @@ impl DefineEventsState {
         let c = z;
         let d = match (y) {
             (Some(a)) => 0.1f64,
-            _ => self.last_d,
+            (_) => self.last_d,
         };
         self.last_d = d;
         self.last_z = z;
@@ -116,8 +116,8 @@ impl FinalTestState {
     pub fn init() -> FinalTestState {
         FinalTestState {
             last_test: false,
-            last_u: Default::default(),
-            last_z: Default::default(),
+            last_u: 0i64,
+            last_z: 0i64,
         }
     }
     pub fn step(&mut self, input: FinalTestInput) -> (i64, Option<i64>, Option<i64>) {
@@ -141,16 +141,16 @@ impl FinalTestState {
         };
         let t = match (input.a) {
             (Some(a)) => Some(a + z),
-            _ => None,
+            (_) => None,
         };
         let test = input.v > 50i64;
         let w = match () {
             () if test && !(self.last_test) => Some(input.v + self.last_u),
-            _ => None,
+            () => None,
         };
         let u = match (y, w) {
             (Some(y), Some(w)) => w + 3i64,
-            _ => self.last_u,
+            (_, _) => self.last_u,
         };
         self.last_test = test;
         self.last_u = u;

@@ -6,9 +6,7 @@ pub struct C1State {
 }
 impl C1State {
     pub fn init() -> C1State {
-        C1State {
-            last_s2: Default::default(),
-        }
+        C1State { last_s2: 0i64 }
     }
     pub fn step(&mut self, input: C1Input) -> (i64, Option<i64>) {
         let prev_s2 = self.last_s2;
@@ -38,7 +36,7 @@ pub struct C2State {
 impl C2State {
     pub fn init() -> C2State {
         C2State {
-            last_s3: Default::default(),
+            last_s3: 0i64,
             last_x: false,
         }
     }
@@ -76,7 +74,7 @@ impl C3State {
         let x = input.s2 > 1i64;
         let e2 = match () {
             () if x && !(self.last_x) => Some(input.s2),
-            _ => None,
+            () => None,
         };
         self.last_x = x;
         e2
@@ -90,14 +88,12 @@ pub struct C4State {
 }
 impl C4State {
     pub fn init() -> C4State {
-        C4State {
-            last_s4: Default::default(),
-        }
+        C4State { last_s4: 0i64 }
     }
     pub fn step(&mut self, input: C4Input) -> i64 {
         let s4 = match (input.e2) {
             (Some(e2)) => e2,
-            _ => self.last_s4,
+            (_) => self.last_s4,
         };
         self.last_s4 = s4;
         s4
@@ -116,7 +112,7 @@ pub struct C5State {
 impl C5State {
     pub fn init() -> C5State {
         C5State {
-            last_o: Default::default(),
+            last_o: 0i64,
             last_x: false,
             last_x_1: false,
         }
