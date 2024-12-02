@@ -8,7 +8,7 @@ mod aeb {
         import event  car::detect::right::pedestrian_r  : float;
         export signal car::urban::braking::brakes       : Braking;
 
-        // Branking type
+        // Braking type
         enum Braking {
             NoBrake,
             SoftBrake,
@@ -37,14 +37,11 @@ mod aeb {
             // requires { 0. <= speed && speed < 55. } // urban limit
             // ensures { pedest? => state != NoBrake } // safety
         {
-            when {
-                let d = pedest? => {
-                    state = brakes(d, speed);
-                }
-                let _ = timeout_pedestrian? => {
-                    state = Braking::NoBrake;
-                }
-            }
+            state = when {
+                init                        => Braking::NoBrake,
+                let d = pedest?             => brakes(d, speed),
+                let _ = timeout_pedestrian? => Braking::NoBrake,
+            };
         }
 
         service aeb @ [10, 3000] {
