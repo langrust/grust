@@ -1,24 +1,22 @@
-pub struct Test1AuxInput {
+pub struct TestThreadsAuxInput {
     pub i: i64,
 }
-pub struct Test1AuxState {
+pub struct TestThreadsAuxState {
     last_i: i64,
 }
-impl Test1AuxState {
-    pub fn init() -> Test1AuxState {
-        Test1AuxState { last_i: 0i64 }
+impl TestThreadsAuxState {
+    pub fn init() -> TestThreadsAuxState {
+        TestThreadsAuxState { last_i: 0i64 }
     }
-    pub fn step(&mut self, input: Test1AuxInput) -> i64 {
+    pub fn step(&mut self, input: TestThreadsAuxInput) -> i64 {
         let (i1, i3, i2) = {
-            let (i1, i3, i2) = (
-                (input.i - 54i64) * 2i64,
-                7i64 * input.i,
-                (input.i + 54i64) * 2i64,
-            );
+            let (i1, i3, i2) = ({ (input.i - 54i64) * 2i64 }, { 7i64 * input.i }, {
+                (input.i + 54i64) * 2i64
+            });
             (i1, i3, i2)
         };
         let (i12, i23) = {
-            let (i12, i23) = (i1 + i2, i2 + i3);
+            let (i12, i23) = ({ i1 + i2 }, { i2 + i3 });
             (i12, i23)
         };
         let i123 = (i12 + (2i64 * i3)) + i23;
@@ -40,29 +38,31 @@ impl Test1AuxState {
         next_o
     }
 }
-pub struct Test1Input {
+pub struct TestThreadsInput {
     pub i: i64,
 }
-pub struct Test1State {
+pub struct TestThreadsState {
     last_i: i64,
-    test1_aux: Test1AuxState,
-    test1_aux_1: Test1AuxState,
-    test1_aux_2: Test1AuxState,
+    test_threads_aux: TestThreadsAuxState,
+    test_threads_aux_1: TestThreadsAuxState,
+    test_threads_aux_2: TestThreadsAuxState,
 }
-impl Test1State {
-    pub fn init() -> Test1State {
-        Test1State {
+impl TestThreadsState {
+    pub fn init() -> TestThreadsState {
+        TestThreadsState {
             last_i: 0i64,
-            test1_aux: Test1AuxState::init(),
-            test1_aux_1: Test1AuxState::init(),
-            test1_aux_2: Test1AuxState::init(),
+            test_threads_aux: TestThreadsAuxState::init(),
+            test_threads_aux_1: TestThreadsAuxState::init(),
+            test_threads_aux_2: TestThreadsAuxState::init(),
         }
     }
-    pub fn step(&mut self, input: Test1Input) -> i64 {
+    pub fn step(&mut self, input: TestThreadsInput) -> i64 {
         let ((i1_1, i1_2), i1_3) = std::thread::scope(|reserved_grust_thread_scope| {
-            let reserved_grust_thread_kid_0 = reserved_grust_thread_scope
-                .spawn(|| self.test1_aux.step(Test1AuxInput { i: input.i }));
-            let (i1_1, i1_2) = ((input.i - 54i64) * 2i64, (input.i + 54i64) * 2i64);
+            let reserved_grust_thread_kid_0 = reserved_grust_thread_scope.spawn(|| {
+                self.test_threads_aux
+                    .step(TestThreadsAuxInput { i: input.i })
+            });
+            let (i1_1, i1_2) = ({ (input.i - 54i64) * 2i64 }, { (input.i + 54i64) * 2i64 });
             let i1_3 = (reserved_grust_thread_kid_0
                 .join()
                 .expect("unexpected panic in sub-thread"));
@@ -71,12 +71,12 @@ impl Test1State {
         let ((x, i2_1), (x_1, i2_2)) = std::thread::scope(|reserved_grust_thread_scope| {
             let reserved_grust_thread_kid_0 = reserved_grust_thread_scope.spawn(|| {
                 let x = (i1_1 + i1_2) - i1_3;
-                let i2_1 = self.test1_aux_1.step(Test1AuxInput { i: x });
+                let i2_1 = self.test_threads_aux_1.step(TestThreadsAuxInput { i: x });
                 (x, i2_1)
             });
             let reserved_grust_thread_kid_1 = reserved_grust_thread_scope.spawn(|| {
                 let x_1 = (i1_2 - i1_2) + i1_3;
-                let i2_2 = self.test1_aux_2.step(Test1AuxInput { i: x_1 });
+                let i2_2 = self.test_threads_aux_2.step(TestThreadsAuxInput { i: x_1 });
                 (x_1, i2_2)
             });
             let ((x, i2_1), (x_1, i2_2)) = (

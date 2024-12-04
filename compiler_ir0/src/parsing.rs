@@ -128,8 +128,16 @@ mod parse_conf {
                     conf::set_component_para(conf::ComponentPara::Threads);
                     return Ok(ConfigItem);
                 }
-                "component_para_rayon" => {
-                    conf::set_component_para(conf::ComponentPara::Rayon);
+                "component_para_rayon1" => {
+                    conf::set_component_para(conf::ComponentPara::Rayon1);
+                    return Ok(ConfigItem);
+                }
+                "component_para_rayon2" => {
+                    conf::set_component_para(conf::ComponentPara::Rayon2);
+                    return Ok(ConfigItem);
+                }
+                "component_para_rayon3" => {
+                    conf::set_component_para(conf::ComponentPara::Rayon3);
                     return Ok(ConfigItem);
                 }
                 "component_para_mixed" => {

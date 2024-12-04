@@ -1,14 +1,14 @@
-pub struct Test2AuxInput {
+pub struct TestRayon1AuxInput {
     pub i: i64,
 }
-pub struct Test2AuxState {
+pub struct TestRayon1AuxState {
     last_i: i64,
 }
-impl Test2AuxState {
-    pub fn init() -> Test2AuxState {
-        Test2AuxState { last_i: 0i64 }
+impl TestRayon1AuxState {
+    pub fn init() -> TestRayon1AuxState {
+        TestRayon1AuxState { last_i: 0i64 }
     }
-    pub fn step(&mut self, input: Test2AuxInput) -> i64 {
+    pub fn step(&mut self, input: TestRayon1AuxInput) -> i64 {
         let (i1, i3, i2) = {
             let (i1, i3, i2) = {
                 let (
@@ -162,27 +162,27 @@ impl Test2AuxState {
         next_o
     }
 }
-pub struct Test2Input {
+pub struct TestRayon1Input {
     pub i: i64,
 }
-pub struct Test2State {
+pub struct TestRayon1State {
     last_i: i64,
-    test2_aux: Test2AuxState,
-    test2_aux_1: Test2AuxState,
-    test2_aux_2: Test2AuxState,
+    test_rayon1_aux: TestRayon1AuxState,
+    test_rayon1_aux_1: TestRayon1AuxState,
+    test_rayon1_aux_2: TestRayon1AuxState,
 }
-impl Test2State {
-    pub fn init() -> Test2State {
-        Test2State {
+impl TestRayon1State {
+    pub fn init() -> TestRayon1State {
+        TestRayon1State {
             last_i: 0i64,
-            test2_aux: Test2AuxState::init(),
-            test2_aux_1: Test2AuxState::init(),
-            test2_aux_2: Test2AuxState::init(),
+            test_rayon1_aux: TestRayon1AuxState::init(),
+            test_rayon1_aux_1: TestRayon1AuxState::init(),
+            test_rayon1_aux_2: TestRayon1AuxState::init(),
         }
     }
-    pub fn step(&mut self, input: Test2Input) -> i64 {
+    pub fn step(&mut self, input: TestRayon1Input) -> i64 {
         let (i1_3, (i1_1, i1_2)) = {
-            let i1_3 = { self.test2_aux.step(Test2AuxInput { i: input.i }) };
+            let i1_3 = { self.test_rayon1_aux.step(TestRayon1AuxInput { i: input.i }) };
             let (i1_1, i1_2) = {
                 let (reserved_grust_rayon_opt_var_0, reserved_grust_rayon_opt_var_1) = {
                     #[allow(unused_imports)]
@@ -242,12 +242,12 @@ impl Test2State {
             let ((x, i2_1), (x_1, i2_2)) = (
                 {
                     let x = (i1_1 + i1_2) - i1_3;
-                    let i2_1 = self.test2_aux_1.step(Test2AuxInput { i: x });
+                    let i2_1 = self.test_rayon1_aux_1.step(TestRayon1AuxInput { i: x });
                     (x, i2_1)
                 },
                 {
                     let x_1 = (i1_2 - i1_2) + i1_3;
-                    let i2_2 = self.test2_aux_2.step(Test2AuxInput { i: x_1 });
+                    let i2_2 = self.test_rayon1_aux_2.step(TestRayon1AuxInput { i: x_1 });
                     (x_1, i2_2)
                 },
             );

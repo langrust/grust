@@ -14,7 +14,9 @@ pub enum Propagation {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ComponentPara {
     None,
-    Rayon,
+    Rayon1,
+    Rayon2,
+    Rayon3,
     Threads,
     Mixed,
 }
@@ -27,14 +29,20 @@ impl ComponentPara {
     pub fn is_none(self) -> bool {
         match self {
             Self::None => true,
-            Self::Rayon | Self::Threads | Self::Mixed => false,
+            Self::Rayon1 | Self::Rayon2 | Self::Rayon3 | Self::Threads | Self::Mixed => false,
         }
     }
     pub fn is_rayon(self, cnd: bool) -> bool {
         match self {
             Self::None | Self::Threads => false,
-            Self::Rayon => true,
+            Self::Rayon1 | Self::Rayon2 | Self::Rayon3 => true,
             Self::Mixed => cnd,
+        }
+    }
+    pub fn has_threads(self) -> bool {
+        match self {
+            Self::Threads | Self::Mixed => true,
+            Self::None | Self::Rayon1 | Self::Rayon2 | Self::Rayon3 => false,
         }
     }
 }
