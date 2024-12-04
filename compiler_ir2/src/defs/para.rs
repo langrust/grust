@@ -644,7 +644,7 @@ impl Stmts {
     }
 
     fn rayon_res(stmts: Vec<syn::Stmt>, idx: usize, len: usize) -> syn::Expr {
-        let expr: syn::Expr = parse_quote! { Some(#(#stmts)*) };
+        let expr: syn::Expr = parse_quote! { Some({#(#stmts)*}) };
         let pref = (0..idx).map::<syn::Expr, _>(|_| parse_quote!(None));
         let suff = ((idx + 1)..len).map::<syn::Expr, _>(|_| parse_quote!(None));
         parse_quote! {

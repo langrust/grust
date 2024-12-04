@@ -21,9 +21,9 @@ impl Test2AuxState {
                     (0..3usize)
                         .into_par_iter()
                         .map(|idx: usize| match idx {
-                            0usize => (Some((input.i - 54i64) * 2i64), None, None),
-                            1usize => (None, Some(7i64 * input.i), None),
-                            2usize => (None, None, Some((input.i + 54i64) * 2i64)),
+                            0usize => (Some({ (input.i - 54i64) * 2i64 }), None, None),
+                            1usize => (None, Some({ 7i64 * input.i }), None),
+                            2usize => (None, None, Some({ (input.i + 54i64) * 2i64 })),
                             idx => unreachable!(
                                 "fatal error in rayon branches, illegal index `{}`",
                                 idx,
@@ -95,8 +95,8 @@ impl Test2AuxState {
                     (0..2usize)
                         .into_par_iter()
                         .map(|idx: usize| match idx {
-                            0usize => (Some(i1 + i2), None),
-                            1usize => (None, Some(i2 + i3)),
+                            0usize => (Some({ i1 + i2 }), None),
+                            1usize => (None, Some({ i2 + i3 })),
                             idx => unreachable!(
                                 "fatal error in rayon branches, illegal index `{}`",
                                 idx,
@@ -190,8 +190,8 @@ impl Test2State {
                     (0..2usize)
                         .into_par_iter()
                         .map(|idx: usize| match idx {
-                            0usize => (Some((input.i - 54i64) * 2i64), None),
-                            1usize => (None, Some((input.i + 54i64) * 2i64)),
+                            0usize => (Some({ (input.i - 54i64) * 2i64 }), None),
+                            1usize => (None, Some({ (input.i + 54i64) * 2i64 })),
                             idx => unreachable!(
                                 "fatal error in rayon branches, illegal index `{}`",
                                 idx,
