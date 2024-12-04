@@ -1,14 +1,14 @@
-pub struct Test2Input {
+pub struct Test2AuxInput {
     pub i: i64,
 }
-pub struct Test2State {
+pub struct Test2AuxState {
     last_i: i64,
 }
-impl Test2State {
-    pub fn init() -> Test2State {
-        Test2State { last_i: 0i64 }
+impl Test2AuxState {
+    pub fn init() -> Test2AuxState {
+        Test2AuxState { last_i: 0i64 }
     }
-    pub fn step(&mut self, input: Test2Input) -> i64 {
+    pub fn step(&mut self, input: Test2AuxInput) -> i64 {
         let (i1, i3, i2) = {
             let (i1, i3, i2) = {
                 let (
@@ -155,6 +155,115 @@ impl Test2State {
             }
             _ => {
                 let next_o = i12;
+                next_o
+            }
+        };
+        self.last_i = input.i;
+        next_o
+    }
+}
+pub struct Test2Input {
+    pub i: i64,
+}
+pub struct Test2State {
+    last_i: i64,
+    test2_aux: Test2AuxState,
+    test2_aux_1: Test2AuxState,
+    test2_aux_2: Test2AuxState,
+}
+impl Test2State {
+    pub fn init() -> Test2State {
+        Test2State {
+            last_i: 0i64,
+            test2_aux: Test2AuxState::init(),
+            test2_aux_1: Test2AuxState::init(),
+            test2_aux_2: Test2AuxState::init(),
+        }
+    }
+    pub fn step(&mut self, input: Test2Input) -> i64 {
+        let (i1_3, (i1_1, i1_2)) = {
+            let i1_3 = { self.test2_aux.step(Test2AuxInput { i: input.i }) };
+            let (i1_1, i1_2) = {
+                let (reserved_grust_rayon_opt_var_0, reserved_grust_rayon_opt_var_1) = {
+                    #[allow(unused_imports)]
+                    use grust::rayon::prelude::*;
+                    (0..2usize)
+                        .into_par_iter()
+                        .map(|idx: usize| match idx {
+                            0usize => (Some((input.i - 54i64) * 2i64), None),
+                            1usize => (None, Some((input.i + 54i64) * 2i64)),
+                            idx => unreachable!(
+                                "fatal error in rayon branches, illegal index `{}`",
+                                idx,
+                            ),
+                        })
+                        .reduce(
+                            || (None, None),
+                            |(reserved_grust_rayon_opt_var_0, reserved_grust_rayon_opt_var_1),
+                             (
+                                reserved_grust_rayon_opt_var_0_rgt,
+                                reserved_grust_rayon_opt_var_1_rgt,
+                            )| {
+                                (
+                                    match (
+                                        reserved_grust_rayon_opt_var_0,
+                                        reserved_grust_rayon_opt_var_0_rgt,
+                                    ) {
+                                        (None, None) => None,
+                                        (Some(val), None) | (None, Some(val)) => Some(val),
+                                        (Some(_), Some(_)) => unreachable!
+                        ("fatal error in rayon reduce operation, found two values"),
+                                    },
+                                    match (
+                                        reserved_grust_rayon_opt_var_1,
+                                        reserved_grust_rayon_opt_var_1_rgt,
+                                    ) {
+                                        (None, None) => None,
+                                        (Some(val), None) | (None, Some(val)) => Some(val),
+                                        (Some(_), Some(_)) => unreachable!
+                        ("fatal error in rayon reduce operation, found two values"),
+                                    },
+                                )
+                            },
+                        )
+                };
+                (
+                    reserved_grust_rayon_opt_var_0.expect(
+                        "unreachable: fatal error in final rayon unwrap, unexpected `None` value",
+                    ),
+                    reserved_grust_rayon_opt_var_1.expect(
+                        "unreachable: fatal error in final rayon unwrap, unexpected `None` value",
+                    ),
+                )
+            };
+            (i1_3, (i1_1, i1_2))
+        };
+        let ((x, i2_1), (x_1, i2_2)) = {
+            let ((x, i2_1), (x_1, i2_2)) = (
+                {
+                    let x = (i1_1 + i1_2) - i1_3;
+                    let i2_1 = self.test2_aux_1.step(Test2AuxInput { i: x });
+                    (x, i2_1)
+                },
+                {
+                    let x_1 = (i1_2 - i1_2) + i1_3;
+                    let i2_2 = self.test2_aux_2.step(Test2AuxInput { i: x_1 });
+                    (x_1, i2_2)
+                },
+            );
+            ((x, i2_1), (x_1, i2_2))
+        };
+        let next_o = match input.i {
+            0 => {
+                let next_o = 1i64 + self.last_i;
+                next_o
+            }
+            7 => {
+                let next_o = i2_1;
+                next_o
+            }
+            _ => {
+                let next_o = i2_2;
                 next_o
             }
         };
