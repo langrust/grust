@@ -16,14 +16,19 @@ macro_rules! token_show {
 
 pub struct Ctx<'a> {
     env: &'a Env<'a>,
+    with_threads: bool,
 }
 impl<'a> Ctx<'a> {
     pub fn new(env: &'a Env<'a>) -> Self {
-        Self { env }
+        Self {
+            env,
+            with_threads: conf::component_para().has_threads(),
+        }
     }
 
     const DONT_PARA_WEIGHT_UBX: usize = 10;
     const RAYON_PARA_WEIGHT_UBX: usize = 20;
+    const INFINITY: usize = 1000;
 }
 impl<'a> synced::CtxSpec for Ctx<'a> {
     type Instr = usize;
@@ -48,7 +53,13 @@ impl<'a> synced::CtxSpec for Ctx<'a> {
                     _ => 10,
                 }
             }
-            Kind::NodeApplication { .. } => 20,
+            Kind::NodeApplication { .. } => {
+                if self.with_threads {
+                    20
+                } else {
+                    Self::INFINITY + 1
+                }
+            }
             Kind::RisingEdge { .. } => 10,
             Kind::FollowedBy { .. } => 0,
             Kind::NoneEvent => 0,
@@ -532,31 +543,49 @@ impl Stmts {
                     //     para_mode.is_rayon(weight < Ctx::RAYON_PARA_WEIGHT_UBX)
                     // );
                     use conf::ComponentPara;
-                    let (target, target_vars) = match para_mode {
-                        ComponentPara::None => (&mut no_para, &mut no_para_vars),
-                        ComponentPara::Rayon => {
-                            if weight < Ctx::DONT_PARA_WEIGHT_UBX
-                                || weight >= Ctx::RAYON_PARA_WEIGHT_UBX
-                            {
-                                (&mut no_para, &mut no_para_vars)
-                            } else {
-                                (&mut rayon, &mut rayon_vars)
+                    let (target, target_vars) = if Ctx::INFINITY <= weight {
+                        (&mut no_para, &mut no_para_vars)
+                    } else {
+                        match para_mode {
+                            ComponentPara::None => (&mut no_para, &mut no_para_vars),
+                            ComponentPara::Rayon1 => {
+                                if weight < Ctx::DONT_PARA_WEIGHT_UBX
+                                    || weight >= Ctx::RAYON_PARA_WEIGHT_UBX
+                                {
+                                    (&mut no_para, &mut no_para_vars)
+                                } else {
+                                    (&mut rayon, &mut rayon_vars)
+                                }
                             }
-                        }
-                        ComponentPara::Threads => {
-                            if weight < Ctx::RAYON_PARA_WEIGHT_UBX {
-                                (&mut no_para, &mut no_para_vars)
-                            } else {
-                                (&mut threads, &mut threads_vars)
+                            ComponentPara::Rayon2 => {
+                                if weight < 2 * Ctx::DONT_PARA_WEIGHT_UBX {
+                                    (&mut no_para, &mut no_para_vars)
+                                } else {
+                                    (&mut rayon, &mut rayon_vars)
+                                }
                             }
-                        }
-                        ComponentPara::Mixed => {
-                            if weight < Ctx::DONT_PARA_WEIGHT_UBX {
-                                (&mut no_para, &mut no_para_vars)
-                            } else if weight < Ctx::RAYON_PARA_WEIGHT_UBX {
-                                (&mut rayon, &mut rayon_vars)
-                            } else {
-                                (&mut threads, &mut threads_vars)
+                            ComponentPara::Rayon3 => {
+                                if weight < 3 * Ctx::DONT_PARA_WEIGHT_UBX {
+                                    (&mut no_para, &mut no_para_vars)
+                                } else {
+                                    (&mut rayon, &mut rayon_vars)
+                                }
+                            }
+                            ComponentPara::Threads => {
+                                if weight < Ctx::RAYON_PARA_WEIGHT_UBX {
+                                    (&mut no_para, &mut no_para_vars)
+                                } else {
+                                    (&mut threads, &mut threads_vars)
+                                }
+                            }
+                            ComponentPara::Mixed => {
+                                if weight < Ctx::DONT_PARA_WEIGHT_UBX {
+                                    (&mut no_para, &mut no_para_vars)
+                                } else if weight < Ctx::RAYON_PARA_WEIGHT_UBX {
+                                    (&mut rayon, &mut rayon_vars)
+                                } else {
+                                    (&mut threads, &mut threads_vars)
+                                }
                             }
                         }
                     };
