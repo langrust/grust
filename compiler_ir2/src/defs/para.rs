@@ -22,8 +22,8 @@ impl<'a> Ctx<'a> {
         Self { env }
     }
 
-    const DONT_PARA_WEIGHT_UB: usize = 10;
-    const RAYON_PARA_WEIGHT_UB: usize = 20;
+    const DONT_PARA_WEIGHT_UBX: usize = 10;
+    const RAYON_PARA_WEIGHT_UBX: usize = 20;
 }
 impl<'a> synced::CtxSpec for Ctx<'a> {
     type Instr = usize;
@@ -529,14 +529,36 @@ impl Stmts {
                     //     "para mode: {:?}, weight is {} ({})",
                     //     para_mode,
                     //     weight,
-                    //     para_mode.is_rayon(weight < Ctx::RAYON_PARA_WEIGHT_UB)
+                    //     para_mode.is_rayon(weight < Ctx::RAYON_PARA_WEIGHT_UBX)
                     // );
-                    let (target, target_vars) = if weight < Ctx::DONT_PARA_WEIGHT_UB {
-                        (&mut no_para, &mut no_para_vars)
-                    } else if para_mode.is_rayon(weight < Ctx::RAYON_PARA_WEIGHT_UB) {
-                        (&mut rayon, &mut rayon_vars)
-                    } else {
-                        (&mut threads, &mut threads_vars)
+                    use conf::ComponentPara;
+                    let (target, target_vars) = match para_mode {
+                        ComponentPara::None => (&mut no_para, &mut no_para_vars),
+                        ComponentPara::Rayon => {
+                            if weight < Ctx::DONT_PARA_WEIGHT_UBX
+                                || weight >= Ctx::RAYON_PARA_WEIGHT_UBX
+                            {
+                                (&mut no_para, &mut no_para_vars)
+                            } else {
+                                (&mut rayon, &mut rayon_vars)
+                            }
+                        }
+                        ComponentPara::Threads => {
+                            if weight < Ctx::RAYON_PARA_WEIGHT_UBX {
+                                (&mut no_para, &mut no_para_vars)
+                            } else {
+                                (&mut threads, &mut threads_vars)
+                            }
+                        }
+                        ComponentPara::Mixed => {
+                            if weight < Ctx::DONT_PARA_WEIGHT_UBX {
+                                (&mut no_para, &mut no_para_vars)
+                            } else if weight < Ctx::RAYON_PARA_WEIGHT_UBX {
+                                (&mut rayon, &mut rayon_vars)
+                            } else {
+                                (&mut threads, &mut threads_vars)
+                            }
+                        }
                     };
                     for sub in subs {
                         let sub = Self::of_synced(env, syms, sub)?;
@@ -734,19 +756,25 @@ impl Stmts {
         match kind {
             ParaKind::None => {
                 // println!("generating branch for `none`");
-                let stmts = stmts.into_iter();
-                Schedule::sequence(
-                    vec![parse_quote! {
+                let syn = if stmts.len() == 1 {
+                    let stmts = stmts.into_iter();
+                    parse_quote! {
+                        let #vars_pat = #({#(#stmts)*})*;
+                    }
+                } else {
+                    let stmts = stmts.into_iter();
+                    parse_quote! {
                         let #vars_pat = (#(
-                            #(#stmts)*
+                            {#(#stmts)*}
                             ,
                         )*);
-                    }],
-                    vars_expr,
-                )
+                    }
+                };
+                let res = Schedule::sequence(vec![syn], vars_expr);
+                res
             }
             ParaKind::RayonFast => {
-                // println!("generating branch for `rayon-fast`");
+                // println!("generating branch for `rayon-fast` ({})", stmts.len());
                 let code = Self::rayon(stmts);
                 Schedule::sequence(
                     vec![parse_quote! {
