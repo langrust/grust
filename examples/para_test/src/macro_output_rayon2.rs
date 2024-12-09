@@ -9,16 +9,43 @@ impl TestRayon2AuxState {
         TestRayon2AuxState { last_i: 0i64 }
     }
     pub fn step(&mut self, input: TestRayon2AuxInput) -> i64 {
-        let (i1, i3, i2) = {
-            let (i1, i3, i2) = ({ (input.i - 54i64) * 2i64 }, { 7i64 * input.i }, {
-                (input.i + 54i64) * 2i64
-            });
-            (i1, i3, i2)
-        };
-        let (i12, i23) = {
-            let (i12, i23) = ({ i1 + i2 }, { i2 + i3 });
-            (i12, i23)
-        };
+        let ((i1, i3, i2), ()) = std::thread::scope(|reserved_grust_thread_scope| {
+            let (i1, i3, i2) = (
+                {
+                    {
+                        (input.i - 54i64) * 2i64
+                    }
+                },
+                {
+                    {
+                        7i64 * input.i
+                    }
+                },
+                {
+                    {
+                        (input.i + 54i64) * 2i64
+                    }
+                },
+            );
+            let () = ();
+            ((i1, i3, i2), ())
+        });
+        let ((i12, i23), ()) = std::thread::scope(|reserved_grust_thread_scope| {
+            let (i12, i23) = (
+                {
+                    {
+                        i1 + i2
+                    }
+                },
+                {
+                    {
+                        i2 + i3
+                    }
+                },
+            );
+            let () = ();
+            ((i12, i23), ())
+        });
         let i123 = (i12 + (2i64 * i3)) + i23;
         let next_o = match input.i {
             0 => {
@@ -57,29 +84,47 @@ impl TestRayon2State {
         }
     }
     pub fn step(&mut self, input: TestRayon2Input) -> i64 {
-        let (i1_1, i1_2, i1_3) = {
+        let ((i1_1, i1_2, i1_3), ()) = std::thread::scope(|reserved_grust_thread_scope| {
             let (i1_1, i1_2, i1_3) = (
-                { (input.i - 54i64) * 2i64 },
-                { (input.i + 54i64) * 2i64 },
-                { self.test_rayon2_aux.step(TestRayon2AuxInput { i: input.i }) },
+                {
+                    {
+                        (input.i - 54i64) * 2i64
+                    }
+                },
+                {
+                    {
+                        (input.i + 54i64) * 2i64
+                    }
+                },
+                {
+                    {
+                        self.test_rayon2_aux.step(TestRayon2AuxInput { i: input.i })
+                    }
+                },
             );
-            (i1_1, i1_2, i1_3)
-        };
-        let ((x, i2_1), (x_1, i2_2)) = {
+            let () = ();
+            ((i1_1, i1_2, i1_3), ())
+        });
+        let (((x, i2_1), (x_1, i2_2)), ()) = std::thread::scope(|reserved_grust_thread_scope| {
             let ((x, i2_1), (x_1, i2_2)) = (
                 {
-                    let x = (i1_1 + i1_2) - i1_3;
-                    let i2_1 = self.test_rayon2_aux_1.step(TestRayon2AuxInput { i: x });
-                    (x, i2_1)
+                    {
+                        let x = (i1_1 + i1_2) - i1_3;
+                        let i2_1 = self.test_rayon2_aux_1.step(TestRayon2AuxInput { i: x });
+                        (x, i2_1)
+                    }
                 },
                 {
-                    let x_1 = (i1_2 - i1_2) + i1_3;
-                    let i2_2 = self.test_rayon2_aux_2.step(TestRayon2AuxInput { i: x_1 });
-                    (x_1, i2_2)
+                    {
+                        let x_1 = (i1_2 - i1_2) + i1_3;
+                        let i2_2 = self.test_rayon2_aux_2.step(TestRayon2AuxInput { i: x_1 });
+                        (x_1, i2_2)
+                    }
                 },
             );
-            ((x, i2_1), (x_1, i2_2))
-        };
+            let () = ();
+            (((x, i2_1), (x_1, i2_2)), ())
+        });
         let next_o = match input.i {
             0 => {
                 let next_o = 1i64 + self.last_i;
