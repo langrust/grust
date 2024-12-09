@@ -605,15 +605,28 @@ impl Stmts {
                         no_para,
                     ));
                 }
-                if !rayon.is_empty() {
-                    // println!("pushing {} rayon(s)", rayon.len());
-                    paras.push((
-                        ParaKind::RayonFast,
-                        Vars::merge(rayon_vars.into_iter()),
-                        rayon,
-                    ));
+
+                let rayon_is_empty = rayon.is_empty();
+                if !rayon_is_empty {
+                    if rayon.len() == 1 && threads.is_empty() {
+                        paras.push((ParaKind::None, Vars::merge(rayon_vars.into_iter()), rayon));
+                    } else {
+                        // println!("pushing {} rayon(s)", rayon.len());
+                        paras.push((
+                            ParaKind::RayonFast,
+                            Vars::merge(rayon_vars.into_iter()),
+                            rayon,
+                        ));
+                    }
                 }
-                if !threads.is_empty() {
+
+                if threads.len() == 1 && rayon_is_empty {
+                    paras.push((
+                        ParaKind::None,
+                        Vars::merge(threads_vars.into_iter()),
+                        threads,
+                    ));
+                } else {
                     // println!("pushing {} thread(s)", threads.len());
                     paras.push((
                         ParaKind::Threads,
@@ -674,10 +687,14 @@ impl Stmts {
 
     fn rayon_res(stmts: Vec<syn::Stmt>, idx: usize, len: usize) -> syn::Expr {
         let expr: syn::Expr = parse_quote! { Some({#(#stmts)*}) };
-        let pref = (0..idx).map::<syn::Expr, _>(|_| parse_quote!(None));
-        let suff = ((idx + 1)..len).map::<syn::Expr, _>(|_| parse_quote!(None));
-        parse_quote! {
-            (#(#pref ,)* #expr #(, #suff)*)
+        if len == 1 {
+            expr
+        } else {
+            let pref = (0..idx).map::<syn::Expr, _>(|_| parse_quote!(None));
+            let suff = ((idx + 1)..len).map::<syn::Expr, _>(|_| parse_quote!(None));
+            parse_quote! {
+                (#(#pref ,)* #expr #(, #suff)*)
+            }
         }
     }
 
@@ -744,8 +761,20 @@ impl Stmts {
         // token_show!(reduce_id, "reduce_id:");
         // token_show!(reduce_merge, "reduce_merge:");
         // token_show!(tuple_unwrap, "tuple_unwrap:");
+        let ids: syn::Pat = if ids.len() > 1 {
+            parse_quote! { (#(#ids),*) }
+        } else {
+            let id = ids.pop().unwrap();
+            parse_quote!(#id)
+        };
+        let ids_rgt: syn::Pat = if ids_rgt.len() > 1 {
+            parse_quote! { (#(#ids_rgt),*) }
+        } else {
+            let id = ids_rgt.pop().unwrap();
+            parse_quote!(#id)
+        };
         parse_quote! {{
-            let ( #(#ids),* ) = {
+            let #ids = {
                 #[allow(unused_imports)]
                 use grust::rayon::prelude::*;
                 (0 .. #len_lit)
@@ -759,7 +788,7 @@ impl Stmts {
                     })
                     .reduce(
                         || ( #(#reduce_id,)* ),
-                        |(#(#ids),*), (#(#ids_rgt),*)| (
+                        |#ids, #ids_rgt| (
                             #(#reduce_merge),*
                         )
                     )
@@ -785,20 +814,41 @@ impl Stmts {
         match kind {
             ParaKind::None => {
                 // println!("generating branch for `none`");
-                let syn = if stmts.len() == 1 {
-                    let stmts = stmts.into_iter();
-                    parse_quote! {
-                        let #vars_pat = #({#(#stmts)*})*;
-                    }
-                } else {
-                    let stmts = stmts.into_iter();
-                    parse_quote! {
-                        let #vars_pat = (#(
-                            {#(#stmts)*}
-                            ,
-                        )*);
-                    }
+                let len = stmts.len();
+                let stmts = stmts.into_iter().map(|stmts| {
+                    let e: syn::Expr = parse_quote! { {#(#stmts)*} };
+                    e
+                });
+                let rhs: syn::Expr = tupleify!(stmts, len);
+                let syn = parse_quote! {
+                    let #vars_pat = #rhs;
                 };
+                // let syn = tupleify! {
+                //     stmts
+                //     => parse_quote! {
+                //         let #vars_pat = (#(
+                //             {#(#stmts)*}
+                //             ,
+                //         )*);
+                //     }
+                //     => parse_quote! {
+                //         let #vars_pat = #({#(#stmts)*})*;
+                //     }
+                // };
+                // let syn = if stmts.len() == 1 {
+                //     let stmts = stmts.into_iter();
+                //     parse_quote! {
+                //         let #vars_pat = #({#(#stmts)*})*;
+                //     }
+                // } else {
+                //     let stmts = stmts.into_iter();
+                //     parse_quote! {
+                //         let #vars_pat = (#(
+                //             {#(#stmts)*}
+                //             ,
+                //         )*);
+                //     }
+                // };
                 let res = Schedule::sequence(vec![syn], vars_expr);
                 res
             }
@@ -836,10 +886,16 @@ impl Stmts {
                     stmt_vec.push(spawn_let);
                 }
                 // println!("- `para_branch_to_syn`, return tuple");
+                let return_tuple: syn::Expr = tupleify!(return_tuple);
+                // if return_tuple.len() == 1 {
+                //     return_tuple.pop().unwrap()
+                // } else {
+                //     parse_quote! { (#(#return_tuple),*) }
+                // };
                 Schedule::threads(
                     stmt_vec,
                     vec![parse_quote! {
-                        let #vars_pat = (#(#return_tuple),*);
+                        let #vars_pat = #return_tuple;
                     }],
                     vars_expr,
                 )

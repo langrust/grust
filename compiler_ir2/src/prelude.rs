@@ -11,6 +11,55 @@ macro_rules! prelude {
     };
 }
 
+#[macro_export]
+macro_rules! tupleify {
+    { $es:expr, $count:expr => $len_n:expr => $len_1:expr } => {
+        if $count == 1 {
+            $len_1
+        } else {
+            $len_n
+        }
+    };
+    { $es:expr => $len_n:expr => $len_1:expr } => {
+        $crate::tupleify! {
+            $es, $es.len() => $len_n => $len_1
+        }
+    };
+    { $es:expr $(, $count:expr)? } => {
+        $crate::tupleify! {
+            $es $(, $count)?
+            => {
+                let es = $es;
+               $crate::prelude::parse_quote! { (#({#es}),*) }
+            }
+            => {
+                let es = $es;
+                $crate::prelude::parse_quote! { #({#es})* }
+            }
+        }
+    };
+    { $es:expr $(, $count:expr)? => $len_n:expr } => {
+        $crate::tupleify! {
+            $es $(, $count)?
+            => $len_n
+            => {
+                let es = $es;
+                $crate::prelude::parse_quote! { #({#es})* }
+            }
+        }
+    };
+    { $es:expr $(, $count:expr)? => => len_1:expr } => {
+        $crate::tupleify! {
+            $es $(, $count)?
+            => {
+                let es = #es;
+                parse_quote! { (#({#es}),*) }
+            }
+            => $len_1
+        }
+    }
+}
+
 pub use compiler_common::import::*;
 pub use compiler_ir0::import::*;
 pub use compiler_ir1::import::*;
@@ -30,6 +79,7 @@ pub mod ir2 {
         execution_machine::{self, ExecutionMachine},
         ir1_into_ir2::{self, Ir1IntoIr2, TriggersGraph},
         state_machine::{self, StateMachine},
+        tupleify,
     };
 }
 

@@ -9,7 +9,7 @@ impl TestMixedAuxState {
         TestMixedAuxState { last_i: 0i64 }
     }
     pub fn step(&mut self, input: TestMixedAuxInput) -> i64 {
-        let (i1, i3, i2) = {
+        let ((i1, i3, i2), ()) = std::thread::scope(|reserved_grust_thread_scope| {
             let (i1, i3, i2) = {
                 let (
                     reserved_grust_rayon_opt_var_0,
@@ -85,9 +85,10 @@ impl TestMixedAuxState {
                     ),
                 )
             };
-            (i1, i3, i2)
-        };
-        let (i12, i23) = {
+            let () = ();
+            ((i1, i3, i2), ())
+        });
+        let ((i12, i23), ()) = std::thread::scope(|reserved_grust_thread_scope| {
             let (i12, i23) = {
                 let (reserved_grust_rayon_opt_var_0, reserved_grust_rayon_opt_var_1) = {
                     #[allow(unused_imports)]
@@ -141,8 +142,9 @@ impl TestMixedAuxState {
                     ),
                 )
             };
-            (i12, i23)
-        };
+            let () = ();
+            ((i12, i23), ())
+        });
         let i123 = (i12 + (2i64 * i3)) + i23;
         let next_o = match input.i {
             0 => {
@@ -237,9 +239,11 @@ impl TestMixedState {
                     ),
                 )
             };
-            let i1_3 = (reserved_grust_thread_kid_0
-                .join()
-                .expect("unexpected panic in sub-thread"));
+            let i1_3 = {
+                reserved_grust_thread_kid_0
+                    .join()
+                    .expect("unexpected panic in sub-thread")
+            };
             ((i1_1, i1_2), i1_3)
         });
         let ((x, i2_1), (x_1, i2_2)) = std::thread::scope(|reserved_grust_thread_scope| {
@@ -254,12 +258,16 @@ impl TestMixedState {
                 (x_1, i2_2)
             });
             let ((x, i2_1), (x_1, i2_2)) = (
-                reserved_grust_thread_kid_0
-                    .join()
-                    .expect("unexpected panic in sub-thread"),
-                reserved_grust_thread_kid_1
-                    .join()
-                    .expect("unexpected panic in sub-thread"),
+                {
+                    reserved_grust_thread_kid_0
+                        .join()
+                        .expect("unexpected panic in sub-thread")
+                },
+                {
+                    reserved_grust_thread_kid_1
+                        .join()
+                        .expect("unexpected panic in sub-thread")
+                },
             );
             ((x, i2_1), (x_1, i2_2))
         });
