@@ -797,16 +797,19 @@ mod parse_stream {
     }
     impl Parse for Last {
         fn parse(input: ParseStream) -> syn::Res<Self> {
-            let _: keyword::last = input.parse()?;
-            let ident = input.parse()?;
+            let kw: keyword::last = input.parse()?;
+            let mut loc = Loc::from(kw.span);
+            let ident: Ident = input.parse()?;
+            loc = loc.join(ident.loc());
             let constant = if input.peek(keyword::init) {
                 let _: keyword::init = input.parse()?;
-                let constant = input.parse()?;
+                let constant: stream::Expr = input.parse()?;
+                loc = loc.join(constant.loc());
                 Some(constant)
             } else {
                 None
             };
-            Ok(Last::new(ident, constant))
+            Ok(Last::new(loc, ident, constant))
         }
     }
 
@@ -875,7 +878,11 @@ mod parse_stream {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let emit_token: keyword::emit = input.parse()?;
             let expr: stream::Expr = input.parse()?;
-            Ok(Emit::new(emit_token, expr))
+            Ok(Emit::new(
+                Loc::from(emit_token.span).join(expr.loc()),
+                emit_token,
+                expr,
+            ))
         }
     }
 
@@ -1177,22 +1184,27 @@ mod parse_expr {
     }
     impl<E> Parse for IfThenElse<E>
     where
-        E: Parse,
+        E: Parse + HasLoc,
     {
         fn parse(input: ParseStream) -> syn::Res<Self> {
-            let _: Token![if] = input.parse()?;
-            let cnd = Box::new(input.parse()?);
+            let iff: Token![if] = input.parse()?;
+            let cnd: E = input.parse()?;
             let _: keyword::then = input.parse()?;
-            let thn = Box::new(input.parse()?);
+            let thn: E = input.parse()?;
             let _: Token![else] = input.parse()?;
-            let els = Box::new(input.parse()?);
-            Ok(IfThenElse { cnd, thn, els })
+            let els: E = input.parse()?;
+            Ok(IfThenElse::new(
+                Loc::from(iff.span).join(els.loc()),
+                cnd,
+                thn,
+                els,
+            ))
         }
     }
 
     impl<E> Application<E>
     where
-        E: Parse,
+        E: Parse + HasLoc,
     {
         pub fn peek(input: ParseStream) -> bool {
             input.peek(token::Paren)
@@ -1200,21 +1212,29 @@ mod parse_expr {
 
         pub fn parse(function: E, input: ParseStream) -> syn::Res<Self> {
             let content;
-            let _ = syn::parenthesized!(content in input);
+            let parens = syn::parenthesized!(content in input);
             let inputs: Punctuated<E, Token![,]> = Punctuated::parse_terminated(&content)?;
-            Ok(Application::new(function, inputs.into_iter().collect()))
+            Ok(Application::new(
+                function.loc().join(parens.span.join()),
+                function,
+                inputs.into_iter().collect(),
+            ))
         }
     }
     impl<E> Parse for Application<E>
     where
-        E: Parse,
+        E: Parse + HasLoc,
     {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let function: E = input.parse()?;
             let content;
-            let _ = parenthesized!(content in input);
+            let parens = parenthesized!(content in input);
             let inputs: Punctuated<E, Token![,]> = Punctuated::parse_terminated(&content)?;
-            Ok(Application::new(function, inputs.into_iter().collect()))
+            Ok(Application::new(
+                function.loc().join(parens.span.join()),
+                function,
+                inputs.into_iter().collect(),
+            ))
         }
     }
 
@@ -1228,10 +1248,10 @@ mod parse_expr {
     }
     impl<E> Parse for TypedAbstraction<E>
     where
-        E: Parse,
+        E: Parse + HasLoc,
     {
         fn parse(input: ParseStream) -> syn::Res<Self> {
-            let _: Token![|] = input.parse()?;
+            let open_pipe: Token![|] = input.parse()?;
             let mut inputs: Punctuated<Colon<Ident, Typ>, Token![,]> = Punctuated::new();
             loop {
                 if input.peek(Token![|]) {
@@ -1248,6 +1268,7 @@ mod parse_expr {
             let _: Token![|] = input.parse()?;
             let expr: E = input.parse()?;
             Ok(TypedAbstraction::new(
+                Loc::from(open_pipe.span).join(expr.loc()),
                 inputs
                     .into_iter()
                     .map(|Colon { left, right, .. }| (left.to_string(), right))
@@ -1273,10 +1294,11 @@ mod parse_expr {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let ident: Ident = input.parse()?;
             let content;
-            let _ = braced!(content in input);
+            let braces = braced!(content in input);
             let fields: Punctuated<Colon<Ident, E>, Token![,]> =
                 Punctuated::parse_terminated(&content)?;
             Ok(Structure::new(
+                ident.loc().join(braces.span.join()),
                 ident.to_string(),
                 fields
                     .into_iter()
@@ -1301,9 +1323,12 @@ mod parse_expr {
     {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let content;
-            let _ = parenthesized!(content in input);
+            let parens = parenthesized!(content in input);
             let elements: Punctuated<E, Token![,]> = Punctuated::parse_terminated(&content)?;
-            Ok(Tuple::new(elements.into_iter().collect()))
+            Ok(Tuple::new(
+                parens.span.join(),
+                elements.into_iter().collect(),
+            ))
         }
     }
 
@@ -1323,6 +1348,7 @@ mod parse_expr {
             let _: Token![::] = input.parse()?;
             let ident_elem: Ident = input.parse()?;
             Ok(Enumeration::new(
+                ident_enum.loc().join(ident_elem.loc()),
                 ident_enum.to_string(),
                 ident_elem.to_string(),
             ))
@@ -1344,9 +1370,12 @@ mod parse_expr {
     {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let content;
-            let _ = bracketed!(content in input);
+            let brackets = bracketed!(content in input);
             let elements: Punctuated<E, Token![,]> = Punctuated::parse_terminated(&content)?;
-            Ok(Array::new(elements.into_iter().collect()))
+            Ok(Array::new(
+                brackets.span.join(),
+                elements.into_iter().collect(),
+            ))
         }
     }
 
@@ -1505,18 +1534,22 @@ mod parse_expr {
         E: Parse,
     {
         fn parse(input: ParseStream) -> syn::Res<Self> {
-            let _: Token![match] = input.parse()?;
+            let m4tch: Token![match] = input.parse()?;
             let expr: E = input.parse()?;
             let content;
-            let _ = braced!(content in input);
+            let braces = braced!(content in input);
             let arms: Punctuated<Arm<E>, Token![,]> = Punctuated::parse_terminated(&content)?;
-            Ok(Match::new(expr, arms.into_iter().collect()))
+            Ok(Match::new(
+                Loc::from(m4tch.span).join(braces.span.join()),
+                expr,
+                arms.into_iter().collect(),
+            ))
         }
     }
 
     impl<E> FieldAccess<E>
     where
-        E: Parse,
+        E: Parse + HasLoc,
     {
         pub fn peek(input: ParseStream) -> bool {
             let forked = input.fork();
@@ -1529,24 +1562,32 @@ mod parse_expr {
         pub fn parse(expr: E, input: ParseStream) -> syn::Res<Self> {
             let _: Token![.] = input.parse()?;
             let field: Ident = input.parse()?;
-            Ok(FieldAccess::new(expr, field.to_string()))
+            Ok(FieldAccess::new(
+                expr.loc().join(field.loc()),
+                expr,
+                field.to_string(),
+            ))
         }
     }
     impl<E> Parse for FieldAccess<E>
     where
-        E: Parse,
+        E: Parse + HasLoc,
     {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let expr: E = input.parse()?;
             let _: Token![.] = input.parse()?;
             let field: Ident = input.parse()?;
-            Ok(FieldAccess::new(expr, field.to_string()))
+            Ok(FieldAccess::new(
+                expr.loc().join(field.loc()),
+                expr,
+                field.to_string(),
+            ))
         }
     }
 
     impl<E> TupleElementAccess<E>
     where
-        E: Parse,
+        E: Parse + HasLoc,
     {
         pub fn peek(input: ParseStream) -> bool {
             let forked = input.fork();
@@ -1560,6 +1601,7 @@ mod parse_expr {
             let _: Token![.] = input.parse()?;
             let element_number: syn::LitInt = input.parse()?;
             Ok(TupleElementAccess::new(
+                expr.loc().join(element_number.span()),
                 expr,
                 element_number.base10_parse().unwrap(),
             ))
@@ -1567,13 +1609,14 @@ mod parse_expr {
     }
     impl<E> Parse for TupleElementAccess<E>
     where
-        E: Parse,
+        E: Parse + HasLoc,
     {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let expr: E = input.parse()?;
             let _: Token![.] = input.parse()?;
             let element_number: syn::LitInt = input.parse()?;
             Ok(TupleElementAccess::new(
+                expr.loc().join(element_number.span()),
                 expr,
                 element_number.base10_parse().unwrap(),
             ))
@@ -1582,7 +1625,7 @@ mod parse_expr {
 
     impl<E> Map<E>
     where
-        E: Parse,
+        E: Parse + HasLoc,
     {
         pub fn peek(input: ParseStream) -> bool {
             let forked = input.fork();
@@ -1596,10 +1639,10 @@ mod parse_expr {
             let _: Token![.] = input.parse()?;
             let _: keyword::map = input.parse()?;
             let content;
-            let _ = parenthesized!(content in input);
+            let parens = parenthesized!(content in input);
             let fun: E = content.parse()?;
             if content.is_empty() {
-                Ok(Self::new(expr, fun))
+                Ok(Self::new(expr.loc().join(parens.span.join()), expr, fun))
             } else {
                 Err(input.error("expected only one expression"))
             }
@@ -1607,17 +1650,17 @@ mod parse_expr {
     }
     impl<E> Parse for Map<E>
     where
-        E: Parse,
+        E: Parse + HasLoc,
     {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let expr: E = input.parse()?;
             let _: Token![.] = input.parse()?;
             let _: keyword::map = input.parse()?;
             let content;
-            let _ = parenthesized!(content in input);
+            let parens = parenthesized!(content in input);
             let fun: E = content.parse()?;
             if content.is_empty() {
-                Ok(Self::new(expr, fun))
+                Ok(Self::new(expr.loc().join(parens.span.join()), expr, fun))
             } else {
                 Err(input.error("expected only one expression"))
             }
@@ -1626,7 +1669,7 @@ mod parse_expr {
 
     impl<E> Fold<E>
     where
-        E: Parse,
+        E: Parse + HasLoc,
     {
         pub fn peek(input: ParseStream) -> bool {
             let forked = input.fork();
@@ -1640,12 +1683,17 @@ mod parse_expr {
             let _: Token![.] = input.parse()?;
             let _: keyword::fold = input.parse()?;
             let content;
-            let _ = parenthesized!(content in input);
+            let parens = parenthesized!(content in input);
             let init: E = content.parse()?;
             let _: Token![,] = content.parse()?;
             let function: E = content.parse()?;
             if content.is_empty() {
-                Ok(Self::new(expr, init, function))
+                Ok(Self::new(
+                    expr.loc().join(parens.span.join()),
+                    expr,
+                    init,
+                    function,
+                ))
             } else {
                 Err(input.error("expected only two expressions"))
             }
@@ -1653,19 +1701,24 @@ mod parse_expr {
     }
     impl<E> Parse for Fold<E>
     where
-        E: Parse,
+        E: Parse + HasLoc,
     {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let expr: E = input.parse()?;
             let _: Token![.] = input.parse()?;
             let _: keyword::fold = input.parse()?;
             let content;
-            let _ = parenthesized!(content in input);
+            let parens = parenthesized!(content in input);
             let init: E = content.parse()?;
             let _: Token![,] = content.parse()?;
             let function: E = content.parse()?;
             if content.is_empty() {
-                Ok(Self::new(expr, init, function))
+                Ok(Self::new(
+                    expr.loc().join(parens.span.join()),
+                    expr,
+                    init,
+                    function,
+                ))
             } else {
                 Err(input.error("expected only two expressions"))
             }
@@ -1674,7 +1727,7 @@ mod parse_expr {
 
     impl<E> Sort<E>
     where
-        E: Parse,
+        E: Parse + HasLoc,
     {
         pub fn peek(input: ParseStream) -> bool {
             let forked = input.fork();
@@ -1688,10 +1741,10 @@ mod parse_expr {
             let _: Token![.] = input.parse()?;
             let _: keyword::sort = input.parse()?;
             let content;
-            let _ = parenthesized!(content in input);
+            let parens = parenthesized!(content in input);
             let fun: E = content.parse()?;
             if content.is_empty() {
-                Ok(Self::new(expr, fun))
+                Ok(Self::new(expr.loc().join(parens.span.join()), expr, fun))
             } else {
                 Err(input.error("expected only one expression"))
             }
@@ -1699,17 +1752,17 @@ mod parse_expr {
     }
     impl<E> Parse for Sort<E>
     where
-        E: Parse,
+        E: Parse + HasLoc,
     {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let expr: E = input.parse()?;
             let _: Token![.] = input.parse()?;
             let _: keyword::sort = input.parse()?;
             let content;
-            let _ = parenthesized!(content in input);
+            let parens = parenthesized!(content in input);
             let fun: E = content.parse()?;
             if content.is_empty() {
-                Ok(Self::new(expr, fun))
+                Ok(Self::new(expr.loc().join(parens.span.join()), expr, fun))
             } else {
                 Err(input.error("expected only one expression"))
             }
@@ -1729,11 +1782,14 @@ mod parse_expr {
         E: Parse,
     {
         fn parse(input: ParseStream) -> syn::Res<Self> {
-            let _: keyword::zip = input.parse()?;
+            let kw: keyword::zip = input.parse()?;
             let content;
-            let _ = parenthesized!(content in input);
+            let parens = parenthesized!(content in input);
             let arrays: Punctuated<E, Token![,]> = Punctuated::parse_terminated(&content)?;
-            Ok(Zip::new(arrays.into_iter().collect()))
+            Ok(Zip::new(
+                Loc::from(kw.span).join(parens.span.join()),
+                arrays.into_iter().collect(),
+            ))
         }
     }
 
@@ -1762,7 +1818,7 @@ mod parse_expr {
                 Self::enumeration(input.parse()?)
             } else if input.fork().call(Ident::parse).is_ok() {
                 let ident: Ident = input.parse()?;
-                Self::ident(ident.to_string())
+                Self::ident(ident)
             } else {
                 return Err(input.error("expected expression"));
             };
@@ -2371,7 +2427,11 @@ mod parsing_tests {
         #[test]
         fn should_parse_last() {
             let expression: ReactExpr = syn::parse_quote! {last x};
-            let control = ReactExpr::expr(Expr::last(Last::new(syn::parse_quote! {x}, None)));
+            let control = ReactExpr::expr(Expr::last(Last::new(
+                Loc::test_dummy(),
+                syn::parse_quote! {x},
+                None,
+            )));
             assert_eq!(expression, control)
         }
 
@@ -2379,6 +2439,7 @@ mod parsing_tests {
         fn should_parse_initialized_last() {
             let expression: ReactExpr = syn::parse_quote! {last x init 0};
             let control = ReactExpr::expr(Expr::last(Last::new(
+                Loc::test_dummy(),
                 syn::parse_quote! {x},
                 Some(Expr::cst(Constant::int(syn::parse_quote! {0}))),
             )));
@@ -2403,6 +2464,7 @@ mod parsing_tests {
         fn should_parse_application() {
             let expression: ReactExpr = syn::parse_quote! {f(x)};
             let control = ReactExpr::expr(Expr::app(Application::new(
+                Loc::test_dummy(),
                 Expr::test_ident("f"),
                 vec![Expr::test_ident("x")],
             )));
@@ -2442,8 +2504,10 @@ mod parsing_tests {
         fn should_parse_typed_abstraction() {
             let expression: ReactExpr = syn::parse_quote! {|x: int| f(x)};
             let control = ReactExpr::expr(Expr::type_abstraction(TypedAbstraction::new(
+                Loc::test_dummy(),
                 vec![("x".into(), Typ::int())],
                 Expr::app(Application::new(
+                    Loc::test_dummy(),
                     Expr::test_ident("f"),
                     vec![Expr::test_ident("x")],
                 )),
@@ -2455,6 +2519,7 @@ mod parsing_tests {
         fn should_parse_structure() {
             let expression: ReactExpr = syn::parse_quote! {Point {x: 0, y: 1}};
             let control = ReactExpr::expr(Expr::structure(Structure::new(
+                Loc::test_dummy(),
                 "Point",
                 vec![
                     ("x".into(), Expr::cst(Constant::int(syn::parse_quote! {0}))),
@@ -2467,28 +2532,38 @@ mod parsing_tests {
         #[test]
         fn should_parse_tuple() {
             let expression: ReactExpr = syn::parse_quote! {(x, 0)};
-            let control = ReactExpr::expr(Expr::tuple(Tuple::new(vec![
-                Expr::test_ident("x"),
-                Expr::cst(Constant::int(syn::parse_quote! {0})),
-            ])));
+            let control = ReactExpr::expr(Expr::tuple(Tuple::new(
+                Loc::test_dummy(),
+                vec![
+                    Expr::test_ident("x"),
+                    Expr::cst(Constant::int(syn::parse_quote! {0})),
+                ],
+            )));
             assert_eq!(expression, control)
         }
 
         #[test]
         fn should_parse_enumeration() {
             let expression: ReactExpr = syn::parse_quote! {Color::Pink};
-            let control = ReactExpr::expr(Expr::enumeration(Enumeration::new("Color", "Pink")));
+            let control = ReactExpr::expr(Expr::enumeration(Enumeration::new(
+                Loc::test_dummy(),
+                "Color",
+                "Pink",
+            )));
             assert_eq!(expression, control)
         }
 
         #[test]
         fn should_parse_array() {
             let expression: ReactExpr = syn::parse_quote! {[1, 2, 3]};
-            let control = ReactExpr::expr(Expr::array(Array::new(vec![
-                Expr::cst(Constant::int(syn::parse_quote! {1})),
-                Expr::cst(Constant::int(syn::parse_quote! {2})),
-                Expr::cst(Constant::int(syn::parse_quote! {3})),
-            ])));
+            let control = ReactExpr::expr(Expr::array(Array::new(
+                Loc::test_dummy(),
+                vec![
+                    Expr::cst(Constant::int(syn::parse_quote! {1})),
+                    Expr::cst(Constant::int(syn::parse_quote! {2})),
+                    Expr::cst(Constant::int(syn::parse_quote! {3})),
+                ],
+            )));
             assert_eq!(expression, control)
         }
 
@@ -2502,6 +2577,7 @@ mod parsing_tests {
                 }
             };
             let control = ReactExpr::expr(Expr::pat_match(Match::new(
+                Loc::test_dummy(),
                 Expr::test_ident("a"),
                 vec![
                     Arm::new(
@@ -2528,6 +2604,7 @@ mod parsing_tests {
                             None,
                         )),
                         guard: Some(Expr::app(Application::new(
+                            Loc::test_dummy(),
                             Expr::test_ident("f"),
                             vec![Expr::test_ident("x")],
                         ))),
@@ -2546,6 +2623,7 @@ mod parsing_tests {
         fn should_parse_field_access() {
             let expression: ReactExpr = syn::parse_quote! {p.x};
             let control = ReactExpr::expr(Expr::field_access(FieldAccess::new(
+                Loc::test_dummy(),
                 Expr::test_ident("p"),
                 "x",
             )));
@@ -2556,6 +2634,7 @@ mod parsing_tests {
         fn should_parse_tuple_element_access() {
             let expression: ReactExpr = syn::parse_quote! {t.0};
             let control = ReactExpr::expr(Expr::tuple_access(TupleElementAccess::new(
+                Loc::test_dummy(),
                 Expr::test_ident("t"),
                 0,
             )));
@@ -2566,6 +2645,7 @@ mod parsing_tests {
         fn should_parse_map() {
             let expression: ReactExpr = syn::parse_quote! {a.map(f)};
             let control = ReactExpr::expr(Expr::map(Map::new(
+                Loc::test_dummy(),
                 Expr::test_ident("a"),
                 Expr::test_ident("f"),
             )));
@@ -2576,6 +2656,7 @@ mod parsing_tests {
         fn should_parse_fold() {
             let expression: ReactExpr = syn::parse_quote! {a.fold(0, sum)};
             let control = ReactExpr::expr(Expr::fold(Fold::new(
+                Loc::test_dummy(),
                 Expr::test_ident("a"),
                 Expr::cst(Constant::int(syn::parse_quote! {0})),
                 Expr::test_ident("sum"),
@@ -2587,6 +2668,7 @@ mod parsing_tests {
         fn should_parse_sort() {
             let expression: ReactExpr = syn::parse_quote! {a.sort(order)};
             let control = ReactExpr::expr(Expr::sort(Sort::new(
+                Loc::test_dummy(),
                 Expr::test_ident("a"),
                 Expr::test_ident("order"),
             )));
@@ -2596,11 +2678,14 @@ mod parsing_tests {
         #[test]
         fn should_parse_zip() {
             let expression: ReactExpr = syn::parse_quote! {zip(a, b, c)};
-            let control = ReactExpr::expr(Expr::zip(Zip::new(vec![
-                Expr::test_ident("a"),
-                Expr::test_ident("b"),
-                Expr::test_ident("c"),
-            ])));
+            let control = ReactExpr::expr(Expr::zip(Zip::new(
+                Loc::test_dummy(),
+                vec![
+                    Expr::test_ident("a"),
+                    Expr::test_ident("b"),
+                    Expr::test_ident("c"),
+                ],
+            )));
             assert_eq!(expression, control)
         }
 
@@ -2608,6 +2693,7 @@ mod parsing_tests {
         fn should_parse_emit() {
             let expression: ReactExpr = syn::parse_quote! {emit 0};
             let control = ReactExpr::expr(Expr::emit(Emit::new(
+                Loc::test_dummy(),
                 Default::default(),
                 Expr::cst(Constant::int(syn::parse_quote! {0})),
             )));
@@ -2629,7 +2715,11 @@ mod parsing_tests {
                         Default::default(),
                     )),
                     None,
-                    Expr::emit(Emit::new(Default::default(), Expr::ident("x"))),
+                    Expr::emit(Emit::new(
+                        Loc::test_dummy(),
+                        Default::default(),
+                        Expr::test_ident("x"),
+                    )),
                 )],
             ));
             assert_eq!(expression, control)
@@ -2655,7 +2745,11 @@ mod parsing_tests {
                         Expr::test_ident("p"),
                         Expr::cst(Constant::Integer(syn::parse_quote! {0})),
                     )))),
-                    Expr::emit(Emit::new(Default::default(), Expr::ident("x"))),
+                    Expr::emit(Emit::new(
+                        Loc::test_dummy(),
+                        Default::default(),
+                        Expr::test_ident("x"),
+                    )),
                 )],
             ));
             assert_eq!(expression, control)
@@ -2814,6 +2908,7 @@ mod parsing_tests {
         fn should_parse_application() {
             let expr: Expr = parse_quote! {f(x)};
             let control = Expr::app(Application::new(
+                Loc::test_dummy(),
                 Expr::test_ident("f"),
                 vec![Expr::test_ident("x")],
             ));
@@ -2869,8 +2964,10 @@ mod parsing_tests {
         fn should_parse_typed_abstraction() {
             let expr: Expr = parse_quote! {|x: int| f(x)};
             let control = Expr::typed_abstraction(TypedAbstraction::new(
+                Loc::test_dummy(),
                 vec![("x".into(), Typ::int())],
                 Expr::app(Application::new(
+                    Loc::test_dummy(),
                     Expr::test_ident("f"),
                     vec![Expr::test_ident("x")],
                 )),
@@ -2882,6 +2979,7 @@ mod parsing_tests {
         fn should_parse_structure() {
             let expr: Expr = parse_quote! {Point {x: 0, y: 1}};
             let control = Expr::structure(Structure::new(
+                Loc::test_dummy(),
                 "Point",
                 vec![
                     ("x".into(), Expr::cst(Constant::int(parse_quote! {0}))),
@@ -2894,28 +2992,34 @@ mod parsing_tests {
         #[test]
         fn should_parse_tuple() {
             let expr: Expr = parse_quote! {(x, 0)};
-            let control = Expr::tuple(Tuple::new(vec![
-                Expr::test_ident("x"),
-                Expr::cst(Constant::int(parse_quote! {0})),
-            ]));
+            let control = Expr::tuple(Tuple::new(
+                Loc::test_dummy(),
+                vec![
+                    Expr::test_ident("x"),
+                    Expr::cst(Constant::int(parse_quote! {0})),
+                ],
+            ));
             assert_eq!(expr, control)
         }
 
         #[test]
         fn should_parse_enumeration() {
             let expr: Expr = parse_quote! {Color::Pink};
-            let control = Expr::enumeration(Enumeration::new("Color", "Pink"));
+            let control = Expr::enumeration(Enumeration::new(Loc::test_dummy(), "Color", "Pink"));
             assert_eq!(expr, control)
         }
 
         #[test]
         fn should_parse_array() {
             let expr: Expr = parse_quote! {[1, 2, 3]};
-            let control = Expr::array(Array::new(vec![
-                Expr::cst(Constant::int(parse_quote! {1})),
-                Expr::cst(Constant::int(parse_quote! {2})),
-                Expr::cst(Constant::int(parse_quote! {3})),
-            ]));
+            let control = Expr::array(Array::new(
+                Loc::test_dummy(),
+                vec![
+                    Expr::cst(Constant::int(parse_quote! {1})),
+                    Expr::cst(Constant::int(parse_quote! {2})),
+                    Expr::cst(Constant::int(parse_quote! {3})),
+                ],
+            ));
             assert_eq!(expr, control)
         }
 
@@ -2929,6 +3033,7 @@ mod parsing_tests {
                 }
             };
             let control = Expr::pat_match(Match::new(
+                Loc::test_dummy(),
                 Expr::test_ident("a"),
                 vec![
                     Arm::new(
@@ -2956,6 +3061,7 @@ mod parsing_tests {
                         )),
                         Expr::cst(Constant::int(parse_quote! {-1})),
                         Some(Expr::app(Application::new(
+                            Loc::test_dummy(),
                             Expr::test_ident("f"),
                             vec![Expr::test_ident("x")],
                         ))),
@@ -2969,21 +3075,33 @@ mod parsing_tests {
         #[test]
         fn should_parse_field_access() {
             let expression: Expr = parse_quote! {p.x};
-            let control = Expr::field_access(FieldAccess::new(Expr::test_ident("p"), "x"));
+            let control = Expr::field_access(FieldAccess::new(
+                Loc::test_dummy(),
+                Expr::test_ident("p"),
+                "x",
+            ));
             assert_eq!(expression, control)
         }
 
         #[test]
         fn should_parse_tuple_element_access() {
             let expression: Expr = parse_quote! {t.0};
-            let control = Expr::tuple_access(TupleElementAccess::new(Expr::test_ident("t"), 0));
+            let control = Expr::tuple_access(TupleElementAccess::new(
+                Loc::test_dummy(),
+                Expr::test_ident("t"),
+                0,
+            ));
             assert_eq!(expression, control)
         }
 
         #[test]
         fn should_parse_map() {
             let expression: Expr = parse_quote! {a.map(f)};
-            let control = Expr::map(Map::new(Expr::test_ident("a"), Expr::test_ident("f")));
+            let control = Expr::map(Map::new(
+                Loc::test_dummy(),
+                Expr::test_ident("a"),
+                Expr::test_ident("f"),
+            ));
             assert_eq!(expression, control)
         }
 
@@ -2991,6 +3109,7 @@ mod parsing_tests {
         fn should_parse_fold() {
             let expression: Expr = parse_quote! {a.fold(0, sum)};
             let control = Expr::fold(Fold::new(
+                Loc::test_dummy(),
                 Expr::test_ident("a"),
                 Expr::cst(Constant::int(parse_quote! {0})),
                 Expr::test_ident("sum"),
@@ -3001,18 +3120,25 @@ mod parsing_tests {
         #[test]
         fn should_parse_sort() {
             let expression: Expr = parse_quote! {a.sort(order)};
-            let control = Expr::sort(Sort::new(Expr::test_ident("a"), Expr::test_ident("order")));
+            let control = Expr::sort(Sort::new(
+                Loc::test_dummy(),
+                Expr::test_ident("a"),
+                Expr::test_ident("order"),
+            ));
             assert_eq!(expression, control)
         }
 
         #[test]
         fn should_parse_zip() {
             let expression: Expr = parse_quote! {zip(a, b, c)};
-            let control = Expr::zip(Zip::new(vec![
-                Expr::test_ident("a"),
-                Expr::test_ident("b"),
-                Expr::test_ident("c"),
-            ]));
+            let control = Expr::zip(Zip::new(
+                Loc::test_dummy(),
+                vec![
+                    Expr::test_ident("a"),
+                    Expr::test_ident("b"),
+                    Expr::test_ident("c"),
+                ],
+            ));
             assert_eq!(expression, control)
         }
     }
@@ -3028,12 +3154,14 @@ mod parsing_tests {
                 pattern: parse_quote! {o},
                 eq_token: parse_quote! {=},
                 expr: stream::ReactExpr::expr(stream::Expr::ite(expr::IfThenElse::new(
+                    Loc::test_dummy(),
                     stream::Expr::test_ident("res"),
                     stream::Expr::cst(Constant::int(parse_quote! {0})),
                     stream::Expr::binop(expr::BinOp::new(
                         BOp::Add,
                         Loc::test_dummy(),
                         stream::Expr::last(stream::Last::new(
+                            Loc::test_dummy(),
                             parse_quote! {o},
                             Some(stream::Expr::cst(Constant::int(parse_quote! {0}))),
                         )),
@@ -3057,28 +3185,40 @@ mod parsing_tests {
                 ])),
                 eq_token: parse_quote! {=},
                 expr: stream::ReactExpr::expr(stream::Expr::ite(expr::IfThenElse::new(
+                    Loc::test_dummy(),
                     stream::Expr::test_ident("res"),
-                    stream::Expr::tuple(expr::Tuple::new(vec![
-                        stream::Expr::cst(Constant::int(parse_quote! {0})),
-                        stream::Expr::cst(Constant::int(parse_quote! {0})),
-                    ])),
-                    stream::Expr::tuple(expr::Tuple::new(vec![
-                        stream::Expr::binop(expr::BinOp::new(
-                            BOp::Add,
-                            Loc::test_dummy(),
-                            stream::Expr::last(stream::Last::new(
-                                parse_quote! {o1},
-                                Some(stream::Expr::cst(Constant::int(parse_quote! {0}))),
+                    stream::Expr::tuple(expr::Tuple::new(
+                        Loc::test_dummy(),
+                        vec![
+                            stream::Expr::cst(Constant::int(parse_quote! {0})),
+                            stream::Expr::cst(Constant::int(parse_quote! {0})),
+                        ],
+                    )),
+                    stream::Expr::tuple(expr::Tuple::new(
+                        Loc::test_dummy(),
+                        vec![
+                            stream::Expr::binop(expr::BinOp::new(
+                                BOp::Add,
+                                Loc::test_dummy(),
+                                stream::Expr::last(stream::Last::new(
+                                    Loc::test_dummy(),
+                                    parse_quote! {o1},
+                                    Some(stream::Expr::cst(Constant::int(parse_quote! {0}))),
+                                )),
+                                stream::Expr::test_ident("inc1"),
                             )),
-                            stream::Expr::test_ident("inc1"),
-                        )),
-                        stream::Expr::binop(expr::BinOp::new(
-                            BOp::Add,
-                            Loc::test_dummy(),
-                            stream::Expr::last(stream::Last::new(parse_quote! {o2}, None)),
-                            stream::Expr::test_ident("inc2"),
-                        )),
-                    ])),
+                            stream::Expr::binop(expr::BinOp::new(
+                                BOp::Add,
+                                Loc::test_dummy(),
+                                stream::Expr::last(stream::Last::new(
+                                    Loc::test_dummy(),
+                                    parse_quote! {o2},
+                                    None,
+                                )),
+                                stream::Expr::test_ident("inc2"),
+                            )),
+                        ],
+                    )),
                 ))),
                 semi_token: parse_quote! {;},
             });
@@ -3099,12 +3239,17 @@ mod parsing_tests {
                 }),
                 parse_quote!(=),
                 stream::ReactExpr::expr(stream::Expr::ite(expr::IfThenElse::new(
+                    Loc::test_dummy(),
                     stream::Expr::test_ident("res"),
                     stream::Expr::cst(Constant::int(parse_quote! {0})),
                     stream::Expr::binop(expr::BinOp::new(
                         BOp::Add,
                         Loc::test_dummy(),
-                        stream::Expr::last(stream::Last::new(parse_quote! {o}, None)),
+                        stream::Expr::last(stream::Last::new(
+                            Loc::test_dummy(),
+                            parse_quote! {o},
+                            None,
+                        )),
                         stream::Expr::test_ident("inc"),
                     )),
                 ))),
@@ -3135,28 +3280,40 @@ mod parsing_tests {
                 ])),
                 parse_quote!(=),
                 stream::ReactExpr::expr(stream::Expr::ite(expr::IfThenElse::new(
+                    Loc::test_dummy(),
                     stream::Expr::test_ident("res"),
-                    stream::Expr::tuple(expr::Tuple::new(vec![
-                        stream::Expr::cst(Constant::int(parse_quote! {0})),
-                        stream::Expr::cst(Constant::int(parse_quote! {0})),
-                    ])),
-                    stream::Expr::tuple(expr::Tuple::new(vec![
-                        stream::Expr::binop(expr::BinOp::new(
-                            BOp::Add,
-                            Loc::test_dummy(),
-                            stream::Expr::last(stream::Last::new(
-                                parse_quote! {o1},
-                                Some(stream::Expr::cst(Constant::int(parse_quote! {0}))),
+                    stream::Expr::tuple(expr::Tuple::new(
+                        Loc::test_dummy(),
+                        vec![
+                            stream::Expr::cst(Constant::int(parse_quote! {0})),
+                            stream::Expr::cst(Constant::int(parse_quote! {0})),
+                        ],
+                    )),
+                    stream::Expr::tuple(expr::Tuple::new(
+                        Loc::test_dummy(),
+                        vec![
+                            stream::Expr::binop(expr::BinOp::new(
+                                BOp::Add,
+                                Loc::test_dummy(),
+                                stream::Expr::last(stream::Last::new(
+                                    Loc::test_dummy(),
+                                    parse_quote! {o1},
+                                    Some(stream::Expr::cst(Constant::int(parse_quote! {0}))),
+                                )),
+                                stream::Expr::test_ident("inc1"),
                             )),
-                            stream::Expr::test_ident("inc1"),
-                        )),
-                        stream::Expr::binop(expr::BinOp::new(
-                            BOp::Add,
-                            Loc::test_dummy(),
-                            stream::Expr::last(stream::Last::new(parse_quote! {o2}, None)),
-                            stream::Expr::test_ident("inc2"),
-                        )),
-                    ])),
+                            stream::Expr::binop(expr::BinOp::new(
+                                BOp::Add,
+                                Loc::test_dummy(),
+                                stream::Expr::last(stream::Last::new(
+                                    Loc::test_dummy(),
+                                    parse_quote! {o2},
+                                    None,
+                                )),
+                                stream::Expr::test_ident("inc2"),
+                            )),
+                        ],
+                    )),
                 ))),
                 parse_quote! {;},
             ));

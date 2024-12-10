@@ -213,3 +213,16 @@ impl<T> VecExt<T> for Vec<T> {
         }
     }
 }
+
+pub trait HasLoc {
+    fn loc(&self) -> Loc;
+}
+impl HasLoc for Ident {
+    fn loc(&self) -> Loc {
+        self.span().into()
+    }
+}
+
+pub trait MaybeHasLoc {
+    fn loc_opt(&self) -> Option<Loc>;
+}
