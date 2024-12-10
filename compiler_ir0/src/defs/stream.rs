@@ -6,13 +6,21 @@ prelude! {
 /// Buffered signal.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Last {
+    /// Location.
+    pub loc: Loc,
     /// Signal identifier.
     pub ident: Ident,
     /// The initialization constant.
     pub constant: Option<Box<Expr>>,
 }
+impl HasLoc for Last {
+    fn loc(&self) -> Loc {
+        self.loc
+    }
+}
 mk_new! { impl Last =>
     new {
+        loc: impl Into<Loc> = loc.into(),
         ident: Ident,
         constant: Option<Expr> = constant.map(Expr::into),
     }
@@ -77,12 +85,20 @@ mk_new! { impl When =>
 /// Emit event expression.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Emit {
+    /// Location.
+    pub loc: Loc,
     pub emit_token: keyword::emit,
     /// The expression to emit.
     pub expr: Box<Expr>,
 }
+impl HasLoc for Emit {
+    fn loc(&self) -> Loc {
+        self.loc
+    }
+}
 mk_new! { impl Emit =>
     new {
+        loc: impl Into<Loc> = loc.into(),
         emit_token: keyword::emit,
         expr: impl Into<Box<Expr >> = expr.into(),
     }
@@ -156,8 +172,8 @@ mk_new! { impl Expr =>
     Emit: emit(arg: Emit = arg)
 }
 
-impl Expr {
-    pub fn loc(&self) -> Loc {
+impl HasLoc for Expr {
+    fn loc(&self) -> Loc {
         use stream::Expr::*;
         match self {
             Constant(c) => c.loc(),
@@ -169,24 +185,25 @@ impl Expr {
             UnOp(op) => op.op_loc.join(op.expr.loc()),
             BinOp(op) => op.op_loc.join(op.lft.loc()).join(op.rgt.loc()),
             IfThenElse(ite) => ite.cnd.loc().join(ite.thn.loc()).join(ite.els.loc()),
-            // TypedAbstraction(abs) => abs.loc(),
-            // Structure(s) => s.loc(),
-            // Tuple(t) => t.loc(),
-            // Enumeration(e) => e.loc(),
-            // Array(a) => a.loc(),
-            // Match(m) => m.loc(),
-            // FieldAccess(fa) => fa.loc(),
-            // TupleElementAccess(ta) => ta.loc(),
-            // Map(m) => m.loc(),
-            // Fold(f) => f.loc(),
-            // Sort(s) => s.loc(),
-            // Zip(z) => z.loc(),
-            // Last(l) => l.loc(),
-            // Emit(e) => e.loc(),
-            _ => todoo!(),
+            TypedAbstraction(abs) => abs.loc(),
+            Structure(s) => s.loc(),
+            Tuple(t) => t.loc(),
+            Enumeration(e) => e.loc(),
+            Array(a) => a.loc(),
+            Match(m) => m.loc(),
+            FieldAccess(fa) => fa.loc(),
+            TupleElementAccess(ta) => ta.loc(),
+            Map(m) => m.loc(),
+            Fold(f) => f.loc(),
+            Sort(s) => s.loc(),
+            Zip(z) => z.loc(),
+            Last(l) => l.loc(),
+            Emit(e) => e.loc(),
         }
     }
+}
 
+impl Expr {
     pub fn check_is_constant(&self, table: &SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         match &self {
             // Constant by default
@@ -230,7 +247,7 @@ impl Expr {
                 thn.check_is_constant(table, errors)?;
                 els.check_is_constant(table, errors)
             }
-            stream::Expr::Application(Application { fun, inputs }) => {
+            stream::Expr::Application(Application { fun, inputs, .. }) => {
                 fun.check_is_constant(table, errors)?;
                 inputs
                     .iter()
@@ -241,12 +258,11 @@ impl Expr {
                 .iter()
                 .map(|(_, expression)| expression.check_is_constant(table, errors))
                 .collect::<TRes<_>>(),
-            stream::Expr::Array(Array { elements }) | stream::Expr::Tuple(Tuple { elements }) => {
-                elements
-                    .iter()
-                    .map(|expression| expression.check_is_constant(table, errors))
-                    .collect::<TRes<_>>()
-            }
+            stream::Expr::Array(Array { elements, .. })
+            | stream::Expr::Tuple(Tuple { elements, .. }) => elements
+                .iter()
+                .map(|expression| expression.check_is_constant(table, errors))
+                .collect::<TRes<_>>(),
         }
     }
 }

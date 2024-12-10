@@ -10,7 +10,11 @@ pub struct UnOp<E> {
     /// The input expression.
     pub expr: Box<E>,
 }
-
+impl<E: HasLoc> HasLoc for UnOp<E> {
+    fn loc(&self) -> Loc {
+        self.op_loc.join(self.expr.loc())
+    }
+}
 mk_new! { impl{E} UnOp<E> =>
     new {
         op : UOp,
@@ -34,7 +38,11 @@ pub struct BinOp<E> {
     /// The right expression.
     pub rgt: Box<E>,
 }
-
+impl<E: HasLoc> HasLoc for BinOp<E> {
+    fn loc(&self) -> Loc {
+        self.lft.loc().join(self.rgt.loc())
+    }
+}
 mk_new! { impl{E} BinOp<E> =>
     new {
         op : BOp,
@@ -48,6 +56,8 @@ mk_new! { impl{E} BinOp<E> =>
 /// IfThenElse expression.
 #[derive(Debug, PartialEq, Clone)]
 pub struct IfThenElse<E> {
+    /// Location.
+    pub loc: Loc,
     /// Condition.
     pub cnd: Box<E>,
     /// `then` branch.
@@ -55,26 +65,38 @@ pub struct IfThenElse<E> {
     /// `else` branch.
     pub els: Box<E>,
 }
-
+impl<E> HasLoc for IfThenElse<E> {
+    fn loc(&self) -> Loc {
+        self.loc
+    }
+}
 mk_new! { impl{E} IfThenElse<E> =>
     new {
+        loc: impl Into<Loc> = loc.into(),
         cnd: impl Into<Box<E>> = cnd.into(),
         thn: impl Into<Box<E>> = thn.into(),
-        els: impl Into<Box<E>> = els.into()
+        els: impl Into<Box<E>> = els.into(),
     }
 }
 
 /// Application expression.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Application<E> {
+    /// Location.
+    pub loc: Loc,
     /// The expression applied.
     pub fun: Box<E>,
     /// The inputs to the expression.
     pub inputs: Vec<E>,
 }
-
+impl<E> HasLoc for Application<E> {
+    fn loc(&self) -> Loc {
+        self.loc
+    }
+}
 mk_new! { impl{E} Application<E> =>
     new {
+        loc: impl Into<Loc> = loc.into(),
         fun: impl Into<Box<E>> = fun.into(),
         inputs: Vec<E>,
     }
@@ -83,14 +105,21 @@ mk_new! { impl{E} Application<E> =>
 /// Abstraction expression with inputs types.
 #[derive(Debug, PartialEq, Clone)]
 pub struct TypedAbstraction<E> {
+    pub loc: Loc,
     /// The inputs to the abstraction.
     pub inputs: Vec<(String, Typ)>,
     /// The expression abstracted.
     pub expr: Box<E>,
 }
+impl<E> HasLoc for TypedAbstraction<E> {
+    fn loc(&self) -> Loc {
+        self.loc
+    }
+}
 
 mk_new! { impl{E} TypedAbstraction<E> =>
     new {
+        loc: impl Into<Loc> = loc.into(),
         inputs: Vec<(String, Typ)>,
         expr: impl Into<Box<E>> = expr.into(),
     }
@@ -99,14 +128,22 @@ mk_new! { impl{E} TypedAbstraction<E> =>
 /// Structure expression.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Structure<E> {
+    /// Location.
+    pub loc: Loc,
     /// The structure name.
     pub name: String,
     /// The fields associated with their expressions.
     pub fields: Vec<(String, E)>,
 }
+impl<E> HasLoc for Structure<E> {
+    fn loc(&self) -> Loc {
+        self.loc
+    }
+}
 
 mk_new! { impl{E} Structure<E> =>
     new {
+        loc: impl Into<Loc> = loc.into(),
         name: impl Into<String> = name.into(),
         fields: Vec<(String, E)>,
     }
@@ -115,17 +152,27 @@ mk_new! { impl{E} Structure<E> =>
 /// Tuple expression.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Tuple<E> {
+    /// Location.
+    pub loc: Loc,
     /// The elements.
     pub elements: Vec<E>,
 }
-
-mk_new! { impl{E} Tuple<E> =>
-    new { elements: Vec<E> }
+impl<E> HasLoc for Tuple<E> {
+    fn loc(&self) -> Loc {
+        self.loc
+    }
 }
+
+mk_new! { impl{E} Tuple<E> => new {
+    loc: impl Into<Loc> = loc.into(),
+    elements: Vec<E>,
+} }
 
 /// Enumeration expression.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Enumeration<E> {
+    /// Location.
+    pub loc: Loc,
     /// The enumeration name.
     pub enum_name: String,
     /// The enumeration element.
@@ -133,10 +180,20 @@ pub struct Enumeration<E> {
     /// Marker for the unused type param.
     pub mark: std::marker::PhantomData<E>,
 }
+impl<E> HasLoc for Enumeration<E> {
+    fn loc(&self) -> Loc {
+        self.loc
+    }
+}
 
 impl<E> Enumeration<E> {
-    pub fn new(enum_name: impl Into<String>, elem_name: impl Into<String>) -> Self {
+    pub fn new(
+        loc: impl Into<Loc>,
+        enum_name: impl Into<String>,
+        elem_name: impl Into<String>,
+    ) -> Self {
         Self {
+            loc: loc.into(),
             enum_name: enum_name.into(),
             elem_name: elem_name.into(),
             mark: std::marker::PhantomData,
@@ -147,13 +204,20 @@ impl<E> Enumeration<E> {
 /// Array expression.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Array<E> {
+    /// Location.
+    pub loc: Loc,
     /// The elements inside the array.
     pub elements: Vec<E>,
 }
-
-mk_new! { impl{E} Array<E> =>
-    new { elements: Vec<E> }
+impl<E> HasLoc for Array<E> {
+    fn loc(&self) -> Loc {
+        self.loc
+    }
 }
+mk_new! { impl{E} Array<E> => new {
+    loc: impl Into<Loc> = loc.into(),
+    elements: Vec<E>,
+} }
 
 /// Structure pattern that matches the structure and its fields.
 #[derive(Debug, PartialEq, Clone)]
@@ -257,14 +321,21 @@ impl<E> Arm<E> {
 /// Pattern matching expression.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Match<E> {
+    /// Location.
+    pub loc: Loc,
     /// The expression to match.
     pub expr: Box<E>,
     /// The different matching cases.
     pub arms: Vec<Arm<E>>,
 }
-
+impl<E> HasLoc for Match<E> {
+    fn loc(&self) -> Loc {
+        self.loc
+    }
+}
 mk_new! { impl{E} Match<E> =>
     new {
+        loc: impl Into<Loc> = loc.into(),
         expr: impl Into<Box<E>> = expr.into(),
         arms: Vec<Arm<E>>,
     }
@@ -273,14 +344,21 @@ mk_new! { impl{E} Match<E> =>
 /// Field access expression.
 #[derive(Debug, PartialEq, Clone)]
 pub struct FieldAccess<E> {
+    /// Location.
+    pub loc: Loc,
     /// The structure expression.
     pub expr: Box<E>,
     /// The field to access.
     pub field: String,
 }
-
+impl<E> HasLoc for FieldAccess<E> {
+    fn loc(&self) -> Loc {
+        self.loc
+    }
+}
 mk_new! { impl{E} FieldAccess<E> =>
     new {
+        loc: impl Into<Loc> = loc.into(),
         expr: impl Into<Box<E>> = expr.into(),
         field: impl Into<String> = field.into(),
     }
@@ -289,14 +367,21 @@ mk_new! { impl{E} FieldAccess<E> =>
 /// Tuple element access expression.
 #[derive(Debug, PartialEq, Clone)]
 pub struct TupleElementAccess<E> {
+    /// Location.
+    pub loc: Loc,
     /// The tuple expression.
     pub expr: Box<E>,
     /// The element to access.
     pub element_number: usize,
 }
-
+impl<E> HasLoc for TupleElementAccess<E> {
+    fn loc(&self) -> Loc {
+        self.loc
+    }
+}
 mk_new! { impl{E} TupleElementAccess<E> =>
     new {
+        loc: impl Into<Loc> = loc.into(),
         expr: impl Into<Box<E>> = expr.into(),
         element_number: usize,
     }
@@ -305,14 +390,21 @@ mk_new! { impl{E} TupleElementAccess<E> =>
 /// Array map operator expression.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Map<E> {
+    /// Location.
+    pub loc: Loc,
     /// The array expression.
     pub expr: Box<E>,
     /// The function expression.
     pub fun: Box<E>,
 }
-
+impl<E> HasLoc for Map<E> {
+    fn loc(&self) -> Loc {
+        self.loc
+    }
+}
 mk_new! { impl{E} Map<E> =>
     new {
+        loc: impl Into<Loc> = loc.into(),
         expr: impl Into<Box<E>> = expr.into(),
         fun: impl Into<Box<E>> = fun.into(),
     }
@@ -321,6 +413,8 @@ mk_new! { impl{E} Map<E> =>
 /// Array fold operator expression.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Fold<E> {
+    /// Location.
+    pub loc: Loc,
     /// The array expression.
     pub array: Box<E>,
     /// The initialization expression.
@@ -328,9 +422,14 @@ pub struct Fold<E> {
     /// The function expression.
     pub fun: Box<E>,
 }
-
+impl<E> HasLoc for Fold<E> {
+    fn loc(&self) -> Loc {
+        self.loc
+    }
+}
 mk_new! { impl{E} Fold<E> =>
     new {
+        loc: impl Into<Loc> = loc.into(),
         array: impl Into<Box<E>> = array.into(),
         init: impl Into<Box<E>> = init.into(),
         fun: impl Into<Box<E>> = fun.into(),
@@ -340,14 +439,21 @@ mk_new! { impl{E} Fold<E> =>
 /// Array sort operator expression.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Sort<E> {
+    /// Location.
+    pub loc: Loc,
     /// The array expression.
     pub expr: Box<E>,
     /// The function expression.
     pub fun: Box<E>,
 }
-
+impl<E> HasLoc for Sort<E> {
+    fn loc(&self) -> Loc {
+        self.loc
+    }
+}
 mk_new! { impl{E} Sort<E> =>
     new {
+        loc: impl Into<Loc> = loc.into(),
         expr: impl Into<Box<E>> = expr.into(),
         fun: impl Into<Box<E>> = fun.into(),
     }
@@ -356,13 +462,20 @@ mk_new! { impl{E} Sort<E> =>
 /// Arrays zip operator expression.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Zip<E> {
+    /// Location.
+    pub loc: Loc,
     /// The array expressions.
     pub arrays: Vec<E>,
 }
-
-mk_new! { impl{E} Zip<E> =>
-    new { arrays: Vec<E> }
+impl<E> HasLoc for Zip<E> {
+    fn loc(&self) -> Loc {
+        self.loc
+    }
 }
+mk_new! { impl{E} Zip<E> => new {
+    loc: impl Into<Loc> = loc.into(),
+    arrays: Vec<E>,
+} }
 
 #[derive(Debug, PartialEq, Clone)]
 /// GRust expression AST.
@@ -370,7 +483,7 @@ pub enum Expr {
     /// Constant expression.
     Constant(Constant),
     /// Identifier expression.
-    Identifier(String),
+    Identifier(Ident),
     /// UnOp expression.
     UnOp(UnOp<Self>),
     /// BinOp expression.
@@ -405,11 +518,39 @@ pub enum Expr {
     Zip(Zip<Self>),
 }
 
+impl HasLoc for Expr {
+    fn loc(&self) -> Loc {
+        use Expr::*;
+        match self {
+            Constant(c) => c.loc(),
+            Identifier(id) => id.span().into(),
+            UnOp(op) => op.loc(),
+            BinOp(op) => op.loc(),
+            IfThenElse(ite) => ite.loc(),
+            Application(app) => app.loc(),
+            TypedAbstraction(ta) => ta.loc(),
+            Structure(s) => s.loc(),
+            Tuple(t) => t.loc(),
+            Enumeration(e) => e.loc(),
+            Array(a) => a.loc(),
+            Match(m) => m.loc(),
+            FieldAccess(fa) => fa.loc(),
+            TupleElementAccess(ta) => ta.loc(),
+            Map(m) => m.loc(),
+            Fold(f) => f.loc(),
+            Sort(s) => s.loc(),
+            Zip(z) => z.loc(),
+        }
+    }
+}
+
 mk_new! { impl Expr =>
     Constant: constant (val: Constant = val)
     Constant: cst (val: Constant = val)
-    Identifier: ident (val: impl Into<String> = val.into())
-    Identifier: test_ident (val: impl Into<String> = val.into())
+    Identifier: ident (val: impl Into<Ident> = val.into())
+    Identifier: test_ident (
+        val: impl AsRef<str> = Ident::new(val.as_ref(), Loc::test_dummy().into()),
+    )
     UnOp: unop (val: UnOp<Self> = val)
     BinOp: binop (val: BinOp<Self> = val)
     IfThenElse: ite (val: IfThenElse<Self> = val)

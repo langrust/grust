@@ -1565,9 +1565,10 @@ mod simple_expr_impl {
                 Identifier(id) => {
                     let id = ctx
                         .symbols
-                        .get_identifier_id(&id, false, ctx.loc, &mut vec![])
+                        .get_identifier_id(&id.to_string(), false, ctx.loc, &mut vec![])
                         .or_else(|_| {
-                            ctx.symbols.get_function_id(&id, false, ctx.loc, ctx.errors)
+                            ctx.symbols
+                                .get_function_id(&id.to_string(), false, ctx.loc, ctx.errors)
                         })?;
                     ir1::expr::Kind::Identifier { id }
                 }
@@ -1836,14 +1837,11 @@ mod stmt_pattern_impl {
                 }) => {
                     if let ir0::stream::Expr::Tuple(ir0::expr::Tuple {
                         elements: expr_elems,
+                        loc,
                     }) = expr
                     {
                         if expr_elems.len() != pat_elems.len() {
-                            let error = Error::IncompatibleTuple {
-                                loc: Location::default(),
-                            };
-                            ctx.errors.push(error);
-                            return Err(TerminationError);
+                            bad!(ctx.errors, @loc => ErrorKind::incompatible_tuple())
                         }
                         for (pat, expr) in pat_elems.into_iter().zip(expr_elems) {
                             pat.set_init_expr(expr, init_map, ctx)?
