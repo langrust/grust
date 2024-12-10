@@ -40,10 +40,12 @@ impl Typing for Function {
         }
         self.returned.typ_check(symbols, errors)?;
         let expected_type = symbols.get_function_output_type(self.id);
+        // #TODO don't `unwrap` below
         self.returned
             .get_typ()
             .unwrap()
-            .eq_check_at(expected_type, errors, &self.loc)
+            .expect(self.loc, expected_type)
+            .dewrap(errors)
     }
 }
 
@@ -94,7 +96,7 @@ impl Typing for contract::Term {
                 term.typ_check(symbols, errors)?;
                 let ty = term.typing.as_ref().unwrap().clone();
                 let mut unop_type = op.get_typ();
-                unop_type.apply(vec![ty], self.loc.clone(), errors)?
+                unop_type.apply(vec![ty], self.loc, errors)?
             }
             contract::Kind::Binary { op, left, right } => {
                 left.typ_check(symbols, errors)?;
@@ -102,21 +104,21 @@ impl Typing for contract::Term {
                 right.typ_check(symbols, errors)?;
                 let right_type = right.typing.as_ref().unwrap().clone();
                 let mut binop_type = op.get_typ();
-                binop_type.apply(vec![left_type, right_type], self.loc.clone(), errors)?
+                binop_type.apply(vec![left_type, right_type], self.loc, errors)?
             }
             contract::Kind::ForAll { term, .. } => {
                 term.typ_check(symbols, errors)?;
                 let ty = term.typing.as_ref().unwrap();
-                ty.eq_check_at(&Typ::bool(), errors, &self.loc)?;
+                ty.expect_bool(self.loc).dewrap(errors)?;
                 Typ::bool()
             }
             contract::Kind::Implication { left, right } => {
                 left.typ_check(symbols, errors)?;
                 let ty = left.typing.as_ref().unwrap();
-                ty.eq_check_at(&Typ::bool(), errors, &self.loc)?;
+                ty.expect_bool(self.loc).dewrap(errors)?;
                 right.typ_check(symbols, errors)?;
                 let ty = right.typing.as_ref().unwrap();
-                ty.eq_check_at(&Typ::bool(), errors, &self.loc)?;
+                ty.expect_bool(self.loc).dewrap(errors)?;
                 ty.clone()
             }
             contract::Kind::PresentEvent { event_id, pattern } => {
@@ -141,18 +143,39 @@ impl Typing for interface::FlowStatement {
     fn typ_check(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         use interface::*;
         match self {
-            FlowStatement::Declaration(FlowDeclaration { pattern, expr, .. }) => {
+            FlowStatement::Declaration(FlowDeclaration {
+                let_token,
+                semi_token,
+                pattern,
+                expr,
+                ..
+            }) => {
                 let expected_type = pattern.typ.as_ref().unwrap();
                 expr.typ_check(symbols, errors)?;
                 let expression_type = expr.get_typ().unwrap();
-                expression_type.eq_check(expected_type, errors)
+                let loc = let_token
+                    .span
+                    .join(semi_token.span)
+                    .map(Loc::from)
+                    .unwrap_or(pattern.loc);
+                expression_type.expect(loc, expected_type).dewrap(errors)
             }
-            FlowStatement::Instantiation(FlowInstantiation { pattern, expr, .. }) => {
+            FlowStatement::Instantiation(FlowInstantiation {
+                pattern,
+                eq_token,
+                semi_token,
+                expr,
+            }) => {
                 pattern.typ_check(symbols, errors)?;
                 let expected_type = pattern.typ.as_ref().unwrap();
                 expr.typ_check(symbols, errors)?;
                 let expression_type = expr.get_typ().unwrap();
-                expression_type.eq_check(expected_type, errors)
+                let loc = pattern
+                    .loc
+                    .join(semi_token.span)
+                    .unwrap_or(eq_token.span.into())
+                    .into();
+                expression_type.expect(loc, expected_type).dewrap(errors)
             }
         }
     }
@@ -160,8 +183,7 @@ impl Typing for interface::FlowStatement {
 
 impl Typing for flow::Expr {
     fn typ_check(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
-        let loc = Location::default();
-
+        let loc = self.loc;
         match &mut self.kind {
             flow::Kind::Ident { id } => {
                 let typ = symbols.get_typ(*id);
@@ -179,12 +201,7 @@ impl Typing for flow::Expr {
                         Ok(())
                     }
                     given_type => {
-                        let error = Error::ExpectEvent {
-                            given_type: given_type.clone(),
-                            loc: loc,
-                        };
-                        errors.push(error);
-                        Err(TerminationError)
+                        bad!(errors, @loc => ErrorKind::expected_event(given_type.clone()))
                     }
                 }
             }
@@ -199,12 +216,7 @@ impl Typing for flow::Expr {
                         Ok(())
                     }
                     given_type => {
-                        let error = Error::ExpectSignal {
-                            given_type: given_type.clone(),
-                            loc: loc,
-                        };
-                        errors.push(error);
-                        Err(TerminationError)
+                        bad!(errors, @loc => ErrorKind::expected_signal(given_type.clone()))
                     }
                 }
             }
@@ -214,12 +226,7 @@ impl Typing for flow::Expr {
                 match expr.get_typ().unwrap() {
                     Typ::Event { .. } => (),
                     given_type => {
-                        let error = Error::ExpectEvent {
-                            given_type: given_type.clone(),
-                            loc: loc,
-                        };
-                        errors.push(error);
-                        return Err(TerminationError);
+                        bad!(errors, @loc => ErrorKind::expected_event(given_type.clone()))
                     }
                 }
                 // set typing
@@ -233,18 +240,13 @@ impl Typing for flow::Expr {
                 match typ {
                     Typ::Signal { ty: typ, .. } => {
                         let delta_ty = delta.get_typ();
-                        typ.eq_check(&delta_ty, errors)?;
+                        typ.expect(expr.loc, &delta_ty).dewrap(errors)?;
                         // set typing
                         self.typ = Some(Typ::signal((**typ).clone()));
                         Ok(())
                     }
                     given_type => {
-                        let error = Error::ExpectSignal {
-                            given_type: given_type.clone(),
-                            loc: loc,
-                        };
-                        errors.push(error);
-                        Err(TerminationError)
+                        bad!(errors, @loc => ErrorKind::expected_signal(given_type.clone()))
                     }
                 }
             }
@@ -259,12 +261,7 @@ impl Typing for flow::Expr {
                         Ok(())
                     }
                     given_type => {
-                        let error = Error::ExpectSignal {
-                            given_type: given_type.clone(),
-                            loc: loc,
-                        };
-                        errors.push(error);
-                        Err(TerminationError)
+                        bad!(errors, @loc => ErrorKind::expected_signal(given_type.clone()))
                     }
                 }
             }
@@ -276,28 +273,18 @@ impl Typing for flow::Expr {
                     Typ::Event { ty: typ_1, .. } => {
                         match expr_2.get_typ().unwrap() {
                             Typ::Event { ty: typ_2, .. } => {
-                                typ_2.eq_check_at(typ_1.as_ref(), errors, &loc)?;
+                                typ_2.expect(loc, typ_1).dewrap(errors)?;
                                 // set typing
                                 self.typ = Some(Typ::event((**typ_1).clone()));
                                 Ok(())
                             }
                             given_type => {
-                                let error = Error::ExpectEvent {
-                                    given_type: given_type.clone(),
-                                    loc: loc,
-                                };
-                                errors.push(error);
-                                Err(TerminationError)
+                                bad!(errors, @loc => ErrorKind::expected_event(given_type.clone()))
                             }
                         }
                     }
                     given_type => {
-                        let error = Error::ExpectEvent {
-                            given_type: given_type.clone(),
-                            loc: loc,
-                        };
-                        errors.push(error);
-                        Err(TerminationError)
+                        bad!(errors, @loc => ErrorKind::expected_event(given_type.clone()))
                     }
                 }
             }
@@ -313,7 +300,7 @@ impl Typing for flow::Expr {
                         input.typ_check(symbols, errors)?;
                         let input_type = input.get_typ().unwrap().convert();
                         let expected_type = symbols.get_typ(*id);
-                        input_type.eq_check_at(expected_type, errors, &self.loc)
+                        input_type.expect(self.loc, expected_type).dewrap(errors)
                     })
                     .collect::<TRes<()>>()?;
 
@@ -361,12 +348,13 @@ impl Typing for stream::Expr {
 
                 // check it is equal to constant type
                 let id_type = symbols.get_typ(id);
+                // #TODO no `unwrap`
                 let constant_type = constant.get_typ().unwrap();
-                id_type.eq_check_at(constant_type, errors, &self.loc)?;
+                id_type.expect(self.loc, constant_type).dewrap(errors)?;
 
                 // check the scope is not 'very_local'
                 if let Scope::VeryLocal = symbols.get_scope(id) {
-                    return Err(TerminationError); // todo generate error
+                    bad!() // todo generate error
                 }
 
                 self.typ = Some(constant_type.clone());
@@ -386,7 +374,7 @@ impl Typing for stream::Expr {
 
                         let input_type = input.typ.as_ref().unwrap();
                         let expected_type = symbols.get_typ(*id);
-                        input_type.eq_check_at(expected_type, errors, &self.loc)
+                        input_type.expect(self.loc, expected_type).dewrap(errors)
                     })
                     .collect::<TRes<()>>()?;
 
@@ -409,7 +397,7 @@ impl Typing for stream::Expr {
             }
 
             stream::Kind::Expression { ref mut expr } => {
-                self.typ = Some(expr.typ_check(&self.loc, symbols, errors)?);
+                self.typ = Some(expr.typ_check(self.loc, symbols, errors)?);
                 Ok(())
             }
 
@@ -429,7 +417,7 @@ impl Typing for stream::Expr {
                 // check expr is a boolean
                 let expr_type = expr.get_typ().unwrap().clone();
                 let expected = Typ::bool();
-                expr_type.eq_check_at(&expected, errors, &self.loc)?;
+                expr_type.expect(self.loc, &expected).dewrap(errors)?;
                 // set the type
                 self.typ = Some(expected);
                 Ok(())
@@ -456,7 +444,7 @@ impl<E: Typing> Typing for Stmt<E> {
         self.expr.typ_check(symbols, errors)?;
         let expr_type = self.expr.get_typ().unwrap();
 
-        expr_type.eq_check_at(expected_type, errors, &self.loc)?;
+        expr_type.expect(self.loc, expected_type).dewrap(errors)?;
 
         Ok(())
     }
@@ -474,7 +462,9 @@ impl Pattern {
         match self.kind {
             Kind::Constant { ref constant } => {
                 let pattern_type = constant.get_typ();
-                pattern_type.eq_check_at(&expected_type, errors, &self.loc)?;
+                pattern_type
+                    .expect(self.loc, &expected_type)
+                    .dewrap(errors)?;
                 self.typing = Some(pattern_type);
                 Ok(())
             }
@@ -495,7 +485,7 @@ impl Pattern {
                             pattern.typ_check(&expected_type, symbols, errors)?;
                             // check pattern type
                             let pattern_type = pattern.get_typ().unwrap();
-                            pattern_type.eq_check_at(&expected_type, errors, &self.loc)
+                            pattern_type.expect(self.loc, &expected_type).dewrap(errors)
                         } else {
                             Ok(())
                         }
@@ -515,11 +505,7 @@ impl Pattern {
                     elements: types, ..
                 } => {
                     if elements.len() != types.len() {
-                        let error = Error::IncompatibleTuple {
-                            loc: self.loc.clone(),
-                        };
-                        errors.push(error);
-                        return Err(TerminationError);
+                        bad!(errors, @self.loc => ErrorKind::incompatible_tuple())
                     }
                     elements
                         .iter_mut()
@@ -537,13 +523,7 @@ impl Pattern {
                     self.typing = Some(Typ::tuple(types));
                     Ok(())
                 }
-                _ => {
-                    let error = Error::ExpectTuplePattern {
-                        loc: self.loc.clone(),
-                    };
-                    errors.push(error);
-                    Err(TerminationError)
-                }
+                _ => bad!(errors, @self.loc => ErrorKind::expected_tuple_pat()),
             },
             Kind::Some { ref mut pattern } => match expected_type {
                 Typ::SMEvent { ty, .. } => {
@@ -552,13 +532,7 @@ impl Pattern {
                     self.typing = Some(Typ::sm_event(pattern_type));
                     Ok(())
                 }
-                _ => {
-                    let error = Error::ExpectOptionPattern {
-                        loc: self.loc.clone(),
-                    };
-                    errors.push(error);
-                    Err(TerminationError)
-                }
+                _ => bad!(errors, @self.loc => ErrorKind::expected_option_pat()),
             },
             Kind::None => {
                 self.typing = Some(Typ::sm_event(Typ::Any));
@@ -573,7 +547,7 @@ impl Pattern {
                 ref mut pattern,
             } => {
                 let typing = symbols.get_typ(event_id).clone();
-                expected_type.eq_check_at(&typing, errors, &self.loc)?;
+                expected_type.expect(self.loc, &typing).dewrap(errors)?;
 
                 match &typing {
                     Typ::SMEvent { ty, .. } => pattern.typ_check(&ty, symbols, errors)?,
@@ -585,7 +559,7 @@ impl Pattern {
             }
             Kind::NoEvent { event_id } => {
                 let typing = symbols.get_typ(event_id).clone();
-                expected_type.eq_check_at(&typing, errors, &self.loc)?;
+                expected_type.expect(self.loc, &typing).dewrap(errors)?;
                 self.typing = Some(typing);
                 Ok(())
             }
@@ -603,8 +577,13 @@ impl stmt::Pattern {
                 Ok(())
             }
             stmt::Kind::Typed { id, ref typ } => {
-                let expected_type = symbols.get_typ(id);
-                typ.eq_check(expected_type, errors)?;
+                let expected_type = &symbols.get_typ(id);
+                let loc = symbols
+                    .resolve_symbol(id)
+                    .dewrap(errors)?
+                    .loc
+                    .unwrap_or_else(Loc::mixed_site);
+                typ.expect(loc, expected_type).dewrap(errors)?;
                 // symbols.set_type(id, typ.clone());
                 self.typ = Some(typ.clone());
                 Ok(())
@@ -629,7 +608,7 @@ impl stmt::Pattern {
 
 impl Typing for Expr {
     fn typ_check(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
-        self.typing = Some(self.kind.typ_check(&self.loc, symbols, errors)?);
+        self.typing = Some(self.kind.typ_check(self.loc, symbols, errors)?);
         Ok(())
     }
     fn get_typ(&self) -> Option<&Typ> {
@@ -644,7 +623,7 @@ impl<E: Typing> expr::Kind<E> {
     /// Tries to type the given construct.
     fn typ_check(
         &mut self,
-        loc: &Location,
+        loc: Loc,
         symbols: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> TRes<Typ> {
@@ -683,23 +662,19 @@ impl<E: Typing> expr::Kind<E> {
 }
 
 struct ExprTyping<'a, E: Typing> {
-    loc: &'a Location,
+    pub loc: Loc,
     table: &'a mut SymbolTable,
     errors: &'a mut Vec<Error>,
     _phantom: std::marker::PhantomData<E>,
 }
 impl<'a, E: Typing> ExprTyping<'a, E> {
-    fn new(loc: &'a Location, table: &'a mut SymbolTable, errors: &'a mut Vec<Error>) -> Self {
+    fn new(loc: Loc, table: &'a mut SymbolTable, errors: &'a mut Vec<Error>) -> Self {
         Self {
             loc,
             table,
             errors,
             _phantom: std::marker::PhantomData,
         }
-    }
-
-    fn loc(&self) -> Location {
-        self.loc.clone()
     }
 
     fn abstraction(&mut self, inputs: &Vec<usize>, expr: &mut E) -> TRes<Typ> {
@@ -734,18 +709,14 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
         let application_type =
             f.get_typ_mut()
                 .unwrap()
-                .apply(input_types, self.loc(), self.errors)?;
+                .apply(input_types, self.loc, self.errors)?;
 
         Ok(application_type)
     }
 
     fn array(&mut self, elms: &mut Vec<E>) -> TRes<Typ> {
         if elms.len() == 0 {
-            let error = Error::ExpectInput {
-                loc: self.loc.clone(),
-            };
-            self.errors.push(error);
-            return Err(TerminationError);
+            bad!(self.errors, @self.loc => ErrorKind::expected_input())
         }
 
         elms.iter_mut()
@@ -756,7 +727,9 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
         elms.iter()
             .map(|element| {
                 let element_type = element.get_typ().unwrap();
-                element_type.eq_check_at(first_type, self.errors, &self.loc)
+                element_type
+                    .expect(self.loc, first_type)
+                    .dewrap(self.errors)
             })
             .collect::<TRes<()>>()?;
 
@@ -775,7 +748,7 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
         // get binop type
         let mut binop_type = op.get_typ();
 
-        binop_type.apply(vec![lft_type, rgt_type], self.loc(), self.errors)
+        binop_type.apply(vec![lft_type, rgt_type], self.loc, self.errors)
     }
 
     fn enumeration(&mut self, enum_id: usize) -> TRes<Typ> {
@@ -807,25 +780,16 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
                         if let Some(field_type) = option_field_type {
                             Ok(field_type)
                         } else {
-                            let error = Error::UnknownField {
-                                structure_name: name.to_string(),
-                                field_name: field.to_string(),
-                                loc: self.loc(),
-                            };
-                            self.errors.push(error);
-                            Err(TerminationError)
+                            bad!(self.errors, @self.loc =>
+                                ErrorKind::unknown_field(name.to_string(), field)
+                            )
                         }
                     }
                     _ => unreachable!(),
                 }
             }
             given_type => {
-                let error = Error::ExpectStructure {
-                    given_type: given_type.clone(),
-                    loc: self.loc(),
-                };
-                self.errors.push(error);
-                Err(TerminationError)
+                bad!(self.errors, @self.loc => ErrorKind::expected_structure(given_type.clone()))
             }
         }
     }
@@ -850,22 +814,19 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
                 // apply the function type to the type of the initialization and array's elements
                 let new_type = function_type.apply(
                     vec![initialization_type.clone(), *element_type.clone()],
-                    self.loc(),
+                    self.loc,
                     self.errors,
                 )?;
 
                 // check the new type is equal to the initialization type
-                new_type.eq_check_at(initialization_type, self.errors, &self.loc)?;
+                new_type
+                    .expect(self.loc, initialization_type)
+                    .dewrap(self.errors)?;
 
                 Ok(new_type)
             }
             given_type => {
-                let error = Error::ExpectArray {
-                    given_type: given_type.clone(),
-                    loc: self.loc(),
-                };
-                self.errors.push(error);
-                Err(TerminationError)
+                bad!(self.errors, @self.loc => ErrorKind::expected_array(given_type.clone()))
             }
         }
     }
@@ -882,7 +843,7 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
         // get if_then_else type
         let mut if_then_else_type = OtherOp::IfThenElse.get_typ();
 
-        if_then_else_type.apply(vec![cnd_type, thn_type, els_type], self.loc(), self.errors)
+        if_then_else_type.apply(vec![cnd_type, thn_type, els_type], self.loc, self.errors)
     }
 
     fn map(&mut self, expr: &mut E, fun: &mut E) -> TRes<Typ> {
@@ -903,7 +864,7 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
 
                 // apply the function type to the type of array's elements
                 let new_element_type =
-                    function_type.apply(vec![*element_type.clone()], self.loc(), self.errors)?;
+                    function_type.apply(vec![*element_type.clone()], self.loc, self.errors)?;
 
                 Ok(Typ::Array {
                     ty: new_element_type.into(),
@@ -913,12 +874,7 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
                 })
             }
             given_type => {
-                let error = Error::ExpectArray {
-                    given_type: given_type.clone(),
-                    loc: self.loc(),
-                };
-                self.errors.push(error);
-                Err(TerminationError)
+                bad!(self.errors, @self.loc => ErrorKind::expected_array(given_type.clone()))
             }
         }
     }
@@ -942,11 +898,11 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
                         .as_mut()
                         .map_or(Ok(()), |expression| {
                             expression.typ_check(self.table, self.errors)?;
-                            expression.get_typ().unwrap().eq_check_at(
-                                &Typ::bool(),
-                                self.errors,
-                                &self.loc,
-                            )
+                            expression
+                                .get_typ()
+                                .unwrap()
+                                .expect_bool(self.loc)
+                                .dewrap(self.errors)
                         })?;
 
                     // set types for every pattern
@@ -968,7 +924,9 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
         arms.iter()
             .map(|(_, _, _, arm_expression)| {
                 let arm_expression_type = arm_expression.get_typ().unwrap();
-                arm_expression_type.eq_check_at(first_type, self.errors, &self.loc)
+                arm_expression_type
+                    .expect(self.loc, first_type)
+                    .dewrap(self.errors)
             })
             .collect::<TRes<()>>()?;
 
@@ -993,14 +951,15 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
                 let function_type = fun.get_typ_mut().unwrap();
 
                 // check it is a sorting function: (element_type, element_type) -> int
-                function_type.eq_check_at(
-                    &Typ::function(
-                        vec![*element_type.clone(), *element_type.clone()],
-                        Typ::int(),
-                    ),
-                    self.errors,
-                    &self.loc,
-                )?;
+                function_type
+                    .expect(
+                        self.loc,
+                        &Typ::function(
+                            vec![*element_type.clone(), *element_type.clone()],
+                            Typ::int(),
+                        ),
+                    )
+                    .dewrap(self.errors)?;
 
                 Ok(Typ::Array {
                     ty: element_type.clone(),
@@ -1010,12 +969,7 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
                 })
             }
             given_type => {
-                let error = Error::ExpectArray {
-                    given_type: given_type.clone(),
-                    loc: self.loc(),
-                };
-                self.errors.push(error);
-                Err(TerminationError)
+                bad!(self.errors, @self.loc => ErrorKind::expected_array(given_type.clone()))
             }
         }
     }
@@ -1028,7 +982,9 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
                 expression.typ_check(self.table, self.errors)?;
                 let expression_type = expression.get_typ().unwrap();
                 let expected_type = self.table.get_typ(*id);
-                expression_type.eq_check_at(expected_type, self.errors, &self.loc)
+                expression_type
+                    .expect(self.loc, expected_type)
+                    .dewrap(self.errors)
             })
             .collect::<TRes<()>>()?;
 
@@ -1047,18 +1003,11 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
                 if let Some(element_type) = option_element_type {
                     Ok(element_type.clone())
                 } else {
-                    let error = Error::IndexOutOfBounds { loc: self.loc() };
-                    self.errors.push(error);
-                    Err(TerminationError)
+                    bad!(self.errors, @self.loc => ErrorKind::oob())
                 }
             }
             given_type => {
-                let error = Error::ExpectTuple {
-                    given_type: given_type.clone(),
-                    loc: self.loc(),
-                };
-                self.errors.push(error);
-                Err(TerminationError)
+                bad!(self.errors, @self.loc => ErrorKind::expected_tuple(given_type.clone()))
             }
         }
     }
@@ -1088,14 +1037,12 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
         // get unop type
         let mut unop_type = op.get_typ();
 
-        unop_type.apply(vec![expr_type], self.loc(), self.errors)
+        unop_type.apply(vec![expr_type], self.loc, self.errors)
     }
 
     fn zip(&mut self, arrays: &mut Vec<E>) -> TRes<Typ> {
         if arrays.len() == 0 {
-            let error = Error::ExpectInput { loc: self.loc() };
-            self.errors.push(error);
-            return Err(TerminationError);
+            bad!(self.errors, @self.loc => ErrorKind::expected_input())
         }
 
         arrays
@@ -1105,35 +1052,20 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
 
         let length = match arrays[0].get_typ().unwrap() {
             Typ::Array { size: n, .. } => Ok(n),
-            ty => {
-                let error = Error::ExpectArray {
-                    given_type: ty.clone(),
-                    loc: self.loc(),
-                };
-                self.errors.push(error);
-                Err(TerminationError)
-            }
+            ty => bad!(self.errors, @self.loc => ErrorKind::expected_array(ty.clone())),
         }?;
         let tuple_types = arrays
             .iter()
             .map(|array| match array.get_typ().unwrap() {
                 Typ::Array { ty, size: n, .. } if n == length => Ok(*ty.clone()),
                 Typ::Array { size: n, .. } => {
-                    let error = Error::IncompatibleLength {
-                        given_length: n.base10_parse().unwrap(),
-                        expected_length: length.base10_parse().unwrap(),
-                        loc: self.loc(),
-                    };
-                    self.errors.push(error);
-                    Err(TerminationError)
+                    bad!(self.errors, @self.loc => ErrorKind::incompatible_length(
+                        n.base10_parse().unwrap(),
+                        length.base10_parse().unwrap(),
+                    ))
                 }
                 ty => {
-                    let error = Error::ExpectArray {
-                        given_type: ty.clone(),
-                        loc: self.loc(),
-                    };
-                    self.errors.push(error);
-                    Err(TerminationError)
+                    bad!(self.errors, @self.loc => ErrorKind::expected_array(ty.clone()))
                 }
             })
             .collect::<TRes<Vec<Typ>>>()?;

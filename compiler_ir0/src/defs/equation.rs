@@ -80,6 +80,11 @@ pub struct TupleEventPattern {
     /// The activated patterns.
     pub patterns: syn::Punctuated<EventPattern, Token![,]>,
 }
+impl TupleEventPattern {
+    pub fn loc(&self) -> Loc {
+        self.paren_token.span.join().into()
+    }
+}
 mk_new! { impl TupleEventPattern =>
     new {
         paren_token: syn::token::Paren,
@@ -97,6 +102,11 @@ pub struct LetEventPattern {
     pub event: Ident,
     pub question_token: Token![?],
 }
+impl LetEventPattern {
+    pub fn loc(&self) -> Loc {
+        self.let_token.span.into()
+    }
+}
 mk_new! { impl LetEventPattern =>
     new {
         let_token: Token![let],
@@ -112,6 +122,15 @@ pub enum EventPattern {
     Tuple(TupleEventPattern),
     Let(LetEventPattern),
     RisingEdge(Box<stream::Expr>),
+}
+impl EventPattern {
+    pub fn loc(&self) -> Loc {
+        match self {
+            Self::Tuple(t) => t.loc(),
+            Self::Let(l) => l.loc(),
+            Self::RisingEdge(r) => r.loc(),
+        }
+    }
 }
 impl std::fmt::Debug for EventPattern {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

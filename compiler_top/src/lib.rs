@@ -32,8 +32,8 @@ pub fn into_token_stream(ast: Ast) -> TokenStream2 {
     let ir1 = match ir1::from_ast(ast, &mut symbol_table) {
         Ok(ir1) => ir1,
         Err(errors) => {
-            for e in errors {
-                eprintln!("{}", e)
+            for error in errors {
+                tokens.extend(error.into_syn_error().to_compile_error());
             }
             return tokens;
         }

@@ -36,6 +36,16 @@ mk_new! { impl Constant =>
 }
 
 impl Constant {
+    pub fn loc(&self) -> Loc {
+        match self {
+            Self::Integer(l) => l.span().into(),
+            Self::Float(l) => l.span().into(),
+            Self::Boolean(l) => l.span().into(),
+            Self::Unit(p) => p.span.join().into(),
+            Self::Default => Loc::call_site(),
+        }
+    }
+
     /// The `syn` version of a constant.
     pub fn into_syn(self) -> syn::Expr {
         prelude!(syn::{Expr, ExprLit, ExprTuple});

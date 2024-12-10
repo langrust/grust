@@ -403,6 +403,7 @@ mk_new! { impl Expr =>
     Constant: constant (val: Constant = val)
     Constant: cst (val: Constant = val)
     Identifier: ident (val: impl Into<String> = val.into())
+    Identifier: test_ident (val: impl Into<String> = val.into())
     UnOp: unop (val: UnOp<Self> = val)
     BinOp: binop (val: BinOp<Self> = val)
     IfThenElse: ite (val: IfThenElse<Self> = val)

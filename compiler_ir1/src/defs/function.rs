@@ -14,5 +14,5 @@ pub struct Function {
     /// Function's returned expression and its type.
     pub returned: ir1::Expr,
     /// Function location.
-    pub loc: Location,
+    pub loc: Loc,
 }

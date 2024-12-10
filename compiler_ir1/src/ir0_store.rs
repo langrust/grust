@@ -12,8 +12,8 @@ mod component {
     impl Ir0Store for Component {
         /// Store node's signals in symbol table.
         fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
-            let location = Location::default();
-            let ctx = &mut ir1::ctx::Loc::new(&location, symbol_table, errors);
+            let location = Loc::mixed_site();
+            let ctx = &mut ir1::ctx::WithLoc::new(location, symbol_table, errors);
 
             ctx.symbols.local();
 
@@ -109,8 +109,8 @@ mod component {
     impl Ir0Store for ComponentImport {
         /// Store node's signals in symbol table.
         fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
-            let location = Location::default();
-            let ctx = &mut ir1::ctx::Loc::new(&location, symbol_table, errors);
+            let location = Loc::mixed_site();
+            let ctx = &mut ir1::ctx::WithLoc::new(location, symbol_table, errors);
             ctx.symbols.local();
 
             let last = self.path.clone().segments.pop().unwrap().into_value();
@@ -351,7 +351,7 @@ mod equation {
                             symbol_table.put_back_in_context(
                                 v,
                                 false,
-                                Location::default(),
+                                Loc::mixed_site(),
                                 errors,
                             )?;
                         }
@@ -420,8 +420,8 @@ impl Ir0Store for Ast {
 
 impl Ir0Store for ir0::Function {
     fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
-        let location = Location::default();
-        let ctx = &mut ir1::ctx::Loc::new(&location, symbol_table, errors);
+        let location = Loc::mixed_site();
+        let ctx = &mut ir1::ctx::WithLoc::new(location, symbol_table, errors);
         ctx.symbols.local();
 
         let inputs = self
@@ -487,7 +487,7 @@ mod expr_pattern {
             symbol_table: &mut SymbolTable,
             errors: &mut Vec<Error>,
         ) -> TRes<Vec<(String, usize)>> {
-            let location = Location::default();
+            let location = Loc::mixed_site();
 
             match self {
                 Pattern::Identifier(name) => {
@@ -599,7 +599,7 @@ mod stmt_pattern {
             symbol_table: &mut SymbolTable,
             errors: &mut Vec<Error>,
         ) -> TRes<Vec<(String, usize)>> {
-            let location = Location::default();
+            let location = Loc::mixed_site();
 
             match self {
                 Pattern::Identifier(ident) => {
@@ -628,8 +628,8 @@ mod stmt_pattern {
                 }
                 Pattern::Typed(Typed { ident, typ, .. }) => {
                     if is_declaration {
-                        let typ = typ.clone().into_ir1(&mut ir1::ctx::Loc::new(
-                            &location,
+                        let typ = typ.clone().into_ir1(&mut ir1::ctx::WithLoc::new(
+                            location,
                             symbol_table,
                             errors,
                         ))?;
@@ -693,7 +693,7 @@ mod stmt_pattern {
                         let id = symbol_table.get_identifier_id(
                             &name,
                             false,
-                            Location::default(),
+                            Loc::mixed_site(),
                             errors,
                         )?;
                         if symbol_table.get_typ(id).is_event() {
@@ -716,7 +716,7 @@ mod stmt_pattern {
                         let id = symbol_table.get_identifier_id(
                             &name,
                             false,
-                            Location::default(),
+                            Loc::mixed_site(),
                             errors,
                         )?;
                         if typ.is_event() {
@@ -747,7 +747,7 @@ mod stmt_pattern {
 impl Ir0Store for ir0::Typedef {
     /// Store typedef's identifiers in symbol table.
     fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
-        let location = Location::default();
+        let location = Loc::mixed_site();
         match self {
             ir0::Typedef::Structure { ident, fields, .. } => {
                 let id = ident.to_string();
@@ -866,7 +866,7 @@ mod event_pattern {
                     let event_id = symbol_table.get_identifier_id(
                         &pattern.event.to_string(),
                         false,
-                        Location::default(),
+                        Loc::mixed_site(),
                         errors,
                     )?;
                     let _ = events_indices.entry(event_id).or_insert_with(|| {
@@ -922,8 +922,8 @@ mod event_pattern {
                     Ok(guard)
                 }
                 EventPattern::Let(pattern) => {
-                    let location = Location::default();
-                    let ctx = &mut ir1::ctx::Loc::new(&location, symbols, errors);
+                    let location = Loc::mixed_site();
+                    let ctx = &mut ir1::ctx::WithLoc::new(location, symbols, errors);
 
                     // get the event identifier
                     let event_id = ctx.symbols.get_identifier_id(
@@ -946,8 +946,8 @@ mod event_pattern {
                     Ok(None)
                 }
                 EventPattern::RisingEdge(expr) => {
-                    let location = Location::default();
-                    let ctx = &mut ir1::ctx::PatLoc::new(None, &location, symbols, errors);
+                    let location = Loc::mixed_site();
+                    let ctx = &mut ir1::ctx::PatLoc::new(None, location, symbols, errors);
                     let guard = ir1::stream::Kind::rising_edge(expr.into_ir1(ctx)?);
                     Ok(Some(ir1::stream::expr(guard)))
                 }

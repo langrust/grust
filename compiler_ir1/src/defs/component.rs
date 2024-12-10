@@ -31,10 +31,10 @@ impl Component {
             Component::Import(comp_import) => comp_import.id,
         }
     }
-    pub fn get_location(&self) -> &Location {
+    pub fn get_location(&self) -> Loc {
         match self {
-            Component::Definition(comp_def) => &comp_def.loc,
-            Component::Import(comp_import) => &comp_import.loc,
+            Component::Definition(comp_def) => comp_def.loc,
+            Component::Import(comp_import) => comp_import.loc,
         }
     }
 
@@ -83,14 +83,11 @@ impl Component {
         });
 
         // if a schedule exists, then the node is causal
-        let _ = graph::toposort(&subgraph, None).map_err(|signal| {
-            let error = Error::NotCausalSignal {
-                signal: symbol_table.get_name(signal.node_id()).clone(),
-                loc: self.get_location().clone(),
-            };
-            errors.push(error);
-            TerminationError
-        })?;
+        let res = graph::toposort(&subgraph, None);
+        if let Err(signal) = res {
+            let name = symbol_table.get_name(signal.node_id());
+            bad!( errors, @self.get_location() => ErrorKind::signal_non_causal(name) )
+        }
 
         Ok(())
     }
@@ -301,7 +298,7 @@ pub struct ComponentDefinition {
     /// Component's contract.
     pub contract: ir1::Contract,
     /// Component location.
-    pub loc: Location,
+    pub loc: Loc,
     /// Component dependency graph.
     pub graph: DiGraphMap<usize, Label>,
     /// Component reduced dependency graph.
@@ -703,7 +700,7 @@ pub struct ComponentImport {
     /// Component path.
     pub path: syn::Path,
     /// Component location.
-    pub loc: Location,
+    pub loc: Loc,
     /// Component dependency graph.
     pub graph: DiGraphMap<usize, Label>,
 }

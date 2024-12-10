@@ -92,14 +92,14 @@ pub struct Term {
     /// The type of the term
     pub typing: Option<Typ>,
     /// The location in source code
-    pub loc: Location,
+    pub loc: Loc,
 }
 
 mk_new! { impl Term =>
     new {
         kind: Kind,
         typing: Option<Typ>,
-        loc: Location,
+        loc: Loc,
     }
 }
 

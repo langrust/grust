@@ -202,7 +202,7 @@ pub struct Expr {
     /// Expression type.
     pub typing: Option<Typ>,
     /// Expression location.
-    pub loc: Location,
+    pub loc: Loc,
     /// Expression dependencies.
     pub dependencies: ir1::Dependencies,
 }
@@ -231,7 +231,7 @@ pub fn init(kind: Kind<Expr>) -> Expr {
     Expr {
         kind,
         typing: None,
-        loc: Location::default(),
+        loc: Loc::mixed_site(),
         dependencies: ir1::Dependencies::new(),
     }
 }

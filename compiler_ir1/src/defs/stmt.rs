@@ -34,21 +34,33 @@ mk_new! { impl Kind =>
 }
 
 /// pattern.
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, Clone)]
 pub struct Pattern {
     /// Pattern kind.
     pub kind: Kind,
     /// Pattern type.
     pub typ: Option<Typ>,
     /// Pattern location.
-    pub loc: Location,
+    pub loc: Loc,
+}
+impl PartialEq for Pattern {
+    fn eq(&self, other: &Self) -> bool {
+        self.kind == other.kind && self.typ == other.typ
+    }
+}
+impl Eq for Pattern {}
+impl Hash for Pattern {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.kind.hash(state);
+        self.typ.hash(state);
+    }
 }
 impl Pattern {
-    pub fn of_many(elements: Vec<Self>) -> Self {
+    pub fn of_many(loc: Loc, elements: Vec<Self>) -> Self {
         Self {
             kind: Kind::Tuple { elements },
             typ: None,
-            loc: Location::dummy().clone(),
+            loc,
         }
     }
 }
@@ -60,7 +72,7 @@ pub fn init(kind: Kind) -> Pattern {
     Pattern {
         kind,
         typ: None,
-        loc: Location::default(),
+        loc: Loc::mixed_site(),
     }
 }
 
@@ -95,7 +107,7 @@ impl Pattern {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 /// LanGRust statement.
 pub struct Stmt<E> {
     /// Pattern of elements.
@@ -103,7 +115,12 @@ pub struct Stmt<E> {
     /// The expression defining the element.
     pub expr: E,
     /// Stmt location.
-    pub loc: Location,
+    pub loc: Loc,
+}
+impl<E: PartialEq> PartialEq for Stmt<E> {
+    fn eq(&self, other: &Self) -> bool {
+        self.pattern == other.pattern && self.expr == other.expr
+    }
 }
 
 impl ir1::stream::Stmt {

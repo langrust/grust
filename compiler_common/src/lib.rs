@@ -19,7 +19,9 @@ mod mk_new_def;
 
 mod constant;
 mod convert_case;
-mod error;
+mod err;
+// mod error;
+pub mod check;
 mod hash_map;
 mod location;
 mod scope;

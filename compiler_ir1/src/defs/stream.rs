@@ -9,7 +9,7 @@ pub type Stmt = ir1::Stmt<Expr>;
 mk_new! { impl Stmt => new {
     pattern: ir1::stmt::Pattern,
     expr: Expr,
-    loc: Location,
+    loc: Loc,
 } }
 
 impl Stmt {
@@ -979,7 +979,7 @@ pub struct Expr {
     /// Stream expression type.
     pub typ: Option<Typ>,
     /// Stream expression location.
-    pub loc: Location,
+    pub loc: Loc,
     /// Stream expression dependencies.
     pub dependencies: Dependencies,
 }
@@ -991,7 +991,7 @@ pub fn expr(kind: Kind) -> Expr {
     Expr {
         kind,
         typ: None,
-        loc: Location::default(),
+        loc: Loc::mixed_site(),
         dependencies: Dependencies::new(),
     }
 }
@@ -1162,19 +1162,19 @@ impl Expr {
                             syn::LitBool::new(false, macro2::Span::call_site()),
                         ))),
                         typ: Some(Typ::Boolean(Default::default())),
-                        loc: Default::default(),
+                        loc: Loc::mixed_site(),
                         dependencies: Dependencies::from(vec![]),
                     };
                     let mem = stream::Expr {
                         kind: stream::Kind::fby(id, constant),
                         typ: Some(Typ::Boolean(Default::default())),
-                        loc: Default::default(),
+                        loc: Loc::mixed_site(),
                         dependencies: fby_dependencies.clone(),
                     };
                     let not_mem = stream::Expr {
                         kind: stream::Kind::expr(expr::Kind::unop(UOp::Not, mem)),
                         typ: Some(Typ::Boolean(Default::default())),
-                        loc: Default::default(),
+                        loc: Loc::mixed_site(),
                         dependencies: fby_dependencies,
                     };
 
