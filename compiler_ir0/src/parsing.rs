@@ -1127,9 +1127,10 @@ mod parse_expr {
         E: ParsePrec,
     {
         fn parse(input: ParseStream) -> syn::Res<Self> {
+            let op_loc = input.span().into();
             let op = input.parse()?;
             let expr = Box::new(E::parse_term(input)?);
-            Ok(UnOp { op, expr })
+            Ok(UnOp { op, expr, op_loc })
         }
     }
 
@@ -1141,24 +1142,28 @@ mod parse_expr {
             BOp::peek(input)
         }
         pub fn parse_term(lhs: E, input: ParseStream) -> syn::Res<Self> {
+            let op_loc = input.span().into();
             let op = input.parse()?;
             let rhs = E::parse_term(input)?;
-            Ok(BinOp::new(op, lhs, rhs))
+            Ok(BinOp::new(op, op_loc, lhs, rhs))
         }
         pub fn parse_prec1(lhs: E, input: ParseStream) -> syn::Res<Self> {
             let op = input.parse()?;
+            let op_loc = input.span().into();
             let rhs = E::parse_prec1(input)?;
-            Ok(BinOp::new(op, lhs, rhs))
+            Ok(BinOp::new(op, op_loc, lhs, rhs))
         }
         pub fn parse_prec2(lhs: E, input: ParseStream) -> syn::Res<Self> {
+            let op_loc = input.span().into();
             let op = input.parse()?;
             let rhs = E::parse_prec2(input)?;
-            Ok(BinOp::new(op, lhs, rhs))
+            Ok(BinOp::new(op, op_loc, lhs, rhs))
         }
         pub fn parse_prec3(lhs: E, input: ParseStream) -> syn::Res<Self> {
+            let op_loc = input.span().into();
             let op = input.parse()?;
             let rhs = E::parse_prec3(input)?;
-            Ok(BinOp::new(op, lhs, rhs))
+            Ok(BinOp::new(op, op_loc, lhs, rhs))
         }
     }
 
@@ -2409,6 +2414,7 @@ mod parsing_tests {
             let expression: ReactExpr = syn::parse_quote! {a+b};
             let control = ReactExpr::expr(Expr::binop(BinOp::new(
                 BOp::Add,
+                Loc::test_dummy(),
                 Expr::test_ident("a"),
                 Expr::test_ident("b"),
             )));
@@ -2420,9 +2426,11 @@ mod parsing_tests {
             let expression: ReactExpr = syn::parse_quote! {a+b*c};
             let control = ReactExpr::expr(Expr::binop(BinOp::new(
                 BOp::Add,
+                Loc::test_dummy(),
                 Expr::test_ident("a"),
                 Expr::BinOp(BinOp::new(
                     BOp::Mul,
+                    Loc::test_dummy(),
                     Expr::test_ident("b"),
                     Expr::test_ident("c"),
                 )),
@@ -2643,7 +2651,8 @@ mod parsing_tests {
                     )),
                     Some(Box::new(Expr::binop(Binop::new(
                         BOp::Grt,
-                        Expr::ident("p"),
+                        Loc::test_dummy(),
+                        Expr::test_ident("p"),
                         Expr::cst(Constant::Integer(syn::parse_quote! {0})),
                     )))),
                     Expr::emit(Emit::new(Default::default(), Expr::ident("x"))),
@@ -2677,7 +2686,8 @@ mod parsing_tests {
                     )),
                     Some(Box::new(Expr::binop(Binop::new(
                         BOp::Grt,
-                        Expr::ident("p"),
+                        Loc::test_dummy(),
+                        Expr::test_ident("p"),
                         Expr::cst(Constant::Integer(syn::parse_quote! {0})),
                     )))),
                     Expr::ident("p"),
@@ -2815,6 +2825,7 @@ mod parsing_tests {
             let expr: Expr = parse_quote! {a+b};
             let control = Expr::binop(BinOp::new(
                 BOp::Add,
+                Loc::test_dummy(),
                 Expr::test_ident("a"),
                 Expr::test_ident("b"),
             ));
@@ -2826,9 +2837,11 @@ mod parsing_tests {
             let expr: Expr = parse_quote! {a+b*c};
             let control = Expr::binop(BinOp::new(
                 BOp::Add,
+                Loc::test_dummy(),
                 Expr::test_ident("a"),
                 Expr::binop(BinOp::new(
                     BOp::Mul,
+                    Loc::test_dummy(),
                     Expr::test_ident("b"),
                     Expr::test_ident("c"),
                 )),
@@ -2841,7 +2854,12 @@ mod parsing_tests {
             let term: Expr = parse_quote! {-x + 1};
             let control = Expr::binop(BinOp::new(
                 BOp::Add,
-                Expr::unop(UnOp::new(UOp::Neg, Expr::test_ident("x"))),
+                Loc::test_dummy(),
+                Expr::unop(UnOp::new(
+                    UOp::Neg,
+                    Loc::test_dummy(),
+                    Expr::test_ident("x"),
+                )),
                 Expr::constant(Constant::int(parse_quote! {1})),
             ));
             assert_eq!(term, control)
@@ -3014,6 +3032,7 @@ mod parsing_tests {
                     stream::Expr::cst(Constant::int(parse_quote! {0})),
                     stream::Expr::binop(expr::BinOp::new(
                         BOp::Add,
+                        Loc::test_dummy(),
                         stream::Expr::last(stream::Last::new(
                             parse_quote! {o},
                             Some(stream::Expr::cst(Constant::int(parse_quote! {0}))),
@@ -3046,6 +3065,7 @@ mod parsing_tests {
                     stream::Expr::tuple(expr::Tuple::new(vec![
                         stream::Expr::binop(expr::BinOp::new(
                             BOp::Add,
+                            Loc::test_dummy(),
                             stream::Expr::last(stream::Last::new(
                                 parse_quote! {o1},
                                 Some(stream::Expr::cst(Constant::int(parse_quote! {0}))),
@@ -3054,6 +3074,7 @@ mod parsing_tests {
                         )),
                         stream::Expr::binop(expr::BinOp::new(
                             BOp::Add,
+                            Loc::test_dummy(),
                             stream::Expr::last(stream::Last::new(parse_quote! {o2}, None)),
                             stream::Expr::test_ident("inc2"),
                         )),
@@ -3082,6 +3103,7 @@ mod parsing_tests {
                     stream::Expr::cst(Constant::int(parse_quote! {0})),
                     stream::Expr::binop(expr::BinOp::new(
                         BOp::Add,
+                        Loc::test_dummy(),
                         stream::Expr::last(stream::Last::new(parse_quote! {o}, None)),
                         stream::Expr::test_ident("inc"),
                     )),
@@ -3121,6 +3143,7 @@ mod parsing_tests {
                     stream::Expr::tuple(expr::Tuple::new(vec![
                         stream::Expr::binop(expr::BinOp::new(
                             BOp::Add,
+                            Loc::test_dummy(),
                             stream::Expr::last(stream::Last::new(
                                 parse_quote! {o1},
                                 Some(stream::Expr::cst(Constant::int(parse_quote! {0}))),
@@ -3129,6 +3152,7 @@ mod parsing_tests {
                         )),
                         stream::Expr::binop(expr::BinOp::new(
                             BOp::Add,
+                            Loc::test_dummy(),
                             stream::Expr::last(stream::Last::new(parse_quote! {o2}, None)),
                             stream::Expr::test_ident("inc2"),
                         )),

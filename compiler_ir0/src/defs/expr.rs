@@ -5,6 +5,8 @@ prelude! {}
 pub struct UnOp<E> {
     /// The unary operator.
     pub op: UOp,
+    /// Operator's location.
+    pub op_loc: Loc,
     /// The input expression.
     pub expr: Box<E>,
 }
@@ -12,6 +14,7 @@ pub struct UnOp<E> {
 mk_new! { impl{E} UnOp<E> =>
     new {
         op : UOp,
+        op_loc: Loc,
         expr: impl Into<Box<E>> = expr.into(),
     }
 
@@ -24,6 +27,8 @@ mk_new! { impl{E} UnOp<E> =>
 pub struct BinOp<E> {
     /// The unary operator.
     pub op: BOp,
+    /// Operator's location.
+    pub op_loc: Loc,
     /// The left expression.
     pub lft: Box<E>,
     /// The right expression.
@@ -33,6 +38,7 @@ pub struct BinOp<E> {
 mk_new! { impl{E} BinOp<E> =>
     new {
         op : BOp,
+        op_loc: Loc,
         lft: impl Into<Box<E>> = lft.into(),
         rgt: impl Into<Box<E>> = rgt.into(),
     }
