@@ -157,6 +157,36 @@ mk_new! { impl Expr =>
 }
 
 impl Expr {
+    pub fn loc(&self) -> Loc {
+        use stream::Expr::*;
+        match self {
+            Constant(c) => c.loc(),
+            Identifier(id) => id.span().into(),
+            Application(app) => {
+                let loc = app.fun.loc();
+                app.inputs.iter().fold(loc, |acc, i| acc.join(i.loc()))
+            }
+            UnOp(op) => op.op_loc.join(op.expr.loc()),
+            BinOp(op) => op.op_loc.join(op.lft.loc()).join(op.rgt.loc()),
+            IfThenElse(ite) => ite.cnd.loc().join(ite.thn.loc()).join(ite.els.loc()),
+            // TypedAbstraction(abs) => abs.loc(),
+            // Structure(s) => s.loc(),
+            // Tuple(t) => t.loc(),
+            // Enumeration(e) => e.loc(),
+            // Array(a) => a.loc(),
+            // Match(m) => m.loc(),
+            // FieldAccess(fa) => fa.loc(),
+            // TupleElementAccess(ta) => ta.loc(),
+            // Map(m) => m.loc(),
+            // Fold(f) => f.loc(),
+            // Sort(s) => s.loc(),
+            // Zip(z) => z.loc(),
+            // Last(l) => l.loc(),
+            // Emit(e) => e.loc(),
+            _ => todoo!(),
+        }
+    }
+
     pub fn check_is_constant(&self, table: &SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         match &self {
             // Constant by default

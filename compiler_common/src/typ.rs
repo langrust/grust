@@ -412,18 +412,16 @@ impl Typ {
             Typ::Boolean(kw) => Some(kw.span.into()),
             Typ::Unit(kw) => Some(kw.span.into()),
             Typ::Array { bracket_token, .. } => Some(bracket_token.span.join().into()),
-            Typ::SMEvent { ty, question_token } => {
-                ty.loc()?.join(question_token.span).map(Loc::from)
-            }
+            Typ::SMEvent { ty, question_token } => ty.loc()?.try_join(question_token.span),
             Typ::Enumeration { name, .. } | Typ::Structure { name, .. } => Some(name.span().into()),
             Typ::Abstract {
                 paren_token: Some(paren),
                 ..
             } => Some(paren.span.join().into()),
-            Typ::Abstract { inputs, output, .. } => inputs.first()?.loc()?.join(output.loc()?),
+            Typ::Abstract { inputs, output, .. } => inputs.first()?.loc()?.try_join(output.loc()?),
             Typ::Tuple { paren_token, .. } => Some(paren_token.span.join().into()),
-            Typ::Event { ty, event_token } => ty.loc()?.join(event_token.span),
-            Typ::Signal { ty, signal_token } => ty.loc()?.join(signal_token.span),
+            Typ::Event { ty, event_token } => ty.loc()?.try_join(event_token.span),
+            Typ::Signal { ty, signal_token } => ty.loc()?.try_join(signal_token.span),
             Typ::NotDefinedYet(id) => Some(id.span().into()),
             Typ::Polymorphism(_) | Typ::Any => None,
         }

@@ -172,9 +172,8 @@ impl Typing for interface::FlowStatement {
                 let expression_type = expr.get_typ().unwrap();
                 let loc = pattern
                     .loc
-                    .join(semi_token.span)
-                    .unwrap_or(eq_token.span.into())
-                    .into();
+                    .try_join(semi_token.span)
+                    .unwrap_or(eq_token.span.into());
                 expression_type.expect(loc, expected_type).dewrap(errors)
             }
         }

@@ -89,6 +89,11 @@ pub struct Loc {
     pub span: Span,
 }
 impl Loc {
+    pub fn test_dummy() -> Self {
+        Self {
+            span: Span::mixed_site(),
+        }
+    }
     pub fn call_site() -> Self {
         Self {
             span: Span::call_site(),
@@ -99,9 +104,11 @@ impl Loc {
             span: Span::mixed_site(),
         }
     }
-    pub fn join(self, that: impl Into<Self>) -> Option<Self> {
-        let that = that.into();
-        self.span.join(that.span).map(Loc::from)
+    pub fn try_join(self, that: impl Into<Self>) -> Option<Self> {
+        self.span.join(that.into().span).map(Loc::from)
+    }
+    pub fn join(self, that: impl Into<Self>) -> Self {
+        self.try_join(that).unwrap_or(self)
     }
 }
 impl PartialEq for Loc {
