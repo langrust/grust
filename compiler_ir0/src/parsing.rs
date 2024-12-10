@@ -98,7 +98,7 @@ mod parse_conf {
                         "onchange" => conf::set_propagation(conf::Propagation::OnChange),
                         "onevent" => conf::set_propagation(conf::Propagation::EventIsles),
                         _ => {
-                            bail!(Error::new_spanned(
+                            return Err(Error::new_spanned(
                                 val,
                                 "unexpected propagation configuration",
                             ));
@@ -109,7 +109,7 @@ mod parse_conf {
                 "dump" => {
                     if let Some(prev) = conf::dump_code() {
                         let msg = format!("code-dump target already set to `{prev}`");
-                        bail!(Error::new_spanned(ident, msg));
+                        return Err(Error::new_spanned(ident, msg));
                     }
                     let _: Token![=] = input.parse()?;
                     let val: LitStr = input.parse()?;
@@ -151,16 +151,16 @@ mod parse_conf {
                 "greusot" => conf::set_greusot(true),
                 "test" => conf::set_test(true),
                 "demo" => conf::set_demo(true),
-                _ => bail!(Error::new_spanned(ident, "unexpected configuration key")),
+                _ => return Err(Error::new_spanned(ident, "unexpected configuration key")),
             }
             if conf::greusot() && (conf::test() || conf::demo()) {
-                bail!(Error::new_spanned(
+                return Err(Error::new_spanned(
                     ident,
                     "greusot can not be used with test/demo modes",
                 ));
             }
             if conf::test() && conf::demo() {
-                bail!(Error::new_spanned(
+                return Err(Error::new_spanned(
                     ident,
                     "test and demo modes are incompatible",
                 ));
@@ -849,6 +849,7 @@ mod parse_stream {
 
     impl ParsePrec for stream::Expr {
         fn parse_term(input: ParseStream) -> syn::Res<Self> {
+            // #TODO: have a cheap peeking for complex expressions
             let mut expression = if input.fork().call(Constant::parse).is_ok() {
                 Self::Constant(input.parse()?)
             } else if Last::peek(input) {
@@ -873,8 +874,7 @@ mod parse_stream {
             } else if expr::Enumeration::<Self>::peek(input) {
                 Self::Enumeration(input.parse()?)
             } else if input.fork().call(Ident::parse).is_ok() {
-                let ident: Ident = input.parse()?;
-                Self::Identifier(ident.to_string())
+                Self::Identifier(input.parse()?)
             } else {
                 return Err(input.error("expected expression"));
             };
@@ -2329,7 +2329,7 @@ mod parsing_tests {
         #[test]
         fn should_parse_identifier() {
             let expression: ReactExpr = syn::parse_quote! {x};
-            let control = ReactExpr::expr(Expr::ident("x"));
+            let control = ReactExpr::expr(Expr::test_ident("x"));
             assert_eq!(expression, control)
         }
 
@@ -2337,8 +2337,8 @@ mod parsing_tests {
         fn should_parse_application() {
             let expression: ReactExpr = syn::parse_quote! {f(x)};
             let control = ReactExpr::expr(Expr::app(Application::new(
-                Expr::ident("f"),
-                vec![Expr::ident("x")],
+                Expr::test_ident("f"),
+                vec![Expr::test_ident("x")],
             )));
             assert_eq!(expression, control)
         }
@@ -2348,8 +2348,8 @@ mod parsing_tests {
             let expression: ReactExpr = syn::parse_quote! {a+b};
             let control = ReactExpr::expr(Expr::binop(BinOp::new(
                 BOp::Add,
-                Expr::ident("a"),
-                Expr::ident("b"),
+                Expr::test_ident("a"),
+                Expr::test_ident("b"),
             )));
             assert_eq!(expression, control)
         }
@@ -2359,8 +2359,12 @@ mod parsing_tests {
             let expression: ReactExpr = syn::parse_quote! {a+b*c};
             let control = ReactExpr::expr(Expr::binop(BinOp::new(
                 BOp::Add,
-                Expr::ident("a"),
-                Expr::BinOp(BinOp::new(BOp::Mul, Expr::ident("b"), Expr::ident("c"))),
+                Expr::test_ident("a"),
+                Expr::BinOp(BinOp::new(
+                    BOp::Mul,
+                    Expr::test_ident("b"),
+                    Expr::test_ident("c"),
+                )),
             )));
             assert_eq!(expression, control)
         }
@@ -2370,7 +2374,10 @@ mod parsing_tests {
             let expression: ReactExpr = syn::parse_quote! {|x: int| f(x)};
             let control = ReactExpr::expr(Expr::type_abstraction(TypedAbstraction::new(
                 vec![("x".into(), Typ::int())],
-                Expr::app(Application::new(Expr::ident("f"), vec![Expr::ident("x")])),
+                Expr::app(Application::new(
+                    Expr::test_ident("f"),
+                    vec![Expr::test_ident("x")],
+                )),
             )));
             assert_eq!(expression, control)
         }
@@ -2392,7 +2399,7 @@ mod parsing_tests {
         fn should_parse_tuple() {
             let expression: ReactExpr = syn::parse_quote! {(x, 0)};
             let control = ReactExpr::expr(Expr::tuple(Tuple::new(vec![
-                Expr::ident("x"),
+                Expr::test_ident("x"),
                 Expr::cst(Constant::int(syn::parse_quote! {0})),
             ])));
             assert_eq!(expression, control)
@@ -2426,7 +2433,7 @@ mod parsing_tests {
                 }
             };
             let control = ReactExpr::expr(Expr::pat_match(Match::new(
-                Expr::ident("a"),
+                Expr::test_ident("a"),
                 vec![
                     Arm::new(
                         Pattern::Structure(PatStructure::new(
@@ -2452,8 +2459,8 @@ mod parsing_tests {
                             None,
                         )),
                         guard: Some(Expr::app(Application::new(
-                            Expr::ident("f"),
-                            vec![Expr::ident("x")],
+                            Expr::test_ident("f"),
+                            vec![Expr::test_ident("x")],
                         ))),
                         expr: Expr::cst(Constant::int(syn::parse_quote! {-1})),
                     },
@@ -2469,8 +2476,10 @@ mod parsing_tests {
         #[test]
         fn should_parse_field_access() {
             let expression: ReactExpr = syn::parse_quote! {p.x};
-            let control =
-                ReactExpr::expr(Expr::field_access(FieldAccess::new(Expr::ident("p"), "x")));
+            let control = ReactExpr::expr(Expr::field_access(FieldAccess::new(
+                Expr::test_ident("p"),
+                "x",
+            )));
             assert_eq!(expression, control)
         }
 
@@ -2478,7 +2487,7 @@ mod parsing_tests {
         fn should_parse_tuple_element_access() {
             let expression: ReactExpr = syn::parse_quote! {t.0};
             let control = ReactExpr::expr(Expr::tuple_access(TupleElementAccess::new(
-                Expr::ident("t"),
+                Expr::test_ident("t"),
                 0,
             )));
             assert_eq!(expression, control)
@@ -2487,7 +2496,10 @@ mod parsing_tests {
         #[test]
         fn should_parse_map() {
             let expression: ReactExpr = syn::parse_quote! {a.map(f)};
-            let control = ReactExpr::expr(Expr::map(Map::new(Expr::ident("a"), Expr::ident("f"))));
+            let control = ReactExpr::expr(Expr::map(Map::new(
+                Expr::test_ident("a"),
+                Expr::test_ident("f"),
+            )));
             assert_eq!(expression, control)
         }
 
@@ -2495,9 +2507,9 @@ mod parsing_tests {
         fn should_parse_fold() {
             let expression: ReactExpr = syn::parse_quote! {a.fold(0, sum)};
             let control = ReactExpr::expr(Expr::fold(Fold::new(
-                Expr::ident("a"),
+                Expr::test_ident("a"),
                 Expr::cst(Constant::int(syn::parse_quote! {0})),
-                Expr::ident("sum"),
+                Expr::test_ident("sum"),
             )));
             assert_eq!(expression, control)
         }
@@ -2506,8 +2518,8 @@ mod parsing_tests {
         fn should_parse_sort() {
             let expression: ReactExpr = syn::parse_quote! {a.sort(order)};
             let control = ReactExpr::expr(Expr::sort(Sort::new(
-                Expr::ident("a"),
-                Expr::ident("order"),
+                Expr::test_ident("a"),
+                Expr::test_ident("order"),
             )));
             assert_eq!(expression, control)
         }
@@ -2516,9 +2528,9 @@ mod parsing_tests {
         fn should_parse_zip() {
             let expression: ReactExpr = syn::parse_quote! {zip(a, b, c)};
             let control = ReactExpr::expr(Expr::zip(Zip::new(vec![
-                Expr::ident("a"),
-                Expr::ident("b"),
-                Expr::ident("c"),
+                Expr::test_ident("a"),
+                Expr::test_ident("b"),
+                Expr::test_ident("c"),
             ])));
             assert_eq!(expression, control)
         }
@@ -2546,7 +2558,7 @@ mod parsing_tests {
                 )),
                 None,
                 Default::default(),
-                Expr::emit(Emit::new(Default::default(), Expr::ident("x"))),
+                Expr::emit(Emit::new(Default::default(), Expr::test_ident("x"))),
             ));
             assert_eq!(expression, control)
         }
@@ -2564,11 +2576,11 @@ mod parsing_tests {
                 )),
                 Some(Expr::binop(BinOp::new(
                     BOp::Grt,
-                    Expr::ident("p"),
+                    Expr::test_ident("p"),
                     Expr::cst(Constant::Integer(syn::parse_quote! {0})),
                 ))),
                 Default::default(),
-                Expr::emit(Emit::new(Default::default(), Expr::ident("x"))),
+                Expr::emit(Emit::new(Default::default(), Expr::test_ident("x"))),
             ));
             assert_eq!(expression, control)
         }
@@ -2683,21 +2695,28 @@ mod parsing_tests {
         #[test]
         fn should_parse_identifier() {
             let expr: Expr = parse_quote! {x};
-            let control = Expr::ident("x");
+            let control = Expr::test_ident("x");
             assert_eq!(expr, control)
         }
 
         #[test]
         fn should_parse_application() {
             let expr: Expr = parse_quote! {f(x)};
-            let control = Expr::app(Application::new(Expr::ident("f"), vec![Expr::ident("x")]));
+            let control = Expr::app(Application::new(
+                Expr::test_ident("f"),
+                vec![Expr::test_ident("x")],
+            ));
             assert_eq!(expr, control)
         }
 
         #[test]
         fn should_parse_binop() {
             let expr: Expr = parse_quote! {a+b};
-            let control = Expr::binop(BinOp::new(BOp::Add, Expr::ident("a"), Expr::ident("b")));
+            let control = Expr::binop(BinOp::new(
+                BOp::Add,
+                Expr::test_ident("a"),
+                Expr::test_ident("b"),
+            ));
             assert_eq!(expr, control)
         }
 
@@ -2706,8 +2725,12 @@ mod parsing_tests {
             let expr: Expr = parse_quote! {a+b*c};
             let control = Expr::binop(BinOp::new(
                 BOp::Add,
-                Expr::ident("a"),
-                Expr::binop(BinOp::new(BOp::Mul, Expr::ident("b"), Expr::ident("c"))),
+                Expr::test_ident("a"),
+                Expr::binop(BinOp::new(
+                    BOp::Mul,
+                    Expr::test_ident("b"),
+                    Expr::test_ident("c"),
+                )),
             ));
             assert_eq!(expr, control)
         }
@@ -2717,7 +2740,7 @@ mod parsing_tests {
             let term: Expr = parse_quote! {-x + 1};
             let control = Expr::binop(BinOp::new(
                 BOp::Add,
-                Expr::unop(UnOp::new(UOp::Neg, Expr::ident("x"))),
+                Expr::unop(UnOp::new(UOp::Neg, Expr::test_ident("x"))),
                 Expr::constant(Constant::int(parse_quote! {1})),
             ));
             assert_eq!(term, control)
@@ -2728,7 +2751,10 @@ mod parsing_tests {
             let expr: Expr = parse_quote! {|x: int| f(x)};
             let control = Expr::typed_abstraction(TypedAbstraction::new(
                 vec![("x".into(), Typ::int())],
-                Expr::app(Application::new(Expr::ident("f"), vec![Expr::ident("x")])),
+                Expr::app(Application::new(
+                    Expr::test_ident("f"),
+                    vec![Expr::test_ident("x")],
+                )),
             ));
             assert_eq!(expr, control)
         }
@@ -2750,7 +2776,7 @@ mod parsing_tests {
         fn should_parse_tuple() {
             let expr: Expr = parse_quote! {(x, 0)};
             let control = Expr::tuple(Tuple::new(vec![
-                Expr::ident("x"),
+                Expr::test_ident("x"),
                 Expr::cst(Constant::int(parse_quote! {0})),
             ]));
             assert_eq!(expr, control)
@@ -2784,7 +2810,7 @@ mod parsing_tests {
                 }
             };
             let control = Expr::pat_match(Match::new(
-                Expr::ident("a"),
+                Expr::test_ident("a"),
                 vec![
                     Arm::new(
                         Pattern::structure(PatStructure::new(
@@ -2811,8 +2837,8 @@ mod parsing_tests {
                         )),
                         Expr::cst(Constant::int(parse_quote! {-1})),
                         Some(Expr::app(Application::new(
-                            Expr::ident("f"),
-                            vec![Expr::ident("x")],
+                            Expr::test_ident("f"),
+                            vec![Expr::test_ident("x")],
                         ))),
                     ),
                     Arm::new(Pattern::Default, Expr::cst(Constant::int(parse_quote! {1}))),
@@ -2824,21 +2850,21 @@ mod parsing_tests {
         #[test]
         fn should_parse_field_access() {
             let expression: Expr = parse_quote! {p.x};
-            let control = Expr::field_access(FieldAccess::new(Expr::ident("p"), "x"));
+            let control = Expr::field_access(FieldAccess::new(Expr::test_ident("p"), "x"));
             assert_eq!(expression, control)
         }
 
         #[test]
         fn should_parse_tuple_element_access() {
             let expression: Expr = parse_quote! {t.0};
-            let control = Expr::tuple_access(TupleElementAccess::new(Expr::ident("t"), 0));
+            let control = Expr::tuple_access(TupleElementAccess::new(Expr::test_ident("t"), 0));
             assert_eq!(expression, control)
         }
 
         #[test]
         fn should_parse_map() {
             let expression: Expr = parse_quote! {a.map(f)};
-            let control = Expr::map(Map::new(Expr::ident("a"), Expr::ident("f")));
+            let control = Expr::map(Map::new(Expr::test_ident("a"), Expr::test_ident("f")));
             assert_eq!(expression, control)
         }
 
@@ -2846,9 +2872,9 @@ mod parsing_tests {
         fn should_parse_fold() {
             let expression: Expr = parse_quote! {a.fold(0, sum)};
             let control = Expr::fold(Fold::new(
-                Expr::ident("a"),
+                Expr::test_ident("a"),
                 Expr::cst(Constant::int(parse_quote! {0})),
-                Expr::ident("sum"),
+                Expr::test_ident("sum"),
             ));
             assert_eq!(expression, control)
         }
@@ -2856,7 +2882,7 @@ mod parsing_tests {
         #[test]
         fn should_parse_sort() {
             let expression: Expr = parse_quote! {a.sort(order)};
-            let control = Expr::sort(Sort::new(Expr::ident("a"), Expr::ident("order")));
+            let control = Expr::sort(Sort::new(Expr::test_ident("a"), Expr::test_ident("order")));
             assert_eq!(expression, control)
         }
 
@@ -2864,9 +2890,9 @@ mod parsing_tests {
         fn should_parse_zip() {
             let expression: Expr = parse_quote! {zip(a, b, c)};
             let control = Expr::zip(Zip::new(vec![
-                Expr::ident("a"),
-                Expr::ident("b"),
-                Expr::ident("c"),
+                Expr::test_ident("a"),
+                Expr::test_ident("b"),
+                Expr::test_ident("c"),
             ]));
             assert_eq!(expression, control)
         }
@@ -2883,7 +2909,7 @@ mod parsing_tests {
                 pattern: parse_quote! {o},
                 eq_token: parse_quote! {=},
                 expr: stream::ReactExpr::expr(stream::Expr::ite(expr::IfThenElse::new(
-                    stream::Expr::ident("res"),
+                    stream::Expr::test_ident("res"),
                     stream::Expr::cst(Constant::int(parse_quote! {0})),
                     stream::Expr::binop(expr::BinOp::new(
                         BOp::Add,
@@ -2891,7 +2917,7 @@ mod parsing_tests {
                             parse_quote! {o},
                             Some(stream::Expr::cst(Constant::int(parse_quote! {0}))),
                         )),
-                        stream::Expr::ident("inc"),
+                        stream::Expr::test_ident("inc"),
                     )),
                 ))),
                 semi_token: parse_quote! {;},
@@ -2911,7 +2937,7 @@ mod parsing_tests {
                 ])),
                 eq_token: parse_quote! {=},
                 expr: stream::ReactExpr::expr(stream::Expr::ite(expr::IfThenElse::new(
-                    stream::Expr::ident("res"),
+                    stream::Expr::test_ident("res"),
                     stream::Expr::tuple(expr::Tuple::new(vec![
                         stream::Expr::cst(Constant::int(parse_quote! {0})),
                         stream::Expr::cst(Constant::int(parse_quote! {0})),
@@ -2923,12 +2949,12 @@ mod parsing_tests {
                                 parse_quote! {o1},
                                 Some(stream::Expr::cst(Constant::int(parse_quote! {0}))),
                             )),
-                            stream::Expr::ident("inc1"),
+                            stream::Expr::test_ident("inc1"),
                         )),
                         stream::Expr::binop(expr::BinOp::new(
                             BOp::Add,
                             stream::Expr::last(stream::Last::new(parse_quote! {o2}, None)),
-                            stream::Expr::ident("inc2"),
+                            stream::Expr::test_ident("inc2"),
                         )),
                     ])),
                 ))),
@@ -2951,12 +2977,12 @@ mod parsing_tests {
                 }),
                 parse_quote!(=),
                 stream::ReactExpr::expr(stream::Expr::ite(expr::IfThenElse::new(
-                    stream::Expr::ident("res"),
+                    stream::Expr::test_ident("res"),
                     stream::Expr::cst(Constant::int(parse_quote! {0})),
                     stream::Expr::binop(expr::BinOp::new(
                         BOp::Add,
                         stream::Expr::last(stream::Last::new(parse_quote! {o}, None)),
-                        stream::Expr::ident("inc"),
+                        stream::Expr::test_ident("inc"),
                     )),
                 ))),
                 parse_quote! {;},
@@ -2986,7 +3012,7 @@ mod parsing_tests {
                 ])),
                 parse_quote!(=),
                 stream::ReactExpr::expr(stream::Expr::ite(expr::IfThenElse::new(
-                    stream::Expr::ident("res"),
+                    stream::Expr::test_ident("res"),
                     stream::Expr::tuple(expr::Tuple::new(vec![
                         stream::Expr::cst(Constant::int(parse_quote! {0})),
                         stream::Expr::cst(Constant::int(parse_quote! {0})),
@@ -2998,12 +3024,12 @@ mod parsing_tests {
                                 parse_quote! {o1},
                                 Some(stream::Expr::cst(Constant::int(parse_quote! {0}))),
                             )),
-                            stream::Expr::ident("inc1"),
+                            stream::Expr::test_ident("inc1"),
                         )),
                         stream::Expr::binop(expr::BinOp::new(
                             BOp::Add,
                             stream::Expr::last(stream::Last::new(parse_quote! {o2}, None)),
-                            stream::Expr::ident("inc2"),
+                            stream::Expr::test_ident("inc2"),
                         )),
                     ])),
                 ))),

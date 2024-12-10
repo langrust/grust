@@ -11,18 +11,20 @@ macro_rules! prelude {
     };
 }
 
-#[macro_export]
-macro_rules! bail {
-    { $e:expr } => { return Err($e.into()) };
-    { $($fmt:tt)* } => { return Err(format!($($fmt)*).into()) };
-}
+// #[macro_export]
+// macro_rules! bail {
+//     { $e:expr } => { return Err($e.into()) };
+//     { $($fmt:tt)* } => { return Err(format!($($fmt)*).into()) };
+// }
 
-pub use crate::bail;
+// pub use crate::bail;
 
 pub use std::{
     collections::{BTreeMap, BTreeSet},
+    error,
     fmt::Display,
     hash::Hash,
+    ops,
 };
 
 pub mod syn {
@@ -41,7 +43,7 @@ pub mod syn {
 
 pub use either::{Either, IntoEither};
 pub use proc_macro2::{Span, TokenStream as TokenStream2};
-pub use quote::{format_ident, ToTokens};
+pub use quote::{format_ident, quote_spanned, ToTokens};
 pub use serde::{Deserialize, Serialize};
 pub use syn::{
     braced, bracketed, custom_keyword, parenthesized, parse_macro_input, parse_quote, Ident,
@@ -49,22 +51,88 @@ pub use syn::{
 };
 
 pub use crate::{
-    codespan_reporting, conf,
+    bad,
+    // error::*,
+    bail,
+    check,
+    codespan_reporting,
+    conf,
     constant::Constant,
     convert_case::to_camel_case,
-    error::*,
+    err::*,
+    error,
     graph,
     hash_map::*,
-    itertools, keyword,
+    itertools,
+    keyword,
     lazy_static::lazy_static,
-    location::Location,
-    macro2, mk_new, once_cell,
+    lerror,
+    lnote,
+    macro2,
+    mk_new,
+    note,
+    once_cell,
     op::{BOp, OtherOp, UOp},
-    petgraph, quote, rustc_hash, safe_index,
+    petgraph,
+    quote,
+    rustc_hash,
+    safe_index,
     scope::Scope,
-    serde, strum, synced,
+    serde,
+    strum,
+    synced,
     typ::Typ,
 };
+
+#[derive(Debug, Clone, Copy)]
+pub struct Loc {
+    pub span: Span,
+}
+impl Loc {
+    pub fn call_site() -> Self {
+        Self {
+            span: Span::call_site(),
+        }
+    }
+    pub fn mixed_site() -> Self {
+        Self {
+            span: Span::mixed_site(),
+        }
+    }
+    pub fn join(self, that: impl Into<Self>) -> Option<Self> {
+        let that = that.into();
+        self.span.join(that.span).map(Loc::from)
+    }
+}
+impl PartialEq for Loc {
+    fn eq(&self, other: &Self) -> bool {
+        // #TODO: that's pretty bad, but we can't have `PartialEq` on `Span` itself...
+        format!("{:?}", self.span) == format!("{:?}", other.span)
+    }
+}
+impl Eq for Loc {}
+impl std::hash::Hash for Loc {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        // #TODO: that's pretty bad, but we can't have `Hash` on `Span` itself...
+        format!("{:?}", self.span).hash(state)
+    }
+}
+impl std::ops::Deref for Loc {
+    type Target = Span;
+    fn deref(&self) -> &Self::Target {
+        &self.span
+    }
+}
+impl From<Span> for Loc {
+    fn from(span: Span) -> Self {
+        Self { span }
+    }
+}
+impl Into<Span> for Loc {
+    fn into(self) -> Span {
+        self.span
+    }
+}
 
 pub fn plural(n: usize) -> &'static str {
     if n == 1 {

@@ -87,7 +87,7 @@ pub struct Pattern {
     /// Pattern type.
     pub typing: Option<Typ>,
     /// Pattern location.
-    pub loc: Location,
+    pub loc: Loc,
 }
 
 /// Constructs pattern.
@@ -97,7 +97,7 @@ pub fn init(kind: Kind) -> Pattern {
     Pattern {
         kind,
         typing: None,
-        loc: Location::default(),
+        loc: Loc::mixed_site(),
     }
 }
 

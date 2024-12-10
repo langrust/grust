@@ -66,7 +66,7 @@ pub struct Expr {
     /// Flow expression type.
     pub typ: Option<Typ>,
     /// Flow expression location.
-    pub loc: Location,
+    pub loc: Loc,
 }
 impl Expr {
     pub fn get_type(&self) -> Option<&Typ> {

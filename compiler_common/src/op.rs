@@ -21,7 +21,7 @@ prelude! {
 /// - [BOp::Leq], "lower or equal" `<=`
 /// - [BOp::Grt], "greater" `>`
 /// - [BOp::Low], "lower" `<`
-#[derive(EnumIter, Debug, Clone, Copy, PartialEq)]
+#[derive(EnumIter, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BOp {
     /// Multiplication, `x * y`.
     Mul,
@@ -165,102 +165,34 @@ impl std::fmt::Display for BOp {
     }
 }
 impl BOp {
-    fn numerical_operator(mut input_types: Vec<Typ>, loc: Location) -> Res<Typ> {
-        if input_types.len() == 2 {
-            let type_2 = input_types.pop().unwrap();
-            let type_1 = input_types.pop().unwrap();
-            if type_1 != Typ::float() && type_1 != Typ::int() {
-                let error = Error::ExpectNumber {
-                    given_type: type_1,
-                    loc,
-                };
-                return Err(error);
-            };
-            if type_2 != Typ::float() && type_2 != Typ::int() {
-                let error = Error::ExpectNumber {
-                    given_type: type_2,
-                    loc,
-                };
-                return Err(error);
-            };
-            if type_1 != type_2 {
-                let error = Error::IncompatibleType {
-                    given_type: type_2,
-                    expected_type: type_1,
-                    loc,
-                };
-                return Err(error);
-            };
-            Ok(Typ::function(vec![type_1.clone(), type_2], type_1))
-        } else {
-            let error = Error::ArityMismatch {
-                input_count: input_types.len(),
-                arity: 2,
-                loc,
-            };
-            Err(error)
+    fn both_arith(loc: Loc, lft: &Typ, rgt: &Typ, and_same_type: bool) -> Res<()> {
+        check::typ::arith_like(loc, lft)?;
+        check::typ::arith_like(loc, rgt)?;
+        if and_same_type {
+            lft.expect(loc, rgt)?;
         }
+        Ok(())
     }
 
-    fn numerical_comparison(mut input_types: Vec<Typ>, loc: Location) -> Res<Typ> {
-        if input_types.len() == 2 {
-            let type_2 = input_types.pop().unwrap();
-            let type_1 = input_types.pop().unwrap();
-            if type_1 != Typ::float() && type_1 != Typ::int() {
-                let error = Error::ExpectNumber {
-                    given_type: type_1,
-                    loc,
-                };
-                return Err(error);
-            };
-            if type_2 != Typ::float() && type_2 != Typ::int() {
-                let error = Error::ExpectNumber {
-                    given_type: type_2,
-                    loc,
-                };
-                return Err(error);
-            };
-            if type_1 != type_2 {
-                let error = Error::IncompatibleType {
-                    given_type: type_2,
-                    expected_type: type_1,
-                    loc,
-                };
-                return Err(error);
-            };
-            Ok(Typ::function(vec![type_1, type_2], Typ::bool()))
-        } else {
-            let error = Error::ArityMismatch {
-                input_count: input_types.len(),
-                arity: 2,
-                loc,
-            };
-            Err(error)
-        }
+    fn numerical_operator(input_types: Vec<Typ>, loc: Loc) -> Res<Typ> {
+        let (lft, rgt) = check::arity::binary(loc, input_types)?;
+        Self::both_arith(loc, &lft, &rgt, true)
+            .err_note(lnote!( @loc => "in this numerical operator application" ))?;
+        Ok(Typ::function(vec![lft.clone(), rgt], lft))
     }
 
-    fn equality(mut input_types: Vec<Typ>, loc: Location) -> Res<Typ> {
-        if input_types.len() == 2 {
-            let type_2 = input_types.pop().unwrap();
-            let type_1 = input_types.pop().unwrap();
-            if type_1 == type_2 {
-                Ok(Typ::function(vec![type_1, type_2], Typ::bool()))
-            } else {
-                let error = Error::IncompatibleType {
-                    given_type: type_2,
-                    expected_type: type_1,
-                    loc,
-                };
-                Err(error)
-            }
-        } else {
-            let error = Error::ArityMismatch {
-                input_count: input_types.len(),
-                arity: 2,
-                loc,
-            };
-            Err(error)
-        }
+    fn numerical_comparison(input_types: Vec<Typ>, loc: Loc) -> Res<Typ> {
+        let (lft, rgt) = check::arity::binary(loc, input_types)?;
+        Self::both_arith(loc, &lft, &rgt, true)
+            .err_note(lnote!( @loc => "in this numerical-value comparison" ))?;
+        Ok(Typ::function(vec![lft, rgt], Typ::bool()))
+    }
+
+    fn equality(input_types: Vec<Typ>, loc: Loc) -> Res<Typ> {
+        let (lft, rgt) = check::arity::binary(loc, input_types)?;
+        lft.expect(loc, &rgt)
+            .err_note(lnote!( @loc => "in this equality"))?;
+        Ok(Typ::function(vec![lft, rgt], Typ::bool()))
     }
 
     /// Get the [Typ] of a binary operator.
@@ -300,7 +232,7 @@ impl BOp {
 ///
 /// - [UOp::Neg] is the numerical negation `-`
 /// - [UOp::Not], the logical negation `!`
-#[derive(EnumIter, Debug, Clone, Copy, PartialEq)]
+#[derive(EnumIter, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UOp {
     /// Numerical negation, `-x`.
     Neg,
@@ -342,26 +274,10 @@ impl std::fmt::Display for UOp {
     }
 }
 impl UOp {
-    fn numerical_negation(mut input_types: Vec<Typ>, loc: Location) -> Res<Typ> {
-        if input_types.len() == 1 {
-            let type_1 = input_types.pop().unwrap();
-            if type_1 == Typ::float() || type_1 == Typ::int() {
-                Ok(Typ::function(vec![type_1.clone()], type_1))
-            } else {
-                let error = Error::ExpectNumber {
-                    given_type: type_1,
-                    loc,
-                };
-                Err(error)
-            }
-        } else {
-            let error = Error::ArityMismatch {
-                input_count: input_types.len(),
-                arity: 1,
-                loc,
-            };
-            Err(error)
-        }
+    fn numerical_negation(inputs: Vec<Typ>, loc: Loc) -> Res<Typ> {
+        let typ = check::arity::unary(loc, inputs)?;
+        check::typ::arith_like(loc, &typ)?;
+        Ok(Typ::function(vec![typ.clone()], typ))
     }
 
     /// Get the [Typ] of a unary operator.
@@ -403,36 +319,11 @@ impl std::fmt::Display for OtherOp {
     }
 }
 impl OtherOp {
-    fn if_then_else(mut input_types: Vec<Typ>, loc: Location) -> Res<Typ> {
-        if input_types.len() == 3 {
-            let type_3 = input_types.pop().unwrap();
-            let type_2 = input_types.pop().unwrap();
-            let type_1 = input_types.pop().unwrap();
-            if type_1 != Typ::bool() {
-                let error = Error::IncompatibleType {
-                    given_type: type_1,
-                    expected_type: Typ::bool(),
-                    loc,
-                };
-                return Err(error);
-            };
-            if type_2 != type_3 {
-                let error = Error::IncompatibleType {
-                    given_type: type_3,
-                    expected_type: type_2,
-                    loc,
-                };
-                return Err(error);
-            };
-            Ok(Typ::function(vec![type_1, type_2.clone(), type_3], type_2))
-        } else {
-            let error = Error::ArityMismatch {
-                input_count: input_types.len(),
-                arity: 1,
-                loc,
-            };
-            Err(error)
-        }
+    fn if_then_else(input_types: Vec<Typ>, loc: Loc) -> Res<Typ> {
+        let (cnd, thn, els) = check::arity::trinary(loc, input_types)?;
+        cnd.expect_bool(loc)?;
+        check::typ::expect(loc, &els, &thn)?;
+        Ok(Typ::function(vec![cnd, thn.clone(), els], thn))
     }
 
     /// Get the [Typ] of the other operators.

@@ -14,7 +14,7 @@ pub struct File {
     /// Program interface. It represents the system.
     pub interface: ir1::Interface,
     /// Program location.
-    pub loc: Location,
+    pub loc: Loc,
 }
 
 impl File {

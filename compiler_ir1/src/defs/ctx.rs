@@ -6,14 +6,14 @@ pub struct Simple<'a> {
     pub symbols: &'a mut SymbolTable,
     pub errors: &'a mut Vec<Error>,
 }
-pub struct Loc<'a> {
-    pub loc: &'a Location,
+pub struct WithLoc<'a> {
+    pub loc: Loc,
     pub symbols: &'a mut SymbolTable,
     pub errors: &'a mut Vec<Error>,
 }
 pub struct PatLoc<'a> {
     pub pat: Option<&'a ir0::stmt::Pattern>,
-    pub loc: &'a Location,
+    pub loc: Loc,
     pub symbols: &'a mut SymbolTable,
     pub errors: &'a mut Vec<Error>,
 }
@@ -21,23 +21,19 @@ impl<'a> Simple<'a> {
     pub fn new(symbols: &'a mut SymbolTable, errors: &'a mut Vec<Error>) -> Self {
         Self { symbols, errors }
     }
-    pub fn add_loc<'b>(&'b mut self, loc: &'b Location) -> Loc<'b> {
-        Loc::new(loc, self.symbols, self.errors)
+    pub fn add_loc<'b>(&'b mut self, loc: Loc) -> WithLoc<'b> {
+        WithLoc::new(loc, self.symbols, self.errors)
     }
     pub fn add_pat_loc<'b>(
         &'b mut self,
         pat: Option<&'b ir0::stmt::Pattern>,
-        loc: &'b Location,
+        loc: Loc,
     ) -> PatLoc<'b> {
         PatLoc::new(pat, loc, self.symbols, self.errors)
     }
 }
-impl<'a> Loc<'a> {
-    pub fn new(
-        loc: &'a Location,
-        symbols: &'a mut SymbolTable,
-        errors: &'a mut Vec<Error>,
-    ) -> Self {
+impl<'a> WithLoc<'a> {
+    pub fn new(loc: Loc, symbols: &'a mut SymbolTable, errors: &'a mut Vec<Error>) -> Self {
         Self {
             loc,
             symbols,
@@ -51,7 +47,7 @@ impl<'a> Loc<'a> {
 impl<'a> PatLoc<'a> {
     pub fn new(
         pat: Option<&'a ir0::stmt::Pattern>,
-        loc: &'a Location,
+        loc: Loc,
         symbols: &'a mut SymbolTable,
         errors: &'a mut Vec<Error>,
     ) -> Self {
@@ -62,8 +58,8 @@ impl<'a> PatLoc<'a> {
             errors,
         }
     }
-    pub fn remove_pat<'b>(&'b mut self) -> Loc<'b> {
-        Loc::new(self.loc, self.symbols, self.errors)
+    pub fn remove_pat<'b>(&'b mut self) -> WithLoc {
+        WithLoc::new(self.loc, self.symbols, self.errors)
     }
     pub fn set_pat(
         &mut self,

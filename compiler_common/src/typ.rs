@@ -91,7 +91,7 @@ pub enum Typ {
     /// Not defined yet, if `x: Color` then `x: NotDefinedYet(Color)`
     NotDefinedYet(Ident),
     /// Polymorphic type, if `add = |x, y| x+y` then `add: 't : Typ -> t -> 't -> 't`
-    Polymorphism(fn(Vec<Typ>, Location) -> Res<Typ>),
+    Polymorphism(fn(Vec<Typ>, Loc) -> Res<Typ>),
     /// Match any type.
     Any,
 }
@@ -356,7 +356,7 @@ mk_new! { impl Typ =>
     NotDefinedYet: undef(
         name: impl Into<String> = Ident::new(&name.into(), Span::call_site())
     )
-    Polymorphism: poly(f : fn(Vec<Self>, Location) -> Res<Self> = f)
+    Polymorphism: poly(f : fn(Vec<Self>, Loc) -> Res<Self> = f)
     Any: any()
 }
 
@@ -404,6 +404,58 @@ impl Typ {
         }
     }
 
+    /// The location of this type, if any.
+    pub fn loc(&self) -> Option<Loc> {
+        match self {
+            Typ::Integer(kw) => Some(kw.span.into()),
+            Typ::Float(kw) => Some(kw.span.into()),
+            Typ::Boolean(kw) => Some(kw.span.into()),
+            Typ::Unit(kw) => Some(kw.span.into()),
+            Typ::Array { bracket_token, .. } => Some(bracket_token.span.join().into()),
+            Typ::SMEvent { ty, question_token } => {
+                ty.loc()?.join(question_token.span).map(Loc::from)
+            }
+            Typ::Enumeration { name, .. } | Typ::Structure { name, .. } => Some(name.span().into()),
+            Typ::Abstract {
+                paren_token: Some(paren),
+                ..
+            } => Some(paren.span.join().into()),
+            Typ::Abstract { inputs, output, .. } => inputs.first()?.loc()?.join(output.loc()?),
+            Typ::Tuple { paren_token, .. } => Some(paren_token.span.join().into()),
+            Typ::Event { ty, event_token } => ty.loc()?.join(event_token.span),
+            Typ::Signal { ty, signal_token } => ty.loc()?.join(signal_token.span),
+            Typ::NotDefinedYet(id) => Some(id.span().into()),
+            Typ::Polymorphism(_) | Typ::Any => None,
+        }
+    }
+
+    /// The location of this type if any, `loc` otherwise.
+    pub fn loc_or(&self, loc: Loc) -> Loc {
+        self.loc().unwrap_or(loc)
+    }
+
+    /// True if this type is arithmetic-like.
+    pub fn is_arith_like(&self) -> bool {
+        match self {
+            Self::Integer(_) | Self::Float(_) | Self::Any => true,
+            // #TODO wildcard at top-level, we should enumerate all variants here...
+            _ => false,
+        }
+    }
+
+    /// Fails if `!self.is_arith_like()` at location `loc`.
+    pub fn check_arith_like(&self, loc: Loc) -> Res<()> {
+        check::typ::arith_like(loc, self)
+    }
+
+    pub fn expect(&self, loc: Loc, expected: &Self) -> Res<()> {
+        check::typ::expect(loc, self, expected)
+    }
+
+    pub fn expect_bool(&self, loc: Loc) -> Res<()> {
+        check::typ::expect(loc, self, &Self::bool())
+    }
+
     /// Type application with errors handling.
     ///
     /// This function tries to apply the input type to the self type. If types are incompatible for
@@ -421,62 +473,49 @@ impl Typ {
     /// let mut abstraction_type = Typ::function(input_types.clone(), output_type.clone());
     ///
     /// let application_result = abstraction_type
-    ///     .apply(input_types, Location::default(), &mut errors)
+    ///     .apply(input_types, Loc::call_site(), &mut errors)
     ///     .unwrap();
     ///
     /// assert_eq!(application_result, output_type);
     /// ```
-    pub fn apply(
-        &mut self,
-        input_types: Vec<Typ>,
-        loc: Location,
-        errors: &mut Vec<Error>,
-    ) -> TRes<Typ> {
+    pub fn apply(&mut self, input_types: Vec<Typ>, loc: Loc, errors: &mut Vec<Error>) -> TRes<Typ> {
         match self {
             // if self is an abstraction, check if the input types are equal
             // and return the output type as the type of the application
             Typ::Abstract { inputs, output, .. } => {
-                if input_types.len() == inputs.len() {
-                    input_types
-                        .iter()
-                        .zip(inputs)
-                        .map(|(given_type, expected_type)| {
-                            given_type.eq_check_at(expected_type, errors, &loc)
-                        })
-                        .collect::<TRes<()>>()?;
-                    Ok((**output).clone())
+                check::arity::expect(loc, input_types.len(), inputs.len()).move_err(errors);
+                let mut fail = false;
+                for (idx, (typ, expected)) in input_types.iter().zip(inputs).enumerate() {
+                    let res = typ
+                        .expect(loc, expected)
+                        .err_note(lnote!(
+                            @loc => "on argument #{} of this lambda application", idx + 1,
+                        ))
+                        .dewrap(errors);
+                    if res.is_err() {
+                        fail = true;
+                    }
+                }
+                if fail {
+                    bad!()
                 } else {
-                    let error = Error::ArityMismatch {
-                        input_count: input_types.len(),
-                        arity: inputs.len(),
-                        loc,
-                    };
-                    errors.push(error);
-                    Err(TerminationError)
+                    Ok((**output).clone())
                 }
             }
             // if self is a polymorphic type, apply the function returning the function_type with
             // the input_types, then apply the function_type with the input_type just like any other
             // type
-            Typ::Polymorphism(fn_type) => {
-                let mut function_type =
-                    fn_type(input_types.clone(), loc.clone()).map_err(|error| {
-                        errors.push(error);
-                        TerminationError
-                    })?;
-                let result = function_type.apply(input_types.clone(), loc, errors)?;
-
-                *self = function_type;
+            Typ::Polymorphism(fn_typ) => {
+                let mut out_typ = fn_typ(input_types.clone(), loc.clone()).dewrap(errors)?;
+                let result = out_typ.apply(input_types.clone(), loc, errors)?;
+                *self = out_typ;
                 Ok(result)
             }
             _ => {
-                let error = Error::ExpectAbstraction {
-                    input_types,
-                    given_type: self.clone(),
-                    loc,
-                };
-                errors.push(error);
-                Err(TerminationError)
+                errors.push(error!(
+                    @loc => ErrorKind::expected_lambda(input_types, self.clone())
+                ));
+                bad!()
             }
         }
     }
@@ -489,36 +528,13 @@ impl Typ {
     ///
     /// ```rust
     /// # compiler_common::prelude! {}
-    /// let mut errors = vec![];
-    ///
     /// let given_type = Typ::int();
     /// let expected_type = Typ::int();
     ///
-    /// given_type.eq_check_at(&expected_type, &mut errors, Location::dummy()).unwrap();
-    /// assert!(errors.is_empty());
+    /// given_type.check_eq(&expected_type, Loc::mixed_site()).unwrap();
     /// ```
-    pub fn eq_check_at(
-        &self,
-        expected_type: &Typ,
-        errors: &mut Vec<Error>,
-        loc: &Location,
-    ) -> TRes<()> {
-        if self.eq(expected_type) {
-            Ok(())
-        } else {
-            let error = Error::IncompatibleType {
-                given_type: self.clone(),
-                expected_type: expected_type.clone(),
-                loc: loc.clone(),
-            };
-            errors.push(error);
-            Err(TerminationError)
-        }
-    }
-
-    /// Alias for [`Self::eq_check_at`] with a dummy position.
-    pub fn eq_check(&self, expected_type: &Typ, errors: &mut Vec<Error>) -> TRes<()> {
-        self.eq_check_at(expected_type, errors, Location::dummy())
+    pub fn check_eq(&self, expected: &Typ, loc: Loc) -> Res<()> {
+        check::typ::expect(loc, self, expected)
     }
 
     /// Get inputs from abstraction type.
@@ -679,28 +695,10 @@ impl Typ {
 mod test {
     use super::*;
 
-    fn equality(mut input_types: Vec<Typ>, loc: Location) -> Res<Typ> {
-        if input_types.len() == 2 {
-            let type_2 = input_types.pop().unwrap();
-            let type_1 = input_types.pop().unwrap();
-            if type_1 == type_2 {
-                Ok(Typ::function(vec![type_1, type_2], Typ::bool()))
-            } else {
-                let error = Error::IncompatibleType {
-                    given_type: type_2,
-                    expected_type: type_1,
-                    loc,
-                };
-                Err(error)
-            }
-        } else {
-            let error = Error::ArityMismatch {
-                input_count: input_types.len(),
-                arity: 2,
-                loc,
-            };
-            Err(error)
-        }
+    fn equality(input_types: Vec<Typ>, loc: Loc) -> Res<Typ> {
+        let (lft, rgt) = check::arity::binary(loc, input_types)?;
+        rgt.expect(loc, &lft)?;
+        Ok(Typ::function(vec![lft, rgt], Typ::bool()))
     }
 
     #[test]
@@ -712,7 +710,7 @@ mod test {
         let mut abstraction_type = Typ::function(input_types.clone(), output_type.clone());
 
         let application_result = abstraction_type
-            .apply(input_types, Location::default(), &mut errors)
+            .apply(input_types, Loc::call_site(), &mut errors)
             .unwrap();
 
         assert_eq!(application_result, output_type);
@@ -727,7 +725,7 @@ mod test {
         let mut abstraction_type = Typ::function(input_types, output_type);
 
         abstraction_type
-            .apply(vec![Typ::float()], Location::default(), &mut errors)
+            .apply(vec![Typ::float()], Loc::call_site(), &mut errors)
             .unwrap_err();
     }
 
@@ -738,11 +736,7 @@ mod test {
         let mut polymorphic_type = Typ::poly(equality);
 
         let application_result = polymorphic_type
-            .apply(
-                vec![Typ::int(), Typ::int()],
-                Location::default(),
-                &mut errors,
-            )
+            .apply(vec![Typ::int(), Typ::int()], Loc::call_site(), &mut errors)
             .unwrap();
 
         let control = Typ::bool();
@@ -759,7 +753,7 @@ mod test {
         let _ = polymorphic_type
             .apply(
                 vec![Typ::int(), Typ::float()],
-                Location::default(),
+                Loc::call_site(),
                 &mut errors,
             )
             .unwrap_err();
@@ -772,11 +766,7 @@ mod test {
         let mut polymorphic_type = Typ::poly(equality);
 
         let _ = polymorphic_type
-            .apply(
-                vec![Typ::int(), Typ::int()],
-                Location::default(),
-                &mut errors,
-            )
+            .apply(vec![Typ::int(), Typ::int()], Loc::call_site(), &mut errors)
             .unwrap();
 
         let control = Typ::function(vec![Typ::int(), Typ::int()], Typ::bool());

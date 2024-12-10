@@ -27,5 +27,5 @@ pub struct Typedef {
     /// Typedef kind.
     pub kind: Kind,
     /// Typedef location.
-    pub loc: Location,
+    pub loc: Loc,
 }

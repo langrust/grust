@@ -29,6 +29,11 @@ pub struct When {
     /// Action triggered by event.
     pub expr: Box<Expr>,
 }
+impl When {
+    pub fn loc(&self) -> Loc {
+        self.pattern.loc()
+    }
+}
 mk_new! { impl When =>
     new {
         pattern: EventPattern,
@@ -58,7 +63,7 @@ pub enum Expr {
     /// Constant expression.
     Constant(Constant),
     /// Identifier expression.
-    Identifier(String),
+    Identifier(Ident),
     /// Application expression.
     Application(Application<Self>),
     /// UnOp expression.
@@ -98,7 +103,8 @@ pub enum Expr {
 }
 mk_new! { impl Expr =>
     Constant: cst(arg: Constant = arg)
-    Identifier: ident(arg : impl Into<String> = arg.into())
+    Identifier: ident(arg : impl Into<Ident> = arg.into())
+    Identifier: test_ident(arg: impl AsRef<str> = Ident::new(arg.as_ref(), Span::mixed_site()))
     Application: app(arg : Application<Self> = arg)
     UnOp: unop(arg: UnOp<Self> = arg)
     BinOp: binop(arg: BinOp<Self> = arg)
@@ -120,8 +126,16 @@ mk_new! { impl Expr =>
 }
 
 impl Expr {
+    pub fn loc(&self) -> Loc {
+        use stream::Expr::*;
+        match self {
+            Constant(c) => c.loc(),
+            _ => todo!(),
+        }
+    }
+
     pub fn check_is_constant(&self, table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
-        match &self {
+        match self {
             // Constant by default
             stream::Expr::Constant { .. } | stream::Expr::Enumeration { .. } => Ok(()),
             // Not constant by default
@@ -135,27 +149,22 @@ impl Expr {
             | stream::Expr::Sort { .. }
             | stream::Expr::Zip { .. }
             | stream::Expr::Last { .. } => {
-                let error = Error::ExpectConstant {
-                    loc: Location::default(),
-                };
-                errors.push(error);
-                Err(TerminationError)
+                let loc = self.loc();
+                bad!(errors, @loc => ErrorKind::expected_constant())
             }
             // It depends
-            stream::Expr::Identifier(id) => {
+            stream::Expr::Identifier(ident) => {
                 // check id exists
                 let id = table
-                    .get_identifier_id(&id, false, Location::default(), &mut vec![])
-                    .or_else(|_| table.get_function_id(&id, false, Location::default(), errors))?;
+                    .get_identifier_id(&ident.to_string(), false, ident.span(), &mut vec![])
+                    .or_else(|_| {
+                        table.get_function_id(&ident.to_string(), false, ident.span(), errors)
+                    })?;
                 // check it is a function or and operator
                 if table.is_function(id) {
                     Ok(())
                 } else {
-                    let error = Error::ExpectConstant {
-                        loc: Location::default(),
-                    };
-                    errors.push(error);
-                    Err(TerminationError)
+                    bad!(errors, @ident.span() => ErrorKind::expected_constant())
                 }
             }
             stream::Expr::UnOp(UnOp { expr, .. }) => expr.check_is_constant(table, errors),
@@ -202,15 +211,17 @@ mk_new! { impl ReactExpr =>
     When: when_match(arg: When = arg)
 }
 impl ReactExpr {
+    pub fn loc(&self) -> Loc {
+        match self {
+            Self::Expr(e) => e.loc(),
+            Self::When(w) => w.loc(),
+        }
+    }
     pub fn check_is_constant(&self, table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
         match &self {
             stream::ReactExpr::Expr(expr) => expr.check_is_constant(table, errors),
-            stream::ReactExpr::When { .. } => {
-                let error = Error::ExpectConstant {
-                    loc: Location::default(),
-                };
-                errors.push(error);
-                Err(TerminationError)
+            stream::ReactExpr::When(whn) => {
+                bad!(errors, @whn.loc() => ErrorKind::expected_constant())
             }
         }
     }

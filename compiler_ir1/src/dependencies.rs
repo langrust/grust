@@ -835,14 +835,13 @@ impl File {
             .for_each(|component| component.add_node_dependencies(&mut nodes_graph));
 
         // sort nodes according to their dependencies
-        let sorted_nodes = toposort(&nodes_graph, None).map_err(|component| {
-            let error = Error::NotCausalNode {
-                node: symbol_table.get_name(component.node_id()).clone(),
-                loc: self.loc.clone(),
-            };
-            errors.push(error);
-            TerminationError
-        })?;
+        let sorted_nodes = toposort(&nodes_graph, None)
+            .map_err(|component| {
+                error!(@self.loc =>
+                    ErrorKind::node_non_causal(symbol_table.get_name(component.node_id()).clone())
+                )
+            })
+            .dewrap(errors)?;
         self.components.sort_by(|c1, c2| {
             let index1 = sorted_nodes
                 .iter()
@@ -933,12 +932,8 @@ impl ir1::stream::Stmt {
             }
             // if processing: error
             Color::Grey => {
-                let error = Error::NotCausalSignal {
-                    signal: ctx.symbol_table.get_name(signal).clone(),
-                    loc: self.loc.clone(),
-                };
-                ctx.errors.push(error);
-                Err(TerminationError)
+                let name = ctx.symbol_table.get_name(signal).clone();
+                bad!(ctx.errors, @self.loc => ErrorKind::signal_non_causal(name))
             }
             // if processed: nothing to do
             Color::Black => Ok(()),

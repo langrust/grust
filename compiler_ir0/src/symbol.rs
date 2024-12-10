@@ -99,6 +99,8 @@ pub struct Symbol {
     kind: SymbolKind,
     /// Symbol name.
     name: String,
+    /// Location of the symbol's declaration.
+    pub loc: Option<Loc>,
 }
 impl PartialEq for Symbol {
     fn eq(&self, other: &Self) -> bool {
@@ -265,9 +267,10 @@ impl SymbolTable {
                     typing: Some(op.get_typ()),
                 },
                 name: op.to_string(),
+                loc: None,
             };
 
-            self.insert_symbol(symbol, false, Location::default(), &mut vec![])
+            self.insert_symbol(symbol, false, Loc::mixed_site(), &mut vec![])
                 .expect("you should not fail");
         });
         BOp::iter().for_each(|op| {
@@ -278,9 +281,10 @@ impl SymbolTable {
                     typing: Some(op.get_typ()),
                 },
                 name: op.to_string(),
+                loc: None,
             };
 
-            self.insert_symbol(symbol, false, Location::default(), &mut vec![])
+            self.insert_symbol(symbol, false, Loc::mixed_site(), &mut vec![])
                 .expect("you should not fail");
         });
         OtherOp::iter().for_each(|op| {
@@ -291,9 +295,10 @@ impl SymbolTable {
                     typing: Some(op.get_typ()),
                 },
                 name: op.to_string(),
+                loc: None,
             };
 
-            self.insert_symbol(symbol, false, Location::default(), &mut vec![])
+            self.insert_symbol(symbol, false, Loc::mixed_site(), &mut vec![])
                 .expect("you should not fail");
         });
     }
@@ -315,17 +320,12 @@ impl SymbolTable {
         &mut self,
         symbol: Symbol,
         local: bool,
-        loc: Location,
+        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let key = symbol.hash();
         if self.known_symbols.contains(&key, local) {
-            let error = Error::AlreadyDefinedElement {
-                name: symbol.name.clone(),
-                loc,
-            };
-            errors.push(error);
-            Err(TerminationError)
+            bad!(errors, @loc => ErrorKind::elm_redef(symbol.name.clone()))
         } else {
             let id = self.fresh_id;
             // update symbol table
@@ -352,12 +352,13 @@ impl SymbolTable {
         scope: Scope,
         typing: Option<Typ>,
         local: bool,
-        loc: Location,
+        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol = Symbol {
             kind: SymbolKind::Identifier { scope, typing },
             name,
+            loc: Some(loc),
         };
 
         self.insert_symbol(symbol, local, loc, errors)
@@ -369,7 +370,7 @@ impl SymbolTable {
         name: String,
         typing: Option<Typ>,
         local: bool,
-        loc: Location,
+        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol = Symbol {
@@ -378,6 +379,7 @@ impl SymbolTable {
                 typing,
             },
             name,
+            loc: Some(loc),
         };
 
         self.insert_symbol(symbol, local, loc, errors)
@@ -388,7 +390,7 @@ impl SymbolTable {
         &mut self,
         typing: Typ,
         local: bool,
-        loc: Location,
+        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol = Symbol {
@@ -397,6 +399,7 @@ impl SymbolTable {
                 typing: Some(typing),
             },
             name: String::from("result"),
+            loc: Some(loc),
         };
 
         self.insert_symbol(symbol, local, loc, errors)
@@ -410,7 +413,7 @@ impl SymbolTable {
         kind: FlowKind,
         typing: Typ,
         local: bool,
-        loc: Location,
+        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol = Symbol {
@@ -421,6 +424,7 @@ impl SymbolTable {
                 typing,
             },
             name,
+            loc: Some(loc),
         };
 
         self.insert_symbol(symbol, local, loc, errors)
@@ -433,7 +437,7 @@ impl SymbolTable {
         inputs: Vec<usize>,
         output_type: Option<Typ>,
         local: bool,
-        loc: Location,
+        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol = Symbol {
@@ -443,6 +447,7 @@ impl SymbolTable {
                 typing: None,
             },
             name,
+            loc: Some(loc),
         };
 
         self.insert_symbol(symbol, local, loc, errors)
@@ -458,7 +463,7 @@ impl SymbolTable {
         outputs: Vec<(String, usize)>,
         locals: HashMap<String, usize>,
         period: Option<u64>,
-        loc: Location,
+        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol = Symbol {
@@ -471,6 +476,7 @@ impl SymbolTable {
                 period_id: None,
             },
             name,
+            loc: Some(loc),
         };
 
         self.insert_symbol(symbol, local, loc, errors)
@@ -481,12 +487,13 @@ impl SymbolTable {
         &mut self,
         name: String,
         local: bool,
-        loc: Location,
+        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol = Symbol {
             kind: SymbolKind::Service,
             name,
+            loc: Some(loc),
         };
 
         self.insert_symbol(symbol, local, loc, errors)
@@ -498,12 +505,13 @@ impl SymbolTable {
         name: String,
         fields: Vec<usize>,
         local: bool,
-        loc: Location,
+        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol = Symbol {
             kind: SymbolKind::Structure { fields },
             name,
+            loc: Some(loc),
         };
 
         self.insert_symbol(symbol, local, loc, errors)
@@ -515,12 +523,13 @@ impl SymbolTable {
         name: String,
         elements: Vec<usize>,
         local: bool,
-        loc: Location,
+        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol = Symbol {
             kind: SymbolKind::Enumeration { elements },
             name,
+            loc: Some(loc),
         };
 
         self.insert_symbol(symbol, local, loc, errors)
@@ -532,12 +541,13 @@ impl SymbolTable {
         name: String,
         enum_name: String,
         local: bool,
-        loc: Location,
+        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol = Symbol {
             kind: SymbolKind::EnumerationElement { enum_name },
             name,
+            loc: Some(loc),
         };
 
         self.insert_symbol(symbol, local, loc, errors)
@@ -550,12 +560,13 @@ impl SymbolTable {
         array_type: Option<Typ>,
         size: usize,
         local: bool,
-        loc: Location,
+        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol = Symbol {
             kind: SymbolKind::Array { array_type, size },
             name,
+            loc: Some(loc),
         };
 
         self.insert_symbol(symbol, local, loc, errors)
@@ -571,9 +582,10 @@ impl SymbolTable {
         let symbol = Symbol {
             kind: SymbolKind::Identifier { scope, typing },
             name: fresh_name,
+            loc: None,
         };
 
-        self.insert_symbol(symbol, false, Location::default(), &mut vec![])
+        self.insert_symbol(symbol, false, Loc::mixed_site(), &mut vec![])
             .expect("you should not fail") // todo make it local
     }
 
@@ -587,9 +599,10 @@ impl SymbolTable {
                 typing,
             },
             name: fresh_name,
+            loc: None,
         };
 
-        self.insert_symbol(symbol, false, Location::default(), &mut vec![])
+        self.insert_symbol(symbol, false, Loc::mixed_site(), &mut vec![])
             .expect("you should not fail") // todo make it local
     }
 
@@ -603,9 +616,10 @@ impl SymbolTable {
                 typing: Typ::event(Typ::unit()),
             },
             name: fresh_name,
+            loc: None,
         };
 
-        self.insert_symbol(symbol, false, Location::default(), &mut vec![])
+        self.insert_symbol(symbol, false, Loc::mixed_site(), &mut vec![])
             .expect("you should not fail") // todo make it local
     }
 
@@ -619,9 +633,10 @@ impl SymbolTable {
                 typing: Typ::event(Typ::unit()),
             },
             name: fresh_name,
+            loc: None,
         };
 
-        self.insert_symbol(symbol, false, Location::default(), &mut vec![])
+        self.insert_symbol(symbol, false, Loc::mixed_site(), &mut vec![])
             .expect("you should not fail") // todo make it local
     }
 
@@ -640,9 +655,10 @@ impl SymbolTable {
                 typing: Typ::event(Typ::unit()),
             },
             name: fresh_name,
+            loc: None,
         };
 
-        self.insert_symbol(symbol, false, Location::default(), &mut vec![])
+        self.insert_symbol(symbol, false, Loc::mixed_site(), &mut vec![])
             .expect("you should not fail") // todo make it local
     }
 
@@ -661,9 +677,10 @@ impl SymbolTable {
                 typing: Typ::event(Typ::unit()),
             },
             name: fresh_name,
+            loc: None,
         };
 
-        self.insert_symbol(symbol, false, Location::default(), &mut vec![])
+        self.insert_symbol(symbol, false, Loc::mixed_site(), &mut vec![])
             .expect("you should not fail") // todo make it local
     }
 
@@ -684,7 +701,7 @@ impl SymbolTable {
         &mut self,
         id: usize,
         local: bool,
-        loc: Location,
+        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<()> {
         let key = self
@@ -692,12 +709,7 @@ impl SymbolTable {
             .expect(&format!("expect symbol for {id}"))
             .hash();
         if self.known_symbols.contains(&key, local) {
-            let error = Error::AlreadyDefinedElement {
-                name: self.get_name(id).clone(),
-                loc,
-            };
-            errors.push(error);
-            Err(TerminationError)
+            bad!(errors, @loc => ErrorKind::elm_redef(self.get_name(id).clone()))
         } else {
             self.known_symbols.add_symbol(key, id);
             Ok(())
@@ -731,6 +743,13 @@ impl SymbolTable {
     /// Get symbol from identifier.
     pub fn get_symbol(&self, id: usize) -> Option<&Symbol> {
         self.table.get(&id)
+    }
+
+    /// Get symbol from identifier.
+    pub fn resolve_symbol(&self, id: usize) -> Res<&Symbol> {
+        self.table.get(&id).ok_or_else(
+            lerror!(@Loc::mixed_site() => "[fatal] failed to resolve symbol identifier {}", id),
+        )
     }
 
     /// Get mutable symbol from identifier.
@@ -1242,20 +1261,13 @@ impl SymbolTable {
         &self,
         name: &String,
         local: bool,
-        loc: Location,
+        loc: impl Into<Loc>,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol_hash = SymbolKey::Identifier { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
-            None => {
-                let error = Error::UnknownElement {
-                    name: name.to_string(),
-                    loc,
-                };
-                errors.push(error);
-                Err(TerminationError)
-            }
+            None => bad!(errors, @loc => ErrorKind::unknown_elem(name)),
         }
     }
 
@@ -1263,22 +1275,14 @@ impl SymbolTable {
     pub fn get_function_result_id(
         &self,
         local: bool,
-        loc: Location,
+        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
-        let symbol_hash = SymbolKey::Identifier {
-            name: String::from("result"),
-        };
+        let name = "result";
+        let symbol_hash = SymbolKey::Identifier { name: name.into() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
-            None => {
-                let error = Error::UnknownElement {
-                    name: String::from("result"),
-                    loc,
-                };
-                errors.push(error);
-                Err(TerminationError)
-            }
+            None => bad!(errors, @loc => ErrorKind::unknown_elem(name)),
         }
     }
 
@@ -1287,20 +1291,13 @@ impl SymbolTable {
         &self,
         name: &String,
         local: bool,
-        loc: Location,
+        loc: impl Into<Loc>,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol_hash = SymbolKey::Function { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
-            None => {
-                let error = Error::UnknownElement {
-                    name: name.to_string(),
-                    loc,
-                };
-                errors.push(error);
-                Err(TerminationError)
-            }
+            None => bad!(errors, @loc => ErrorKind::unknown_elem(name)),
         }
     }
 
@@ -1309,20 +1306,13 @@ impl SymbolTable {
         &self,
         name: &String,
         local: bool,
-        loc: Location,
+        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol_hash = SymbolKey::Flow { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
-            None => {
-                let error = Error::UnknownSignal {
-                    name: name.to_string(),
-                    loc,
-                };
-                errors.push(error);
-                Err(TerminationError)
-            }
+            None => bad!(errors, @loc => ErrorKind::unknown_signal(name)),
         }
     }
 
@@ -1331,20 +1321,13 @@ impl SymbolTable {
         &self,
         name: &String,
         local: bool,
-        loc: Location,
+        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol_hash = SymbolKey::Node { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
-            None => {
-                let error = Error::UnknownNode {
-                    name: name.to_string(),
-                    loc,
-                };
-                errors.push(error);
-                Err(TerminationError)
-            }
+            None => bad!(errors, @loc => ErrorKind::unknown_node(name)),
         }
     }
 
@@ -1353,20 +1336,13 @@ impl SymbolTable {
         &self,
         name: &String,
         local: bool,
-        loc: Location,
+        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol_hash = SymbolKey::Structure { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
-            None => {
-                let error = Error::UnknownType {
-                    name: name.to_string(),
-                    loc,
-                };
-                errors.push(error);
-                Err(TerminationError)
-            }
+            None => bad!(errors, @loc => ErrorKind::unknown_type(name)),
         }
     }
 
@@ -1375,20 +1351,13 @@ impl SymbolTable {
         &self,
         name: &String,
         local: bool,
-        loc: Location,
+        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol_hash = SymbolKey::Enumeration { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
-            None => {
-                let error = Error::UnknownType {
-                    name: name.to_string(),
-                    loc,
-                };
-                errors.push(error);
-                Err(TerminationError)
-            }
+            None => bad!(errors, @loc => ErrorKind::unknown_type(name)),
         }
     }
 
@@ -1398,7 +1367,7 @@ impl SymbolTable {
         elem_name: &String,
         enum_name: &String,
         local: bool,
-        loc: Location,
+        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol_hash = SymbolKey::EnumerationElement {
@@ -1407,14 +1376,7 @@ impl SymbolTable {
         };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
-            None => {
-                let error = Error::UnknownElement {
-                    name: elem_name.to_string(),
-                    loc,
-                };
-                errors.push(error);
-                Err(TerminationError)
-            }
+            None => bad!(errors, @loc => ErrorKind::unknown_elem(elem_name)),
         }
     }
 
@@ -1423,20 +1385,13 @@ impl SymbolTable {
         &self,
         name: &String,
         local: bool,
-        loc: Location,
+        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol_hash = SymbolKey::Array { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
-            None => {
-                let error = Error::UnknownType {
-                    name: name.to_string(),
-                    loc,
-                };
-                errors.push(error);
-                Err(TerminationError)
-            }
+            None => bad!(errors, @loc => ErrorKind::unknown_type(name)),
         }
     }
 }
