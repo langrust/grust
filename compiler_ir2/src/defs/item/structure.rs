@@ -6,15 +6,15 @@ prelude! {}
 #[derive(Debug, PartialEq)]
 pub struct Structure {
     /// The structure's name.
-    pub name: String,
+    pub name: Ident,
     /// The structure's fields.
-    pub fields: Vec<(String, Typ)>,
+    pub fields: Vec<(Ident, Typ)>,
 }
 
 mk_new! { impl Structure =>
     new {
-        name: impl Into<String> = name.into(),
-        fields: Vec<(String, Typ)>,
+        name: impl Into<Ident> = name.into(),
+        fields: Vec<(Ident, Typ)>,
     }
 }
 
@@ -22,7 +22,6 @@ impl Structure {
     /// Transform [ir2] structure into RustAST structure.
     pub fn into_syn(self) -> syn::ItemStruct {
         let fields = self.fields.into_iter().map(|(name, typ)| {
-            let name = Ident::new(&name, Span::call_site());
             let typ = typ.into_syn();
             syn::Field {
                 attrs: vec![],
@@ -33,7 +32,7 @@ impl Structure {
                 mutability: syn::FieldMutability::None,
             }
         });
-        let name = Ident::new(&self.name, Span::call_site());
+        let name = self.name;
         let attribute: syn::Attribute = if conf::greusot() {
             parse_quote!(
                 #[derive(prelude::Clone, Copy, prelude::PartialEq, prelude::Default, DeepModel)]
@@ -57,8 +56,11 @@ mod test {
     #[test]
     fn should_create_rust_ast_structure_from_ir2_structure() {
         let structure = Structure::new(
-            "Point",
-            vec![("x".into(), Typ::int()), ("y".into(), Typ::int())],
+            Loc::test_id("Point"),
+            vec![
+                (Loc::test_id("x"), Typ::int()),
+                (Loc::test_id("y"), Typ::int()),
+            ],
         );
 
         let control = parse_quote! {

@@ -13,17 +13,17 @@ pub enum Term {
     /// An identifier call: `x`.
     Identifier {
         /// The identifier.
-        identifier: String,
+        identifier: Ident,
     },
     /// A memory access: `self.i_mem`.
     MemoryAccess {
         /// The identifier to the memory.
-        identifier: String,
+        identifier: Ident,
     },
     /// An input access: `self.i_mem`.
     InputAccess {
         /// The identifier to the input.
-        identifier: String,
+        identifier: Ident,
     },
     /// An unitary operation: `!x`.
     Unop {
@@ -44,7 +44,7 @@ pub enum Term {
     /// Identifier term: x
     Forall {
         /// The identifier's name.
-        name: String,
+        name: Ident,
         /// The identifier's type.
         ty: Typ,
         /// The term
@@ -60,9 +60,9 @@ pub enum Term {
     /// Enumeration term.
     Enumeration {
         /// The enumeration type name.
-        enum_name: String,
+        enum_name: Ident,
         /// The element name.
-        elem_name: String,
+        elem_name: Ident,
         /// The optional element of the enumeration.
         element: Option<Box<Term>>,
     },
@@ -87,13 +87,13 @@ mk_new! { impl Term =>
         literal: Constant,
     }
     Identifier: ident {
-        identifier: impl Into<String> = identifier.into(),
+        identifier: impl Into<Ident> = identifier.into(),
     }
     MemoryAccess: mem {
-        identifier: impl Into<String> = identifier.into(),
+        identifier: impl Into<Ident> = identifier.into(),
     }
     InputAccess: input {
-        identifier: impl Into<String> = identifier.into(),
+        identifier: impl Into<Ident> = identifier.into(),
     }
     Unop: unop {
         op: UOp,
@@ -105,7 +105,7 @@ mk_new! { impl Term =>
         right: Self = right.into(),
     }
     Forall: forall {
-        name: impl Into<String> = name.into(),
+        name: impl Into<Ident> = name.into(),
         ty: Typ,
         term: Term = term.into(),
     }
@@ -114,8 +114,8 @@ mk_new! { impl Term =>
         right: Term = right.into(),
     }
     Enumeration: enumeration {
-        enum_name: impl Into<String> = enum_name.into(),
-        elem_name: impl Into<String> = elem_name.into(),
+        enum_name: impl Into<Ident> = enum_name.into(),
+        elem_name: impl Into<Ident> = elem_name.into(),
         element: Option<Term> = element.map(Term::into),
     }
     Ok: ok { term: Term = term.into() }
@@ -149,7 +149,7 @@ impl Term {
                 quote!(#expr)
             }
             Self::Identifier { identifier } => {
-                let id = Ident::new(&identifier, Span::call_site());
+                let id = identifier;
                 quote!(#id)
             }
             Self::MemoryAccess { identifier } => {
@@ -165,7 +165,7 @@ impl Term {
                 }
             }
             Self::InputAccess { identifier } => {
-                let id = Ident::new(&identifier, Span::call_site());
+                let id = identifier;
                 if function_like {
                     quote!(#id)
                 } else {
@@ -178,7 +178,7 @@ impl Term {
                 quote!(#ts_left ==> #ts_right)
             }
             Self::Forall { name, ty, term } => {
-                let id = Ident::new(&name, Span::call_site());
+                let id = name;
                 let ts_term = term.to_token_stream(prophecy, function_like);
                 let ts_ty = ty.into_syn();
                 quote!(forall<#id:#ts_ty> #ts_term)
@@ -188,8 +188,8 @@ impl Term {
                 elem_name,
                 element,
             } => {
-                let ty = Ident::new(&enum_name, Span::call_site());
-                let cons = Ident::new(&elem_name, Span::call_site());
+                let ty = enum_name;
+                let cons = elem_name;
                 if let Some(term) = element {
                     let inner = term.to_token_stream(prophecy, function_like);
                     parse_quote! { #ty::#cons(#inner) }

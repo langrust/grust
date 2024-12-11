@@ -58,6 +58,25 @@ pub enum Typedef {
         size: syn::LitInt,
     },
 }
+impl HasLoc for Typedef {
+    fn loc(&self) -> Loc {
+        match self {
+            Self::Structure {
+                struct_token,
+                brace,
+                ..
+            } => Loc::from(struct_token.span).join(brace.span.join()),
+            Self::Enumeration {
+                enum_token, brace, ..
+            } => Loc::from(enum_token.span).join(brace.span.join()),
+            Self::Array {
+                array_token,
+                bracket_token,
+                ..
+            } => Loc::from(array_token.span).join(bracket_token.span.join()),
+        }
+    }
+}
 
 /// GRust component AST.
 pub struct Component {
@@ -79,6 +98,11 @@ pub struct Component {
     /// Component's equations.
     pub equations: Vec<equation::ReactEq>,
 }
+impl HasLoc for Component {
+    fn loc(&self) -> Loc {
+        Loc::from(self.component_token.span).join(self.brace.span.join())
+    }
+}
 
 /// GRust component import AST.
 pub struct ComponentImport {
@@ -97,6 +121,11 @@ pub struct ComponentImport {
     pub period: Option<(Token![@], syn::LitInt, keyword::ms)>,
     pub semi_token: Token![;],
 }
+impl HasLoc for ComponentImport {
+    fn loc(&self) -> Loc {
+        Loc::from(self.import_token.span).join(self.semi_token.span)
+    }
+}
 
 /// GRust function AST.
 pub struct Function {
@@ -114,6 +143,11 @@ pub struct Function {
     /// Function's statements.
     pub statements: Vec<Stmt>,
 }
+impl HasLoc for Function {
+    fn loc(&self) -> Loc {
+        Loc::from(self.function_token.span).join(self.brace.span.join())
+    }
+}
 
 /// Things that can appear in a GRust program.
 pub enum Item {
@@ -128,6 +162,19 @@ pub enum Item {
     Service(Service),
     Import(FlowImport),
     Export(FlowExport),
+}
+impl HasLoc for Item {
+    fn loc(&self) -> Loc {
+        match self {
+            Self::ComponentImport(ci) => ci.loc(),
+            Self::Component(c) => c.loc(),
+            Self::Function(f) => f.loc(),
+            Self::Typedef(t) => t.loc(),
+            Self::Service(s) => s.loc(),
+            Self::Import(i) => i.loc(),
+            Self::Export(e) => e.loc(),
+        }
+    }
 }
 
 /// Complete AST of GRust program.

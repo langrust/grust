@@ -191,7 +191,7 @@ impl Stmt {
         for signal_id in local_signals {
             let name = symbol_table.get_name(signal_id);
             let scope = symbol_table.get_scope(signal_id).clone();
-            let fresh_name = identifier_creator.new_identifier(name);
+            let fresh_name = identifier_creator.new_identifier(name.span(), &name.to_string());
             if Scope::Output != scope && &fresh_name != name {
                 let typ = Some(symbol_table.get_typ(signal_id).clone());
                 let fresh_id = symbol_table.insert_fresh_signal(fresh_name, scope, typ);
@@ -983,6 +983,11 @@ pub struct Expr {
     /// Stream expression dependencies.
     pub dependencies: Dependencies,
 }
+impl HasLoc for Expr {
+    fn loc(&self) -> Loc {
+        self.loc
+    }
+}
 
 /// Constructs stream expression.
 ///
@@ -991,7 +996,7 @@ pub fn expr(kind: Kind) -> Expr {
     Expr {
         kind,
         typ: None,
-        loc: Loc::mixed_site(),
+        loc: Loc::builtin(),
         dependencies: Dependencies::new(),
     }
 }
@@ -1104,7 +1109,8 @@ impl Expr {
                 debug_assert!(node_memory_id.is_none());
                 // create fresh identifier for the new memory buffer
                 let node_name = symbol_table.get_name(*called_node_id);
-                let memory_name = identifier_creator.new_identifier(&node_name);
+                let memory_name =
+                    identifier_creator.new_identifier(node_name.loc(), &node_name.to_string());
                 let memory_id = symbol_table.insert_fresh_signal(memory_name, Scope::Local, None);
                 memory.add_called_node(memory_id, *called_node_id);
                 // put the 'memory_id' of the called node
@@ -1143,6 +1149,7 @@ impl Expr {
         identifier_creator: &mut IdentifierCreator,
         symbol_table: &mut SymbolTable,
     ) -> Vec<stream::Stmt> {
+        let loc = self.loc;
         match self.kind {
             stream::Kind::FollowedBy { ref constant, .. } => {
                 // constant should already be in normal form
@@ -1162,19 +1169,19 @@ impl Expr {
                             syn::LitBool::new(false, macro2::Span::call_site()),
                         ))),
                         typ: Some(Typ::Boolean(Default::default())),
-                        loc: Loc::mixed_site(),
+                        loc,
                         dependencies: Dependencies::from(vec![]),
                     };
                     let mem = stream::Expr {
                         kind: stream::Kind::fby(id, constant),
                         typ: Some(Typ::Boolean(Default::default())),
-                        loc: Loc::mixed_site(),
+                        loc,
                         dependencies: fby_dependencies.clone(),
                     };
                     let not_mem = stream::Expr {
                         kind: stream::Kind::expr(expr::Kind::unop(UOp::Not, mem)),
                         typ: Some(Typ::Boolean(Default::default())),
-                        loc: Loc::mixed_site(),
+                        loc,
                         dependencies: fby_dependencies,
                     };
 
@@ -1230,8 +1237,11 @@ impl Expr {
                 );
 
                 // create fresh identifier for the new statement
-                let fresh_name = identifier_creator
-                    .fresh_identifier("comp_app", symbol_table.get_name(called_node_id));
+                let fresh_name = identifier_creator.fresh_identifier(
+                    loc,
+                    "comp_app",
+                    &symbol_table.get_name(called_node_id).to_string(),
+                );
                 let typ = self.get_type().cloned();
                 let fresh_id =
                     symbol_table.insert_fresh_signal(fresh_name, Scope::Local, typ.clone());
@@ -1303,7 +1313,7 @@ impl Expr {
                     self.normal_form(nodes_reduced_graphs, identifier_creator, symbol_table);
 
                 // create fresh identifier for the new statement
-                let fresh_name = identifier_creator.fresh_identifier("", "x");
+                let fresh_name = identifier_creator.fresh_identifier(self.loc(), "", "x");
                 let typ = self.get_type();
                 let fresh_id =
                     symbol_table.insert_fresh_signal(fresh_name, Scope::Local, typ.cloned());

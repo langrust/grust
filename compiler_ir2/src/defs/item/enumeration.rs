@@ -6,15 +6,15 @@ prelude! {}
 #[derive(Debug, PartialEq)]
 pub struct Enumeration {
     /// The enumeration's name.
-    pub name: String,
+    pub name: Ident,
     /// The enumeration's elements.
-    pub elements: Vec<String>,
+    pub elements: Vec<Ident>,
 }
 
 mk_new! { impl Enumeration =>
     new {
-        name: impl Into<String> = name.into(),
-        elements: Vec<String>
+        name: impl Into<Ident> = name.into(),
+        elements: Vec<Ident>
     }
 }
 
@@ -38,7 +38,7 @@ impl Enumeration {
             attrs: vec![attribute],
             vis: syn::Visibility::Public(Default::default()),
             enum_token: Default::default(),
-            ident: Ident::new(&self.name, Span::call_site()),
+            ident: self.name,
             generics: Default::default(),
             brace_token: Default::default(),
             variants: self
@@ -53,7 +53,7 @@ impl Enumeration {
                     };
                     syn::Variant {
                         attrs,
-                        ident: Ident::new(element, Span::call_site()),
+                        ident: element.clone(),
                         fields: syn::Fields::Unit,
                         discriminant: Default::default(),
                     }
@@ -69,8 +69,14 @@ mod test {
 
     #[test]
     fn should_create_rust_ast_enumeration_from_ir2_enumeration() {
-        let enumeration =
-            Enumeration::new("Color", vec!["Blue".into(), "Red".into(), "Green".into()]);
+        let enumeration = Enumeration::new(
+            Loc::test_id("Color"),
+            vec![
+                Loc::test_id("Blue"),
+                Loc::test_id("Red"),
+                Loc::test_id("Green"),
+            ],
+        );
 
         let control = parse_quote! {
         #[derive(Clone, Copy, PartialEq, Default)]

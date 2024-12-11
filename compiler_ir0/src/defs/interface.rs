@@ -145,11 +145,11 @@ pub enum FlowExpression {
     /// Component call.
     ComponentCall(ComponentCall),
     /// Identifier to flow.
-    Ident(String),
+    Ident(Ident),
 }
 
 mk_new! { impl FlowExpression =>
-    Ident: ident (val: impl Into<String> = val.into())
+    Ident: ident (val: impl Into<Ident> = val.into())
     Sample: sample (val: Sample = val)
     Scan: scan (val: Scan = val)
     Timeout: timeout (val: Timeout = val)
@@ -193,6 +193,14 @@ pub enum FlowPattern {
         ident: Ident,
     },
 }
+impl HasLoc for FlowPattern {
+    fn loc(&self) -> Loc {
+        match self {
+            Self::Tuple { paren_token, .. } => paren_token.span.join().into(),
+            Self::SingleTyped { ident, .. } | Self::Single { ident } => ident.loc().into(),
+        }
+    }
+}
 
 /// Flow statement AST.
 pub struct FlowDeclaration {
@@ -204,6 +212,11 @@ pub struct FlowDeclaration {
     pub expr: FlowExpression,
     pub semi_token: Token![;],
 }
+impl HasLoc for FlowDeclaration {
+    fn loc(&self) -> Loc {
+        Loc::from(self.let_token.span).join(self.semi_token.span)
+    }
+}
 
 /// Flow statement AST.
 pub struct FlowInstantiation {
@@ -213,6 +226,11 @@ pub struct FlowInstantiation {
     /// The expression defining the flow.
     pub expr: FlowExpression,
     pub semi_token: Token![;],
+}
+impl HasLoc for FlowInstantiation {
+    fn loc(&self) -> Loc {
+        self.pattern.loc().join(self.semi_token.span)
+    }
 }
 
 /// Flow statement AST.
@@ -224,6 +242,11 @@ pub struct FlowImport {
     pub typed_path: Colon<syn::Path, Typ>,
     pub semi_token: Token![;],
 }
+impl HasLoc for FlowImport {
+    fn loc(&self) -> Loc {
+        Loc::from(self.import_token.span).join(self.semi_token.span)
+    }
+}
 
 /// Flow statement AST.
 pub struct FlowExport {
@@ -234,10 +257,23 @@ pub struct FlowExport {
     pub typed_path: Colon<syn::Path, Typ>,
     pub semi_token: Token![;],
 }
+impl HasLoc for FlowExport {
+    fn loc(&self) -> Loc {
+        Loc::from(self.export_token.span).join(self.semi_token.span)
+    }
+}
 
 pub enum FlowStatement {
     Declaration(FlowDeclaration),
     Instantiation(FlowInstantiation),
+}
+impl HasLoc for FlowStatement {
+    fn loc(&self) -> Loc {
+        match self {
+            Self::Declaration(d) => d.loc(),
+            Self::Instantiation(i) => i.loc(),
+        }
+    }
 }
 
 /// Service's time range.
@@ -259,4 +295,9 @@ pub struct Service {
     pub brace: token::Brace,
     /// Service's flow statements.
     pub flow_statements: Vec<FlowStatement>,
+}
+impl HasLoc for Service {
+    fn loc(&self) -> Loc {
+        Loc::from(self.service_token.span).join(self.brace.span.join())
+    }
 }

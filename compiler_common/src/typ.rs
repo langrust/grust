@@ -316,11 +316,11 @@ mk_new! { impl Typ =>
         id: usize,
     }
     Enumeration: enumeration_str {
-        name: impl Into<String> = Ident::new(&name.into(), Span::call_site()),
+        name: impl Into<Ident> = name.into(),
         id: usize,
     }
     Structure: structure_str {
-        name: impl Into<String> = Ident::new(&name.into(), Span::call_site()),
+        name: impl Into<Ident> = name.into(),
         id: usize,
     }
     Abstract: function {
@@ -520,7 +520,7 @@ impl Typ {
 
     /// Check if `self` matches the expected [Typ].
     ///
-    /// See also [`Self::eq_check`].
+    /// See also the [`check::typ`] module.
     ///
     /// # Example
     ///
@@ -708,7 +708,7 @@ mod test {
         let mut abstraction_type = Typ::function(input_types.clone(), output_type.clone());
 
         let application_result = abstraction_type
-            .apply(input_types, Loc::call_site(), &mut errors)
+            .apply(input_types, Loc::test_dummy(), &mut errors)
             .unwrap();
 
         assert_eq!(application_result, output_type);
@@ -723,7 +723,7 @@ mod test {
         let mut abstraction_type = Typ::function(input_types, output_type);
 
         abstraction_type
-            .apply(vec![Typ::float()], Loc::call_site(), &mut errors)
+            .apply(vec![Typ::float()], Loc::test_dummy(), &mut errors)
             .unwrap_err();
     }
 
@@ -734,7 +734,7 @@ mod test {
         let mut polymorphic_type = Typ::poly(equality);
 
         let application_result = polymorphic_type
-            .apply(vec![Typ::int(), Typ::int()], Loc::call_site(), &mut errors)
+            .apply(vec![Typ::int(), Typ::int()], Loc::test_dummy(), &mut errors)
             .unwrap();
 
         let control = Typ::bool();
@@ -751,7 +751,7 @@ mod test {
         let _ = polymorphic_type
             .apply(
                 vec![Typ::int(), Typ::float()],
-                Loc::call_site(),
+                Loc::test_dummy(),
                 &mut errors,
             )
             .unwrap_err();
@@ -764,7 +764,7 @@ mod test {
         let mut polymorphic_type = Typ::poly(equality);
 
         let _ = polymorphic_type
-            .apply(vec![Typ::int(), Typ::int()], Loc::call_site(), &mut errors)
+            .apply(vec![Typ::int(), Typ::int()], Loc::test_dummy(), &mut errors)
             .unwrap();
 
         let control = Typ::function(vec![Typ::int(), Typ::int()], Typ::bool());
@@ -820,7 +820,7 @@ mod test {
 
     #[test]
     fn should_create_structure_from_ir2_structure() {
-        let typ = Typ::structure_str("Point", 0);
+        let typ = Typ::structure_str(Loc::test_id("Point"), 0);
         let control = parse_quote! { Point };
 
         assert_eq!(typ.into_syn(), control)
@@ -828,7 +828,7 @@ mod test {
 
     #[test]
     fn should_create_enumeration_from_ir2_enumeration() {
-        let typ = Typ::enumeration_str("Color", 0);
+        let typ = Typ::enumeration_str(Loc::test_id("Color"), 0);
         let control = parse_quote! { Color };
 
         assert_eq!(typ.into_syn(), control)

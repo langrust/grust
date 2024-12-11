@@ -92,7 +92,7 @@ pub enum Kind<E> {
         /// The structure expression.
         expr: Box<E>,
         /// The field to access.
-        field: String, // can not be a usize because we don't know the structure type
+        field: Ident, // can not be a usize because we don't know the structure type
     },
     /// Tuple element access expression.
     TupleElementAccess {
@@ -172,7 +172,7 @@ mk_new! { impl{E} Kind<E> =>
     }
     FieldAccess: field_access {
         expr: E = expr.into(),
-        field: String,
+        field: impl Into<Ident> = field.into(),
     }
     TupleElementAccess: tuple_access {
         expr: E = expr.into(),
@@ -231,7 +231,7 @@ pub fn init(kind: Kind<Expr>) -> Expr {
     Expr {
         kind,
         typing: None,
-        loc: Loc::mixed_site(),
+        loc: Loc::builtin(),
         dependencies: ir1::Dependencies::new(),
     }
 }

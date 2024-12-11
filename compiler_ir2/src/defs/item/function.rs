@@ -6,9 +6,9 @@ prelude! { Block }
 #[derive(Debug, PartialEq)]
 pub struct Function {
     /// The function's name.
-    pub name: String,
+    pub name: Ident,
     /// The inputs.
-    pub inputs: Vec<(String, Typ)>,
+    pub inputs: Vec<(Ident, Typ)>,
     /// The output type.
     pub output: Typ,
     /// The body of the function.
@@ -18,8 +18,8 @@ pub struct Function {
 }
 
 mk_new! { impl Function => new {
-    name: impl Into<String> = name.into(),
-    inputs: Vec<(String, Typ)>,
+    name: impl Into<Ident> = name.into(),
+    inputs: Vec<(Ident, Typ)>,
     output: Typ,
     body: Block,
     contract: Contract,
@@ -33,7 +33,6 @@ impl Function {
             .inputs
             .into_iter()
             .map(|(name, typ)| {
-                let name = Ident::new(&name, Span::call_site());
                 syn::FnArg::Typed(syn::PatType {
                     attrs: vec![],
                     pat: parse_quote!(#name),
@@ -49,7 +48,7 @@ impl Function {
             unsafety: None,
             abi: None,
             fn_token: Default::default(),
-            ident: Ident::new(&self.name, Span::call_site()),
+            ident: self.name.clone(),
             generics: Default::default(),
             paren_token: Default::default(),
             inputs,
@@ -76,12 +75,15 @@ mod test {
     fn should_create_rust_ast_function_from_ir2_function() {
         // use item::{Block, Function, Stmt};
         let function = Function {
-            name: "foo".into(),
-            inputs: vec![("a".into(), Typ::int()), ("b".into(), Typ::int())],
+            name: Loc::test_id("foo"),
+            inputs: vec![
+                (Loc::test_id("a"), Typ::int()),
+                (Loc::test_id("b"), Typ::int()),
+            ],
             output: Typ::int(),
             body: Block {
                 statements: vec![Stmt::ExprLast {
-                    expr: Expr::binop(BOp::Add, Expr::ident("a"), Expr::ident("b")),
+                    expr: Expr::binop(BOp::Add, Expr::test_ident("a"), Expr::test_ident("b")),
                 }],
             },
             contract: Default::default(),

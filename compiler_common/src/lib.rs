@@ -1,8 +1,10 @@
-pub extern crate codespan_reporting;
+#![feature(proc_macro_diagnostic)]
+
 pub extern crate itertools;
 pub extern crate lazy_static;
 pub extern crate once_cell;
 pub extern crate petgraph;
+pub extern crate proc_macro as macro1;
 pub extern crate proc_macro2 as macro2;
 pub extern crate quote;
 pub extern crate rustc_hash;

@@ -175,15 +175,19 @@ mod service_handler {
                 .map(|(stmt_id, import_id)| {
                     if imports.contains(stmt_id) {
                         let flow_name = symbols.get_name(*import_id);
+                        let instant = Ident::new(
+                            &format!("{}_instant", flow_name.to_string()),
+                            flow_name.span(),
+                        );
                         if symbols.is_timer(*import_id) {
                             Pattern::some(Pattern::tuple(vec![
                                 Pattern::literal(Constant::unit(Default::default())),
-                                Pattern::ident(format!("{}_instant", flow_name)),
+                                Pattern::ident(instant),
                             ]))
                         } else {
                             Pattern::some(Pattern::tuple(vec![
-                                Pattern::ident(flow_name),
-                                Pattern::ident(format!("{}_instant", flow_name)),
+                                Pattern::ident(flow_name.clone()),
+                                Pattern::ident(instant),
                             ]))
                         }
                     } else {
@@ -272,7 +276,7 @@ mod service_handler {
     /// Compute the service handler.
     pub fn build<'a>(mut ctx: flow_instr::Builder<'a>) -> ServiceHandler {
         // get service's name
-        let service = ctx.service_name();
+        let service = ctx.service_name().clone();
         // create flow handlers according to propagations of every incoming flows
         let flows_handling: Vec<_> = ctx
             .service_imports()
@@ -335,7 +339,7 @@ mod flow_instr {
         /// Map from id to export.
         exports: &'a HashMap<usize, FlowExport>,
         /// Called components.
-        components: Vec<String>,
+        components: Vec<Ident>,
         /// Triggers graph,
         graph: trigger::Graph<'a>,
     }
@@ -427,8 +431,8 @@ mod flow_instr {
                 })
                 .map(|(stmt_id, import)| (*stmt_id, import.id))
         }
-        pub fn service_name(&self) -> String {
-            self.symbols.get_name(self.service.id).to_string()
+        pub fn service_name(&self) -> &Ident {
+            self.symbols.get_name(self.service.id)
         }
         pub fn inputs(&self) -> impl Iterator<Item = (usize, usize)> + 'a {
             self.service_imports().filter(|(_, import_id)| {
@@ -438,7 +442,7 @@ mod flow_instr {
         pub fn set_multiple_inputs(&mut self, multiple_inputs: bool) {
             self.multiple_inputs = multiple_inputs
         }
-        pub fn destroy(self) -> (ir1::ctx::Flows, Vec<String>) {
+        pub fn destroy(self) -> (ir1::ctx::Flows, Vec<Ident>) {
             (self.flows_context, self.components)
         }
 
@@ -483,7 +487,7 @@ mod flow_instr {
             flows_context: &mut ir1::ctx::Flows,
             imports: &mut HashMap<usize, FlowImport>,
             timing_events: &mut Vec<TimingEvent>,
-            components: &mut Vec<String>,
+            components: &mut Vec<Ident>,
         ) -> (HashMap<usize, usize>, HashMap<usize, usize>) {
             // collects components, timing events, on_change_events that are present in the service
             let mut stmts_timers = HashMap::new();
@@ -505,8 +509,12 @@ mod flow_instr {
                                 let event_name = symbols.get_name(flow_event_id).clone();
 
                                 // add new event into the identifier creator
-                                let fresh_name =
-                                    identifier_creator.new_identifier_with("", &event_name, "old");
+                                let fresh_name = identifier_creator.new_identifier_with(
+                                    event_name.loc(),
+                                    "",
+                                    &event_name.to_string(),
+                                    "old",
+                                );
                                 let typing = symbols.get_typ(flow_event_id).clone();
                                 let kind = symbols.get_flow_kind(flow_event_id).clone();
                                 let fresh_id = symbols.insert_fresh_flow(
@@ -526,8 +534,11 @@ mod flow_instr {
                                 // add new timing event into the identifier creator
                                 let flow_name =
                                     symbols.get_name(pattern.identifiers().pop().unwrap());
-                                let fresh_name =
-                                    identifier_creator.fresh_identifier("period", flow_name);
+                                let fresh_name = identifier_creator.fresh_identifier(
+                                    flow_name.loc(),
+                                    "period",
+                                    flow_name.to_string(),
+                                );
                                 let typing = Typ::event(Typ::unit());
                                 let fresh_id =
                                     symbols.insert_fresh_period(fresh_name.clone(), *period_ms);
@@ -560,8 +571,11 @@ mod flow_instr {
                                 // add new timing event into the identifier creator
                                 let flow_name =
                                     symbols.get_name(pattern.identifiers().pop().unwrap());
-                                let fresh_name =
-                                    identifier_creator.fresh_identifier("timeout", flow_name);
+                                let fresh_name = identifier_creator.fresh_identifier(
+                                    flow_name.loc(),
+                                    "timeout",
+                                    &flow_name.to_string(),
+                                );
                                 let typing = Typ::event(Typ::unit());
                                 let fresh_id =
                                     symbols.insert_fresh_deadline(fresh_name.clone(), *deadline);
@@ -596,8 +610,11 @@ mod flow_instr {
                                 // add optional period constraint
                                 if let Some(period) = symbols.get_node_period(*component_id) {
                                     // add new timing event into the identifier creator
-                                    let fresh_name =
-                                        identifier_creator.fresh_identifier("period", &comp_name);
+                                    let fresh_name = identifier_creator.fresh_identifier(
+                                        comp_name.loc(),
+                                        "period",
+                                        &comp_name.to_string(),
+                                    );
                                     let typing = Typ::event(Typ::unit());
                                     let fresh_id =
                                         symbols.insert_fresh_period(fresh_name.clone(), period);
@@ -647,8 +664,10 @@ mod flow_instr {
         ) {
             let min_delay = service.time_range.0;
             // add new timing event into the identifier creator
-            let fresh_name =
-                identifier_creator.fresh_identifier("delay", symbols.get_name(service.id));
+            let fresh_name = {
+                let s = symbols.get_name(service.id);
+                identifier_creator.fresh_identifier(s.loc(), "delay", &s.to_string())
+            };
             let typing = Typ::event(Typ::unit());
             let fresh_id = symbols.insert_service_delay(fresh_name.clone(), service.id, min_delay);
             // add timing_event in imports
@@ -674,8 +693,10 @@ mod flow_instr {
 
             let max_timeout = service.time_range.1;
             // add new timing event into the identifier creator
-            let fresh_name =
-                identifier_creator.fresh_identifier("timeout", symbols.get_name(service.id));
+            let fresh_name = {
+                let s = symbols.get_name(service.id);
+                identifier_creator.fresh_identifier(s.loc(), "timeout", &s.to_string())
+            };
             let typing = Typ::event(Typ::unit());
             let fresh_id =
                 symbols.insert_service_timeout(fresh_name.clone(), service.id, max_timeout);
@@ -729,7 +750,9 @@ mod flow_instr {
             self.events
                 .iter()
                 .filter(|event_id| !self.symbols.is_timer(**event_id))
-                .map(|event_id| FlowInstruction::init_event(self.symbols.get_name(*event_id)))
+                .map(|event_id| {
+                    FlowInstruction::init_event(self.symbols.get_name(*event_id).clone())
+                })
         }
 
         /// Compute the instruction from an import.
@@ -740,7 +763,7 @@ mod flow_instr {
                 if !self.symbols.is_timer(flow_id) {
                     // store the event in the local reference
                     let event_name = self.symbols.get_name(flow_id);
-                    let expr = Expression::some(Expression::ident(event_name));
+                    let expr = Expression::some(Expression::ident(event_name.clone()));
                     self.define_event(flow_id, expr)
                 } else if self.symbols.is_period(flow_id) {
                     // reset periodic timer
@@ -837,8 +860,10 @@ mod flow_instr {
             // source is an event, look if it is defined
             if self.events.contains(&id_source) {
                 // if activated, store event value in context
-                let update =
-                    FlowInstruction::update_ctx(source_name, Expression::event(source_name));
+                let update = FlowInstruction::update_ctx(
+                    source_name.clone(),
+                    Expression::event(source_name.clone()),
+                );
                 instrs.push(FlowInstruction::if_activated(
                     vec![source_name.clone()],
                     [],
@@ -849,8 +874,10 @@ mod flow_instr {
             // if timing event is activated
             if self.events.contains(&timer_id) {
                 // update signal by taking from stored event value
-                let take_update =
-                    FlowInstruction::update_ctx(flow_name, Expression::take_from_ctx(source_name));
+                let take_update = FlowInstruction::update_ctx(
+                    flow_name.clone(),
+                    Expression::take_from_ctx(source_name.clone()),
+                );
                 instrs.push(take_update)
             }
 
@@ -953,10 +980,10 @@ mod flow_instr {
             // update created signal
             let expr = self.get_signal(id_source);
             FlowInstruction::if_throttle(
-                flow_name,
-                source_name,
+                flow_name.clone(),
+                source_name.clone(),
                 delta,
-                FlowInstruction::update_ctx(flow_name, expr),
+                FlowInstruction::update_ctx(flow_name.clone(), expr),
             )
         }
 
@@ -986,7 +1013,7 @@ mod flow_instr {
                 event_def,
             ];
             FlowInstruction::if_change(
-                old_event_name,
+                old_event_name.clone(),
                 self.get_signal(id_source),
                 FlowInstruction::seq(then),
             )
@@ -1075,7 +1102,7 @@ mod flow_instr {
         fn define_signal(&mut self, signal_id: usize, expr: Expression) -> FlowInstruction {
             let signal_name = self.symbols.get_name(signal_id);
             self.signals.insert(signal_id);
-            FlowInstruction::def_let(signal_name, expr)
+            FlowInstruction::def_let(signal_name.clone(), expr)
         }
 
         /// Get signal call expression.
@@ -1083,9 +1110,9 @@ mod flow_instr {
             let signal_name = self.symbols.get_name(signal_id);
             // if signal not already defined, get from context value
             if !self.signals.contains(&signal_id) {
-                Expression::in_ctx(signal_name)
+                Expression::in_ctx(signal_name.clone())
             } else {
-                Expression::ident(signal_name)
+                Expression::ident(signal_name.clone())
             }
         }
 
@@ -1093,20 +1120,20 @@ mod flow_instr {
         fn define_event(&mut self, event_id: usize, expr: Expression) -> FlowInstruction {
             let event_name = self.symbols.get_name(event_id);
             self.events.insert(event_id);
-            FlowInstruction::update_event(event_name, expr)
+            FlowInstruction::update_event(event_name.clone(), expr)
         }
 
         /// Add reset timer in current propagation branch.
         fn reset_timer(&self, timer_id: usize, import_flow: usize) -> FlowInstruction {
             let timer_name = self.symbols.get_name(timer_id);
             let import_name = self.symbols.get_name(import_flow);
-            FlowInstruction::reset(timer_name, import_name)
+            FlowInstruction::reset(timer_name.clone(), import_name.clone())
         }
 
         /// Get event call expression.
         fn get_event(&self, event_id: usize) -> Expression {
             let event_name = self.symbols.get_name(event_id);
-            Expression::event(event_name)
+            Expression::event(event_name.clone())
         }
 
         /// Add component call in current propagation branch with outputs update.
@@ -1114,8 +1141,8 @@ mod flow_instr {
             &mut self,
             component_id: usize,
             output_pattern: ir1::stmt::Pattern,
-            signals: Vec<(String, String)>,
-            events: Vec<(String, Option<String>)>,
+            signals: Vec<(Ident, Ident)>,
+            events: Vec<(Ident, Option<Ident>)>,
         ) -> FlowInstruction {
             let component_name = self.symbols.get_name(component_id);
             let outputs_ids = output_pattern.identifiers();
@@ -1123,7 +1150,7 @@ mod flow_instr {
             // call component
             let mut instrs = vec![FlowInstruction::comp_call(
                 output_pattern.into_ir2(self.symbols),
-                component_name,
+                component_name.clone(),
                 signals.clone(),
                 events.clone(),
             )];
@@ -1131,7 +1158,7 @@ mod flow_instr {
             let updates = outputs_ids.into_iter().filter_map(|output_id| {
                 if self.symbols.get_flow_kind(output_id).is_event() {
                     let event_name = self.symbols.get_name(output_id);
-                    let expr = Expression::ident(event_name);
+                    let expr = Expression::ident(event_name.clone());
                     Some(self.define_event(output_id, expr))
                 } else {
                     self.signals.insert(output_id);
@@ -1153,11 +1180,11 @@ mod flow_instr {
                         }
                     }
                     // call component when activated by inputs
-                    let events: Vec<String> = events
+                    let events: Vec<Ident> = events
                         .into_iter()
                         .filter_map(|(_, opt_event)| opt_event)
                         .collect();
-                    let signals: Vec<String> =
+                    let signals: Vec<Ident> =
                         signals.into_iter().map(|(_, signal)| signal).collect();
                     FlowInstruction::if_activated(events, signals, comp_call, None)
                 }
@@ -1169,10 +1196,10 @@ mod flow_instr {
             let signal_name = self.symbols.get_name(signal_id);
             let expr = self.get_signal(signal_id);
             if self.multiple_inputs {
-                FlowInstruction::send(signal_name, expr, false)
+                FlowInstruction::send(signal_name.clone(), expr, false)
             } else {
                 let import_name = self.symbols.get_name(import_flow);
-                FlowInstruction::send_from(signal_name, expr, import_name, false)
+                FlowInstruction::send_from(signal_name.clone(), expr, import_name.clone(), false)
             }
         }
 
@@ -1182,12 +1209,12 @@ mod flow_instr {
             if self.events.contains(&event_id) {
                 // if activated, send event
                 let event_name = self.symbols.get_name(event_id);
-                let expr = Expression::ident(event_name);
+                let expr = Expression::ident(event_name.clone());
                 if self.multiple_inputs {
-                    FlowInstruction::send(event_name, expr, true)
+                    FlowInstruction::send(event_name.clone(), expr, true)
                 } else {
                     let import_name = self.symbols.get_name(import_flow);
-                    FlowInstruction::send_from(event_name, expr, import_name, true)
+                    FlowInstruction::send_from(event_name.clone(), expr, import_name.clone(), true)
                 }
             } else {
                 FlowInstruction::seq(vec![])
@@ -1218,7 +1245,7 @@ mod flow_instr {
                     self.get_signal(flow_id)
                 };
                 let flow_name = self.symbols.get_name(flow_id);
-                Some(FlowInstruction::update_ctx(flow_name, expr))
+                Some(FlowInstruction::update_ctx(flow_name.clone(), expr))
             } else {
                 None
             }

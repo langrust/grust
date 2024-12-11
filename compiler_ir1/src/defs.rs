@@ -47,23 +47,22 @@ pub fn from_ast(ast: Ast, symbols: &mut SymbolTable) -> Result<File, Vec<Error>>
                 Err(()) => {
                     assert!(!errors.is_empty());
                     for e in errors {
-                        e.add_note_mut(Note::new(None, concat!("failure during ", $desc)))
+                        e.add_note_mut(Note::new(None, concat!("during ", $desc)))
                     }
                     return Err(errors_data);
                 }
             }
         }};
     }
-    check_errors!();
-    unwrap("IR1 type-checking", ir1.typ_check(symbols, errors), &errors);
-    check_errors!();
-    unwrap(
-        "IR1 dependency graph generation",
+    let mut ir1 = check_errors!("parsing (ir0 → ir1)", raw_from_ast(ast, symbols, errors));
+    check_errors!("type-checking (ir1)", ir1.typ_check(symbols, errors));
+    check_errors!(
+        "dependency graph generation (ir1)",
         ir1.generate_dependency_graphs(symbols, errors),
         &errors,
     );
     check_errors!(
-        "IR1 causality analysis",
+        "causality analysis (ir1)",
         ir1.causality_analysis(symbols, errors),
         &errors,
     );

@@ -16,7 +16,7 @@ impl Service {
     pub fn get_flows_names<'a>(
         &'a self,
         symbol_table: &'a SymbolTable,
-    ) -> impl Iterator<Item = String> + 'a {
+    ) -> impl Iterator<Item = Ident> + 'a {
         self.statements
             .values()
             .flat_map(|statement| match statement {
@@ -400,7 +400,7 @@ impl FlowStatement {
                         // push in signals context
                         let flow_name = symbol_table.get_name(pattern_id).clone();
                         let ty = symbol_table.get_typ(pattern_id);
-                        flows_context.add_element(flow_name, ty);
+                        flows_context.add_element(flow_name.clone(), ty);
                     }
                     flow::Kind::Sample { expr, .. } => {
                         // get the id of expr (and check it is an identifier, from

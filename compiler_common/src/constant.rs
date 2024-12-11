@@ -42,7 +42,7 @@ impl Constant {
             Self::Float(l) => l.span().into(),
             Self::Boolean(l) => l.span().into(),
             Self::Unit(p) => p.span.join().into(),
-            Self::Default => Loc::call_site(),
+            Self::Default => Loc::builtin(),
         }
     }
 

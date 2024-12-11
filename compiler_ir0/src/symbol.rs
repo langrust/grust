@@ -1,5 +1,3 @@
-use strum::IntoEnumIterator;
-
 prelude! {
     interface::FlowKind,
 }
@@ -49,9 +47,9 @@ pub enum SymbolKind {
         /// Eventful node.
         eventful: bool,
         /// Node's output identifiers.
-        outputs: Vec<(String, usize)>,
+        outputs: Vec<(Ident, usize)>,
         /// Node's local identifiers.
-        locals: HashMap<String, usize>,
+        locals: HashMap<Ident, usize>,
         /// Node's period of execution.
         period: Option<u64>,
         /// Node's periodic timer identifier.
@@ -72,7 +70,7 @@ pub enum SymbolKind {
     /// Enumeration element kind.
     EnumerationElement {
         /// Enumeration name.
-        enum_name: String,
+        enum_name: Ident,
     },
     /// Array kind.
     Array {
@@ -98,9 +96,24 @@ pub struct Symbol {
     /// Symbol kind.
     kind: SymbolKind,
     /// Symbol name.
-    name: String,
-    /// Location of the symbol's declaration.
-    pub loc: Option<Loc>,
+    name: Ident,
+    /// String version.
+    name_string: String,
+}
+impl Symbol {
+    pub fn new(kind: SymbolKind, name: Ident) -> Self {
+        let name_string = name.to_string();
+        Self {
+            kind,
+            name,
+            name_string,
+        }
+    }
+}
+impl HasLoc for Symbol {
+    fn loc(&self) -> Loc {
+        self.name.loc()
+    }
 }
 impl PartialEq for Symbol {
     fn eq(&self, other: &Self) -> bool {
@@ -111,6 +124,9 @@ impl Symbol {
     /// Get symbol's kind.
     pub fn kind(&self) -> &SymbolKind {
         &self.kind
+    }
+    pub fn name(&self) -> &Ident {
+        &self.name
     }
 
     /// Get symbol's mutable kind.
@@ -157,15 +173,15 @@ impl Symbol {
 pub enum SymbolKey {
     Period,
     Deadline,
-    Identifier { name: String },
-    Flow { name: String },
-    Function { name: String },
-    Node { name: String },
-    Structure { name: String },
-    Service { name: String },
-    Enumeration { name: String },
-    EnumerationElement { name: String, enum_name: String },
-    Array { name: String },
+    Identifier { name: Ident },
+    Flow { name: Ident },
+    Function { name: Ident },
+    Node { name: Ident },
+    Structure { name: Ident },
+    Service { name: Ident },
+    Enumeration { name: Ident },
+    EnumerationElement { name: Ident, enum_name: Ident },
+    Array { name: Ident },
 }
 /// Context table.
 pub struct Context {
@@ -256,51 +272,74 @@ impl SymbolTable {
         }
     }
 
+    pub fn levenshtein_closest(&self, name: impl AsRef<str>, at_least: usize) -> Option<&Symbol> {
+        let name = name.as_ref();
+        let min = at_least + 1;
+        let mut symbol_opt: Option<&Symbol> = None;
+        for symbol in self.table.values() {
+            let distance = levenshtein(name, &symbol.name_string);
+            if distance < min {
+                symbol_opt = Some(&symbol);
+            }
+        }
+        symbol_opt
+    }
+
+    pub fn add_unknown_ident_notes(&self, id: &Ident, e: Error) -> Error {
+        let max_levenshtein_distance = 2;
+        if let Some(symbol) = self.levenshtein_closest(&id.to_string(), max_levenshtein_distance) {
+            e.add_note(note! { @id.loc() => "did you mean `{}`?", symbol.name_string })
+                .add_note(note! { @symbol.name.loc() => "declared here" })
+        } else {
+            e
+        }
+    }
+
     /// Initialize symbol table with builtin operators.
     pub fn initialize(&mut self) {
         // initialize with unary, binary and other operators
-        UOp::iter().for_each(|op| {
-            let symbol = Symbol {
-                kind: SymbolKind::Function {
-                    inputs: vec![],
-                    output_type: None,
-                    typing: Some(op.get_typ()),
-                },
-                name: op.to_string(),
-                loc: None,
-            };
+        // UOp::iter().for_each(|op| {
+        //     let symbol = Symbol {
+        //         kind: SymbolKind::Function {
+        //             inputs: vec![],
+        //             output_type: None,
+        //             typing: Some(op.get_typ()),
+        //         },
+        //         name: Loc::builtin_id(op.to_string()),
+        //         loc: None,
+        //     };
 
-            self.insert_symbol(symbol, false, Loc::mixed_site(), &mut vec![])
-                .expect("you should not fail");
-        });
-        BOp::iter().for_each(|op| {
-            let symbol = Symbol {
-                kind: SymbolKind::Function {
-                    inputs: vec![],
-                    output_type: None,
-                    typing: Some(op.get_typ()),
-                },
-                name: op.to_string(),
-                loc: None,
-            };
+        //     self.insert_symbol(symbol, false, &mut vec![])
+        //         .expect("you should not fail");
+        // });
+        // BOp::iter().for_each(|op| {
+        //     let symbol = Symbol {
+        //         kind: SymbolKind::Function {
+        //             inputs: vec![],
+        //             output_type: None,
+        //             typing: Some(op.get_typ()),
+        //         },
+        //         name: Loc::builtin_id(op.to_string()),
+        //         loc: None,
+        //     };
 
-            self.insert_symbol(symbol, false, Loc::mixed_site(), &mut vec![])
-                .expect("you should not fail");
-        });
-        OtherOp::iter().for_each(|op| {
-            let symbol = Symbol {
-                kind: SymbolKind::Function {
-                    inputs: vec![],
-                    output_type: None,
-                    typing: Some(op.get_typ()),
-                },
-                name: op.to_string(),
-                loc: None,
-            };
+        //     self.insert_symbol(symbol, false, &mut vec![])
+        //         .expect("you should not fail");
+        // });
+        // OtherOp::iter().for_each(|op| {
+        //     let symbol = Symbol {
+        //         kind: SymbolKind::Function {
+        //             inputs: vec![],
+        //             output_type: None,
+        //             typing: Some(op.get_typ()),
+        //         },
+        //         name: Loc::builtin_id(op.to_string()),
+        //         loc: None,
+        //     };
 
-            self.insert_symbol(symbol, false, Loc::mixed_site(), &mut vec![])
-                .expect("you should not fail");
-        });
+        //     self.insert_symbol(symbol, false, &mut vec![])
+        //         .expect("you should not fail");
+        // });
     }
 
     /// Create local context in symbol table.
@@ -320,12 +359,15 @@ impl SymbolTable {
         &mut self,
         symbol: Symbol,
         local: bool,
-        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let key = symbol.hash();
+        let loc = symbol.loc();
+        // if loc == Loc::builtin() {
+        //     bad!(errors, @loc => "inserting symbol `{}` with builtin location", symbol.name)
+        // }
         if self.known_symbols.contains(&key, local) {
-            bad!(errors, @loc => ErrorKind::elm_redef(symbol.name.clone()))
+            bad!(errors, @loc => ErrorKind::elm_redef(symbol.name.to_string()))
         } else {
             let id = self.fresh_id;
             // update symbol table
@@ -348,41 +390,34 @@ impl SymbolTable {
     /// Insert signal in symbol table.
     pub fn insert_signal(
         &mut self,
-        name: String,
+        name: Ident,
         scope: Scope,
         typing: Option<Typ>,
         local: bool,
-        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
-        let symbol = Symbol {
-            kind: SymbolKind::Identifier { scope, typing },
-            name,
-            loc: Some(loc),
-        };
+        let symbol = Symbol::new(SymbolKind::Identifier { scope, typing }, name);
 
-        self.insert_symbol(symbol, local, loc, errors)
+        self.insert_symbol(symbol, local, errors)
     }
 
     /// Insert identifier in symbol table.
     pub fn insert_identifier(
         &mut self,
-        name: String,
+        name: Ident,
         typing: Option<Typ>,
         local: bool,
-        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
-        let symbol = Symbol {
-            kind: SymbolKind::Identifier {
+        let symbol = Symbol::new(
+            SymbolKind::Identifier {
                 scope: Scope::Local,
                 typing,
             },
             name,
-            loc: Some(loc),
-        };
+        );
 
-        self.insert_symbol(symbol, local, loc, errors)
+        self.insert_symbol(symbol, local, errors)
     }
 
     /// Insert function result in symbol table.
@@ -390,84 +425,77 @@ impl SymbolTable {
         &mut self,
         typing: Typ,
         local: bool,
-        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
-        let symbol = Symbol {
-            kind: SymbolKind::Identifier {
+        let symbol = Symbol::new(
+            SymbolKind::Identifier {
                 scope: Scope::Output,
                 typing: Some(typing),
             },
-            name: String::from("result"),
-            loc: Some(loc),
-        };
+            Loc::builtin_id("result"),
+        );
 
-        self.insert_symbol(symbol, local, loc, errors)
+        self.insert_symbol(symbol, local, errors)
     }
 
     /// Insert flow in symbol table.
     pub fn insert_flow(
         &mut self,
-        name: String,
+        name: Ident,
         path: Option<syn::Path>,
         kind: FlowKind,
         typing: Typ,
         local: bool,
-        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
-        let symbol = Symbol {
-            kind: SymbolKind::Flow {
+        let symbol = Symbol::new(
+            SymbolKind::Flow {
                 path,
                 kind,
                 timer: None,
                 typing,
             },
             name,
-            loc: Some(loc),
-        };
+        );
 
-        self.insert_symbol(symbol, local, loc, errors)
+        self.insert_symbol(symbol, local, errors)
     }
 
     /// Insert function in symbol table.
     pub fn insert_function(
         &mut self,
-        name: String,
+        name: Ident,
         inputs: Vec<usize>,
         output_type: Option<Typ>,
         local: bool,
-        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
-        let symbol = Symbol {
-            kind: SymbolKind::Function {
+        let symbol = Symbol::new(
+            SymbolKind::Function {
                 inputs,
                 output_type,
                 typing: None,
             },
             name,
-            loc: Some(loc),
-        };
+        );
 
-        self.insert_symbol(symbol, local, loc, errors)
+        self.insert_symbol(symbol, local, errors)
     }
 
     /// Insert node in symbol table.
     pub fn insert_node(
         &mut self,
-        name: String,
+        name: Ident,
         local: bool,
         inputs: Vec<usize>,
         eventful: bool,
-        outputs: Vec<(String, usize)>,
-        locals: HashMap<String, usize>,
+        outputs: Vec<(Ident, usize)>,
+        locals: HashMap<Ident, usize>,
         period: Option<u64>,
-        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
-        let symbol = Symbol {
-            kind: SymbolKind::Node {
+        let symbol = Symbol::new(
+            SymbolKind::Node {
                 inputs,
                 eventful,
                 outputs,
@@ -476,211 +504,173 @@ impl SymbolTable {
                 period_id: None,
             },
             name,
-            loc: Some(loc),
-        };
+        );
 
-        self.insert_symbol(symbol, local, loc, errors)
+        self.insert_symbol(symbol, local, errors)
     }
 
     /// Insert service in symbol table.
     pub fn insert_service(
         &mut self,
-        name: String,
+        name: Ident,
         local: bool,
-        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
-        let symbol = Symbol {
-            kind: SymbolKind::Service,
-            name,
-            loc: Some(loc),
-        };
+        let symbol = Symbol::new(SymbolKind::Service, name);
 
-        self.insert_symbol(symbol, local, loc, errors)
+        self.insert_symbol(symbol, local, errors)
     }
 
     /// Insert structure in symbol table.
     pub fn insert_struct(
         &mut self,
-        name: String,
+        name: Ident,
         fields: Vec<usize>,
         local: bool,
-        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
-        let symbol = Symbol {
-            kind: SymbolKind::Structure { fields },
-            name,
-            loc: Some(loc),
-        };
-
-        self.insert_symbol(symbol, local, loc, errors)
+        let symbol = Symbol::new(SymbolKind::Structure { fields }, name);
+        self.insert_symbol(symbol, local, errors)
     }
 
     /// Insert enumeration in symbol table.
     pub fn insert_enum(
         &mut self,
-        name: String,
+        name: Ident,
         elements: Vec<usize>,
         local: bool,
-        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
-        let symbol = Symbol {
-            kind: SymbolKind::Enumeration { elements },
-            name,
-            loc: Some(loc),
-        };
-
-        self.insert_symbol(symbol, local, loc, errors)
+        let symbol = Symbol::new(SymbolKind::Enumeration { elements }, name);
+        self.insert_symbol(symbol, local, errors)
     }
 
     /// Insert enumeration element in symbol table.
     pub fn insert_enum_elem(
         &mut self,
-        name: String,
-        enum_name: String,
+        name: Ident,
+        enum_name: Ident,
         local: bool,
-        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
-        let symbol = Symbol {
-            kind: SymbolKind::EnumerationElement { enum_name },
-            name,
-            loc: Some(loc),
-        };
-
-        self.insert_symbol(symbol, local, loc, errors)
+        let symbol = Symbol::new(SymbolKind::EnumerationElement { enum_name }, name);
+        self.insert_symbol(symbol, local, errors)
     }
 
     /// Insert array in symbol table.
     pub fn insert_array(
         &mut self,
-        name: String,
+        name: Ident,
         array_type: Option<Typ>,
         size: usize,
         local: bool,
-        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
-        let symbol = Symbol {
-            kind: SymbolKind::Array { array_type, size },
-            name,
-            loc: Some(loc),
-        };
+        let symbol = Symbol::new(SymbolKind::Array { array_type, size }, name);
 
-        self.insert_symbol(symbol, local, loc, errors)
+        self.insert_symbol(symbol, local, errors)
     }
 
     /// Insert fresh signal in symbol table.
     pub fn insert_fresh_signal(
         &mut self,
-        fresh_name: String,
+        fresh_name: Ident,
         scope: Scope,
         typing: Option<Typ>,
     ) -> usize {
-        let symbol = Symbol {
-            kind: SymbolKind::Identifier { scope, typing },
-            name: fresh_name,
-            loc: None,
-        };
+        let symbol = Symbol::new(SymbolKind::Identifier { scope, typing }, fresh_name);
 
-        self.insert_symbol(symbol, false, Loc::mixed_site(), &mut vec![])
+        self.insert_symbol(symbol, false, &mut vec![])
             .expect("you should not fail") // todo make it local
     }
 
     /// Insert fresh flow in symbol table.
-    pub fn insert_fresh_flow(&mut self, fresh_name: String, kind: FlowKind, typing: Typ) -> usize {
-        let symbol = Symbol {
-            kind: SymbolKind::Flow {
+    pub fn insert_fresh_flow(&mut self, fresh_name: Ident, kind: FlowKind, typing: Typ) -> usize {
+        let symbol = Symbol::new(
+            SymbolKind::Flow {
                 path: None,
                 kind,
                 timer: None,
                 typing,
             },
-            name: fresh_name,
-            loc: None,
-        };
+            fresh_name,
+        );
 
-        self.insert_symbol(symbol, false, Loc::mixed_site(), &mut vec![])
+        self.insert_symbol(symbol, false, &mut vec![])
             .expect("you should not fail") // todo make it local
     }
 
     /// Insert fresh period timer in symbol table.
-    pub fn insert_fresh_period(&mut self, fresh_name: String, period: u64) -> usize {
-        let symbol = Symbol {
-            kind: SymbolKind::Flow {
+    pub fn insert_fresh_period(&mut self, fresh_name: Ident, period: u64) -> usize {
+        let symbol = Symbol::new(
+            SymbolKind::Flow {
                 path: None,
                 kind: FlowKind::Event(Default::default()),
                 timer: Some(TimerKind::Period(period)),
                 typing: Typ::event(Typ::unit()),
             },
-            name: fresh_name,
-            loc: None,
-        };
+            fresh_name,
+        );
 
-        self.insert_symbol(symbol, false, Loc::mixed_site(), &mut vec![])
+        self.insert_symbol(symbol, false, &mut vec![])
             .expect("you should not fail") // todo make it local
     }
 
     /// Insert fresh deadline timer in symbol table.
-    pub fn insert_fresh_deadline(&mut self, fresh_name: String, deadline: u64) -> usize {
-        let symbol = Symbol {
-            kind: SymbolKind::Flow {
+    pub fn insert_fresh_deadline(&mut self, fresh_name: Ident, deadline: u64) -> usize {
+        let symbol = Symbol::new(
+            SymbolKind::Flow {
                 path: None,
                 kind: FlowKind::Event(Default::default()),
                 timer: Some(TimerKind::Deadline(deadline)),
                 typing: Typ::event(Typ::unit()),
             },
-            name: fresh_name,
-            loc: None,
-        };
+            fresh_name,
+        );
 
-        self.insert_symbol(symbol, false, Loc::mixed_site(), &mut vec![])
+        self.insert_symbol(symbol, false, &mut vec![])
             .expect("you should not fail") // todo make it local
     }
 
     /// Insert service delay timer in symbol table.
     pub fn insert_service_delay(
         &mut self,
-        fresh_name: String,
+        fresh_name: Ident,
         service_id: usize,
         delay: u64,
     ) -> usize {
-        let symbol = Symbol {
-            kind: SymbolKind::Flow {
+        let symbol = Symbol::new(
+            SymbolKind::Flow {
                 path: None,
                 kind: FlowKind::Event(Default::default()),
                 timer: Some(TimerKind::ServiceDelay(service_id, delay)),
                 typing: Typ::event(Typ::unit()),
             },
-            name: fresh_name,
-            loc: None,
-        };
+            fresh_name,
+        );
 
-        self.insert_symbol(symbol, false, Loc::mixed_site(), &mut vec![])
+        self.insert_symbol(symbol, false, &mut vec![])
             .expect("you should not fail") // todo make it local
     }
 
     /// Insert service timeout timer in symbol table.
     pub fn insert_service_timeout(
         &mut self,
-        fresh_name: String,
+        fresh_name: Ident,
         service_id: usize,
         timeout: u64,
     ) -> usize {
-        let symbol = Symbol {
-            kind: SymbolKind::Flow {
+        let symbol = Symbol::new(
+            SymbolKind::Flow {
                 path: None,
                 kind: FlowKind::Event(Default::default()),
                 timer: Some(TimerKind::ServiceTimeout(service_id, timeout)),
                 typing: Typ::event(Typ::unit()),
             },
-            name: fresh_name,
-            loc: None,
-        };
+            fresh_name,
+        );
 
-        self.insert_symbol(symbol, false, Loc::mixed_site(), &mut vec![])
+        self.insert_symbol(symbol, false, &mut vec![])
             .expect("you should not fail") // todo make it local
     }
 
@@ -709,7 +699,7 @@ impl SymbolTable {
             .expect(&format!("expect symbol for {id}"))
             .hash();
         if self.known_symbols.contains(&key, local) {
-            bad!(errors, @loc => ErrorKind::elm_redef(self.get_name(id).clone()))
+            bad!(errors, @loc => ErrorKind::elm_redef(self.get_name(id).to_string()))
         } else {
             self.known_symbols.add_symbol(key, id);
             Ok(())
@@ -746,10 +736,10 @@ impl SymbolTable {
     }
 
     /// Get symbol from identifier.
-    pub fn resolve_symbol(&self, id: usize) -> Res<&Symbol> {
-        self.table.get(&id).ok_or_else(
-            lerror!(@Loc::mixed_site() => "[fatal] failed to resolve symbol identifier {}", id),
-        )
+    pub fn resolve_symbol(&self, loc: Loc, id: usize) -> Res<&Symbol> {
+        self.table
+            .get(&id)
+            .ok_or_else(lerror!(@loc => "[fatal] failed to resolve symbol identifier {}", id))
     }
 
     /// Get mutable symbol from identifier.
@@ -948,7 +938,7 @@ impl SymbolTable {
     }
 
     /// Get identifier's name.
-    pub fn get_name(&self, id: usize) -> &String {
+    pub fn get_name(&self, id: usize) -> &Ident {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
@@ -989,7 +979,7 @@ impl SymbolTable {
     }
 
     /// Get node output identifiers from identifier.
-    pub fn get_node_outputs(&self, id: usize) -> &Vec<(String, usize)> {
+    pub fn get_node_outputs(&self, id: usize) -> &Vec<(Ident, usize)> {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
@@ -1195,7 +1185,7 @@ impl SymbolTable {
     }
 
     /// Tell if identifier is a node.
-    pub fn is_node(&self, name: &String, local: bool) -> bool {
+    pub fn is_node(&self, name: &Ident, local: bool) -> bool {
         let symbol_hash = SymbolKey::Node { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(_) => true,
@@ -1259,15 +1249,22 @@ impl SymbolTable {
     /// Get identifier symbol identifier.
     pub fn get_identifier_id(
         &self,
-        name: &String,
+        name: &Ident,
         local: bool,
-        loc: impl Into<Loc>,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol_hash = SymbolKey::Identifier { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
-            None => bad!(errors, @loc => ErrorKind::unknown_elem(name)),
+            None => {
+                // let error = self.add_unknown_ident_notes(
+                //     name,
+                //     error!(@name.loc() => ErrorKind::unknown_ident(name.to_string())),
+                // );
+                let error = error!(@name.loc() => ErrorKind::unknown_ident(name.to_string()));
+                errors.push(error);
+                bad!()
+            }
         }
     }
 
@@ -1279,62 +1276,51 @@ impl SymbolTable {
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let name = "result";
-        let symbol_hash = SymbolKey::Identifier { name: name.into() };
+        let symbol_hash = SymbolKey::Identifier {
+            name: Loc::builtin_id(name),
+        };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
-            None => bad!(errors, @loc => ErrorKind::unknown_elem(name)),
+            None => bad!(errors, @loc => ErrorKind::unknown_ident(name)),
         }
     }
 
     /// Get function symbol identifier.
     pub fn get_function_id(
         &self,
-        name: &String,
+        name: &Ident,
         local: bool,
-        loc: impl Into<Loc>,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol_hash = SymbolKey::Function { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
-            None => bad!(errors, @loc => ErrorKind::unknown_elem(name)),
+            None => bad!(errors, @name.loc() => ErrorKind::unknown_ident(name.to_string())),
         }
     }
 
     /// Get flow symbol identifier.
-    pub fn get_flow_id(
-        &self,
-        name: &String,
-        local: bool,
-        loc: Loc,
-        errors: &mut Vec<Error>,
-    ) -> TRes<usize> {
+    pub fn get_flow_id(&self, name: &Ident, local: bool, errors: &mut Vec<Error>) -> TRes<usize> {
         let symbol_hash = SymbolKey::Flow { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
-            None => bad!(errors, @loc => ErrorKind::unknown_signal(name)),
+            None => bad!(errors, @name.loc() => ErrorKind::unknown_signal(name.to_string())),
         }
     }
 
     /// Get node symbol identifier.
-    pub fn get_node_id(
-        &self,
-        name: &String,
-        local: bool,
-        loc: Loc,
-        errors: &mut Vec<Error>,
-    ) -> TRes<usize> {
+    pub fn get_node_id(&self, name: &Ident, local: bool, errors: &mut Vec<Error>) -> TRes<usize> {
         let symbol_hash = SymbolKey::Node { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
-            None => bad!(errors, @loc => ErrorKind::unknown_node(name)),
+            None => bad!(errors, @name.loc() => ErrorKind::unknown_node(name.to_string())),
         }
     }
 
     /// Get structure symbol identifier.
     pub fn get_struct_id(
         &self,
-        name: &String,
+        name: &Ident,
         local: bool,
         loc: Loc,
         errors: &mut Vec<Error>,
@@ -1342,14 +1328,14 @@ impl SymbolTable {
         let symbol_hash = SymbolKey::Structure { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
-            None => bad!(errors, @loc => ErrorKind::unknown_type(name)),
+            None => bad!(errors, @loc => ErrorKind::unknown_type(name.to_string())),
         }
     }
 
     /// Get enumeration symbol identifier.
     pub fn get_enum_id(
         &self,
-        name: &String,
+        name: &Ident,
         local: bool,
         loc: Loc,
         errors: &mut Vec<Error>,
@@ -1357,15 +1343,15 @@ impl SymbolTable {
         let symbol_hash = SymbolKey::Enumeration { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
-            None => bad!(errors, @loc => ErrorKind::unknown_type(name)),
+            None => bad!(errors, @loc => ErrorKind::unknown_type(name.to_string())),
         }
     }
 
     /// Get enumeration element symbol identifier.
     pub fn get_enum_elem_id(
         &self,
-        elem_name: &String,
-        enum_name: &String,
+        elem_name: &Ident,
+        enum_name: &Ident,
         local: bool,
         loc: Loc,
         errors: &mut Vec<Error>,
@@ -1376,14 +1362,18 @@ impl SymbolTable {
         };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
-            None => bad!(errors, @loc => ErrorKind::unknown_elem(elem_name)),
+            None => {
+                bad!(errors, @loc =>
+                    ErrorKind::unknown_enum_elem(enum_name.to_string(), elem_name.to_string())
+                )
+            }
         }
     }
 
     /// Get array symbol identifier.
     pub fn get_array_id(
         &self,
-        name: &String,
+        name: &Ident,
         local: bool,
         loc: Loc,
         errors: &mut Vec<Error>,
@@ -1391,7 +1381,7 @@ impl SymbolTable {
         let symbol_hash = SymbolKey::Array { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
-            None => bad!(errors, @loc => ErrorKind::unknown_type(name)),
+            None => bad!(errors, @loc => ErrorKind::unknown_type(name.to_string())),
         }
     }
 }

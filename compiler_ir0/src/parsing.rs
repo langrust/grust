@@ -405,7 +405,7 @@ mod interface {
                 Ok(Self::comp_call(input.parse()?))
             } else {
                 let ident: Ident = input.parse()?;
-                Ok(Self::ident(ident.to_string()))
+                Ok(Self::ident(ident))
             }
         }
     }
@@ -1047,11 +1047,12 @@ mod parse_stmt {
     impl Parse for Tuple {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let content;
-            let _ = parenthesized!(content in input);
+            let parens = parenthesized!(content in input);
             let elements: Punctuated<Pattern, Token![,]> = Punctuated::parse_terminated(&content)?;
-            Ok(Tuple {
-                elements: elements.into_iter().collect(),
-            })
+            Ok(Tuple::new(
+                parens.span.join(),
+                elements.into_iter().collect(),
+            ))
         }
     }
 
@@ -1271,7 +1272,7 @@ mod parse_expr {
                 Loc::from(open_pipe.span).join(expr.loc()),
                 inputs
                     .into_iter()
-                    .map(|Colon { left, right, .. }| (left.to_string(), right))
+                    .map(|Colon { left, right, .. }| (left, right))
                     .collect(),
                 expr,
             ))
@@ -1299,10 +1300,10 @@ mod parse_expr {
                 Punctuated::parse_terminated(&content)?;
             Ok(Structure::new(
                 ident.loc().join(braces.span.join()),
-                ident.to_string(),
+                ident,
                 fields
                     .into_iter()
-                    .map(|Colon { left, right, .. }| (left.to_string(), right))
+                    .map(|Colon { left, right, .. }| (left, right))
                     .collect(),
             ))
         }
@@ -1349,8 +1350,8 @@ mod parse_expr {
             let ident_elem: Ident = input.parse()?;
             Ok(Enumeration::new(
                 ident_enum.loc().join(ident_elem.loc()),
-                ident_enum.to_string(),
-                ident_elem.to_string(),
+                ident_enum,
+                ident_elem,
             ))
         }
     }
@@ -1393,7 +1394,7 @@ mod parse_expr {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let ident: Ident = input.parse()?;
             let content;
-            let _ = braced!(content in input);
+            let braces = braced!(content in input);
             let mut fields: Punctuated<(Ident, Option<(Token![:], Pattern)>), Token![,]> =
                 Punctuated::new();
             let mut rest = None;
@@ -1420,14 +1421,12 @@ mod parse_expr {
             }
 
             Ok(PatStructure {
-                name: ident.to_string(),
+                braces,
+                name: ident,
                 fields: fields
                     .into_iter()
                     .map(|(ident, optional_pattern)| {
-                        (
-                            ident.to_string(),
-                            optional_pattern.map(|(_, pattern)| pattern),
-                        )
+                        (ident, optional_pattern.map(|(_, pattern)| pattern))
                     })
                     .collect(),
                 rest,
@@ -1451,8 +1450,8 @@ mod parse_expr {
             let _: Token![::] = input.parse()?;
             let ident_elem: Ident = input.parse()?;
             Ok(PatEnumeration {
-                enum_name: ident_enum.to_string(),
-                elem_name: ident_elem.to_string(),
+                enum_name: ident_enum,
+                elem_name: ident_elem,
             })
         }
     }
@@ -1466,9 +1465,10 @@ mod parse_expr {
     impl Parse for PatTuple {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let content;
-            let _ = parenthesized!(content in input);
+            let parens = parenthesized!(content in input);
             let elements: Punctuated<Pattern, Token![,]> = Punctuated::parse_terminated(&content)?;
             Ok(PatTuple {
+                parens,
                 elements: elements.into_iter().collect(),
             })
         }
@@ -1489,7 +1489,7 @@ mod parse_expr {
                 Pattern::Default
             } else {
                 let ident: Ident = input.parse()?;
-                Pattern::Identifier(ident.to_string())
+                Pattern::Identifier(ident)
             };
 
             Ok(pattern)
@@ -1562,11 +1562,7 @@ mod parse_expr {
         pub fn parse(expr: E, input: ParseStream) -> syn::Res<Self> {
             let _: Token![.] = input.parse()?;
             let field: Ident = input.parse()?;
-            Ok(FieldAccess::new(
-                expr.loc().join(field.loc()),
-                expr,
-                field.to_string(),
-            ))
+            Ok(FieldAccess::new(expr.loc().join(field.loc()), expr, field))
         }
     }
     impl<E> Parse for FieldAccess<E>
@@ -1577,11 +1573,7 @@ mod parse_expr {
             let expr: E = input.parse()?;
             let _: Token![.] = input.parse()?;
             let field: Ident = input.parse()?;
-            Ok(FieldAccess::new(
-                expr.loc().join(field.loc()),
-                expr,
-                field.to_string(),
-            ))
+            Ok(FieldAccess::new(expr.loc().join(field.loc()), expr, field))
         }
     }
 
@@ -2013,7 +2005,7 @@ mod parse_equation {
                     let question_token: token::Question = input.parse()?;
                     let span = event.span();
                     let let_token = token::Let { span };
-                    let pattern = expr::Pattern::ident(event.to_string());
+                    let pattern = expr::Pattern::ident(event.clone());
                     let eq_token = token::Eq { spans: [span] };
                     let pat =
                         LetEventPattern::new(let_token, pattern, eq_token, event, question_token);
@@ -2129,7 +2121,7 @@ mod parse_contract {
             let term: Term = input.parse()?;
             Ok(ForAll::new(
                 forall_token,
-                ident.to_string(),
+                ident,
                 colon_token,
                 ty,
                 comma_token,
@@ -2165,9 +2157,9 @@ mod parse_contract {
             let term: Term = Term::parse_prec4(input)?;
             Ok(EventImplication::new(
                 when_token,
-                pattern.to_string(),
+                pattern,
                 eq_token,
-                event.to_string(),
+                event,
                 question_token,
                 arrow,
                 term,
@@ -2189,10 +2181,7 @@ mod parse_contract {
             let ident_enum: Ident = input.parse()?;
             let _: Token![::] = input.parse()?;
             let ident_elem: Ident = input.parse()?;
-            Ok(Enumeration::new(
-                ident_enum.to_string(),
-                ident_elem.to_string(),
-            ))
+            Ok(Enumeration::new(ident_enum, ident_elem))
         }
     }
 
@@ -2203,40 +2192,46 @@ mod parse_contract {
     }
     impl Parse for Unary {
         fn parse(input: ParseStream) -> syn::Res<Self> {
+            let op_loc = input.span();
             let op: UOp = input.parse()?;
             let term: Term = Term::parse_term(input)?;
-            Ok(Unary::new(op, term))
+            Ok(Unary::new(op_loc, op, term))
         }
     }
 
     impl Binary {
-        fn parse_term(left: Box<Term>, input: ParseStream) -> syn::Res<Self> {
+        fn parse_term(left: Term, input: ParseStream) -> syn::Res<Self> {
+            let op_loc = input.span();
             let op = input.parse()?;
-            let right = Box::new(Term::parse_term(input)?);
-            Ok(Binary { op, left, right })
+            let right = Term::parse_term(input)?;
+            Ok(Binary::new(op_loc, left, op, right))
         }
-        fn parse_prec1(left: Box<Term>, input: ParseStream) -> syn::Res<Self> {
+        fn parse_prec1(left: Term, input: ParseStream) -> syn::Res<Self> {
+            let op_loc = input.span();
             let op = input.parse()?;
-            let right = Box::new(Term::parse_prec1(input)?);
-            Ok(Binary { op, left, right })
+            let right = Term::parse_prec1(input)?;
+            Ok(Binary::new(op_loc, left, op, right))
         }
-        fn parse_prec2(left: Box<Term>, input: ParseStream) -> syn::Res<Self> {
+        fn parse_prec2(left: Term, input: ParseStream) -> syn::Res<Self> {
+            let op_loc = input.span();
             let op = input.parse()?;
-            let right = Box::new(Term::parse_prec2(input)?);
-            Ok(Binary { op, left, right })
+            let right = Term::parse_prec2(input)?;
+            Ok(Binary::new(op_loc, left, op, right))
         }
-        fn parse_prec3(left: Box<Term>, input: ParseStream) -> syn::Res<Self> {
+        fn parse_prec3(left: Term, input: ParseStream) -> syn::Res<Self> {
+            let op_loc = input.span();
             let op = input.parse()?;
-            let right = Box::new(Term::parse_prec3(input)?);
-            Ok(Binary { op, left, right })
+            let right = Term::parse_prec3(input)?;
+            Ok(Binary::new(op_loc, left, op, right))
         }
     }
     impl Parse for Binary {
         fn parse(input: ParseStream) -> syn::Res<Self> {
-            let left: Box<Term> = Box::new(input.parse()?);
-            let op: BOp = input.parse()?;
-            let right: Box<Term> = Box::new(input.parse()?);
-            Ok(Binary { left, op, right })
+            let left = input.parse()?;
+            let op_loc = input.span();
+            let op = input.parse()?;
+            let right = input.parse()?;
+            Ok(Binary::new(op_loc, left, op, right))
         }
     }
 
@@ -2252,7 +2247,7 @@ mod parse_contract {
                 Term::unary(input.parse()?)
             } else if input.fork().call(Ident::parse).is_ok() {
                 let ident: Ident = input.parse()?;
-                Term::ident(ident.to_string())
+                Term::ident(ident)
             } else {
                 return Err(input.error("expected expression"));
             };
@@ -2265,7 +2260,7 @@ mod parse_contract {
 
             loop {
                 if BOp::peek_prec1(input) {
-                    term = Term::binary(Binary::parse_term(Box::new(term), input)?);
+                    term = Term::binary(Binary::parse_term(term, input)?);
                 } else {
                     break;
                 }
@@ -2278,7 +2273,7 @@ mod parse_contract {
 
             loop {
                 if BOp::peek_prec2(input) {
-                    term = Term::binary(Binary::parse_prec1(Box::new(term), input)?);
+                    term = Term::binary(Binary::parse_prec1(term, input)?);
                 } else {
                     break;
                 }
@@ -2291,7 +2286,7 @@ mod parse_contract {
 
             loop {
                 if BOp::peek_prec3(input) {
-                    term = Term::binary(Binary::parse_prec2(Box::new(term), input)?);
+                    term = Term::binary(Binary::parse_prec2(term, input)?);
                 } else {
                     break;
                 }
@@ -2304,7 +2299,7 @@ mod parse_contract {
 
             loop {
                 if BOp::peek_prec4(input) {
-                    term = Term::binary(Binary::parse_prec3(Box::new(term), input)?);
+                    term = Term::binary(Binary::parse_prec3(term, input)?);
                 } else {
                     break;
                 }
@@ -2505,7 +2500,7 @@ mod parsing_tests {
             let expression: ReactExpr = syn::parse_quote! {|x: int| f(x)};
             let control = ReactExpr::expr(Expr::type_abstraction(TypedAbstraction::new(
                 Loc::test_dummy(),
-                vec![("x".into(), Typ::int())],
+                vec![(Loc::test_id("x"), Typ::int())],
                 Expr::app(Application::new(
                     Loc::test_dummy(),
                     Expr::test_ident("f"),
@@ -2520,10 +2515,16 @@ mod parsing_tests {
             let expression: ReactExpr = syn::parse_quote! {Point {x: 0, y: 1}};
             let control = ReactExpr::expr(Expr::structure(Structure::new(
                 Loc::test_dummy(),
-                "Point",
+                Loc::test_id("Point"),
                 vec![
-                    ("x".into(), Expr::cst(Constant::int(syn::parse_quote! {0}))),
-                    ("y".into(), Expr::cst(Constant::int(syn::parse_quote! {1}))),
+                    (
+                        Loc::test_id("x"),
+                        Expr::cst(Constant::int(syn::parse_quote! {0})),
+                    ),
+                    (
+                        Loc::test_id("y"),
+                        Expr::cst(Constant::int(syn::parse_quote! {1})),
+                    ),
                 ],
             )));
             assert_eq!(expression, control)
@@ -2547,8 +2548,8 @@ mod parsing_tests {
             let expression: ReactExpr = syn::parse_quote! {Color::Pink};
             let control = ReactExpr::expr(Expr::enumeration(Enumeration::new(
                 Loc::test_dummy(),
-                "Color",
-                "Pink",
+                Loc::test_id("Color"),
+                Loc::test_id("Pink"),
             )));
             assert_eq!(expression, control)
         }
@@ -2582,13 +2583,14 @@ mod parsing_tests {
                 vec![
                     Arm::new(
                         Pattern::Structure(PatStructure::new(
-                            "Point",
+                            Default::default(),
+                            Loc::test_id("Point"),
                             vec![
                                 (
-                                    "x".into(),
+                                    Loc::test_id("x"),
                                     Some(Pattern::Constant(Constant::int(syn::parse_quote! {0}))),
                                 ),
-                                ("y".into(), Some(Pattern::Default)),
+                                (Loc::test_id("y"), Some(Pattern::Default)),
                             ],
                             None,
                         )),
@@ -2596,10 +2598,11 @@ mod parsing_tests {
                     ),
                     Arm {
                         pattern: Pattern::Structure(PatStructure::new(
-                            "Point",
+                            Default::default(),
+                            Loc::test_id("Point"),
                             vec![
-                                ("x".into(), Some(Pattern::ident("x"))),
-                                ("y".into(), Some(Pattern::Default)),
+                                (Loc::test_id("x"), Some(Pattern::test_ident("x"))),
+                                (Loc::test_id("y"), Some(Pattern::Default)),
                             ],
                             None,
                         )),
@@ -2625,7 +2628,7 @@ mod parsing_tests {
             let control = ReactExpr::expr(Expr::field_access(FieldAccess::new(
                 Loc::test_dummy(),
                 Expr::test_ident("p"),
-                "x",
+                Loc::test_id("x"),
             )));
             assert_eq!(expression, control)
         }
@@ -2709,7 +2712,7 @@ mod parsing_tests {
                 vec![stream::EventArmWhen::new(
                     equation::EventPattern::Let(equation::LetEventPattern::new(
                         Default::default(),
-                        expr::Pattern::ident("d"),
+                        expr::Pattern::test_ident("d"),
                         Default::default(),
                         format_ident!("p"),
                         Default::default(),
@@ -2734,7 +2737,7 @@ mod parsing_tests {
                 vec![stream::EventArmWhen::new(
                     equation::EventPattern::Let(equation::LetEventPattern::new(
                         Default::default(),
-                        expr::Pattern::ident("p"),
+                        expr::Pattern::test_ident("p"),
                         Default::default(),
                         format_ident!("p"),
                         Default::default(),
@@ -2773,7 +2776,7 @@ mod parsing_tests {
                 vec![stream::EventArmWhen::new(
                     equation::EventPattern::Let(equation::LetEventPattern::new(
                         Default::default(),
-                        expr::Pattern::ident("p"),
+                        expr::Pattern::test_ident("p"),
                         Default::default(),
                         format_ident!("p"),
                         Default::default(),
@@ -2805,7 +2808,7 @@ mod parsing_tests {
         #[test]
         fn parse_identifier_pat() {
             let pattern: Pattern = parse_quote! {x};
-            let control = Pattern::ident("x");
+            let control = Pattern::test_ident("x");
             assert_eq!(pattern, control)
         }
 
@@ -2818,13 +2821,14 @@ mod parsing_tests {
                 }
             };
             let control = Pattern::structure(PatStructure::new(
-                "Point",
+                Default::default(),
+                Loc::test_id("Point"),
                 vec![
                     (
-                        "x".into(),
+                        Loc::test_id("x"),
                         Some(Pattern::cst(Constant::int(parse_quote! {0}))),
                     ),
-                    ("y".into(), Some(Pattern::default())),
+                    (Loc::test_id("y"), Some(Pattern::default())),
                 ],
                 None,
             ));
@@ -2837,13 +2841,14 @@ mod parsing_tests {
                 Point { x: 0, y, }
             };
             let control = Pattern::structure(PatStructure::new(
-                "Point",
+                Default::default(),
+                Loc::test_id("Point"),
                 vec![
                     (
-                        "x".into(),
+                        Loc::test_id("x"),
                         Some(Pattern::cst(Constant::int(parse_quote! {0}))),
                     ),
-                    ("y".into(), None),
+                    (Loc::test_id("y"), None),
                 ],
                 None,
             ));
@@ -2856,9 +2861,10 @@ mod parsing_tests {
                 Point { x: 0, .. }
             };
             let control = Pattern::structure(PatStructure::new(
-                "Point",
+                Default::default(),
+                Loc::test_id("Point"),
                 vec![(
-                    "x".into(),
+                    Loc::test_id("x"),
                     Some(Pattern::cst(Constant::int(parse_quote! {0}))),
                 )],
                 Some(parse_quote!(..)),
@@ -2869,17 +2875,23 @@ mod parsing_tests {
         #[test]
         fn parse_tuple_pat() {
             let pattern: Pattern = parse_quote! {(x, 0)};
-            let control = Pattern::tuple(PatTuple::new(vec![
-                Pattern::ident("x"),
-                Pattern::cst(Constant::int(parse_quote! {0})),
-            ]));
+            let control = Pattern::tuple(PatTuple::new(
+                Default::default(),
+                vec![
+                    Pattern::test_ident("x"),
+                    Pattern::cst(Constant::int(parse_quote! {0})),
+                ],
+            ));
             assert_eq!(pattern, control)
         }
 
         #[test]
         fn parse_enumeration_pat() {
             let pattern: Pattern = parse_quote! {Color::Pink};
-            let control = Pattern::enumeration(PatEnumeration::new("Color", "Pink"));
+            let control = Pattern::enumeration(PatEnumeration::new(
+                Loc::test_id("Color"),
+                Loc::test_id("Pink"),
+            ));
             assert_eq!(pattern, control)
         }
 
@@ -2965,7 +2977,7 @@ mod parsing_tests {
             let expr: Expr = parse_quote! {|x: int| f(x)};
             let control = Expr::typed_abstraction(TypedAbstraction::new(
                 Loc::test_dummy(),
-                vec![("x".into(), Typ::int())],
+                vec![(Loc::test_id("x"), Typ::int())],
                 Expr::app(Application::new(
                     Loc::test_dummy(),
                     Expr::test_ident("f"),
@@ -2980,10 +2992,16 @@ mod parsing_tests {
             let expr: Expr = parse_quote! {Point {x: 0, y: 1}};
             let control = Expr::structure(Structure::new(
                 Loc::test_dummy(),
-                "Point",
+                Loc::test_id("Point"),
                 vec![
-                    ("x".into(), Expr::cst(Constant::int(parse_quote! {0}))),
-                    ("y".into(), Expr::cst(Constant::int(parse_quote! {1}))),
+                    (
+                        Loc::test_id("x"),
+                        Expr::cst(Constant::int(parse_quote! {0})),
+                    ),
+                    (
+                        Loc::test_id("y"),
+                        Expr::cst(Constant::int(parse_quote! {1})),
+                    ),
                 ],
             ));
             assert_eq!(expr, control)
@@ -3005,7 +3023,11 @@ mod parsing_tests {
         #[test]
         fn should_parse_enumeration() {
             let expr: Expr = parse_quote! {Color::Pink};
-            let control = Expr::enumeration(Enumeration::new(Loc::test_dummy(), "Color", "Pink"));
+            let control = Expr::enumeration(Enumeration::new(
+                Loc::test_dummy(),
+                Loc::test_id("Color"),
+                Loc::test_id("Pink"),
+            ));
             assert_eq!(expr, control)
         }
 
@@ -3038,13 +3060,14 @@ mod parsing_tests {
                 vec![
                     Arm::new(
                         Pattern::structure(PatStructure::new(
-                            "Point",
+                            Default::default(),
+                            Loc::test_id("Point"),
                             vec![
                                 (
-                                    "x".into(),
+                                    Loc::test_id("x"),
                                     Some(Pattern::cst(Constant::int(parse_quote! {0}))),
                                 ),
-                                ("y".into(), Some(Pattern::default())),
+                                (Loc::test_id("y"), Some(Pattern::default())),
                             ],
                             None,
                         )),
@@ -3052,10 +3075,11 @@ mod parsing_tests {
                     ),
                     Arm::new_with_guard(
                         Pattern::Structure(PatStructure::new(
-                            "Point",
+                            Default::default(),
+                            Loc::test_id("Point"),
                             vec![
-                                ("x".into(), Some(Pattern::ident("x"))),
-                                ("y".into(), Some(Pattern::default())),
+                                (Loc::test_id("x"), Some(Pattern::test_ident("x"))),
+                                (Loc::test_id("y"), Some(Pattern::default())),
                             ],
                             None,
                         )),
@@ -3078,7 +3102,7 @@ mod parsing_tests {
             let control = Expr::field_access(FieldAccess::new(
                 Loc::test_dummy(),
                 Expr::test_ident("p"),
-                "x",
+                Loc::test_id("x"),
             ));
             assert_eq!(expression, control)
         }
@@ -3179,10 +3203,10 @@ mod parsing_tests {
                 (o1, o2) = if res then (0, 0) else ((last o1 init 0) + inc1, last o2 + inc2);
             };
             let control = ReactEq::out_def(Instantiation {
-                pattern: stmt::Pattern::tuple(stmt::Tuple::new(vec![
-                    parse_quote! {o1},
-                    parse_quote! {o2},
-                ])),
+                pattern: stmt::Pattern::tuple(stmt::Tuple::new(
+                    Loc::test_dummy(),
+                    vec![parse_quote! {o1}, parse_quote! {o2}],
+                )),
                 eq_token: parse_quote! {=},
                 expr: stream::ReactExpr::expr(stream::Expr::ite(expr::IfThenElse::new(
                     Loc::test_dummy(),
@@ -3266,18 +3290,21 @@ mod parsing_tests {
             };
             let control = ReactEq::local_def(stmt::LetDecl::new(
                 parse_quote!(let),
-                stmt::Pattern::tuple(stmt::Tuple::new(vec![
-                    stmt::Pattern::Typed(stmt::Typed {
-                        ident: parse_quote!(o1),
-                        colon_token: parse_quote!(:),
-                        typ: Typ::int(),
-                    }),
-                    stmt::Pattern::Typed(stmt::Typed {
-                        ident: parse_quote!(o2),
-                        colon_token: parse_quote!(:),
-                        typ: Typ::int(),
-                    }),
-                ])),
+                stmt::Pattern::tuple(stmt::Tuple::new(
+                    Loc::test_dummy(),
+                    vec![
+                        stmt::Pattern::Typed(stmt::Typed {
+                            ident: parse_quote!(o1),
+                            colon_token: parse_quote!(:),
+                            typ: Typ::int(),
+                        }),
+                        stmt::Pattern::Typed(stmt::Typed {
+                            ident: parse_quote!(o2),
+                            colon_token: parse_quote!(:),
+                            typ: Typ::int(),
+                        }),
+                    ],
+                )),
                 parse_quote!(=),
                 stream::ReactExpr::expr(stream::Expr::ite(expr::IfThenElse::new(
                     Loc::test_dummy(),
@@ -3335,14 +3362,18 @@ mod parsing_tests {
         #[test]
         fn should_parse_identifier() {
             let term: Term = parse_quote! {x};
-            let control = Term::ident("x");
+            let control = Term::test_ident("x");
             assert_eq!(term, control)
         }
 
         #[test]
         fn should_parse_unary_operation() {
             let term: Term = parse_quote! {!x};
-            let control = Term::unary(Unary::new(UOp::Not, Term::ident("x")));
+            let control = Term::unary(Unary::new(
+                Loc::test_dummy(),
+                UOp::Not,
+                Term::test_ident("x"),
+            ));
             assert_eq!(term, control)
         }
 
@@ -3350,7 +3381,12 @@ mod parsing_tests {
         fn should_parse_binary_operation() {
             let term: Term = parse_quote! {-x + 1};
             let control = Term::binary(Binary::new(
-                Term::unary(Unary::new(UOp::Neg, Term::ident("x"))),
+                Loc::test_dummy(),
+                Term::unary(Unary::new(
+                    Loc::test_dummy(),
+                    UOp::Neg,
+                    Term::test_ident("x"),
+                )),
                 BOp::Add,
                 Term::constant(Constant::int(parse_quote! {1})),
             ));
@@ -3362,12 +3398,17 @@ mod parsing_tests {
             let term: Term = parse_quote! { !x && y => z};
             let control = Term::implication(Implication::new(
                 Term::binary(Binary::new(
-                    Term::unary(Unary::new(UOp::Not, Term::ident("x"))),
+                    Loc::test_dummy(),
+                    Term::unary(Unary::new(
+                        Loc::test_dummy(),
+                        UOp::Not,
+                        Term::test_ident("x"),
+                    )),
                     BOp::And,
-                    Term::ident("y"),
+                    Term::test_ident("y"),
                 )),
                 Default::default(),
-                Term::ident("z"),
+                Term::test_ident("z"),
             ));
             assert_eq!(term, control)
         }
@@ -3377,15 +3418,21 @@ mod parsing_tests {
             let term: Term = parse_quote! { when d = p? => d > x+y};
             let control = Term::event(EventImplication::new(
                 Default::default(),
-                "d",
+                Loc::test_id("d"),
                 Default::default(),
-                "p",
+                Loc::test_id("p"),
                 Default::default(),
                 Default::default(),
                 Term::binary(Binary::new(
-                    Term::ident("d"),
+                    Loc::test_dummy(),
+                    Term::test_ident("d"),
                     BOp::Grt,
-                    Term::binary(Binary::new(Term::ident("x"), BOp::Add, Term::ident("y"))),
+                    Term::binary(Binary::new(
+                        Loc::test_dummy(),
+                        Term::test_ident("x"),
+                        BOp::Add,
+                        Term::test_ident("y"),
+                    )),
                 )),
             ));
             assert_eq!(term, control)
@@ -3396,14 +3443,20 @@ mod parsing_tests {
             let term: Term = parse_quote! { forall d: int, d > x+y};
             let control = Term::forall(ForAll::new(
                 Default::default(),
-                "d",
+                Loc::test_id("d"),
                 Default::default(),
                 Typ::int(),
                 Default::default(),
                 Term::binary(Binary::new(
-                    Term::ident("d"),
+                    Loc::test_dummy(),
+                    Term::test_ident("d"),
                     BOp::Grt,
-                    Term::binary(Binary::new(Term::ident("x"), BOp::Add, Term::ident("y"))),
+                    Term::binary(Binary::new(
+                        Loc::test_dummy(),
+                        Term::test_ident("x"),
+                        BOp::Add,
+                        Term::test_ident("y"),
+                    )),
                 )),
             ));
             assert_eq!(term, control)
