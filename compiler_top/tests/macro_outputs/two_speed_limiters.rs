@@ -485,21 +485,14 @@ pub mod runtime {
                 .await?;
             while let Some(input) = input.next().await {
                 match input {
-                    I::VacuumBrake(vacuum_brake, instant) => {
+                    I::Activation(activation, instant) => {
                         runtime
                             .speed_limiter
-                            .handle_vacuum_brake(instant, vacuum_brake)
+                            .handle_activation(instant, activation)
                             .await?;
                         runtime
                             .another_speed_limiter
-                            .handle_vacuum_brake(instant, vacuum_brake)
-                            .await?;
-                    }
-                    I::Speed(speed, instant) => {
-                        runtime.speed_limiter.handle_speed(instant, speed).await?;
-                        runtime
-                            .another_speed_limiter
-                            .handle_speed(instant, speed)
+                            .handle_activation(instant, activation)
                             .await?;
                     }
                     I::SetSpeed(set_speed, instant) => {
@@ -512,21 +505,21 @@ pub mod runtime {
                             .handle_set_speed(instant, set_speed)
                             .await?;
                     }
-                    I::Activation(activation, instant) => {
+                    I::Kickdown(kickdown, instant) => {
                         runtime
                             .speed_limiter
-                            .handle_activation(instant, activation)
+                            .handle_kickdown(instant, kickdown)
                             .await?;
                         runtime
                             .another_speed_limiter
-                            .handle_activation(instant, activation)
+                            .handle_kickdown(instant, kickdown)
                             .await?;
                     }
-                    I::Vdc(vdc, instant) => {
-                        runtime.speed_limiter.handle_vdc(instant, vdc).await?;
+                    I::Speed(speed, instant) => {
+                        runtime.speed_limiter.handle_speed(instant, speed).await?;
                         runtime
                             .another_speed_limiter
-                            .handle_vdc(instant, vdc)
+                            .handle_speed(instant, speed)
                             .await?;
                     }
                     I::Timer(T::PeriodSpeedLimiter, instant) => {
@@ -559,20 +552,27 @@ pub mod runtime {
                             .handle_timeout_speed_limiter(instant)
                             .await?;
                     }
-                    I::Kickdown(kickdown, instant) => {
+                    I::VacuumBrake(vacuum_brake, instant) => {
                         runtime
                             .speed_limiter
-                            .handle_kickdown(instant, kickdown)
+                            .handle_vacuum_brake(instant, vacuum_brake)
                             .await?;
                         runtime
                             .another_speed_limiter
-                            .handle_kickdown(instant, kickdown)
+                            .handle_vacuum_brake(instant, vacuum_brake)
                             .await?;
                     }
                     I::Timer(T::TimeoutAnotherSpeedLimiter, instant) => {
                         runtime
                             .another_speed_limiter
                             .handle_timeout_another_speed_limiter(instant)
+                            .await?;
+                    }
+                    I::Vdc(vdc, instant) => {
+                        runtime.speed_limiter.handle_vdc(instant, vdc).await?;
+                        runtime
+                            .another_speed_limiter
+                            .handle_vdc(instant, vdc)
                             .await?;
                     }
                 }

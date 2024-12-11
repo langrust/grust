@@ -594,6 +594,12 @@ macro_rules! note {
     { @ $loc:expr => $($stuff:tt)* } => {
         $crate::prelude::Note::new_at($loc.into(), format!($($stuff)*))
     };
+    { $e:expr } => {
+        $crate::prelude::Note::new(None, $e)
+    };
+    { $($stuff:tt)* } => {
+        $crate::prelude::Note::new(None, format!($($stuff)*))
+    };
 }
 
 #[macro_export]
@@ -659,7 +665,8 @@ macro_rules! bad {
         )*
     };
     { $errors:expr, $($stuff:tt)* } => {{
-        $errors.push(error!($($stuff)*));
+        let info = format!("[internal] error raised at `{}:{}`", file!(), line!());
+        $errors.push(error!($($stuff)*).add_note(Note::new(None, info)));
         bad!()
     }};
 }

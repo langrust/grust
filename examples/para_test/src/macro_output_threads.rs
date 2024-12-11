@@ -9,13 +9,8 @@ impl TestThreadsAuxState {
         TestThreadsAuxState { last_i: 0i64 }
     }
     pub fn step(&mut self, input: TestThreadsAuxInput) -> i64 {
-        let ((i1, i3, i2), ()) = std::thread::scope(|reserved_grust_thread_scope| {
-            let (i1, i3, i2) = (
-                {
-                    {
-                        (input.i - 54i64) * 2i64
-                    }
-                },
+        let ((i3, i2), (i1, i12)) = {
+            let (i3, i2) = (
                 {
                     {
                         7i64 * input.i
@@ -27,25 +22,16 @@ impl TestThreadsAuxState {
                     }
                 },
             );
-            let () = ();
-            ((i1, i3, i2), ())
-        });
-        let ((i12, i23), ()) = std::thread::scope(|reserved_grust_thread_scope| {
-            let (i12, i23) = (
+            let (i1, i12) = {
                 {
-                    {
-                        i1 + i2
-                    }
-                },
-                {
-                    {
-                        i2 + i3
-                    }
-                },
-            );
-            let () = ();
-            ((i12, i23), ())
-        });
+                    let i1 = (input.i - 54i64) * 2i64;
+                    let i12 = i1 + input.i;
+                    (i1, i12)
+                }
+            };
+            ((i3, i2), (i1, i12))
+        };
+        let i23 = i2 + i3;
         let i123 = (i12 + (2i64 * i3)) + i23;
         let next_o = match input.i {
             0 => {

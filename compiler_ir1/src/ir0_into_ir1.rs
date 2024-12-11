@@ -1540,10 +1540,7 @@ mod simple_expr_impl {
             let kind = match self {
                 Constant(constant) => ir1::expr::Kind::Constant { constant },
                 Identifier(id) => {
-                    let id = ctx
-                        .symbols
-                        .get_identifier_id(&id, false, &mut vec![])
-                        .or_else(|_| ctx.symbols.get_function_id(&id, false, ctx.errors))?;
+                    let id = ctx.symbols.get_ident(&id, false, true, ctx.errors)?;
                     ir1::expr::Kind::Identifier { id }
                 }
                 UnOp(e) => e.into_ir1(ctx)?,
@@ -2107,10 +2104,7 @@ mod stream_impl {
                     expr: ir1::expr::Kind::Constant { constant },
                 },
                 stream::Expr::Identifier(id) => {
-                    let id = ctx
-                        .symbols
-                        .get_identifier_id(&id, false, &mut vec![])
-                        .or_else(|_| ctx.symbols.get_function_id(&id, false, ctx.errors))?;
+                    let id = ctx.symbols.get_ident(&id, false, true, ctx.errors)?;
                     Kind::expr(ir1::expr::Kind::Identifier { id })
                 }
                 stream::Expr::UnOp(expr) => Kind::expr(expr.into_ir1(ctx)?),

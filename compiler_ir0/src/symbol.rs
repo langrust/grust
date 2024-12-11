@@ -80,6 +80,14 @@ pub enum SymbolKind {
         size: usize,
     },
 }
+impl SymbolKind {
+    pub fn scope(&self) -> Option<&Scope> {
+        match self {
+            Self::Identifier { scope, .. } => Some(scope),
+            _ => None,
+        }
+    }
+}
 impl PartialEq for SymbolKind {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
@@ -285,13 +293,16 @@ impl SymbolTable {
         symbol_opt
     }
 
-    pub fn add_unknown_ident_notes(&self, id: &Ident, e: Error) -> Error {
+    pub fn unknown_ident_error<T>(&self, id: &Ident) -> Res<T> {
+        let str = id.to_string();
         let max_levenshtein_distance = 2;
-        if let Some(symbol) = self.levenshtein_closest(&id.to_string(), max_levenshtein_distance) {
-            e.add_note(note! { @id.loc() => "did you mean `{}`?", symbol.name_string })
-                .add_note(note! { @symbol.name.loc() => "declared here" })
+        let e = error!(@id.loc() => ErrorKind::unknown_ident(str.clone()));
+        if let Some(symbol) = self.levenshtein_closest(&str, max_levenshtein_distance) {
+            Err(e
+                .add_note(note!("did you mean `{}`?", symbol.name_string))
+                .add_note(note!(@symbol.name.loc() => "declared here")))
         } else {
-            e
+            Err(e)
         }
     }
 
@@ -1246,6 +1257,26 @@ impl SymbolTable {
         }
     }
 
+    /// Gets a variable (or function) identifier.
+    pub fn get_ident(
+        &self,
+        name: &Ident,
+        local: bool,
+        or_function: bool,
+        errors: &mut Vec<Error>,
+    ) -> TRes<usize> {
+        let symbol_hash = SymbolKey::Identifier { name: name.clone() };
+        match self.known_symbols.get_id(&symbol_hash, local) {
+            Some(id) => Ok(id),
+            None => {
+                if or_function {
+                    self.get_function_id(name, local, errors)
+                } else {
+                    self.unknown_ident_error(name).dewrap(errors)
+                }
+            }
+        }
+    }
     /// Get identifier symbol identifier.
     pub fn get_identifier_id(
         &self,
@@ -1253,36 +1284,7 @@ impl SymbolTable {
         local: bool,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
-        let symbol_hash = SymbolKey::Identifier { name: name.clone() };
-        match self.known_symbols.get_id(&symbol_hash, local) {
-            Some(id) => Ok(id),
-            None => {
-                // let error = self.add_unknown_ident_notes(
-                //     name,
-                //     error!(@name.loc() => ErrorKind::unknown_ident(name.to_string())),
-                // );
-                let error = error!(@name.loc() => ErrorKind::unknown_ident(name.to_string()));
-                errors.push(error);
-                bad!()
-            }
-        }
-    }
-
-    /// Get function result symbol identifier.
-    pub fn get_function_result_id(
-        &self,
-        local: bool,
-        loc: Loc,
-        errors: &mut Vec<Error>,
-    ) -> TRes<usize> {
-        let name = "result";
-        let symbol_hash = SymbolKey::Identifier {
-            name: Loc::builtin_id(name),
-        };
-        match self.known_symbols.get_id(&symbol_hash, local) {
-            Some(id) => Ok(id),
-            None => bad!(errors, @loc => ErrorKind::unknown_ident(name)),
-        }
+        self.get_ident(name, local, false, errors)
     }
 
     /// Get function symbol identifier.
@@ -1295,7 +1297,27 @@ impl SymbolTable {
         let symbol_hash = SymbolKey::Function { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
-            None => bad!(errors, @name.loc() => ErrorKind::unknown_ident(name.to_string())),
+            None => self.unknown_ident_error(name).dewrap(errors),
+            // bad!(errors, @name.loc() => ErrorKind::unknown_ident(name.to_string())),
+        }
+    }
+
+    /// Get function result symbol identifier.
+    pub fn get_function_result_id(
+        &self,
+        local: bool,
+        loc: Loc,
+        errors: &mut Vec<Error>,
+    ) -> TRes<usize> {
+        let name = "result";
+        let ident = Ident::new(name, loc.span);
+        let symbol_hash = SymbolKey::Identifier {
+            name: ident.clone(),
+        };
+        match self.known_symbols.get_id(&symbol_hash, local) {
+            Some(id) => Ok(id),
+            None => self.unknown_ident_error(&ident).dewrap(errors),
+            // None => bad!(errors, @loc => ErrorKind::unknown_ident(name)),
         }
     }
 

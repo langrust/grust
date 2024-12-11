@@ -394,10 +394,10 @@ pub mod runtime {
                             .handle_period_speed_limiter(instant)
                             .await?;
                     }
-                    I::Failure(failure, instant) => {
+                    I::Activation(activation, instant) => {
                         runtime
                             .speed_limiter
-                            .handle_failure(instant, failure)
+                            .handle_activation(instant, activation)
                             .await?;
                     }
                     I::Timer(T::DelaySpeedLimiter, instant) => {
@@ -406,13 +406,16 @@ pub mod runtime {
                             .handle_delay_speed_limiter(instant)
                             .await?;
                     }
-                    I::Vdc(vdc, instant) => {
-                        runtime.speed_limiter.handle_vdc(instant, vdc).await?;
-                    }
                     I::VacuumBrake(vacuum_brake, instant) => {
                         runtime
                             .speed_limiter
                             .handle_vacuum_brake(instant, vacuum_brake)
+                            .await?;
+                    }
+                    I::Failure(failure, instant) => {
+                        runtime
+                            .speed_limiter
+                            .handle_failure(instant, failure)
                             .await?;
                     }
                     I::Timer(T::TimeoutSpeedLimiter, instant) => {
@@ -427,11 +430,8 @@ pub mod runtime {
                             .handle_period_in_regulation(instant)
                             .await?;
                     }
-                    I::Activation(activation, instant) => {
-                        runtime
-                            .speed_limiter
-                            .handle_activation(instant, activation)
-                            .await?;
+                    I::Vdc(vdc, instant) => {
+                        runtime.speed_limiter.handle_vdc(instant, vdc).await?;
                     }
                 }
             }

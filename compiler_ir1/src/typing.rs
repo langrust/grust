@@ -352,8 +352,16 @@ impl Typing for stream::Expr {
                 id_type.expect(self.loc, constant_type).dewrap(errors)?;
 
                 // check the scope is not 'very_local'
-                if let Scope::VeryLocal = symbols.get_scope(id) {
-                    bad!() // todo generate error
+                let sym = symbols.resolve_symbol(self.loc, id).dewrap(errors)?;
+                if sym
+                    .kind()
+                    .scope()
+                    .map(|s| s == &Scope::VeryLocal)
+                    .unwrap_or(false)
+                {
+                    bad!(errors, @sym.loc() =>
+                        "`{}` has an unexpected `VeryLocal` scope", sym.name()
+                    )
                 }
 
                 self.typ = Some(constant_type.clone());
