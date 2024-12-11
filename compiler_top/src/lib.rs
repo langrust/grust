@@ -60,7 +60,12 @@ pub fn dump_code(path_name: &str, tokens: &TokenStream2) {
             .truncate(true)
             .open(path)
             .expect(&format!("failed to open `{path_name}`"));
-        writeln!(&mut file, "{}", tokens).expect(&format!("failed to write to `{path_name}`"));
+        let content = tokens.to_string();
+        for line in content.lines() {
+            writeln!(&mut file, "{}", line).expect(&format!("failed to write to `{path_name}`"));
+        }
+        file.flush()
+            .expect(&format!("failed to flush `{path_name}`"));
     }
 
     let mut rustfmt = Command::new("rustfmt")

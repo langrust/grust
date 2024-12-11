@@ -28,7 +28,7 @@ mod sl {
             return Hysterisis { value: value, flag: true };
         }
 
-        // Enumerates the kinds of activation resquests.
+        // Enumerates the kinds of activation requests.
         enum ActivationRequest { Off, On }
 
         // Vehicle dynamic control states.
@@ -103,7 +103,7 @@ mod sl {
 
         // # Components
 
-        // Processes the speed setted by the driver.
+        // Processes the speed set by the driver.
         component process_set_speed(set_speed: float?) -> (v_set: float, v_update: bool) {
             let prev_v_set: float = last v_set;
             v_update = prev_v_set != v_set;

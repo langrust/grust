@@ -33,23 +33,24 @@ pub fn raw_from_ast(ast: Ast, symbols: &mut SymbolTable, errors: &mut Vec<Error>
 }
 
 pub fn from_ast(ast: Ast, symbols: &mut SymbolTable) -> Result<File, Vec<Error>> {
-    let mut errors_data = vec![];
-    let errors = &mut errors_data;
-    let mut ir1 = raw_from_ast(ast, symbols, errors);
+    let mut errors_vec = vec![];
+    let errors = &mut errors_vec;
     macro_rules! check_errors {
         {} => {
-            if !errors.is_empty() { return Err(errors_data); }
+            if !errors.is_empty() { return Err(errors_vec); }
         };
         { $desc:expr, $e:expr $(,)? } => {{
             check_errors!();
             match $e {
                 Ok(()) => check_errors!(),
                 Err(()) => {
-                    assert!(!errors.is_empty());
+                    if errors.is_empty() {
+                        panic!("empty errors :/ ({})", $desc);
+                    }
                     for e in errors {
                         e.add_note_mut(Note::new(None, concat!("during ", $desc)))
                     }
-                    return Err(errors_data);
+                    return Err(errors_vec);
                 }
             }
         }};

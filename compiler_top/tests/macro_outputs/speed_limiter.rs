@@ -463,14 +463,11 @@ pub mod runtime {
                 .await?;
             while let Some(input) = input.next().await {
                 match input {
-                    I::VacuumBrake(vacuum_brake, instant) => {
+                    I::Activation(activation, instant) => {
                         runtime
                             .speed_limiter
-                            .handle_vacuum_brake(instant, vacuum_brake)
+                            .handle_activation(instant, activation)
                             .await?;
-                    }
-                    I::Speed(speed, instant) => {
-                        runtime.speed_limiter.handle_speed(instant, speed).await?;
                     }
                     I::SetSpeed(set_speed, instant) => {
                         runtime
@@ -478,14 +475,14 @@ pub mod runtime {
                             .handle_set_speed(instant, set_speed)
                             .await?;
                     }
-                    I::Activation(activation, instant) => {
+                    I::Kickdown(kickdown, instant) => {
                         runtime
                             .speed_limiter
-                            .handle_activation(instant, activation)
+                            .handle_kickdown(instant, kickdown)
                             .await?;
                     }
-                    I::Vdc(vdc, instant) => {
-                        runtime.speed_limiter.handle_vdc(instant, vdc).await?;
+                    I::Speed(speed, instant) => {
+                        runtime.speed_limiter.handle_speed(instant, speed).await?;
                     }
                     I::Timer(T::PeriodSpeedLimiter, instant) => {
                         runtime
@@ -499,17 +496,20 @@ pub mod runtime {
                             .handle_delay_speed_limiter(instant)
                             .await?;
                     }
-                    I::Kickdown(kickdown, instant) => {
-                        runtime
-                            .speed_limiter
-                            .handle_kickdown(instant, kickdown)
-                            .await?;
-                    }
                     I::Timer(T::TimeoutSpeedLimiter, instant) => {
                         runtime
                             .speed_limiter
                             .handle_timeout_speed_limiter(instant)
                             .await?;
+                    }
+                    I::VacuumBrake(vacuum_brake, instant) => {
+                        runtime
+                            .speed_limiter
+                            .handle_vacuum_brake(instant, vacuum_brake)
+                            .await?;
+                    }
+                    I::Vdc(vdc, instant) => {
+                        runtime.speed_limiter.handle_vdc(instant, vdc).await?;
                     }
                 }
             }

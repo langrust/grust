@@ -13,7 +13,7 @@ grust::grust! {
         let i1: int = (i - 54) * 2;
         let i2: int = (i + 54) * 2;
         let i3: int = 7 * i;
-        let i12: int = i1 + i2;
+        let i12: int = i1 + i;
         let i23: int = i2 + i3;
         let i123: int = i12 + 2 * i3 + i23;
         match i {

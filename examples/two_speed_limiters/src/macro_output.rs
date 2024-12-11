@@ -429,14 +429,14 @@ pub mod runtime {
                             .handle_period_speed_limiter(instant)
                             .await?;
                     }
-                    I::Failure(failure, instant) => {
+                    I::Activation(activation, instant) => {
                         runtime
                             .speed_limiter
-                            .handle_failure(instant, failure)
+                            .handle_activation(instant, activation)
                             .await?;
                         runtime
                             .another_speed_limiter
-                            .handle_failure(instant, failure)
+                            .handle_activation(instant, activation)
                             .await?;
                     }
                     I::Timer(T::PeriodSpeedLimiter1, instant) => {
@@ -445,17 +445,10 @@ pub mod runtime {
                             .handle_period_speed_limiter_1(instant)
                             .await?;
                     }
-                    I::Vdc(vdc, instant) => {
-                        runtime.speed_limiter.handle_vdc(instant, vdc).await?;
-                        runtime
-                            .another_speed_limiter
-                            .handle_vdc(instant, vdc)
-                            .await?;
-                    }
-                    I::Timer(T::TimeoutSpeedLimiter, instant) => {
+                    I::Timer(T::DelaySpeedLimiter, instant) => {
                         runtime
                             .speed_limiter
-                            .handle_timeout_speed_limiter(instant)
+                            .handle_delay_speed_limiter(instant)
                             .await?;
                     }
                     I::VacuumBrake(vacuum_brake, instant) => {
@@ -468,10 +461,20 @@ pub mod runtime {
                             .handle_vacuum_brake(instant, vacuum_brake)
                             .await?;
                     }
-                    I::Timer(T::DelaySpeedLimiter, instant) => {
+                    I::Timer(T::TimeoutSpeedLimiter, instant) => {
                         runtime
                             .speed_limiter
-                            .handle_delay_speed_limiter(instant)
+                            .handle_timeout_speed_limiter(instant)
+                            .await?;
+                    }
+                    I::Failure(failure, instant) => {
+                        runtime
+                            .speed_limiter
+                            .handle_failure(instant, failure)
+                            .await?;
+                        runtime
+                            .another_speed_limiter
+                            .handle_failure(instant, failure)
                             .await?;
                     }
                     I::Timer(T::DelayAnotherSpeedLimiter, instant) => {
@@ -480,14 +483,11 @@ pub mod runtime {
                             .handle_delay_another_speed_limiter(instant)
                             .await?;
                     }
-                    I::Activation(activation, instant) => {
-                        runtime
-                            .speed_limiter
-                            .handle_activation(instant, activation)
-                            .await?;
+                    I::Vdc(vdc, instant) => {
+                        runtime.speed_limiter.handle_vdc(instant, vdc).await?;
                         runtime
                             .another_speed_limiter
-                            .handle_activation(instant, activation)
+                            .handle_vdc(instant, vdc)
                             .await?;
                     }
                 }
