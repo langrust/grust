@@ -28,20 +28,23 @@ pub fn handle_tokens(tokens: TokenStream) -> TokenStream {
 /// Creates RustAST from GRust file.
 pub fn into_token_stream(ast: Ast) -> TokenStream2 {
     let mut symbol_table = SymbolTable::new();
-    let mut tokens = TokenStream2::new();
     let ir1 = match ir1::from_ast(ast, &mut symbol_table) {
         Ok(ir1) => ir1,
         Err(errors) => {
             for error in errors {
-                tokens.extend(error.into_syn_error().to_compile_error());
+                error.emit();
+                // tokens.extend(error.into_syn_error().to_compile_error());
             }
-            return tokens;
+            return parse_quote! {};
         }
     };
     let ir2 = ir1.into_ir2(symbol_table);
     let rust = ir2.into_syn();
-    use quote::TokenStreamExt;
-    tokens.append_all(rust);
+    let mut tokens = TokenStream2::new();
+    {
+        use quote::TokenStreamExt;
+        tokens.append_all(rust);
+    }
     tokens
 }
 

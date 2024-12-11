@@ -51,7 +51,7 @@ mod test {
     #[test]
     fn should_create_rust_ast_let_statement_from_ir2_let_statement() {
         let statement = Stmt::let_binding(
-            Pattern::ident("x"),
+            Pattern::test_ident("x"),
             Expr::lit(Constant::int(parse_quote!(1i64))),
         );
 
@@ -64,12 +64,15 @@ mod test {
     #[test]
     fn should_create_rust_ast_let_statement_from_ir2_let_statement_with_node_call() {
         let statement = Stmt::let_binding(
-            Pattern::ident("o"),
+            Pattern::test_ident("o"),
             Expr::node_call(
-                "node_state",
-                "node",
-                "NodeInput",
-                vec![("i".into(), Expr::lit(Constant::int(parse_quote!(1i64))))],
+                Loc::test_id("node_state"),
+                Loc::test_id("node"),
+                Loc::test_id("NodeInput"),
+                vec![(
+                    Loc::test_id("i"),
+                    Expr::lit(Constant::int(parse_quote!(1i64))),
+                )],
             ),
         );
 

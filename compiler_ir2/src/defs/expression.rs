@@ -13,7 +13,7 @@ pub enum Expr {
     /// An identifier call: `x`.
     Identifier {
         /// The identifier.
-        identifier: String,
+        identifier: Ident,
     },
     /// Some expression: `Some(x`.
     Some {
@@ -50,26 +50,26 @@ pub enum Expr {
     /// A memory access: `self.i_mem`.
     MemoryAccess {
         /// The identifier to the memory.
-        identifier: String,
+        identifier: Ident,
     },
     /// An input access: `self.i_mem`.
     InputAccess {
         /// The identifier to the input.
-        identifier: String,
+        identifier: Ident,
     },
     /// A structure literal expression: `Point { x: 1, y: 1 }`.
     Structure {
         /// The name of the structure.
-        name: String,
+        name: Ident,
         /// The filled fields.
-        fields: Vec<(String, Self)>,
+        fields: Vec<(Ident, Self)>,
     },
     /// A enumeration literal expression: `Color::Red`.
     Enumeration {
         /// The name of the enumeration.
-        name: String,
+        name: Ident,
         /// The name of the element.
-        element: String,
+        element: Ident,
     },
     /// An array expression: `[1, 2, 3]`.
     Array {
@@ -96,13 +96,13 @@ pub enum Expr {
     /// A node call: `self.called_node.step(inputs)`.
     NodeCall {
         /// Node's identifier in memory.
-        memory_ident: String,
+        memory_ident: Ident,
         /// The identifier to the node.
-        node_identifier: String,
+        node_identifier: Ident,
         /// The name of the input structure of the called node.
-        input_name: String,
+        input_name: Ident,
         /// The filled input's fields.
-        input_fields: Vec<(String, Self)>,
+        input_fields: Vec<(Ident, Self)>,
     },
     /// A named or unnamed field access: `my_point.x`.
     FieldAccess {
@@ -116,7 +116,7 @@ pub enum Expr {
         /// If true, the closure is a `move` closure.
         is_move: bool,
         /// The lambda inputs.
-        inputs: Vec<(String, Typ)>,
+        inputs: Vec<(Ident, Typ)>,
         /// The output type.
         output: Typ,
         /// The body of the closure.
@@ -163,7 +163,8 @@ impl Expr {
     mk_new! {
         Literal: literal { literal: Constant }
         Literal: lit { literal: Constant }
-        Identifier: ident { identifier: impl Into<String> = identifier.into() }
+        Identifier: ident { identifier: impl Into<Ident> = identifier.into() }
+        Identifier: test_ident { identifier: impl AsRef<str> = Loc::test_id(identifier.as_ref()) }
         Some: some {
             expr: Self = Box::new(expr),
         }
@@ -182,15 +183,15 @@ impl Expr {
             thn: Block,
             els: Block,
         }
-        MemoryAccess: memory_access { identifier: impl Into<String> = identifier.into() }
-        InputAccess: input_access { identifier: impl Into<String> = identifier.into() }
+        MemoryAccess: memory_access { identifier: impl Into<Ident> = identifier.into() }
+        InputAccess: input_access { identifier: impl Into<Ident> = identifier.into() }
         Structure: structure {
-            name: impl Into<String> = name.into(),
-            fields: Vec<(String, Self)>
+            name: impl Into<Ident> = name.into(),
+            fields: Vec<(Ident, Self)>
         }
         Enumeration: enumeration {
-            name: impl Into<String> = name.into(),
-            element: impl Into<String> = element.into(),
+            name: impl Into<Ident> = name.into(),
+            element: impl Into<Ident> = element.into(),
         }
         Array: array { elements: Vec<Self> }
         Tuple: tuple { elements: Vec<Self> }
@@ -200,10 +201,10 @@ impl Expr {
             arguments: Vec<Self>,
         }
         NodeCall: node_call {
-            memory_ident: impl Into<String> = memory_ident.into(),
-            node_identifier: impl Into<String> = node_identifier.into(),
-            input_name: impl Into<String> = input_name.into(),
-            input_fields: Vec<(String, Self)>,
+            memory_ident: impl Into<Ident> = memory_ident.into(),
+            node_identifier: impl Into<Ident> = node_identifier.into(),
+            input_name: impl Into<Ident> = input_name.into(),
+            input_fields: Vec<(Ident, Self)>,
         }
         FieldAccess: field_access {
             expr: Self = expr.into(),
@@ -211,7 +212,7 @@ impl Expr {
         }
         Lambda: lambda {
             is_move: bool,
-            inputs: Vec<(String, Typ)>,
+            inputs: Vec<(Ident, Typ)>,
             output: Typ,
             body: Self = body.into(),
         }
@@ -301,7 +302,6 @@ impl Expr {
         match self {
             Self::Literal { literal } => literal.into_syn(),
             Self::Identifier { identifier } => {
-                let identifier = Ident::new(&identifier, Span::call_site());
                 parse_quote! { #identifier }
             }
             Self::Some { expr } => {
@@ -385,18 +385,18 @@ impl Expr {
                 input_fields,
                 ..
             } => {
-                let ident = Ident::new(&memory_ident, Span::call_site());
+                let ident = memory_ident;
                 let receiver: syn::ExprField = parse_quote! { self.#ident};
                 let input_fields: Vec<syn::FieldValue> = input_fields
                     .into_iter()
                     .map(|(name, expr)| {
-                        let id = Ident::new(&name, Span::call_site());
+                        let id = name;
                         let expr = expr.into_syn(crates);
                         parse_quote! { #id : #expr }
                     })
                     .collect();
 
-                let input_name = Ident::new(&input_name, Span::call_site());
+                let input_name = input_name;
                 let argument: syn::ExprStruct = parse_quote! { #input_name { #(#input_fields),* }};
 
                 syn::Expr::MethodCall(parse_quote! { #receiver.step (#argument) })
@@ -405,7 +405,6 @@ impl Expr {
                 let expr = expr.into_syn(crates);
                 match field {
                     FieldIdentifier::Named(name) => {
-                        let name = Ident::new(&name, Span::call_site());
                         parse_quote!(#expr.#name)
                     }
                     FieldIdentifier::Unnamed(number) => {
@@ -427,7 +426,7 @@ impl Expr {
                             attrs: Vec::new(),
                             by_ref: None,
                             mutability: None,
-                            ident: Ident::new(&identifier, Span::call_site()),
+                            ident: identifier,
                             subpat: None,
                         });
                         let pattern = syn::Pat::Type(syn::PatType {
@@ -581,13 +580,13 @@ impl Expr {
 #[derive(Debug, PartialEq, Clone)]
 pub enum FieldIdentifier {
     /// Named field access.
-    Named(String),
+    Named(Ident),
     /// Unnamed field access.
     Unnamed(usize),
 }
 
 impl FieldIdentifier {
-    pub fn named(s: impl Into<String>) -> Self {
+    pub fn named(s: impl Into<Ident>) -> Self {
         Self::Named(s.into())
     }
     pub fn unnamed(n: usize) -> Self {
@@ -608,21 +607,21 @@ mod test {
 
     #[test]
     fn should_create_rust_ast_identifier_from_ir2_identifier() {
-        let expression = Expr::ident("x");
+        let expression = Expr::test_ident("x");
         let control = parse_quote! { x };
         assert_eq!(expression.into_syn(&mut Default::default()), control)
     }
 
     #[test]
     fn should_create_rust_ast_field_access_to_self_from_ir2_memory_access() {
-        let expression = Expr::memory_access("x");
+        let expression = Expr::memory_access(Loc::test_id("x"));
         let control = parse_quote! { self.last_x};
         assert_eq!(expression.into_syn(&mut Default::default()), control)
     }
 
     #[test]
     fn should_create_rust_ast_field_access_to_input_from_ir2_input_access() {
-        let expression = Expr::input_access("i");
+        let expression = Expr::input_access(Loc::test_id("i"));
         let control = parse_quote! { input.i};
         assert_eq!(expression.into_syn(&mut Default::default()), control)
     }
@@ -630,10 +629,16 @@ mod test {
     #[test]
     fn should_create_rust_ast_structure_from_ir2_structure() {
         let expression = Expr::structure(
-            "Point",
+            Loc::test_id("Point"),
             vec![
-                ("x".into(), Expr::lit(Constant::Integer(parse_quote!(1i64)))),
-                ("y".into(), Expr::lit(Constant::Integer(parse_quote!(2i64)))),
+                (
+                    Loc::test_id("x"),
+                    Expr::lit(Constant::Integer(parse_quote!(1i64))),
+                ),
+                (
+                    Loc::test_id("y"),
+                    Expr::lit(Constant::Integer(parse_quote!(2i64))),
+                ),
             ],
         );
         let control = parse_quote! { Point { x : 1i64, y : 2i64 } };
@@ -655,11 +660,11 @@ mod test {
         let expression = Expr::block(Block {
             statements: vec![
                 Stmt::Let {
-                    pattern: Pattern::ident("x"),
+                    pattern: Pattern::test_ident("x"),
                     expr: Expr::lit(Constant::Integer(parse_quote!(1i64))),
                 },
                 Stmt::ExprLast {
-                    expr: Expr::ident("x"),
+                    expr: Expr::test_ident("x"),
                 },
             ],
         });
@@ -669,8 +674,10 @@ mod test {
 
     #[test]
     fn should_create_rust_ast_function_call_from_ir2_function_call() {
-        let expression =
-            Expr::function_call(Expr::ident("foo"), vec![Expr::ident("a"), Expr::ident("b")]);
+        let expression = Expr::function_call(
+            Expr::test_ident("foo"),
+            vec![Expr::test_ident("a"), Expr::test_ident("b")],
+        );
 
         let control = parse_quote! { foo (a, b) };
         assert_eq!(expression.into_syn(&mut Default::default()), control)
@@ -678,7 +685,7 @@ mod test {
 
     #[test]
     fn should_create_rust_ast_binary_from_ir2_function_call() {
-        let expression = Expr::binop(BOp::Add, Expr::ident("a"), Expr::ident("b"));
+        let expression = Expr::binop(BOp::Add, Expr::test_ident("a"), Expr::test_ident("b"));
 
         let control = parse_quote! { a + b };
         assert_eq!(expression.into_syn(&mut Default::default()), control)
@@ -687,11 +694,11 @@ mod test {
     #[test]
     fn should_create_rust_ast_method_call_from_ir2_node_call() {
         let expression = Expr::node_call(
-            "node_state",
-            "node",
-            "NodeInput",
+            Loc::test_id("node_state"),
+            Loc::test_id("node"),
+            Loc::test_id("NodeInput"),
             vec![(
-                "i".into(),
+                Loc::test_id("i"),
                 Expr::Literal {
                     literal: Constant::Integer(parse_quote!(1i64)),
                 },
@@ -704,8 +711,10 @@ mod test {
 
     #[test]
     fn should_create_rust_ast_field_access_from_ir2_field_access() {
-        let expression =
-            Expr::field_access(Expr::ident("my_point"), FieldIdentifier::Named("x".into()));
+        let expression = Expr::field_access(
+            Expr::test_ident("my_point"),
+            FieldIdentifier::Named(Loc::test_id("x")),
+        );
 
         let control = parse_quote! { my_point.x };
         assert_eq!(expression.into_syn(&mut Default::default()), control)
@@ -715,12 +724,12 @@ mod test {
     fn should_create_rust_ast_closure_from_ir2_lambda() {
         let expression = Expr::lambda(
             true,
-            vec![("x".into(), Typ::int())],
+            vec![(Loc::test_id("x"), Typ::int())],
             Typ::int(),
             Expr::block(Block {
                 statements: vec![
-                    Stmt::let_binding(Pattern::ident("y"), Expr::ident("x")),
-                    Stmt::expression_last(Expr::ident("y")),
+                    Stmt::let_binding(Pattern::test_ident("y"), Expr::test_ident("x")),
+                    Stmt::expression_last(Expr::test_ident("y")),
                 ],
             }),
         );
@@ -732,7 +741,7 @@ mod test {
     #[test]
     fn should_create_rust_ast_if_then_else_from_ir2_if_then_else() {
         let expression = Expr::ite(
-            Expr::ident("test"),
+            Expr::test_ident("test"),
             Block::new(vec![Stmt::expression_last(Expr::lit(Constant::int(
                 parse_quote!(1i64),
             )))]),
@@ -748,15 +757,15 @@ mod test {
     #[test]
     fn should_create_rust_ast_match_from_ir2_match() {
         let expression = Expr::pat_match(
-            Expr::ident("my_color"),
+            Expr::test_ident("my_color"),
             vec![
                 (
-                    Pattern::enumeration("Color", "Blue", None),
+                    Pattern::enumeration(Loc::test_id("Color"), Loc::test_id("Blue"), None),
                     None,
                     Expr::lit(Constant::Integer(parse_quote!(1i64))),
                 ),
                 (
-                    Pattern::enumeration("Color", "Green", None),
+                    Pattern::enumeration(Loc::test_id("Color"), Loc::test_id("Green"), None),
                     None,
                     Expr::Literal {
                         literal: Constant::Integer(parse_quote!(0i64)),
@@ -772,7 +781,7 @@ mod test {
 
     #[test]
     fn should_create_rust_ast_map_operation_from_ir2_map() {
-        let expression = Expr::map(Expr::ident("a"), Expr::ident("f"));
+        let expression = Expr::map(Expr::test_ident("a"), Expr::test_ident("f"));
 
         let control = parse_quote! { a.map (f) };
         assert_eq!(expression.into_syn(&mut Default::default()), control)
@@ -781,9 +790,9 @@ mod test {
     #[test]
     fn should_create_rust_ast_fold_iterator_from_ir2_fold() {
         let expression = Expr::fold(
-            Expr::ident("a"),
+            Expr::test_ident("a"),
             Expr::lit(Constant::Integer(parse_quote!(0i64))),
-            Expr::ident("sum"),
+            Expr::test_ident("sum"),
         );
 
         let control = parse_quote! { a.into_iter().fold(0i64, sum) };
@@ -792,7 +801,7 @@ mod test {
 
     #[test]
     fn should_create_rust_ast_sort_iterator_from_ir2_sort() {
-        let expression = Expr::sort(Expr::ident("a"), Expr::ident("compare"));
+        let expression = Expr::sort(Expr::test_ident("a"), Expr::test_ident("compare"));
 
         let control = parse_quote!({
             let mut x = a.clone();
@@ -814,7 +823,7 @@ mod test {
 
     #[test]
     fn should_create_rust_ast_macro_from_ir2_zip() {
-        let expression = Expr::zip(vec![Expr::ident("a"), Expr::ident("b")]);
+        let expression = Expr::zip(vec![Expr::test_ident("a"), Expr::test_ident("b")]);
 
         let control = parse_quote!({
             let mut iter = itertools::izip!(a, b);

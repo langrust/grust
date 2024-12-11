@@ -89,7 +89,7 @@ impl Typing for contract::Term {
             contract::Kind::Constant { constant } => constant.get_typ(),
             contract::Kind::Identifier { id } => symbols.get_typ(*id).clone(),
             contract::Kind::Enumeration { enum_id, .. } => Typ::Enumeration {
-                name: Ident::new(symbols.get_name(*enum_id), Span::call_site()),
+                name: symbols.get_name(*enum_id).clone(),
                 id: *enum_id,
             },
             contract::Kind::Unary { op, term } => {
@@ -492,11 +492,14 @@ impl Pattern {
                     .collect::<Vec<TRes<()>>>()
                     .into_iter()
                     .collect::<TRes<()>>()?;
-                self.typing = Some(Typ::structure_str(symbols.get_name(*id), *id));
+                self.typing = Some(Typ::structure_str(symbols.get_name(*id).clone(), *id));
                 Ok(())
             }
             Kind::Enumeration { ref enum_id, .. } => {
-                self.typing = Some(Typ::enumeration_str(symbols.get_name(*enum_id), *enum_id));
+                self.typing = Some(Typ::enumeration_str(
+                    symbols.get_name(*enum_id).clone(),
+                    *enum_id,
+                ));
                 Ok(())
             }
             Kind::Tuple { ref mut elements } => match expected_type {
@@ -577,12 +580,8 @@ impl stmt::Pattern {
             }
             stmt::Kind::Typed { id, ref typ } => {
                 let expected_type = &symbols.get_typ(id);
-                let loc = symbols
-                    .resolve_symbol(id)
-                    .dewrap(errors)?
-                    .loc
-                    .unwrap_or_else(Loc::mixed_site);
-                typ.expect(loc, expected_type).dewrap(errors)?;
+                let sym = symbols.resolve_symbol(self.loc, id).dewrap(errors)?;
+                typ.expect(sym.loc(), expected_type).dewrap(errors)?;
                 // symbols.set_type(id, typ.clone());
                 self.typ = Some(typ.clone());
                 Ok(())
@@ -752,12 +751,12 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
 
     fn enumeration(&mut self, enum_id: usize) -> TRes<Typ> {
         Ok(Typ::Enumeration {
-            name: Ident::new(self.table.get_name(enum_id), Span::call_site()),
+            name: self.table.get_name(enum_id).clone(),
             id: enum_id,
         })
     }
 
-    fn field_access(&mut self, expr: &mut E, field: &str) -> TRes<Typ> {
+    fn field_access(&mut self, expr: &mut E, field: &Ident) -> TRes<Typ> {
         expr.typ_check(self.table, self.errors)?;
 
         match expr.get_typ().unwrap() {
@@ -779,8 +778,8 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
                         if let Some(field_type) = option_field_type {
                             Ok(field_type)
                         } else {
-                            bad!(self.errors, @self.loc =>
-                                ErrorKind::unknown_field(name.to_string(), field)
+                            bad!(self.errors, @field.loc() =>
+                                ErrorKind::unknown_field(name.to_string(), field.to_string())
                             )
                         }
                     }
@@ -988,7 +987,7 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
             .collect::<TRes<()>>()?;
 
         Ok(Typ::Structure {
-            name: Ident::new(self.table.get_name(id), Span::call_site()),
+            name: self.table.get_name(id).clone(),
             id,
         })
     }

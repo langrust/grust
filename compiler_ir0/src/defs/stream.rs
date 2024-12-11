@@ -226,10 +226,8 @@ impl Expr {
             stream::Expr::Identifier(ident) => {
                 // check id exists
                 let id = table
-                    .get_identifier_id(&ident.to_string(), false, ident.span(), &mut vec![])
-                    .or_else(|_| {
-                        table.get_function_id(&ident.to_string(), false, ident.span(), errors)
-                    })?;
+                    .get_identifier_id(ident, false, &mut vec![])
+                    .or_else(|_| table.get_function_id(ident, false, errors))?;
                 // check it is a function or and operator
                 if table.is_function(id) {
                     Ok(())

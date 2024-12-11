@@ -12,7 +12,11 @@ pub struct Instantiation<E> {
     pub expr: E,
     pub semi_token: Token![;],
 }
-
+impl<E> HasLoc for Instantiation<E> {
+    fn loc(&self) -> Loc {
+        self.pattern.loc().join(self.semi_token.span)
+    }
+}
 mk_new! { impl{E} Instantiation<E> =>
     new {
         pattern: Pattern,
@@ -52,7 +56,11 @@ pub struct Match {
     /// The different matching cases.
     pub arms: syn::Punctuated<Arm, Token![,]>,
 }
-
+impl HasLoc for Match {
+    fn loc(&self) -> Loc {
+        Loc::from(self.match_token.span).join(self.brace_token.span.join())
+    }
+}
 mk_new! { impl Match =>
     new {
         match_token: Token![match],
@@ -67,6 +75,15 @@ pub enum Eq {
     LocalDef(LetDecl<stream::Expr>),
     OutputDef(Instantiation<stream::Expr>),
     Match(Match),
+}
+impl HasLoc for Eq {
+    fn loc(&self) -> Loc {
+        match self {
+            Self::LocalDef(ld) => ld.loc(),
+            Self::OutputDef(od) => od.loc(),
+            Self::Match(m) => m.loc(),
+        }
+    }
 }
 mk_new! { impl Eq =>
     LocalDef: local_def(e: LetDecl<stream::Expr> = e)
@@ -194,6 +211,11 @@ pub struct MatchWhen {
     /// The different event cases.
     pub arms: Vec<EventArmWhen>,
 }
+impl HasLoc for MatchWhen {
+    fn loc(&self) -> Loc {
+        Loc::from(self.when_token.span).join(self.brace_token.span.join())
+    }
+}
 mk_new! { impl MatchWhen =>
     new {
         when_token: keyword::when,
@@ -209,6 +231,16 @@ pub enum ReactEq {
     OutputDef(Instantiation<stream::ReactExpr>),
     MatchWhen(MatchWhen),
     Match(Match),
+}
+impl HasLoc for ReactEq {
+    fn loc(&self) -> Loc {
+        match self {
+            Self::LocalDef(ld) => ld.loc(),
+            Self::OutputDef(od) => od.loc(),
+            Self::MatchWhen(mw) => mw.loc(),
+            Self::Match(m) => m.loc(),
+        }
+    }
 }
 mk_new! { impl ReactEq =>
     LocalDef: local_def(e: LetDecl<stream::ReactExpr> = e)

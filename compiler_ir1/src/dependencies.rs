@@ -838,7 +838,9 @@ impl File {
         let sorted_nodes = toposort(&nodes_graph, None)
             .map_err(|component| {
                 error!(@self.loc =>
-                    ErrorKind::node_non_causal(symbol_table.get_name(component.node_id()).clone())
+                    ErrorKind::node_non_causal(
+                        symbol_table.get_name(component.node_id()).to_string()
+                    )
                 )
             })
             .dewrap(errors)?;
@@ -933,7 +935,7 @@ impl ir1::stream::Stmt {
             // if processing: error
             Color::Grey => {
                 let name = ctx.symbol_table.get_name(signal).clone();
-                bad!(ctx.errors, @self.loc => ErrorKind::signal_non_causal(name))
+                bad!(ctx.errors, @self.loc => ErrorKind::signal_non_causal(name.to_string()))
             }
             // if processed: nothing to do
             Color::Black => Ok(()),

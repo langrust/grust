@@ -8,7 +8,7 @@ pub enum Pattern {
     /// Identifier pattern, gives a name to the matching expression.
     Identifier {
         /// Identifier.
-        name: String,
+        name: Ident,
     },
     /// Literal pattern, matches the given literal (constant).
     Literal {
@@ -25,16 +25,16 @@ pub enum Pattern {
     /// Structure pattern that matches the structure and its fields.
     Structure {
         /// The structure id.
-        name: String,
+        name: Ident,
         /// The structure fields with the corresponding patterns to match.
-        fields: Vec<(String, Pattern)>,
+        fields: Vec<(Ident, Pattern)>,
     },
     /// Enumeration pattern.
     Enumeration {
         /// The enumeration type name.
-        enum_name: String,
+        enum_name: Ident,
         /// The element name.
-        elem_name: String,
+        elem_name: Ident,
         /// The optional element of the enumeration.
         element: Option<Box<Pattern>>,
     },
@@ -62,19 +62,20 @@ pub enum Pattern {
 }
 
 mk_new! { impl Pattern =>
-    Identifier: ident { name: impl Into<String> = name.into() }
+    Identifier: ident { name: impl Into<Ident> = name.into() }
+    Identifier: test_ident { name: impl AsRef<str> = Loc::test_id(name.as_ref()) }
     Literal: literal {literal: Constant }
     Typed: typed {
         pattern: Self = Box::new(pattern),
         typ: Typ
     }
     Structure: structure {
-        name: impl Into<String> = name.into(),
-        fields: Vec<(String, Self)>
+        name: impl Into<Ident> = name.into(),
+        fields: Vec<(Ident, Self)>
     }
     Enumeration: enumeration {
-        enum_name: impl Into<String> = enum_name.into(),
-        elem_name: impl Into<String> = elem_name.into(),
+        enum_name: impl Into<Ident> = enum_name.into(),
+        elem_name: impl Into<Ident> = elem_name.into(),
         element: Option<Self> = element.map(Box::new),
     }
     Tuple: tuple { elements: Vec<Self> }
@@ -104,7 +105,7 @@ impl Pattern {
                 attrs: vec![],
                 by_ref: None,
                 mutability: None,
-                ident: Ident::new(&name, Span::call_site()),
+                ident: name.clone(),
                 subpat: None,
             }),
             Pattern::Default => Pat::Wild(PatWild {
@@ -136,7 +137,7 @@ impl Pattern {
                     .into_iter()
                     .map(|(name, pattern)| FieldPat {
                         attrs: vec![],
-                        member: Member::Named(Ident::new(&name, Span::call_site())),
+                        member: Member::Named(name.clone()),
                         colon_token: Some(Default::default()),
                         pat: Box::new(pattern.into_syn()),
                     })
@@ -149,8 +150,8 @@ impl Pattern {
                 elem_name,
                 element,
             } => {
-                let ty = Ident::new(&enum_name, Span::call_site());
-                let cons = Ident::new(&elem_name, Span::call_site());
+                let ty = enum_name.clone();
+                let cons = elem_name.clone();
                 if let Some(pattern) = element {
                     let inner = pattern.into_syn();
                     parse_quote! { #ty::#cons(#inner) }
@@ -208,7 +209,7 @@ mod test {
 
     #[test]
     fn should_create_a_rust_ast_ident_pattern_owned_and_immutable_from_a_ir2_ident_pattern() {
-        let pattern = Pattern::ident("x");
+        let pattern = Pattern::test_ident("x");
 
         let control = parse_quote! { x };
         assert_eq!(pattern.into_syn(), control)
@@ -217,10 +218,10 @@ mod test {
     #[test]
     fn should_create_a_rust_ast_structure_pattern_from_a_ir2_structure_pattern() {
         let pattern = Pattern::Structure {
-            name: "Point".into(),
+            name: Loc::test_id("Point"),
             fields: vec![
-                ("x".into(), Pattern::Default),
-                ("y".into(), Pattern::ident("y")),
+                (Loc::test_id("x"), Pattern::Default),
+                (Loc::test_id("y"), Pattern::test_ident("y")),
             ],
         };
 

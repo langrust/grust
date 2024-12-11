@@ -10,8 +10,9 @@
 /// let control = format!("MyNodeO");
 /// assert_eq!(string, control)
 /// ```
-pub fn to_camel_case(s: &str) -> String {
-    s.split('_')
+pub fn to_camel_case(s: impl AsRef<str>) -> String {
+    s.as_ref()
+        .split('_')
         .map(|word| {
             let mut chars = word.chars();
             if let Some(a) = chars.next() {

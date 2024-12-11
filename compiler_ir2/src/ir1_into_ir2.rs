@@ -100,7 +100,7 @@ impl Ir1IntoIr2<&'_ SymbolTable> for ir1::ComponentDefinition {
         use state_machine::*;
 
         // 'init' method
-        let init = Init::new(name, state_elements_init, invariant_initialization);
+        let init = Init::new(name.clone(), state_elements_init, invariant_initialization);
 
         // 'step' method
         let step = {
@@ -113,7 +113,7 @@ impl Ir1IntoIr2<&'_ SymbolTable> for ir1::ComponentDefinition {
                 ),
             };
             Step::new(
-                name,
+                name.clone(),
                 output_type,
                 body,
                 state_elements_step,
@@ -139,7 +139,7 @@ impl Ir1IntoIr2<&'_ SymbolTable> for ir1::ComponentDefinition {
             init,
         };
 
-        StateMachine::new(name, input, state)
+        StateMachine::new(name.clone(), input, state)
     }
 }
 
@@ -151,7 +151,10 @@ impl Ir1IntoIr2<&'_ SymbolTable> for ir1::ComponentImport {
         let name = symbol_table.get_name(self.id).clone();
         let path = self.path;
 
-        Import { name, path }
+        Import {
+            name: name.clone(),
+            path,
+        }
     }
 }
 
@@ -181,10 +184,10 @@ pub fn memory_state_elements(
     ) in mem.buffers.into_iter().sorted_by_key(|(id, _)| id.clone())
     {
         let scope = symbol_table.get_scope(id);
-        let mem_ident = format!("last_{}", ident);
-        elements.push(StateElmInfo::buffer(&mem_ident, typing));
+        let mem_ident = Ident::new(&format!("last_{}", ident), ident.loc().into());
+        elements.push(StateElmInfo::buffer(mem_ident.clone(), typing));
         inits.push(StateElmInit::buffer(
-            &mem_ident,
+            mem_ident.clone(),
             init.into_ir2(symbol_table),
         ));
         steps.push(StateElmStep::new(
@@ -202,8 +205,14 @@ pub fn memory_state_elements(
         .for_each(|(memory_id, CalledNode { node_id, .. })| {
             let memory_name = symbol_table.get_name(memory_id);
             let node_name = symbol_table.get_name(node_id);
-            elements.push(StateElmInfo::called_node(memory_name, node_name));
-            inits.push(StateElmInit::called_node(memory_name, node_name));
+            elements.push(StateElmInfo::called_node(
+                memory_name.clone(),
+                node_name.clone(),
+            ));
+            inits.push(StateElmInit::called_node(
+                memory_name.clone(),
+                node_name.clone(),
+            ));
         });
 
     (elements, inits, steps)
@@ -247,10 +256,12 @@ mod term {
                 Kind::Identifier { id } => {
                     let name = symbol_table.get_name(id);
                     match symbol_table.get_scope(id) {
-                        Scope::Input => contract::Term::input(name),
+                        Scope::Input => contract::Term::input(name.clone()),
                         // todo: this will broke for components with multiple outputs
-                        Scope::Output => contract::Term::ident("result"),
-                        Scope::Local => contract::Term::ident(name),
+                        Scope::Output => {
+                            contract::Term::ident(Ident::new("result", name.loc().into()))
+                        }
+                        Scope::Local => contract::Term::ident(name.clone()),
                         Scope::VeryLocal => unreachable!("you should not do that with this ident"),
                     }
                 }
@@ -272,16 +283,16 @@ mod term {
                     let name = symbol_table.get_name(id);
                     let ty = symbol_table.get_typ(id).clone();
                     let term = term.into_ir2(symbol_table);
-                    contract::Term::forall(name, ty, term)
+                    contract::Term::forall(name.clone(), ty, term)
                 }
                 Kind::Implication { left, right } => contract::Term::implication(
                     left.into_ir2(symbol_table),
                     right.into_ir2(symbol_table),
                 ),
                 Kind::PresentEvent { event_id, pattern } => match symbol_table.get_typ(event_id) {
-                    Typ::SMEvent { .. } => {
-                        contract::Term::some(contract::Term::ident(symbol_table.get_name(pattern)))
-                    }
+                    Typ::SMEvent { .. } => contract::Term::some(contract::Term::ident(
+                        symbol_table.get_name(pattern).clone(),
+                    )),
                     _ => unreachable!(),
                 },
             }
@@ -459,7 +470,7 @@ where
         match self {
             Self::Identifier { id, .. } => OtherOp::IfThenElse
                 .to_string()
-                .eq(symbol_table.get_name(*id)),
+                .eq(&symbol_table.get_name(*id).to_string()),
             _ => false,
         }
     }
@@ -677,10 +688,16 @@ impl Ir1IntoIr2<&'_ SymbolTable> for ir1::stream::Expr {
                         )
                     })
                     .collect::<Vec<_>>();
+                let input_name = {
+                    Ident::new(
+                        &to_camel_case(&format!("{}Input", name.to_string())),
+                        name.span(),
+                    )
+                };
                 ir2::Expr::NodeCall {
                     memory_ident,
-                    node_identifier: name.clone(),
-                    input_name: to_camel_case(&format!("{name}Input")),
+                    node_identifier: name,
+                    input_name,
                     input_fields,
                 }
             }

@@ -12,27 +12,27 @@ pub enum StateElm<T> {
     /// A buffer identifier and some data.
     Buffer {
         /// Identifier of the buffer.
-        ident: String,
+        ident: Ident,
         /// Buffer data.
         data: T,
     },
     /// A node.
     CalledNode {
         /// Identifier of the memory storage.
-        memory_ident: String,
+        memory_ident: Ident,
         /// Name of the node called.
-        node_name: String,
+        node_name: Ident,
     },
 }
 
 mk_new! { impl{T} StateElm<T> =>
     Buffer : buffer {
-        ident : impl Into<String> = ident.into(),
+        ident : impl Into<Ident> = ident.into(),
         data : T,
     }
     CalledNode : called_node {
-        memory_ident : impl Into<String> = memory_ident.into(),
-        node_name : impl Into<String> = node_name.into(),
+        memory_ident : impl Into<Ident> = memory_ident.into(),
+        node_name : impl Into<Ident> = node_name.into(),
     }
 }
 
@@ -44,14 +44,14 @@ pub type StateElmInit = StateElm<Expr>;
 #[derive(Debug, PartialEq)]
 pub struct InputElm {
     /// The name of the input.
-    pub identifier: String,
+    pub identifier: Ident,
     /// The type of the input.
     pub typ: Typ,
 }
 
 mk_new! { impl InputElm =>
     new {
-        identifier : impl Into<String> = identifier.into(),
+        identifier : impl Into<Ident> = identifier.into(),
         typ : Typ,
     }
 }
@@ -60,14 +60,14 @@ mk_new! { impl InputElm =>
 #[derive(Debug, PartialEq)]
 pub struct Input {
     /// The node's name.
-    pub node_name: String,
+    pub node_name: Ident,
     /// The input's elements.
     pub elements: Vec<InputElm>,
 }
 
 mk_new! { impl Input =>
     new {
-        node_name : impl Into<String> = node_name.into(),
+        node_name : impl Into<Ident> = node_name.into(),
         elements : Vec<InputElm>,
     }
 }
@@ -94,7 +94,7 @@ impl Input {
 #[derive(Debug, PartialEq)]
 pub struct Init {
     /// The node's name.
-    pub node_name: String,
+    pub node_name: Ident,
     /// The initialization of the node's state.
     pub state_init: Vec<StateElmInit>,
     /// The invariant initialization to prove.
@@ -103,7 +103,7 @@ pub struct Init {
 
 mk_new! { impl Init =>
     new {
-        node_name : impl Into<String> = node_name.into(),
+        node_name : impl Into<Ident> = node_name.into(),
         state_init : Vec<StateElmInit>,
         invariant_initialization : Vec<Term>,
     }
@@ -143,7 +143,7 @@ impl Init {
                         memory_ident,
                         node_name,
                     } => {
-                        let id = Ident::new(&memory_ident, Span::call_site());
+                        let id = memory_ident;
                         let called_state_ty = Ident::new(
                             &to_camel_case(&format!("{}State", node_name)),
                             Span::call_site(),
@@ -183,7 +183,7 @@ impl Init {
 #[derive(Debug, PartialEq)]
 pub struct Step {
     /// The node's name.
-    pub node_name: String,
+    pub node_name: Ident,
     /// The output type.
     pub output_type: Typ,
     /// The body of the step function.
@@ -198,7 +198,7 @@ pub struct Step {
 
 mk_new! { impl Step =>
     new {
-        node_name: impl Into<String> = node_name.into(),
+        node_name: impl Into<Ident> = node_name.into(),
         output_type: Typ,
         body: para::Stmts,
         state_elements_step: Vec<StateElmStep>,
@@ -291,14 +291,14 @@ impl Step {
 #[derive(Debug, PartialEq)]
 pub struct StateElmStep {
     /// The name of the memory storage.
-    pub identifier: String,
+    pub identifier: Ident,
     /// The expression that will update the memory.
     pub expression: Expr,
 }
 
 mk_new! { impl StateElmStep =>
     new {
-        identifier: impl Into<String> = identifier.into(),
+        identifier: impl Into<Ident> = identifier.into(),
         expression: Expr,
     }
 }
@@ -307,7 +307,7 @@ mk_new! { impl StateElmStep =>
 #[derive(Debug, PartialEq)]
 pub struct State {
     /// The node's name.
-    pub node_name: String,
+    pub node_name: Ident,
     /// The state's elements.
     pub elements: Vec<StateElmInfo>,
     /// The init function.
@@ -317,7 +317,7 @@ pub struct State {
 }
 
 mk_new! { impl State => new {
-    node_name : impl Into<String> = node_name.into(),
+    node_name : impl Into<Ident> = node_name.into(),
     elements : Vec<StateElmInfo>,
     init : Init,
     step : Step,
@@ -369,7 +369,7 @@ impl State {
 #[derive(Debug, PartialEq)]
 pub struct StateMachine {
     /// The node's name.
-    pub name: String,
+    pub name: Ident,
     /// The input structure.
     pub input: Input,
     /// The state structure.
@@ -377,7 +377,7 @@ pub struct StateMachine {
 }
 
 mk_new! { impl StateMachine => new {
-    name : impl Into<String> = name.into(),
+    name : impl Into<Ident> = name.into(),
     input : Input,
     state : State,
 } }
@@ -405,10 +405,16 @@ mod test {
     #[test]
     fn should_create_rust_ast_associated_method_from_ir2_node_init() {
         let init = Init::new(
-            format!("Node"),
+            Loc::test_id("Node"),
             vec![
-                StateElmInit::buffer("mem_i", Expr::lit(Constant::int(parse_quote!(0i64)))),
-                StateElmInit::called_node("called_node_state", "CalledNode"),
+                StateElmInit::buffer(
+                    Loc::test_id("mem_i"),
+                    Expr::lit(Constant::int(parse_quote!(0i64))),
+                ),
+                StateElmInit::called_node(
+                    Loc::test_id("called_node_state"),
+                    Loc::test_id("CalledNode"),
+                ),
             ],
             vec![],
         );
@@ -428,35 +434,41 @@ mod test {
     fn should_create_rust_ast_associated_method_from_ir2_node_step() {
         let init = Step {
             contract: Default::default(),
-            node_name: format!("Node"),
+            node_name: Loc::test_id("Node"),
             output_type: Typ::int(),
             body: para::Stmts::easy_seq(vec![
                 (
-                    "o",
-                    Expr::field_access(Expr::ident("self"), FieldIdentifier::named("mem_i")),
+                    Loc::test_id("o"),
+                    Expr::field_access(
+                        Expr::test_ident("self"),
+                        FieldIdentifier::named(Loc::test_id("mem_i")),
+                    ),
                 ),
                 (
-                    "y",
+                    Loc::test_id("y"),
                     Expr::node_call(
-                        "called_node_state",
-                        "called_node",
-                        "CalledNodeInput",
+                        Loc::test_id("called_node_state"),
+                        Loc::test_id("called_node"),
+                        Loc::test_id("CalledNodeInput"),
                         vec![],
                     ),
                 ),
             ]),
             state_elements_step: vec![
                 StateElmStep::new(
-                    "mem_i",
+                    Loc::test_id("mem_i"),
                     Expr::binop(
                         BOp::Add,
-                        Expr::ident("o"),
+                        Expr::test_ident("o"),
                         Expr::lit(Constant::Integer(parse_quote!(1i64))),
                     ),
                 ),
-                StateElmStep::new("called_node_state", Expr::ident("new_called_node_state")),
+                StateElmStep::new(
+                    Loc::test_id("called_node_state"),
+                    Expr::test_ident("new_called_node_state"),
+                ),
             ],
-            output: Expr::binop(BOp::Add, Expr::ident("o"), Expr::ident("y")),
+            output: Expr::binop(BOp::Add, Expr::test_ident("o"), Expr::test_ident("y")),
         };
 
         let control = parse_quote! {
@@ -474,9 +486,9 @@ mod test {
     #[test]
     fn should_create_rust_ast_structure_from_ir2_node_input() {
         let input = Input {
-            node_name: format!("Node"),
+            node_name: Loc::test_id("Node"),
             elements: vec![InputElm {
-                identifier: format!("i"),
+                identifier: Loc::test_id("i"),
                 typ: Typ::int(),
             }],
         };

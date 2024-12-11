@@ -68,6 +68,11 @@ pub struct Expr {
     /// Flow expression location.
     pub loc: Loc,
 }
+impl HasLoc for Expr {
+    fn loc(&self) -> Loc {
+        self.loc
+    }
+}
 impl Expr {
     pub fn get_type(&self) -> Option<&Typ> {
         self.typ.as_ref()
@@ -179,7 +184,7 @@ impl Expr {
                 let mut statements = self.normal_form(identifier_creator, symbol_table);
 
                 // create fresh identifier for the new statement
-                let fresh_name = identifier_creator.fresh_identifier("", "x");
+                let fresh_name = identifier_creator.fresh_identifier(self.loc(), "", "x");
                 let typ = self.get_type().unwrap();
                 let kind = match typ {
                     Typ::Signal { .. } => ir0::interface::FlowKind::Signal(Default::default()),

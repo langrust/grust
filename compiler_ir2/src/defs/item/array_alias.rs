@@ -6,7 +6,7 @@ prelude! {}
 #[derive(Debug, PartialEq)]
 pub struct ArrayAlias {
     /// The array's name.
-    pub name: String,
+    pub name: Ident,
     /// The array's type.
     pub array_type: Typ,
     /// The array's size.
@@ -15,7 +15,7 @@ pub struct ArrayAlias {
 
 mk_new! { impl ArrayAlias =>
     new {
-        name: impl Into<String> = name.into(),
+        name: impl Into<Ident> = name.into(),
         array_type: Typ,
         size: usize,
     }
@@ -28,7 +28,7 @@ impl ArrayAlias {
             attrs: Default::default(),
             vis: syn::Visibility::Public(Default::default()),
             type_token: Default::default(),
-            ident: Ident::new(&self.name, Span::call_site()),
+            ident: self.name,
             generics: Default::default(),
             eq_token: Default::default(),
             ty: Box::new(syn::Type::Array(syn::TypeArray {
@@ -49,7 +49,7 @@ mod test {
     #[test]
     fn should_create_rust_ast_type_alias_from_ir2_array_alias() {
         let array_alias = ArrayAlias {
-            name: "Matrix5x5".into(),
+            name: Loc::test_id("Matrix5x5"),
             array_type: Typ::array(Typ::int(), 5),
             size: 5,
         };

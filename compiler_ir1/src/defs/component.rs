@@ -86,7 +86,7 @@ impl Component {
         let res = graph::toposort(&subgraph, None);
         if let Err(signal) = res {
             let name = symbol_table.get_name(signal.node_id());
-            bad!( errors, @self.get_location() => ErrorKind::signal_non_causal(name) )
+            bad!( errors, @self.get_location() => ErrorKind::signal_non_causal(name.to_string()) )
         }
 
         Ok(())
@@ -327,7 +327,7 @@ impl ComponentDefinition {
     }
 
     /// Return vector of unitary node's signals name.
-    pub fn get_signals_names(&self, symbol_table: &SymbolTable) -> Vec<String> {
+    pub fn get_signals_names(&self, symbol_table: &SymbolTable) -> Vec<Ident> {
         self.statements
             .iter()
             .flat_map(|statement| statement.get_identifiers())

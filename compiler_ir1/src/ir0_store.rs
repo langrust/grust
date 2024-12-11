@@ -12,12 +12,11 @@ mod component {
     impl Ir0Store for Component {
         /// Store node's signals in symbol table.
         fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
-            let location = Loc::mixed_site();
-            let ctx = &mut ir1::ctx::WithLoc::new(location, symbol_table, errors);
+            let loc = self.loc();
+            let ctx = &mut ir1::ctx::WithLoc::new(loc, symbol_table, errors);
 
             ctx.symbols.local();
 
-            let name = self.ident.to_string();
             let period = self
                 .period
                 .as_ref()
@@ -38,14 +37,12 @@ mod component {
                          right: typ,
                          ..
                      }| {
-                        let name = ident.to_string();
                         let typ = typ.clone().into_ir1(ctx)?;
                         let id = ctx.symbols.insert_signal(
-                            name,
+                            ident.clone(),
                             Scope::Input,
                             Some(typ),
                             true,
-                            location.clone(),
                             ctx.errors,
                         )?;
                         Ok(id)
@@ -63,17 +60,15 @@ mod component {
                          right: typ,
                          ..
                      }| {
-                        let name = ident.to_string();
                         let typ = typ.clone().into_ir1(ctx)?;
                         let id = ctx.symbols.insert_signal(
-                            name.clone(),
+                            ident.clone(),
                             Scope::Output,
                             Some(typ),
                             true,
-                            ctx.loc.clone(),
                             ctx.errors,
                         )?;
-                        Ok((name, id))
+                        Ok((self.ident.clone(), id))
                     },
                 )
                 .collect::<TRes<Vec<_>>>()?;
@@ -91,14 +86,13 @@ mod component {
             ctx.symbols.global();
 
             let _ = ctx.symbols.insert_node(
-                name,
+                self.ident.clone(),
                 false,
                 inputs,
                 eventful,
                 outputs,
                 locals,
                 period,
-                ctx.loc.clone(),
                 ctx.errors,
             )?;
 
@@ -109,12 +103,11 @@ mod component {
     impl Ir0Store for ComponentImport {
         /// Store node's signals in symbol table.
         fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
-            let location = Loc::mixed_site();
-            let ctx = &mut ir1::ctx::WithLoc::new(location, symbol_table, errors);
+            let loc = self.loc();
+            let ctx = &mut ir1::ctx::WithLoc::new(loc, symbol_table, errors);
             ctx.symbols.local();
 
             let last = self.path.clone().segments.pop().unwrap().into_value();
-            let name = last.ident.to_string();
             assert!(last.arguments.is_none());
 
             let period = self
@@ -138,14 +131,12 @@ mod component {
                          right: typ,
                          ..
                      }| {
-                        let name = ident.to_string();
                         let typ = typ.clone().into_ir1(ctx)?;
                         let id = ctx.symbols.insert_signal(
-                            name,
+                            ident.clone(),
                             Scope::Input,
                             Some(typ),
                             true,
-                            location.clone(),
                             ctx.errors,
                         )?;
                         Ok(id)
@@ -163,17 +154,15 @@ mod component {
                          right: typ,
                          ..
                      }| {
-                        let name = ident.to_string();
                         let typ = typ.clone().into_ir1(ctx)?;
                         let id = ctx.symbols.insert_signal(
-                            name.clone(),
+                            ident.clone(),
                             Scope::Output,
                             Some(typ),
                             true,
-                            location.clone(),
                             ctx.errors,
                         )?;
-                        Ok((name, id))
+                        Ok((last.ident.clone(), id))
                     },
                 )
                 .collect::<TRes<Vec<_>>>()?;
@@ -183,7 +172,14 @@ mod component {
             symbol_table.global();
 
             let _ = symbol_table.insert_node(
-                name, false, inputs, eventful, outputs, locals, period, location, errors,
+                last.ident.clone(),
+                false,
+                inputs,
+                eventful,
+                outputs,
+                locals,
+                period,
+                errors,
             )?;
 
             Ok(())
@@ -208,7 +204,7 @@ pub trait Ir0StoreSignals {
     fn store_signals(
         &self,
         store_outputs: bool,
-        signals: &mut HashMap<String, usize>,
+        signals: &mut HashMap<Ident, usize>,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
     ) -> TRes<()>;
@@ -228,7 +224,7 @@ pub trait Ir0StoreSignals {
     /// the algorithm insert in the `signals` map [ a -> id_a ] and [ b -> id_b ].
     fn get_signals(
         &self,
-        signals: &mut HashMap<String, ir0::stmt::Pattern>,
+        signals: &mut HashMap<Ident, ir0::stmt::Pattern>,
         symbol_table: &SymbolTable,
         errors: &mut Vec<Error>,
     ) -> TRes<()>;
@@ -241,7 +237,7 @@ mod equation {
         fn store_signals(
             &self,
             store_outputs: bool,
-            signals: &mut HashMap<String, usize>,
+            signals: &mut HashMap<Ident, usize>,
             symbol_table: &mut SymbolTable,
             errors: &mut Vec<Error>,
         ) -> TRes<()> {
@@ -269,7 +265,7 @@ mod equation {
 
         fn get_signals(
             &self,
-            signals: &mut HashMap<String, ir0::stmt::Pattern>,
+            signals: &mut HashMap<Ident, ir0::stmt::Pattern>,
             symbol_table: &SymbolTable,
             errors: &mut Vec<Error>,
         ) -> TRes<()> {
@@ -297,7 +293,7 @@ mod equation {
         fn store_signals(
             &self,
             store_outputs: bool,
-            signals: &mut HashMap<String, usize>,
+            signals: &mut HashMap<Ident, usize>,
             symbol_table: &mut SymbolTable,
             errors: &mut Vec<Error>,
         ) -> TRes<()> {
@@ -347,13 +343,9 @@ mod equation {
                         if signals.contains_key(&k) {
                             // todo: delete the symbol
                         } else {
+                            let loc = k.loc();
                             signals.insert(k, v);
-                            symbol_table.put_back_in_context(
-                                v,
-                                false,
-                                Loc::mixed_site(),
-                                errors,
-                            )?;
+                            symbol_table.put_back_in_context(v, false, loc, errors)?;
                         }
                     }
                     Ok(())
@@ -363,7 +355,7 @@ mod equation {
 
         fn get_signals(
             &self,
-            signals: &mut HashMap<String, ir0::stmt::Pattern>,
+            signals: &mut HashMap<Ident, ir0::stmt::Pattern>,
             symbol_table: &SymbolTable,
             errors: &mut Vec<Error>,
         ) -> TRes<()> {
@@ -420,8 +412,8 @@ impl Ir0Store for Ast {
 
 impl Ir0Store for ir0::Function {
     fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
-        let location = Loc::mixed_site();
-        let ctx = &mut ir1::ctx::WithLoc::new(location, symbol_table, errors);
+        let loc = self.loc();
+        let ctx = &mut ir1::ctx::WithLoc::new(loc, symbol_table, errors);
         ctx.symbols.local();
 
         let inputs = self
@@ -433,13 +425,11 @@ impl Ir0Store for ir0::Function {
                      right: typ,
                      ..
                  }| {
-                    let name = ident.to_string();
                     let typ = typ.clone().into_ir1(ctx)?;
                     let id = ctx.symbols.insert_identifier(
-                        name.clone(),
+                        ident.clone(),
                         Some(typ),
                         true,
-                        location.clone(),
                         ctx.errors,
                     )?;
                     Ok(id)
@@ -449,14 +439,9 @@ impl Ir0Store for ir0::Function {
 
         ctx.symbols.global();
 
-        let _ = ctx.symbols.insert_function(
-            self.ident.to_string(),
-            inputs,
-            None,
-            false,
-            ctx.loc.clone(),
-            ctx.errors,
-        )?;
+        let _ = ctx
+            .symbols
+            .insert_function(self.ident.clone(), inputs, None, false, ctx.errors)?;
 
         Ok(())
     }
@@ -467,13 +452,13 @@ pub trait Ir0StorePattern: Sized {
         &self,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> TRes<Vec<(String, usize)>>;
+    ) -> TRes<Vec<(Ident, usize)>>;
 
     fn get_signals(
         &self,
         symbol_table: &SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> TRes<Vec<(String, Self)>>;
+    ) -> TRes<Vec<(Ident, Self)>>;
 }
 
 mod expr_pattern {
@@ -486,9 +471,7 @@ mod expr_pattern {
             &self,
             symbol_table: &mut SymbolTable,
             errors: &mut Vec<Error>,
-        ) -> TRes<Vec<(String, usize)>> {
-            let location = Loc::mixed_site();
-
+        ) -> TRes<Vec<(Ident, usize)>> {
             match self {
                 Pattern::Identifier(name) => {
                     let id = symbol_table.insert_signal(
@@ -496,12 +479,11 @@ mod expr_pattern {
                         Scope::VeryLocal,
                         None,
                         true,
-                        location.clone(),
                         errors,
                     )?;
                     Ok(vec![(name.clone(), id)])
                 }
-                Pattern::Tuple(PatTuple { elements }) => Ok(elements
+                Pattern::Tuple(PatTuple { elements, .. }) => Ok(elements
                     .iter()
                     .map(|pattern| pattern.store(symbol_table, errors))
                     .collect::<TRes<Vec<_>>>()?
@@ -518,7 +500,6 @@ mod expr_pattern {
                                 field.clone(),
                                 None,
                                 true,
-                                location.clone(),
                                 errors,
                             )?;
                             Ok(vec![(field.clone(), id)])
@@ -536,10 +517,10 @@ mod expr_pattern {
             &self,
             symbol_table: &SymbolTable,
             errors: &mut Vec<Error>,
-        ) -> TRes<Vec<(String, Pattern)>> {
+        ) -> TRes<Vec<(Ident, Pattern)>> {
             match self {
                 Pattern::Identifier(name) => Ok(vec![(name.clone(), self.clone())]),
-                Pattern::Tuple(PatTuple { elements }) => Ok(elements
+                Pattern::Tuple(PatTuple { elements, .. }) => Ok(elements
                     .iter()
                     .map(|pattern| pattern.get_signals(symbol_table, errors))
                     .collect::<TRes<Vec<_>>>()?
@@ -552,7 +533,7 @@ mod expr_pattern {
                         if let Some(pattern) = optional_pattern {
                             pattern.get_signals(symbol_table, errors)
                         } else {
-                            Ok(vec![(field.clone(), Pattern::ident(field))])
+                            Ok(vec![(field.clone(), Pattern::ident(field.clone()))])
                         }
                     })
                     .collect::<TRes<Vec<_>>>()?
@@ -571,13 +552,13 @@ pub trait Ir0StoreStmtPattern: Sized {
         is_declaration: bool,
         symbol_table: &mut SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> TRes<Vec<(String, usize)>>;
+    ) -> TRes<Vec<(Ident, usize)>>;
 
     fn get_signals(
         &self,
         symbol_table: &SymbolTable,
         errors: &mut Vec<Error>,
-    ) -> TRes<Vec<(String, Self)>>;
+    ) -> TRes<Vec<(Ident, Self)>>;
 }
 
 mod stmt_pattern {
@@ -591,8 +572,8 @@ mod stmt_pattern {
             is_declaration: bool,
             symbol_table: &mut SymbolTable,
             errors: &mut Vec<Error>,
-        ) -> TRes<Vec<(String, usize)>> {
-            let location = Loc::mixed_site();
+        ) -> TRes<Vec<(Ident, usize)>> {
+            let loc = self.loc();
 
             match self {
                 Pattern::Identifier(ident) => {
@@ -600,40 +581,32 @@ mod stmt_pattern {
                         panic!("error in `Pattern`'s `store` for identifier `{}`", ident);
                         // Err(TerminationError)
                     } else {
-                        let name = ident.to_string();
-                        let id = symbol_table.get_identifier_id(
-                            &name,
-                            false,
-                            location.clone(),
-                            errors,
-                        )?;
+                        let id = symbol_table.get_identifier_id(ident, false, errors)?;
                         // outputs should be already typed
                         let typ = symbol_table.get_typ(id).clone();
                         let id = symbol_table.insert_identifier(
-                            name.clone(),
+                            ident.clone(),
                             Some(typ),
                             true,
-                            location.clone(),
                             errors,
                         )?;
-                        Ok(vec![(name, id)])
+                        Ok(vec![(ident.clone(), id)])
                     }
                 }
                 Pattern::Typed(Typed { ident, typ, .. }) => {
                     if is_declaration {
                         let typ = typ.clone().into_ir1(&mut ir1::ctx::WithLoc::new(
-                            location,
+                            loc,
                             symbol_table,
                             errors,
                         ))?;
                         let id = symbol_table.insert_identifier(
-                            ident.to_string(),
+                            ident.clone(),
                             Some(typ),
                             true,
-                            location.clone(),
                             errors,
                         )?;
-                        Ok(vec![(ident.to_string(), id)])
+                        Ok(vec![(ident.clone(), id)])
                     } else {
                         panic!(
                             "error in `Pattern`'s store for identifier `{}` with type `{}`",
@@ -642,7 +615,7 @@ mod stmt_pattern {
                         // Err(TerminationError)
                     }
                 }
-                Pattern::Tuple(Tuple { elements }) => Ok(elements
+                Pattern::Tuple(Tuple { elements, .. }) => Ok(elements
                     .iter()
                     .map(|pattern| pattern.store(is_declaration, symbol_table, errors))
                     .collect::<TRes<Vec<_>>>()?
@@ -656,12 +629,12 @@ mod stmt_pattern {
             &self,
             symbol_table: &SymbolTable,
             errors: &mut Vec<Error>,
-        ) -> TRes<Vec<(String, Pattern)>> {
+        ) -> TRes<Vec<(Ident, Pattern)>> {
             match self {
                 Pattern::Identifier(ident) | Pattern::Typed(Typed { ident, .. }) => {
-                    Ok(vec![(ident.to_string(), self.clone())])
+                    Ok(vec![(ident.clone(), self.clone())])
                 }
-                Pattern::Tuple(Tuple { elements }) => Ok(elements
+                Pattern::Tuple(Tuple { elements, .. }) => Ok(elements
                     .iter()
                     .map(|pattern| pattern.get_signals(symbol_table, errors))
                     .collect::<TRes<Vec<_>>>()?
@@ -676,75 +649,46 @@ mod stmt_pattern {
 impl Ir0Store for ir0::Typedef {
     /// Store typedef's identifiers in symbol table.
     fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
-        let location = Loc::mixed_site();
         match self {
             ir0::Typedef::Structure { ident, fields, .. } => {
-                let id = ident.to_string();
                 symbol_table.local();
 
                 let field_ids = fields
                     .iter()
                     .map(|ir0::Colon { left: ident, .. }| {
-                        let field_name = ident.to_string();
-                        let field_id = symbol_table.insert_identifier(
-                            field_name.clone(),
-                            None,
-                            true,
-                            location.clone(),
-                            errors,
-                        )?;
+                        let field_id =
+                            symbol_table.insert_identifier(ident.clone(), None, true, errors)?;
                         Ok(field_id)
                     })
                     .collect::<TRes<Vec<_>>>()?;
 
                 symbol_table.global();
 
-                let _ = symbol_table.insert_struct(
-                    id.clone(),
-                    field_ids.clone(),
-                    false,
-                    location.clone(),
-                    errors,
-                )?;
+                let _ =
+                    symbol_table.insert_struct(ident.clone(), field_ids.clone(), false, errors)?;
             }
             ir0::Typedef::Enumeration {
                 ident, elements, ..
             } => {
-                let id = ident.to_string();
                 let element_ids = elements
                     .iter()
                     .map(|element_ident| {
-                        let element_name = element_ident.to_string();
                         let element_id = symbol_table.insert_enum_elem(
-                            element_name.clone(),
-                            id.clone(),
+                            element_ident.clone(),
+                            ident.clone(),
                             false,
-                            location.clone(),
                             errors,
                         )?;
                         Ok(element_id)
                     })
                     .collect::<TRes<Vec<_>>>()?;
 
-                let _ = symbol_table.insert_enum(
-                    id.clone(),
-                    element_ids.clone(),
-                    false,
-                    location.clone(),
-                    errors,
-                )?;
+                let _ =
+                    symbol_table.insert_enum(ident.clone(), element_ids.clone(), false, errors)?;
             }
             ir0::Typedef::Array { ident, size, .. } => {
-                let id = ident.to_string();
                 let size = size.base10_parse().unwrap();
-                let _ = symbol_table.insert_array(
-                    id.clone(),
-                    None,
-                    size,
-                    false,
-                    location.clone(),
-                    errors,
-                )?;
+                let _ = symbol_table.insert_array(ident.clone(), None, size, false, errors)?;
             }
         }
 
@@ -792,12 +736,7 @@ mod event_pattern {
                     .map(|pattern| pattern.place_events(events_indices, idx, symbol_table, errors))
                     .collect::<TRes<()>>(),
                 EventPattern::Let(pattern) => {
-                    let event_id = symbol_table.get_identifier_id(
-                        &pattern.event.to_string(),
-                        false,
-                        Loc::mixed_site(),
-                        errors,
-                    )?;
+                    let event_id = symbol_table.get_identifier_id(&pattern.event, false, errors)?;
                     let _ = events_indices.entry(event_id).or_insert_with(|| {
                         let v = *idx;
                         *idx += 1;
@@ -851,16 +790,13 @@ mod event_pattern {
                     Ok(guard)
                 }
                 EventPattern::Let(pattern) => {
-                    let location = Loc::mixed_site();
-                    let ctx = &mut ir1::ctx::WithLoc::new(location, symbols, errors);
+                    let loc = pattern.loc();
+                    let ctx = &mut ir1::ctx::WithLoc::new(loc, symbols, errors);
 
                     // get the event identifier
-                    let event_id = ctx.symbols.get_identifier_id(
-                        &pattern.event.to_string(),
-                        false,
-                        ctx.loc.clone(),
-                        ctx.errors,
-                    )?;
+                    let event_id =
+                        ctx.symbols
+                            .get_identifier_id(&pattern.event, false, ctx.errors)?;
 
                     // transform inner_pattern into [ir1]
                     pattern.pattern.store(ctx.symbols, ctx.errors)?;
@@ -875,8 +811,8 @@ mod event_pattern {
                     Ok(None)
                 }
                 EventPattern::RisingEdge(expr) => {
-                    let location = Loc::mixed_site();
-                    let ctx = &mut ir1::ctx::PatLoc::new(None, location, symbols, errors);
+                    let loc = expr.loc();
+                    let ctx = &mut ir1::ctx::PatLoc::new(None, loc, symbols, errors);
                     let guard = ir1::stream::Kind::rising_edge(expr.into_ir1(ctx)?);
                     Ok(Some(ir1::stream::expr(guard)))
                 }

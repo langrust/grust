@@ -36,6 +36,13 @@ pub enum NoteKind {
     /// A plain message.
     Msg { msg: String },
 }
+impl Display for NoteKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Msg { msg } => msg.fmt(f),
+        }
+    }
+}
 impl From<String> for NoteKind {
     fn from(msg: String) -> Self {
         Self::Msg { msg }
@@ -75,7 +82,7 @@ pub enum ErrorKind {
     /// A plain error message.
     Msg { msg: String },
     /// Encountering an unknown element.
-    UnknownElement {
+    UnknownIdent {
         /// The unknown identifier.
         name: String,
     },
@@ -103,6 +110,13 @@ pub enum ErrorKind {
     UnknownEnumeration {
         /// The unknown enumeration identifier.
         name: String,
+    },
+    /// Encountering an unknown enumeration.
+    UnknownEnumerationElement {
+        /// The unknown enumeration identifier.
+        name: String,
+        /// The unknown enumeration variant identifier.
+        variant: String,
     },
     /// Encountering an unknown field.
     UnknownField {
@@ -295,8 +309,12 @@ mk_new! { impl ErrorKind =>
         name: impl Into<String> = name.into(),
     }
 
-    UnknownElement: unknown_elem {
+    UnknownIdent: unknown_ident {
         name: impl Into<String> = name.into(),
+    }
+    UnknownEnumerationElement: unknown_enum_elem {
+        name: impl Into<String> = name.into(),
+        variant: impl Into<String> = variant.into(),
     }
     UnknownSignal: unknown_signal {
         name: impl Into<String> = name.into(),
@@ -336,7 +354,10 @@ impl Display for ErrorKind {
         use ErrorKind::*;
         match self {
             Msg { msg } => msg.fmt(f),
-            UnknownElement { name } => write!(f, "unknown element `{name}`"),
+            UnknownIdent { name } => write!(f, "unknown identifier `{name}`"),
+            UnknownEnumerationElement { name, variant } => {
+                write!(f, "unknown enumeration variant `{name}::{variant}`")
+            }
             UnknownSignal { name } => write!(f, "unknown signal `{name}`"),
             UnknownNode { name } => write!(f, "unknown node `{name}`"),
             UnknownInterface { name } => write!(f, "unknown interface `{name}`"),
@@ -462,20 +483,44 @@ impl Error {
         self
     }
 
-    pub fn to_syn_error(&self) -> syn::Error {
-        // we're ignoring notes, sadly...
-        let loc = self.loc.unwrap_or_else(Loc::mixed_site);
-        let msg = self.error().to_string();
-        syn::Error::new(loc.span, msg)
+    // pub fn to_syn_error(&self) -> syn::Error {
+    //     // we're ignoring notes, sadly...
+    //     // let loc = self.loc.unwrap_or_else(Loc::mixed_site);
+    //     let loc = self.loc.expect("error has no location >_<");
+    //     // println!("-> {:?}", loc);
+    //     let msg = self.error().to_string();
+    //     let error = syn::Error::new(loc.span, msg);
+    //     // println!("   {:?}", error.span());
+    //     error
+    // }
+    // pub fn into_syn_error(self) -> syn::Error {
+    //     self.to_syn_error()
+    // }
+    // pub fn to_compile_error(&self) -> TokenStream2 {
+    //     self.to_syn_error().into_compile_error()
+    // }
+    // pub fn into_compile_error(self) -> TokenStream2 {
+    //     self.to_compile_error()
+    // }
+
+    pub fn to_diagnostic(self) -> macro1::Diagnostic {
+        use macro1::*;
+        let (error_kind, notes) = self.val;
+        let loc = self.loc.expect("error has no location >_<").unwrap();
+        let mut d = Diagnostic::spanned(&[loc] as &[Span], Level::Error, error_kind.to_string());
+        for note in notes {
+            let msg = note.val;
+            if let Some(loc) = note.loc {
+                d = d.span_note(&[loc.unwrap()] as &[Span], msg.to_string());
+            } else {
+                d = d.note(msg.to_string());
+            }
+        }
+        d
     }
-    pub fn into_syn_error(self) -> syn::Error {
-        self.to_syn_error()
-    }
-    pub fn to_compile_error(&self) -> TokenStream2 {
-        self.to_syn_error().into_compile_error()
-    }
-    pub fn into_compile_error(self) -> TokenStream2 {
-        self.to_compile_error()
+
+    pub fn emit(self) {
+        self.to_diagnostic().emit();
     }
 }
 

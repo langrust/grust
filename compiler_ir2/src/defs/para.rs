@@ -269,9 +269,9 @@ impl Vars {
         Self { bind, expr }
     }
 
-    pub fn easy_var(id: &str) -> Self {
+    pub fn easy_var(id: Ident) -> Self {
         Self {
-            bind: Pattern::ident(id),
+            bind: Pattern::ident(id.clone()),
             expr: Expr::ident(id),
         }
     }
@@ -455,7 +455,7 @@ mk_new! { impl Stmts =>
 }
 
 impl Stmts {
-    pub fn easy_seq<'a>(bindings: impl IntoIterator<Item = (&'a str, Expr)>) -> Self {
+    pub fn easy_seq(bindings: impl IntoIterator<Item = (Ident, Expr)>) -> Self {
         Self::new_seq(
             bindings
                 .into_iter()

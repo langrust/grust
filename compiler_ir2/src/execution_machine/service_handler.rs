@@ -5,9 +5,9 @@ prelude! {
 #[derive(Debug, PartialEq)]
 pub struct ServiceHandler {
     /// The service name.
-    pub service: String,
+    pub service: Ident,
     /// Its components.
-    pub components: Vec<String>,
+    pub components: Vec<Ident>,
     /// The flows handling.
     pub flows_handling: Vec<FlowHandler>,
     /// The signals context from where components will get their inputs.
@@ -15,8 +15,8 @@ pub struct ServiceHandler {
 }
 
 mk_new! { impl ServiceHandler => new {
-    service: impl Into<String> = service.into(),
-    components: Vec<String>,
+    service: impl Into<Ident> = service.into(),
+    components: Vec<Ident>,
     flows_handling: Vec<FlowHandler>,
     flows_context: ir1::ctx::Flows,
 } }
@@ -33,14 +33,14 @@ impl ServiceHandler {
         self.flows_handling.iter().for_each(
             |FlowHandler { arriving_flow, .. }| match arriving_flow {
                 ArrivingFlow::Channel(flow_name, flow_type, _) => {
-                    let ident = Ident::new(flow_name.as_str(), Span::call_site());
+                    let ident = flow_name;
                     let ty = flow_type.into_syn();
                     service_store_fields
                         .push(parse_quote! { #ident: Option<(#ty, std::time::Instant)> });
                     service_store_is_some_s.push(parse_quote! { self.#ident.is_some() });
                 }
                 ArrivingFlow::Period(time_flow_name) | ArrivingFlow::Deadline(time_flow_name) => {
-                    let ident = Ident::new(time_flow_name.as_str(), Span::call_site());
+                    let ident = time_flow_name;
                     service_store_fields
                         .push(parse_quote! { #ident: Option<((), std::time::Instant)> });
                     service_store_is_some_s.push(parse_quote! { self.#ident.is_some() });
@@ -140,7 +140,6 @@ impl ServiceHandler {
                 let stmts = instruction.into_syn();
                 match arriving_flow {
                     ArrivingFlow::Channel(flow_name, flow_type, _) => {
-                        let ident = Ident::new(flow_name.as_str(), Span::call_site());
                         let instant = format_ident!("{flow_name}_instant");
                         let function_name: Ident = format_ident!("handle_{flow_name}");
                         let ty = flow_type.into_syn();
@@ -149,28 +148,28 @@ impl ServiceHandler {
                             Span::call_site(),
                         );
                         impl_items.push(parse_quote! {
-                        pub async fn #function_name(
-                            &mut self, #instant: std::time::Instant, #ident: #ty
-                        ) -> Result<(), futures::channel::mpsc::SendError> {
-                            if self.delayed {
-                                // reset time constraints
-                                self.reset_time_constraints(#instant).await?;
-                                // reset all signals' update
-                                self.context.reset();
-                                // propagate changes
-                            #(#stmts)*
-                            } else {
-                                // store in input_store
-                                let unique = self.input_store.#ident.replace((#ident, #instant));
-                                assert!(unique.is_none(), #message);
+                            pub async fn #function_name(
+                                &mut self, #instant: std::time::Instant, #flow_name: #ty
+                            ) -> Result<(), futures::channel::mpsc::SendError> {
+                                if self.delayed {
+                                    // reset time constraints
+                                    self.reset_time_constraints(#instant).await?;
+                                    // reset all signals' update
+                                    self.context.reset();
+                                    // propagate changes
+                                #(#stmts)*
+                                } else {
+                                    // store in input_store
+                                    let unique =
+                                        self.input_store.#flow_name.replace((#flow_name, #instant));
+                                    assert!(unique.is_none(), #message);
+                                }
+                                Ok(())
                             }
-                            Ok(())
-                        }
-                    })
+                        })
                     }
                     ArrivingFlow::Period(time_flow_name)
                     | ArrivingFlow::Deadline(time_flow_name) => {
-                        let ident = Ident::new(time_flow_name.as_str(), Span::call_site());
                         let instant = format_ident!("{time_flow_name}_instant");
                         let function_name: Ident = format_ident!("handle_{time_flow_name}");
                         let message = syn::LitStr::new(
@@ -190,7 +189,8 @@ impl ServiceHandler {
                                 #(#stmts)*
                                 } else {
                                     // store in input_store
-                                    let unique = self.input_store.#ident.replace(((), #instant));
+                                    let unique =
+                                        self.input_store.#time_flow_name.replace(((), #instant));
                                     assert!(unique.is_none(), #message);
                                 }
                                 Ok(())
@@ -211,8 +211,8 @@ impl ServiceHandler {
                             }
                         });
                         let enum_ident = Ident::new(
-                            to_camel_case(service_delay.as_str()).as_str(),
-                            Span::call_site(),
+                            &to_camel_case(service_delay.to_string()),
+                            service_delay.span(),
                         );
                         impl_items.push(parse_quote! {
                             #[inline]
@@ -241,8 +241,8 @@ impl ServiceHandler {
                             }
                         });
                         let enum_ident = Ident::new(
-                            to_camel_case(service_timeout.as_str()).as_str(),
-                            Span::call_site(),
+                            &to_camel_case(service_timeout.to_string()),
+                            service_timeout.span(),
                         );
                         impl_items.push(parse_quote! {
                             #[inline]
@@ -309,23 +309,23 @@ pub struct FlowHandler {
 
 #[derive(Debug, PartialEq)]
 pub enum FlowInstruction {
-    Let(String, Expression),
-    InitEvent(String),
-    UpdateEvent(String, Expression),
-    UpdateContext(String, Expression),
-    SendSignal(String, Expression, Option<String>),
-    SendEvent(String, Expression, Expression, Option<String>),
-    IfThrottle(String, String, Constant, Box<Self>),
-    IfChange(String, Expression, Box<Self>),
-    IfActivated(Vec<String>, Vec<String>, Box<Self>, Option<Box<Self>>),
-    ResetTimer(String, String),
+    Let(Ident, Expression),
+    InitEvent(Ident),
+    UpdateEvent(Ident, Expression),
+    UpdateContext(Ident, Expression),
+    SendSignal(Ident, Expression, Option<Ident>),
+    SendEvent(Ident, Expression, Expression, Option<Ident>),
+    IfThrottle(Ident, Ident, Constant, Box<Self>),
+    IfChange(Ident, Expression, Box<Self>),
+    IfActivated(Vec<Ident>, Vec<Ident>, Box<Self>, Option<Box<Self>>),
+    ResetTimer(Ident, Ident),
     ComponentCall(
         Pattern,
-        String,
-        Vec<(String, String)>,
-        Vec<(String, Option<String>)>,
+        Ident,
+        Vec<(Ident, Ident)>,
+        Vec<(Ident, Option<Ident>)>,
     ),
-    HandleDelay(Vec<String>, Vec<MatchArm>),
+    HandleDelay(Vec<Ident>, Vec<MatchArm>),
     Seq(Vec<Self>),
     Para(BTreeMap<ParaMethod, Vec<Self>>),
 }
@@ -334,7 +334,6 @@ impl FlowInstruction {
     pub fn into_syn(self) -> Vec<syn::Stmt> {
         let stmt = match self {
             FlowInstruction::Let(ident, flow_expression) => {
-                let ident = Ident::new(&ident, Span::call_site());
                 let expression = flow_expression.into_syn();
                 parse_quote! { let #ident = #expression; }
             }
@@ -348,13 +347,11 @@ impl FlowInstruction {
                 parse_quote! { *#ident = #expression; }
             }
             FlowInstruction::UpdateContext(ident, flow_expression) => {
-                let ident = Ident::new(&ident, Span::call_site());
                 let expression = flow_expression.into_syn();
                 parse_quote! { self.context.#ident.set(#expression); }
             }
             FlowInstruction::SendSignal(name, send_expr, instant) => {
-                let enum_ident =
-                    Ident::new(to_camel_case(name.as_str()).as_str(), Span::call_site());
+                let enum_ident = Ident::new(&to_camel_case(name.to_string()), name.span());
                 let send_expr = send_expr.into_syn();
                 let instant = if let Some(instant) = instant {
                     format_ident!("{instant}_instant")
@@ -364,9 +361,7 @@ impl FlowInstruction {
                 parse_quote! { self.send_output(O::#enum_ident(#send_expr, #instant)).await?; }
             }
             FlowInstruction::SendEvent(name, event_expr, send_expr, instant) => {
-                let ident = Ident::new(name.as_str(), Span::call_site());
-                let enum_ident =
-                    Ident::new(to_camel_case(name.as_str()).as_str(), Span::call_site());
+                let enum_ident = Ident::new(&to_camel_case(name.to_string()), name.span());
                 let event_expr = event_expr.into_syn();
                 let send_expr = send_expr.into_syn();
                 let instant = if let Some(instant) = instant {
@@ -375,14 +370,14 @@ impl FlowInstruction {
                     Ident::new("instant", Span::call_site())
                 };
                 parse_quote! {
-                    if let Some(#ident) = #event_expr {
+                    if let Some(#name) = #event_expr {
                         self.send_output(O::#enum_ident(#send_expr, #instant)).await?;
                     }
                 }
             }
             FlowInstruction::IfThrottle(receiver_name, source_name, delta, instruction) => {
-                let receiver_ident = Ident::new(&receiver_name, Span::call_site());
-                let source_ident = Ident::new(&source_name, Span::call_site());
+                let receiver_ident = receiver_name;
+                let source_ident = source_name;
                 let delta = delta.into_syn();
                 let instructions = instruction.into_syn();
 
@@ -393,7 +388,7 @@ impl FlowInstruction {
                 }
             }
             FlowInstruction::IfChange(old_event_name, signal, then) => {
-                let old_event_ident = Ident::new(&old_event_name, Span::call_site());
+                let old_event_ident = old_event_name;
                 let expr = signal.into_syn();
                 let then = then.into_syn();
                 parse_quote! {
@@ -403,10 +398,8 @@ impl FlowInstruction {
                 }
             }
             FlowInstruction::ResetTimer(timer_name, import_name) => {
-                let enum_ident = Ident::new(
-                    to_camel_case(timer_name.as_str()).as_str(),
-                    Span::call_site(),
-                );
+                let enum_ident =
+                    Ident::new(&to_camel_case(timer_name.to_string()), timer_name.span());
                 let instant = format_ident!("{import_name}_instant");
                 parse_quote! { self.send_timer(T::#enum_ident, #instant).await?; }
             }
@@ -417,20 +410,22 @@ impl FlowInstruction {
                 events_fields,
             ) => {
                 let outputs = pattern.into_syn();
-                let component_ident = Ident::new(&component_name, Span::call_site());
-                let component_input_name =
-                    format_ident!("{}", to_camel_case(&format!("{component_name}Input")));
+                let component_ident = component_name;
+                let component_input_name = Ident::new(
+                    &to_camel_case(format!("{}Input", component_ident.to_string())),
+                    component_ident.span(),
+                );
 
                 let input_fields = signals_fields
                     .into_iter()
                     .map(|(field_name, in_context)| -> syn::FieldValue {
-                        let field_id = Ident::new(&field_name, Span::call_site());
-                        let in_context_id = Ident::new(&in_context, Span::call_site());
+                        let field_id = field_name;
+                        let in_context_id = in_context;
                         let expr: syn::Expr = parse_quote!(self.context.#in_context_id.get());
                         parse_quote! { #field_id : #expr }
                     })
                     .chain(events_fields.into_iter().map(|(field_name, opt_event)| {
-                        let field_id = Ident::new(&field_name, Span::call_site());
+                        let field_id = field_name;
                         if let Some(event_name) = opt_event {
                             let event_id = format_ident!("{event_name}_ref");
                             parse_quote! { #field_id : *#event_id }
@@ -449,7 +444,7 @@ impl FlowInstruction {
             }
             FlowInstruction::HandleDelay(input_flows, match_arms) => {
                 let input_flows = input_flows.iter().map(|name| -> syn::Expr {
-                    let ident = Ident::new(name, Span::call_site());
+                    let ident = name;
                     parse_quote! { self.input_store.#ident.take() }
                 });
                 let arms = match_arms.into_iter().map(|arm| arm.into_syn());
@@ -472,7 +467,7 @@ impl FlowInstruction {
                         parse_quote! { #ident.is_some() }
                     })
                     .chain(signals.iter().map(|s| -> syn::Expr {
-                        let ident = Ident::new(s, Span::call_site());
+                        let ident = s;
                         parse_quote! { self.context.#ident.is_new() }
                     }));
                 let then_instrs = then.into_syn();
@@ -519,81 +514,73 @@ impl FlowInstruction {
         vec![stmt]
     }
 
-    pub fn send(name: impl Into<String> + Copy, expr: Expression, is_event: bool) -> Self {
+    pub fn send(name: impl Into<Ident>, expr: Expression, is_event: bool) -> Self {
+        let name = name.into();
         if is_event {
-            FlowInstruction::SendEvent(
-                name.into(),
-                Expression::event(name.into()).into(),
-                expr.into(),
-                None,
-            )
+            FlowInstruction::SendEvent(name.clone(), Expression::event(name).into(), expr, None)
         } else {
-            FlowInstruction::SendSignal(name.into(), expr.into(), None)
+            FlowInstruction::SendSignal(name, expr, None)
         }
     }
     pub fn send_from(
-        name: impl Into<String> + Copy,
+        name: impl Into<Ident>,
         expr: Expression,
-        instant: impl Into<String>,
+        instant: impl Into<Ident>,
         is_event: bool,
     ) -> Self {
+        let (name, instant) = (name.into(), instant.into());
         if is_event {
-            FlowInstruction::SendEvent(
-                name.into(),
-                Expression::event(name.into()).into(),
-                expr.into(),
-                Some(instant.into()),
-            )
+            FlowInstruction::SendEvent(name.clone(), Expression::event(name), expr, Some(instant))
         } else {
-            FlowInstruction::SendSignal(name.into(), expr.into(), Some(instant.into()))
+            FlowInstruction::SendSignal(name, expr, Some(instant))
         }
     }
 }
 mk_new! { impl FlowInstruction =>
     Let: def_let (
-        name: impl Into<String> = name.into(),
+        name: impl Into<Ident> = name.into(),
         expr: Expression = expr.into(),
     )
     InitEvent: init_event (
-        name: impl Into<String> = name.into(),
+        name: impl Into<Ident> = name.into(),
     )
     UpdateEvent: update_event (
-        name: impl Into<String> = name.into(),
+        name: impl Into<Ident> = name.into(),
         expr: Expression = expr.into(),
     )
     UpdateContext: update_ctx (
-        name: impl Into<String> = name.into(),
+        name: impl Into<Ident> = name.into(),
         expr: Expression = expr.into(),
     )
     IfThrottle: if_throttle (
-        flow_name: impl Into<String> = flow_name.into(),
-        source_name: impl Into<String> = source_name.into(),
+        flow_name: impl Into<Ident> = flow_name.into(),
+        source_name: impl Into<Ident> = source_name.into(),
         delta: Constant = delta,
         instr: FlowInstruction = instr.into(),
     )
     IfChange: if_change (
-        old_event_name: impl Into<String> = old_event_name.into(),
+        old_event_name: impl Into<Ident> = old_event_name.into(),
         signal: Expression = signal,
         then: FlowInstruction = then.into(),
     )
     IfActivated: if_activated (
-        events: impl Into<Vec<String>> = events.into(),
-        signals: impl Into<Vec<String>> = signals.into(),
+        events: impl Into<Vec<Ident>> = events.into(),
+        signals: impl Into<Vec<Ident>> = signals.into(),
         then: FlowInstruction = then.into(),
         els: Option<FlowInstruction> = els.map(Into::into),
     )
     ResetTimer: reset (
-        name: impl Into<String> = name.into(),
-        instant: impl Into<String> = instant.into(),
+        name: impl Into<Ident> = name.into(),
+        instant: impl Into<Ident> = instant.into(),
     )
     ComponentCall: comp_call (
         pat: Pattern = pat,
-        name: impl Into<String> = name.into(),
-        signals: impl Into<Vec<(String, String)>> = signals.into(),
-        events: impl Into<Vec<(String, Option<String>)>> = events.into(),
+        name: impl Into<Ident> = name.into(),
+        signals: impl Into<Vec<(Ident, Ident)>> = signals.into(),
+        events: impl Into<Vec<(Ident, Option<Ident>)>> = events.into(),
     )
     HandleDelay: handle_delay(
-        input_names: impl Iterator<Item = String> = input_names.collect(),
+        input_names: impl Iterator<Item = Ident> = input_names.collect(),
         arms: impl Iterator<Item = MatchArm> = arms.collect(),
     )
     Seq: seq(
@@ -652,22 +639,22 @@ pub enum Expression {
     /// An event call: `x`.
     Event {
         /// The identifier.
-        identifier: String,
+        identifier: Ident,
     },
     /// An identifier call: `x`.
     Identifier {
         /// The identifier.
-        identifier: String,
+        identifier: Ident,
     },
     /// A call from the context: `ctx.s`.
     InContext {
         /// The flow called.
-        flow: String,
+        flow: Ident,
     },
     /// A call from the context that will take the value: `ctx.s.take()`.
     TakeFromContext {
         /// The flow called.
-        flow: String,
+        flow: Ident,
     },
     /// Some expression: `Some(v)`.
     Some {
@@ -683,16 +670,16 @@ mk_new! { impl Expression =>
         literal: Constant = literal
     }
     Event: event {
-        identifier: impl Into<String> = identifier.into()
+        identifier: impl Into<Ident> = identifier.into()
     }
     Identifier: ident {
-        identifier: impl Into<String> = identifier.into()
+        identifier: impl Into<Ident> = identifier.into()
     }
     InContext: in_ctx {
-        flow: impl Into<String> = flow.into()
+        flow: impl Into<Ident> = flow.into()
     }
     TakeFromContext: take_from_ctx {
-        flow: impl Into<String> = flow.into()
+        flow: impl Into<Ident> = flow.into()
     }
     Some: some {
         expression: Expression = expression.into()
@@ -709,15 +696,12 @@ impl Expression {
                 parse_quote! { *#identifier }
             }
             Expression::Identifier { identifier } => {
-                let identifier = Ident::new(&identifier, Span::call_site());
                 parse_quote! { #identifier }
             }
             Expression::InContext { flow } => {
-                let flow = Ident::new(&flow, Span::call_site());
                 parse_quote! { self.context.#flow.get() }
             }
             Expression::TakeFromContext { flow } => {
-                let flow = Ident::new(&flow, Span::call_site());
                 parse_quote! { std::mem::take(&mut self.context.#flow.0) }
             }
             Expression::Some { expression } => {

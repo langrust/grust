@@ -67,7 +67,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for Ast {
             functions: functions.into_iter().collect::<TRes<Vec<_>>>()?,
             components: components.into_iter().collect::<TRes<Vec<_>>>()?,
             interface,
-            loc: Loc::mixed_site(),
+            loc: Loc::nu_call_site(),
         })
     }
 }
@@ -89,12 +89,7 @@ mod interface_impl {
         type Ir1 = ir1::Service;
 
         fn into_ir1(self, ctx: &mut ir1::ctx::Simple<'a>) -> TRes<Self::Ir1> {
-            let id = ctx.symbols.insert_service(
-                self.ident.to_string(),
-                true,
-                Loc::mixed_site(),
-                ctx.errors,
-            )?;
+            let id = ctx.symbols.insert_service(self.ident, true, ctx.errors)?;
 
             let time_range = if let Some(TimeRange { min, max, .. }) = self.time_range {
                 (min.base10_parse().unwrap(), max.base10_parse().unwrap())
@@ -128,10 +123,9 @@ mod interface_impl {
         type Ir1 = Ir1FlowImport;
 
         fn into_ir1(mut self, ctx: &mut ir1::ctx::Simple<'a>) -> TRes<Self::Ir1> {
-            let loc = Loc::mixed_site();
+            let loc = self.loc();
 
             let last = self.typed_path.left.segments.pop().unwrap().into_value();
-            let name = last.ident.to_string();
             assert!(last.arguments.is_none());
             let path = self.typed_path.left;
             let flow_type = {
@@ -142,12 +136,11 @@ mod interface_impl {
                 }
             };
             let id = ctx.symbols.insert_flow(
-                name,
+                last.ident,
                 Some(path.clone()),
                 self.kind,
                 flow_type.clone(),
                 true,
-                loc,
                 ctx.errors,
             )?;
 
@@ -166,10 +159,9 @@ mod interface_impl {
         type Ir1 = Ir1FlowExport;
 
         fn into_ir1(mut self, ctx: &mut ir1::ctx::Simple<'a>) -> TRes<Self::Ir1> {
-            let loc = Loc::mixed_site();
+            let loc = self.loc();
 
             let last = self.typed_path.left.segments.pop().unwrap().into_value();
-            let name = last.ident.to_string();
             assert!(last.arguments.is_none());
             let path = self.typed_path.left;
             let flow_type = {
@@ -180,12 +172,11 @@ mod interface_impl {
                 }
             };
             let id = ctx.symbols.insert_flow(
-                name,
+                last.ident,
                 Some(path.clone()),
                 self.kind,
                 flow_type.clone(),
                 true,
-                loc,
                 ctx.errors,
             )?;
 
@@ -204,6 +195,7 @@ mod interface_impl {
         type Ir1 = Ir1FlowStatement;
 
         fn into_ir1(self, ctx: &mut ir1::ctx::Simple<'a>) -> TRes<Self::Ir1> {
+            let loc = self.loc();
             match self {
                 FlowStatement::Declaration(FlowDeclaration {
                     let_token,
@@ -213,7 +205,7 @@ mod interface_impl {
                     semi_token,
                 }) => {
                     let pattern = typed_pattern.into_ir1(ctx)?;
-                    let expr = expr.into_ir1(&mut ctx.add_loc(Loc::mixed_site()))?;
+                    let expr = expr.into_ir1(&mut ctx.add_loc(loc))?;
 
                     Ok(Ir1FlowStatement::Declaration(Ir1FlowDeclaration {
                         let_token,
@@ -232,7 +224,7 @@ mod interface_impl {
                     // transform pattern and check its identifiers exist
                     let pattern = pattern.into_ir1(ctx)?;
                     // transform the expression
-                    let expr = expr.into_ir1(&mut ctx.add_loc(Loc::mixed_site()))?;
+                    let expr = expr.into_ir1(&mut ctx.add_loc(loc))?;
 
                     Ok(Ir1FlowStatement::Instantiation(Ir1FlowInstantiation {
                         pattern,
@@ -249,13 +241,11 @@ mod interface_impl {
         type Ir1 = ir1::stmt::Pattern;
 
         fn into_ir1(self, ctx: &mut ir1::ctx::Simple<'a>) -> TRes<Self::Ir1> {
-            let loc = Loc::mixed_site();
+            let loc = self.loc();
 
             match self {
                 FlowPattern::Single { ident } => {
-                    let id = ctx
-                        .symbols
-                        .get_flow_id(&ident.to_string(), false, loc, ctx.errors)?;
+                    let id = ctx.symbols.get_flow_id(&ident, false, ctx.errors)?;
                     let typ = ctx.symbols.get_typ(id);
 
                     Ok(ir1::stmt::Pattern {
@@ -273,12 +263,11 @@ mod interface_impl {
                         FlowKind::Event(_) => Typ::event(inner),
                     };
                     let id = ctx.symbols.insert_flow(
-                        ident.to_string(),
+                        ident.clone(),
                         None,
                         kind,
                         flow_typ.clone(),
                         true,
-                        loc,
                         ctx.errors,
                     )?;
 
@@ -323,9 +312,10 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Function {
     // pre-condition: function and its inputs are already stored in symbol table
     // post-condition: construct [ir1] function and check identifiers good use
     fn into_ir1(self, ctx: &mut ctx::Simple) -> TRes<Self::Ir1> {
-        let name = self.ident.to_string();
-        let loc = Loc::mixed_site();
-        let id = ctx.symbols.get_function_id(&name, false, loc, ctx.errors)?;
+        let loc = self.loc();
+        let id = ctx
+            .symbols
+            .get_function_id(&self.ident, false, ctx.errors)?;
 
         // create local context with all signals
         ctx.symbols.local();
@@ -334,9 +324,9 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Function {
         // insert function output type in symbol table
         let output_typing = self.output_type.into_ir1(&mut ctx.add_loc(loc))?;
         if !self.contract.clauses.is_empty() {
-            let _ =
-                ctx.symbols
-                    .insert_function_result(output_typing.clone(), true, loc, ctx.errors)?;
+            let _ = ctx
+                .symbols
+                .insert_function_result(output_typing.clone(), true, ctx.errors)?;
         }
         ctx.symbols.set_function_output_type(id, output_typing);
 
@@ -376,9 +366,8 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Component {
     // pre-condition: node and its signals are already stored in symbol table
     // post-condition: construct [ir1] node and check identifiers good use
     fn into_ir1(self, ctx: &mut ctx::Simple) -> TRes<Self::Ir1> {
-        let name = self.ident.to_string();
-        let loc = Loc::mixed_site();
-        let id = ctx.symbols.get_node_id(&name, false, loc, ctx.errors)?;
+        let loc = self.loc();
+        let id = ctx.symbols.get_node_id(&self.ident, false, ctx.errors)?;
 
         // create local context with all signals
         ctx.symbols.local();
@@ -412,11 +401,10 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ComponentImport {
     // post-condition: construct [ir1] node
     fn into_ir1(self, ctx: &mut ctx::Simple) -> TRes<Self::Ir1> {
         let last = self.path.clone().segments.pop().unwrap().into_value();
-        let name = last.ident.to_string();
         assert!(last.arguments.is_none());
 
-        let loc = Loc::mixed_site();
-        let id = ctx.symbols.get_node_id(&name, false, loc, ctx.errors)?;
+        let loc = self.loc();
+        let id = ctx.symbols.get_node_id(&last.ident, false, ctx.errors)?;
 
         Ok(ir1::Component::Import(ir1::ComponentImport {
             id,
@@ -512,10 +500,10 @@ mod flow_expr_impl {
 
         /// Transforms AST into [ir1] and check identifiers good use.
         fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
-            let name = self.ident_component.to_string();
-
             // get called component id
-            let component_id = ctx.symbols.get_node_id(&name, false, ctx.loc, ctx.errors)?;
+            let component_id = ctx
+                .symbols
+                .get_node_id(&self.ident_component, false, ctx.errors)?;
 
             let component_inputs = ctx.symbols.get_node_inputs(component_id).clone();
 
@@ -550,9 +538,7 @@ mod flow_expr_impl {
         fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<Self::Ir1> {
             let kind = match self {
                 FlowExpression::Ident(ident) => {
-                    let id = ctx
-                        .symbols
-                        .get_flow_id(&ident, false, ctx.loc, ctx.errors)?;
+                    let id = ctx.symbols.get_flow_id(&ident, false, ctx.errors)?;
                     flow::Kind::Ident { id }
                 }
                 FlowExpression::ComponentCall(expr) => expr.into_ir1(ctx)?,
@@ -603,7 +589,7 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
 
     fn into_ir1(self, ctx: &mut ctx::Simple<'a>) -> TRes<Self::Ir1> {
         use ir0::contract::*;
-        let loc = Loc::mixed_site();
+        let loc = self.loc();
         match self {
             Term::Result(_) => {
                 let id = ctx.symbols.get_function_result_id(false, loc, ctx.errors)?;
@@ -640,12 +626,14 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
                     loc,
                 ))
             }
-            Term::Unary(Unary { op, term }) => Ok(ir1::contract::Term::new(
+            Term::Unary(Unary { op, term, .. }) => Ok(ir1::contract::Term::new(
                 ir1::contract::Kind::unary(op, term.into_ir1(ctx)?),
                 None,
                 loc,
             )),
-            Term::Binary(Binary { op, left, right }) => Ok(ir1::contract::Term::new(
+            Term::Binary(Binary {
+                op, left, right, ..
+            }) => Ok(ir1::contract::Term::new(
                 ir1::contract::Kind::binary(op, left.into_ir1(ctx)?, right.into_ir1(ctx)?),
                 None,
                 loc,
@@ -656,9 +644,7 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
                 loc,
             )),
             Term::Identifier(ident) => {
-                let id = ctx
-                    .symbols
-                    .get_identifier_id(&ident, false, loc, ctx.errors)?;
+                let id = ctx.symbols.get_identifier_id(&ident, false, ctx.errors)?;
                 Ok(ir1::contract::Term::new(
                     ir1::contract::Kind::ident(id),
                     None,
@@ -670,13 +656,9 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
             }) => {
                 let ty = ty.into_ir1(&mut ctx.add_loc(loc))?;
                 ctx.symbols.local();
-                let id = ctx.symbols.insert_identifier(
-                    ident.clone(),
-                    Some(ty),
-                    true,
-                    loc,
-                    ctx.errors,
-                )?;
+                let id =
+                    ctx.symbols
+                        .insert_identifier(ident.clone(), Some(ty), true, ctx.errors)?;
                 let term = term.into_ir1(ctx)?;
                 ctx.symbols.global();
                 Ok(ir1::contract::Term::new(
@@ -692,14 +674,12 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
                 ..
             }) => {
                 // get the event identifier
-                let event_id = ctx
-                    .symbols
-                    .get_identifier_id(&event, false, loc, ctx.errors)?;
+                let event_id = ctx.symbols.get_identifier_id(&event, false, ctx.errors)?;
                 ctx.symbols.local();
                 // set pattern signal in local context
                 let pattern_id =
                     ctx.symbols
-                        .insert_identifier(pattern.clone(), None, true, loc, ctx.errors)?;
+                        .insert_identifier(pattern.clone(), None, true, ctx.errors)?;
                 // transform term into [ir1]
                 let right = term.into_ir1(ctx)?;
                 ctx.symbols.global();
@@ -750,7 +730,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Eq {
             equation::{Arm, Eq, Instantiation, Match},
             stmt::LetDecl,
         };
-        let loc = Loc::mixed_site();
+        let loc = self.loc();
 
         // get signals defined by the equation
         let mut defined_signals = HashMap::new();
@@ -840,7 +820,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Eq {
                                     )));
                                 } else {
                                     bad!(ctx.errors, @loc =>
-                                        ErrorKind::missing_match_stmt(signal_name.clone())
+                                        ErrorKind::missing_match_stmt(signal_name.to_string())
                                     )
                                 }
                             }
@@ -881,7 +861,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
             stmt::LetDecl,
             ReactEq,
         };
-        let loc = Loc::mixed_site();
+        let loc = self.loc();
 
         // get signals defined by the equation
         let mut defined_signals = HashMap::new();
@@ -975,7 +955,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                                             )))
                                         } else {
                                             bad!(ctx.errors, @loc => ErrorKind::missing_match_stmt(
-                                                signal_name.clone(),
+                                                signal_name.to_string(),
                                             ))
                                         }
                                     })
@@ -1011,7 +991,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                     if elements.len() == 1 {
                         elements.pop().unwrap()
                     } else {
-                        ir0::stmt::Pattern::tuple(ir0::stmt::Tuple::new(elements))
+                        ir0::stmt::Pattern::tuple(ir0::stmt::Tuple::new(loc, elements))
                     }
                 };
 
@@ -1294,7 +1274,7 @@ where
                 let id = field_ids.remove(&field_name).map_or_else(
                     || {
                         bad!(ctx.errors, @ctx.loc =>
-                            ErrorKind::unknown_field(&self.name, &field_name)
+                            ErrorKind::unknown_field(self.name.to_string(), field_name.to_string())
                         )
                     },
                     |id| Ok(id),
@@ -1308,7 +1288,9 @@ where
         field_ids
             .keys()
             .map(|field_name| {
-                bad!(ctx.errors, @ctx.loc => ErrorKind::missing_field(&self.name, field_name))
+                bad!(ctx.errors, @ctx.loc =>
+                    ErrorKind::missing_field(self.name.to_string(), field_name.to_string())
+                )
             })
             .collect::<TRes<Vec<()>>>()?;
 
@@ -1537,13 +1519,8 @@ mod simple_expr_impl {
                 .into_iter()
                 .map(|(input_name, typing)| {
                     let typing = typing.into_ir1(&mut ctx.remove_pat())?;
-                    ctx.symbols.insert_identifier(
-                        input_name,
-                        Some(typing),
-                        true,
-                        ctx.loc,
-                        ctx.errors,
-                    )
+                    ctx.symbols
+                        .insert_identifier(input_name, Some(typing), true, ctx.errors)
                 })
                 .collect::<TRes<Vec<_>>>()?;
             let expr = self.expr.into_ir1(ctx)?;
@@ -1565,11 +1542,8 @@ mod simple_expr_impl {
                 Identifier(id) => {
                     let id = ctx
                         .symbols
-                        .get_identifier_id(&id.to_string(), false, ctx.loc, &mut vec![])
-                        .or_else(|_| {
-                            ctx.symbols
-                                .get_function_id(&id.to_string(), false, ctx.loc, ctx.errors)
-                        })?;
+                        .get_identifier_id(&id, false, &mut vec![])
+                        .or_else(|_| ctx.symbols.get_function_id(&id, false, ctx.errors))?;
                     ir1::expr::Kind::Identifier { id }
                 }
                 UnOp(e) => e.into_ir1(ctx)?,
@@ -1626,7 +1600,7 @@ mod expr_pattern_impl {
                     let id = field_ids.remove(&field_name).map_or_else(
                         || {
                             bad!(ctx.errors, @ctx.loc => ErrorKind::unknown_field(
-                                &self.name, field_name,
+                                self.name.to_string(), field_name.to_string(),
                             ))
                         },
                         |id| Ok(id),
@@ -1644,8 +1618,8 @@ mod expr_pattern_impl {
                     .keys()
                     .map(|field_name| {
                         bad!(ctx.errors, @ctx.loc => ErrorKind::missing_field(
-                            &self.name,
-                            field_name
+                            self.name.to_string(),
+                            field_name.to_string(),
                         ))
                     })
                     .collect::<TRes<Vec<()>>>()?;
@@ -1694,9 +1668,7 @@ mod expr_pattern_impl {
             let kind = match self {
                 Constant(constant) => ir1::pattern::Kind::Constant { constant },
                 Identifier(name) => {
-                    let id = ctx
-                        .symbols
-                        .get_identifier_id(&name, false, ctx.loc, ctx.errors)?;
+                    let id = ctx.symbols.get_identifier_id(&name, false, ctx.errors)?;
                     ir1::pattern::Kind::Identifier { id }
                 }
                 Structure(pat) => pat.into_ir1(ctx)?,
@@ -1725,7 +1697,7 @@ trait Helper: Sized {
 
     fn into_default_expr(
         &self,
-        defined_signals: &HashMap<String, usize>,
+        defined_signals: &HashMap<Ident, usize>,
         init_signal_vals: &HashMap<Ident, ir1::stream::Expr>,
         ctx: &mut ctx::Simple,
     ) -> TRes<ir1::stream::Expr>;
@@ -1741,22 +1713,16 @@ mod stmt_pattern_impl {
     impl Helper for ir0::stmt::Pattern {
         fn into_default_expr(
             &self,
-            defined_signals: &HashMap<String, usize>,
+            defined_signals: &HashMap<Ident, usize>,
             init_signal_vals: &HashMap<Ident, ir1::stream::Expr>,
             ctx: &mut ctx::Simple,
         ) -> TRes<ir1::stream::Expr> {
             let kind = match self {
                 ir0::stmt::Pattern::Identifier(ident) => {
-                    let name = ident.to_string();
-                    if let Some(id) = defined_signals.get(&name) {
+                    if let Some(id) = defined_signals.get(&ident) {
                         ir1::stream::Kind::expr(ir1::expr::Kind::ident(*id))
                     } else {
-                        let id = ctx.symbols.get_identifier_id(
-                            &name,
-                            false,
-                            Location::default(),
-                            ctx.errors,
-                        )?;
+                        let id = ctx.symbols.get_identifier_id(&ident, false, ctx.errors)?;
                         if init_signal_vals.contains_key(ident) {
                             ir1::stream::Kind::fby(id, init_signal_vals[ident].clone())
                         } else {
@@ -1765,16 +1731,10 @@ mod stmt_pattern_impl {
                     }
                 }
                 ir0::stmt::Pattern::Typed(Typed { ident, .. }) => {
-                    let name = ident.to_string();
-                    if let Some(id) = defined_signals.get(&name) {
+                    if let Some(id) = defined_signals.get(&ident) {
                         ir1::stream::Kind::expr(ir1::expr::Kind::ident(*id))
                     } else {
-                        let id = ctx.symbols.get_identifier_id(
-                            &name,
-                            false,
-                            Location::default(),
-                            ctx.errors,
-                        )?;
+                        let id = ctx.symbols.get_identifier_id(&ident, false, ctx.errors)?;
                         if init_signal_vals.contains_key(ident) {
                             ir1::stream::Kind::fby(id, init_signal_vals[ident].clone())
                         } else {
@@ -1782,7 +1742,7 @@ mod stmt_pattern_impl {
                         }
                     }
                 }
-                ir0::stmt::Pattern::Tuple(Tuple { elements }) => {
+                ir0::stmt::Pattern::Tuple(Tuple { elements, .. }) => {
                     let elements = elements
                         .iter()
                         .map(|pat| pat.into_default_expr(defined_signals, init_signal_vals, ctx))
@@ -1834,6 +1794,7 @@ mod stmt_pattern_impl {
                 }
                 ir0::stmt::Pattern::Tuple(ir0::stmt::Tuple {
                     elements: pat_elems,
+                    ..
                 }) => {
                     if let ir0::stream::Expr::Tuple(ir0::expr::Tuple {
                         elements: expr_elems,
@@ -1864,12 +1825,9 @@ mod stmt_pattern_impl {
         type Ir1 = ir1::stmt::Kind;
 
         fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc) -> TRes<ir1::stmt::Kind> {
-            let id = ctx.symbols.get_identifier_id(
-                &self.ident.to_string(),
-                false,
-                ctx.loc,
-                ctx.errors,
-            )?;
+            let id = ctx
+                .symbols
+                .get_identifier_id(&self.ident, false, ctx.errors)?;
             let typ = self.typ.into_ir1(ctx)?;
             Ok(ir1::stmt::Kind::Typed { id, typ })
         }
@@ -1895,12 +1853,7 @@ mod stmt_pattern_impl {
             use ir0::stmt::Pattern::*;
             let kind = match self {
                 Identifier(ident) => {
-                    let id = ctx.symbols.get_identifier_id(
-                        &ident.to_string(),
-                        false,
-                        ctx.loc,
-                        ctx.errors,
-                    )?;
+                    let id = ctx.symbols.get_identifier_id(&ident, false, ctx.errors)?;
                     ir1::stmt::Kind::Identifier { id }
                 }
                 Typed(pattern) => pattern.into_ir1(ctx)?,
@@ -1922,7 +1875,7 @@ impl Ir0IntoIr1<ir1::ctx::Simple<'_>> for ir0::stmt::LetDecl<ir0::Expr> {
     // pre-condition: NOTHING is in symbol table
     // post-condition: construct [ir1] statement and check identifiers good use
     fn into_ir1(self, ctx: &mut ir1::ctx::Simple) -> TRes<Self::Ir1> {
-        let loc = Loc::mixed_site();
+        let loc = self.loc();
         // stmts should be ordered in functions
         // then patterns are stored in order
         self.typed_pattern.store(true, ctx.symbols, ctx.errors)?;
@@ -2094,15 +2047,8 @@ mod stream_impl {
             use ir1::stream::Kind;
             let kind = match self {
                 stream::Expr::Application(app) => match *app.fun {
-                    stream::Expr::Identifier(node)
-                        if ctx.symbols.is_node(&node.to_string(), false) =>
-                    {
-                        let called_node_id = ctx.symbols.get_node_id(
-                            &node.to_string(),
-                            false,
-                            ctx.loc,
-                            ctx.errors,
-                        )?;
+                    stream::Expr::Identifier(node) if ctx.symbols.is_node(&node, false) => {
+                        let called_node_id = ctx.symbols.get_node_id(&node, false, ctx.errors)?;
                         let node_symbol = ctx
                             .symbols
                             .get_symbol(called_node_id)
@@ -2147,12 +2093,9 @@ mod stream_impl {
                             cst.into_ir1(ctx)
                         })?;
 
-                    let id = ctx.symbols.get_identifier_id(
-                        &last.ident.to_string(),
-                        false,
-                        ctx.loc,
-                        ctx.errors,
-                    )?;
+                    let id = ctx
+                        .symbols
+                        .get_identifier_id(&last.ident, false, ctx.errors)?;
 
                     Kind::FollowedBy {
                         constant: Box::new(constant),
@@ -2166,11 +2109,8 @@ mod stream_impl {
                 stream::Expr::Identifier(id) => {
                     let id = ctx
                         .symbols
-                        .get_identifier_id(&id.to_string(), false, ctx.loc, &mut vec![])
-                        .or_else(|_| {
-                            ctx.symbols
-                                .get_function_id(&id.to_string(), false, ctx.loc, ctx.errors)
-                        })?;
+                        .get_identifier_id(&id, false, &mut vec![])
+                        .or_else(|_| ctx.symbols.get_function_id(&id, false, ctx.errors))?;
                     Kind::expr(ir1::expr::Kind::Identifier { id })
                 }
                 stream::Expr::UnOp(expr) => Kind::expr(expr.into_ir1(ctx)?),
@@ -2246,16 +2186,16 @@ impl Ir0IntoIr1<ir1::ctx::WithLoc<'_>> for Typ {
                         }).collect::<TRes<_>>()?
                 }),
                 Typ::NotDefinedYet(name) => ctx.symbols
-                    .get_struct_id(&name.to_string(), false, ctx.loc, &mut vec![])
+                    .get_struct_id(&name, false, ctx.loc, &mut vec![])
                     .map(|id| Typ::Structure { name: name.clone(), id })
                     .or_else(|_| {
                         ctx.symbols
-                            .get_enum_id(&name.to_string(), false, ctx.loc, &mut vec![])
+                            .get_enum_id(&name, false, ctx.loc, &mut vec![])
                             .map(|id| Typ::enumeration(name.clone(), id))
                     }).or_else(|_| {
                         let id = ctx
                             .symbols
-                            .get_array_id(&name.to_string(), false, ctx.loc, ctx.errors)?;
+                            .get_array_id(&name, false, ctx.loc, ctx.errors)?;
                         Ok(ctx.symbols.get_array(id))
                     }),
                 Typ::Abstract { paren_token, inputs, arrow_token, output } => {
@@ -2297,11 +2237,10 @@ impl Ir0IntoIr1<ir1::ctx::Simple<'_>> for ir0::Typedef {
     // post-condition: construct [ir1] typedef and check identifiers good use
     fn into_ir1(self, ctx: &mut ir1::ctx::Simple) -> TRes<Self::Ir1> {
         use ir0::{Colon, Typedef};
-        let loc = Loc::mixed_site();
+        let loc = self.loc();
         match self {
             Typedef::Structure { ident, fields, .. } => {
-                let id = ident.to_string();
-                let type_id = ctx.symbols.get_struct_id(&id, false, loc, ctx.errors)?;
+                let type_id = ctx.symbols.get_struct_id(&ident, false, loc, ctx.errors)?;
                 let field_ids = ctx.symbols.get_struct_fields(type_id).clone();
 
                 // insert field's type in symbol table
@@ -2317,8 +2256,7 @@ impl Ir0IntoIr1<ir1::ctx::Simple<'_>> for ir0::Typedef {
                                 ..
                             },
                         )| {
-                            let name = ident.to_string();
-                            debug_assert_eq!(&name, ctx.symbols.get_name(*id));
+                            debug_assert_eq!(&ident, ctx.symbols.get_name(*id));
                             let typing = typing.into_ir1(&mut ctx.add_loc(loc))?;
                             Ok(ctx.symbols.set_type(*id, typing))
                         },
@@ -2333,8 +2271,7 @@ impl Ir0IntoIr1<ir1::ctx::Simple<'_>> for ir0::Typedef {
             }
 
             Typedef::Enumeration { ident, .. } => {
-                let id = ident.to_string();
-                let type_id = ctx.symbols.get_enum_id(&id, false, loc, ctx.errors)?;
+                let type_id = ctx.symbols.get_enum_id(&ident, false, loc, ctx.errors)?;
                 let element_ids = ctx.symbols.get_enum_elements(type_id).clone();
                 Ok(ir1::Typedef {
                     id: type_id,
@@ -2348,8 +2285,7 @@ impl Ir0IntoIr1<ir1::ctx::Simple<'_>> for ir0::Typedef {
             Typedef::Array {
                 ident, array_type, ..
             } => {
-                let id = ident.to_string();
-                let type_id = ctx.symbols.get_array_id(&id, false, loc, ctx.errors)?;
+                let type_id = ctx.symbols.get_array_id(&ident, false, loc, ctx.errors)?;
 
                 // insert array's type in symbol table
                 let typing = array_type.into_ir1(&mut ctx.add_loc(loc))?;

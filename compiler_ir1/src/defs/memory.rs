@@ -9,7 +9,7 @@ prelude! {}
 #[derive(Debug, PartialEq, Clone)]
 pub struct Memory {
     /// Initialized buffers.
-    pub buffers: HashMap<String, Buffer>,
+    pub buffers: HashMap<Ident, Buffer>,
     /// Called unitary nodes' names.
     pub called_nodes: HashMap<usize, CalledNode>,
 }
@@ -34,7 +34,7 @@ impl Memory {
         // we just rename the called nodes
         self.called_nodes.keys().for_each(|memory_id| {
             let name = symbol_table.get_name(*memory_id);
-            let fresh_name = identifier_creator.new_identifier(name);
+            let fresh_name = identifier_creator.new_identifier(name.span(), &name.to_string());
             if &fresh_name != name {
                 // supposed to be Scope::Local
                 let scope = symbol_table.get_scope(*memory_id).clone();
@@ -139,7 +139,7 @@ pub struct Buffer {
     /// Buffered id.
     pub id: usize,
     /// Buffered identifier.
-    pub ident: String,
+    pub ident: Ident,
     /// Buffer type.
     pub typing: Typ,
     /// Buffer initial value.
@@ -176,7 +176,7 @@ impl Memory {
     pub fn add_buffer(
         &mut self,
         id: usize,
-        ident: String,
+        ident: Ident,
         typing: Typ,
         constant: ir1::stream::Expr,
     ) {

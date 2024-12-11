@@ -97,7 +97,7 @@ pub fn init(kind: Kind) -> Pattern {
     Pattern {
         kind,
         typing: None,
-        loc: Loc::mixed_site(),
+        loc: Loc::builtin(),
     }
 }
 

@@ -20,7 +20,7 @@ impl RuntimeLoop {
                 | ArrivingFlow::Deadline(time_flow_name)
                 | ArrivingFlow::ServiceTimeout(time_flow_name) => {
                     let enum_ident = Ident::new(
-                        to_camel_case(time_flow_name.as_str()).as_str(),
+                        &to_camel_case(time_flow_name.to_string()),
                         Span::call_site(),
                     );
                     Some(parse_quote! { runtime.send_timer(T::#enum_ident, init_instant).await?; })
@@ -37,15 +37,12 @@ impl RuntimeLoop {
             {
                 match arriving_flow {
                     ArrivingFlow::Channel(flow_name, _, _) => {
-                        let enum_ident = Ident::new(
-                            to_camel_case(flow_name.as_str()).as_str(),
-                            Span::call_site(),
-                        );
-                        let ident = Ident::new(flow_name.as_str(), Span::call_site());
+                        let enum_ident =
+                            Ident::new(&to_camel_case(flow_name.to_string()), Span::call_site());
+                        let ident = flow_name;
                         let function_name: Ident = format_ident!("handle_{flow_name}");
                         let call_services_handlers =
                             services.iter().map(|service_name| -> syn::Stmt {
-                                let service_name = Ident::new(service_name, Span::call_site());
                                 parse_quote! {
                                     runtime.#service_name.#function_name(instant, #ident).await?;
                                 }
@@ -61,13 +58,12 @@ impl RuntimeLoop {
                     | ArrivingFlow::ServiceDelay(time_flow_name)
                     | ArrivingFlow::ServiceTimeout(time_flow_name) => {
                         let enum_ident = Ident::new(
-                            to_camel_case(time_flow_name.as_str()).as_str(),
+                            to_camel_case(time_flow_name.to_string()).as_str(),
                             Span::call_site(),
                         );
                         let function_name: Ident = format_ident!("handle_{time_flow_name}");
                         let call_services_handlers =
                             services.iter().map(|service_name| -> syn::Stmt {
-                                let service_name = Ident::new(service_name, Span::call_site());
                                 parse_quote! {
                                     runtime.#service_name.#function_name(instant).await?;
                                 }
@@ -111,5 +107,5 @@ pub struct InputHandler {
     /// Arriving flow.
     pub arriving_flow: ArrivingFlow,
     /// Delivered services.
-    pub services: Vec<String>,
+    pub services: Vec<Ident>,
 }

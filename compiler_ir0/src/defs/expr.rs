@@ -107,7 +107,7 @@ mk_new! { impl{E} Application<E> =>
 pub struct TypedAbstraction<E> {
     pub loc: Loc,
     /// The inputs to the abstraction.
-    pub inputs: Vec<(String, Typ)>,
+    pub inputs: Vec<(Ident, Typ)>,
     /// The expression abstracted.
     pub expr: Box<E>,
 }
@@ -120,7 +120,7 @@ impl<E> HasLoc for TypedAbstraction<E> {
 mk_new! { impl{E} TypedAbstraction<E> =>
     new {
         loc: impl Into<Loc> = loc.into(),
-        inputs: Vec<(String, Typ)>,
+        inputs: Vec<(Ident, Typ)>,
         expr: impl Into<Box<E>> = expr.into(),
     }
 }
@@ -131,9 +131,9 @@ pub struct Structure<E> {
     /// Location.
     pub loc: Loc,
     /// The structure name.
-    pub name: String,
+    pub name: Ident,
     /// The fields associated with their expressions.
-    pub fields: Vec<(String, E)>,
+    pub fields: Vec<(Ident, E)>,
 }
 impl<E> HasLoc for Structure<E> {
     fn loc(&self) -> Loc {
@@ -144,8 +144,8 @@ impl<E> HasLoc for Structure<E> {
 mk_new! { impl{E} Structure<E> =>
     new {
         loc: impl Into<Loc> = loc.into(),
-        name: impl Into<String> = name.into(),
-        fields: Vec<(String, E)>,
+        name: impl Into<Ident> = name.into(),
+        fields: Vec<(Ident, E)>,
     }
 }
 
@@ -174,9 +174,9 @@ pub struct Enumeration<E> {
     /// Location.
     pub loc: Loc,
     /// The enumeration name.
-    pub enum_name: String,
+    pub enum_name: Ident,
     /// The enumeration element.
-    pub elem_name: String,
+    pub elem_name: Ident,
     /// Marker for the unused type param.
     pub mark: std::marker::PhantomData<E>,
 }
@@ -189,8 +189,8 @@ impl<E> HasLoc for Enumeration<E> {
 impl<E> Enumeration<E> {
     pub fn new(
         loc: impl Into<Loc>,
-        enum_name: impl Into<String>,
-        elem_name: impl Into<String>,
+        enum_name: impl Into<Ident>,
+        elem_name: impl Into<Ident>,
     ) -> Self {
         Self {
             loc: loc.into(),
@@ -222,17 +222,24 @@ mk_new! { impl{E} Array<E> => new {
 /// Structure pattern that matches the structure and its fields.
 #[derive(Debug, PartialEq, Clone)]
 pub struct PatStructure {
+    pub braces: syn::token::Brace,
     /// The structure name.
-    pub name: String,
+    pub name: Ident,
     /// The structure fields with the corresponding patterns to match.
-    pub fields: Vec<(String, Option<Pattern>)>,
+    pub fields: Vec<(Ident, Option<Pattern>)>,
     /// The rest of the fields
     pub rest: Option<Token![..]>,
 }
+impl HasLoc for PatStructure {
+    fn loc(&self) -> Loc {
+        self.name.loc().join(self.braces.span.join())
+    }
+}
 mk_new! { impl PatStructure =>
     new {
-        name: impl Into<String> = name.into(),
-        fields: Vec<(String, Option<Pattern>)>,
+        braces: syn::token::Brace,
+        name: impl Into<Ident> = name.into(),
+        fields: Vec<(Ident, Option<Pattern>)>,
         rest: Option<Token![..]>,
     }
 }
@@ -241,26 +248,38 @@ mk_new! { impl PatStructure =>
 #[derive(Debug, PartialEq, Clone)]
 pub struct PatEnumeration {
     /// The enumeration type name.
-    pub enum_name: String,
+    pub enum_name: Ident,
     /// The element name.
-    pub elem_name: String,
+    pub elem_name: Ident,
+}
+impl HasLoc for PatEnumeration {
+    fn loc(&self) -> Loc {
+        self.enum_name.loc().join(self.elem_name.loc())
+    }
 }
 mk_new! { impl PatEnumeration =>
     new {
-        enum_name: impl Into<String> = enum_name.into(),
-        elem_name: impl Into<String> = elem_name.into(),
+        enum_name: impl Into<Ident> = enum_name.into(),
+        elem_name: impl Into<Ident> = elem_name.into(),
     }
 }
 
 /// Tuple pattern that matches tuples.
 #[derive(Debug, PartialEq, Clone)]
 pub struct PatTuple {
+    pub parens: syn::token::Paren,
     /// The elements of the tuple.
     pub elements: Vec<Pattern>,
 }
-mk_new! { impl PatTuple =>
-    new { elements: Vec<Pattern> }
+impl HasLoc for PatTuple {
+    fn loc(&self) -> Loc {
+        self.parens.span.join().into()
+    }
 }
+mk_new! { impl PatTuple => new {
+    parens: syn::token::Paren,
+    elements: Vec<Pattern>,
+} }
 
 #[derive(Debug, PartialEq, Clone)]
 /// GRust matching pattern AST.
@@ -268,7 +287,7 @@ pub enum Pattern {
     /// Constant pattern.
     Constant(Constant),
     /// Identifier pattern.
-    Identifier(String),
+    Identifier(Ident),
     /// Structure pattern that matches the structure and its fields.
     Structure(PatStructure),
     /// Enumeration pattern.
@@ -278,11 +297,28 @@ pub enum Pattern {
     /// Default pattern.
     Default,
 }
+impl HasLoc for Pattern {
+    fn loc(&self) -> Loc {
+        match self {
+            Self::Constant(c) => c.loc(),
+            Self::Identifier(i) => i.loc(),
+            Self::Structure(s) => s.loc(),
+            Self::Enumeration(e) => e.loc(),
+            Self::Tuple(t) => t.loc(),
+            Self::Default => Loc::builtin(),
+        }
+    }
+}
 impl Pattern {
     mk_new! {
         Constant: constant(c: Constant = c)
         Constant: cst(c: Constant = c)
-        Identifier: ident(s: impl Into<String> = s.into())
+        Identifier: ident(
+            id: impl Into<Ident> = id.into(),
+        )
+        Identifier: test_ident(
+            s: impl AsRef<str> = Ident::new(s.as_ref(), Loc::test_dummy().into()),
+        )
         Structure: structure(s: PatStructure = s)
         Enumeration: enumeration(e: PatEnumeration = e)
         Tuple: tuple(t: PatTuple = t)
@@ -349,7 +385,7 @@ pub struct FieldAccess<E> {
     /// The structure expression.
     pub expr: Box<E>,
     /// The field to access.
-    pub field: String,
+    pub field: Ident,
 }
 impl<E> HasLoc for FieldAccess<E> {
     fn loc(&self) -> Loc {
@@ -360,7 +396,7 @@ mk_new! { impl{E} FieldAccess<E> =>
     new {
         loc: impl Into<Loc> = loc.into(),
         expr: impl Into<Box<E>> = expr.into(),
-        field: impl Into<String> = field.into(),
+        field: impl Into<Ident> = field.into(),
     }
 }
 

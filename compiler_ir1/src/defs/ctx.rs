@@ -75,17 +75,17 @@ impl<'a> PatLoc<'a> {
 /// A signals context from where components will get their inputs.
 #[derive(Debug, PartialEq, Default)]
 pub struct Flows {
-    pub elements: HashMap<String, Typ>,
+    pub elements: HashMap<Ident, Typ>,
 }
 
 impl Flows {
-    pub fn add_element(&mut self, element_name: String, element_type: &Typ) {
+    pub fn add_element(&mut self, element_name: Ident, element_type: &Typ) {
         match self.elements.insert(element_name, element_type.clone()) {
             Some(other_ty) => debug_assert!(other_ty.eq(element_type)),
             None => (),
         }
     }
-    pub fn contains_element(&self, element_name: &String) -> bool {
+    pub fn contains_element(&self, element_name: &Ident) -> bool {
         self.elements.contains_key(element_name)
     }
 
@@ -93,9 +93,11 @@ impl Flows {
         // construct Context structure type
         let context_struct = {
             let fields = self.elements.iter().map(|(element_name, _)| -> syn::Field {
-                let name = Ident::new(element_name, Span::call_site());
-                let struct_name = Ident::new(&to_camel_case(&element_name), Span::call_site());
-                parse_quote! { pub #name: #struct_name }
+                let struct_name = Ident::new(
+                    &to_camel_case(&element_name.to_string()),
+                    element_name.span(),
+                );
+                parse_quote! { pub #element_name: #struct_name }
             });
             let name = Ident::new("Context", Span::call_site());
             let attribute: syn::Attribute =
@@ -117,8 +119,7 @@ impl Flows {
 
         // create a 'reset' function that resets all signals
         let stmts = self.elements.iter().map(|(element_name, _)| -> syn::Stmt {
-            let name = Ident::new(element_name, Span::call_site());
-            parse_quote! { self.#name.reset(); }
+            parse_quote! { self.#element_name.reset(); }
         });
         let reset_fun: syn::ImplItem = parse_quote! {
             fn reset(&mut self) {
@@ -139,8 +140,11 @@ impl Flows {
             .elements
             .into_iter()
             .flat_map(|(element_name, element_ty)| {
-                let struct_name = Ident::new(&to_camel_case(&element_name), Span::call_site());
-                let name = Ident::new(&element_name, Span::call_site());
+                let struct_name = Ident::new(
+                    &to_camel_case(&element_name.to_string()),
+                    element_name.span(),
+                );
+                let name = element_name;
                 let ty = element_ty.into_syn();
                 let attribute: syn::Attribute =
                     parse_quote!(#[derive(Clone, Copy, PartialEq, Default)]);

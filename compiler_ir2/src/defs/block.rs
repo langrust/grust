@@ -33,10 +33,10 @@ mod test {
     fn should_create_rust_ast_block_from_ir2_block() {
         let block = Block::new(vec![
             Stmt::let_binding(
-                Pattern::ident("x"),
+                Pattern::test_ident("x"),
                 Expr::lit(Constant::int(parse_quote!(1i64))),
             ),
-            Stmt::expression_last(Expr::ident("x")),
+            Stmt::expression_last(Expr::test_ident("x")),
         ]);
 
         let control: syn::Block = parse_quote!({

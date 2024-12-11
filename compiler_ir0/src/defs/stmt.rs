@@ -10,6 +10,11 @@ pub struct Typed {
     /// The type.
     pub typ: Typ,
 }
+impl HasLoc for Typed {
+    fn loc(&self) -> Loc {
+        self.ident.loc()
+    }
+}
 mk_new! { impl Typed =>
     new {
         ident: Ident = ident,
@@ -21,12 +26,19 @@ mk_new! { impl Typed =>
 /// Tuple pattern that matches tuples.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Tuple {
+    pub loc: Loc,
     /// The elements of the tuple.
     pub elements: Vec<Pattern>,
 }
-mk_new! { impl Tuple =>
-    new { elements: Vec<Pattern> }
+impl HasLoc for Tuple {
+    fn loc(&self) -> Loc {
+        self.loc
+    }
 }
+mk_new! { impl Tuple => new {
+    loc: impl Into<Loc> = loc.into(),
+    elements: Vec<Pattern>,
+} }
 
 #[derive(Debug, PartialEq, Clone)]
 /// GRust matching pattern AST.
@@ -37,6 +49,15 @@ pub enum Pattern {
     Typed(Typed),
     /// Tuple pattern that matches tuples.
     Tuple(Tuple),
+}
+impl HasLoc for Pattern {
+    fn loc(&self) -> Loc {
+        match self {
+            Self::Identifier(id) => id.loc(),
+            Self::Typed(t) => t.loc(),
+            Self::Tuple(t) => t.loc(),
+        }
+    }
 }
 impl Pattern {
     mk_new! {
@@ -55,6 +76,11 @@ pub struct LetDecl<E> {
     /// The stream expression defining the signal.
     pub expr: E,
     pub semi_token: Token![;],
+}
+impl<E> HasLoc for LetDecl<E> {
+    fn loc(&self) -> Loc {
+        Loc::from(self.let_token.span).join(self.semi_token.span)
+    }
 }
 
 mk_new! { impl{E} LetDecl<E> =>

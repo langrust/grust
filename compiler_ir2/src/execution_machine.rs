@@ -39,8 +39,8 @@ impl ExecutionMachine {
 
             for TimingEvent { identifier, kind } in self.timing_events.iter() {
                 let enum_ident = Ident::new(
-                    to_camel_case(identifier.as_str()).as_str(),
-                    Span::call_site(),
+                    to_camel_case(&identifier.to_string()).as_str(),
+                    identifier.span(),
                 );
                 timer_variants.push(parse_quote! { #enum_ident });
                 match kind {
@@ -65,10 +65,8 @@ impl ExecutionMachine {
                 identifier, typ, ..
             } in self.input_flows.iter()
             {
-                let enum_ident = Ident::new(
-                    to_camel_case(identifier.as_str()).as_str(),
-                    Span::call_site(),
-                );
+                let enum_ident =
+                    Ident::new(&to_camel_case(&identifier.to_string()), identifier.span());
                 let ty = typ.into_syn();
                 input_variants.push(parse_quote! { #enum_ident(#ty, std::time::Instant) });
                 input_eq_arms.push(parse_quote! {
@@ -82,10 +80,8 @@ impl ExecutionMachine {
                 identifier, typ, ..
             } in self.output_flows.into_iter()
             {
-                let enum_ident = Ident::new(
-                    to_camel_case(identifier.as_str()).as_str(),
-                    Span::call_site(),
-                );
+                let enum_ident =
+                    Ident::new(&to_camel_case(&identifier.to_string()), identifier.span());
                 let ty = typ.into_syn();
                 output_variants.push(parse_quote! { #enum_ident(#ty, std::time::Instant) });
             }
@@ -271,25 +267,25 @@ pub struct InterfaceFlow {
     /// Path of the flow.
     pub path: syn::Path,
     /// The name of the flow.
-    pub identifier: String,
+    pub identifier: Ident,
     /// The type of the flow.
     pub typ: Typ,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ArrivingFlow {
-    Channel(String, Typ, syn::Path),
-    Period(String),
-    Deadline(String),
-    ServiceDelay(String),
-    ServiceTimeout(String),
+    Channel(Ident, Typ, syn::Path),
+    Period(Ident),
+    Deadline(Ident),
+    ServiceDelay(Ident),
+    ServiceTimeout(Ident),
 }
 
 /// A timing event structure.
 #[derive(Clone, Debug, PartialEq)]
 pub struct TimingEvent {
     /// The name of the timing event.
-    pub identifier: String,
+    pub identifier: Ident,
     /// Kind of timing event.
     pub kind: TimingEventKind,
 }

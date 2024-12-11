@@ -39,7 +39,7 @@ impl std::error::Error for TerminationError {}
 /// let mut errors = vec![];
 ///
 /// let name = String::from("unknown");
-/// let loc = Location::default();
+/// let loc = Loc::default();
 ///
 /// let error = Error::UnknownElement { name, loc };
 /// errors.push(error);
@@ -52,42 +52,42 @@ pub enum Error {
         /// The unknown identifier.
         name: String,
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Encountering an unknown signal.
     UnknownSignal {
         /// The unknown identifier.
         name: String,
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Encountering an unknown node.
     UnknownNode {
         /// The unknown identifier.
         name: String,
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Encountering an unknown interface.
     UnknownInterface {
         /// The unknown identifier.
         name: String,
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Encountering an unknown type.
     UnknownType {
         /// The unknown identifier.
         name: String,
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Encountering an unknown enumeration.
     UnknownEnumeration {
         /// The unknown enumeration identifier.
         name: String,
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Encountering an unknown field.
     UnknownField {
@@ -96,7 +96,7 @@ pub enum Error {
         /// The unknown field.
         field_name: String,
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// A field is missing.
     MissingField {
@@ -105,19 +105,19 @@ pub enum Error {
         /// The missing field.
         field_name: String,
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// The index is out of bounds.
     IndexOutOfBounds {
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Redefine an already defined element.
     AlreadyDefinedElement {
         /// The known identifier.
         name: String,
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Incompatible type.
     IncompatibleType {
@@ -126,12 +126,12 @@ pub enum Error {
         /// Expected type.
         expected_type: Typ,
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Incompatible tuple.
     IncompatibleTuple {
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Incompatible match statements.
     IncompatibleMatchStatements {
@@ -140,19 +140,19 @@ pub enum Error {
         /// Received number of statements.
         received: usize,
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Missing match statement.
     MissingMatchStatement {
         /// Ident of the missing statement in match.
         identifier: String,
         /// The error location
-        loc: Location,
+        loc: Loc,
     },
     /// Not statement pattern error.
     NotStatementPattern {
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Given inputs are not of the right number.
     ArityMismatch {
@@ -161,7 +161,7 @@ pub enum Error {
         /// The expected number of inputs.
         arity: usize,
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Calling an unknown output signal.
     UnknownOutputSignal {
@@ -170,24 +170,24 @@ pub enum Error {
         /// The unknown identifier.
         signal_name: String,
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Expect constant expression.
     ExpectConstant {
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Expect at least one input.
     ExpectInput {
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Expect number type.
     ExpectNumber {
         /// Given type.
         given_type: Typ,
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Expect abstraction with input type.
     ExpectAbstraction {
@@ -196,59 +196,59 @@ pub enum Error {
         /// Given type instead of the abstraction.
         given_type: Typ,
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Expect option type.
     ExpectOption {
         /// Given type instead of the option.
         given_type: Typ,
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Expect structure type.
     ExpectStructure {
         /// Given type instead of the structure.
         given_type: Typ,
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Expect tuple type.
     ExpectTuple {
         /// Given type instead of the structure.
         given_type: Typ,
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Expect array type.
     ExpectArray {
         /// Given type instead of the array.
         given_type: Typ,
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Expect event type.
     ExpectEvent {
         /// Given type instead of the event.
         given_type: Typ,
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Expect signal type.
     ExpectSignal {
         /// Given type instead of the signal.
         given_type: Typ,
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Expect option pattern.
     ExpectOptionPattern {
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Expect tuple pattern.
     ExpectTuplePattern {
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Incompatible array length.
     IncompatibleLength {
@@ -257,26 +257,26 @@ pub enum Error {
         /// Expected length.
         expected_length: usize,
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Can not infer type.
     NoTypeInference {
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Causality error.
     NotCausalSignal {
         /// Signal's name.
         signal: String,
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Causality error.
     NotCausalNode {
         /// Node's name.
         node: String,
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
     /// Unused signal error.
     UnusedSignal {
@@ -285,7 +285,7 @@ pub enum Error {
         /// Signal's name.
         signal: String,
         /// The error location.
-        loc: Location,
+        loc: Loc,
     },
 }
 
@@ -308,7 +308,7 @@ impl Error {
     ///
     /// let file_id = files.add("file_test.gr", "a code without x...");
     /// let name = String::from("x");
-    /// let loc = Location {
+    /// let loc = Loc {
     ///     file_id,
     ///     range: 0..0,
     /// };

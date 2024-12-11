@@ -6,17 +6,22 @@ prelude! {}
 /// For all term.
 pub struct ForAll {
     pub forall_token: keyword::forall,
-    pub ident: String,
+    pub ident: Ident,
     pub colon_token: Token![:],
     pub ty: Typ,
     pub comma_token: Token![,],
     pub term: Box<Term>,
 }
+impl HasLoc for ForAll {
+    fn loc(&self) -> Loc {
+        Loc::from(self.forall_token.span).join(self.term.loc())
+    }
+}
 
 mk_new! { impl ForAll =>
     new {
         forall_token: keyword::forall,
-        ident: impl Into<String> = ident.into(),
+        ident: impl Into<Ident> = ident.into(),
         colon_token: Token![:],
         ty: Typ,
         comma_token: Token![,],
@@ -30,6 +35,11 @@ pub struct Implication {
     pub left: Box<Term>,
     pub arrow: Token![=>],
     pub right: Box<Term>,
+}
+impl HasLoc for Implication {
+    fn loc(&self) -> Loc {
+        self.left.loc().join(self.right.loc())
+    }
 }
 
 mk_new! { impl Implication =>
@@ -45,21 +55,26 @@ mk_new! { impl Implication =>
 pub struct EventImplication {
     pub when_token: keyword::when,
     /// The pattern receiving the value of the event.
-    pub pattern: String,
+    pub pattern: Ident,
     pub eq_token: Token![=],
     /// The event to match.
-    pub event: String,
+    pub event: Ident,
     pub question_token: Token![?],
     pub arrow: Token![=>],
     pub term: Box<Term>,
+}
+impl HasLoc for EventImplication {
+    fn loc(&self) -> Loc {
+        Loc::from(self.when_token.span).join(self.term.loc())
+    }
 }
 
 mk_new! { impl EventImplication =>
     new {
         when_token: keyword::when,
-        pattern: impl Into<String> = pattern.into(),
+        pattern: impl Into<Ident> = pattern.into(),
         eq_token: Token![=],
-        event: impl Into<String> = event.into(),
+        event: impl Into<Ident> = event.into(),
         question_token: Token![?],
         arrow: Token![=>],
         term: Term = term.into(),
@@ -70,26 +85,38 @@ mk_new! { impl EventImplication =>
 #[derive(Debug, PartialEq, Clone)]
 pub struct Enumeration {
     /// The enumeration type name.
-    pub enum_name: String,
+    pub enum_name: Ident,
     /// The element name.
-    pub elem_name: String,
+    pub elem_name: Ident,
+}
+impl HasLoc for Enumeration {
+    fn loc(&self) -> Loc {
+        self.enum_name.loc().join(self.elem_name.loc())
+    }
 }
 mk_new! { impl Enumeration =>
     new {
-        enum_name: impl Into<String> = enum_name.into(),
-        elem_name: impl Into<String> = elem_name.into(),
+        enum_name: impl Into<Ident> = enum_name.into(),
+        elem_name: impl Into<Ident> = elem_name.into(),
     }
 }
 
 #[derive(Debug, PartialEq, Clone)]
 /// Unary term.
 pub struct Unary {
+    pub op_loc: Loc,
     pub op: UOp,
     pub term: Box<Term>,
+}
+impl HasLoc for Unary {
+    fn loc(&self) -> Loc {
+        self.op_loc.join(self.term.loc())
+    }
 }
 
 mk_new! { impl Unary =>
     new {
+        op_loc: impl Into<Loc> = op_loc.into(),
         op: UOp,
         term: Term = term.into(),
     }
@@ -98,13 +125,20 @@ mk_new! { impl Unary =>
 #[derive(Debug, PartialEq, Clone)]
 /// Binary term.
 pub struct Binary {
+    pub op_loc: Loc,
     pub left: Box<Term>,
     pub op: BOp,
     pub right: Box<Term>,
 }
+impl HasLoc for Binary {
+    fn loc(&self) -> Loc {
+        self.left.loc().join(self.right.loc())
+    }
+}
 
 mk_new! { impl Binary =>
     new {
+        op_loc: impl Into<Loc> = op_loc.into(),
         left: Term = left.into(),
         op: BOp,
         right: Term = right.into(),
@@ -116,7 +150,7 @@ mk_new! { impl Binary =>
 pub enum Term {
     Constant(Constant),
     Result(keyword::result),
-    Identifier(String),
+    Identifier(Ident),
     Enumeration(Enumeration),
     Unary(Unary),
     Binary(Binary),
@@ -124,11 +158,29 @@ pub enum Term {
     Implication(Implication),
     EventImplication(EventImplication),
 }
+impl HasLoc for Term {
+    fn loc(&self) -> Loc {
+        match self {
+            Self::Constant(c) => c.loc(),
+            Self::Result(r) => r.span.into(),
+            Self::Identifier(i) => i.loc(),
+            Self::Enumeration(e) => e.loc(),
+            Self::Unary(u) => u.loc(),
+            Self::Binary(b) => b.loc(),
+            Self::ForAll(f) => f.loc(),
+            Self::Implication(i) => i.loc(),
+            Self::EventImplication(ei) => ei.loc(),
+        }
+    }
+}
 
 mk_new! { impl Term =>
     Constant: constant (val: Constant = val)
     Result: result (val: keyword::result = val)
-    Identifier: ident (val: impl Into<String> = val.into())
+    Identifier: ident (val: impl Into<Ident> = val.into())
+    Identifier: test_ident (
+        val: impl AsRef<str> = Ident::new(val.as_ref(), Loc::test_dummy().into()),
+    )
     Enumeration: enumeration (val: Enumeration = val)
     Unary: unary (val: Unary = val)
     Binary: binary (val: Binary = val)
