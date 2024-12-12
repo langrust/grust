@@ -1485,8 +1485,8 @@ mod parse_expr {
             } else if PatEnumeration::peek(input) {
                 Pattern::Enumeration(input.parse()?)
             } else if input.fork().peek(Token![_]) {
-                let _: Token![_] = input.parse()?;
-                Pattern::Default
+                let token: Token![_] = input.parse()?;
+                Pattern::Default(token.span.into())
             } else {
                 let ident: Ident = input.parse()?;
                 Pattern::Identifier(ident)
@@ -2590,7 +2590,7 @@ mod parsing_tests {
                                     Loc::test_id("x"),
                                     Some(Pattern::Constant(Constant::int(syn::parse_quote! {0}))),
                                 ),
-                                (Loc::test_id("y"), Some(Pattern::Default)),
+                                (Loc::test_id("y"), Some(Pattern::Default(Loc::test_dummy()))),
                             ],
                             None,
                         )),
@@ -2602,7 +2602,7 @@ mod parsing_tests {
                             Loc::test_id("Point"),
                             vec![
                                 (Loc::test_id("x"), Some(Pattern::test_ident("x"))),
-                                (Loc::test_id("y"), Some(Pattern::Default)),
+                                (Loc::test_id("y"), Some(Pattern::Default(Loc::test_dummy()))),
                             ],
                             None,
                         )),
@@ -2614,7 +2614,7 @@ mod parsing_tests {
                         expr: Expr::cst(Constant::int(syn::parse_quote! {-1})),
                     },
                     Arm::new(
-                        Pattern::Default,
+                        Pattern::Default(Loc::test_dummy()),
                         Expr::cst(Constant::int(syn::parse_quote! {1})),
                     ),
                 ],
@@ -2828,7 +2828,7 @@ mod parsing_tests {
                         Loc::test_id("x"),
                         Some(Pattern::cst(Constant::int(parse_quote! {0}))),
                     ),
-                    (Loc::test_id("y"), Some(Pattern::default())),
+                    (Loc::test_id("y"), Some(Pattern::default(Loc::test_dummy()))),
                 ],
                 None,
             ));
@@ -2898,7 +2898,7 @@ mod parsing_tests {
         #[test]
         fn parse_default_pat() {
             let pattern: Pattern = parse_quote! {_};
-            let control = Pattern::default();
+            let control = Pattern::default(Loc::test_dummy());
             assert_eq!(pattern, control)
         }
 
@@ -3067,7 +3067,7 @@ mod parsing_tests {
                                     Loc::test_id("x"),
                                     Some(Pattern::cst(Constant::int(parse_quote! {0}))),
                                 ),
-                                (Loc::test_id("y"), Some(Pattern::default())),
+                                (Loc::test_id("y"), Some(Pattern::default(Loc::test_dummy()))),
                             ],
                             None,
                         )),
@@ -3079,7 +3079,7 @@ mod parsing_tests {
                             Loc::test_id("Point"),
                             vec![
                                 (Loc::test_id("x"), Some(Pattern::test_ident("x"))),
-                                (Loc::test_id("y"), Some(Pattern::default())),
+                                (Loc::test_id("y"), Some(Pattern::default(Loc::test_dummy()))),
                             ],
                             None,
                         )),
@@ -3090,7 +3090,10 @@ mod parsing_tests {
                             vec![Expr::test_ident("x")],
                         ))),
                     ),
-                    Arm::new(Pattern::Default, Expr::cst(Constant::int(parse_quote! {1}))),
+                    Arm::new(
+                        Pattern::Default(Loc::test_dummy()),
+                        Expr::cst(Constant::int(parse_quote! {1})),
+                    ),
                 ],
             ));
             assert_eq!(expr, control)

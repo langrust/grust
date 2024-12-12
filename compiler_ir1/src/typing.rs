@@ -548,7 +548,7 @@ impl Pattern {
                 self.typing = Some(Typ::sm_event(Typ::Any));
                 Ok(())
             }
-            Kind::Default => {
+            Kind::Default(_) => {
                 self.typing = Some(Typ::any());
                 Ok(())
             }

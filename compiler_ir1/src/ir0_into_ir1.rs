@@ -1031,7 +1031,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                         for _ in prev_idx..idx {
                             dflt_event_elems.push(pattern::Pattern::new(
                                 arm.pattern.loc(),
-                                pattern::Kind::default(),
+                                pattern::Kind::default(arm.pattern.loc()),
                             ));
                         }
                     }
@@ -1695,7 +1695,7 @@ mod expr_pattern_impl {
                 Enumeration(pat) => pat.into_ir1(ctx)?,
                 Tuple(pat) => pat.into_ir1(ctx)?,
                 // None => ir1::pattern::Kind::None,
-                Default => ir1::pattern::Kind::Default,
+                Default(loc) => ir1::pattern::Kind::Default(loc),
             };
 
             Ok(ir1::Pattern {
@@ -1951,7 +1951,7 @@ mod stream_impl {
                     for _ in prev_idx..idx {
                         dflt_event_elems.push(pattern::Pattern::new(
                             arm.pattern.loc(),
-                            pattern::Kind::default(),
+                            pattern::Kind::default(arm.pattern.loc()),
                         ));
                     }
                 }

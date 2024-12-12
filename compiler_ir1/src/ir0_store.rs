@@ -509,7 +509,7 @@ mod expr_pattern {
                     .into_iter()
                     .flatten()
                     .collect()),
-                Pattern::Constant(_) | Pattern::Enumeration(_) | Pattern::Default => Ok(vec![]),
+                Pattern::Constant(_) | Pattern::Enumeration(_) | Pattern::Default(_) => Ok(vec![]),
             }
         }
 
@@ -540,7 +540,7 @@ mod expr_pattern {
                     .into_iter()
                     .flatten()
                     .collect()),
-                Pattern::Constant(_) | Pattern::Enumeration(_) | Pattern::Default => Ok(vec![]),
+                Pattern::Constant(_) | Pattern::Enumeration(_) | Pattern::Default(_) => Ok(vec![]),
             }
         }
     }

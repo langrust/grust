@@ -610,7 +610,7 @@ impl Ir1IntoIr2<&'_ SymbolTable> for ir1::Pattern {
                 pattern: Box::new(pattern.into_ir2(symbol_table)),
             },
             Kind::None => Pattern::None,
-            Kind::Default => Pattern::Default,
+            Kind::Default(loc) => Pattern::Default(loc),
             Kind::PresentEvent { event_id, pattern } => match symbol_table.get_typ(event_id) {
                 Typ::SMEvent { .. } => Pattern::some(pattern.into_ir2(symbol_table)),
                 _ => unreachable!(),
