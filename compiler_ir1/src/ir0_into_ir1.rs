@@ -2133,7 +2133,6 @@ mod stream_impl {
                     let id = ctx
                         .symbols
                         .get_identifier_id(&last.ident, false, ctx.errors)?;
-
                     Kind::FollowedBy {
                         constant: Box::new(constant),
                         id,

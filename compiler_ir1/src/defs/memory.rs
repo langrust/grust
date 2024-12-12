@@ -185,15 +185,16 @@ impl Memory {
             ..
         }) = self.buffers.get_mut(&ident)
         {
-            let default_cst = ir1::stream::Kind::expr(ir1::expr::Kind::constant(
-                Constant::Default(other_constant.loc()),
-            ));
-            if other_constant.kind == default_cst {
+            if other_constant.is_default_constant() {
+                // overwrite default
                 *other_constant = constant;
-            } else if constant.kind.ne(&default_cst) {
-                bail!(@constant.loc() =>
-                    "incompatible initial value `{:?}`", default_cst =>
-                    | @other_constant.loc() => "should be the same as `{:?}`", other_constant.kind,
+            } else if constant.is_default_constant() {
+                // do nothing, an actual value is already there
+            } else if other_constant != &constant {
+                bail!(@ident.loc() =>
+                    "[internal] incompatible initial values for `{}`", ident
+                    => | @constant.loc() => "involving this constant",
+                    => | @other_constant.loc() => "and this constant",
                 )
             }
             Ok(())

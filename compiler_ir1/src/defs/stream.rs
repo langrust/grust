@@ -958,6 +958,16 @@ pub enum Kind {
     NoneEvent,
 }
 
+impl Kind {
+    pub fn is_default_constant(&self) -> bool {
+        if let Self::Expression { expr } = self {
+            expr.is_default_constant()
+        } else {
+            false
+        }
+    }
+}
+
 mk_new! { impl Kind =>
     Expression: expr {
         expr: impl Into<expr::Kind<Expr>> = expr.into(),
@@ -1009,6 +1019,10 @@ impl Expr {
             loc: loc.into(),
             dependencies: Dependencies::new(),
         }
+    }
+
+    pub fn is_default_constant(&self) -> bool {
+        self.kind.is_default_constant()
     }
 
     /// Get stream expression's type.

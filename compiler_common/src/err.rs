@@ -519,8 +519,27 @@ impl Error {
         d
     }
 
+    pub fn to_note_diagnostic(self) -> macro1::Diagnostic {
+        use macro1::*;
+        let (error_kind, notes) = self.val;
+        let loc = self.loc.expect("error has no location >_<").unwrap();
+        let mut d = Diagnostic::spanned(&[loc] as &[Span], Level::Note, error_kind.to_string());
+        for note in notes {
+            let msg = note.val;
+            if let Some(loc) = note.loc {
+                d = d.span_note(&[loc.unwrap()] as &[Span], msg.to_string());
+            } else {
+                d = d.note(msg.to_string());
+            }
+        }
+        d
+    }
+
     pub fn emit(self) {
         self.to_diagnostic().emit();
+    }
+    pub fn emit_note(self) {
+        self.to_note_diagnostic().emit();
     }
 }
 
@@ -617,22 +636,23 @@ macro_rules! error {
         $({
             #[allow(unused_imports)]
             use $crate::prelude::NoteKind::*;
-                error!( (@extend &mut error) | $($notes)* );
+                $crate::error!( (@extend &mut error) | $($notes)* );
         })?
         error
     }};
-    // Note parsing.
     { (@extend $error:expr)
         | @ $loc:expr => $($expr:expr),* $(,)?
-    } => {
-        $error.add_note_mut(note!(@ $loc => $($expr),*))
-    };
-    { (@extend $error:expr)
-        | @ $loc:expr => $($expr:expr),* ,
-        | $($tail:tt)*
-    } => {
-        $error.add_note_mut(note!(@ $loc => $($expr),*))
-    };
+        $(=> | $($tail:tt)*)?
+    } => {{
+        $error.add_note_mut(note!(@ $loc => $($expr),*));
+        $( $crate::error!((@extend $error)  | $($tail)*) )?
+    }};
+    // Note parsing.
+    // { (@extend $error:expr)
+    //     | @ $loc:expr => $($expr:expr),* ,
+    // } => {
+    //     $error.add_note_mut(note!(@ $loc => $($expr),*))
+    // };
 }
 
 #[macro_export]

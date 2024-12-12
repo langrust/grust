@@ -131,6 +131,16 @@ pub enum Kind<E> {
     },
 }
 
+impl<E> Kind<E> {
+    pub fn is_default_constant(&self) -> bool {
+        if let Self::Constant { constant } = self {
+            constant.is_default()
+        } else {
+            false
+        }
+    }
+}
+
 mk_new! { impl{E} Kind<E> =>
     Constant: constant { constant: Constant }
     Identifier: ident { id : usize }
