@@ -63,20 +63,18 @@ impl Pattern {
             loc,
         }
     }
-}
 
-/// Constructs pattern.
-///
-/// Typing and location are empty.
-pub fn init(kind: Kind) -> Pattern {
-    Pattern {
-        kind,
-        typ: None,
-        loc: Loc::builtin(),
+    /// Constructs pattern.
+    ///
+    /// Typing and location are empty.
+    pub fn new(loc: impl Into<Loc>, kind: Kind) -> Pattern {
+        Pattern {
+            kind,
+            typ: None,
+            loc: loc.into(),
+        }
     }
-}
 
-impl Pattern {
     /// Get pattern's type.
     pub fn get_type(&self) -> Option<&Typ> {
         self.typ.as_ref()

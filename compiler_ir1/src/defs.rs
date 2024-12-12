@@ -64,10 +64,8 @@ pub fn from_ast(ast: Ast, symbols: &mut SymbolTable) -> Result<File, Vec<Error>>
     );
     check_errors!(
         "causality analysis (ir1)",
-        ir1.causality_analysis(symbols, errors),
-        &errors,
+        ir1.causality_analysis(symbols, errors)
     );
-    ir1.normalize(symbols);
-    debug_assert!(errors.is_empty());
+    check_errors!("normalization (ir1)", ir1.normalize(symbols, errors));
     Ok(ir1)
 }

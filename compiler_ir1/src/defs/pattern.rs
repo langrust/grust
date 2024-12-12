@@ -89,19 +89,24 @@ pub struct Pattern {
     /// Pattern location.
     pub loc: Loc,
 }
-
-/// Constructs pattern.
-///
-/// Typing and location are empty.
-pub fn init(kind: Kind) -> Pattern {
-    Pattern {
-        kind,
-        typing: None,
-        loc: Loc::builtin(),
+impl HasLoc for Pattern {
+    fn loc(&self) -> Loc {
+        self.loc
     }
 }
 
 impl Pattern {
+    /// Constructs pattern.
+    ///
+    /// Typing and location are empty.
+    pub fn new(loc: impl Into<Loc>, kind: Kind) -> Pattern {
+        Pattern {
+            kind,
+            typing: None,
+            loc: loc.into(),
+        }
+    }
+
     /// Get pattern's type.
     pub fn get_typ(&self) -> Option<&Typ> {
         self.typing.as_ref()

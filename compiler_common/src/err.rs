@@ -606,7 +606,7 @@ macro_rules! note {
 macro_rules! error {
     { @ $loc:expr
         => $($error:expr),* $(,)?
-        $( => $($notes:tt)* )?
+        $( => | $($notes:tt)* )?
     } => {{
         #[allow(unused_mut)]
         let mut error = {
@@ -617,7 +617,7 @@ macro_rules! error {
         $({
             #[allow(unused_imports)]
             use $crate::prelude::NoteKind::*;
-                error!( (@extend &mut error) => $($notes)* );
+                error!( (@extend &mut error) | $($notes)* );
         })?
         error
     }};

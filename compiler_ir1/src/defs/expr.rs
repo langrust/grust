@@ -224,18 +224,6 @@ impl Expr {
     }
 }
 
-/// Constructs expression.
-///
-/// Typing, location and dependencies are empty.
-pub fn init(kind: Kind<Expr>) -> Expr {
-    Expr {
-        kind,
-        typing: None,
-        loc: Loc::builtin(),
-        dependencies: ir1::Dependencies::new(),
-    }
-}
-
 impl<E> Kind<E> {
     /// Propagate a predicate over the expression tree.
     pub fn propagate_predicate<F1, F2>(&self, expr_pred: F1, stmt_pred: F2) -> bool

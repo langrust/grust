@@ -179,19 +179,24 @@ impl Memory {
         ident: Ident,
         typing: Typ,
         constant: ir1::stream::Expr,
-    ) {
+    ) -> Res<()> {
         if let Some(Buffer {
             init: other_constant,
             ..
         }) = self.buffers.get_mut(&ident)
         {
-            let default_cst = ir1::stream::Kind::expr(ir1::expr::Kind::constant(Constant::Default));
+            let default_cst = ir1::stream::Kind::expr(ir1::expr::Kind::constant(
+                Constant::Default(other_constant.loc()),
+            ));
             if other_constant.kind == default_cst {
                 *other_constant = constant;
             } else if constant.kind.ne(&default_cst) {
-                // todo: make it an error
-                assert!(other_constant == &constant, "different init values")
+                bail!(@constant.loc() =>
+                    "incompatible initial value `{:?}`", default_cst =>
+                    | @other_constant.loc() => "should be the same as `{:?}`", other_constant.kind,
+                )
             }
+            Ok(())
         } else {
             self.buffers.insert(
                 ident.clone(),
@@ -202,6 +207,7 @@ impl Memory {
                     init: constant,
                 },
             );
+            Ok(())
         }
     }
 

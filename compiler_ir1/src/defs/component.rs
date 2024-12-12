@@ -124,10 +124,10 @@ impl Component {
     ///     },
     /// }
     /// ```
-    pub fn memorize(&mut self, symbol_table: &mut SymbolTable) {
+    pub fn memorize(&mut self, symbol_table: &mut SymbolTable) -> Res<()> {
         match self {
             Component::Definition(comp_def) => comp_def.memorize(symbol_table),
-            Component::Import(_) => (),
+            Component::Import(_) => Ok(()),
         }
     }
 
@@ -389,20 +389,20 @@ impl ComponentDefinition {
     ///     },
     /// }
     /// ```
-    pub fn memorize(&mut self, symbol_table: &mut SymbolTable) {
+    pub fn memorize(&mut self, symbol_table: &mut SymbolTable) -> Res<()> {
         // create an IdentifierCreator, a local SymbolTable and Memory
         let mut identifier_creator = IdentifierCreator::from(self.get_signals_names(symbol_table));
         symbol_table.local();
         let mut memory = Memory::new();
 
-        self.statements.iter_mut().for_each(|statement| {
+        for statement in self.statements.iter_mut() {
             statement.memorize(
                 &mut identifier_creator,
                 &mut memory,
                 &mut self.contract,
                 symbol_table,
-            )
-        });
+            )?;
+        }
 
         // drop IdentifierCreator (auto), local SymbolTable and set Memory
         symbol_table.global();
@@ -417,6 +417,7 @@ impl ComponentDefinition {
             .iter()
             .for_each(|statement| statement.add_to_graph(&mut graph));
         self.graph = graph;
+        Ok(())
     }
 
     /// Change [ir1] node into a normal form.

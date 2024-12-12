@@ -99,7 +99,7 @@ impl Pattern {
                     paren_token,
                     elems: Default::default(),
                 }),
-                Constant::Default => parse_quote! { Default::default() },
+                Constant::Default(loc) => parse_quote_spanned! { loc.span => Default::default() },
             },
             Pattern::Identifier { name } => Pat::Ident(PatIdent {
                 attrs: vec![],
