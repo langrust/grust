@@ -589,9 +589,10 @@ macro_rules! mk_error {
     { @ $loc:expr => $e:expr } => {
         // compile_error!(concat!("tokens: ", stringify!($e)));
         $crate::prelude::Error::new_at($loc.into(), $e)
+            .add_note($crate::note!(@ $loc => "raised at `{}:{}`", file!(), line!()))
     };
     { @ $loc:expr => $($stuff:tt)* } => {
-        $crate::prelude::Error::new_at($loc.into(), format!($($stuff)*))
+        $crate::mk_error!(@ $loc => format!($($stuff)*))
     };
 }
 

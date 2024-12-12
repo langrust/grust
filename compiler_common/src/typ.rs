@@ -471,7 +471,7 @@ impl Typ {
     /// let mut abstraction_type = Typ::function(input_types.clone(), output_type.clone());
     ///
     /// let application_result = abstraction_type
-    ///     .apply(input_types, Loc::call_site(), &mut errors)
+    ///     .apply(input_types, Loc::test_dummy(), &mut errors)
     ///     .unwrap();
     ///
     /// assert_eq!(application_result, output_type);
@@ -529,7 +529,7 @@ impl Typ {
     /// let given_type = Typ::int();
     /// let expected_type = Typ::int();
     ///
-    /// given_type.check_eq(&expected_type, Loc::mixed_site()).unwrap();
+    /// given_type.check_eq(&expected_type, Loc::test_dummy()).unwrap();
     /// ```
     pub fn check_eq(&self, expected: &Typ, loc: Loc) -> Res<()> {
         check::typ::expect(loc, self, expected)

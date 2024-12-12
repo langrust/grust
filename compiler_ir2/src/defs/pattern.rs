@@ -58,7 +58,7 @@ pub enum Pattern {
     /// None pattern, matches when the optional does not have a value.
     None,
     /// The default pattern that matches anything.
-    Default,
+    Default(Loc),
 }
 
 mk_new! { impl Pattern =>
@@ -83,7 +83,9 @@ mk_new! { impl Pattern =>
     Err: err()
     Some: some { pattern: Self = Box::new(pattern) }
     None: none()
-    Default: default()
+    Default: default(
+        loc: impl Into<Loc> = loc.into(),
+    )
 }
 
 impl Pattern {
@@ -108,9 +110,9 @@ impl Pattern {
                 ident: name.clone(),
                 subpat: None,
             }),
-            Pattern::Default => Pat::Wild(PatWild {
+            Pattern::Default(loc) => Pat::Wild(PatWild {
                 attrs: vec![],
-                underscore_token: Default::default(),
+                underscore_token: token::Underscore { spans: [loc.span] },
             }),
             Pattern::Ok { pattern } => Pat::TupleStruct(PatTupleStruct {
                 attrs: vec![],
@@ -175,7 +177,7 @@ mod test {
 
     #[test]
     fn should_create_a_rust_ast_default_pattern_from_a_ir2_default_pattern() {
-        let pattern = Pattern::Default;
+        let pattern = Pattern::Default(Loc::test_dummy());
         let control = parse_quote! { _ };
         assert_eq!(pattern.into_syn(), control)
     }
@@ -190,7 +192,7 @@ mod test {
     #[test]
     fn should_create_a_rust_ast_tuple_structure_pattern_from_a_ir2_some_pattern() {
         let pattern = Pattern::Some {
-            pattern: Box::new(Pattern::Default),
+            pattern: Box::new(Pattern::Default(Loc::test_dummy())),
         };
 
         let control = parse_quote! { Some(_) };
@@ -220,7 +222,7 @@ mod test {
         let pattern = Pattern::Structure {
             name: Loc::test_id("Point"),
             fields: vec![
-                (Loc::test_id("x"), Pattern::Default),
+                (Loc::test_id("x"), Pattern::Default(Loc::test_dummy())),
                 (Loc::test_id("y"), Pattern::test_ident("y")),
             ],
         };

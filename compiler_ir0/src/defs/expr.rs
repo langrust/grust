@@ -295,7 +295,7 @@ pub enum Pattern {
     /// Tuple pattern that matches tuples.
     Tuple(PatTuple),
     /// Default pattern.
-    Default,
+    Default(Loc),
 }
 impl HasLoc for Pattern {
     fn loc(&self) -> Loc {
@@ -305,7 +305,7 @@ impl HasLoc for Pattern {
             Self::Structure(s) => s.loc(),
             Self::Enumeration(e) => e.loc(),
             Self::Tuple(t) => t.loc(),
-            Self::Default => Loc::builtin(),
+            Self::Default(loc) => *loc,
         }
     }
 }
@@ -322,7 +322,9 @@ impl Pattern {
         Structure: structure(s: PatStructure = s)
         Enumeration: enumeration(e: PatEnumeration = e)
         Tuple: tuple(t: PatTuple = t)
-        Default: default()
+        Default: default(
+            loc: impl Into<Loc> = loc.into(),
+        )
     }
 }
 

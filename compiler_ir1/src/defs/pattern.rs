@@ -54,7 +54,7 @@ pub enum Kind {
     /// None pattern, matches when the optional does not have a value.
     None,
     /// The default pattern that matches anything.
-    Default,
+    Default(Loc),
 }
 
 mk_new! { impl Kind =>
@@ -76,7 +76,9 @@ mk_new! { impl Kind =>
     Tuple: tuple { elements: Vec<Pattern> }
     Some: some { pattern: Pattern = pattern.into() }
     None: none {}
-    Default: default {}
+    Default: default(
+        loc: impl Into<Loc> = loc.into(),
+    )
 }
 
 /// Pattern.
@@ -123,7 +125,7 @@ impl Pattern {
             | Kind::Enumeration { .. }
             | Kind::NoEvent { .. }
             | Kind::None
-            | Kind::Default => vec![],
+            | Kind::Default(_) => vec![],
             Kind::Structure { fields, .. } => fields
                 .iter()
                 .flat_map(|(id, optional_pattern)| {
@@ -149,7 +151,7 @@ impl Pattern {
             | Kind::Enumeration { .. }
             | Kind::NoEvent { .. }
             | Kind::None
-            | Kind::Default => vec![],
+            | Kind::Default(_) => vec![],
             Kind::Structure { fields, .. } => fields
                 .iter_mut()
                 .flat_map(|(id, optional_pattern)| {
