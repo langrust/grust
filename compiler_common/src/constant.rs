@@ -46,6 +46,14 @@ impl Constant {
         }
     }
 
+    pub fn is_default(&self) -> bool {
+        if let Self::Default(_) = self {
+            true
+        } else {
+            false
+        }
+    }
+
     /// The `syn` version of a constant.
     pub fn into_syn(self) -> syn::Expr {
         prelude!(syn::{Expr, ExprLit, ExprTuple});

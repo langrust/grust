@@ -11,6 +11,23 @@ macro_rules! prelude {
     };
 }
 
+#[macro_export]
+macro_rules! todoo {
+    {  } => {
+        unimplemented!("at `{}:{}`", file!(), line!())
+    };
+    { $($blah:tt)* } => {
+        unimplemented!("at `{}:{}`, {}", file!(), line!(), format!($($blah)*))
+    };
+}
+
+#[macro_export]
+macro_rules! noteln {
+    { $($stuff:tt)* } => {
+        error!($($stuff)*).emit_note()
+    }
+}
+
 // #[macro_export]
 // macro_rules! bail {
 //     { $e:expr } => { return Err($e.into()) };
@@ -72,6 +89,7 @@ pub use crate::{
     macro2,
     mk_new,
     note,
+    noteln,
     once_cell,
     op::{BOp, OtherOp, UOp},
     petgraph,
