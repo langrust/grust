@@ -758,13 +758,18 @@ mod event_pattern {
         ) -> TRes<Option<ir1::stream::Expr>> {
             match self {
                 EventPattern::Tuple(patterns) => {
-                    let mut guard = None;
+                    let mut guard: Option<ir1::stream::Expr> = None;
                     let mut combine_guard = |opt_guard: Option<ir1::stream::Expr>| {
                         if let Some(add_guard) = opt_guard {
                             if let Some(old_guard) = guard.take() {
-                                guard = Some(ir1::stream::expr(ir1::stream::Kind::expr(
-                                    ir1::expr::Kind::binop(BOp::And, old_guard, add_guard),
-                                )));
+                                guard = Some(ir1::stream::Expr::new(
+                                    old_guard.loc(),
+                                    ir1::stream::Kind::expr(ir1::expr::Kind::binop(
+                                        BOp::And,
+                                        old_guard,
+                                        add_guard,
+                                    )),
+                                ));
                             } else {
                                 guard = Some(add_guard);
                             }
@@ -801,8 +806,10 @@ mod event_pattern {
                     // transform inner_pattern into [ir1]
                     pattern.pattern.store(ctx.symbols, ctx.errors)?;
                     let inner_pattern = pattern.pattern.into_ir1(ctx)?;
-                    let event_pattern =
-                        ir1::pattern::init(ir1::pattern::Kind::present(event_id, inner_pattern));
+                    let event_pattern = ir1::pattern::Pattern::new(
+                        pattern.event.loc(),
+                        ir1::pattern::Kind::present(event_id, inner_pattern),
+                    );
 
                     // put event in tuple
                     let idx = events_indices[&event_id];
@@ -814,7 +821,7 @@ mod event_pattern {
                     let loc = expr.loc();
                     let ctx = &mut ir1::ctx::PatLoc::new(None, loc, symbols, errors);
                     let guard = ir1::stream::Kind::rising_edge(expr.into_ir1(ctx)?);
-                    Ok(Some(ir1::stream::expr(guard)))
+                    Ok(Some(ir1::stream::Expr::new(loc, guard)))
                 }
             }
         }

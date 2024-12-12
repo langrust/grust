@@ -436,6 +436,7 @@ impl SymbolTable {
         &mut self,
         typing: Typ,
         local: bool,
+        loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol = Symbol::new(
@@ -443,7 +444,7 @@ impl SymbolTable {
                 scope: Scope::Output,
                 typing: Some(typing),
             },
-            Loc::builtin_id("result"),
+            Ident::new("result", loc.span),
         );
 
         self.insert_symbol(symbol, local, errors)

@@ -23,7 +23,7 @@ pub enum Constant {
     /// Unit constant
     Unit(Paren),
     /// Default constant
-    Default,
+    Default(Loc),
 }
 
 mk_new! { impl Constant =>
@@ -32,7 +32,7 @@ mk_new! { impl Constant =>
     Boolean: bool(l: LitBool = l)
     Unit: unit(l: Paren = l)
     Unit: unit_default(l = Default::default())
-    Default: default()
+    Default: default(loc: impl Into<Loc> = loc.into())
 }
 
 impl Constant {
@@ -42,7 +42,7 @@ impl Constant {
             Self::Float(l) => l.span().into(),
             Self::Boolean(l) => l.span().into(),
             Self::Unit(p) => p.span.join().into(),
-            Self::Default => Loc::builtin(),
+            Self::Default(loc) => *loc,
         }
     }
 
@@ -84,7 +84,7 @@ impl Constant {
                 paren_token,
                 elems: Default::default(),
             }),
-            Constant::Default => parse_quote! { Default::default() },
+            Constant::Default(loc) => parse_quote_spanned! {loc.span => Default::default() },
         }
     }
 
@@ -97,7 +97,7 @@ impl Constant {
             Constant::Unit(paren) => Typ::Unit(keyword::unit {
                 span: paren.span.span(),
             }),
-            Constant::Default => Typ::Any,
+            Constant::Default(_) => Typ::Any,
         }
     }
 }

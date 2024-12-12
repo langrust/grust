@@ -54,7 +54,7 @@ impl Stmt {
         memory: &mut Memory,
         contract: &mut Contract,
         symbol_table: &mut SymbolTable,
-    ) {
+    ) -> Res<()> {
         self.expr
             .memorize(identifier_creator, memory, contract, symbol_table)
     }
@@ -364,71 +364,78 @@ impl ExprKind {
         memory: &mut Memory,
         contract: &mut Contract,
         symbol_table: &mut SymbolTable,
-    ) {
+    ) -> Res<()> {
         match self {
             Self::Constant { .. }
             | Self::Identifier { .. }
             | Self::Abstraction { .. }
             | Self::Enumeration { .. } => (),
             Self::UnOp { expr, .. } => {
-                expr.memorize(identifier_creator, memory, contract, symbol_table)
+                expr.memorize(identifier_creator, memory, contract, symbol_table)?;
             }
             Self::BinOp { lft, rgt, .. } => {
-                lft.memorize(identifier_creator, memory, contract, symbol_table);
-                rgt.memorize(identifier_creator, memory, contract, symbol_table)
+                lft.memorize(identifier_creator, memory, contract, symbol_table)?;
+                rgt.memorize(identifier_creator, memory, contract, symbol_table)?;
             }
             Self::IfThenElse { cnd, thn, els } => {
-                cnd.memorize(identifier_creator, memory, contract, symbol_table);
-                thn.memorize(identifier_creator, memory, contract, symbol_table);
-                els.memorize(identifier_creator, memory, contract, symbol_table)
+                cnd.memorize(identifier_creator, memory, contract, symbol_table)?;
+                thn.memorize(identifier_creator, memory, contract, symbol_table)?;
+                els.memorize(identifier_creator, memory, contract, symbol_table)?;
             }
             Self::Application { fun, inputs } => {
-                fun.memorize(identifier_creator, memory, contract, symbol_table);
-                inputs.iter_mut().for_each(|expr| {
-                    expr.memorize(identifier_creator, memory, contract, symbol_table)
-                })
+                fun.memorize(identifier_creator, memory, contract, symbol_table)?;
+                for expr in inputs.iter_mut() {
+                    expr.memorize(identifier_creator, memory, contract, symbol_table)?;
+                }
             }
-            Self::Structure { fields, .. } => fields.iter_mut().for_each(|(_, expr)| {
-                expr.memorize(identifier_creator, memory, contract, symbol_table)
-            }),
-            Self::Array { elements } | Self::Tuple { elements } => elements
-                .iter_mut()
-                .for_each(|expr| expr.memorize(identifier_creator, memory, contract, symbol_table)),
+            Self::Structure { fields, .. } => {
+                for (_, expr) in fields.iter_mut() {
+                    expr.memorize(identifier_creator, memory, contract, symbol_table)?;
+                }
+            }
+            Self::Array { elements } | Self::Tuple { elements } => {
+                for expr in elements {
+                    expr.memorize(identifier_creator, memory, contract, symbol_table)?;
+                }
+            }
             Self::Match { expr, arms } => {
-                expr.memorize(identifier_creator, memory, contract, symbol_table);
-                arms.iter_mut().for_each(|(_, option, block, expr)| {
-                    option.as_mut().map(|expr| {
-                        expr.memorize(identifier_creator, memory, contract, symbol_table)
-                    });
-                    block.iter_mut().for_each(|statement| {
-                        statement.memorize(identifier_creator, memory, contract, symbol_table)
-                    });
-                    expr.memorize(identifier_creator, memory, contract, symbol_table)
-                })
+                expr.memorize(identifier_creator, memory, contract, symbol_table)?;
+                for (_, option, block, expr) in arms.iter_mut() {
+                    if let Some(expr) = option.as_mut() {
+                        expr.memorize(identifier_creator, memory, contract, symbol_table)?;
+                    }
+                    for statement in block.iter_mut() {
+                        statement.memorize(identifier_creator, memory, contract, symbol_table)?;
+                    }
+                    expr.memorize(identifier_creator, memory, contract, symbol_table)?;
+                }
             }
             Self::FieldAccess { expr, .. } => {
-                expr.memorize(identifier_creator, memory, contract, symbol_table)
+                expr.memorize(identifier_creator, memory, contract, symbol_table)?;
             }
             Self::TupleElementAccess { expr, .. } => {
-                expr.memorize(identifier_creator, memory, contract, symbol_table)
+                expr.memorize(identifier_creator, memory, contract, symbol_table)?;
             }
             Self::Map { expr, fun } => {
-                expr.memorize(identifier_creator, memory, contract, symbol_table);
-                fun.memorize(identifier_creator, memory, contract, symbol_table)
+                expr.memorize(identifier_creator, memory, contract, symbol_table)?;
+                fun.memorize(identifier_creator, memory, contract, symbol_table)?;
             }
             Self::Fold { array, init, fun } => {
-                array.memorize(identifier_creator, memory, contract, symbol_table);
-                init.memorize(identifier_creator, memory, contract, symbol_table);
-                fun.memorize(identifier_creator, memory, contract, symbol_table)
+                array.memorize(identifier_creator, memory, contract, symbol_table)?;
+                init.memorize(identifier_creator, memory, contract, symbol_table)?;
+                fun.memorize(identifier_creator, memory, contract, symbol_table)?;
             }
             Self::Sort { expr, fun } => {
-                expr.memorize(identifier_creator, memory, contract, symbol_table);
-                fun.memorize(identifier_creator, memory, contract, symbol_table)
+                expr.memorize(identifier_creator, memory, contract, symbol_table)?;
+                fun.memorize(identifier_creator, memory, contract, symbol_table)?;
             }
-            Self::Zip { arrays } => arrays
-                .iter_mut()
-                .for_each(|expr| expr.memorize(identifier_creator, memory, contract, symbol_table)),
+            Self::Zip { arrays } => {
+                for expr in arrays {
+                    expr.memorize(identifier_creator, memory, contract, symbol_table)?;
+                }
+            }
         }
+        Ok(())
     }
 
     /// Change [ir1] expression into a normal form.
@@ -952,7 +959,9 @@ pub enum Kind {
 }
 
 mk_new! { impl Kind =>
-    Expression: expr { expr: expr::Kind<Expr> }
+    Expression: expr {
+        expr: impl Into<expr::Kind<Expr>> = expr.into(),
+    }
     FollowedBy: fby {
         id: usize,
         constant: Expr = constant.into(),
@@ -989,19 +998,19 @@ impl HasLoc for Expr {
     }
 }
 
-/// Constructs stream expression.
-///
-/// Typing, location and dependencies are empty.
-pub fn expr(kind: Kind) -> Expr {
-    Expr {
-        kind,
-        typ: None,
-        loc: Loc::builtin(),
-        dependencies: Dependencies::new(),
-    }
-}
-
 impl Expr {
+    /// Constructs stream expression.
+    ///
+    /// Typing, location and dependencies are empty.
+    pub fn new(loc: impl Into<Loc>, kind: Kind) -> Expr {
+        Expr {
+            kind,
+            typ: None,
+            loc: loc.into(),
+            dependencies: Dependencies::new(),
+        }
+    }
+
     /// Get stream expression's type.
     pub fn get_type(&self) -> Option<&Typ> {
         self.typ.as_ref()
@@ -1090,16 +1099,16 @@ impl Expr {
         memory: &mut Memory,
         contract: &mut Contract,
         symbol_table: &mut SymbolTable,
-    ) {
+    ) -> Res<()> {
         match &mut self.kind {
             stream::Kind::Expression { expr } => {
-                expr.memorize(identifier_creator, memory, contract, symbol_table)
+                expr.memorize(identifier_creator, memory, contract, symbol_table)?;
             }
             stream::Kind::FollowedBy { id, constant } => {
                 // add buffer to memory
                 let name = symbol_table.get_name(*id);
                 let typ = symbol_table.get_typ(*id);
-                memory.add_buffer(*id, name.clone(), typ.clone(), *constant.clone());
+                memory.add_buffer(*id, name.clone(), typ.clone(), *constant.clone())?;
             }
             stream::Kind::NodeApplication {
                 called_node_id,
@@ -1117,11 +1126,12 @@ impl Expr {
                 *node_memory_id = Some(memory_id);
             }
             stream::Kind::SomeEvent { expr } => {
-                expr.memorize(identifier_creator, memory, contract, symbol_table);
+                expr.memorize(identifier_creator, memory, contract, symbol_table)?;
             }
             stream::Kind::NoneEvent => (),
             stream::Kind::RisingEdge { .. } => unreachable!(),
         }
+        Ok(())
     }
 
     /// Change [ir1] expression into a normal form.

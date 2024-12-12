@@ -124,10 +124,11 @@ impl File {
     /// ```
     ///
     /// This example is tested in source.
-    pub fn memorize(&mut self, symbol_table: &mut SymbolTable) {
-        self.components
-            .iter_mut()
-            .for_each(|node| node.memorize(symbol_table));
+    pub fn memorize(&mut self, symbol_table: &mut SymbolTable) -> Res<()> {
+        for node in self.components.iter_mut() {
+            node.memorize(symbol_table)?;
+        }
+        Ok(())
     }
 
     /// Change [ir1] file into a normal form.
@@ -414,11 +415,16 @@ impl File {
     ///     out z: int = 0 fby z;
     /// }
     /// ```
-    pub fn normalize(&mut self, symbol_table: &mut SymbolTable) {
+    pub fn normalize(
+        &mut self,
+        symbol_table: &mut SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> TRes<()> {
         self.normal_form(symbol_table);
         self.generate_flows_dependency_graphs();
-        self.memorize(symbol_table);
+        self.memorize(symbol_table).dewrap(errors)?;
         self.inline_when_needed(symbol_table);
-        self.schedule()
+        self.schedule();
+        Ok(())
     }
 }

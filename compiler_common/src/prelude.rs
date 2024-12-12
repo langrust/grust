@@ -31,7 +31,7 @@ pub mod syn {
     pub use syn::{
         braced, bracketed, custom_keyword, parenthesized,
         parse::{Parse, ParseStream},
-        parse_macro_input, parse_quote, parse_str,
+        parse_macro_input, parse_quote, parse_quote_spanned, parse_str,
         punctuated::{self, Punctuated},
         spanned::Spanned,
         Token, *,
@@ -47,8 +47,8 @@ pub use macro2::{Span, TokenStream as TokenStream2};
 pub use quote::{format_ident, quote_spanned, ToTokens};
 pub use serde::{Deserialize, Serialize};
 pub use syn::{
-    braced, bracketed, custom_keyword, parenthesized, parse_macro_input, parse_quote, Ident,
-    ParseStream, Token,
+    braced, bracketed, custom_keyword, parenthesized, parse_macro_input, parse_quote,
+    parse_quote_spanned, Ident, ParseStream, Token,
 };
 
 pub use crate::{
