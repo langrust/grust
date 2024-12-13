@@ -28,6 +28,22 @@ macro_rules! noteln {
     }
 }
 
+#[macro_export]
+macro_rules! res_vec {
+    { $len:expr, $e:expr $(,)? } => {{
+        let mut vec = Vec::with_capacity($len);
+        for res in $e {
+            vec.push(res?);
+        }
+        vec
+    }};
+    { $e:expr $(,)? } => {{
+        for res in $e {
+            res?;
+        }
+    }};
+}
+
 // #[macro_export]
 // macro_rules! bail {
 //     { $e:expr } => { return Err($e.into()) };
@@ -95,6 +111,7 @@ pub use crate::{
     op::{BOp, OtherOp, UOp},
     petgraph,
     quote,
+    res_vec,
     rustc_hash,
     safe_index,
     scope::Scope,
