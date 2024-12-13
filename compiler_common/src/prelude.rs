@@ -42,6 +42,7 @@ pub use std::{
     fmt::Display,
     hash::Hash,
     ops,
+    time::{Duration, Instant},
 };
 
 pub mod syn {
@@ -353,4 +354,51 @@ fn test_levenshtein() {
     check("i12", "i76", 2);
     check("kitten", "sitting", 3);
     check("uninformed", "uniformed", 1);
+}
+
+pub struct Stats {
+    vec: Vec<(String, Duration)>,
+}
+impl Stats {
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            vec: Vec::with_capacity(capacity),
+        }
+    }
+    pub fn new() -> Self {
+        Self::with_capacity(10)
+    }
+
+    pub fn timed<T>(&mut self, desc: impl Into<String>, run: impl FnOnce() -> T) -> T {
+        let start = Instant::now();
+        let res = run();
+        self.vec.push((desc.into(), Instant::now() - start));
+        res
+    }
+
+    pub fn pretty(&self) -> String {
+        let max_key_len = if let Some(max) = self.vec.iter().map(|(s, _)| s.chars().count()).max() {
+            max
+        } else {
+            return String::new();
+        };
+        let mut string = String::with_capacity(200);
+        let mut sep = "| ";
+        for (s, d) in self.vec.iter() {
+            string.push_str(sep);
+            for _ in s.chars().count()..max_key_len {
+                string.push(' ');
+            }
+            string.push_str(s);
+            string.push_str(" | ");
+            let secs = format!("{}.{:0>3}", d.as_secs(), d.subsec_nanos());
+            for _ in secs.len()..15 {
+                string.push(' ');
+            }
+            string.extend([secs].into_iter());
+            string.push_str(" |");
+            sep = "\n| ";
+        }
+        string
+    }
 }
