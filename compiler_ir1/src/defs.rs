@@ -32,17 +32,18 @@ pub fn raw_from_ast(ast: Ast, symbols: &mut SymbolTable, errors: &mut Vec<Error>
     unwrap("IR0 to IR1", ast.into_ir1(&mut ctx), &ctx.errors)
 }
 
-pub fn from_ast(ast: Ast, symbols: &mut SymbolTable) -> Result<File, Vec<Error>> {
+pub fn from_ast_timed(ast: Ast, symbols: &mut SymbolTable) -> Result<(File, Stats), Vec<Error>> {
     let mut errors_vec = vec![];
     let errors = &mut errors_vec;
+    let mut stats = Stats::with_capacity(5);
     macro_rules! check_errors {
         {} => {
             if !errors.is_empty() { return Err(errors_vec); }
         };
         { $desc:expr, $e:expr $(,)? } => {{
             check_errors!();
-            match $e {
-                Ok(()) => check_errors!(),
+            match stats.timed($desc, || $e) {
+                Ok(res) => res,
                 Err(()) => {
                     if errors.is_empty() {
                         panic!("empty errors :/ ({})", $desc);
@@ -67,5 +68,9 @@ pub fn from_ast(ast: Ast, symbols: &mut SymbolTable) -> Result<File, Vec<Error>>
         ir1.causality_analysis(symbols, errors)
     );
     check_errors!("normalization (ir1)", ir1.normalize(symbols, errors));
-    Ok(ir1)
+    Ok((ir1, stats))
+}
+
+pub fn from_ast(ast: Ast, symbols: &mut SymbolTable) -> Result<File, Vec<Error>> {
+    from_ast_timed(ast, symbols).map(|(ir1, _)| ir1)
 }

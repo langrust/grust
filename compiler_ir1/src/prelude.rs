@@ -23,7 +23,7 @@ pub mod ir1 {
             dependencies::Dependencies,
             expr::{self, Expr},
             file::File,
-            flow, from_ast,
+            flow, from_ast, from_ast_timed,
             function::Function,
             identifier_creator::IdentifierCreator,
             interface::{self, Interface, Service},
