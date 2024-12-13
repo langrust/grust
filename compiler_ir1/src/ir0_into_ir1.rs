@@ -41,16 +41,14 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for Ast {
                     let id = ctx.symbols.get_fresh_id();
                     let _prev = imports.insert(id, ir1);
                     debug_assert!(_prev.is_none());
-                },
-                ir0::Item::Export(export) =>{
+                }
+                ir0::Item::Export(export) => {
                     let ir1 = export.into_ir1(ctx)?;
                     let id = ctx.symbols.get_fresh_id();
                     let _prev = exports.insert(id, ir1);
                     debug_assert!(_prev.is_none());
-                },
-                ir0::Item::ComponentImport(component) => {
-                    components.push(component.into_ir1(ctx)?)
                 }
+                ir0::Item::ComponentImport(component) => components.push(component.into_ir1(ctx)?),
             }
         }
 
@@ -279,15 +277,24 @@ mod interface_impl {
                     })
                 }
                 FlowPattern::Tuple { patterns, .. } => {
-                    let elements = patterns
-                        .into_iter()
-                        .map(|pattern| pattern.into_ir1(ctx))
-                        .collect::<TRes<Vec<_>>>()?;
-
-                    let mut types = elements
-                        .iter()
-                        .map(|pattern| pattern.typ.as_ref().unwrap().clone())
-                        .collect::<Vec<_>>();
+                    let (mut elements, mut types) = (
+                        Vec::with_capacity(patterns.len()),
+                        Vec::with_capacity(patterns.len()),
+                    );
+                    for pat in patterns {
+                        let loc = pat.loc();
+                        let elem = pat.into_ir1(ctx)?;
+                        let typ = elem
+                            .typ
+                            .as_ref()
+                            .ok_or_else(lerror!(@loc =>
+                                "[internal] failed to retrieve type of pattern"
+                            ))
+                            .dewrap(&mut ctx.errors)?
+                            .clone();
+                        types.push(typ);
+                        elements.push(elem);
+                    }
                     let typ = if types.len() == 1 {
                         types.pop().unwrap()
                     } else {
@@ -331,22 +338,18 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Function {
         }
         ctx.symbols.set_function_output_type(id, output_typing);
 
-        let (statements, returned) = self.statements.into_iter().fold(
-            (vec![], None),
-            |(mut declarations, option_returned), statement| match statement {
+        let (mut statements, mut returned) = (Vec::with_capacity(self.statements.len()), None);
+        for stmt in self.statements {
+            match stmt {
                 ir0::Stmt::Declaration(declaration) => {
-                    declarations.push(declaration.into_ir1(ctx));
-                    (declarations, option_returned)
+                    statements.push(declaration.into_ir1(ctx)?);
                 }
                 ir0::Stmt::Return(ir0::stmt::Return { expression, .. }) => {
-                    assert!(option_returned.is_none());
-                    (
-                        declarations,
-                        Some(expression.into_ir1(&mut ctx.add_pat_loc(None, loc))),
-                    )
+                    assert!(returned.is_none());
+                    returned = Some(expression.into_ir1(&mut ctx.add_pat_loc(None, loc))?);
                 }
-            },
-        );
+            }
+        }
         let contract = self.contract.into_ir1(ctx)?;
 
         ctx.symbols.global();
@@ -354,8 +357,12 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Function {
         Ok(ir1::Function {
             id,
             contract,
-            statements: statements.into_iter().collect::<TRes<Vec<_>>>()?,
-            returned: returned.unwrap()?,
+            statements,
+            returned: returned
+                .ok_or_else(lerror!(@self.ident.loc() =>
+                    "[internal] this function has not return expression"
+                ))
+                .dewrap(ctx.errors)?,
             loc,
         })
     }
@@ -374,11 +381,12 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Component {
         ctx.symbols.local();
         ctx.symbols.restore_context(id);
 
-        let statements = self
-            .equations
-            .into_iter()
-            .map(|equation| equation.into_ir1(ctx))
-            .collect::<TRes<Vec<_>>>()?;
+        let statements = res_vec!(
+            self.equations.len(),
+            self.equations
+                .into_iter()
+                .map(|equation| equation.into_ir1(ctx)),
+        );
         let contract = self.contract.into_ir1(ctx)?;
 
         ctx.symbols.global();
@@ -563,24 +571,32 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Contract {
     type Ir1 = Contract;
 
     fn into_ir1(self, ctx: &mut ctx::Simple) -> TRes<Self::Ir1> {
-        use ir0::contract::ClauseKind;
-        let (requires, ensures, invariant) = self.clauses.into_iter().fold(
-            (vec![], vec![], vec![]),
-            |(mut requires, mut ensures, mut invariant), clause| {
-                match clause.kind {
-                    ClauseKind::Requires(_) => requires.push(clause.term.into_ir1(ctx)),
-                    ClauseKind::Ensures(_) => ensures.push(clause.term.into_ir1(ctx)),
-                    ClauseKind::Invariant(_) => invariant.push(clause.term.into_ir1(ctx)),
-                    ClauseKind::Assert(_) => todo!(),
-                };
-                (requires, ensures, invariant)
-            },
+        use ir0::contract::ClauseKind::*;
+        let (mut requires, mut ensures, mut invariant) = (
+            Vec::with_capacity(self.clauses.len()),
+            Vec::with_capacity(self.clauses.len()),
+            Vec::with_capacity(self.clauses.len()),
         );
+        for clause in self.clauses {
+            match clause.kind {
+                Requires(_) => requires.push(clause.term.into_ir1(ctx)?),
+                Ensures(_) => ensures.push(clause.term.into_ir1(ctx)?),
+                Invariant(_) => invariant.push(clause.term.into_ir1(ctx)?),
+                Assert(a) => {
+                    bad!(ctx.errors, @a.span =>
+                        "`ir0::Contract::into_ir1` does not support assertions clauses"
+                    )
+                }
+            }
+        }
+        requires.shrink_to_fit();
+        ensures.shrink_to_fit();
+        invariant.shrink_to_fit();
 
         Ok(ir1::Contract {
-            requires: requires.into_iter().collect::<TRes<Vec<_>>>()?,
-            ensures: ensures.into_iter().collect::<TRes<Vec<_>>>()?,
-            invariant: invariant.into_iter().collect::<TRes<Vec<_>>>()?,
+            requires,
+            ensures,
+            invariant,
         })
     }
 }
@@ -751,10 +767,12 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Eq {
             Eq::Match(Match { expr, arms, .. }) => {
                 // create the receiving pattern for the equation
                 let pattern = {
-                    let mut elements = defined_signals
-                        .values()
-                        .map(|pat| pat.clone().into_ir1(&mut ctx.add_loc(loc)))
-                        .collect::<TRes<Vec<_>>>()?;
+                    let mut elements = res_vec!(
+                        defined_signals.len(),
+                        defined_signals
+                            .values()
+                            .map(|pat| pat.clone().into_ir1(&mut ctx.add_loc(loc))),
+                    );
                     if elements.len() == 1 {
                         elements.pop().unwrap()
                     } else {
@@ -889,10 +907,12 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
             ReactEq::Match(ir0::equation::Match { expr, arms, .. }) => {
                 // create the receiving pattern for the equation
                 let pattern = {
-                    let mut elements = defined_signals
-                        .values()
-                        .map(|pat| pat.clone().into_ir1(&mut ctx.add_loc(loc)))
-                        .collect::<TRes<Vec<_>>>()?;
+                    let mut elements = res_vec!(
+                        defined_signals.len(),
+                        defined_signals
+                            .values()
+                            .map(|pat| pat.clone().into_ir1(&mut ctx.add_loc(loc))),
+                    );
                     if elements.len() == 1 {
                         elements.pop().unwrap()
                     } else {
@@ -901,9 +921,9 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                 };
 
                 // for each arm, construct pattern guard and statements
-                let arms = arms
-                    .into_iter()
-                    .map(
+                let arms = res_vec!(
+                    arms.len(),
+                    arms.into_iter().map(
                         |Arm {
                              pattern,
                              guard,
@@ -928,7 +948,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                                             ctx.errors,
                                         )
                                     })
-                                    .collect::<TRes<()>>()?;
+                                    .collect_res()?;
 
                                 // transform pattern guard and equations into [ir1] with local
                                 // context
@@ -936,10 +956,10 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                                 let guard = guard
                                     .map(|(_, expr)| expr.into_ir1(&mut ctx.add_pat_loc(None, loc)))
                                     .transpose()?;
-                                let statements = equations
-                                    .into_iter()
-                                    .map(|equation| equation.into_ir1(ctx))
-                                    .collect::<TRes<Vec<_>>>()?;
+                                let statements = res_vec!(
+                                    equations.len(),
+                                    equations.into_iter().map(|equation| equation.into_ir1(ctx)),
+                                );
 
                                 ctx.symbols.global();
 
@@ -954,9 +974,9 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                                         defined_signals.len(), signals.len(),
                                     ))
                                 }
-                                let mut elements = defined_signals
-                                    .keys()
-                                    .map(|signal_name| {
+                                let mut elements = res_vec!(
+                                    defined_signals.len(),
+                                    defined_signals.keys().map(|signal_name| {
                                         if let Some(id) = signals.get(signal_name) {
                                             Ok(stream::Expr::new(
                                                 signal_name.loc(),
@@ -967,8 +987,8 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                                                 signal_name.to_string(),
                                             ))
                                         }
-                                    })
-                                    .collect::<TRes<Vec<_>>>()?;
+                                    }),
+                                );
 
                                 // create the tuple expression
                                 if elements.len() == 1 {
@@ -983,8 +1003,8 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
 
                             Ok((pattern, guard, statements, expr))
                         },
-                    )
-                    .collect::<TRes<Vec<_>>>()?;
+                    ),
+                );
 
                 // construct the match expression
                 let expr = stream::Expr::new(
@@ -1000,7 +1020,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
             ReactEq::MatchWhen(MatchWhen { init, arms, .. }) => {
                 // create the pattern defined by the equation
                 let def_eq_pat = {
-                    let mut elements = defined_signals.into_values().collect::<Vec<_>>();
+                    let mut elements: Vec<_> = defined_signals.into_values().collect();
                     if elements.len() == 1 {
                         elements.pop().unwrap()
                     } else {
@@ -1027,7 +1047,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                             ctx.errors,
                         )?;
                         for _ in prev_idx..idx {
-                            dflt_event_elems.push(pattern::Pattern::new(
+                            dflt_event_elems.push(Pattern::new(
                                 arm.pattern.loc(),
                                 pattern::Kind::default(arm.pattern.loc()),
                             ));
@@ -1066,7 +1086,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                 let dflt_arm = {
                     // create tuple pattern
                     let elements = dflt_event_elems.clone();
-                    let pattern = pattern::Pattern::new(loc, pattern::Kind::tuple(elements));
+                    let pattern = Pattern::new(loc, pattern::Kind::tuple(elements));
                     // transform guard and equations into [ir1] with local context
                     let guard = None;
                     // create the tuple expression
@@ -1077,9 +1097,9 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                 };
 
                 // for each arm construct [ir1] pattern, guard and statements
-                let mut match_arms = arms
-                    .into_iter()
-                    .map(
+                let mut match_arms = res_vec!(
+                    arms.len(),
+                    arms.into_iter().map(
                         |EventArmWhen {
                              pattern: event_pattern,
                              guard,
@@ -1099,8 +1119,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                                     ctx.symbols,
                                     ctx.errors,
                                 )?;
-                                let matched =
-                                    pattern::Pattern::new(pat_loc, pattern::Kind::tuple(elements));
+                                let matched = Pattern::new(pat_loc, pattern::Kind::tuple(elements));
 
                                 // transform AST guard into [ir1]
                                 let mut guard = guard
@@ -1141,15 +1160,15 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                                             ctx.errors,
                                         )
                                     })
-                                    .collect::<TRes<()>>()?;
+                                    .collect_res()?;
                                 signals
                             };
 
                             // transform equations into [ir1] with local context
-                            let statements = equations
-                                .into_iter()
-                                .map(|equation| equation.into_ir1(ctx))
-                                .collect::<TRes<Vec<_>>>()?;
+                            let statements = res_vec!(
+                                equations.len(),
+                                equations.into_iter().map(|equation| equation.into_ir1(ctx)),
+                            );
 
                             ctx.symbols.global();
 
@@ -1159,8 +1178,8 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
 
                             Ok((matched_pattern, guard, statements, expression))
                         },
-                    )
-                    .collect::<TRes<Vec<_>>>()?;
+                    ),
+                );
                 match_arms.push(dflt_arm);
 
                 // construct the match expression
@@ -1176,7 +1195,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                                     stream::Kind::expr(ir1::expr::Kind::ident(*event_id)),
                                 )
                             })
-                            .collect::<Vec<_>>();
+                            .collect();
                         stream::Expr::new(loc, stream::Kind::expr(ir1::expr::Kind::tuple(elements)))
                     };
                     stream::Expr::new(
@@ -1259,10 +1278,10 @@ where
         // post-condition: construct [ir1] expression kind and check identifiers good use
         Ok(expr::Kind::app(
             self.fun.into_ir1(ctx)?,
-            self.inputs
-                .into_iter()
-                .map(|input| input.into_ir1(ctx))
-                .collect::<TRes<Vec<_>>>()?,
+            res_vec!(
+                self.inputs.len(),
+                self.inputs.into_iter().map(|input| input.into_ir1(ctx)),
+            ),
         ))
     }
 }
@@ -1288,10 +1307,9 @@ where
             .map(|id| (ctx.symbols.get_name(id).clone(), id))
             .collect::<HashMap<_, _>>();
 
-        let fields = self
-            .fields
-            .into_iter()
-            .map(|(field_name, expression)| {
+        let fields = res_vec!(
+            self.fields.len(),
+            self.fields.into_iter().map(|(field_name, expression)| {
                 let id = field_ids.remove(&field_name).map_or_else(
                     || {
                         bad!(ctx.errors, @ctx.loc =>
@@ -1302,18 +1320,16 @@ where
                 )?;
                 let expression = expression.into_ir1(ctx)?;
                 Ok((id, expression))
-            })
-            .collect::<TRes<Vec<_>>>()?;
+            }),
+        );
 
-        // check if there are no missing fields
-        field_ids
-            .keys()
-            .map(|field_name| {
-                bad!(ctx.errors, @ctx.loc =>
-                    ErrorKind::missing_field(self.name.to_string(), field_name.to_string())
-                )
-            })
-            .collect::<TRes<Vec<()>>>()?;
+        // fail on missing fields
+        for field_name in field_ids.keys() {
+            bad!(ctx.errors, @self.loc =>
+                ErrorKind::missing_field(self.name.to_string(), field_name.to_string())
+                => | @field_name.loc() => "field declared here"
+            )
+        }
 
         Ok(expr::Kind::Structure { id, fields })
     }
@@ -1363,11 +1379,12 @@ mod simple_expr_impl {
             // pre-condition: identifiers are stored in symbol table
             // post-condition: construct [ir1] expression kind and check identifiers good use
             Ok(expr::Kind::Array {
-                elements: self
-                    .elements
-                    .into_iter()
-                    .map(|expression| expression.into_ir1(ctx))
-                    .collect::<TRes<Vec<_>>>()?,
+                elements: res_vec!(
+                    self.elements.len(),
+                    self.elements
+                        .into_iter()
+                        .map(|expression| expression.into_ir1(ctx)),
+                ),
             })
         }
     }
@@ -1382,12 +1399,12 @@ mod simple_expr_impl {
         fn into_ir1(self, ctx: &mut ir1::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Ir1>> {
             // pre-condition: identifiers are stored in symbol table
             // post-condition: construct [ir1] expression kind and check identifiers good use
-            Ok(expr::Kind::tuple(
+            Ok(expr::Kind::tuple(res_vec!(
+                self.elements.len(),
                 self.elements
                     .into_iter()
-                    .map(|expression| expression.into_ir1(ctx))
-                    .collect::<TRes<Vec<_>>>()?,
-            ))
+                    .map(|expression| expression.into_ir1(ctx)),
+            )))
         }
     }
 
@@ -1403,9 +1420,9 @@ mod simple_expr_impl {
             // post-condition: construct [ir1] expression kind and check identifiers good use
             Ok(expr::Kind::match_expr(
                 self.expr.into_ir1(ctx)?,
-                self.arms
-                    .into_iter()
-                    .map(|arm| {
+                res_vec!(
+                    self.arms.len(),
+                    self.arms.into_iter().map(|arm| {
                         ctx.symbols.local();
                         arm.pattern.store(ctx.symbols, ctx.errors)?;
                         let pattern = arm.pattern.into_ir1(&mut ctx.remove_pat())?;
@@ -1413,8 +1430,8 @@ mod simple_expr_impl {
                         let expr = arm.expr.into_ir1(ctx)?;
                         ctx.symbols.global();
                         Ok((pattern, guard, vec![], expr))
-                    })
-                    .collect::<TRes<Vec<_>>>()?,
+                    }),
+                ),
             ))
         }
     }
@@ -1515,12 +1532,10 @@ mod simple_expr_impl {
         fn into_ir1(self, ctx: &mut ir1::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Ir1>> {
             // pre-condition: identifiers are stored in symbol table
             // post-condition: construct [ir1] expression kind and check identifiers good use
-            Ok(expr::Kind::zip(
-                self.arrays
-                    .into_iter()
-                    .map(|array| array.into_ir1(ctx))
-                    .collect::<TRes<Vec<_>>>()?,
-            ))
+            Ok(expr::Kind::zip(res_vec!(
+                self.arrays.len(),
+                self.arrays.into_iter().map(|array| array.into_ir1(ctx)),
+            )))
         }
     }
 
@@ -1535,15 +1550,14 @@ mod simple_expr_impl {
             // pre-condition: identifiers are stored in symbol table
             // post-condition: construct [ir1] expression kind and check identifiers good use
             ctx.symbols.local();
-            let inputs = self
-                .inputs
-                .into_iter()
-                .map(|(input_name, typing)| {
+            let inputs = res_vec!(
+                self.inputs.len(),
+                self.inputs.into_iter().map(|(input_name, typing)| {
                     let typing = typing.into_ir1(&mut ctx.remove_pat())?;
                     ctx.symbols
                         .insert_identifier(input_name, Some(typing), true, ctx.errors)
-                })
-                .collect::<TRes<Vec<_>>>()?;
+                }),
+            );
             let expr = self.expr.into_ir1(ctx)?;
             ctx.symbols.global();
 
@@ -1600,47 +1614,45 @@ mod expr_pattern_impl {
         type Ir1 = ir1::pattern::Kind;
 
         fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc) -> TRes<ir1::pattern::Kind> {
+            let loc = self.loc();
             let id = ctx
                 .symbols
                 .get_struct_id(&self.name, false, ctx.loc, ctx.errors)?;
             let mut field_ids = ctx
                 .symbols
                 .get_struct_fields(id)
-                .clone()
-                .into_iter()
-                .map(|id| (ctx.symbols.get_name(id).clone(), id))
+                .iter()
+                .map(|id| (ctx.symbols.get_name(*id).clone(), *id))
                 .collect::<HashMap<_, _>>();
 
-            let fields = self
-                .fields
-                .into_iter()
-                .map(|(field_name, optional_pattern)| {
-                    let id = field_ids.remove(&field_name).map_or_else(
-                        || {
-                            bad!(ctx.errors, @ctx.loc => ErrorKind::unknown_field(
-                                self.name.to_string(), field_name.to_string(),
-                            ))
-                        },
-                        |id| Ok(id),
-                    )?;
-                    let pattern = optional_pattern
-                        .map(|pattern| pattern.into_ir1(ctx))
-                        .transpose()?;
-                    Ok((id, pattern))
-                })
-                .collect::<TRes<Vec<_>>>()?;
+            let fields = res_vec!(
+                self.fields.len(),
+                self.fields
+                    .into_iter()
+                    .map(|(field_name, optional_pattern)| {
+                        let id = field_ids.remove(&field_name).map_or_else(
+                            || {
+                                bad!(ctx.errors, @ctx.loc => ErrorKind::unknown_field(
+                                    self.name.to_string(), field_name.to_string(),
+                                ))
+                            },
+                            |id| Ok(id),
+                        )?;
+                        let pattern = optional_pattern
+                            .map(|pattern| pattern.into_ir1(ctx))
+                            .transpose()?;
+                        Ok((id, pattern))
+                    }),
+            );
 
             if self.rest.is_none() {
                 // check if there are no missing fields
-                field_ids
-                    .keys()
-                    .map(|field_name| {
-                        bad!(ctx.errors, @ctx.loc => ErrorKind::missing_field(
-                            self.name.to_string(),
-                            field_name.to_string(),
-                        ))
-                    })
-                    .collect::<TRes<Vec<()>>>()?;
+                for field_name in field_ids.keys() {
+                    bad!(ctx.errors, @loc =>
+                        ErrorKind::missing_field(self.name.to_string(), field_name.to_string())
+                        => | @field_name.loc() => "field declared here"
+                    )
+                }
             }
 
             Ok(ir1::pattern::Kind::Structure { id, fields })
@@ -1669,12 +1681,12 @@ mod expr_pattern_impl {
         type Ir1 = ir1::pattern::Kind;
 
         fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc) -> TRes<ir1::pattern::Kind> {
-            Ok(ir1::pattern::Kind::tuple(
+            Ok(ir1::pattern::Kind::tuple(res_vec!(
+                self.elements.len(),
                 self.elements
                     .into_iter()
-                    .map(|pattern| pattern.into_ir1(ctx))
-                    .collect::<TRes<Vec<_>>>()?,
-            ))
+                    .map(|pattern| pattern.into_ir1(ctx)),
+            )))
         }
     }
 
@@ -1761,10 +1773,14 @@ mod stmt_pattern_impl {
                     }
                 }
                 ir0::stmt::Pattern::Tuple(Tuple { elements, .. }) => {
-                    let elements = elements
-                        .iter()
-                        .map(|pat| pat.into_default_expr(defined_signals, init_signal_vals, ctx))
-                        .collect::<TRes<_>>()?;
+                    let elements = res_vec!(
+                        elements.len(),
+                        elements.iter().map(|pat| pat.into_default_expr(
+                            defined_signals,
+                            init_signal_vals,
+                            ctx
+                        )),
+                    );
                     ir1::stream::Kind::expr(ir1::expr::Kind::tuple(elements))
                 }
             };
@@ -1855,12 +1871,12 @@ mod stmt_pattern_impl {
         type Ir1 = ir1::stmt::Kind;
 
         fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc) -> TRes<ir1::stmt::Kind> {
-            Ok(ir1::stmt::Kind::tuple(
+            Ok(ir1::stmt::Kind::tuple(res_vec!(
+                self.elements.len(),
                 self.elements
                     .into_iter()
-                    .map(|pattern| pattern.into_ir1(ctx))
-                    .collect::<TRes<Vec<_>>>()?,
-            ))
+                    .map(|pattern| pattern.into_ir1(ctx)),
+            )))
         }
     }
 
@@ -1947,7 +1963,7 @@ mod stream_impl {
                         ctx.errors,
                     )?;
                     for _ in prev_idx..idx {
-                        dflt_event_elems.push(pattern::Pattern::new(
+                        dflt_event_elems.push(Pattern::new(
                             arm.pattern.loc(),
                             pattern::Kind::default(arm.pattern.loc()),
                         ));
@@ -1972,8 +1988,7 @@ mod stream_impl {
             let dflt_arm = {
                 // create tuple pattern
                 let elements = dflt_event_elems.clone();
-                let pattern =
-                    pattern::Pattern::new(self.when_token.span, pattern::Kind::tuple(elements));
+                let pattern = Pattern::new(self.when_token.span, pattern::Kind::tuple(elements));
                 // transform guard and equations into [ir1] with local context
                 let guard = None;
                 // create the tuple expression
@@ -1987,9 +2002,9 @@ mod stream_impl {
             };
 
             // for each arm construct [ir1] pattern, guard and statements
-            let mut match_arms = arms
-                .into_iter()
-                .map(
+            let mut match_arms = res_vec!(
+                arms.len(),
+                arms.into_iter().map(
                     |stream::EventArmWhen {
                          pattern: event_pattern,
                          guard,
@@ -2009,8 +2024,7 @@ mod stream_impl {
                                 ctx.symbols,
                                 ctx.errors,
                             )?;
-                            let matched =
-                                pattern::Pattern::new(pat_loc, pattern::Kind::tuple(elements));
+                            let matched = Pattern::new(pat_loc, pattern::Kind::tuple(elements));
 
                             // transform AST guard into [ir1]
                             let mut guard = guard
@@ -2042,8 +2056,8 @@ mod stream_impl {
 
                         Ok((matched_pattern, guard, vec![], expression))
                     },
-                )
-                .collect::<TRes<Vec<_>>>()?;
+                ),
+            );
             match_arms.push(dflt_arm);
 
             // construct the match expression
@@ -2059,7 +2073,7 @@ mod stream_impl {
                                 ir1::stream::Kind::expr(ir1::expr::Kind::ident(*event_id)),
                             )
                         })
-                        .collect::<Vec<_>>();
+                        .collect();
                     ir1::stream::Expr::new(
                         when_token.span,
                         ir1::stream::Kind::expr(ir1::expr::Kind::tuple(elements)),
@@ -2099,11 +2113,13 @@ mod stream_impl {
 
                                 Kind::call(
                                     called_node_id,
-                                    app.inputs
-                                        .into_iter()
-                                        .zip(inputs)
-                                        .map(|(input, id)| Ok((*id, input.clone().into_ir1(ctx)?)))
-                                        .collect::<TRes<Vec<_>>>()?,
+                                    res_vec!(
+                                        app.inputs.len(),
+                                        app.inputs.into_iter().zip(inputs).map(|(input, id)| Ok((
+                                            *id,
+                                            input.clone().into_ir1(ctx)?
+                                        ))),
+                                    ),
                                 )
                             }
                             _ => unreachable!(),
@@ -2111,10 +2127,12 @@ mod stream_impl {
                     }
                     fun => Kind::expr(ir1::expr::Kind::app(
                         fun.into_ir1(ctx)?,
-                        app.inputs
-                            .into_iter()
-                            .map(|input| input.clone().into_ir1(ctx))
-                            .collect::<TRes<Vec<_>>>()?,
+                        res_vec!(
+                            app.inputs.len(),
+                            app.inputs
+                                .into_iter()
+                                .map(|input| input.clone().into_ir1(ctx)),
+                        ),
                     )),
                 },
                 stream::Expr::Last(last) => {
@@ -2275,24 +2293,19 @@ impl Ir0IntoIr1<ir1::ctx::Simple<'_>> for ir0::Typedef {
                 let field_ids = ctx.symbols.get_struct_fields(type_id).clone();
 
                 // insert field's type in symbol table
-                field_ids
-                    .iter()
-                    .zip(fields)
-                    .map(
-                        |(
-                            id,
-                            Colon {
-                                left: ident,
-                                right: typing,
-                                ..
-                            },
-                        )| {
-                            debug_assert_eq!(&ident, ctx.symbols.get_name(*id));
-                            let typing = typing.into_ir1(&mut ctx.add_loc(loc))?;
-                            Ok(ctx.symbols.set_type(*id, typing))
-                        },
-                    )
-                    .collect::<TRes<Vec<_>>>()?;
+                for (
+                    id,
+                    Colon {
+                        left: ident,
+                        right: typing,
+                        ..
+                    },
+                ) in field_ids.iter().zip(fields)
+                {
+                    debug_assert_eq!(&ident, ctx.symbols.get_name(*id));
+                    let typing = typing.into_ir1(&mut ctx.add_loc(loc))?;
+                    ctx.symbols.set_type(*id, typing)
+                }
 
                 Ok(ir1::Typedef {
                     id: type_id,
