@@ -392,10 +392,12 @@ impl ComponentDefinition {
 
                         // get node's reduced graph (borrow checker)
                         let reduced_graph = ctx.reduced_graphs.get_mut(&self.id).unwrap();
+                        // `collect` into a graph because we're about to add edges to
+                        // `reduced_graph`
                         let neighbor_edges = reduced_graph
                             .edges(neighbor_id)
                             .map(|(_, input_id, label)| (input_id, label.clone()))
-                            .collect::<Vec<_>>();
+                            .collect_vec();
 
                         // add dependencies as graph's edges:
                         // s = e depends on i <=> s -> i
@@ -440,84 +442,67 @@ impl stream::ExprKind {
     pub fn get_called_nodes(&self) -> Vec<usize> {
         match &self {
             Self::Constant { .. } | Self::Identifier { .. } | Self::Enumeration { .. } => vec![],
-            Self::Application { fun, inputs } => {
-                let mut nodes = inputs
-                    .iter()
-                    .flat_map(|expression| expression.get_called_nodes())
-                    .collect::<Vec<_>>();
-                let mut other_nodes = fun.get_called_nodes();
-                nodes.append(&mut other_nodes);
-                nodes
-            }
+            Self::Application { fun, inputs } => inputs
+                .iter()
+                .flat_map(|expression| expression.get_called_nodes())
+                .chain(fun.get_called_nodes())
+                .collect(),
             Self::Abstraction { expr, .. } | Self::UnOp { expr, .. } => expr.get_called_nodes(),
             Self::BinOp { lft, rgt, .. } => {
                 let mut nodes = lft.get_called_nodes();
-                let mut other_nodes = rgt.get_called_nodes();
-                nodes.append(&mut other_nodes);
+                nodes.extend(rgt.get_called_nodes());
                 nodes
             }
             Self::IfThenElse { cnd, thn, els } => {
                 let mut nodes = cnd.get_called_nodes();
-                let mut other_nodes = thn.get_called_nodes();
-                nodes.append(&mut other_nodes);
-                let mut other_nodes = els.get_called_nodes();
-                nodes.append(&mut other_nodes);
+                nodes.extend(thn.get_called_nodes());
+                nodes.extend(els.get_called_nodes());
                 nodes
             }
             Self::Structure { fields, .. } => fields
                 .iter()
                 .flat_map(|(_, expression)| expression.get_called_nodes())
-                .collect::<Vec<_>>(),
+                .collect_vec(),
             Self::Array { elements } => elements
                 .iter()
                 .flat_map(|expression| expression.get_called_nodes())
-                .collect::<Vec<_>>(),
+                .collect_vec(),
             Self::Tuple { elements } => elements
                 .iter()
                 .flat_map(|expression| expression.get_called_nodes())
-                .collect::<Vec<_>>(),
+                .collect_vec(),
             Self::Match { expr, arms } => {
                 let mut nodes = expr.get_called_nodes();
-                let mut other_nodes = arms
-                    .iter()
-                    .flat_map(|(_, bound, body, expr)| {
-                        let mut nodes = vec![];
-                        body.iter().for_each(|statement| {
-                            let mut other_nodes = statement.expr.get_called_nodes();
-                            nodes.append(&mut other_nodes);
-                        });
-                        let mut other_nodes = expr.get_called_nodes();
-                        nodes.append(&mut other_nodes);
-                        let mut other_nodes = bound
-                            .as_ref()
-                            .map_or(vec![], |expr| expr.get_called_nodes());
-                        nodes.append(&mut other_nodes);
-                        nodes
-                    })
-                    .collect::<Vec<_>>();
-                nodes.append(&mut other_nodes);
+                let other_nodes = arms.iter().flat_map(|(_, bound, body, expr)| {
+                    let body_nodes = body
+                        .iter()
+                        .flat_map(|stmt| stmt.expr.get_called_nodes().into_iter());
+                    let expr_nodes = expr.get_called_nodes();
+                    let bound_nodes = bound
+                        .as_ref()
+                        .into_iter()
+                        .flat_map(|e| e.get_called_nodes().into_iter());
+                    body_nodes.chain(expr_nodes).chain(bound_nodes)
+                });
+                nodes.extend(other_nodes);
                 nodes
             }
             Self::FieldAccess { expr, .. } => expr.get_called_nodes(),
             Self::TupleElementAccess { expr, .. } => expr.get_called_nodes(),
             Self::Map { expr, fun } => {
                 let mut nodes = expr.get_called_nodes();
-                let mut other_nodes = fun.get_called_nodes();
-                nodes.append(&mut other_nodes);
+                nodes.extend(fun.get_called_nodes());
                 nodes
             }
             Self::Fold { array, init, fun } => {
                 let mut nodes = array.get_called_nodes();
-                let mut other_nodes = init.get_called_nodes();
-                nodes.append(&mut other_nodes);
-                let mut other_nodes = fun.get_called_nodes();
-                nodes.append(&mut other_nodes);
+                nodes.extend(init.get_called_nodes());
+                nodes.extend(fun.get_called_nodes());
                 nodes
             }
             Self::Sort { expr, fun } => {
                 let mut nodes = expr.get_called_nodes();
-                let mut other_nodes = fun.get_called_nodes();
-                nodes.append(&mut other_nodes);
+                nodes.extend(fun.get_called_nodes());
                 nodes
             }
             Self::Zip { arrays } => arrays
