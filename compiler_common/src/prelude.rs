@@ -184,38 +184,54 @@ pub trait Lt {
 }
 
 /// Extension over `Iterator`s.
-pub trait IteratorExt: Sized {
-    /// Type of the items the iterator is for.
-    type I;
-
+pub trait IteratorExt: IntoIterator + Sized {
     /// Pairwise fold.
-    fn pairwise<Acc>(self, init: Acc, f: impl FnMut(Acc, Self::I, Self::I) -> Acc) -> Acc;
+    fn pairwise<Acc>(self, init: Acc, f: impl FnMut(Acc, Self::Item, Self::Item) -> Acc) -> Acc
+    where
+        Self::Item: Clone;
 
     /// Checks that an iterator is sorted.
     ///
     /// Weird name because of a warning that `is_sorted` may be used by the compiler one day.
     fn check_sorted(self) -> bool
     where
-        Self::I: Ord,
+        Self::Item: Ord + Clone,
     {
         self.pairwise(true, |okay, lft, rgt| okay && lft <= rgt)
+    }
+
+    fn collect_vec(self) -> Vec<Self::Item> {
+        self.into_iter().collect()
     }
 }
 impl<T> IteratorExt for T
 where
-    T: Iterator,
-    T::Item: Copy,
+    T: IntoIterator,
 {
-    type I = T::Item;
-    fn pairwise<Acc>(self, init: Acc, mut f: impl FnMut(Acc, T::Item, T::Item) -> Acc) -> Acc {
-        self.fold((None, init), |(prev, acc), cur| {
-            if let Some(prev) = prev {
-                (Some(cur), f(acc, prev, cur))
-            } else {
-                (Some(cur), acc)
-            }
-        })
-        .1
+    fn pairwise<Acc>(self, init: Acc, mut f: impl FnMut(Acc, T::Item, T::Item) -> Acc) -> Acc
+    where
+        Self::Item: Clone,
+    {
+        self.into_iter()
+            .fold((None, init), |(prev, acc), cur| {
+                if let Some(prev) = prev {
+                    (Some(cur.clone()), f(acc, prev, cur))
+                } else {
+                    (Some(cur), acc)
+                }
+            })
+            .1
+    }
+}
+pub trait ResIteratorExt<E>: IntoIterator<Item = Result<(), E>> {
+    fn collect_res(self) -> Result<(), E>;
+}
+impl<T, E> ResIteratorExt<E> for T
+where
+    T: IntoIterator<Item = Result<(), E>>,
+{
+    fn collect_res(self) -> Result<(), E> {
+        self.into_iter().collect()
     }
 }
 

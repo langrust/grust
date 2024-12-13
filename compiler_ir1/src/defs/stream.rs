@@ -101,7 +101,7 @@ impl Stmt {
                             symbol_table,
                         )
                     })
-                    .collect::<Vec<_>>();
+                    .collect_vec();
 
                 // change dependencies to be the sum of inputs dependencies
                 let reduced_graph = nodes_reduced_graphs.get(&called_node_id).unwrap();
@@ -113,16 +113,15 @@ impl Stmt {
                                 .get_node_outputs(called_node_id)
                                 .iter()
                                 .flat_map(|(_, output_id)| {
-                                    reduced_graph.edge_weight(*output_id, *input_id).map_or(
-                                        vec![],
-                                        |label1| {
+                                    reduced_graph
+                                        .edge_weight(*output_id, *input_id)
+                                        .into_iter()
+                                        .flat_map(|label1| {
                                             expr.get_dependencies()
                                                 .clone()
                                                 .into_iter()
                                                 .map(|(id, label2)| (id, label1.add(&label2)))
-                                                .collect()
-                                        },
-                                    )
+                                        })
                                 })
                         })
                         .collect(),
@@ -843,13 +842,12 @@ impl ExprKind {
                             .for_each(|statement| statement.expr.replace_by_context(&context_map));
 
                         matched_expr.replace_by_context(&context_map);
-                        let mut matched_expr_dependencies = matched_expr
+                        let matched_expr_dependencies = matched_expr
                             .get_dependencies()
                             .clone()
                             .into_iter()
-                            .filter(|(signal, _)| !local_signals.contains(signal))
-                            .collect::<Vec<(usize, Label)>>();
-                        expr_dependencies.append(&mut matched_expr_dependencies);
+                            .filter(|(signal, _)| !local_signals.contains(signal));
+                        expr_dependencies.extend(matched_expr_dependencies);
                     });
 
                 *dependencies = Dependencies::from(expr_dependencies);
@@ -1233,7 +1231,7 @@ impl Expr {
                             symbol_table,
                         )
                     })
-                    .collect::<Vec<_>>();
+                    .collect_vec();
 
                 // change dependencies to be the sum of inputs dependencies
                 let reduced_graph = nodes_reduced_graphs.get(&called_node_id).unwrap();
@@ -1245,16 +1243,15 @@ impl Expr {
                                 .get_node_outputs(called_node_id)
                                 .iter()
                                 .flat_map(|(_, output_id)| {
-                                    reduced_graph.edge_weight(*output_id, *input_id).map_or(
-                                        vec![],
-                                        |label1| {
+                                    reduced_graph
+                                        .edge_weight(*output_id, *input_id)
+                                        .into_iter()
+                                        .flat_map(|label1| {
                                             expr.get_dependencies()
                                                 .clone()
                                                 .into_iter()
                                                 .map(|(id, label2)| (id, label1.add(&label2)))
-                                                .collect()
-                                        },
-                                    )
+                                        })
                                 })
                         })
                         .collect(),

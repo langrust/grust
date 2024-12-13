@@ -152,10 +152,7 @@ impl EventPattern {
 impl std::fmt::Debug for EventPattern {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Tuple(arg0) => f
-                .debug_tuple("Tuple")
-                .field(&arg0.patterns.iter().collect::<Vec<_>>())
-                .finish(),
+            Self::Tuple(arg0) => f.debug_tuple("Tuple").field(&arg0.patterns).finish(),
             Self::Let(arg0) => f
                 .debug_tuple("Let")
                 .field(&(&arg0.pattern, &arg0.event))

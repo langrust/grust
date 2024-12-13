@@ -248,17 +248,17 @@ impl Expr {
                 inputs
                     .iter()
                     .map(|expression| expression.check_is_constant(table, errors))
-                    .collect::<TRes<_>>()
+                    .collect_res()
             }
             stream::Expr::Structure(Structure { fields, .. }) => fields
                 .iter()
                 .map(|(_, expression)| expression.check_is_constant(table, errors))
-                .collect::<TRes<_>>(),
+                .collect_res(),
             stream::Expr::Array(Array { elements, .. })
             | stream::Expr::Tuple(Tuple { elements, .. }) => elements
                 .iter()
                 .map(|expression| expression.check_is_constant(table, errors))
-                .collect::<TRes<_>>(),
+                .collect_res(),
         }
     }
 }

@@ -807,7 +807,7 @@ impl SymbolTable {
             SymbolKind::Function { ref inputs, .. } => inputs
                 .iter()
                 .map(|id| self.get_typ(*id).clone())
-                .collect::<Vec<_>>(),
+                .collect_vec(),
             _ => unreachable!(),
         };
 

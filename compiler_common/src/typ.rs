@@ -1,7 +1,3 @@
-use std::fmt::{self, Display};
-
-use macro2::Span;
-
 prelude! {
     syn::{Parse, Punctuated, token},
 }
@@ -168,7 +164,7 @@ impl PartialEq for Typ {
     }
 }
 impl Display for Typ {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Typ::Integer(_) => write!(f, "i64"),
             Typ::Float(_) => write!(f, "f64"),
@@ -178,25 +174,24 @@ impl Display for Typ {
             Typ::SMEvent { ty, .. } => write!(f, "SMEvent<{}>", *ty),
             Typ::Enumeration { name, .. } => write!(f, "{name}"),
             Typ::Structure { name, .. } => write!(f, "{name}"),
-            Typ::Abstract { inputs, output, .. } => write!(
-                f,
-                "({}) -> {}",
-                inputs
-                    .into_iter()
-                    .map(|input_type| input_type.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", "),
-                *output
-            ),
-            Typ::Tuple { elements, .. } => write!(
-                f,
-                "({})",
-                elements
-                    .into_iter()
-                    .map(|input_type| input_type.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", "),
-            ),
+            Typ::Abstract { inputs, output, .. } => {
+                write!(f, "(")?;
+                let mut sep = "";
+                for typ in inputs {
+                    write!(f, "{}{}", sep, typ)?;
+                    sep = ", "
+                }
+                write!(f, ") -> {}", *output)
+            }
+            Typ::Tuple { elements, .. } => {
+                write!(f, "(")?;
+                let mut sep = "";
+                for typ in elements {
+                    write!(f, "{}{}", sep, typ)?;
+                    sep = ", "
+                }
+                write!(f, ")")
+            }
             Typ::Signal { ty, .. } => write!(f, "Signal<{}>", *ty),
             Typ::Event { ty, .. } => write!(f, "Event<{}>", *ty),
             Typ::NotDefinedYet(s) => write!(f, "{s}"),
@@ -777,7 +772,7 @@ mod test {
         let abstraction_type = Typ::function(vec![Typ::int(), Typ::int()], Typ::int());
 
         assert_eq!(
-            abstraction_type.get_inputs().cloned().collect::<Vec<_>>(),
+            abstraction_type.get_inputs().cloned().collect_vec(),
             vec![Typ::int(), Typ::int()]
         );
     }
