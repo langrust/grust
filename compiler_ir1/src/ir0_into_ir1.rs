@@ -21,51 +21,49 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for Ast {
         // store elements in symbol table
         self.store(ctx.symbols, ctx.errors)?;
 
-        let (typedefs, functions, components, imports, exports, services) =
-            self.items.into_iter().fold(
-                (vec![], vec![], vec![], vec![], vec![], vec![]),
-                |(
-                    mut typedefs,
-                    mut functions,
-                    mut components,
-                    mut imports,
-                    mut exports,
-                    mut services,
-                ),
-                 item| {
-                    match item {
-                        ir0::Item::Component(component) => components.push(component.into_ir1(ctx)),
-                        ir0::Item::Function(function) => functions.push(function.into_ir1(ctx)),
-                        ir0::Item::Typedef(typedef) => typedefs.push(typedef.into_ir1(ctx)),
-                        ir0::Item::Service(service) => services.push(service.into_ir1(ctx)),
-                        ir0::Item::Import(import) => imports.push(
-                            import
-                                .into_ir1(ctx)
-                                .map(|res| (ctx.symbols.get_fresh_id(), res)),
-                        ),
-                        ir0::Item::Export(export) => exports.push(
-                            export
-                                .into_ir1(ctx)
-                                .map(|res| (ctx.symbols.get_fresh_id(), res)),
-                        ),
-                        ir0::Item::ComponentImport(component) => {
-                            components.push(component.into_ir1(ctx))
-                        }
-                    }
-                    (typedefs, functions, components, imports, exports, services)
+        let (mut typedefs, mut functions, mut components, mut imports, mut exports, mut services) = (
+            Vec::with_capacity(20),
+            Vec::with_capacity(20),
+            Vec::with_capacity(20),
+            HashMap::with_capacity(20),
+            HashMap::with_capacity(20),
+            Vec::with_capacity(20),
+        );
+
+        for item in self.items {
+            match item {
+                ir0::Item::Component(component) => components.push(component.into_ir1(ctx)?),
+                ir0::Item::Function(function) => functions.push(function.into_ir1(ctx)?),
+                ir0::Item::Typedef(typedef) => typedefs.push(typedef.into_ir1(ctx)?),
+                ir0::Item::Service(service) => services.push(service.into_ir1(ctx)?),
+                ir0::Item::Import(import) => {
+                    let ir1 = import.into_ir1(ctx)?;
+                    let id = ctx.symbols.get_fresh_id();
+                    let _prev = imports.insert(id, ir1);
+                    debug_assert!(_prev.is_none());
                 },
-            );
+                ir0::Item::Export(export) =>{
+                    let ir1 = export.into_ir1(ctx)?;
+                    let id = ctx.symbols.get_fresh_id();
+                    let _prev = exports.insert(id, ir1);
+                    debug_assert!(_prev.is_none());
+                },
+                ir0::Item::ComponentImport(component) => {
+                    components.push(component.into_ir1(ctx)?)
+                }
+            }
+        }
 
         let interface = Interface {
-            services: services.into_iter().collect::<TRes<Vec<_>>>()?,
-            imports: imports.into_iter().collect::<TRes<_>>()?,
-            exports: exports.into_iter().collect::<TRes<_>>()?,
+            services,
+            imports,
+            exports,
         };
 
         Ok(File {
-            typedefs: typedefs.into_iter().collect::<TRes<Vec<_>>>()?,
-            functions: functions.into_iter().collect::<TRes<Vec<_>>>()?,
-            components: components.into_iter().collect::<TRes<Vec<_>>>()?,
+            typedefs: typedefs,
+            functions: functions,
+            components: components,
             interface,
             loc: Loc::nu_call_site(),
         })

@@ -40,7 +40,7 @@ pub fn into_token_stream(ast: Ast) -> TokenStream2 {
     };
     let ir2 = stats.timed("ir1 → ir2", || ir1.into_ir2(symbol_table));
     let rust = stats.timed("codegen (ir2 → rust tokens)", || ir2.into_syn());
-    // println!("Stats:\n\n{}", stats.pretty());
+    println!("Stats:\n\n{}", stats.pretty());
     let mut tokens = TokenStream2::new();
     {
         use quote::TokenStreamExt;
