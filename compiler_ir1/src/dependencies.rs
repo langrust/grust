@@ -236,15 +236,14 @@ impl ComponentDefinition {
         // add [self] as node in graph
         graph.add_node(self.id);
         // add [self]->[called_nodes] as edges in graph
-        self.statements.iter().for_each(|statement| {
-            statement
-                .expr
-                .get_called_nodes()
-                .into_iter()
-                .for_each(|id| {
-                    graph.add_edge(self.id, id, ());
-                })
-        });
+        let mut nodes = Vec::with_capacity(29);
+        for stmt in self.statements.iter() {
+            debug_assert!(nodes.is_empty());
+            stmt.expr.get_called_nodes(&mut nodes);
+            for id in nodes.drain(0..) {
+                graph.add_edge(self.id, id, ());
+            }
+        }
     }
 
     /// Compute the dependency graph of the node.
@@ -439,76 +438,62 @@ impl ComponentDefinition {
 
 impl stream::ExprKind {
     /// Get nodes applications identifiers.
-    pub fn get_called_nodes(&self) -> Vec<usize> {
+    pub fn get_called_nodes(&self, target: &mut Vec<usize>) {
         match &self {
-            Self::Constant { .. } | Self::Identifier { .. } | Self::Enumeration { .. } => vec![],
-            Self::Application { fun, inputs } => inputs
-                .iter()
-                .flat_map(|expression| expression.get_called_nodes())
-                .chain(fun.get_called_nodes())
-                .collect(),
-            Self::Abstraction { expr, .. } | Self::UnOp { expr, .. } => expr.get_called_nodes(),
+            Self::Constant { .. } | Self::Identifier { .. } | Self::Enumeration { .. } => (),
+            Self::Application { fun, inputs } => {
+                inputs.iter().for_each(|e| e.get_called_nodes(target));
+                fun.get_called_nodes(target);
+            }
+            Self::Abstraction { expr, .. } | Self::UnOp { expr, .. } => {
+                expr.get_called_nodes(target)
+            }
             Self::BinOp { lft, rgt, .. } => {
-                let mut nodes = lft.get_called_nodes();
-                nodes.extend(rgt.get_called_nodes());
-                nodes
+                lft.get_called_nodes(target);
+                rgt.get_called_nodes(target);
             }
             Self::IfThenElse { cnd, thn, els } => {
-                let mut nodes = cnd.get_called_nodes();
-                nodes.extend(thn.get_called_nodes());
-                nodes.extend(els.get_called_nodes());
-                nodes
+                cnd.get_called_nodes(target);
+                thn.get_called_nodes(target);
+                els.get_called_nodes(target);
             }
             Self::Structure { fields, .. } => fields
                 .iter()
-                .flat_map(|(_, expression)| expression.get_called_nodes())
-                .collect_vec(),
+                .for_each(|(_, expression)| expression.get_called_nodes(target)),
             Self::Array { elements } => elements
                 .iter()
-                .flat_map(|expression| expression.get_called_nodes())
-                .collect_vec(),
+                .for_each(|expression| expression.get_called_nodes(target)),
             Self::Tuple { elements } => elements
                 .iter()
-                .flat_map(|expression| expression.get_called_nodes())
-                .collect_vec(),
+                .for_each(|expression| expression.get_called_nodes(target)),
             Self::Match { expr, arms } => {
-                let mut nodes = expr.get_called_nodes();
-                let other_nodes = arms.iter().flat_map(|(_, bound, body, expr)| {
-                    let body_nodes = body
-                        .iter()
-                        .flat_map(|stmt| stmt.expr.get_called_nodes().into_iter());
-                    let expr_nodes = expr.get_called_nodes();
-                    let bound_nodes = bound
-                        .as_ref()
-                        .into_iter()
-                        .flat_map(|e| e.get_called_nodes().into_iter());
-                    body_nodes.chain(expr_nodes).chain(bound_nodes)
-                });
-                nodes.extend(other_nodes);
-                nodes
+                expr.get_called_nodes(target);
+                for (_, bound, body, expr) in arms.iter() {
+                    for stmt in body.iter() {
+                        stmt.expr.get_called_nodes(target);
+                    }
+                    expr.get_called_nodes(target);
+                    if let Some(bound) = bound.as_ref() {
+                        bound.get_called_nodes(target);
+                    }
+                }
             }
-            Self::FieldAccess { expr, .. } => expr.get_called_nodes(),
-            Self::TupleElementAccess { expr, .. } => expr.get_called_nodes(),
+            Self::FieldAccess { expr, .. } => expr.get_called_nodes(target),
+            Self::TupleElementAccess { expr, .. } => expr.get_called_nodes(target),
             Self::Map { expr, fun } => {
-                let mut nodes = expr.get_called_nodes();
-                nodes.extend(fun.get_called_nodes());
-                nodes
+                expr.get_called_nodes(target);
+                fun.get_called_nodes(target);
             }
             Self::Fold { array, init, fun } => {
-                let mut nodes = array.get_called_nodes();
-                nodes.extend(init.get_called_nodes());
-                nodes.extend(fun.get_called_nodes());
-                nodes
+                array.get_called_nodes(target);
+                init.get_called_nodes(target);
+                fun.get_called_nodes(target);
             }
             Self::Sort { expr, fun } => {
-                let mut nodes = expr.get_called_nodes();
-                nodes.extend(fun.get_called_nodes());
-                nodes
+                expr.get_called_nodes(target);
+                fun.get_called_nodes(target);
             }
-            Self::Zip { arrays } => arrays
-                .iter()
-                .flat_map(|expr| expr.get_called_nodes())
-                .collect::<Vec<_>>(),
+            Self::Zip { arrays } => arrays.iter().for_each(|expr| expr.get_called_nodes(target)),
         }
     }
 
@@ -847,7 +832,7 @@ impl File {
         self.components
             .iter_mut()
             .map(|component| component.compute_dependencies(&mut ctx))
-            .collect::<TRes<()>>()?;
+            .collect_res()?;
 
         Ok(())
     }
@@ -930,24 +915,22 @@ impl ir1::stream::Stmt {
 
 impl stream::Expr {
     /// Get nodes applications identifiers.
-    pub fn get_called_nodes(&self) -> Vec<usize> {
+    pub fn get_called_nodes(&self, target: &mut Vec<usize>) {
         match &self.kind {
-            stream::Kind::Expression { expr } => expr.get_called_nodes(),
+            stream::Kind::Expression { expr } => expr.get_called_nodes(target),
             stream::Kind::SomeEvent { expr } | stream::Kind::RisingEdge { expr } => {
-                expr.get_called_nodes()
+                expr.get_called_nodes(target)
             }
-            stream::Kind::FollowedBy { .. } | stream::Kind::NoneEvent => vec![],
+            stream::Kind::FollowedBy { .. } | stream::Kind::NoneEvent => (),
             stream::Kind::NodeApplication {
                 called_node_id,
                 inputs,
                 ..
             } => {
-                let mut nodes = inputs
+                inputs
                     .iter()
-                    .flat_map(|(_, expr)| expr.get_called_nodes())
-                    .collect::<Vec<_>>();
-                nodes.push(*called_node_id);
-                nodes
+                    .for_each(|(_, expr)| expr.get_called_nodes(target));
+                target.push(*called_node_id);
             }
         }
     }
