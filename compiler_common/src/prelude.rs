@@ -44,13 +44,40 @@ macro_rules! res_vec {
     }};
 }
 
-// #[macro_export]
-// macro_rules! bail {
-//     { $e:expr } => { return Err($e.into()) };
-//     { $($fmt:tt)* } => { return Err(format!($($fmt)*).into()) };
-// }
-
-// pub use crate::bail;
+/// Iterates over a collection with a special action if there is only one element.
+///
+/// # Examples
+///
+/// ```rust
+/// # use compiler_common::iter_1;
+/// fn run(vec: Vec<usize>) -> usize {
+///     iter_1!(
+///         // `Iterator + ExactSizeIterator` to work on
+///         vec.into_iter(),
+///         // action when the length isn't one
+///         |coll| coll.sum(),
+///         // action when the iterator contains a single element
+///         |elem| elem * 10
+///     )
+/// }
+/// let coll_1 = vec![2];
+/// assert_eq!( run(coll_1), 20 );
+/// let coll_n = vec![2, 3, 4];
+/// assert_eq!( run(coll_n), 9 );
+/// ```
+#[macro_export]
+macro_rules! iter_1 {
+    { $e:expr, |$iter:ident| $iter_do:expr, |$elem:ident| $one_do:expr $(,)? } => {{
+        let mut iter = $e;
+        if iter.len() == 1 {
+            let $elem = iter.next().expect("len is `1`");
+            $one_do
+        } else {
+            let $iter = iter;
+            $iter_do
+        }
+    }}
+}
 
 pub use std::{
     collections::{BTreeMap, BTreeSet},
@@ -98,6 +125,7 @@ pub use crate::{
     error,
     graph,
     hash_map::*,
+    iter_1,
     itertools,
     keyword,
     lazy_static::lazy_static,
@@ -374,7 +402,25 @@ fn test_levenshtein() {
 }
 
 pub struct Stats {
-    vec: Vec<(String, Duration)>,
+    vec: Vec<(String, Duration, Option<Stats>)>,
+}
+pub struct StatsItem {
+    start: Instant,
+    desc: String,
+}
+pub struct StatsMut<'a> {
+    inner: &'a mut Stats,
+}
+impl<'a> std::ops::Deref for StatsMut<'a> {
+    type Target = Stats;
+    fn deref(&self) -> &Self::Target {
+        self.inner
+    }
+}
+impl<'a> std::ops::DerefMut for StatsMut<'a> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.inner
+    }
 }
 impl Stats {
     pub fn with_capacity(capacity: usize) -> Self {
@@ -386,34 +432,140 @@ impl Stats {
         Self::with_capacity(10)
     }
 
-    pub fn timed<T>(&mut self, desc: impl Into<String>, run: impl FnOnce() -> T) -> T {
+    pub fn as_mut(&mut self) -> StatsMut {
+        StatsMut { inner: self }
+    }
+
+    pub fn start(&self, desc: impl Into<String>) -> StatsItem {
+        StatsItem {
+            start: Instant::now(),
+            desc: desc.into(),
+        }
+    }
+
+    pub fn end(&mut self, i: StatsItem) {
+        self.vec.push((i.desc, Instant::now() - i.start, None))
+    }
+    pub fn augment_end(&mut self, i: StatsItem) {
+        self.augment(i.desc, Instant::now() - i.start, None)
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.vec.is_empty()
+    }
+
+    pub fn indent(&mut self) {
+        for (desc, _, sub_opt) in self.vec.iter_mut() {
+            *desc = format!("  {}", desc);
+            if let Some(sub) = sub_opt {
+                sub.indent()
+            }
+        }
+    }
+
+    pub fn augment(&mut self, desc: impl Into<String>, time: Duration, sub_opt: Option<Stats>) {
+        let desc = desc.into();
+        for (desc2, time2, sub_opt2) in &mut self.vec {
+            if &desc == desc2 {
+                *time2 = time + *time2;
+                match (sub_opt, sub_opt2.as_mut()) {
+                    (None, _) => (),
+                    (Some(sub), None) => *sub_opt2 = Some(sub),
+                    (Some(sub), Some(sub2)) => sub2.augment_merge(sub),
+                }
+                return ();
+            }
+        }
+        self.vec.push((desc, time, sub_opt));
+    }
+
+    pub fn augment_merge(&mut self, that: Self) {
+        for (d, t, s) in that.vec {
+            self.augment(d, t, s)
+        }
+    }
+
+    pub fn augment_timed_with<T>(
+        &mut self,
+        desc: impl Into<String>,
+        run: impl FnOnce(StatsMut) -> T,
+    ) -> T {
+        let mut sub = Self::new();
         let start = Instant::now();
-        let res = run();
-        self.vec.push((desc.into(), Instant::now() - start));
+        let res = run(sub.as_mut());
+        let time = Instant::now() - start;
+        let sub_opt = if sub.is_empty() {
+            None
+        } else {
+            sub.indent();
+            Some(sub)
+        };
+        self.augment(desc, time, sub_opt);
         res
     }
 
-    pub fn pretty(&self) -> String {
-        let max_key_len = if let Some(max) = self.vec.iter().map(|(s, _)| s.chars().count()).max() {
-            max
+    pub fn timed_with<T>(&mut self, desc: impl Into<String>, run: impl FnOnce(StatsMut) -> T) -> T {
+        let start = Instant::now();
+        let mut sub = Self::new();
+        let res = run(sub.as_mut());
+        let sub_opt = if sub.is_empty() {
+            None
         } else {
-            return String::new();
+            sub.indent();
+            Some(sub)
         };
+        self.vec
+            .push((desc.into(), Instant::now() - start, sub_opt));
+        res
+    }
+
+    pub fn timed<T>(&mut self, desc: impl Into<String>, run: impl FnOnce() -> T) -> T {
+        self.timed_with(desc, |_| run())
+    }
+
+    pub fn max_key_len(&self) -> usize {
+        let mut max = 0;
+        for (s, _, sub) in &self.vec {
+            max = max.max(s.chars().count());
+            if let Some(sub) = sub {
+                max = max.max(sub.max_key_len());
+            }
+        }
+        max
+    }
+
+    pub fn pretty(&self) -> Option<String> {
+        let max_depth = conf::stats_depth();
+        if max_depth == 0 {
+            None
+        } else {
+            Some(self.pretty_aux(self.max_key_len(), 1, max_depth))
+        }
+    }
+
+    fn pretty_aux(&self, max_key_len: usize, depth: usize, max_depth: usize) -> String {
         let mut string = String::with_capacity(200);
         let mut sep = "| ";
-        for (s, d) in self.vec.iter() {
+        for (desc, duration, sub_opt) in self.vec.iter() {
             string.push_str(sep);
-            for _ in s.chars().count()..max_key_len {
+            string.push_str(desc);
+            for _ in desc.chars().count()..max_key_len {
                 string.push(' ');
             }
-            string.push_str(s);
             string.push_str(" | ");
-            let secs = format!("{}.{:0>3}", d.as_secs(), d.subsec_nanos());
+            let secs = format!("{}.{:0>9}", duration.as_secs(), duration.subsec_nanos());
             for _ in secs.len()..15 {
                 string.push(' ');
             }
             string.extend([secs].into_iter());
             string.push_str(" |");
+            if let Some(sub) = sub_opt {
+                let depth = depth + 1;
+                if depth <= max_depth {
+                    string.push('\n');
+                    string.push_str(&sub.pretty_aux(max_key_len, depth, max_depth));
+                }
+            }
             sep = "\n| ";
         }
         string

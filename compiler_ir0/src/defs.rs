@@ -179,6 +179,7 @@ impl HasLoc for Item {
 
 /// Complete AST of GRust program.
 pub struct Ast {
+    pub config: Config,
     /// Items contained in the GRust program.
     pub items: Vec<Item>,
 }

@@ -1,11 +1,8 @@
 #![allow(warnings)]
 
 use grust::grust;
-mod macro_output;
 
 grust! {
-    #![dump = "examples/fibo/src/macro_output.rs"]
-
     component next(i: int) -> (next_o: int) {
         next_o = i + last i init 1;
     }

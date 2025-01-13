@@ -1,13 +1,7 @@
 #![allow(warnings)]
 
-mod macro_output_mixed;
-mod macro_output_rayon1;
-mod macro_output_rayon2;
-mod macro_output_rayon3;
-mod macro_output_threads;
-
 grust::grust! {
-    #![dump = "examples/para_test/src/macro_output_threads.rs", component_para_threads]
+    #![component_para_threads]
 
     component test_threads_aux(i: int) -> (next_o: int) {
         let i1: int = (i - 54) * 2;
@@ -52,7 +46,7 @@ grust::grust! {
 }
 
 grust::grust! {
-    #![dump = "examples/para_test/src/macro_output_rayon1.rs", component_para_rayon1]
+    #![component_para_rayon1]
 
     component test_rayon1_aux(i: int) -> (next_o: int) {
         let i1: int = (i - 54) * 2;
@@ -97,7 +91,7 @@ grust::grust! {
 }
 
 grust::grust! {
-    #![dump = "examples/para_test/src/macro_output_rayon2.rs", component_para_rayon2]
+    #![component_para_rayon2]
 
     component test_rayon2_aux(i: int) -> (next_o: int) {
         let i1: int = (i - 54) * 2;
@@ -142,7 +136,7 @@ grust::grust! {
 }
 
 grust::grust! {
-    #![dump = "examples/para_test/src/macro_output_rayon3.rs", component_para_rayon3]
+    #![component_para_rayon3]
 
     component test_rayon3_aux(i: int) -> (next_o: int) {
         let i1: int = (i - 54) * 2;
@@ -187,7 +181,7 @@ grust::grust! {
 }
 
 grust::grust! {
-    #![dump = "examples/para_test/src/macro_output_mixed.rs", component_para_mixed]
+    #![component_para_mixed]
 
     component test_mixed_aux(i: int) -> (next_o: int) {
         let i1: int = (i - 54) * 2;

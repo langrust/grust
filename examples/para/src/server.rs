@@ -11,7 +11,7 @@ mod para {
     use grust::grust;
 
     grust! {
-        #![dump = "examples/para/src/macro_output.rs", propag = "onchange", para, test]
+        #![propag = "onchange", para, test]
         import event e0: int;
         export signal o1: int;
 

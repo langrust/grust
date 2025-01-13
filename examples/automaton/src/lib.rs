@@ -1,11 +1,8 @@
 #![allow(warnings)]
 
 use grust::grust;
-mod macro_output;
 
 grust! {
-    #![dump = "examples/automaton/src/macro_output.rs"]
-
     enum State {
         Off,
         On,

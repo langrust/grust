@@ -1,11 +1,8 @@
 #![allow(warnings)]
 
 use grust::grust;
-mod macro_output;
 
 grust! {
-    #![dump = "examples/counter/src/macro_output.rs"]
-
     function add(x: int, y: int) -> int {
         let res: int = x + y;
         return res;

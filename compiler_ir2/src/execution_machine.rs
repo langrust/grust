@@ -22,7 +22,7 @@ pub struct ExecutionMachine {
 
 impl ExecutionMachine {
     /// Transform [ir2] execution-machine into a runtime module.
-    pub fn into_syn(self) -> syn::Item {
+    pub fn into_syn(self, mut stats: StatsMut) -> syn::Item {
         let (runtime_items, field_values) = {
             let mut runtime_items = vec![];
 
@@ -37,54 +37,60 @@ impl ExecutionMachine {
             let mut runtime_fields: Vec<syn::Field> = vec![];
             let mut field_values: Vec<syn::FieldValue> = vec![];
 
-            for TimingEvent { identifier, kind } in self.timing_events.iter() {
-                let enum_ident = Ident::new(
-                    to_camel_case(&identifier.to_string()).as_str(),
-                    identifier.span(),
-                );
-                timer_variants.push(parse_quote! { #enum_ident });
-                match kind {
-                    TimingEventKind::Period(duration) => {
-                        timer_duration_arms.push(parse_quote! { T::#enum_ident => {
-                            std::time::Duration::from_millis(#duration)
-                        } });
-                        timer_reset_arms.push(parse_quote! { T::#enum_ident => false });
-                    }
-                    TimingEventKind::Timeout(duration)
-                    | TimingEventKind::ServiceTimeout(duration)
-                    | TimingEventKind::ServiceDelay(duration) => {
-                        timer_duration_arms.push(parse_quote! { T::#enum_ident => {
-                            std::time::Duration::from_millis(#duration)
-                        } });
-                        timer_reset_arms.push(parse_quote! { T::#enum_ident => true });
+            stats.timed("timing events", || {
+                for TimingEvent { identifier, kind } in self.timing_events.iter() {
+                    let enum_ident = Ident::new(
+                        to_camel_case(&identifier.to_string()).as_str(),
+                        identifier.span(),
+                    );
+                    timer_variants.push(parse_quote! { #enum_ident });
+                    match kind {
+                        TimingEventKind::Period(duration) => {
+                            timer_duration_arms.push(parse_quote! { T::#enum_ident => {
+                                std::time::Duration::from_millis(#duration)
+                            } });
+                            timer_reset_arms.push(parse_quote! { T::#enum_ident => false });
+                        }
+                        TimingEventKind::Timeout(duration)
+                        | TimingEventKind::ServiceTimeout(duration)
+                        | TimingEventKind::ServiceDelay(duration) => {
+                            timer_duration_arms.push(parse_quote! { T::#enum_ident => {
+                                std::time::Duration::from_millis(#duration)
+                            } });
+                            timer_reset_arms.push(parse_quote! { T::#enum_ident => true });
+                        }
                     }
                 }
-            }
+            });
 
-            for InterfaceFlow {
-                identifier, typ, ..
-            } in self.input_flows.iter()
-            {
-                let enum_ident =
-                    Ident::new(&to_camel_case(&identifier.to_string()), identifier.span());
-                let ty = typ.into_syn();
-                input_variants.push(parse_quote! { #enum_ident(#ty, std::time::Instant) });
-                input_eq_arms.push(parse_quote! {
-                    (I::#enum_ident(this, _), I::#enum_ident(other, _)) => this.eq(other)
-                });
-                input_get_instant_arms
-                    .push(parse_quote! { I::#enum_ident(_, instant) => *instant });
-            }
+            stats.timed("interface, input flows", || {
+                for InterfaceFlow {
+                    identifier, typ, ..
+                } in self.input_flows.iter()
+                {
+                    let enum_ident =
+                        Ident::new(&to_camel_case(&identifier.to_string()), identifier.span());
+                    let ty = typ.into_syn();
+                    input_variants.push(parse_quote! { #enum_ident(#ty, std::time::Instant) });
+                    input_eq_arms.push(parse_quote! {
+                        (I::#enum_ident(this, _), I::#enum_ident(other, _)) => this.eq(other)
+                    });
+                    input_get_instant_arms
+                        .push(parse_quote! { I::#enum_ident(_, instant) => *instant });
+                }
+            });
 
-            for InterfaceFlow {
-                identifier, typ, ..
-            } in self.output_flows.into_iter()
-            {
-                let enum_ident =
-                    Ident::new(&to_camel_case(&identifier.to_string()), identifier.span());
-                let ty = typ.into_syn();
-                output_variants.push(parse_quote! { #enum_ident(#ty, std::time::Instant) });
-            }
+            stats.timed("interface, output flows", || {
+                for InterfaceFlow {
+                    identifier, typ, ..
+                } in self.output_flows.into_iter()
+                {
+                    let enum_ident =
+                        Ident::new(&to_camel_case(&identifier.to_string()), identifier.span());
+                    let ty = typ.into_syn();
+                    output_variants.push(parse_quote! { #enum_ident(#ty, std::time::Instant) });
+                }
+            });
 
             if !timer_variants.is_empty() {
                 input_variants.push(parse_quote! { Timer(T, std::time::Instant) });
@@ -182,7 +188,7 @@ impl ExecutionMachine {
         };
 
         // create a new runtime
-        let new_runtime = {
+        let new_runtime = stats.timed("runtime creation", || {
             let nb_services = self.services_handlers.len();
             let is_last = |idx| idx < nb_services - 1;
             // initialize services
@@ -220,44 +226,54 @@ impl ExecutionMachine {
                     }
                 }
             })
-        };
+        });
 
         // create the runtime loop
         let run_loop = self.runtime_loop.into_syn();
 
         // create the services handlers
-        let handlers = self
-            .services_handlers
-            .into_iter()
-            .map(|handler| handler.into_syn());
+        let handlers = stats.timed_with(
+            format!(
+                "service handlers creation ({})",
+                self.services_handlers.len()
+            ),
+            |mut stats| {
+                self.services_handlers
+                    .into_iter()
+                    .map(|handler| handler.into_syn(&mut stats))
+                    .collect_vec()
+            },
+        );
 
         // parse the runtime module
-        syn::Item::Mod(parse_quote! {
-            pub mod runtime {
-                use futures::{stream::StreamExt, sink::SinkExt};
-                use super::*;
-                use RuntimeTimer as T;
-                use RuntimeInput as I;
-                use RuntimeOutput as O;
+        stats.timed("parse-quote runtime module", || {
+            syn::Item::Mod(parse_quote! {
+                pub mod runtime {
+                    use futures::{stream::StreamExt, sink::SinkExt};
+                    use super::*;
+                    use RuntimeTimer as T;
+                    use RuntimeInput as I;
+                    use RuntimeOutput as O;
 
-                #(#runtime_items)*
+                    #(#runtime_items)*
 
-                impl Runtime {
-                    #new_runtime
+                    impl Runtime {
+                        #new_runtime
 
-                    #[inline]
-                    pub async fn send_timer(
-                        &mut self, timer: T, instant: std::time::Instant
-                    ) -> Result<(), futures::channel::mpsc::SendError> {
-                        self.timer.send((timer, instant)).await?;
-                        Ok(())
+                        #[inline]
+                        pub async fn send_timer(
+                            &mut self, timer: T, instant: std::time::Instant
+                        ) -> Result<(), futures::channel::mpsc::SendError> {
+                            self.timer.send((timer, instant)).await?;
+                            Ok(())
+                        }
+
+                        #run_loop
                     }
 
-                    #run_loop
+                    #(#handlers)*
                 }
-
-                #(#handlers)*
-            }
+            })
         })
     }
 }
@@ -279,6 +295,18 @@ pub enum ArrivingFlow {
     Deadline(Ident),
     ServiceDelay(Ident),
     ServiceTimeout(Ident),
+}
+impl ArrivingFlow {
+    pub fn ident(&self) -> &Ident {
+        use ArrivingFlow::*;
+        match self {
+            Channel(id, _, _)
+            | Period(id)
+            | Deadline(id)
+            | ServiceDelay(id)
+            | ServiceTimeout(id) => id,
+        }
+    }
 }
 
 /// A timing event structure.

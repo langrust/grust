@@ -46,46 +46,38 @@ impl Ir1IntoIr2<&'_ SymbolTable> for ir1::ComponentDefinition {
         let name = symbol_table.get_name(self.id);
 
         // get node inputs
-        let inputs = symbol_table
-            .get_node_inputs(self.id)
-            .into_iter()
-            .map(|id| {
-                (
-                    symbol_table.get_name(*id).clone(),
-                    symbol_table.get_typ(*id).clone(),
-                )
-            })
-            .collect::<Vec<_>>();
+        let inputs = symbol_table.get_node_inputs(self.id).into_iter().map(|id| {
+            (
+                symbol_table.get_name(*id).clone(),
+                symbol_table.get_typ(*id).clone(),
+            )
+        });
 
         // get node output type
         let outputs = symbol_table.get_node_outputs(self.id);
         let output_type = {
-            let mut types = outputs
-                .iter()
-                .map(|(_, output_id)| symbol_table.get_typ(*output_id).clone())
-                .collect::<Vec<_>>();
-            if types.len() == 1 {
-                types.pop().unwrap()
-            } else {
-                Typ::tuple(types)
+            iter_1! {
+                outputs.iter(),
+                |iter| Typ::tuple(
+                    iter.map(|(_, id)| symbol_table.get_typ(*id).clone()).collect()
+                ),
+                |just_one| symbol_table.get_typ(just_one.1).clone()
             }
         };
 
         // get node output expression
         let outputs = symbol_table.get_node_outputs(self.id);
         let output_expression = {
-            let mut identifiers = outputs
-                .iter()
-                .map(|(_, output_id)| Expr::Identifier {
-                    identifier: symbol_table.get_name(*output_id).clone(),
-                })
-                .collect::<Vec<_>>();
-            if identifiers.len() == 1 {
-                identifiers.pop().unwrap()
-            } else {
-                Expr::Tuple {
-                    elements: identifiers,
-                }
+            iter_1! {
+                outputs.iter(),
+                |iter| Expr::Tuple {
+                    elements: iter.map(|(_, output_id)| Expr::Identifier {
+                        identifier: symbol_table.get_name(*output_id).clone(),
+                    }).collect()
+                },
+                |just_one| Expr::Identifier {
+                    identifier: symbol_table.get_name(just_one.1).clone(),
+                },
             }
         };
 
@@ -418,7 +410,7 @@ where
                                 let mut statements = body
                                     .into_iter()
                                     .map(|statement| statement.into_ir2(symbol_table))
-                                    .collect::<Vec<_>>();
+                                    .collect_vec();
                                 statements.push(Stmt::ExprLast {
                                     expr: expr.into_ir2(symbol_table),
                                 });
@@ -540,7 +532,7 @@ impl Ir1IntoIr2<&'_ SymbolTable> for ir1::Function {
                     symbol_table.get_typ(*id).clone(),
                 )
             })
-            .collect::<Vec<_>>();
+            .collect_vec();
 
         // get function output type
         let output = symbol_table.get_function_output_type(self.id).clone();
@@ -550,7 +542,7 @@ impl Ir1IntoIr2<&'_ SymbolTable> for ir1::Function {
             .statements
             .into_iter()
             .map(|statement| statement.into_ir2(symbol_table))
-            .collect::<Vec<_>>();
+            .collect_vec();
         statements.push(Stmt::ExprLast {
             expr: self.returned.into_ir2(symbol_table),
         });
@@ -687,7 +679,7 @@ impl Ir1IntoIr2<&'_ SymbolTable> for ir1::stream::Expr {
                             expression.into_ir2(symbol_table),
                         )
                     })
-                    .collect::<Vec<_>>();
+                    .collect_vec();
                 let input_name = {
                     Ident::new(
                         &to_camel_case(&format!("{}Input", name.to_string())),

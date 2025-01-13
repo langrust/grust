@@ -5,6 +5,3 @@ pub mod client;
 
 // AEB `server` module.
 pub mod server;
-
-#[cfg(test)]
-mod macro_output;

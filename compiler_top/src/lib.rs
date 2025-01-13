@@ -28,8 +28,9 @@ pub fn handle_tokens(tokens: TokenStream) -> TokenStream {
 /// Creates RustAST from GRust file.
 pub fn into_token_stream(ast: Ast) -> TokenStream2 {
     let mut symbol_table = SymbolTable::new();
-    let (ir1, mut stats) = match ir1::from_ast_timed(ast, &mut symbol_table) {
-        Ok(ir1) => ir1,
+    let mut stats = Stats::new();
+    let ir1 = match ir1::from_ast_timed(ast, &mut symbol_table, stats.as_mut()) {
+        Ok(pair) => pair,
         Err(errors) => {
             for error in errors {
                 error.emit();
@@ -39,8 +40,10 @@ pub fn into_token_stream(ast: Ast) -> TokenStream2 {
         }
     };
     let ir2 = stats.timed("ir1 → ir2", || ir1.into_ir2(symbol_table));
-    let rust = stats.timed("codegen (ir2 → rust tokens)", || ir2.into_syn());
-    println!("Stats:\n\n{}", stats.pretty());
+    let rust = stats.timed_with("codegen (ir2 → rust tokens)", |stats| ir2.into_syn(stats));
+    if let Some(stats) = stats.pretty() {
+        println!("Stats:\n\n{}", stats);
+    }
     let mut tokens = TokenStream2::new();
     {
         use quote::TokenStreamExt;

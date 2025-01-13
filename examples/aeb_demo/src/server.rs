@@ -2,7 +2,7 @@ mod aeb {
     use grust::grust;
 
     grust! {
-        #![dump = "examples/aeb_demo/src/macro_output.rs", demo]
+        #![demo]
         import signal car::speed_km_h                   : float;
         import event  car::detect::left::pedestrian_l   : float;
         import event  car::detect::right::pedestrian_r  : float;

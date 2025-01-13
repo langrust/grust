@@ -1,11 +1,8 @@
 #![allow(warnings)]
 
 use grust::grust;
-mod macro_output;
 
 grust! {
-    #![dump = "examples/import_counter/src/macro_output.rs"]
-
     import component counter: (res: bool, tick: bool) -> (o: int);
 
     function add(x: int, y: int) -> int {
