@@ -2,11 +2,8 @@
 
 use grust::grust;
 
-#[cfg(test)]
-mod macro_output;
-
 grust! {
-    #![dump = "examples/aeb_greusot/src/macro_output.rs", greusot]
+    #![greusot]
 
     // Braking type
     enum Braking {

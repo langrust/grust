@@ -41,7 +41,7 @@ impl Parse for Item {
 
 impl Parse for Ast {
     fn parse(input: ParseStream) -> Res<Self> {
-        let _: Config = input.parse()?;
+        let config: Config = input.parse()?;
         let items: Vec<Item> = {
             let mut items = Vec::with_capacity(100);
             while !input.is_empty() {
@@ -50,7 +50,7 @@ impl Parse for Ast {
             items.shrink_to_fit();
             items
         };
-        Ok(Self { items })
+        Ok(Self { config, items })
     }
 }
 
@@ -82,7 +82,11 @@ mod parse_conf {
                 let _: Token![!] = input.parse()?;
                 let content;
                 let _ = bracketed!(content in input);
-                let _: Punctuated<ConfigItem, Token![,]> = Punctuated::parse_terminated(&content)?;
+                let items: Punctuated<ConfigItem, Token![,]> =
+                    Punctuated::parse_terminated(&content)?;
+                for _ in items {
+                    ()
+                }
             }
             Ok(Self)
         }
@@ -107,13 +111,20 @@ mod parse_conf {
                     return Ok(ConfigItem);
                 }
                 "dump" => {
+                    let _: Token![=] = input.parse()?;
+                    let val: LitStr = input.parse()?;
                     if let Some(prev) = conf::dump_code() {
                         let msg = format!("code-dump target already set to `{prev}`");
                         return Err(Error::new_spanned(ident, msg));
                     }
+                    conf::set_dump_code(Some(val.value().to_string()));
+                    return Ok(ConfigItem);
+                }
+                "stats_depth" => {
                     let _: Token![=] = input.parse()?;
-                    let val: LitStr = input.parse()?;
-                    conf::set_dump_code(Some(val.value()));
+                    let val: LitInt = input.parse()?;
+                    let val: usize = val.base10_parse()?;
+                    conf::set_stats_depth(val);
                     return Ok(ConfigItem);
                 }
                 "para" => {

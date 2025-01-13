@@ -1,11 +1,8 @@
 #![allow(warnings)]
 
 use grust::grust;
-pub mod macro_output;
 
 grust! {
-    #![dump = "examples/speed_limiter_events/src/macro_output.rs"]
-
     // # Imports
     import event    car::hmi::speed_limiter::activation : ActivationRequest;
     import signal   car::hmi::speed_limiter::set_speed  : float;

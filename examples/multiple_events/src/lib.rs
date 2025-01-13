@@ -1,11 +1,8 @@
 #![allow(warnings)]
 
 use grust::grust;
-mod macro_output;
 
 grust! {
-    #![dump = "examples/multiple_events/src/macro_output.rs"]
-
     component multiple_events(a: int?, b: int?, v: int) -> (c: int) {
         c = last z;
         let y: unit? = when { v > 50 => emit () };

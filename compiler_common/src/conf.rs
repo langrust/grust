@@ -57,6 +57,7 @@ pub struct Conf {
     greusot: bool,
     test: bool,
     demo: bool,
+    stats_depth: usize,
 }
 impl Default for Conf {
     fn default() -> Self {
@@ -69,6 +70,7 @@ impl Default for Conf {
             greusot: false,
             test: false,
             demo: false,
+            stats_depth: 0,
         }
     }
 }
@@ -164,5 +166,11 @@ def! {
         demo
         #[doc = "Set demo mode."]
         set_demo
+    }
+    usize {
+        #[doc = "Stats printing depth, no output on `0`."]
+        stats_depth
+        #[doc = "Set `stats_depth`."]
+        set_stats_depth
     }
 }
