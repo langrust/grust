@@ -9,41 +9,47 @@ pub type ReducedGraph = HashMap<usize, Graph>;
 pub type ProcManager = HashMap<usize, Color>;
 
 pub struct Ctx<'a> {
-    pub symbol_table: &'a SymbolTable,
+    pub ctx0: &'a ir0::Ctx,
     pub reduced_graphs: &'a mut ReducedGraph,
     pub errors: &'a mut Vec<Error>,
 }
+impl std::ops::Deref for Ctx<'_> {
+    type Target = ir0::Ctx;
+    fn deref(&self) -> &Self::Target {
+        self.ctx0
+    }
+}
 mk_new! { impl{'a} Ctx<'a> =>
     new {
-        symbol_table: &'a SymbolTable,
+        ctx0: &'a ir0::Ctx,
         reduced_graphs: &'a mut ReducedGraph,
         errors: &'a mut Vec<Error>,
     }
 }
 impl<'a> Ctx<'a> {
     pub fn as_graph_ctx<'g>(&'g mut self, graph: &'g mut Graph) -> GraphCtx<'a, 'g> {
-        GraphCtx { ctx: self, graph }
+        GraphCtx { ctx1: self, graph }
     }
 }
 
 pub struct GraphCtx<'a, 'graph> {
-    pub ctx: &'graph mut Ctx<'a>,
+    pub ctx1: &'graph mut Ctx<'a>,
     pub graph: &'graph mut Graph,
 }
 impl<'a, 'g> GraphCtx<'a, 'g> {
-    pub fn new(ctx: &'a mut Ctx<'a>, graph: &'g mut Graph) -> Self {
-        Self { ctx, graph }
+    pub fn new(ctx1: &'a mut Ctx<'a>, graph: &'g mut Graph) -> Self {
+        Self { ctx1, graph }
     }
 }
 impl<'a, 'g> std::ops::Deref for GraphCtx<'a, 'g> {
     type Target = Ctx<'a>;
     fn deref(&self) -> &Self::Target {
-        &self.ctx
+        &self.ctx1
     }
 }
 impl<'a, 'g> std::ops::DerefMut for GraphCtx<'a, 'g> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.ctx
+        &mut self.ctx1
     }
 }
 impl<'a, 'g> GraphCtx<'a, 'g> {
@@ -131,14 +137,14 @@ impl ComponentImport {
     /// ```
     pub fn compute_dependencies(&mut self, ctx: &mut Ctx) {
         // initiate graph
-        let mut graph = self.create_initialized_graph(ctx.symbol_table);
+        let mut graph = self.create_initialized_graph(ctx.ctx0);
 
         // add output dependencies over inputs in graph
-        ctx.symbol_table
+        ctx.ctx0
             .get_node_outputs(self.id)
             .iter()
             .for_each(|(_, output)| {
-                ctx.symbol_table
+                ctx.ctx0
                     .get_node_inputs(self.id)
                     .into_iter()
                     .for_each(|input| {
@@ -153,19 +159,15 @@ impl ComponentImport {
 
     /// Create an initialized graph from a node.
     ///
-    /// The created graph has every node's signals as vertices.
-    /// But no edges are added.
-    fn create_initialized_graph(&self, symbol_table: &SymbolTable) -> Graph {
+    /// The created graph has every node's signals as vertices. But no edges are added.
+    fn create_initialized_graph(&self, ctx: &ir0::Ctx) -> Graph {
         // create an empty graph
         let mut graph = DiGraphMap::new();
 
         // add input signals as vertices
-        symbol_table
-            .get_node_inputs(self.id)
-            .into_iter()
-            .for_each(|input| {
-                graph.add_node(*input);
-            });
+        ctx.get_node_inputs(self.id).into_iter().for_each(|input| {
+            graph.add_node(*input);
+        });
 
         // return graph
         graph
@@ -177,15 +179,14 @@ impl ComponentDefinition {
     ///
     /// The created graph has every node's signals as vertices.
     /// But no edges are added.
-    fn create_initialized_graph(&self, symbol_table: &SymbolTable) -> Graph {
+    fn create_initialized_graph(&self, ctx: &ir0::Ctx) -> Graph {
         // create an empty graph
         let mut graph = DiGraphMap::new();
 
         // add input signals as vertices
-        symbol_table
-            .get_node_inputs(self.id)
+        ctx.get_node_inputs(self.id)
             .into_iter()
-            .filter(|id| !symbol_table.get_typ(**id).is_event()) // todo: is this important
+            .filter(|id| !ctx.get_typ(**id).is_event()) // todo: is this important
             .for_each(|input| {
                 graph.add_node(*input);
             });
@@ -203,18 +204,14 @@ impl ComponentDefinition {
     }
 
     /// Create an initialized process manager from a node.
-    fn create_initialized_process_manager(
-        &self,
-        symbol_table: &SymbolTable,
-    ) -> HashMap<usize, Color> {
+    fn create_initialized_process_manager(&self, ctx: &ir0::Ctx) -> HashMap<usize, Color> {
         // create an empty hash
         let mut hash = HashMap::new();
 
         // add input signals with white color (unprocessed)
-        symbol_table
-            .get_node_inputs(self.id)
+        ctx.get_node_inputs(self.id)
             .into_iter()
-            .filter(|id| !symbol_table.get_typ(**id).is_event())
+            .filter(|id| !ctx.get_typ(**id).is_event())
             .for_each(|input| {
                 hash.insert(*input, Color::White);
             });
@@ -261,7 +258,7 @@ impl ComponentDefinition {
     /// ```
     pub fn compute_dependencies(&mut self, ctx: &mut Ctx) -> TRes<()> {
         // initiate graph
-        let mut graph = self.create_initialized_graph(ctx.symbol_table);
+        let mut graph = self.create_initialized_graph(ctx.ctx0);
 
         // complete contract dependency graphs
         self.add_contract_dependencies(&mut graph);
@@ -292,7 +289,7 @@ impl ComponentDefinition {
     /// }
     /// ```
     fn add_equations_dependencies(&self, ctx: &mut GraphCtx) -> TRes<()> {
-        let mut process_manager = self.create_initialized_process_manager(ctx.symbol_table);
+        let mut process_manager = self.create_initialized_process_manager(ctx.ctx0);
 
         // scope for inner `ctx`
         {
@@ -304,10 +301,10 @@ impl ComponentDefinition {
         }
 
         // add input signals dependencies
-        ctx.symbol_table
+        ctx.ctx0
             .get_node_inputs(self.id)
             .iter()
-            .filter(|id| !ctx.symbol_table.get_typ(**id).is_event()) // why?
+            .filter(|id| !ctx.ctx0.get_typ(**id).is_event()) // why?
             .for_each(|signal| {
                 // get signal's color
                 let color = process_manager
@@ -322,12 +319,12 @@ impl ComponentDefinition {
 
     fn construct_reduced_graph(&mut self, ctx: &mut Ctx) {
         ctx.reduced_graphs
-            .insert(self.id, self.create_initialized_graph(ctx.symbol_table));
+            .insert(self.id, self.create_initialized_graph(ctx.ctx0));
 
-        let mut process_manager = self.create_initialized_process_manager(ctx.symbol_table);
+        let mut process_manager = self.create_initialized_process_manager(ctx.ctx0);
 
         // add output dependencies over inputs in reduced graph
-        ctx.symbol_table
+        ctx.ctx0
             .get_node_outputs(self.id)
             .iter()
             .for_each(|(_, output_signal)| {
@@ -357,7 +354,7 @@ impl ComponentDefinition {
         // get signal's color
         let color = process_manager.get_mut(&signal).expect(&format!(
             "signal '{}' should be in process manager",
-            ctx.symbol_table.get_name(signal)
+            ctx.get_name(signal)
         ));
 
         match color {
@@ -369,7 +366,6 @@ impl ComponentDefinition {
                 for (_, neighbor_id, label1) in self.graph.edges(signal) {
                     // tells if the neighbor is an input
                     let is_input = ctx
-                        .symbol_table
                         .get_node_inputs(self.id)
                         .iter()
                         .any(|input| neighbor_id.eq(input));
@@ -517,7 +513,7 @@ impl stream::ExprKind {
         use expr::Kind::*;
         match self {
             Constant { .. } => Self::constant_deps(),
-            Identifier { id, .. } => Self::ident_deps(ctx.symbol_table, *id),
+            Identifier { id, .. } => Self::ident_deps(ctx.ctx, *id),
             Abstraction { .. } => Self::abstraction_deps(),
             Enumeration { .. } => Self::enumeration_deps(),
             UnOp { expr, .. } => Self::unop_deps(ctx, expr),
@@ -630,9 +626,9 @@ impl stream::ExprKind {
     }
 
     /// Compute dependencies of an identifier.
-    pub fn ident_deps(symbol_table: &SymbolTable, id: usize) -> TRes<Vec<(usize, Label)>> {
+    pub fn ident_deps(ctx: &Ctx, id: usize) -> TRes<Vec<(usize, Label)>> {
         // identifier depends on called identifier with label weight of 0
-        if symbol_table.is_function(id) {
+        if ctx.is_function(id) {
             Ok(vec![])
         } else {
             Ok(vec![(id, Label::Weight(0))])
@@ -792,7 +788,7 @@ impl File {
     /// Generate dependency graph for every nodes/component.
     pub fn generate_dependency_graphs(
         &mut self,
-        symbol_table: &SymbolTable,
+        ctx: &ir0::Ctx,
         errors: &mut Vec<Error>,
     ) -> TRes<()> {
         // initialize dictionary for reduced graphs
@@ -809,7 +805,7 @@ impl File {
             .map_err(|component| {
                 error!(@self.loc =>
                     ErrorKind::node_non_causal(
-                        symbol_table.get_name(component.node_id()).to_string()
+                        ctx.get_name(component.node_id()).to_string()
                     )
                 )
             })
@@ -828,7 +824,7 @@ impl File {
         });
 
         // ordered nodes complete their dependency graphs
-        let mut ctx = Ctx::new(symbol_table, &mut nodes_reduced_graphs, errors);
+        let mut ctx = Ctx::new(ctx, &mut nodes_reduced_graphs, errors);
         self.components
             .iter_mut()
             .map(|component| component.compute_dependencies(&mut ctx))
@@ -904,7 +900,7 @@ impl ir1::stream::Stmt {
             }
             // if processing: error
             Color::Grey => {
-                let name = ctx.symbol_table.get_name(signal).clone();
+                let name = ctx.ctx.get_name(signal).clone();
                 bad!(ctx.errors, @self.loc => ErrorKind::signal_non_causal(name.to_string()))
             }
             // if processed: nothing to do
@@ -981,46 +977,47 @@ impl stream::Expr {
                 ref inputs,
                 ..
             } => {
+                let deps = {
+                    let mut vec = Vec::with_capacity(inputs.len() * 3);
+                    let mut res = Ok(());
+                    macro_rules! handle {
+                        { $e:expr } => {
+                            match $e {
+                                Ok(val) => val,
+                                Err(e) => if res.is_ok() { res = Err(e) }
+                            }
+                        }
+                    }
+                    for (input_id, input_expression) in inputs.iter() {
+                        // compute input expression dependencies
+                        handle!(input_expression.compute_dependencies(ctx));
+
+                        let Ctx {
+                            ref ctx0,
+                            ref mut reduced_graphs,
+                            ..
+                        } = ctx.ctx1;
+
+                        // get reduced graph (graph with only inputs/outputs signals)
+                        let reduced_graph = reduced_graphs.get_mut(called_node_id).unwrap();
+
+                        // for each node's output, get dependencies from output to inputs
+                        for (_, output_signal) in ctx0.get_node_outputs(*called_node_id).iter() {
+                            if let Some(label1) =
+                                reduced_graph.edge_weight(*output_signal, *input_id)
+                            {
+                                for (id, label2) in input_expression.get_dependencies().iter() {
+                                    vec.push((*id, label1.add(&label2)));
+                                }
+                            }
+                        }
+                    }
+                    res?;
+                    vec
+                };
                 // function "dependencies to inputs" and "input expressions's dependencies"
                 // of node application
-                self.dependencies.set(
-                    inputs
-                        .iter()
-                        .map(|(input_id, input_expression)| {
-                            // compute input expression dependencies
-                            input_expression.compute_dependencies(ctx)?;
-
-                            let symbol_table = ctx.symbol_table;
-                            // get reduced graph (graph with only inputs/outputs signals)
-                            let reduced_graph = ctx.reduced_graphs.get_mut(called_node_id).unwrap();
-
-                            // for each node's output, get dependencies from output to inputs
-                            let dependencies = symbol_table
-                                .get_node_outputs(*called_node_id)
-                                .iter()
-                                .flat_map(|(_, output_signal)| {
-                                    reduced_graph.edge_weight(*output_signal, *input_id).map_or(
-                                        vec![],
-                                        |label1| {
-                                            input_expression
-                                                .get_dependencies()
-                                                .clone()
-                                                .into_iter()
-                                                .map(|(id, label2)| (id, label1.add(&label2)))
-                                                .collect()
-                                        },
-                                    )
-                                })
-                                .collect();
-
-                            Ok(dependencies)
-                        })
-                        .collect::<TRes<Vec<Vec<(usize, Label)>>>>()?
-                        .into_iter()
-                        .flatten()
-                        .collect::<Vec<(usize, Label)>>(),
-                );
-
+                self.dependencies.set(deps);
                 Ok(())
             }
             stream::Kind::Expression { expr } => {

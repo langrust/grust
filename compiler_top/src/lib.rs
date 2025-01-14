@@ -27,7 +27,7 @@ pub fn handle_tokens(tokens: TokenStream) -> TokenStream {
 
 /// Creates RustAST from GRust file.
 pub fn into_token_stream(ast: Ast) -> TokenStream2 {
-    let mut symbol_table = SymbolTable::new();
+    let mut symbol_table = ir0::Ctx::new();
     let mut stats = Stats::new();
     let ir1 = match ir1::from_ast_timed(ast, &mut symbol_table, stats.as_mut()) {
         Ok(pair) => pair,

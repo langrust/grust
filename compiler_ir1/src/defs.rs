@@ -20,21 +20,14 @@ pub mod interface;
 
 prelude! {}
 
-fn unwrap<D: Display, T>(desc: D, res: TRes<T>, errors: &Vec<Error>) -> T {
-    match res {
-        Ok(res) => res,
-        Err(_) => panic!("fatal error during {}: {:?}", desc, errors),
-    }
-}
-
-pub fn raw_from_ast(ast: Ast, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> File {
+pub fn raw_from_ast(ast: Ast, symbols: &mut Ctx, errors: &mut Vec<Error>) -> TRes<File> {
     let mut ctx = ctx::Simple::new(symbols, errors);
     unwrap("IR0 to IR1", ast.into_ir1(&mut ctx), &ctx.errors)
 }
 
 pub fn from_ast_timed(
     ast: Ast,
-    symbols: &mut SymbolTable,
+    symbols: &mut Ctx,
     mut stats: StatsMut,
 ) -> Result<File, Vec<Error>> {
     let mut errors_vec = vec![];
@@ -74,6 +67,6 @@ pub fn from_ast_timed(
     Ok(ir1)
 }
 
-pub fn from_ast(ast: Ast, symbols: &mut SymbolTable) -> Result<File, Vec<Error>> {
+pub fn from_ast(ast: Ast, symbols: &mut Ctx) -> Result<File, Vec<Error>> {
     from_ast_timed(ast, symbols, Stats::new().as_mut()).map(|ir1| ir1)
 }

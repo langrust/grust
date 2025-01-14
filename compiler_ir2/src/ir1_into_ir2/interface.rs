@@ -5,9 +5,9 @@ prelude! {
     },
 }
 
-impl Ir1IntoIr2<&mut SymbolTable> for Interface {
+impl Ir1IntoIr2<&mut Ctx> for Interface {
     type Ir2 = ExecutionMachine;
-    fn into_ir2(mut self, symbol_table: &mut SymbolTable) -> ExecutionMachine {
+    fn into_ir2(mut self, symbol_table: &mut Ctx) -> ExecutionMachine {
         if self.services.is_empty() {
             return Default::default();
         }
@@ -68,10 +68,10 @@ impl Ir1IntoIr2<&mut SymbolTable> for Interface {
     }
 }
 
-impl Ir1IntoIr2<&'_ SymbolTable> for FlowImport {
+impl Ir1IntoIr2<&'_ Ctx> for FlowImport {
     type Ir2 = Option<InterfaceFlow>;
 
-    fn into_ir2(self, symbol_table: &SymbolTable) -> Self::Ir2 {
+    fn into_ir2(self, symbol_table: &Ctx) -> Self::Ir2 {
         if self.flow_type.eq(&Typ::event(Typ::unit())) {
             None
         } else {
@@ -84,10 +84,10 @@ impl Ir1IntoIr2<&'_ SymbolTable> for FlowImport {
     }
 }
 
-impl Ir1IntoIr2<&'_ SymbolTable> for FlowExport {
+impl Ir1IntoIr2<&'_ Ctx> for FlowExport {
     type Ir2 = InterfaceFlow;
 
-    fn into_ir2(self, symbol_table: &SymbolTable) -> Self::Ir2 {
+    fn into_ir2(self, symbol_table: &Ctx) -> Self::Ir2 {
         InterfaceFlow {
             path: self.path,
             identifier: symbol_table.get_name(self.id).clone(),
@@ -319,7 +319,7 @@ mod flow_instr {
         /// Context of the service.
         flows_context: ir1::ctx::Flows,
         /// Symbol table.
-        symbols: &'a SymbolTable,
+        symbols: &'a Ctx,
         /// Events currently triggered during a traversal.
         events: HashSet<usize>,
         /// Signals currently defined during a traversal.
@@ -350,7 +350,7 @@ mod flow_instr {
         /// After creating the builder, you only need to [super::service_handler::build].
         pub fn new(
             service: &'a mut Service,
-            symbols: &'a mut SymbolTable,
+            symbols: &'a mut Ctx,
             mut flows_context: ir1::ctx::Flows,
             imports: &'a mut HashMap<usize, FlowImport>,
             exports: &'a HashMap<usize, FlowExport>,
@@ -414,7 +414,7 @@ mod flow_instr {
         pub fn get_export(&self, export_id: usize) -> Option<&FlowExport> {
             self.exports.get(&export_id)
         }
-        pub fn symbols(&self) -> &'a SymbolTable {
+        pub fn symbols(&self) -> &'a Ctx {
             self.symbols
         }
         pub fn graph(&self) -> &trigger::Graph<'a> {
@@ -483,7 +483,7 @@ mod flow_instr {
         fn build_stmt_events(
             identifier_creator: &mut IdentifierCreator,
             service: &mut Service,
-            symbols: &mut SymbolTable,
+            symbols: &mut Ctx,
             flows_context: &mut ir1::ctx::Flows,
             imports: &mut HashMap<usize, FlowImport>,
             timing_events: &mut Vec<TimingEvent>,
@@ -658,7 +658,7 @@ mod flow_instr {
         fn build_constraint_events(
             identifier_creator: &mut IdentifierCreator,
             service: &mut Service,
-            symbols: &mut SymbolTable,
+            symbols: &mut Ctx,
             imports: &mut HashMap<usize, FlowImport>,
             timing_events: &mut Vec<TimingEvent>,
         ) {

@@ -106,8 +106,8 @@ pub struct IsleBuilder<'a> {
 }
 impl<'a> IsleBuilder<'a> {
     /// Factored [`Isles`] allocation.
-    fn new_isles(_symbols: &'a SymbolTable) -> Isles {
-        // #TODO retrieve event count from `_symbols` for capacity
+    fn new_isles(_ctx: &'a Ctx) -> Isles {
+        // #TODO retrieve event count from `_ctx` for capacity
         Isles::with_capacity(10)
     }
 
@@ -117,16 +117,12 @@ impl<'a> IsleBuilder<'a> {
     ///
     /// During construction, the statements of the `service` are scanned to populate a map from
     /// events to the statements that react to it.
-    pub fn new(
-        symbols: &'a SymbolTable,
-        service: &'a Service,
-        imports: &HashMap<usize, FlowImport>,
-    ) -> Self {
-        let real_events = Self::build_real_events(symbols, service, imports);
+    pub fn new(ctx: &'a Ctx, service: &'a Service, imports: &HashMap<usize, FlowImport>) -> Self {
+        let real_events = Self::build_real_events(ctx, service, imports);
         let (event_to_stmts, eventful_calls) =
-            Self::build_event_to_stmts(symbols, service, imports, real_events);
+            Self::build_event_to_stmts(ctx, service, imports, real_events);
         Self {
-            isles: Self::new_isles(symbols),
+            isles: Self::new_isles(ctx),
             events: HashSet::with_capacity(10),
             stack: Vec::with_capacity(service.statements.len() / 2),
             memory: HashSet::with_capacity(service.statements.len()),
@@ -144,7 +140,7 @@ impl<'a> IsleBuilder<'a> {
     /// statement indices are in the order in which they appear in the service. (It actually
     /// does not matter for the actual isle building process atm.)
     fn build_event_to_stmts(
-        symbols: &SymbolTable,
+        ctx: &Ctx,
         service: &Service,
         imports: &HashMap<usize, FlowImport>,
         real_events: HashSet<usize>,
@@ -164,9 +160,7 @@ impl<'a> IsleBuilder<'a> {
                 // scan incoming stmt for timers
                 for import_id in service.get_dependencies(*stmt_id) {
                     if let Some(FlowImport { id: timer, .. }) = &imports.get(&import_id) {
-                        if !symbols.is_service_timeout(service.id, *timer)
-                            && symbols.is_timer(*timer)
-                        {
+                        if !ctx.is_service_timeout(service.id, *timer) && ctx.is_timer(*timer) {
                             // register `stmt_id` as triggered by `input`
                             triggered_by(*timer);
                         }
@@ -196,7 +190,7 @@ impl<'a> IsleBuilder<'a> {
     ///
     /// Real events are not produced by components.
     fn build_real_events(
-        symbols: &SymbolTable,
+        ctx: &Ctx,
         service: &Service,
         imports: &HashMap<usize, FlowImport>,
     ) -> HashSet<usize> {
@@ -205,7 +199,7 @@ impl<'a> IsleBuilder<'a> {
         let mut real_events = HashSet::with_capacity(10);
         // add only events to 'real_events'
         let mut add_real_event = |event: usize| {
-            if symbols.get_flow_kind(event).is_event() {
+            if ctx.get_flow_kind(event).is_event() {
                 real_events.insert(event);
             }
         };

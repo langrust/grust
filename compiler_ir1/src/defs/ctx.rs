@@ -3,22 +3,22 @@
 prelude! {}
 
 pub struct Simple<'a> {
-    pub symbols: &'a mut SymbolTable,
+    pub symbols: &'a mut Ctx,
     pub errors: &'a mut Vec<Error>,
 }
 pub struct WithLoc<'a> {
     pub loc: Loc,
-    pub symbols: &'a mut SymbolTable,
+    pub symbols: &'a mut Ctx,
     pub errors: &'a mut Vec<Error>,
 }
 pub struct PatLoc<'a> {
     pub pat: Option<&'a ir0::stmt::Pattern>,
     pub loc: Loc,
-    pub symbols: &'a mut SymbolTable,
+    pub symbols: &'a mut Ctx,
     pub errors: &'a mut Vec<Error>,
 }
 impl<'a> Simple<'a> {
-    pub fn new(symbols: &'a mut SymbolTable, errors: &'a mut Vec<Error>) -> Self {
+    pub fn new(symbols: &'a mut Ctx, errors: &'a mut Vec<Error>) -> Self {
         Self { symbols, errors }
     }
     pub fn add_loc<'b>(&'b mut self, loc: Loc) -> WithLoc<'b> {
@@ -33,7 +33,7 @@ impl<'a> Simple<'a> {
     }
 }
 impl<'a> WithLoc<'a> {
-    pub fn new(loc: Loc, symbols: &'a mut SymbolTable, errors: &'a mut Vec<Error>) -> Self {
+    pub fn new(loc: Loc, symbols: &'a mut Ctx, errors: &'a mut Vec<Error>) -> Self {
         Self {
             loc,
             symbols,
@@ -47,8 +47,8 @@ impl<'a> WithLoc<'a> {
 impl<'a> PatLoc<'a> {
     pub fn new(
         pat: Option<&'a ir0::stmt::Pattern>,
-        loc: Loc,
-        symbols: &'a mut SymbolTable,
+        loc: impl Into<Loc>,
+        symbols: &'a mut Ctx,
         errors: &'a mut Vec<Error>,
     ) -> Self {
         Self {
@@ -196,12 +196,12 @@ pub struct Full<'a, Event> {
     pub imports: &'a mut HashMap<usize, interface::FlowImport>,
     pub exports: &'a HashMap<usize, interface::FlowExport>,
     pub timings: &'a mut Vec<Event>,
-    pub symbols: &'a mut SymbolTable,
+    pub symbols: &'a mut Ctx,
 }
 
 mk_new! { impl{'a, Event} Full<'a, Event> => new {
     imports: &'a mut HashMap<usize, interface::FlowImport>,
     exports: &'a HashMap<usize, interface::FlowExport>,
     timings: &'a mut Vec<Event>,
-    symbols: &'a mut SymbolTable,
+    symbols: &'a mut Ctx,
 } }

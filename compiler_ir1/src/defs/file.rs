@@ -76,11 +76,7 @@ impl File {
     ///     x: int = 0 fby o;
     /// }
     /// ```
-    pub fn causality_analysis(
-        &self,
-        symbol_table: &SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> TRes<()> {
+    pub fn causality_analysis(&self, symbol_table: &Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         // check causality for each node
         self.components
             .iter()
@@ -124,7 +120,7 @@ impl File {
     /// ```
     ///
     /// This example is tested in source.
-    pub fn memorize(&mut self, symbol_table: &mut SymbolTable) -> Res<()> {
+    pub fn memorize(&mut self, symbol_table: &mut Ctx) -> Res<()> {
         for node in self.components.iter_mut() {
             node.memorize(symbol_table)?;
         }
@@ -187,7 +183,7 @@ impl File {
     /// ```
     ///
     /// This example is tested in source.
-    pub fn normal_form(&mut self, symbol_table: &mut SymbolTable) {
+    pub fn normal_form(&mut self, symbol_table: &mut Ctx) {
         let mut nodes_reduced_graphs = HashMap::new();
         // get every nodes' graphs
         self.components.iter().for_each(|node| {
@@ -225,7 +221,7 @@ impl File {
     ///
     /// We need to inline the code, the output `fib` is defined before the input `fib`,
     /// which can not be computed by a function call.
-    pub fn inline_when_needed(&mut self, symbol_table: &mut SymbolTable) {
+    pub fn inline_when_needed(&mut self, symbol_table: &mut Ctx) {
         let nodes = self
             .components
             .iter()
@@ -415,11 +411,7 @@ impl File {
     ///     out z: int = 0 fby z;
     /// }
     /// ```
-    pub fn normalize(
-        &mut self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> TRes<()> {
+    pub fn normalize(&mut self, symbol_table: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         self.normal_form(symbol_table);
         self.generate_flows_dependency_graphs();
         self.memorize(symbol_table).dewrap(errors)?;

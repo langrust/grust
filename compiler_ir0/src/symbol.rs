@@ -253,7 +253,7 @@ impl Context {
 }
 
 /// Symbol table.
-pub struct SymbolTable {
+pub struct Table {
     /// Table.
     table: HashMap<usize, Symbol>,
     /// The next fresh identifier.
@@ -261,7 +261,7 @@ pub struct SymbolTable {
     /// Context of known symbols.
     known_symbols: Context,
 }
-impl Default for SymbolTable {
+impl Default for Table {
     fn default() -> Self {
         Self {
             table: HashMap::new(),
@@ -270,7 +270,7 @@ impl Default for SymbolTable {
         }
     }
 }
-impl SymbolTable {
+impl Table {
     /// Create new symbol table.
     pub fn new() -> Self {
         Self {
