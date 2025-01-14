@@ -208,24 +208,22 @@ impl<'a> Env<'a> {
         self.id_to_repr.get(&id).cloned()
     }
 
-    pub fn to_stmts(&self, syms: &SymbolTable) -> Result<Stmts, String> {
+    pub fn to_stmts(&self, ctx: &ir0::Ctx) -> Result<Stmts, String> {
         let subset = self.repr_to_stmt.keys().cloned().collect();
-        let ctx = Ctx::new(self);
-        let synced = Synced::new_with(&ctx, &self.graph, subset)?;
-        // println!("synced:\n{}", synced);
-        Stmts::of_synced(self, syms, synced)
+        let synced = Synced::new_with(&Ctx::new(self), &self.graph, subset)?;
+        Stmts::of_synced(self, ctx, synced)
     }
 
-    pub fn print(&self, syms: &SymbolTable) {
+    pub fn print(&self, ctx: &ir0::Ctx) {
         println!("env:");
         println!("  idents:");
         for tgt in self.id_to_repr.values() {
-            let name = syms.get_name(*tgt);
+            let name = ctx.get_name(*tgt);
             println!("    {} is {}", tgt, name);
             for (_, tgt, label) in self.graph.edges_directed(*tgt, graph::Direction::Outgoing) {
-                println!("      dep {} ({}, {:?})", syms.get_name(tgt), tgt, label);
+                println!("      dep {} ({}, {:?})", ctx.get_name(tgt), tgt, label);
                 for (_, tgt, label) in self.graph.edges_directed(tgt, graph::Direction::Outgoing) {
-                    println!("        dep {} ({}, {:?})", syms.get_name(tgt), tgt, label);
+                    println!("        dep {} ({}, {:?})", ctx.get_name(tgt), tgt, label);
                 }
             }
         }
@@ -276,7 +274,7 @@ impl Vars {
         }
     }
 
-    pub fn from_ir1(pat: ir1::stmt::Pattern, syms: &SymbolTable) -> Self {
+    pub fn from_ir1(pat: ir1::stmt::Pattern, ctx: &ir0::Ctx) -> Self {
         let mut curr = pat.kind;
         let mut stack = vec![];
 
@@ -284,7 +282,7 @@ impl Vars {
             use ir1::stmt::Kind;
             let (mut bind, mut expr) = match curr {
                 Kind::Identifier { id } => {
-                    let id = syms.get_name(id).clone();
+                    let id = ctx.get_name(id).clone();
                     (Pattern::ident(id.clone()), Expr::ident(id))
                 }
                 Kind::Tuple { elements } => {
@@ -294,7 +292,7 @@ impl Vars {
                     continue 'current;
                 }
                 Kind::Typed { id, typ } => {
-                    let id = syms.get_name(id).clone();
+                    let id = ctx.get_name(id).clone();
                     (
                         Pattern::typed(Pattern::ident(id.clone()), typ),
                         Expr::ident(id),
@@ -464,26 +462,21 @@ impl Stmts {
         )
     }
 
-    pub fn sequential(stmts: &Vec<ir1::stream::Stmt>, syms: &SymbolTable) -> Self {
-        Self::new_seq(
-            stmts
-                .iter()
-                .map(|stmt| Self::new_stmt(stmt, syms))
-                .collect(),
-        )
+    pub fn sequential(stmts: &Vec<ir1::stream::Stmt>, ctx: &ir0::Ctx) -> Self {
+        Self::new_seq(stmts.iter().map(|stmt| Self::new_stmt(stmt, ctx)).collect())
     }
 
     pub fn of_ir1(
         stmts: &Vec<ir1::stream::Stmt>,
-        syms: &SymbolTable,
+        ctx: &ir0::Ctx,
         graph: &Graph,
     ) -> Result<Self, String> {
         if conf::component_para().is_none() {
-            Ok(Self::sequential(stmts, syms))
+            Ok(Self::sequential(stmts, ctx))
         } else {
             let env = Env::new(stmts, graph)?;
-            // env.print(syms);
-            env.to_stmts(syms)
+            // env.print(ctx);
+            env.to_stmts(ctx)
         }
     }
 
@@ -495,9 +488,9 @@ impl Stmts {
         let vars = Vars::merge(subs.iter().map(|(_, vars, _)| vars.clone()));
         Self::Para(vars, subs)
     }
-    pub fn new_stmt(stmt: &ir1::stream::Stmt, syms: &SymbolTable) -> Self {
-        let vars = Vars::from_ir1(stmt.pattern.clone(), syms);
-        let expr = stmt.expr.clone().into_ir2(syms);
+    pub fn new_stmt(stmt: &ir1::stream::Stmt, ctx: &ir0::Ctx) -> Self {
+        let vars = Vars::from_ir1(stmt.pattern.clone(), ctx);
+        let expr = stmt.expr.clone().into_ir2(ctx);
         Self::Stmt(vars, expr)
     }
 
@@ -509,19 +502,19 @@ impl Stmts {
         }
     }
 
-    pub fn of_synced(env: &Env, syms: &SymbolTable, synced: Synced<Ctx>) -> Result<Self, String> {
+    pub fn of_synced(env: &Env, ctx: &ir0::Ctx, synced: Synced<Ctx>) -> Result<Self, String> {
         match synced {
             Synced::Instr(id, _) => {
                 let stmt = env
                     .repr_to_stmt
                     .get(&id)
                     .ok_or_else(|| format!("unknown statement identifier `{}`", id))?;
-                Ok(Self::new_stmt(stmt, syms))
+                Ok(Self::new_stmt(stmt, ctx))
             }
             Synced::Seq(subs, _) => {
                 let mut seq = Vec::with_capacity(subs.len());
                 for sub in subs {
-                    let sub = Self::of_synced(env, syms, sub)?;
+                    let sub = Self::of_synced(env, ctx, sub)?;
                     seq.push(sub)
                 }
                 Ok(Self::new_seq(seq))
@@ -590,7 +583,7 @@ impl Stmts {
                         }
                     };
                     for sub in subs {
-                        let sub = Self::of_synced(env, syms, sub)?;
+                        let sub = Self::of_synced(env, ctx, sub)?;
                         target_vars.push(sub.vars().clone());
                         target.push(sub);
                     }

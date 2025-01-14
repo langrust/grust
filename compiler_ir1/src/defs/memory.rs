@@ -28,19 +28,19 @@ impl Memory {
         &self,
         identifier_creator: &mut IdentifierCreator,
         context_map: &mut HashMap<usize, Either<usize, stream::Expr>>,
-        symbol_table: &mut SymbolTable,
+        ctx: &mut Ctx,
     ) {
         // buffered signals are renamed with their stmts
         // we just rename the called nodes
         self.called_nodes.keys().for_each(|memory_id| {
-            let name = symbol_table.get_name(*memory_id);
+            let name = ctx.get_name(*memory_id);
             let fresh_name = identifier_creator.new_identifier(name.span(), &name.to_string());
             if &fresh_name != name {
                 // supposed to be Scope::Local
-                let scope = symbol_table.get_scope(*memory_id).clone();
+                let scope = ctx.get_scope(*memory_id).clone();
                 debug_assert_eq!(scope, Scope::Local);
                 let typing = None;
-                let fresh_id = symbol_table.insert_fresh_signal(fresh_name, scope, typing);
+                let fresh_id = ctx.insert_fresh_signal(fresh_name, scope, typing);
                 let _unique = context_map.insert(*memory_id, Either::Left(fresh_id));
                 debug_assert!(_unique.is_none());
             }
@@ -63,7 +63,7 @@ impl Memory {
     pub fn replace_by_context(
         &self,
         context_map: &HashMap<usize, Either<usize, stream::Expr>>,
-        symbol_table: &SymbolTable,
+        ctx: &Ctx,
     ) -> Memory {
         let buffers = self
             .buffers
@@ -80,7 +80,7 @@ impl Memory {
                                 },
                             ..
                         }) => {
-                            let new_name = symbol_table.get_name(*new_id);
+                            let new_name = ctx.get_name(*new_id);
                             new_buffer.id = *new_id;
                             new_buffer.ident = new_name.clone();
                             (new_name.clone(), new_buffer)

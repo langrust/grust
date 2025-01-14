@@ -70,7 +70,7 @@ impl Component {
     ///     x: int = o;
     /// }
     /// ```
-    pub fn causal(&self, symbol_table: &SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    pub fn causal(&self, symbol_table: &Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         // construct node's subgraph containing only 0-label weight
         let graph = self.get_graph();
         let mut subgraph = graph.clone();
@@ -124,7 +124,7 @@ impl Component {
     ///     },
     /// }
     /// ```
-    pub fn memorize(&mut self, symbol_table: &mut SymbolTable) -> Res<()> {
+    pub fn memorize(&mut self, symbol_table: &mut Ctx) -> Res<()> {
         match self {
             Component::Definition(comp_def) => comp_def.memorize(symbol_table),
             Component::Import(_) => Ok(()),
@@ -173,7 +173,7 @@ impl Component {
     pub fn normal_form(
         &mut self,
         nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
-        symbol_table: &mut SymbolTable,
+        symbol_table: &mut Ctx,
     ) {
         match self {
             Component::Definition(comp_def) => {
@@ -204,7 +204,7 @@ impl Component {
     pub fn inline_when_needed(
         &mut self,
         unitary_nodes: &HashMap<usize, Component>,
-        symbol_table: &mut SymbolTable,
+        symbol_table: &mut Ctx,
     ) {
         match self {
             Component::Definition(comp_def) => {
@@ -244,7 +244,7 @@ impl Component {
         identifier_creator: &mut IdentifierCreator,
         inputs: &[(usize, stream::Expr)],
         new_output_pattern: Option<stmt::Pattern>,
-        symbol_table: &mut SymbolTable,
+        symbol_table: &mut Ctx,
     ) -> (Vec<stream::Stmt>, Memory) {
         match self {
             Component::Definition(comp_def) => comp_def.instantiate_statements_and_memory(
@@ -327,7 +327,7 @@ impl ComponentDefinition {
     }
 
     /// Return vector of unitary node's signals name.
-    pub fn get_signals_names(&self, symbol_table: &SymbolTable) -> Vec<Ident> {
+    pub fn get_signals_names(&self, symbol_table: &Ctx) -> Vec<Ident> {
         self.statements
             .iter()
             .flat_map(|statement| statement.get_identifiers())
@@ -389,8 +389,8 @@ impl ComponentDefinition {
     ///     },
     /// }
     /// ```
-    pub fn memorize(&mut self, symbol_table: &mut SymbolTable) -> Res<()> {
-        // create an IdentifierCreator, a local SymbolTable and Memory
+    pub fn memorize(&mut self, symbol_table: &mut Ctx) -> Res<()> {
+        // create an IdentifierCreator, a local Ctx and Memory
         let mut identifier_creator = IdentifierCreator::from(self.get_signals_names(symbol_table));
         symbol_table.local();
         let mut memory = Memory::new();
@@ -404,7 +404,7 @@ impl ComponentDefinition {
             )?;
         }
 
-        // drop IdentifierCreator (auto), local SymbolTable and set Memory
+        // drop IdentifierCreator (auto), local Ctx and set Memory
         symbol_table.global();
         self.memory = memory;
 
@@ -462,9 +462,9 @@ impl ComponentDefinition {
     pub fn normal_form(
         &mut self,
         nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
-        symbol_table: &mut SymbolTable,
+        symbol_table: &mut Ctx,
     ) {
-        // create an IdentifierCreator and a local SymbolTable
+        // create an IdentifierCreator and a local Ctx
         let mut identifier_creator = IdentifierCreator::from(self.get_signals_names(symbol_table));
         symbol_table.local();
 
@@ -477,7 +477,7 @@ impl ComponentDefinition {
             })
             .collect();
 
-        // drop IdentifierCreator (auto) and local SymbolTable
+        // drop IdentifierCreator (auto) and local Ctx
         symbol_table.global();
 
         // add a dependency graph to the node
@@ -512,7 +512,7 @@ impl ComponentDefinition {
     pub fn inline_when_needed(
         &mut self,
         unitary_nodes: &HashMap<usize, Component>,
-        symbol_table: &mut SymbolTable,
+        symbol_table: &mut Ctx,
     ) {
         // create identifier creator containing the signals
         let mut identifier_creator = IdentifierCreator::from(self.get_signals_names(symbol_table));
@@ -565,7 +565,7 @@ impl ComponentDefinition {
         identifier_creator: &mut IdentifierCreator,
         inputs: &[(usize, stream::Expr)],
         new_output_pattern: Option<stmt::Pattern>,
-        symbol_table: &mut SymbolTable,
+        symbol_table: &mut Ctx,
     ) -> (Vec<stream::Stmt>, Memory) {
         // create the context with the given inputs
         let mut context_map = inputs

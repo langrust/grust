@@ -9,11 +9,7 @@ use super::isles;
 
 /// Graph of triggers.
 pub trait TriggersGraph<'a> {
-    fn new(
-        symbols: &'a SymbolTable,
-        service: &'a Service,
-        imports: &'a HashMap<usize, FlowImport>,
-    ) -> Self;
+    fn new(ctx: &'a Ctx, service: &'a Service, imports: &'a HashMap<usize, FlowImport>) -> Self;
     fn get_triggered(&self, parent: usize) -> Vec<usize>;
     fn subgraph(&self, starts: impl Iterator<Item = usize>) -> DiGraphMap<usize, ()>;
     fn graph(&self) -> DiGraphMap<usize, ()>;
@@ -25,17 +21,13 @@ pub enum Graph<'a> {
     OnChange(OnChangeGraph<'a>),
 }
 impl<'a> TriggersGraph<'a> for Graph<'a> {
-    fn new(
-        symbols: &'a SymbolTable,
-        service: &'a Service,
-        imports: &'a HashMap<usize, FlowImport>,
-    ) -> Self {
+    fn new(ctx: &'a Ctx, service: &'a Service, imports: &'a HashMap<usize, FlowImport>) -> Self {
         match conf::propagation() {
             conf::Propagation::EventIsles => {
-                Graph::EventIsles(EventIslesGraph::new(symbols, service, imports))
+                Graph::EventIsles(EventIslesGraph::new(ctx, service, imports))
             }
             conf::Propagation::OnChange => {
-                Graph::OnChange(OnChangeGraph::new(symbols, service, imports))
+                Graph::OnChange(OnChangeGraph::new(ctx, service, imports))
             }
         }
     }
@@ -65,7 +57,7 @@ impl<'a> TriggersGraph<'a> for Graph<'a> {
 /// Isles of statements triggered by events only.
 pub struct EventIslesGraph<'a> {
     service: &'a Service,
-    symbols: &'a SymbolTable,
+    ctx: &'a Ctx,
     graph: &'a DiGraphMap<usize, ()>,
     stmts: &'a HashMap<usize, FlowStatement>,
     imports: &'a HashMap<usize, FlowImport>,
@@ -107,13 +99,9 @@ impl<'a> EventIslesGraph<'a> {
     }
 }
 impl<'a> TriggersGraph<'a> for EventIslesGraph<'a> {
-    fn new(
-        symbols: &'a SymbolTable,
-        service: &'a Service,
-        imports: &'a HashMap<usize, FlowImport>,
-    ) -> Self {
+    fn new(ctx: &'a Ctx, service: &'a Service, imports: &'a HashMap<usize, FlowImport>) -> Self {
         // create events isles
-        let mut isle_builder = isles::IsleBuilder::new(symbols, service, &imports);
+        let mut isle_builder = isles::IsleBuilder::new(ctx, service, &imports);
         isle_builder.trace_events(service.get_flows_ids(imports.values()));
         let isles = isle_builder.into_isles();
 
@@ -122,7 +110,7 @@ impl<'a> TriggersGraph<'a> for EventIslesGraph<'a> {
             stmts: &service.statements,
             imports,
             isles,
-            symbols,
+            ctx,
             service,
         }
     }
@@ -132,7 +120,7 @@ impl<'a> TriggersGraph<'a> for EventIslesGraph<'a> {
         if self
             .get_def_flows(parent)
             .into_iter()
-            .any(|id| self.symbols.is_service_timeout(self.service.id, id))
+            .any(|id| self.ctx.is_service_timeout(self.service.id, id))
         {
             return self
                 .service
@@ -206,11 +194,7 @@ pub struct OnChangeGraph<'a> {
     graph: &'a DiGraphMap<usize, ()>,
 }
 impl<'a> TriggersGraph<'a> for OnChangeGraph<'a> {
-    fn new(
-        _symbols: &'a SymbolTable,
-        service: &'a Service,
-        _imports: &'a HashMap<usize, FlowImport>,
-    ) -> Self {
+    fn new(_ctx: &'a Ctx, service: &'a Service, _imports: &'a HashMap<usize, FlowImport>) -> Self {
         OnChangeGraph {
             graph: &service.graph,
         }

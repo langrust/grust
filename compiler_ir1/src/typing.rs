@@ -3,7 +3,7 @@ prelude! {}
 /// Performs type analysis.
 pub trait Typing {
     /// Tries to type the given construct.
-    fn typ_check(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()>;
+    fn typ_check(&mut self, symbols: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()>;
 
     /// Get type from construct.
     fn get_typ(&self) -> Option<&Typ> {
@@ -17,7 +17,7 @@ pub trait Typing {
 }
 
 impl Typing for File {
-    fn typ_check(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    fn typ_check(&mut self, symbols: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         for c in self.components.iter_mut() {
             c.typ_check(symbols, errors)?;
         }
@@ -34,7 +34,7 @@ impl Typing for File {
 }
 
 impl Typing for Function {
-    fn typ_check(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    fn typ_check(&mut self, symbols: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         for stmt in self.statements.iter_mut() {
             stmt.typ_check(symbols, errors)?;
         }
@@ -50,7 +50,7 @@ impl Typing for Function {
 }
 
 impl Typing for Component {
-    fn typ_check(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    fn typ_check(&mut self, symbols: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         if let Component::Definition(comp_def) = self {
             comp_def.typ_check(symbols, errors)
         } else {
@@ -60,7 +60,7 @@ impl Typing for Component {
 }
 
 impl Typing for ComponentDefinition {
-    fn typ_check(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    fn typ_check(&mut self, symbols: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         for stmt in self.statements.iter_mut() {
             stmt.typ_check(symbols, errors)?;
         }
@@ -69,7 +69,7 @@ impl Typing for ComponentDefinition {
 }
 
 impl Typing for Contract {
-    fn typ_check(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    fn typ_check(&mut self, symbols: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         for term in self.requires.iter_mut() {
             term.typ_check(symbols, errors)?
         }
@@ -84,7 +84,7 @@ impl Typing for Contract {
 }
 
 impl Typing for contract::Term {
-    fn typ_check(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    fn typ_check(&mut self, symbols: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         let ty = match &mut self.kind {
             contract::Kind::Constant { constant } => constant.get_typ(),
             contract::Kind::Identifier { id } => symbols.get_typ(*id).clone(),
@@ -140,7 +140,7 @@ impl Typing for contract::Term {
 impl Typing for interface::FlowStatement {
     // pre-condition: identifiers associated with statement is already typed
     // post-condition: expression associated with statement is typed and checked
-    fn typ_check(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    fn typ_check(&mut self, symbols: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         use interface::*;
         match self {
             FlowStatement::Declaration(FlowDeclaration {
@@ -181,7 +181,7 @@ impl Typing for interface::FlowStatement {
 }
 
 impl Typing for flow::Expr {
-    fn typ_check(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    fn typ_check(&mut self, symbols: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         let loc = self.loc;
         match &mut self.kind {
             flow::Kind::Ident { id } => {
@@ -336,7 +336,7 @@ impl Typing for flow::Expr {
 }
 
 impl Typing for stream::Expr {
-    fn typ_check(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    fn typ_check(&mut self, symbols: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         match self.kind {
             stream::Kind::FollowedBy {
                 id,
@@ -444,7 +444,7 @@ impl Typing for stream::Expr {
 impl<E: Typing> Typing for Stmt<E> {
     // pre-condition: identifiers associated with statement is already typed
     // post-condition: expression associated with statement is typed and checked
-    fn typ_check(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    fn typ_check(&mut self, symbols: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         self.pattern.typ_check(symbols, errors)?;
         let expected_type = self.pattern.typ.as_ref().unwrap();
 
@@ -462,7 +462,7 @@ impl Pattern {
     pub fn typ_check(
         &mut self,
         expected_type: &Typ,
-        symbols: &mut SymbolTable,
+        symbols: &mut Ctx,
         errors: &mut Vec<Error>,
     ) -> TRes<()> {
         use pattern::Kind;
@@ -579,7 +579,7 @@ impl Pattern {
 
 impl stmt::Pattern {
     /// Tries to construct the type of the given construct.
-    pub fn typ_check(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    pub fn typ_check(&mut self, symbols: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         match self.kind {
             stmt::Kind::Identifier { id } => {
                 let typing = symbols.get_typ(id);
@@ -613,7 +613,7 @@ impl stmt::Pattern {
 }
 
 impl Typing for Expr {
-    fn typ_check(&mut self, symbols: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    fn typ_check(&mut self, symbols: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         self.typing = Some(self.kind.typ_check(self.loc, symbols, errors)?);
         Ok(())
     }
@@ -627,12 +627,7 @@ impl Typing for Expr {
 
 impl<E: Typing> expr::Kind<E> {
     /// Tries to type the given construct.
-    fn typ_check(
-        &mut self,
-        loc: Loc,
-        symbols: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> TRes<Typ> {
+    fn typ_check(&mut self, loc: Loc, symbols: &mut Ctx, errors: &mut Vec<Error>) -> TRes<Typ> {
         let mut typing = ExprTyping::new(loc, symbols, errors);
         match self {
             expr::Kind::Constant { constant } => Ok(constant.get_typ()),
@@ -669,12 +664,12 @@ impl<E: Typing> expr::Kind<E> {
 
 struct ExprTyping<'a, E: Typing> {
     pub loc: Loc,
-    table: &'a mut SymbolTable,
+    table: &'a mut Ctx,
     errors: &'a mut Vec<Error>,
     _phantom: std::marker::PhantomData<E>,
 }
 impl<'a, E: Typing> ExprTyping<'a, E> {
-    fn new(loc: Loc, table: &'a mut SymbolTable, errors: &'a mut Vec<Error>) -> Self {
+    fn new(loc: Loc, table: &'a mut Ctx, errors: &'a mut Vec<Error>) -> Self {
         Self {
             loc,
             table,

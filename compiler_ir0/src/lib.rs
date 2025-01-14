@@ -9,5 +9,5 @@ pub mod symbol;
 
 pub mod import {
     pub use crate::prelude::ir0;
-    pub use ir0::{Ast, SymbolTable};
+    pub use ir0::{Ast, Ctx};
 }

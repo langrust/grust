@@ -18,75 +18,69 @@ pub trait Ir1IntoIr2<Ctx> {
         None
     }
     /// True if the [ir2] element is an if-then-else operator.
-    fn is_if_then_else(&self, _symbols: &SymbolTable) -> bool {
+    fn is_if_then_else(&self, _ctx: &ir0::Ctx) -> bool {
         false
     }
 }
 
-impl Ir1IntoIr2<&'_ SymbolTable> for ir1::Component {
+impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Component {
     type Ir2 = Item;
 
-    fn into_ir2(self, symbol_table: &SymbolTable) -> Self::Ir2 {
+    fn into_ir2(self, ctx: &ir0::Ctx) -> Self::Ir2 {
         match self {
-            ir1::Component::Definition(comp_def) => {
-                Item::StateMachine(comp_def.into_ir2(&symbol_table))
-            }
-            ir1::Component::Import(comp_import) => {
-                Item::Import(comp_import.into_ir2(&symbol_table))
-            }
+            ir1::Component::Definition(comp_def) => Item::StateMachine(comp_def.into_ir2(&ctx)),
+            ir1::Component::Import(comp_import) => Item::Import(comp_import.into_ir2(&ctx)),
         }
     }
 }
 
-impl Ir1IntoIr2<&'_ SymbolTable> for ir1::ComponentDefinition {
+impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::ComponentDefinition {
     type Ir2 = StateMachine;
 
-    fn into_ir2(self, symbol_table: &SymbolTable) -> Self::Ir2 {
+    fn into_ir2(self, ctx: &ir0::Ctx) -> Self::Ir2 {
         // get node name
-        let name = symbol_table.get_name(self.id);
+        let name = ctx.get_name(self.id);
 
         // get node inputs
-        let inputs = symbol_table.get_node_inputs(self.id).into_iter().map(|id| {
-            (
-                symbol_table.get_name(*id).clone(),
-                symbol_table.get_typ(*id).clone(),
-            )
-        });
+        let inputs = ctx
+            .get_node_inputs(self.id)
+            .into_iter()
+            .map(|id| (ctx.get_name(*id).clone(), ctx.get_typ(*id).clone()));
 
         // get node output type
-        let outputs = symbol_table.get_node_outputs(self.id);
+        let outputs = ctx.get_node_outputs(self.id);
         let output_type = {
             iter_1! {
                 outputs.iter(),
                 |iter| Typ::tuple(
-                    iter.map(|(_, id)| symbol_table.get_typ(*id).clone()).collect()
+                    iter.map(|(_, id)| ctx.get_typ(*id).clone()).collect()
                 ),
-                |just_one| symbol_table.get_typ(just_one.1).clone()
+                |just_one| ctx.get_typ(just_one.1).clone()
             }
         };
 
         // get node output expression
-        let outputs = symbol_table.get_node_outputs(self.id);
+        let outputs = ctx.get_node_outputs(self.id);
         let output_expression = {
             iter_1! {
                 outputs.iter(),
                 |iter| Expr::Tuple {
                     elements: iter.map(|(_, output_id)| Expr::Identifier {
-                        identifier: symbol_table.get_name(*output_id).clone(),
+                        identifier: ctx.get_name(*output_id).clone(),
                     }).collect()
                 },
                 |just_one| Expr::Identifier {
-                    identifier: symbol_table.get_name(just_one.1).clone(),
+                    identifier: ctx.get_name(just_one.1).clone(),
                 },
             }
         };
 
         // get memory/state elements
         let (elements, state_elements_init, state_elements_step) =
-            memory_state_elements(self.memory, symbol_table);
+            memory_state_elements(self.memory, ctx);
 
         // transform contract
-        let contract = self.contract.into_ir2(symbol_table);
+        let contract = self.contract.into_ir2(ctx);
         let invariant_initialization = vec![]; // TODO
 
         use state_machine::*;
@@ -96,11 +90,11 @@ impl Ir1IntoIr2<&'_ SymbolTable> for ir1::ComponentDefinition {
 
         // 'step' method
         let step = {
-            let body = match para::Stmts::of_ir1(&self.statements, symbol_table, &self.graph) {
+            let body = match para::Stmts::of_ir1(&self.statements, ctx, &self.graph) {
                 Ok(stmts) => stmts,
                 Err(e) => panic!(
                     "failed to generate (step) synced body of component `{}`:\n{}",
-                    symbol_table.get_name(self.id),
+                    ctx.get_name(self.id),
                     e
                 ),
             };
@@ -135,12 +129,12 @@ impl Ir1IntoIr2<&'_ SymbolTable> for ir1::ComponentDefinition {
     }
 }
 
-impl Ir1IntoIr2<&'_ SymbolTable> for ir1::ComponentImport {
+impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::ComponentImport {
     type Ir2 = Import;
 
-    fn into_ir2(self, symbol_table: &SymbolTable) -> Self::Ir2 {
+    fn into_ir2(self, ctx: &ir0::Ctx) -> Self::Ir2 {
         // get node name
-        let name = symbol_table.get_name(self.id).clone();
+        let name = ctx.get_name(self.id).clone();
         let path = self.path;
 
         Import {
@@ -153,7 +147,7 @@ impl Ir1IntoIr2<&'_ SymbolTable> for ir1::ComponentImport {
 /// Get state elements from memory.
 pub fn memory_state_elements(
     mem: ir1::Memory,
-    symbol_table: &SymbolTable,
+    ctx: &ir0::Ctx,
 ) -> (
     Vec<state_machine::StateElmInfo>,
     Vec<state_machine::StateElmInit>,
@@ -175,13 +169,10 @@ pub fn memory_state_elements(
         },
     ) in mem.buffers.into_iter().sorted_by_key(|(id, _)| id.clone())
     {
-        let scope = symbol_table.get_scope(id);
+        let scope = ctx.get_scope(id);
         let mem_ident = Ident::new(&format!("last_{}", ident), ident.loc().into());
         elements.push(StateElmInfo::buffer(mem_ident.clone(), typing));
-        inits.push(StateElmInit::buffer(
-            mem_ident.clone(),
-            init.into_ir2(symbol_table),
-        ));
+        inits.push(StateElmInit::buffer(mem_ident.clone(), init.into_ir2(ctx)));
         steps.push(StateElmStep::new(
             mem_ident,
             match scope {
@@ -195,8 +186,8 @@ pub fn memory_state_elements(
         .into_iter()
         .sorted_by_key(|(id, _)| *id)
         .for_each(|(memory_id, CalledNode { node_id, .. })| {
-            let memory_name = symbol_table.get_name(memory_id);
-            let node_name = symbol_table.get_name(node_id);
+            let memory_name = ctx.get_name(memory_id);
+            let node_name = ctx.get_name(node_id);
             elements.push(StateElmInfo::called_node(
                 memory_name.clone(),
                 node_name.clone(),
@@ -210,25 +201,25 @@ pub fn memory_state_elements(
     (elements, inits, steps)
 }
 
-impl Ir1IntoIr2<&'_ SymbolTable> for ir1::Contract {
+impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Contract {
     type Ir2 = Contract;
 
-    fn into_ir2(self, symbol_table: &SymbolTable) -> Self::Ir2 {
+    fn into_ir2(self, ctx: &ir0::Ctx) -> Self::Ir2 {
         Contract {
             requires: self
                 .requires
                 .into_iter()
-                .map(|term| term.into_ir2(symbol_table))
+                .map(|term| term.into_ir2(ctx))
                 .collect(),
             ensures: self
                 .ensures
                 .into_iter()
-                .map(|term| term.into_ir2(symbol_table))
+                .map(|term| term.into_ir2(ctx))
                 .collect(),
             invariant: self
                 .invariant
                 .into_iter()
-                .map(|term| term.into_ir2(symbol_table))
+                .map(|term| term.into_ir2(ctx))
                 .collect(),
         }
     }
@@ -239,15 +230,15 @@ mod term {
         ir1::contract::{Term, Kind},
     }
 
-    impl Ir1IntoIr2<&'_ SymbolTable> for Term {
+    impl Ir1IntoIr2<&'_ ir0::Ctx> for Term {
         type Ir2 = contract::Term;
 
-        fn into_ir2(self, symbol_table: &SymbolTable) -> Self::Ir2 {
+        fn into_ir2(self, ctx: &ir0::Ctx) -> Self::Ir2 {
             match self.kind {
                 Kind::Constant { constant } => contract::Term::literal(constant),
                 Kind::Identifier { id } => {
-                    let name = symbol_table.get_name(id);
-                    match symbol_table.get_scope(id) {
+                    let name = ctx.get_name(id);
+                    match ctx.get_scope(id) {
                         Scope::Input => contract::Term::input(name.clone()),
                         // todo: this will broke for components with multiple outputs
                         Scope::Output => {
@@ -261,30 +252,27 @@ mod term {
                     enum_id,
                     element_id,
                 } => contract::Term::enumeration(
-                    symbol_table.get_name(enum_id).clone(),
-                    symbol_table.get_name(element_id).clone(),
+                    ctx.get_name(enum_id).clone(),
+                    ctx.get_name(element_id).clone(),
                     None,
                 ),
-                Kind::Unary { op, term } => contract::Term::unop(op, term.into_ir2(symbol_table)),
-                Kind::Binary { op, left, right } => contract::Term::binop(
-                    op,
-                    left.into_ir2(symbol_table),
-                    right.into_ir2(symbol_table),
-                ),
+                Kind::Unary { op, term } => contract::Term::unop(op, term.into_ir2(ctx)),
+                Kind::Binary { op, left, right } => {
+                    contract::Term::binop(op, left.into_ir2(ctx), right.into_ir2(ctx))
+                }
                 Kind::ForAll { id, term } => {
-                    let name = symbol_table.get_name(id);
-                    let ty = symbol_table.get_typ(id).clone();
-                    let term = term.into_ir2(symbol_table);
+                    let name = ctx.get_name(id);
+                    let ty = ctx.get_typ(id).clone();
+                    let term = term.into_ir2(ctx);
                     contract::Term::forall(name.clone(), ty, term)
                 }
-                Kind::Implication { left, right } => contract::Term::implication(
-                    left.into_ir2(symbol_table),
-                    right.into_ir2(symbol_table),
-                ),
-                Kind::PresentEvent { event_id, pattern } => match symbol_table.get_typ(event_id) {
-                    Typ::SMEvent { .. } => contract::Term::some(contract::Term::ident(
-                        symbol_table.get_name(pattern).clone(),
-                    )),
+                Kind::Implication { left, right } => {
+                    contract::Term::implication(left.into_ir2(ctx), right.into_ir2(ctx))
+                }
+                Kind::PresentEvent { event_id, pattern } => match ctx.get_typ(event_id) {
+                    Typ::SMEvent { .. } => {
+                        contract::Term::some(contract::Term::ident(ctx.get_name(pattern).clone()))
+                    }
                     _ => unreachable!(),
                 },
             }
@@ -292,21 +280,21 @@ mod term {
     }
 }
 
-impl<'a, E> Ir1IntoIr2<&'a SymbolTable> for ir1::expr::Kind<E>
+impl<'a, E> Ir1IntoIr2<&'a ir0::Ctx> for ir1::expr::Kind<E>
 where
-    E: Ir1IntoIr2<&'a SymbolTable, Ir2 = Expr>,
+    E: Ir1IntoIr2<&'a ir0::Ctx, Ir2 = Expr>,
 {
     type Ir2 = Expr;
 
-    fn into_ir2(self, symbol_table: &'a SymbolTable) -> Self::Ir2 {
+    fn into_ir2(self, ctx: &'a ir0::Ctx) -> Self::Ir2 {
         match self {
             Self::Constant { constant, .. } => Expr::Literal { literal: constant },
             Self::Identifier { id, .. } => {
-                let name = symbol_table.get_name(id).clone();
-                if symbol_table.is_function(id) {
+                let name = ctx.get_name(id).clone();
+                if ctx.is_function(id) {
                     Expr::Identifier { identifier: name }
                 } else {
-                    let scope = symbol_table.get_scope(id);
+                    let scope = ctx.get_scope(id);
                     match scope {
                         Scope::Input => Expr::InputAccess { identifier: name },
                         Scope::Output | Scope::Local | Scope::VeryLocal => {
@@ -316,18 +304,18 @@ where
                 }
             }
             Self::UnOp { op, expr } => {
-                let expr = expr.into_ir2(symbol_table);
+                let expr = expr.into_ir2(ctx);
                 Expr::unop(op, expr)
             }
             Self::BinOp { op, lft, rgt } => {
-                let lft = lft.into_ir2(symbol_table);
-                let rgt = rgt.into_ir2(symbol_table);
+                let lft = lft.into_ir2(ctx);
+                let rgt = rgt.into_ir2(ctx);
                 Expr::binop(op, lft, rgt)
             }
             Self::IfThenElse { cnd, thn, els } => {
-                let cnd = cnd.into_ir2(symbol_table);
-                let thn = thn.into_ir2(symbol_table);
-                let els = els.into_ir2(symbol_table);
+                let cnd = cnd.into_ir2(ctx);
+                let thn = thn.into_ir2(ctx);
+                let els = els.into_ir2(ctx);
                 Expr::ite(
                     cnd,
                     Block::new(vec![Stmt::ExprLast { expr: thn }]),
@@ -337,22 +325,17 @@ where
             Self::Application { fun, inputs, .. } => {
                 let arguments = inputs
                     .into_iter()
-                    .map(|input| input.into_ir2(symbol_table))
+                    .map(|input| input.into_ir2(ctx))
                     .collect();
                 Expr::FunctionCall {
-                    function: Box::new(fun.into_ir2(symbol_table)),
+                    function: Box::new(fun.into_ir2(ctx)),
                     arguments,
                 }
             }
             Self::Abstraction { inputs, expr, .. } => {
                 let inputs = inputs
                     .iter()
-                    .map(|id| {
-                        (
-                            symbol_table.get_name(*id).clone(),
-                            symbol_table.get_typ(*id).clone(),
-                        )
-                    })
+                    .map(|id| (ctx.get_name(*id).clone(), ctx.get_typ(*id).clone()))
                     .collect();
                 let output = expr.try_get_typ().expect("it should be typed").clone();
                 Expr::Lambda {
@@ -362,57 +345,52 @@ where
                     body: Box::new(Expr::Block {
                         block: Block {
                             statements: vec![Stmt::ExprLast {
-                                expr: expr.into_ir2(symbol_table),
+                                expr: expr.into_ir2(ctx),
                             }],
                         },
                     }),
                 }
             }
             Self::Structure { id, fields, .. } => Expr::Structure {
-                name: symbol_table.get_name(id).clone(),
+                name: ctx.get_name(id).clone(),
                 fields: fields
                     .into_iter()
-                    .map(|(id, expr)| {
-                        (
-                            symbol_table.get_name(id).clone(),
-                            expr.into_ir2(symbol_table),
-                        )
-                    })
+                    .map(|(id, expr)| (ctx.get_name(id).clone(), expr.into_ir2(ctx)))
                     .collect(),
             },
             Self::Enumeration { enum_id, elem_id } => Expr::Enumeration {
-                name: symbol_table.get_name(enum_id).clone(),
-                element: symbol_table.get_name(elem_id).clone(),
+                name: ctx.get_name(enum_id).clone(),
+                element: ctx.get_name(elem_id).clone(),
             },
             Self::Array { elements } => Expr::Array {
                 elements: elements
                     .into_iter()
-                    .map(|element| element.into_ir2(symbol_table))
+                    .map(|element| element.into_ir2(ctx))
                     .collect(),
             },
             Self::Tuple { elements } => Expr::Tuple {
                 elements: elements
                     .into_iter()
-                    .map(|element| element.into_ir2(symbol_table))
+                    .map(|element| element.into_ir2(ctx))
                     .collect(),
             },
             Self::Match { expr, arms, .. } => Expr::Match {
-                matched: Box::new(expr.into_ir2(symbol_table)),
+                matched: Box::new(expr.into_ir2(ctx)),
                 arms: arms
                     .into_iter()
                     .map(|(pattern, guard, body, expr)| {
                         (
-                            pattern.into_ir2(symbol_table),
-                            guard.map(|expr| expr.into_ir2(symbol_table)),
+                            pattern.into_ir2(ctx),
+                            guard.map(|expr| expr.into_ir2(ctx)),
                             if body.is_empty() {
-                                expr.into_ir2(symbol_table)
+                                expr.into_ir2(ctx)
                             } else {
                                 let mut statements = body
                                     .into_iter()
-                                    .map(|statement| statement.into_ir2(symbol_table))
+                                    .map(|statement| statement.into_ir2(ctx))
                                     .collect_vec();
                                 statements.push(Stmt::ExprLast {
-                                    expr: expr.into_ir2(symbol_table),
+                                    expr: expr.into_ir2(ctx),
                                 });
                                 Expr::Block {
                                     block: Block { statements },
@@ -423,7 +401,7 @@ where
                     .collect(),
             },
             Self::FieldAccess { expr, field, .. } => Expr::FieldAccess {
-                expr: Box::new(expr.into_ir2(symbol_table)),
+                expr: Box::new(expr.into_ir2(ctx)),
                 field: FieldIdentifier::Named(field),
             },
             Self::TupleElementAccess {
@@ -431,124 +409,115 @@ where
                 element_number,
                 ..
             } => Expr::FieldAccess {
-                expr: Box::new(expr.into_ir2(symbol_table)),
+                expr: Box::new(expr.into_ir2(ctx)),
                 field: FieldIdentifier::Unnamed(element_number),
             },
             Self::Map { expr, fun, .. } => Expr::Map {
-                mapped: Box::new(expr.into_ir2(symbol_table)),
-                function: Box::new(fun.into_ir2(symbol_table)),
+                mapped: Box::new(expr.into_ir2(ctx)),
+                function: Box::new(fun.into_ir2(ctx)),
             },
             Self::Fold {
                 array, init, fun, ..
-            } => Expr::fold(
-                array.into_ir2(symbol_table),
-                init.into_ir2(symbol_table),
-                fun.into_ir2(symbol_table),
-            ),
+            } => Expr::fold(array.into_ir2(ctx), init.into_ir2(ctx), fun.into_ir2(ctx)),
             Self::Sort { expr, fun, .. } => Expr::Sort {
-                sorted: Box::new(expr.into_ir2(symbol_table)),
-                function: Box::new(fun.into_ir2(symbol_table)),
+                sorted: Box::new(expr.into_ir2(ctx)),
+                function: Box::new(fun.into_ir2(ctx)),
             },
             Self::Zip { arrays, .. } => Expr::Zip {
                 arrays: arrays
                     .into_iter()
-                    .map(|element| element.into_ir2(symbol_table))
+                    .map(|element| element.into_ir2(ctx))
                     .collect(),
             },
         }
     }
 
-    fn is_if_then_else(&self, symbol_table: &SymbolTable) -> bool {
+    fn is_if_then_else(&self, ctx: &ir0::Ctx) -> bool {
         match self {
             Self::Identifier { id, .. } => OtherOp::IfThenElse
                 .to_string()
-                .eq(&symbol_table.get_name(*id).to_string()),
+                .eq(&ctx.get_name(*id).to_string()),
             _ => false,
         }
     }
 }
 
-impl Ir1IntoIr2<&'_ SymbolTable> for ir1::Expr {
+impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Expr {
     type Ir2 = Expr;
 
-    fn into_ir2(self, symbol_table: &SymbolTable) -> Self::Ir2 {
-        self.kind.into_ir2(symbol_table)
+    fn into_ir2(self, ctx: &ir0::Ctx) -> Self::Ir2 {
+        self.kind.into_ir2(ctx)
     }
     fn try_get_typ(&self) -> Option<&Typ> {
         self.typing.as_ref()
     }
 
-    fn is_if_then_else(&self, symbol_table: &SymbolTable) -> bool {
-        self.kind.is_if_then_else(symbol_table)
+    fn is_if_then_else(&self, ctx: &ir0::Ctx) -> bool {
+        self.kind.is_if_then_else(ctx)
     }
 }
 
-impl Ir1IntoIr2<SymbolTable> for ir1::File {
+impl Ir1IntoIr2<ir0::Ctx> for ir1::File {
     type Ir2 = Project;
 
-    fn into_ir2(self, mut symbol_table: SymbolTable) -> Project {
+    fn into_ir2(self, mut ctx: ir0::Ctx) -> Project {
         let mut items = vec![];
 
         let typedefs = self
             .typedefs
             .into_iter()
-            .map(|typedef| typedef.into_ir2(&symbol_table));
+            .map(|typedef| typedef.into_ir2(&ctx));
         items.extend(typedefs);
 
         let functions = self
             .functions
             .into_iter()
-            .map(|function| function.into_ir2(&symbol_table))
+            .map(|function| function.into_ir2(&ctx))
             .map(Item::Function);
         items.extend(functions);
 
         let state_machines = self
             .components
             .into_iter()
-            .map(|component| component.into_ir2(&symbol_table));
+            .map(|component| component.into_ir2(&ctx));
         items.extend(state_machines);
 
-        let execution_machines = self.interface.into_ir2(&mut symbol_table);
+        let execution_machines = self.interface.into_ir2(&mut ctx);
         items.push(Item::ExecutionMachine(execution_machines));
 
         Project { items }
     }
 }
 
-impl Ir1IntoIr2<&'_ SymbolTable> for ir1::Function {
+impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Function {
     type Ir2 = Function;
 
-    fn into_ir2(self, symbol_table: &SymbolTable) -> Self::Ir2 {
+    fn into_ir2(self, ctx: &ir0::Ctx) -> Self::Ir2 {
         // get function name
-        let name = symbol_table.get_name(self.id).clone();
+        let name = ctx.get_name(self.id).clone();
 
         // get function inputs
-        let inputs = symbol_table
+        let inputs = ctx
             .get_function_input(self.id)
             .into_iter()
-            .map(|id| {
-                (
-                    symbol_table.get_name(*id).clone(),
-                    symbol_table.get_typ(*id).clone(),
-                )
-            })
+            .map(|id| (ctx.get_name(*id).clone(), ctx.get_typ(*id).clone()))
             .collect_vec();
 
         // get function output type
-        let output = symbol_table.get_function_output_type(self.id).clone();
+        let output = ctx.get_function_output_type(self.id).clone();
 
         // Transforms into [ir2] statements
         let mut statements = self
             .statements
             .into_iter()
-            .map(|statement| statement.into_ir2(symbol_table))
+            .map(|statement| statement.into_ir2(ctx))
             .collect_vec();
         statements.push(Stmt::ExprLast {
-            expr: self.returned.into_ir2(symbol_table),
+            expr: self.returned.into_ir2(ctx),
         });
 
         // transform contract
-        let contract = self.contract.into_ir2(symbol_table);
+        let contract = self.contract.into_ir2(ctx);
 
         Function {
             name,
@@ -560,54 +529,54 @@ impl Ir1IntoIr2<&'_ SymbolTable> for ir1::Function {
     }
 }
 
-impl Ir1IntoIr2<&'_ SymbolTable> for ir1::Pattern {
+impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Pattern {
     type Ir2 = Pattern;
 
-    fn into_ir2(self, symbol_table: &SymbolTable) -> Self::Ir2 {
+    fn into_ir2(self, ctx: &ir0::Ctx) -> Self::Ir2 {
         use ir1::pattern::Kind;
         match self.kind {
             Kind::Identifier { id } => Pattern::Identifier {
-                name: symbol_table.get_name(id).clone(),
+                name: ctx.get_name(id).clone(),
             },
             Kind::Constant { constant } => Pattern::Literal { literal: constant },
             Kind::Structure { id, fields } => Pattern::Structure {
-                name: symbol_table.get_name(id).clone(),
+                name: ctx.get_name(id).clone(),
                 fields: fields
                     .into_iter()
                     .map(|(id, optional_pattern)| {
                         (
-                            symbol_table.get_name(id).clone(),
+                            ctx.get_name(id).clone(),
                             optional_pattern.map_or(
                                 Pattern::Identifier {
-                                    name: symbol_table.get_name(id).clone(),
+                                    name: ctx.get_name(id).clone(),
                                 },
-                                |pattern| pattern.into_ir2(symbol_table),
+                                |pattern| pattern.into_ir2(ctx),
                             ),
                         )
                     })
                     .collect(),
             },
             Kind::Enumeration { enum_id, elem_id } => Pattern::Enumeration {
-                enum_name: symbol_table.get_name(enum_id).clone(),
-                elem_name: symbol_table.get_name(elem_id).clone(),
+                enum_name: ctx.get_name(enum_id).clone(),
+                elem_name: ctx.get_name(elem_id).clone(),
                 element: None,
             },
             Kind::Tuple { elements } => Pattern::Tuple {
                 elements: elements
                     .into_iter()
-                    .map(|element| element.into_ir2(symbol_table))
+                    .map(|element| element.into_ir2(ctx))
                     .collect(),
             },
             Kind::Some { pattern } => Pattern::Some {
-                pattern: Box::new(pattern.into_ir2(symbol_table)),
+                pattern: Box::new(pattern.into_ir2(ctx)),
             },
             Kind::None => Pattern::None,
             Kind::Default(loc) => Pattern::Default(loc),
-            Kind::PresentEvent { event_id, pattern } => match symbol_table.get_typ(event_id) {
-                Typ::SMEvent { .. } => Pattern::some(pattern.into_ir2(symbol_table)),
+            Kind::PresentEvent { event_id, pattern } => match ctx.get_typ(event_id) {
+                Typ::SMEvent { .. } => Pattern::some(pattern.into_ir2(ctx)),
                 _ => unreachable!(),
             },
-            Kind::NoEvent { event_id } => match symbol_table.get_typ(event_id) {
+            Kind::NoEvent { event_id } => match ctx.get_typ(event_id) {
                 Typ::SMEvent { .. } => Pattern::none(),
                 _ => unreachable!(),
             },
@@ -615,48 +584,48 @@ impl Ir1IntoIr2<&'_ SymbolTable> for ir1::Pattern {
     }
 }
 
-impl Ir1IntoIr2<&'_ SymbolTable> for ir1::stmt::Pattern {
+impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::stmt::Pattern {
     type Ir2 = Pattern;
 
-    fn into_ir2(self, symbol_table: &SymbolTable) -> Self::Ir2 {
+    fn into_ir2(self, ctx: &ir0::Ctx) -> Self::Ir2 {
         match self.kind {
             ir1::stmt::Kind::Identifier { id } => Pattern::Identifier {
-                name: symbol_table.get_name(id).clone(),
+                name: ctx.get_name(id).clone(),
             },
             ir1::stmt::Kind::Typed { id, typ } => Pattern::Typed {
                 pattern: Box::new(Pattern::Identifier {
-                    name: symbol_table.get_name(id).clone(),
+                    name: ctx.get_name(id).clone(),
                 }),
                 typ,
             },
             ir1::stmt::Kind::Tuple { elements } => Pattern::Tuple {
                 elements: elements
                     .into_iter()
-                    .map(|element| element.into_ir2(symbol_table))
+                    .map(|element| element.into_ir2(ctx))
                     .collect(),
             },
         }
     }
 }
 
-impl<'a, E> Ir1IntoIr2<&'a SymbolTable> for ir1::Stmt<E>
+impl<'a, E> Ir1IntoIr2<&'a ir0::Ctx> for ir1::Stmt<E>
 where
-    E: Ir1IntoIr2<&'a SymbolTable, Ir2 = Expr>,
+    E: Ir1IntoIr2<&'a ir0::Ctx, Ir2 = Expr>,
 {
     type Ir2 = Stmt;
 
-    fn into_ir2(self, symbol_table: &'a SymbolTable) -> Self::Ir2 {
+    fn into_ir2(self, ctx: &'a ir0::Ctx) -> Self::Ir2 {
         Stmt::Let {
-            pattern: self.pattern.into_ir2(symbol_table),
-            expr: self.expr.into_ir2(symbol_table),
+            pattern: self.pattern.into_ir2(ctx),
+            expr: self.expr.into_ir2(ctx),
         }
     }
 }
 
-impl Ir1IntoIr2<&'_ SymbolTable> for ir1::stream::Expr {
+impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::stream::Expr {
     type Ir2 = Expr;
 
-    fn into_ir2(self, symbol_table: &SymbolTable) -> Self::Ir2 {
+    fn into_ir2(self, ctx: &ir0::Ctx) -> Self::Ir2 {
         use ir1::stream::Kind::*;
         match self.kind {
             NodeApplication {
@@ -665,20 +634,15 @@ impl Ir1IntoIr2<&'_ SymbolTable> for ir1::stream::Expr {
                 inputs,
                 ..
             } => {
-                let memory_ident = symbol_table
+                let memory_ident = ctx
                     .get_name(
                         memory_id.expect("should be defined in `ir1::stream::Expr::memorize`"),
                     )
                     .clone();
-                let name = symbol_table.get_name(called_node_id).clone();
+                let name = ctx.get_name(called_node_id).clone();
                 let input_fields = inputs
                     .into_iter()
-                    .map(|(id, expression)| {
-                        (
-                            symbol_table.get_name(id).clone(),
-                            expression.into_ir2(symbol_table),
-                        )
-                    })
+                    .map(|(id, expression)| (ctx.get_name(id).clone(), expression.into_ir2(ctx)))
                     .collect_vec();
                 let input_name = {
                     Ident::new(
@@ -693,11 +657,11 @@ impl Ir1IntoIr2<&'_ SymbolTable> for ir1::stream::Expr {
                     input_fields,
                 }
             }
-            Expression { expr } => expr.into_ir2(symbol_table),
-            SomeEvent { expr } => ir2::Expr::some(expr.into_ir2(symbol_table)),
+            Expression { expr } => expr.into_ir2(ctx),
+            SomeEvent { expr } => ir2::Expr::some(expr.into_ir2(ctx)),
             NoneEvent => ir2::Expr::none(),
             FollowedBy { id, .. } => {
-                let name = symbol_table.get_name(id).clone();
+                let name = ctx.get_name(id).clone();
                 ir2::Expr::MemoryAccess { identifier: name }
             }
             RisingEdge { .. } => unreachable!(),
@@ -708,43 +672,38 @@ impl Ir1IntoIr2<&'_ SymbolTable> for ir1::stream::Expr {
         self.typ.as_ref()
     }
 
-    fn is_if_then_else(&self, symbol_table: &SymbolTable) -> bool {
+    fn is_if_then_else(&self, ctx: &ir0::Ctx) -> bool {
         match &self.kind {
-            ir1::stream::Kind::Expression { expr } => expr.is_if_then_else(symbol_table),
+            ir1::stream::Kind::Expression { expr } => expr.is_if_then_else(ctx),
             _ => false,
         }
     }
 }
 
-impl Ir1IntoIr2<&'_ SymbolTable> for ir1::Typedef {
+impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Typedef {
     type Ir2 = Item;
 
-    fn into_ir2(self, symbol_table: &SymbolTable) -> Self::Ir2 {
+    fn into_ir2(self, ctx: &ir0::Ctx) -> Self::Ir2 {
         use ir1::typedef::Kind;
         match self.kind {
             Kind::Structure { fields, .. } => Item::Structure(Structure {
-                name: symbol_table.get_name(self.id).clone(),
+                name: ctx.get_name(self.id).clone(),
                 fields: fields
                     .into_iter()
-                    .map(|id| {
-                        (
-                            symbol_table.get_name(id).clone(),
-                            symbol_table.get_typ(id).clone(),
-                        )
-                    })
+                    .map(|id| (ctx.get_name(id).clone(), ctx.get_typ(id).clone()))
                     .collect(),
             }),
             Kind::Enumeration { elements, .. } => Item::Enumeration(Enumeration {
-                name: symbol_table.get_name(self.id).clone(),
+                name: ctx.get_name(self.id).clone(),
                 elements: elements
                     .into_iter()
-                    .map(|id| symbol_table.get_name(id).clone())
+                    .map(|id| ctx.get_name(id).clone())
                     .collect(),
             }),
             Kind::Array => Item::ArrayAlias(ir2::item::ArrayAlias {
-                name: symbol_table.get_name(self.id).clone(),
-                array_type: symbol_table.get_array_type(self.id).clone(),
-                size: symbol_table.get_array_size(self.id),
+                name: ctx.get_name(self.id).clone(),
+                array_type: ctx.get_array_type(self.id).clone(),
+                size: ctx.get_array_size(self.id),
             }),
         }
     }

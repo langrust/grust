@@ -19,6 +19,34 @@ pub struct ConfigItem;
 /// It sets the static [Conf](conf::Conf).
 pub struct Config;
 
+/// An `ir0` context, gathers a symbol table and a [`Conf`].
+///
+/// For convenience, this type [`std::ops::Deref`]s/[`std::ops::DerefMut`]s to [`symbol::Table`].
+pub struct Ctx {
+    pub table: symbol::Table,
+    pub conf: conf::Conf,
+}
+impl std::ops::Deref for Ctx {
+    type Target = symbol::Table;
+    fn deref(&self) -> &Self::Target {
+        &self.table
+    }
+}
+impl std::ops::DerefMut for Ctx {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.table
+    }
+}
+impl Ctx {
+    /// Empty context: empty symbol table and default configuration.
+    pub fn new() -> Self {
+        Self {
+            table: symbol::Table::new(),
+            conf: conf::Conf::default(),
+        }
+    }
+}
+
 pub struct Colon<U, V> {
     pub left: U,
     pub colon: Token![:],

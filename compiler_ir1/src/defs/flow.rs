@@ -146,29 +146,23 @@ impl Expr {
     pub fn normal_form(
         &mut self,
         identifier_creator: &mut IdentifierCreator,
-        symbol_table: &mut SymbolTable,
+        ctx: &mut Ctx,
     ) -> Vec<interface::FlowStatement> {
         match &mut self.kind {
             flow::Kind::Ident { .. } => vec![],
-            flow::Kind::Sample { expr, .. } => {
-                expr.into_flow_call(identifier_creator, symbol_table)
-            }
-            flow::Kind::Scan { expr, .. } => expr.into_flow_call(identifier_creator, symbol_table),
-            flow::Kind::Timeout { expr, .. } => {
-                expr.into_flow_call(identifier_creator, symbol_table)
-            }
-            flow::Kind::Throttle { expr, .. } => {
-                expr.into_flow_call(identifier_creator, symbol_table)
-            }
-            flow::Kind::OnChange { expr } => expr.into_flow_call(identifier_creator, symbol_table),
+            flow::Kind::Sample { expr, .. } => expr.into_flow_call(identifier_creator, ctx),
+            flow::Kind::Scan { expr, .. } => expr.into_flow_call(identifier_creator, ctx),
+            flow::Kind::Timeout { expr, .. } => expr.into_flow_call(identifier_creator, ctx),
+            flow::Kind::Throttle { expr, .. } => expr.into_flow_call(identifier_creator, ctx),
+            flow::Kind::OnChange { expr } => expr.into_flow_call(identifier_creator, ctx),
             flow::Kind::Merge { expr_1, expr_2 } => {
-                let mut stmts = expr_1.into_flow_call(identifier_creator, symbol_table);
-                stmts.extend(expr_2.into_flow_call(identifier_creator, symbol_table));
+                let mut stmts = expr_1.into_flow_call(identifier_creator, ctx);
+                stmts.extend(expr_2.into_flow_call(identifier_creator, ctx));
                 stmts
             }
             flow::Kind::ComponentCall { inputs, .. } => inputs
                 .iter_mut()
-                .flat_map(|(_, expr)| expr.into_flow_call(identifier_creator, symbol_table))
+                .flat_map(|(_, expr)| expr.into_flow_call(identifier_creator, ctx))
                 .collect(),
         }
     }
@@ -176,12 +170,12 @@ impl Expr {
     fn into_flow_call(
         &mut self,
         identifier_creator: &mut IdentifierCreator,
-        symbol_table: &mut SymbolTable,
+        ctx: &mut Ctx,
     ) -> Vec<interface::FlowStatement> {
         match self.kind {
             flow::Kind::Ident { .. } => vec![],
             _ => {
-                let mut statements = self.normal_form(identifier_creator, symbol_table);
+                let mut statements = self.normal_form(identifier_creator, ctx);
 
                 // create fresh identifier for the new statement
                 let fresh_name = identifier_creator.fresh_identifier(self.loc(), "", "x");
@@ -192,7 +186,7 @@ impl Expr {
                     Typ::Tuple { .. } => panic!("tuple of flows can not be converted into flow"),
                     _ => unreachable!(),
                 };
-                let fresh_id = symbol_table.insert_fresh_flow(fresh_name, kind, typ.clone());
+                let fresh_id = ctx.insert_fresh_flow(fresh_name, kind, typ.clone());
 
                 // create statement for the expression
                 let new_statement =

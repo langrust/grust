@@ -1,7 +1,7 @@
 prelude! {}
 
 pub trait Ir0Store {
-    fn store(&self, table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()>;
+    fn store(&self, table: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()>;
 }
 
 mod component {
@@ -11,7 +11,7 @@ mod component {
 
     impl Ir0Store for Component {
         /// Store node's signals in symbol table.
-        fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+        fn store(&self, symbol_table: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
             let loc = self.loc();
             let ctx = &mut ir1::ctx::WithLoc::new(loc, symbol_table, errors);
 
@@ -102,7 +102,7 @@ mod component {
 
     impl Ir0Store for ComponentImport {
         /// Store node's signals in symbol table.
-        fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+        fn store(&self, symbol_table: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
             let loc = self.loc();
             let ctx = &mut ir1::ctx::WithLoc::new(loc, symbol_table, errors);
             ctx.symbols.local();
@@ -205,7 +205,7 @@ pub trait Ir0StoreSignals {
         &self,
         store_outputs: bool,
         signals: &mut HashMap<Ident, usize>,
-        symbol_table: &mut SymbolTable,
+        symbol_table: &mut Ctx,
         errors: &mut Vec<Error>,
     ) -> TRes<()>;
 
@@ -225,7 +225,7 @@ pub trait Ir0StoreSignals {
     fn get_signals(
         &self,
         signals: &mut HashMap<Ident, ir0::stmt::Pattern>,
-        symbol_table: &SymbolTable,
+        symbol_table: &Ctx,
         errors: &mut Vec<Error>,
     ) -> TRes<()>;
 }
@@ -238,7 +238,7 @@ mod equation {
             &self,
             store_outputs: bool,
             signals: &mut HashMap<Ident, usize>,
-            symbol_table: &mut SymbolTable,
+            symbol_table: &mut Ctx,
             errors: &mut Vec<Error>,
         ) -> TRes<()> {
             match self {
@@ -266,7 +266,7 @@ mod equation {
         fn get_signals(
             &self,
             signals: &mut HashMap<Ident, ir0::stmt::Pattern>,
-            symbol_table: &SymbolTable,
+            symbol_table: &Ctx,
             errors: &mut Vec<Error>,
         ) -> TRes<()> {
             match self {
@@ -294,7 +294,7 @@ mod equation {
             &self,
             store_outputs: bool,
             signals: &mut HashMap<Ident, usize>,
-            symbol_table: &mut SymbolTable,
+            symbol_table: &mut Ctx,
             errors: &mut Vec<Error>,
         ) -> TRes<()> {
             match self {
@@ -356,7 +356,7 @@ mod equation {
         fn get_signals(
             &self,
             signals: &mut HashMap<Ident, ir0::stmt::Pattern>,
-            symbol_table: &SymbolTable,
+            symbol_table: &Ctx,
             errors: &mut Vec<Error>,
         ) -> TRes<()> {
             match self {
@@ -395,7 +395,7 @@ mod equation {
 }
 
 impl Ir0Store for Ast {
-    fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    fn store(&self, symbol_table: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         self.items
             .iter()
             .map(|item| match item {
@@ -411,7 +411,7 @@ impl Ir0Store for Ast {
 }
 
 impl Ir0Store for ir0::Function {
-    fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    fn store(&self, symbol_table: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         let loc = self.loc();
         let ctx = &mut ir1::ctx::WithLoc::new(loc, symbol_table, errors);
         ctx.symbols.local();
@@ -448,17 +448,9 @@ impl Ir0Store for ir0::Function {
 }
 
 pub trait Ir0StorePattern: Sized {
-    fn store(
-        &self,
-        symbol_table: &mut SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> TRes<Vec<(Ident, usize)>>;
+    fn store(&self, symbol_table: &mut Ctx, errors: &mut Vec<Error>) -> TRes<Vec<(Ident, usize)>>;
 
-    fn get_signals(
-        &self,
-        symbol_table: &SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> TRes<Vec<(Ident, Self)>>;
+    fn get_signals(&self, symbol_table: &Ctx, errors: &mut Vec<Error>) -> TRes<Vec<(Ident, Self)>>;
 }
 
 mod expr_pattern {
@@ -469,7 +461,7 @@ mod expr_pattern {
     impl Ir0StorePattern for Pattern {
         fn store(
             &self,
-            symbol_table: &mut SymbolTable,
+            symbol_table: &mut Ctx,
             errors: &mut Vec<Error>,
         ) -> TRes<Vec<(Ident, usize)>> {
             match self {
@@ -515,7 +507,7 @@ mod expr_pattern {
 
         fn get_signals(
             &self,
-            symbol_table: &SymbolTable,
+            symbol_table: &Ctx,
             errors: &mut Vec<Error>,
         ) -> TRes<Vec<(Ident, Pattern)>> {
             match self {
@@ -550,15 +542,11 @@ pub trait Ir0StoreStmtPattern: Sized {
     fn store(
         &self,
         is_declaration: bool,
-        symbol_table: &mut SymbolTable,
+        symbol_table: &mut Ctx,
         errors: &mut Vec<Error>,
     ) -> TRes<Vec<(Ident, usize)>>;
 
-    fn get_signals(
-        &self,
-        symbol_table: &SymbolTable,
-        errors: &mut Vec<Error>,
-    ) -> TRes<Vec<(Ident, Self)>>;
+    fn get_signals(&self, symbol_table: &Ctx, errors: &mut Vec<Error>) -> TRes<Vec<(Ident, Self)>>;
 }
 
 mod stmt_pattern {
@@ -570,7 +558,7 @@ mod stmt_pattern {
         fn store(
             &self,
             is_declaration: bool,
-            symbol_table: &mut SymbolTable,
+            symbol_table: &mut Ctx,
             errors: &mut Vec<Error>,
         ) -> TRes<Vec<(Ident, usize)>> {
             let loc = self.loc();
@@ -627,7 +615,7 @@ mod stmt_pattern {
 
         fn get_signals(
             &self,
-            symbol_table: &SymbolTable,
+            symbol_table: &Ctx,
             errors: &mut Vec<Error>,
         ) -> TRes<Vec<(Ident, Pattern)>> {
             match self {
@@ -648,7 +636,7 @@ mod stmt_pattern {
 
 impl Ir0Store for ir0::Typedef {
     /// Store typedef's identifiers in symbol table.
-    fn store(&self, symbol_table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    fn store(&self, symbol_table: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         match self {
             ir0::Typedef::Structure { ident, fields, .. } => {
                 symbol_table.local();
@@ -702,7 +690,7 @@ pub trait Ir0StoreEventPattern {
         &self,
         events_indices: &mut HashMap<usize, usize>,
         idx: &mut usize,
-        symbol_table: &SymbolTable,
+        symbol_table: &Ctx,
         errors: &mut Vec<Error>,
     ) -> TRes<()>;
     /// Creates event tuple and stores the events.
@@ -710,7 +698,7 @@ pub trait Ir0StoreEventPattern {
         self,
         tuple: &mut Vec<ir1::Pattern>,
         events_indices: &HashMap<usize, usize>,
-        symbol_table: &mut SymbolTable,
+        symbol_table: &mut Ctx,
         errors: &mut Vec<Error>,
     ) -> TRes<Option<ir1::stream::Expr>>;
 }
@@ -726,7 +714,7 @@ mod event_pattern {
             &self,
             events_indices: &mut HashMap<usize, usize>,
             idx: &mut usize,
-            symbol_table: &SymbolTable,
+            symbol_table: &Ctx,
             errors: &mut Vec<Error>,
         ) -> TRes<()> {
             match self {
@@ -753,7 +741,7 @@ mod event_pattern {
             self,
             tuple: &mut Vec<ir1::Pattern>,
             events_indices: &HashMap<usize, usize>,
-            symbols: &mut SymbolTable,
+            symbols: &mut Ctx,
             errors: &mut Vec<Error>,
         ) -> TRes<Option<ir1::stream::Expr>> {
             match self {

@@ -13,10 +13,7 @@ pub struct Service {
     pub graph: DiGraphMap<usize, ()>,
 }
 impl Service {
-    pub fn get_flows_names<'a>(
-        &'a self,
-        symbol_table: &'a SymbolTable,
-    ) -> impl Iterator<Item = Ident> + 'a {
+    pub fn get_flows_names<'a>(&'a self, ctx: &'a Ctx) -> impl Iterator<Item = Ident> + 'a {
         self.statements
             .values()
             .flat_map(|statement| match statement {
@@ -24,7 +21,7 @@ impl Service {
                 | FlowStatement::Instantiation(FlowInstantiation { pattern, .. }) => pattern
                     .identifiers()
                     .into_iter()
-                    .map(|id| symbol_table.get_name(id).clone()),
+                    .map(|id| ctx.get_name(id).clone()),
             })
     }
 
@@ -43,13 +40,13 @@ impl Service {
             .chain(imports.map(|import| import.id))
     }
 
-    pub fn get_flows_context(&self, symbol_table: &SymbolTable) -> ctx::Flows {
+    pub fn get_flows_context(&self, ctx: &Ctx) -> ctx::Flows {
         let mut flows_context = ctx::Flows {
             elements: Default::default(),
         };
         self.statements
             .values()
-            .for_each(|statement| statement.add_flows_context(&mut flows_context, symbol_table));
+            .for_each(|statement| statement.add_flows_context(&mut flows_context, ctx));
         flows_context
     }
 
@@ -144,21 +141,19 @@ impl Service {
         graph
     }
 
-    pub fn normal_form(&mut self, symbol_table: &mut SymbolTable) {
-        symbol_table.local();
-        let mut identifier_creator = IdentifierCreator::from(self.get_flows_names(symbol_table));
+    pub fn normal_form(&mut self, ctx: &mut Ctx) {
+        ctx.local();
+        let mut identifier_creator = IdentifierCreator::from(self.get_flows_names(ctx));
         let statements = std::mem::take(&mut self.statements);
         debug_assert!(self.statements.is_empty());
         statements.into_values().for_each(|flow_statement| {
-            let statements = flow_statement.normal_form(&mut identifier_creator, symbol_table);
+            let statements = flow_statement.normal_form(&mut identifier_creator, ctx);
             for statement in statements {
-                let _unique = self
-                    .statements
-                    .insert(symbol_table.get_fresh_id(), statement);
+                let _unique = self.statements.insert(ctx.get_fresh_id(), statement);
                 debug_assert!(_unique.is_none())
             }
         });
-        symbol_table.global()
+        ctx.global()
     }
 }
 
@@ -198,10 +193,10 @@ impl Interface {
         flows_exports
     }
 
-    pub fn normal_form(&mut self, symbol_table: &mut SymbolTable) {
+    pub fn normal_form(&mut self, ctx: &mut Ctx) {
         self.services
             .iter_mut()
-            .for_each(|service| service.normal_form(symbol_table))
+            .for_each(|service| service.normal_form(ctx))
     }
 }
 
@@ -375,18 +370,18 @@ impl FlowStatement {
     pub fn normal_form(
         mut self,
         identifier_creator: &mut IdentifierCreator,
-        symbol_table: &mut SymbolTable,
+        ctx: &mut Ctx,
     ) -> Vec<FlowStatement> {
         let mut new_statements = match &mut self {
             FlowStatement::Declaration(FlowDeclaration { ref mut expr, .. })
             | FlowStatement::Instantiation(FlowInstantiation { ref mut expr, .. }) => {
-                expr.normal_form(identifier_creator, symbol_table)
+                expr.normal_form(identifier_creator, ctx)
             }
         };
         new_statements.push(self);
         new_statements
     }
-    fn add_flows_context(&self, flows_context: &mut ctx::Flows, symbol_table: &SymbolTable) {
+    fn add_flows_context(&self, flows_context: &mut ctx::Flows, ctx: &Ctx) {
         match self {
             FlowStatement::Declaration(FlowDeclaration { pattern, expr, .. })
             | FlowStatement::Instantiation(FlowInstantiation { pattern, expr, .. }) => {
@@ -398,8 +393,8 @@ impl FlowStatement {
                         let pattern_id = ids.pop().unwrap();
 
                         // push in signals context
-                        let flow_name = symbol_table.get_name(pattern_id).clone();
-                        let ty = symbol_table.get_typ(pattern_id);
+                        let flow_name = ctx.get_name(pattern_id).clone();
+                        let ty = ctx.get_typ(pattern_id);
                         flows_context.add_element(flow_name.clone(), ty);
                     }
                     flow::Kind::Sample { expr, .. } => {
@@ -415,9 +410,9 @@ impl FlowStatement {
                         let pattern_id = ids.pop().unwrap();
 
                         // push in signals context
-                        let source_name = symbol_table.get_name(id).clone();
-                        let flow_name = symbol_table.get_name(pattern_id).clone();
-                        let ty = Typ::sm_event(symbol_table.get_typ(id).clone());
+                        let source_name = ctx.get_name(id).clone();
+                        let flow_name = ctx.get_name(pattern_id).clone();
+                        let ty = Typ::sm_event(ctx.get_typ(id).clone());
                         flows_context.add_element(source_name, &ty);
                         flows_context.add_element(flow_name, &ty);
                     }
@@ -430,8 +425,8 @@ impl FlowStatement {
                         };
 
                         // push in signals context
-                        let source_name = symbol_table.get_name(id).clone();
-                        let ty = symbol_table.get_typ(id);
+                        let source_name = ctx.get_name(id).clone();
+                        let ty = ctx.get_typ(id);
                         flows_context.add_element(source_name, ty);
                     }
                     flow::Kind::ComponentCall { inputs, .. } => {
@@ -440,8 +435,8 @@ impl FlowStatement {
 
                         // store output signals in flows_context
                         for output_id in outputs_ids.iter() {
-                            let output_name = symbol_table.get_name(*output_id);
-                            let output_type = symbol_table.get_typ(*output_id);
+                            let output_name = ctx.get_name(*output_id);
+                            let output_type = ctx.get_typ(*output_id);
                             flows_context.add_element(output_name.clone(), output_type)
                         }
 
@@ -450,8 +445,8 @@ impl FlowStatement {
                                 // get the id of expr (and check it is an identifier, from
                                 // normalization)
                                 flow::Kind::Ident { id: flow_id } => {
-                                    let flow_name = symbol_table.get_name(*flow_id).clone();
-                                    let ty = symbol_table.get_typ(*flow_id);
+                                    let flow_name = ctx.get_name(*flow_id).clone();
+                                    let ty = ctx.get_typ(*flow_id);
                                     if !ty.is_event() {
                                         // push in context
                                         flows_context.add_element(flow_name, ty);

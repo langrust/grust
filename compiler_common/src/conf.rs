@@ -49,15 +49,15 @@ impl ComponentPara {
 
 /// Stores all possible compiler's configurations.
 pub struct Conf {
-    propagation: Propagation,
-    para: bool,
-    component_para: ComponentPara,
-    pub_components: bool,
-    dump_code: Option<String>,
-    greusot: bool,
-    test: bool,
-    demo: bool,
-    stats_depth: usize,
+    pub propagation: Propagation,
+    pub para: bool,
+    pub component_para: ComponentPara,
+    pub pub_components: bool,
+    pub dump_code: Option<String>,
+    pub greusot: bool,
+    pub test: bool,
+    pub demo: bool,
+    pub stats_depth: usize,
 }
 impl Default for Conf {
     fn default() -> Self {

@@ -204,8 +204,8 @@ impl HasLoc for Expr {
 }
 
 impl Expr {
-    pub fn check_is_constant(&self, table: &SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
-        match &self {
+    pub fn check_is_constant(&self, table: &Ctx, errors: &mut Vec<Error>) -> TRes<()> {
+        match self {
             // Constant by default
             stream::Expr::Constant { .. } | stream::Expr::Enumeration { .. } => Ok(()),
             // Not constant by default
@@ -282,7 +282,7 @@ impl ReactExpr {
             Self::When(w) => w.loc(),
         }
     }
-    pub fn check_is_constant(&self, table: &mut SymbolTable, errors: &mut Vec<Error>) -> TRes<()> {
+    pub fn check_is_constant(&self, table: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         match &self {
             stream::ReactExpr::Expr(expr) => expr.check_is_constant(table, errors),
             stream::ReactExpr::When(whn) => {
