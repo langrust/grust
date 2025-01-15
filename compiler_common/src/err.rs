@@ -622,6 +622,30 @@ macro_rules! note {
     };
 }
 
+/// Generates a grust error at some location.
+///
+/// # Examples
+///
+/// ```rust
+/// # compiler_common::prelude! {}
+/// let loc = Loc::test_dummy();
+/// let some_data = "<data>";
+/// // simple error
+/// let _error = error!{ @ loc =>
+///     "something went wrong because of this data: `{}`", some_data
+/// };
+///
+/// let loc1 = Loc::test_dummy();
+/// let loc2 = Loc::test_dummy();
+/// let data1 = "<data1>";
+/// let data2 = "<data2>";
+/// // error with two notes
+/// let _error = error! { @ loc =>
+///     "something went wrong because of this data: `{}`", some_data,
+///     => | @loc1 => "probably because of this: `{}`", data1,
+///     => | @loc2 => "or maybe because of that: `{}`", data2,
+/// };
+/// ```
 #[macro_export]
 macro_rules! error {
     { @ $loc:expr

@@ -169,8 +169,9 @@ impl ExecutionMachine {
                 let service_state_struct =
                     format_ident!("{}", to_camel_case(&format!("{}Service", service_name)));
                 let service_name = format_ident!("{}", service_name);
-                runtime_fields
-                    .push(parse_quote! { #service_name: #service_path::#service_state_struct });
+                runtime_fields.push(parse_quote! {
+                    #service_name: #service_path::#service_state_struct
+                });
                 field_values.push(parse_quote! { #service_name });
             });
             runtime_fields.push(

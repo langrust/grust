@@ -8,41 +8,41 @@ pub type Graph = DiGraphMap<usize, Label>;
 pub type ReducedGraph = HashMap<usize, Graph>;
 pub type ProcManager = HashMap<usize, Color>;
 
-pub struct Ctx<'a> {
+pub struct DepCtx<'a> {
     pub ctx0: &'a ir0::Ctx,
     pub reduced_graphs: &'a mut ReducedGraph,
     pub errors: &'a mut Vec<Error>,
 }
-impl std::ops::Deref for Ctx<'_> {
+impl std::ops::Deref for DepCtx<'_> {
     type Target = ir0::Ctx;
     fn deref(&self) -> &Self::Target {
         self.ctx0
     }
 }
-mk_new! { impl{'a} Ctx<'a> =>
+mk_new! { impl{'a} DepCtx<'a> =>
     new {
         ctx0: &'a ir0::Ctx,
         reduced_graphs: &'a mut ReducedGraph,
         errors: &'a mut Vec<Error>,
     }
 }
-impl<'a> Ctx<'a> {
+impl<'a> DepCtx<'a> {
     pub fn as_graph_ctx<'g>(&'g mut self, graph: &'g mut Graph) -> GraphCtx<'a, 'g> {
         GraphCtx { ctx1: self, graph }
     }
 }
 
 pub struct GraphCtx<'a, 'graph> {
-    pub ctx1: &'graph mut Ctx<'a>,
+    pub ctx1: &'graph mut DepCtx<'a>,
     pub graph: &'graph mut Graph,
 }
 impl<'a, 'g> GraphCtx<'a, 'g> {
-    pub fn new(ctx1: &'a mut Ctx<'a>, graph: &'g mut Graph) -> Self {
+    pub fn new(ctx1: &'a mut DepCtx<'a>, graph: &'g mut Graph) -> Self {
         Self { ctx1, graph }
     }
 }
 impl<'a, 'g> std::ops::Deref for GraphCtx<'a, 'g> {
-    type Target = Ctx<'a>;
+    type Target = DepCtx<'a>;
     fn deref(&self) -> &Self::Target {
         &self.ctx1
     }
@@ -107,7 +107,7 @@ impl Component {
     ///     x: int = i;     // depends on i
     /// }
     /// ```
-    pub fn compute_dependencies(&mut self, ctx: &mut Ctx) -> TRes<()> {
+    pub fn compute_dependencies(&mut self, ctx: &mut DepCtx) -> TRes<()> {
         match self {
             Component::Definition(comp_def) => comp_def.compute_dependencies(ctx),
             Component::Import(comp_import) => Ok(comp_import.compute_dependencies(ctx)),
@@ -135,7 +135,7 @@ impl ComponentImport {
     ///     x: int = i;     // depends on i
     /// }
     /// ```
-    pub fn compute_dependencies(&mut self, ctx: &mut Ctx) {
+    pub fn compute_dependencies(&mut self, ctx: &mut DepCtx) {
         // initiate graph
         let mut graph = self.create_initialized_graph(ctx.ctx0);
 
@@ -256,7 +256,7 @@ impl ComponentDefinition {
     ///     x: int = i;     // depends on i
     /// }
     /// ```
-    pub fn compute_dependencies(&mut self, ctx: &mut Ctx) -> TRes<()> {
+    pub fn compute_dependencies(&mut self, ctx: &mut DepCtx) -> TRes<()> {
         // initiate graph
         let mut graph = self.create_initialized_graph(ctx.ctx0);
 
@@ -317,7 +317,7 @@ impl ComponentDefinition {
         Ok(())
     }
 
-    fn construct_reduced_graph(&mut self, ctx: &mut Ctx) {
+    fn construct_reduced_graph(&mut self, ctx: &mut DepCtx) {
         ctx.reduced_graphs
             .insert(self.id, self.create_initialized_graph(ctx.ctx0));
 
@@ -348,7 +348,7 @@ impl ComponentDefinition {
     fn add_signal_dependencies_over_inputs(
         &self,
         signal: usize,
-        ctx: &mut Ctx,
+        ctx: &mut DepCtx,
         process_manager: &mut HashMap<usize, Color>,
     ) {
         // get signal's color
@@ -824,7 +824,7 @@ impl File {
         });
 
         // ordered nodes complete their dependency graphs
-        let mut ctx = Ctx::new(ctx, &mut nodes_reduced_graphs, errors);
+        let mut ctx = DepCtx::new(ctx, &mut nodes_reduced_graphs, errors);
         self.components
             .iter_mut()
             .map(|component| component.compute_dependencies(&mut ctx))
@@ -992,7 +992,7 @@ impl stream::Expr {
                         // compute input expression dependencies
                         handle!(input_expression.compute_dependencies(ctx));
 
-                        let Ctx {
+                        let DepCtx {
                             ref ctx0,
                             ref mut reduced_graphs,
                             ..

@@ -15,7 +15,7 @@ mod component {
             let loc = self.loc();
             let ctx = &mut ir1::ctx::WithLoc::new(loc, symbol_table, errors);
 
-            ctx.symbols.local();
+            ctx.local();
 
             let period = self
                 .period
@@ -38,7 +38,7 @@ mod component {
                          ..
                      }| {
                         let typ = typ.clone().into_ir1(ctx)?;
-                        let id = ctx.symbols.insert_signal(
+                        let id = ctx.ctx0.insert_signal(
                             ident.clone(),
                             Scope::Input,
                             Some(typ),
@@ -61,7 +61,7 @@ mod component {
                          ..
                      }| {
                         let typ = typ.clone().into_ir1(ctx)?;
-                        let id = ctx.symbols.insert_signal(
+                        let id = ctx.ctx0.insert_signal(
                             ident.clone(),
                             Scope::Output,
                             Some(typ),
@@ -77,15 +77,15 @@ mod component {
             let locals = {
                 let mut map = HashMap::with_capacity(25);
                 for equation in self.equations.iter() {
-                    equation.store_signals(false, &mut map, ctx.symbols, ctx.errors)?;
+                    equation.store_signals(false, &mut map, ctx.ctx0, ctx.errors)?;
                 }
                 map.shrink_to_fit();
                 map
             };
 
-            ctx.symbols.global();
+            ctx.global();
 
-            let _ = ctx.symbols.insert_node(
+            let _ = ctx.ctx0.insert_node(
                 self.ident.clone(),
                 false,
                 inputs,
@@ -105,7 +105,7 @@ mod component {
         fn store(&self, symbol_table: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
             let loc = self.loc();
             let ctx = &mut ir1::ctx::WithLoc::new(loc, symbol_table, errors);
-            ctx.symbols.local();
+            ctx.local();
 
             let last = self.path.clone().segments.pop().unwrap().into_value();
             assert!(last.arguments.is_none());
@@ -132,7 +132,7 @@ mod component {
                          ..
                      }| {
                         let typ = typ.clone().into_ir1(ctx)?;
-                        let id = ctx.symbols.insert_signal(
+                        let id = ctx.ctx0.insert_signal(
                             ident.clone(),
                             Scope::Input,
                             Some(typ),
@@ -155,7 +155,7 @@ mod component {
                          ..
                      }| {
                         let typ = typ.clone().into_ir1(ctx)?;
-                        let id = ctx.symbols.insert_signal(
+                        let id = ctx.ctx0.insert_signal(
                             ident.clone(),
                             Scope::Output,
                             Some(typ),
@@ -414,7 +414,7 @@ impl Ir0Store for ir0::Function {
     fn store(&self, symbol_table: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         let loc = self.loc();
         let ctx = &mut ir1::ctx::WithLoc::new(loc, symbol_table, errors);
-        ctx.symbols.local();
+        ctx.local();
 
         let inputs = self
             .args
@@ -426,21 +426,18 @@ impl Ir0Store for ir0::Function {
                      ..
                  }| {
                     let typ = typ.clone().into_ir1(ctx)?;
-                    let id = ctx.symbols.insert_identifier(
-                        ident.clone(),
-                        Some(typ),
-                        true,
-                        ctx.errors,
-                    )?;
+                    let id =
+                        ctx.ctx0
+                            .insert_identifier(ident.clone(), Some(typ), true, ctx.errors)?;
                     Ok(id)
                 },
             )
             .collect::<TRes<Vec<_>>>()?;
 
-        ctx.symbols.global();
+        ctx.global();
 
         let _ = ctx
-            .symbols
+            .ctx0
             .insert_function(self.ident.clone(), inputs, None, false, ctx.errors)?;
 
         Ok(())
@@ -787,12 +784,12 @@ mod event_pattern {
                     let ctx = &mut ir1::ctx::WithLoc::new(loc, symbols, errors);
 
                     // get the event identifier
-                    let event_id =
-                        ctx.symbols
-                            .get_identifier_id(&pattern.event, false, ctx.errors)?;
+                    let event_id = ctx
+                        .ctx0
+                        .get_identifier_id(&pattern.event, false, ctx.errors)?;
 
                     // transform inner_pattern into [ir1]
-                    pattern.pattern.store(ctx.symbols, ctx.errors)?;
+                    pattern.pattern.store(ctx.ctx0, ctx.errors)?;
                     let inner_pattern = pattern.pattern.into_ir1(ctx)?;
                     let event_pattern = ir1::pattern::Pattern::new(
                         pattern.event.loc(),

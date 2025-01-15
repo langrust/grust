@@ -90,7 +90,9 @@ impl ServiceHandler {
             let component_state_struct =
                 format_ident!("{}", to_camel_case(&format!("{}State", component_name)));
             let component_name = format_ident!("{}", component_name);
-            service_fields.push(parse_quote! { #component_name: #component_state_struct });
+            service_fields.push(parse_quote! {
+                #component_name: #component_state_struct
+            });
             field_values.push(parse_quote! { #component_name });
         });
         // and sending channels

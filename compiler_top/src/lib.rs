@@ -17,31 +17,35 @@ prelude! {}
 
 /// Compiles input GRust tokens into output Rust tokens.
 pub fn handle_tokens(tokens: TokenStream) -> TokenStream {
-    let ast = parse_macro_input!(tokens as Ast);
-    let tokens = into_token_stream(ast);
-    if let Some(path) = conf::dump_code() {
-        dump_code(&path, &tokens);
+    let top = parse_macro_input!(tokens as ir0::Top);
+    let (ast, mut ctx) = top.init();
+    let tokens = into_token_stream(ast, &mut ctx);
+    if let Some(path) = ctx.conf.dump_code.as_ref() {
+        let res = dump_code(path, &tokens);
+        if let Err(e) = res {
+            e.emit()
+        }
     }
     TokenStream::from(tokens)
 }
 
 /// Creates RustAST from GRust file.
-pub fn into_token_stream(ast: Ast) -> TokenStream2 {
-    let mut symbol_table = ir0::Ctx::new();
+pub fn into_token_stream(ast: Ast, ctx: &mut ir0::Ctx) -> TokenStream2 {
     let mut stats = Stats::new();
-    let ir1 = match ir1::from_ast_timed(ast, &mut symbol_table, stats.as_mut()) {
+    let ir1 = match ir1::from_ast_timed(ast, ctx, stats.as_mut()) {
         Ok(pair) => pair,
         Err(errors) => {
             for error in errors {
                 error.emit();
-                // tokens.extend(error.into_syn_error().to_compile_error());
             }
             return parse_quote! {};
         }
     };
-    let ir2 = stats.timed("ir1 → ir2", || ir1.into_ir2(symbol_table));
-    let rust = stats.timed_with("codegen (ir2 → rust tokens)", |stats| ir2.into_syn(stats));
-    if let Some(stats) = stats.pretty() {
+    let ir2 = stats.timed("ir1 → ir2", || ir1.into_ir2(ctx));
+    let rust = stats.timed_with("codegen (ir2 → rust tokens)", |stats| {
+        ir2.into_syn(ctx, stats)
+    });
+    if let Some(stats) = stats.pretty(&ctx.conf) {
         println!("Stats:\n\n{}", stats);
     }
     let mut tokens = TokenStream2::new();
@@ -53,9 +57,10 @@ pub fn into_token_stream(ast: Ast) -> TokenStream2 {
 }
 
 /// Writes the generated code at the given filepath.
-pub fn dump_code(path_name: &str, tokens: &TokenStream2) {
+pub fn dump_code(path_lit: &syn::LitStr, tokens: &TokenStream2) -> Res<()> {
     use std::{fs::OpenOptions, io::Write, path::Path, process::Command};
-    let path = Path::new(path_name);
+    let path_str = path_lit.value();
+    let path = Path::new(&path_str);
 
     {
         let mut file = OpenOptions::new()
@@ -63,13 +68,20 @@ pub fn dump_code(path_name: &str, tokens: &TokenStream2) {
             .create(true)
             .truncate(true)
             .open(path)
-            .expect(&format!("failed to open `{path_name}`"));
+            .map_err(|e| error!( @path_lit.span() => "failed to open this file: {}", e ))?;
         let content = tokens.to_string();
         for line in content.lines() {
-            writeln!(&mut file, "{}", line).expect(&format!("failed to write to `{path_name}`"));
+            writeln!(&mut file, "{}", line).map_err(|e| {
+                error!( @path_lit.span() =>
+                    "failed to write to this file: {}", e
+                )
+            })?;
         }
-        file.flush()
-            .expect(&format!("failed to flush `{path_name}`"));
+        file.flush().map_err(|e| {
+            error!( @path_lit.span() =>
+                "failed to write to this file: {}", e
+            )
+        })?;
     }
 
     let mut rustfmt = Command::new("rustfmt")
@@ -77,6 +89,16 @@ pub fn dump_code(path_name: &str, tokens: &TokenStream2) {
         .arg("2021")
         .arg(path)
         .spawn()
-        .expect("failed to spawn `rustfmt`");
-    rustfmt.wait().expect("`rustfmt` failed");
+        .map_err(|e| {
+            error!( @path_lit.span() =>
+                "rust fmt failed to spawn: {}", e
+            )
+        })?;
+    rustfmt.wait().map_err(|e| {
+        error!( @path_lit.span() =>
+            "rust fmt terminated with an error: {}", e
+        )
+    })?;
+
+    Ok(())
 }

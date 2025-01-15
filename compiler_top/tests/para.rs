@@ -3,7 +3,7 @@ compiler_top::prelude! {}
 #[test]
 fn should_compile_para() {
     println!("para");
-    let ast: Ast = parse_quote! {
+    let top: ir0::Top = parse_quote! {
         #![dump = "tests/macro_outputs/para.rs", propag = "onchange", para, test]
         import event e0: int;
         export signal o1: int;
@@ -74,13 +74,14 @@ fn should_compile_para() {
             o1 = C5(s4, s3, e3);
         }
     };
-    let tokens = compiler_top::into_token_stream(ast);
-    if let Some(path) = conf::dump_code() {
-        compiler_top::dump_code(&path, &tokens);
+    let (ast, mut ctx) = top.init();
+    let tokens = compiler_top::into_token_stream(ast, &mut ctx);
+    if let Some(path) = ctx.conf.dump_code {
+        compiler_top::dump_code(&path, &tokens).unwrap();
     }
 
     println!("threads");
-    let ast: Ast = parse_quote! {
+    let top: ir0::Top = parse_quote! {
         #![dump = "tests/macro_outputs/para_threads.rs", component_para_threads]
 
         component test_threads_aux(i: int) -> (next_o: int) {
@@ -124,13 +125,14 @@ fn should_compile_para() {
             }
         }
     };
-    let tokens = compiler_top::into_token_stream(ast);
-    if let Some(path) = conf::dump_code() {
-        compiler_top::dump_code(&path, &tokens);
+    let (ast, mut ctx) = top.init();
+    let tokens = compiler_top::into_token_stream(ast, &mut ctx);
+    if let Some(path) = ctx.conf.dump_code {
+        compiler_top::dump_code(&path, &tokens).unwrap();
     }
 
     println!("rayon1");
-    let ast: Ast = parse_quote! {
+    let top: ir0::Top = parse_quote! {
         #![dump = "tests/macro_outputs/para_rayon1.rs", component_para_rayon1]
 
         component test_rayon1_aux(i: int) -> (next_o: int) {
@@ -174,13 +176,14 @@ fn should_compile_para() {
             }
         }
     };
-    let tokens = compiler_top::into_token_stream(ast);
-    if let Some(path) = conf::dump_code() {
-        compiler_top::dump_code(&path, &tokens);
+    let (ast, mut ctx) = top.init();
+    let tokens = compiler_top::into_token_stream(ast, &mut ctx);
+    if let Some(path) = ctx.conf.dump_code {
+        compiler_top::dump_code(&path, &tokens).unwrap();
     }
 
     println!("rayon2");
-    let ast: Ast = parse_quote! {
+    let top: ir0::Top = parse_quote! {
         #![dump = "tests/macro_outputs/para_rayon2.rs", component_para_rayon2]
 
         component test_rayon2_aux(i: int) -> (next_o: int) {
@@ -224,13 +227,14 @@ fn should_compile_para() {
             }
         }
     };
-    let tokens = compiler_top::into_token_stream(ast);
-    if let Some(path) = conf::dump_code() {
-        compiler_top::dump_code(&path, &tokens);
+    let (ast, mut ctx) = top.init();
+    let tokens = compiler_top::into_token_stream(ast, &mut ctx);
+    if let Some(path) = ctx.conf.dump_code {
+        compiler_top::dump_code(&path, &tokens).unwrap();
     }
 
     println!("rayon3");
-    let ast: Ast = parse_quote! {
+    let top: ir0::Top = parse_quote! {
         #![dump = "tests/macro_outputs/para_rayon3.rs", component_para_rayon3]
 
         component test_rayon3_aux(i: int) -> (next_o: int) {
@@ -274,13 +278,14 @@ fn should_compile_para() {
             }
         }
     };
-    let tokens = compiler_top::into_token_stream(ast);
-    if let Some(path) = conf::dump_code() {
-        compiler_top::dump_code(&path, &tokens);
+    let (ast, mut ctx) = top.init();
+    let tokens = compiler_top::into_token_stream(ast, &mut ctx);
+    if let Some(path) = ctx.conf.dump_code {
+        compiler_top::dump_code(&path, &tokens).unwrap();
     }
 
     println!("mixed");
-    let ast: Ast = parse_quote! {
+    let top: ir0::Top = parse_quote! {
         #![dump = "tests/macro_outputs/para_mixed.rs", component_para_mixed]
 
         component test_mixed_aux(i: int) -> (next_o: int) {
@@ -324,8 +329,9 @@ fn should_compile_para() {
             }
         }
     };
-    let tokens = compiler_top::into_token_stream(ast);
-    if let Some(path) = conf::dump_code() {
-        compiler_top::dump_code(&path, &tokens);
+    let (ast, mut ctx) = top.init();
+    let tokens = compiler_top::into_token_stream(ast, &mut ctx);
+    if let Some(path) = ctx.conf.dump_code {
+        compiler_top::dump_code(&path, &tokens).unwrap();
     }
 }

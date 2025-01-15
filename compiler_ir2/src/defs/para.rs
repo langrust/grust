@@ -19,11 +19,8 @@ pub struct Ctx<'a> {
     with_threads: bool,
 }
 impl<'a> Ctx<'a> {
-    pub fn new(env: &'a Env<'a>) -> Self {
-        Self {
-            env,
-            with_threads: conf::component_para().has_threads(),
-        }
+    pub fn new(env: &'a Env<'a>, with_threads: bool) -> Self {
+        Self { env, with_threads }
     }
 
     const DONT_PARA_WEIGHT_UBX: usize = 10;
@@ -210,7 +207,11 @@ impl<'a> Env<'a> {
 
     pub fn to_stmts(&self, ctx: &ir0::Ctx) -> Result<Stmts, String> {
         let subset = self.repr_to_stmt.keys().cloned().collect();
-        let synced = Synced::new_with(&Ctx::new(self), &self.graph, subset)?;
+        let synced = Synced::new_with(
+            &Ctx::new(self, ctx.conf.component_para.has_threads()),
+            &self.graph,
+            subset,
+        )?;
         Stmts::of_synced(self, ctx, synced)
     }
 
@@ -471,7 +472,7 @@ impl Stmts {
         ctx: &ir0::Ctx,
         graph: &Graph,
     ) -> Result<Self, String> {
-        if conf::component_para().is_none() {
+        if ctx.conf.component_para.is_none() {
             Ok(Self::sequential(stmts, ctx))
         } else {
             let env = Env::new(stmts, graph)?;
@@ -528,7 +529,7 @@ impl Stmts {
                 let mut threads = Vec::with_capacity(map.len());
                 let mut threads_vars = Vec::with_capacity(map.len());
                 for (weight, subs) in map {
-                    let para_mode = conf::component_para();
+                    let para_mode = ctx.conf.component_para;
                     // println!(
                     //     "para mode: {:?}, weight is {} ({})",
                     //     para_mode,

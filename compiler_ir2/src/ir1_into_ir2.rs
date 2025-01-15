@@ -18,7 +18,7 @@ pub trait Ir1IntoIr2<Ctx> {
         None
     }
     /// True if the [ir2] element is an if-then-else operator.
-    fn is_if_then_else(&self, _ctx: &ir0::Ctx) -> bool {
+    fn is_if_then_else(&self, _ctx: Ctx) -> bool {
         false
     }
 }
@@ -457,10 +457,10 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Expr {
     }
 }
 
-impl Ir1IntoIr2<ir0::Ctx> for ir1::File {
+impl Ir1IntoIr2<&'_ mut ir0::Ctx> for ir1::File {
     type Ir2 = Project;
 
-    fn into_ir2(self, mut ctx: ir0::Ctx) -> Project {
+    fn into_ir2(self, mut ctx: &mut ir0::Ctx) -> Project {
         let mut items = vec![];
 
         let typedefs = self

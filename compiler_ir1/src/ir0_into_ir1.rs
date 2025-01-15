@@ -16,10 +16,10 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for Ast {
 
     fn into_ir1(self, ctx: &mut ctx::Simple) -> TRes<Self::Ir1> {
         // initialize symbol table with builtin operators
-        ctx.symbols.initialize();
+        ctx.ctx0.initialize();
 
         // store elements in symbol table
-        self.store(ctx.symbols, ctx.errors)?;
+        self.store(ctx.ctx0, ctx.errors)?;
 
         let (mut typedefs, mut functions, mut components, mut imports, mut exports, mut services) = (
             Vec::with_capacity(20),
@@ -38,13 +38,13 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for Ast {
                 ir0::Item::Service(service) => services.push(service.into_ir1(ctx)?),
                 ir0::Item::Import(import) => {
                     let ir1 = import.into_ir1(ctx)?;
-                    let id = ctx.symbols.get_fresh_id();
+                    let id = ctx.get_fresh_id();
                     let _prev = imports.insert(id, ir1);
                     debug_assert!(_prev.is_none());
                 }
                 ir0::Item::Export(export) => {
                     let ir1 = export.into_ir1(ctx)?;
-                    let id = ctx.symbols.get_fresh_id();
+                    let id = ctx.get_fresh_id();
                     let _prev = exports.insert(id, ir1);
                     debug_assert!(_prev.is_none());
                 }
@@ -85,7 +85,7 @@ mod interface_impl {
         type Ir1 = ir1::Service;
 
         fn into_ir1(self, ctx: &mut ir1::ctx::Simple<'a>) -> TRes<Self::Ir1> {
-            let id = ctx.symbols.insert_service(self.ident, true, ctx.errors)?;
+            let id = ctx.ctx0.insert_service(self.ident, true, ctx.errors)?;
 
             let time_range = if let Some(TimeRange { min, max, .. }) = self.time_range {
                 (min.base10_parse().unwrap(), max.base10_parse().unwrap())
@@ -93,18 +93,18 @@ mod interface_impl {
                 (10, 500)
             };
 
-            ctx.symbols.local();
+            ctx.local();
             let statements = self
                 .flow_statements
                 .into_iter()
                 .map(|flow_statement| {
                     flow_statement
                         .into_ir1(ctx)
-                        .map(|res| (ctx.symbols.get_fresh_id(), res))
+                        .map(|res| (ctx.get_fresh_id(), res))
                 })
                 .collect::<TRes<HashMap<_, _>>>()?;
             let graph = Default::default();
-            ctx.symbols.global();
+            ctx.global();
 
             Ok(ir1::Service {
                 id,
@@ -131,7 +131,7 @@ mod interface_impl {
                     FlowKind::Event(_) => Typ::event(inner),
                 }
             };
-            let id = ctx.symbols.insert_flow(
+            let id = ctx.ctx0.insert_flow(
                 last.ident,
                 Some(path.clone()),
                 self.kind,
@@ -167,7 +167,7 @@ mod interface_impl {
                     FlowKind::Event(_) => Typ::event(inner),
                 }
             };
-            let id = ctx.symbols.insert_flow(
+            let id = ctx.ctx0.insert_flow(
                 last.ident,
                 Some(path.clone()),
                 self.kind,
@@ -241,8 +241,8 @@ mod interface_impl {
 
             match self {
                 FlowPattern::Single { ident } => {
-                    let id = ctx.symbols.get_flow_id(&ident, false, ctx.errors)?;
-                    let typ = ctx.symbols.get_typ(id);
+                    let id = ctx.ctx0.get_flow_id(&ident, false, ctx.errors)?;
+                    let typ = ctx.get_typ(id);
 
                     Ok(ir1::stmt::Pattern {
                         kind: ir1::stmt::Kind::Identifier { id },
@@ -258,7 +258,7 @@ mod interface_impl {
                         FlowKind::Signal(_) => Typ::signal(inner),
                         FlowKind::Event(_) => Typ::event(inner),
                     };
-                    let id = ctx.symbols.insert_flow(
+                    let id = ctx.ctx0.insert_flow(
                         ident.clone(),
                         None,
                         kind,
@@ -318,25 +318,23 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Function {
     // post-condition: construct [ir1] function and check identifiers good use
     fn into_ir1(self, ctx: &mut ctx::Simple) -> TRes<Self::Ir1> {
         let loc = self.loc();
-        let id = ctx
-            .symbols
-            .get_function_id(&self.ident, false, ctx.errors)?;
+        let id = ctx.ctx0.get_function_id(&self.ident, false, ctx.errors)?;
 
         // create local context with all signals
-        ctx.symbols.local();
-        ctx.symbols.restore_context(id);
+        ctx.local();
+        ctx.restore_context(id);
 
         // insert function output type in symbol table
         let output_typing = self.output_type.into_ir1(&mut ctx.add_loc(loc))?;
         if !self.contract.clauses.is_empty() {
-            let _ = ctx.symbols.insert_function_result(
+            let _ = ctx.ctx0.insert_function_result(
                 output_typing.clone(),
                 true,
                 self.ident.loc(),
                 ctx.errors,
             )?;
         }
-        ctx.symbols.set_function_output_type(id, output_typing);
+        ctx.set_function_output_type(id, output_typing);
 
         let (mut statements, mut returned) = (Vec::with_capacity(self.statements.len()), None);
         for stmt in self.statements {
@@ -352,7 +350,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Function {
         }
         let contract = self.contract.into_ir1(ctx)?;
 
-        ctx.symbols.global();
+        ctx.global();
 
         Ok(ir1::Function {
             id,
@@ -375,11 +373,11 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Component {
     // post-condition: construct [ir1] node and check identifiers good use
     fn into_ir1(self, ctx: &mut ctx::Simple) -> TRes<Self::Ir1> {
         let loc = self.loc();
-        let id = ctx.symbols.get_node_id(&self.ident, false, ctx.errors)?;
+        let id = ctx.ctx0.get_node_id(&self.ident, false, ctx.errors)?;
 
         // create local context with all signals
-        ctx.symbols.local();
-        ctx.symbols.restore_context(id);
+        ctx.local();
+        ctx.restore_context(id);
 
         let statements = res_vec!(
             self.equations.len(),
@@ -389,7 +387,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Component {
         );
         let contract = self.contract.into_ir1(ctx)?;
 
-        ctx.symbols.global();
+        ctx.global();
 
         Ok(ir1::Component::Definition(ir1::ComponentDefinition {
             id,
@@ -413,7 +411,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ComponentImport {
         assert!(last.arguments.is_none());
 
         let loc = self.loc();
-        let id = ctx.symbols.get_node_id(&last.ident, false, ctx.errors)?;
+        let id = ctx.ctx0.get_node_id(&last.ident, false, ctx.errors)?;
 
         Ok(ir1::Component::Import(ir1::ComponentImport {
             id,
@@ -511,10 +509,10 @@ mod flow_expr_impl {
         fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
             // get called component id
             let component_id = ctx
-                .symbols
+                .ctx0
                 .get_node_id(&self.ident_component, false, ctx.errors)?;
 
-            let component_inputs = ctx.symbols.get_node_inputs(component_id).clone();
+            let component_inputs = ctx.get_node_inputs(component_id).clone();
 
             // check inputs and node_inputs have the same length
             if self.inputs.len() != component_inputs.len() {
@@ -547,7 +545,7 @@ mod flow_expr_impl {
         fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<Self::Ir1> {
             let kind = match self {
                 FlowExpression::Ident(ident) => {
-                    let id = ctx.symbols.get_flow_id(&ident, false, ctx.errors)?;
+                    let id = ctx.ctx0.get_flow_id(&ident, false, ctx.errors)?;
                     flow::Kind::Ident { id }
                 }
                 FlowExpression::ComponentCall(expr) => expr.into_ir1(ctx)?,
@@ -609,7 +607,7 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
         let loc = self.loc();
         match self {
             Term::Result(_) => {
-                let id = ctx.symbols.get_function_result_id(false, loc, ctx.errors)?;
+                let id = ctx.ctx0.get_function_result_id(false, loc, ctx.errors)?;
                 Ok(ir1::contract::Term::new(
                     ir1::contract::Kind::ident(id),
                     None,
@@ -630,11 +628,9 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
                 enum_name,
                 elem_name,
             }) => {
-                let enum_id = ctx
-                    .symbols
-                    .get_enum_id(&enum_name, false, loc, ctx.errors)?;
+                let enum_id = ctx.ctx0.get_enum_id(&enum_name, false, loc, ctx.errors)?;
                 let element_id = ctx
-                    .symbols
+                    .ctx0
                     .get_enum_elem_id(&elem_name, &enum_name, false, loc, ctx.errors)?;
                 // TODO check elem is in enum
                 Ok(ir1::contract::Term::new(
@@ -661,7 +657,7 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
                 loc,
             )),
             Term::Identifier(ident) => {
-                let id = ctx.symbols.get_identifier_id(&ident, false, ctx.errors)?;
+                let id = ctx.ctx0.get_identifier_id(&ident, false, ctx.errors)?;
                 Ok(ir1::contract::Term::new(
                     ir1::contract::Kind::ident(id),
                     None,
@@ -672,12 +668,12 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
                 ident, ty, term, ..
             }) => {
                 let ty = ty.into_ir1(&mut ctx.add_loc(loc))?;
-                ctx.symbols.local();
-                let id =
-                    ctx.symbols
-                        .insert_identifier(ident.clone(), Some(ty), true, ctx.errors)?;
+                ctx.local();
+                let id = ctx
+                    .ctx0
+                    .insert_identifier(ident.clone(), Some(ty), true, ctx.errors)?;
                 let term = term.into_ir1(ctx)?;
-                ctx.symbols.global();
+                ctx.global();
                 Ok(ir1::contract::Term::new(
                     ir1::contract::Kind::forall(id, term),
                     None,
@@ -691,15 +687,15 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
                 ..
             }) => {
                 // get the event identifier
-                let event_id = ctx.symbols.get_identifier_id(&event, false, ctx.errors)?;
-                ctx.symbols.local();
+                let event_id = ctx.ctx0.get_identifier_id(&event, false, ctx.errors)?;
+                ctx.local();
                 // set pattern signal in local context
                 let pattern_id =
-                    ctx.symbols
+                    ctx.ctx0
                         .insert_identifier(pattern.clone(), None, true, ctx.errors)?;
                 // transform term into [ir1]
                 let right = term.into_ir1(ctx)?;
-                ctx.symbols.global();
+                ctx.global();
                 // construct right side of implication: `PresentEvent(pat) == event`
                 let left = ir1::contract::Term::new(
                     ir1::contract::Kind::binary(
@@ -751,7 +747,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Eq {
 
         // get signals defined by the equation
         let mut defined_signals = HashMap::new();
-        self.get_signals(&mut defined_signals, ctx.symbols, ctx.errors)?;
+        self.get_signals(&mut defined_signals, ctx.ctx0, ctx.errors)?;
 
         match self {
             Eq::LocalDef(LetDecl {
@@ -791,16 +787,16 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Eq {
                 {
                     // transform pattern guard and equations into [ir1]
                     let (signals, pattern, guard, statements) = {
-                        ctx.symbols.local();
+                        ctx.local();
 
                         // set local context: pattern signals + equations' signals
-                        pattern.store(ctx.symbols, ctx.errors)?;
+                        pattern.store(ctx.ctx0, ctx.errors)?;
                         let mut signals = HashMap::new();
                         equations
                             .iter()
                             .map(|equation| {
                                 // store equations' signals in the local context
-                                equation.store_signals(true, &mut signals, ctx.symbols, ctx.errors)
+                                equation.store_signals(true, &mut signals, ctx.ctx0, ctx.errors)
                             })
                             .collect::<TRes<()>>()?;
 
@@ -817,7 +813,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Eq {
                             .map(|equation| equation.into_ir1(ctx))
                             .collect::<TRes<Vec<_>>>()?;
 
-                        ctx.symbols.global();
+                        ctx.global();
 
                         (signals, pattern, guard, statements)
                     };
@@ -891,7 +887,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
 
         // get signals defined by the equation
         let mut defined_signals = HashMap::new();
-        self.get_signals(&mut defined_signals, ctx.symbols, ctx.errors)?;
+        self.get_signals(&mut defined_signals, ctx.ctx0, ctx.errors)?;
 
         match self {
             ReactEq::LocalDef(LetDecl {
@@ -932,10 +928,10 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                          }| {
                             // transform pattern guard and equations into [ir1]
                             let (signals, pattern, guard, statements) = {
-                                ctx.symbols.local();
+                                ctx.local();
 
                                 // set local context: pattern signals + equations' signals
-                                pattern.store(ctx.symbols, ctx.errors)?;
+                                pattern.store(ctx.ctx0, ctx.errors)?;
                                 let mut signals = HashMap::new();
                                 equations
                                     .iter()
@@ -944,7 +940,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                                         equation.store_signals(
                                             true,
                                             &mut signals,
-                                            ctx.symbols,
+                                            ctx.ctx0,
                                             ctx.errors,
                                         )
                                     })
@@ -961,7 +957,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                                     equations.into_iter().map(|equation| equation.into_ir1(ctx)),
                                 );
 
-                                ctx.symbols.global();
+                                ctx.global();
 
                                 (signals, pattern, guard, statements)
                             };
@@ -1043,7 +1039,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                         arm.pattern.place_events(
                             &mut events_indices,
                             &mut idx,
-                            ctx.symbols,
+                            ctx.ctx0,
                             ctx.errors,
                         )?;
                         for _ in prev_idx..idx {
@@ -1107,7 +1103,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                              ..
                          }| {
                             // transform event_pattern guard and equations into [ir1]
-                            ctx.symbols.local();
+                            ctx.local();
                             let pat_loc = event_pattern.loc();
 
                             // set local context + create matched pattern
@@ -1116,7 +1112,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                                 let opt_rising_edges = event_pattern.create_tuple_pattern(
                                     &mut elements,
                                     &events_indices,
-                                    ctx.symbols,
+                                    ctx.ctx0,
                                     ctx.errors,
                                 )?;
                                 let matched = Pattern::new(pat_loc, pattern::Kind::tuple(elements));
@@ -1156,7 +1152,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                                         equation.store_signals(
                                             true,
                                             &mut signals,
-                                            ctx.symbols,
+                                            ctx.ctx0,
                                             ctx.errors,
                                         )
                                     })
@@ -1170,7 +1166,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                                 equations.into_iter().map(|equation| equation.into_ir1(ctx)),
                             );
 
-                            ctx.symbols.global();
+                            ctx.global();
 
                             // create the tuple expression
                             let expression =
@@ -1297,14 +1293,13 @@ where
         // pre-condition: identifiers are stored in symbol table
         // post-condition: construct [ir1] expression kind and check identifiers good use
         let id = ctx
-            .symbols
+            .ctx0
             .get_struct_id(&self.name, false, ctx.loc, ctx.errors)?;
         let mut field_ids = ctx
-            .symbols
             .get_struct_fields(id)
             .clone()
             .into_iter()
-            .map(|id| (ctx.symbols.get_name(id).clone(), id))
+            .map(|id| (ctx.get_name(id).clone(), id))
             .collect::<HashMap<_, _>>();
 
         let fields = res_vec!(
@@ -1354,9 +1349,9 @@ mod simple_expr_impl {
             // pre-condition: identifiers are stored in symbol table
             // post-condition: construct [ir1] expression kind and check identifiers good use
             let enum_id = ctx
-                .symbols
+                .ctx0
                 .get_enum_id(&self.enum_name, false, ctx.loc, ctx.errors)?;
-            let elem_id = ctx.symbols.get_enum_elem_id(
+            let elem_id = ctx.ctx0.get_enum_elem_id(
                 &self.elem_name,
                 &self.enum_name,
                 false,
@@ -1423,12 +1418,12 @@ mod simple_expr_impl {
                 res_vec!(
                     self.arms.len(),
                     self.arms.into_iter().map(|arm| {
-                        ctx.symbols.local();
-                        arm.pattern.store(ctx.symbols, ctx.errors)?;
+                        ctx.local();
+                        arm.pattern.store(ctx.ctx0, ctx.errors)?;
                         let pattern = arm.pattern.into_ir1(&mut ctx.remove_pat())?;
                         let guard = arm.guard.map(|expr| expr.into_ir1(ctx)).transpose()?;
                         let expr = arm.expr.into_ir1(ctx)?;
-                        ctx.symbols.global();
+                        ctx.global();
                         Ok((pattern, guard, vec![], expr))
                     }),
                 ),
@@ -1549,17 +1544,17 @@ mod simple_expr_impl {
         fn into_ir1(self, ctx: &mut ir1::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Ir1>> {
             // pre-condition: identifiers are stored in symbol table
             // post-condition: construct [ir1] expression kind and check identifiers good use
-            ctx.symbols.local();
+            ctx.local();
             let inputs = res_vec!(
                 self.inputs.len(),
                 self.inputs.into_iter().map(|(input_name, typing)| {
                     let typing = typing.into_ir1(&mut ctx.remove_pat())?;
-                    ctx.symbols
+                    ctx.ctx0
                         .insert_identifier(input_name, Some(typing), true, ctx.errors)
                 }),
             );
             let expr = self.expr.into_ir1(ctx)?;
-            ctx.symbols.global();
+            ctx.global();
 
             Ok(expr::Kind::lambda(inputs, expr))
         }
@@ -1575,7 +1570,7 @@ mod simple_expr_impl {
             let kind = match self {
                 Constant(constant) => ir1::expr::Kind::Constant { constant },
                 Identifier(id) => {
-                    let id = ctx.symbols.get_ident(&id, false, true, ctx.errors)?;
+                    let id = ctx.ctx0.get_ident(&id, false, true, ctx.errors)?;
                     ir1::expr::Kind::Identifier { id }
                 }
                 UnOp(e) => e.into_ir1(ctx)?,
@@ -1616,13 +1611,12 @@ mod expr_pattern_impl {
         fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc) -> TRes<ir1::pattern::Kind> {
             let loc = self.loc();
             let id = ctx
-                .symbols
+                .ctx0
                 .get_struct_id(&self.name, false, ctx.loc, ctx.errors)?;
             let mut field_ids = ctx
-                .symbols
                 .get_struct_fields(id)
                 .iter()
-                .map(|id| (ctx.symbols.get_name(*id).clone(), *id))
+                .map(|id| (ctx.get_name(*id).clone(), *id))
                 .collect::<HashMap<_, _>>();
 
             let fields = res_vec!(
@@ -1664,9 +1658,9 @@ mod expr_pattern_impl {
 
         fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc) -> TRes<ir1::pattern::Kind> {
             let enum_id = ctx
-                .symbols
+                .ctx0
                 .get_enum_id(&self.enum_name, false, ctx.loc, ctx.errors)?;
-            let elem_id = ctx.symbols.get_enum_elem_id(
+            let elem_id = ctx.ctx0.get_enum_elem_id(
                 &self.elem_name,
                 &self.enum_name,
                 false,
@@ -1698,7 +1692,7 @@ mod expr_pattern_impl {
             let kind = match self {
                 Constant(constant) => ir1::pattern::Kind::Constant { constant },
                 Identifier(name) => {
-                    let id = ctx.symbols.get_identifier_id(&name, false, ctx.errors)?;
+                    let id = ctx.ctx0.get_identifier_id(&name, false, ctx.errors)?;
                     ir1::pattern::Kind::Identifier { id }
                 }
                 Structure(pat) => pat.into_ir1(ctx)?,
@@ -1752,7 +1746,7 @@ mod stmt_pattern_impl {
                     if let Some(id) = defined_signals.get(&ident) {
                         ir1::stream::Kind::expr(ir1::expr::Kind::ident(*id))
                     } else {
-                        let id = ctx.symbols.get_identifier_id(&ident, false, ctx.errors)?;
+                        let id = ctx.ctx0.get_identifier_id(&ident, false, ctx.errors)?;
                         if init_signal_vals.contains_key(ident) {
                             ir1::stream::Kind::fby(id, init_signal_vals[ident].clone())
                         } else {
@@ -1764,7 +1758,7 @@ mod stmt_pattern_impl {
                     if let Some(id) = defined_signals.get(&ident) {
                         ir1::stream::Kind::expr(ir1::expr::Kind::ident(*id))
                     } else {
-                        let id = ctx.symbols.get_identifier_id(&ident, false, ctx.errors)?;
+                        let id = ctx.ctx0.get_identifier_id(&ident, false, ctx.errors)?;
                         if init_signal_vals.contains_key(ident) {
                             ir1::stream::Kind::fby(id, init_signal_vals[ident].clone())
                         } else {
@@ -1794,12 +1788,10 @@ mod stmt_pattern_impl {
             ctx: &mut ctx::Simple,
         ) -> TRes<()> {
             match self {
-                ir0::stmt::Pattern::Identifier(ident) => {
-                    expr.check_is_constant(ctx.symbols, ctx.errors)?;
-                    let error = Error::AlreadyDefinedElement {
-                        name: ident.to_string(),
-                        loc: Location::default(),
-                    };
+                Self::Identifier(ident) => {
+                    expr.check_is_constant(ctx.ctx0, ctx.errors)?;
+
+                    let loc: Loc = ident.span().into();
                     let unique = init_map.insert(
                         ident,
                         expr.into_ir1(&mut ctx.add_pat_loc(None, &Location::default()))?,
@@ -1810,16 +1802,12 @@ mod stmt_pattern_impl {
                     }
                     Ok(())
                 }
-                ir0::stmt::Pattern::Typed(typed) => {
-                    expr.check_is_constant(ctx.symbols, ctx.errors)?;
-                    let error = Error::AlreadyDefinedElement {
-                        name: typed.ident.to_string(),
-                        loc: Location::default(),
-                    };
-                    let unique = init_map.insert(
-                        typed.ident,
-                        expr.into_ir1(&mut ctx.add_pat_loc(None, &Location::default()))?,
-                    );
+                Self::Typed(typed) => {
+                    let ident = typed.ident.clone();
+                    let loc: Loc = ident.span().into();
+                    expr.check_is_constant(ctx.ctx0, ctx.errors)?;
+                    let unique = init_map
+                        .insert(typed.ident, expr.into_ir1(&mut ctx.add_pat_loc(None, loc))?);
                     if unique.is_some() {
                         ctx.errors.push(error);
                         return Err(TerminationError);
@@ -1859,9 +1847,7 @@ mod stmt_pattern_impl {
         type Ir1 = ir1::stmt::Kind;
 
         fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc) -> TRes<ir1::stmt::Kind> {
-            let id = ctx
-                .symbols
-                .get_identifier_id(&self.ident, false, ctx.errors)?;
+            let id = ctx.ctx0.get_identifier_id(&self.ident, false, ctx.errors)?;
             let typ = self.typ.into_ir1(ctx)?;
             Ok(ir1::stmt::Kind::Typed { id, typ })
         }
@@ -1887,7 +1873,7 @@ mod stmt_pattern_impl {
             use ir0::stmt::Pattern::*;
             let kind = match self {
                 Identifier(ident) => {
-                    let id = ctx.symbols.get_identifier_id(&ident, false, ctx.errors)?;
+                    let id = ctx.ctx0.get_identifier_id(&ident, false, ctx.errors)?;
                     ir1::stmt::Kind::Identifier { id }
                 }
                 Typed(pattern) => pattern.into_ir1(ctx)?,
@@ -1912,7 +1898,7 @@ impl Ir0IntoIr1<ir1::ctx::Simple<'_>> for ir0::stmt::LetDecl<ir0::Expr> {
         let loc = self.loc();
         // stmts should be ordered in functions
         // then patterns are stored in order
-        self.typed_pattern.store(true, ctx.symbols, ctx.errors)?;
+        self.typed_pattern.store(true, ctx.ctx0, ctx.errors)?;
         let expr = self
             .expr
             .into_ir1(&mut ctx.add_pat_loc(Some(&self.typed_pattern), loc))?;
@@ -1959,7 +1945,7 @@ mod stream_impl {
                     arm.pattern.place_events(
                         &mut events_indices,
                         &mut idx,
-                        ctx.symbols,
+                        ctx.ctx0,
                         ctx.errors,
                     )?;
                     for _ in prev_idx..idx {
@@ -2012,7 +1998,7 @@ mod stream_impl {
                          ..
                      }| {
                         // transform event_pattern guard and equations into [ir1]
-                        ctx.symbols.local();
+                        ctx.local();
                         let pat_loc = event_pattern.loc();
 
                         // set local context + create matched pattern
@@ -2021,7 +2007,7 @@ mod stream_impl {
                             let opt_rising_edges = event_pattern.create_tuple_pattern(
                                 &mut elements,
                                 &events_indices,
-                                ctx.symbols,
+                                ctx.ctx0,
                                 ctx.errors,
                             )?;
                             let matched = Pattern::new(pat_loc, pattern::Kind::tuple(elements));
@@ -2052,7 +2038,7 @@ mod stream_impl {
                         // transform expression into [ir1] with local context
                         let expression = expr.into_ir1(ctx)?;
 
-                        ctx.symbols.global();
+                        ctx.global();
 
                         Ok((matched_pattern, guard, vec![], expression))
                     },
@@ -2095,10 +2081,9 @@ mod stream_impl {
             use ir1::stream::Kind;
             let kind = match self {
                 stream::Expr::Application(app) => match *app.fun {
-                    stream::Expr::Identifier(node) if ctx.symbols.is_node(&node, false) => {
-                        let called_node_id = ctx.symbols.get_node_id(&node, false, ctx.errors)?;
+                    stream::Expr::Identifier(node) if ctx.is_node(&node, false) => {
+                        let called_node_id = ctx.ctx0.get_node_id(&node, false, ctx.errors)?;
                         let node_symbol = ctx
-                            .symbols
                             .get_symbol(called_node_id)
                             .expect("there should be a symbol")
                             .clone();
@@ -2142,13 +2127,11 @@ mod stream_impl {
                         last.constant
                             .map_or(Ok(ir1::stream::Expr::new(loc, default)), |cst| {
                                 // check the constant expression is indeed constant
-                                cst.check_is_constant(ctx.symbols, ctx.errors)?;
+                                cst.check_is_constant(ctx.ctx0, ctx.errors)?;
                                 cst.into_ir1(ctx)
                             })?;
 
-                    let id = ctx
-                        .symbols
-                        .get_identifier_id(&last.ident, false, ctx.errors)?;
+                    let id = ctx.ctx0.get_identifier_id(&last.ident, false, ctx.errors)?;
                     Kind::FollowedBy {
                         constant: Box::new(constant),
                         id,
@@ -2159,7 +2142,7 @@ mod stream_impl {
                     expr: ir1::expr::Kind::Constant { constant },
                 },
                 stream::Expr::Identifier(id) => {
-                    let id = ctx.symbols.get_ident(&id, false, true, ctx.errors)?;
+                    let id = ctx.ctx0.get_ident(&id, false, true, ctx.errors)?;
                     Kind::expr(ir1::expr::Kind::Identifier { id })
                 }
                 stream::Expr::UnOp(expr) => Kind::expr(expr.into_ir1(ctx)?),
@@ -2234,18 +2217,18 @@ impl Ir0IntoIr1<ir1::ctx::WithLoc<'_>> for Typ {
                             Ok(Pair::new(ty, comma))
                         }).collect::<TRes<_>>()?
                 }),
-                Typ::NotDefinedYet(name) => ctx.symbols
+                Typ::NotDefinedYet(name) => ctx
                     .get_struct_id(&name, false, ctx.loc, &mut vec![])
                     .map(|id| Typ::Structure { name: name.clone(), id })
                     .or_else(|_| {
-                        ctx.symbols
+                        ctx
                             .get_enum_id(&name, false, ctx.loc, &mut vec![])
                             .map(|id| Typ::enumeration(name.clone(), id))
                     }).or_else(|_| {
-                        let id = ctx
-                            .symbols
+                        let id = ctx.ctx0
+
                             .get_array_id(&name, false, ctx.loc, ctx.errors)?;
-                        Ok(ctx.symbols.get_array(id))
+                        Ok(ctx.get_array(id))
                     }),
                 Typ::Abstract { paren_token, inputs, arrow_token, output } => {
                     let inputs = inputs.into_pairs()
@@ -2289,8 +2272,8 @@ impl Ir0IntoIr1<ir1::ctx::Simple<'_>> for ir0::Typedef {
         let loc = self.loc();
         match self {
             Typedef::Structure { ident, fields, .. } => {
-                let type_id = ctx.symbols.get_struct_id(&ident, false, loc, ctx.errors)?;
-                let field_ids = ctx.symbols.get_struct_fields(type_id).clone();
+                let type_id = ctx.ctx0.get_struct_id(&ident, false, loc, ctx.errors)?;
+                let field_ids = ctx.get_struct_fields(type_id).clone();
 
                 // insert field's type in symbol table
                 for (
@@ -2302,9 +2285,9 @@ impl Ir0IntoIr1<ir1::ctx::Simple<'_>> for ir0::Typedef {
                     },
                 ) in field_ids.iter().zip(fields)
                 {
-                    debug_assert_eq!(&ident, ctx.symbols.get_name(*id));
+                    debug_assert_eq!(&ident, ctx.get_name(*id));
                     let typing = typing.into_ir1(&mut ctx.add_loc(loc))?;
-                    ctx.symbols.set_type(*id, typing)
+                    ctx.set_type(*id, typing)
                 }
 
                 Ok(ir1::Typedef {
@@ -2315,8 +2298,8 @@ impl Ir0IntoIr1<ir1::ctx::Simple<'_>> for ir0::Typedef {
             }
 
             Typedef::Enumeration { ident, .. } => {
-                let type_id = ctx.symbols.get_enum_id(&ident, false, loc, ctx.errors)?;
-                let element_ids = ctx.symbols.get_enum_elements(type_id).clone();
+                let type_id = ctx.ctx0.get_enum_id(&ident, false, loc, ctx.errors)?;
+                let element_ids = ctx.get_enum_elements(type_id).clone();
                 Ok(ir1::Typedef {
                     id: type_id,
                     kind: ir1::typedef::Kind::Enumeration {
@@ -2329,11 +2312,11 @@ impl Ir0IntoIr1<ir1::ctx::Simple<'_>> for ir0::Typedef {
             Typedef::Array {
                 ident, array_type, ..
             } => {
-                let type_id = ctx.symbols.get_array_id(&ident, false, loc, ctx.errors)?;
+                let type_id = ctx.ctx0.get_array_id(&ident, false, loc, ctx.errors)?;
 
                 // insert array's type in symbol table
                 let typing = array_type.into_ir1(&mut ctx.add_loc(loc))?;
-                ctx.symbols.set_array_type(type_id, typing);
+                ctx.set_array_type(type_id, typing);
 
                 Ok(ir1::Typedef {
                     id: type_id,

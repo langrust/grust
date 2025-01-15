@@ -95,7 +95,7 @@ pub mod syn {
         parse_macro_input, parse_quote, parse_quote_spanned, parse_str,
         punctuated::{self, Punctuated},
         spanned::Spanned,
-        Token, *,
+        Error, Token, *,
     };
 
     /// Alias for `syn`'s notion of result.
@@ -118,7 +118,7 @@ pub use crate::{
     bail,
     check,
     // codespan_reporting,
-    conf,
+    conf::{self, Conf},
     constant::Constant,
     convert_case::to_camel_case,
     err::*,
@@ -149,8 +149,10 @@ pub use crate::{
     typ::Typ,
 };
 
+/// Custom location type, wraps a [`Span`].
 #[derive(Debug, Clone, Copy)]
 pub struct Loc {
+    /// Inner location as a span.
     pub span: Span,
 }
 impl Loc {
@@ -534,8 +536,8 @@ impl Stats {
         max
     }
 
-    pub fn pretty(&self) -> Option<String> {
-        let max_depth = conf::stats_depth();
+    pub fn pretty(&self, conf: &Conf) -> Option<String> {
+        let max_depth = conf.stats_depth;
         if max_depth == 0 {
             None
         } else {

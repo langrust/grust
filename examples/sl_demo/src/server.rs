@@ -2,7 +2,7 @@ mod sl {
     use grust::grust;
 
     grust! {
-        #![dump = "examples/sl_demo/src/macro_output.rs", test]
+        #![test]
 
         // # Imports
         import event    car::hmi::speed_limiter::activation : ActivationRequest;
