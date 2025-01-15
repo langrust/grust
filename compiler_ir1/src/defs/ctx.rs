@@ -3,66 +3,95 @@
 prelude! {}
 
 pub struct Simple<'a> {
-    pub symbols: &'a mut Ctx,
+    pub ctx0: &'a mut Ctx,
     pub errors: &'a mut Vec<Error>,
+}
+impl ops::Deref for Simple<'_> {
+    type Target = Ctx;
+    fn deref(&self) -> &Self::Target {
+        self.ctx0
+    }
+}
+impl ops::DerefMut for Simple<'_> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.ctx0
+    }
 }
 pub struct WithLoc<'a> {
     pub loc: Loc,
-    pub symbols: &'a mut Ctx,
+    pub ctx0: &'a mut Ctx,
     pub errors: &'a mut Vec<Error>,
+}
+impl ops::Deref for WithLoc<'_> {
+    type Target = Ctx;
+    fn deref(&self) -> &Self::Target {
+        self.ctx0
+    }
+}
+impl ops::DerefMut for WithLoc<'_> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.ctx0
+    }
 }
 pub struct PatLoc<'a> {
     pub pat: Option<&'a ir0::stmt::Pattern>,
     pub loc: Loc,
-    pub symbols: &'a mut Ctx,
+    pub ctx0: &'a mut Ctx,
     pub errors: &'a mut Vec<Error>,
 }
+impl ops::Deref for PatLoc<'_> {
+    type Target = Ctx;
+    fn deref(&self) -> &Self::Target {
+        self.ctx0
+    }
+}
+impl ops::DerefMut for PatLoc<'_> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.ctx0
+    }
+}
 impl<'a> Simple<'a> {
-    pub fn new(symbols: &'a mut Ctx, errors: &'a mut Vec<Error>) -> Self {
-        Self { symbols, errors }
+    pub fn new(ctx0: &'a mut Ctx, errors: &'a mut Vec<Error>) -> Self {
+        Self { ctx0, errors }
     }
     pub fn add_loc<'b>(&'b mut self, loc: Loc) -> WithLoc<'b> {
-        WithLoc::new(loc, self.symbols, self.errors)
+        WithLoc::new(loc, self.ctx0, self.errors)
     }
     pub fn add_pat_loc<'b>(
         &'b mut self,
         pat: Option<&'b ir0::stmt::Pattern>,
         loc: Loc,
     ) -> PatLoc<'b> {
-        PatLoc::new(pat, loc, self.symbols, self.errors)
+        PatLoc::new(pat, loc, self.ctx0, self.errors)
     }
 }
 impl<'a> WithLoc<'a> {
-    pub fn new(loc: Loc, symbols: &'a mut Ctx, errors: &'a mut Vec<Error>) -> Self {
-        Self {
-            loc,
-            symbols,
-            errors,
-        }
+    pub fn new(loc: Loc, ctx0: &'a mut Ctx, errors: &'a mut Vec<Error>) -> Self {
+        Self { loc, ctx0, errors }
     }
     pub fn add_pat<'b>(&'b mut self, pat: Option<&'b ir0::stmt::Pattern>) -> PatLoc<'b> {
-        PatLoc::new(pat, self.loc, self.symbols, self.errors)
+        PatLoc::new(pat, self.loc, self.ctx0, self.errors)
     }
 }
 impl<'a> PatLoc<'a> {
     pub fn new(
         pat: Option<&'a ir0::stmt::Pattern>,
         loc: impl Into<Loc>,
-        symbols: &'a mut Ctx,
+        ctx0: &'a mut Ctx,
         errors: &'a mut Vec<Error>,
     ) -> Self {
         Self {
             pat,
-            loc,
-            symbols,
+            loc: loc.into(),
+            ctx0,
             errors,
         }
     }
     pub fn remove_pat<'b>(&'b mut self) -> WithLoc {
-        WithLoc::new(self.loc, self.symbols, self.errors)
+        WithLoc::new(self.loc, self.ctx0, self.errors)
     }
     pub fn remove_pat_loc<'b>(&'b mut self) -> Simple<'b> {
-        Simple::new(self.symbols, self.errors)
+        Simple::new(self.ctx0, self.errors)
     }
     pub fn set_pat(
         &mut self,
@@ -196,12 +225,23 @@ pub struct Full<'a, Event> {
     pub imports: &'a mut HashMap<usize, interface::FlowImport>,
     pub exports: &'a HashMap<usize, interface::FlowExport>,
     pub timings: &'a mut Vec<Event>,
-    pub symbols: &'a mut Ctx,
+    pub ctx0: &'a mut Ctx,
+}
+impl<E> ops::Deref for Full<'_, E> {
+    type Target = Ctx;
+    fn deref(&self) -> &Self::Target {
+        self.ctx0
+    }
+}
+impl<E> ops::DerefMut for Full<'_, E> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.ctx0
+    }
 }
 
 mk_new! { impl{'a, Event} Full<'a, Event> => new {
     imports: &'a mut HashMap<usize, interface::FlowImport>,
     exports: &'a HashMap<usize, interface::FlowExport>,
     timings: &'a mut Vec<Event>,
-    symbols: &'a mut Ctx,
+    ctx0: &'a mut Ctx,
 } }

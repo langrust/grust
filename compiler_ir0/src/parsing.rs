@@ -1,7 +1,7 @@
 //! Parsing.
 
 prelude! {
-    syn::{Parse, Punctuated, token, LitInt, LitStr, Error, Res},
+    syn::{Parse, Punctuated, token, LitInt, Res},
 }
 
 impl<U: Parse, V: Parse> Parse for Colon<U, V> {
@@ -41,7 +41,6 @@ impl Parse for Item {
 
 impl Parse for Ast {
     fn parse(input: ParseStream) -> Res<Self> {
-        let config: Config = input.parse()?;
         let items: Vec<Item> = {
             let mut items = Vec::with_capacity(100);
             while !input.is_empty() {
@@ -50,7 +49,15 @@ impl Parse for Ast {
             items.shrink_to_fit();
             items
         };
-        Ok(Self { config, items })
+        Ok(Self { items })
+    }
+}
+
+impl Parse for Top {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let conf: Conf = input.parse()?;
+        let ast: Ast = input.parse()?;
+        Ok(Self { conf, ast })
     }
 }
 
@@ -63,122 +70,6 @@ where
     fn parse_prec2(input: ParseStream) -> syn::Res<Self>;
     fn parse_prec3(input: ParseStream) -> syn::Res<Self>;
     fn parse_prec4(input: ParseStream) -> syn::Res<Self>;
-}
-
-mod parse_conf {
-    use super::*;
-
-    impl Parse for Config {
-        fn parse(input: ParseStream) -> Res<Self> {
-            if let Ok(true) = input
-                .fork()
-                .call(syn::Attribute::parse_inner)
-                .map(|attrs| !attrs.is_empty())
-            {
-                // reset config before parsing items
-                conf::reset();
-
-                let _: Token![#] = input.parse()?;
-                let _: Token![!] = input.parse()?;
-                let content;
-                let _ = bracketed!(content in input);
-                let items: Punctuated<ConfigItem, Token![,]> =
-                    Punctuated::parse_terminated(&content)?;
-                for _ in items {
-                    ()
-                }
-            }
-            Ok(Self)
-        }
-    }
-    impl Parse for ConfigItem {
-        fn parse(input: ParseStream) -> Res<Self> {
-            let ident: Ident = input.parse()?;
-            match ident.to_string().as_str() {
-                "propag" => {
-                    let _: Token![=] = input.parse()?;
-                    let val: LitStr = input.parse()?;
-                    match val.value().as_str() {
-                        "onchange" => conf::set_propagation(conf::Propagation::OnChange),
-                        "onevent" => conf::set_propagation(conf::Propagation::EventIsles),
-                        _ => {
-                            return Err(Error::new_spanned(
-                                val,
-                                "unexpected propagation configuration",
-                            ));
-                        }
-                    }
-                    return Ok(ConfigItem);
-                }
-                "dump" => {
-                    let _: Token![=] = input.parse()?;
-                    let val: LitStr = input.parse()?;
-                    if let Some(prev) = conf::dump_code() {
-                        let msg = format!("code-dump target already set to `{prev}`");
-                        return Err(Error::new_spanned(ident, msg));
-                    }
-                    conf::set_dump_code(Some(val.value().to_string()));
-                    return Ok(ConfigItem);
-                }
-                "stats_depth" => {
-                    let _: Token![=] = input.parse()?;
-                    let val: LitInt = input.parse()?;
-                    let val: usize = val.base10_parse()?;
-                    conf::set_stats_depth(val);
-                    return Ok(ConfigItem);
-                }
-                "para" => {
-                    conf::set_para(true);
-                    return Ok(ConfigItem);
-                }
-                "component_para_none" => {
-                    conf::set_component_para(conf::ComponentPara::None);
-                    return Ok(ConfigItem);
-                }
-                "component_para_threads" => {
-                    conf::set_component_para(conf::ComponentPara::Threads);
-                    return Ok(ConfigItem);
-                }
-                "component_para_rayon1" => {
-                    conf::set_component_para(conf::ComponentPara::Rayon1);
-                    return Ok(ConfigItem);
-                }
-                "component_para_rayon2" => {
-                    conf::set_component_para(conf::ComponentPara::Rayon2);
-                    return Ok(ConfigItem);
-                }
-                "component_para_rayon3" => {
-                    conf::set_component_para(conf::ComponentPara::Rayon3);
-                    return Ok(ConfigItem);
-                }
-                "component_para_mixed" => {
-                    conf::set_component_para(conf::ComponentPara::Mixed);
-                    return Ok(ConfigItem);
-                }
-                "pub" => {
-                    conf::set_pub_components(true);
-                    return Ok(ConfigItem);
-                }
-                "greusot" => conf::set_greusot(true),
-                "test" => conf::set_test(true),
-                "demo" => conf::set_demo(true),
-                _ => return Err(Error::new_spanned(ident, "unexpected configuration key")),
-            }
-            if conf::greusot() && (conf::test() || conf::demo()) {
-                return Err(Error::new_spanned(
-                    ident,
-                    "greusot can not be used with test/demo modes",
-                ));
-            }
-            if conf::test() && conf::demo() {
-                return Err(Error::new_spanned(
-                    ident,
-                    "test and demo modes are incompatible",
-                ));
-            }
-            Ok(ConfigItem)
-        }
-    }
 }
 
 mod interface {

@@ -20,7 +20,7 @@ mk_new! { impl Structure =>
 
 impl Structure {
     /// Transform [ir2] structure into RustAST structure.
-    pub fn into_syn(self) -> syn::ItemStruct {
+    pub fn into_syn(self, ctx: &ir0::Ctx) -> syn::ItemStruct {
         let fields = self.fields.into_iter().map(|(name, typ)| {
             let typ = typ.into_syn();
             syn::Field {
@@ -33,7 +33,7 @@ impl Structure {
             }
         });
         let name = self.name;
-        let attribute: syn::Attribute = if conf::greusot() {
+        let attribute: syn::Attribute = if ctx.conf.greusot {
             parse_quote!(
                 #[derive(prelude::Clone, Copy, prelude::PartialEq, prelude::Default, DeepModel)]
             )
@@ -70,6 +70,6 @@ mod test {
                 pub y: i64
             }
         };
-        assert_eq!(structure.into_syn(), control)
+        assert_eq!(structure.into_syn(&ir0::Ctx::empty()), control)
     }
 }

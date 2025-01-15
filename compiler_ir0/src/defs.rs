@@ -9,16 +9,6 @@ pub mod stream;
 
 prelude! {}
 
-/// Configuration items in the AST.
-///
-/// They set the static [conf::Conf].
-pub struct ConfigItem;
-
-/// Configuration structure in the AST.
-///
-/// It sets the static [Conf](conf::Conf).
-pub struct Config;
-
 /// An `ir0` context, gathers a symbol table and a [`Conf`].
 ///
 /// For convenience, this type [`std::ops::Deref`]s/[`std::ops::DerefMut`]s to [`symbol::Table`].
@@ -38,12 +28,19 @@ impl std::ops::DerefMut for Ctx {
     }
 }
 impl Ctx {
+    /// Constructor.
+    pub fn new(table: symbol::Table, conf: Conf) -> Self {
+        Self { table, conf }
+    }
+
+    /// Constructor from an existing configuration (empty table).
+    pub fn from_conf(conf: Conf) -> Self {
+        Self::new(symbol::Table::new(), conf)
+    }
+
     /// Empty context: empty symbol table and default configuration.
-    pub fn new() -> Self {
-        Self {
-            table: symbol::Table::new(),
-            conf: conf::Conf::default(),
-        }
+    pub fn empty() -> Self {
+        Self::from_conf(Conf::default())
     }
 }
 
@@ -207,7 +204,16 @@ impl HasLoc for Item {
 
 /// Complete AST of GRust program.
 pub struct Ast {
-    pub config: Config,
     /// Items contained in the GRust program.
     pub items: Vec<Item>,
+}
+
+pub struct Top {
+    pub ast: Ast,
+    pub conf: Conf,
+}
+impl Top {
+    pub fn init(self) -> (Ast, Ctx) {
+        (self.ast, Ctx::from_conf(self.conf))
+    }
 }

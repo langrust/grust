@@ -2,7 +2,7 @@ compiler_top::prelude! {}
 
 #[test]
 fn should_compile_speed_limiter_events() {
-    let ast: Ast = parse_quote! {
+    let top: ir0::Top = parse_quote! {
         #![dump = "tests/macro_outputs/speed_limiter_events.rs", demo]
 
         // # Imports
@@ -223,8 +223,9 @@ fn should_compile_speed_limiter_events() {
             in_regulation = scan(in_regulation_aux, 10);
         }
     };
-    let tokens = compiler_top::into_token_stream(ast);
-    if let Some(path) = conf::dump_code() {
-        compiler_top::dump_code(&path, &tokens);
+    let (ast, mut ctx) = top.init();
+    let tokens = compiler_top::into_token_stream(ast, &mut ctx);
+    if let Some(path) = ctx.conf.dump_code {
+        compiler_top::dump_code(&path, &tokens).unwrap();
     }
 }

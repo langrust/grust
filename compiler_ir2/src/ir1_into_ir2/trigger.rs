@@ -22,7 +22,7 @@ pub enum Graph<'a> {
 }
 impl<'a> TriggersGraph<'a> for Graph<'a> {
     fn new(ctx: &'a Ctx, service: &'a Service, imports: &'a HashMap<usize, FlowImport>) -> Self {
-        match conf::propagation() {
+        match ctx.conf.propagation {
             conf::Propagation::EventIsles => {
                 Graph::EventIsles(EventIslesGraph::new(ctx, service, imports))
             }

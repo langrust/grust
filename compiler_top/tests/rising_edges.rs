@@ -2,7 +2,7 @@ compiler_top::prelude! {}
 
 #[test]
 fn should_compile_rising_edges() {
-    let ast: Ast = parse_quote! {
+    let top: ir0::Top = parse_quote! {
         #![dump = "tests/macro_outputs/rising_edges.rs"]
 
         component rising_edges(a: int?, b: int?, v: int) -> (
@@ -31,8 +31,9 @@ fn should_compile_rising_edges() {
             }
         }
     };
-    let tokens = compiler_top::into_token_stream(ast);
-    if let Some(path) = conf::dump_code() {
-        compiler_top::dump_code(&path, &tokens);
+    let (ast, mut ctx) = top.init();
+    let tokens = compiler_top::into_token_stream(ast, &mut ctx);
+    if let Some(path) = ctx.conf.dump_code {
+        compiler_top::dump_code(&path, &tokens).unwrap();
     }
 }

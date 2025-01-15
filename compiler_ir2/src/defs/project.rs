@@ -10,11 +10,11 @@ pub struct Project {
 
 impl Project {
     /// Transform [ir2] item into RustAST item.
-    pub fn into_syn(self, mut stats: StatsMut) -> Vec<syn::Item> {
+    pub fn into_syn(self, ctx: &ir0::Ctx, mut stats: StatsMut) -> Vec<syn::Item> {
         let mut crates = BTreeSet::new();
         let mut rust_items = vec![];
 
-        if conf::greusot() {
+        if ctx.conf.greusot {
             rust_items.push(syn::Item::Use(parse_quote!(
                 use creusot_contracts::{ensures, logic, open, prelude, requires, DeepModel};
             )))
@@ -25,7 +25,7 @@ impl Project {
             .enumerate()
             .for_each(|(idx, item)| match item {
                 Item::ExecutionMachine(execution_machine) => {
-                    if conf::test() || conf::demo() {
+                    if ctx.conf.test || ctx.conf.demo {
                         stats.timed_with(format!("item #{}, execution-machine", idx), |stats| {
                             let item = execution_machine.into_syn(stats);
                             rust_items.push(item);
@@ -49,14 +49,14 @@ impl Project {
                 Item::Enumeration(enumeration) => stats.timed(
                     format!("item #{}, enumeration `{}`", idx, enumeration.name),
                     || {
-                        let rust_ast_enumeration = enumeration.into_syn();
+                        let rust_ast_enumeration = enumeration.into_syn(ctx);
                         rust_items.push(syn::Item::Enum(rust_ast_enumeration))
                     },
                 ),
                 Item::Structure(structure) => stats.timed(
                     format!("item #{}, structure `{}`", idx, structure.name),
                     || {
-                        let rust_ast_structure = structure.into_syn();
+                        let rust_ast_structure = structure.into_syn(ctx);
                         rust_items.push(syn::Item::Struct(rust_ast_structure))
                     },
                 ),

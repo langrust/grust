@@ -2,7 +2,7 @@ compiler_top::prelude! {}
 
 #[test]
 fn should_compile_define_events() {
-    let ast: Ast = parse_quote! {
+    let top: ir0::Top = parse_quote! {
         #![dump = "tests/macro_outputs/define_events.rs"]
 
         component define_events(a: int?, b: int?, v: int) -> (
@@ -30,8 +30,9 @@ fn should_compile_define_events() {
             }
         }
     };
-    let tokens = compiler_top::into_token_stream(ast);
-    if let Some(path) = conf::dump_code() {
-        compiler_top::dump_code(&path, &tokens);
+    let (ast, mut ctx) = top.init();
+    let tokens = compiler_top::into_token_stream(ast, &mut ctx);
+    if let Some(path) = ctx.conf.dump_code {
+        compiler_top::dump_code(&path, &tokens).unwrap();
     }
 }

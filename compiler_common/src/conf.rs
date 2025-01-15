@@ -1,5 +1,3 @@
-use std::sync::RwLock;
-
 prelude! {}
 
 /// Services configuration for the propagation of
@@ -47,130 +45,197 @@ impl ComponentPara {
     }
 }
 
-/// Stores all possible compiler's configurations.
-pub struct Conf {
-    pub propagation: Propagation,
-    pub para: bool,
-    pub component_para: ComponentPara,
-    pub pub_components: bool,
-    pub dump_code: Option<String>,
-    pub greusot: bool,
-    pub test: bool,
-    pub demo: bool,
-    pub stats_depth: usize,
+macro_rules! build_conf {
+    {
+        $(#[$conf_meta:meta])*
+        $conf_struct:ident where Item = $conf_item_enum:ident {
+            $(
+                $(#[$field_meta:meta])*
+                $field_id:ident
+                :
+                $field_ty:ty
+                =
+                $field_default:expr
+                =>
+                $(#[$field_variant_meta:meta])*
+                $field_variant:ident
+            ),* $(,)?
+        }
+    } => {
+        // conf `struct`, all fields public
+        $(#[$conf_meta])*
+        pub struct $conf_struct {
+            $(
+                $(#[$field_meta])*
+                pub $field_id : $field_ty,
+            )*
+        }
+        // `Default` implementation
+        impl std::default::Default for $conf_struct {
+            fn default() -> Self {
+                Self {
+                    $( $field_id: $field_default, )*
+                }
+            }
+        }
+        // config item enumeration
+        /// Enumeration of all the configuration items.
+        pub enum $conf_item_enum {
+            $(
+                $(#[$field_variant_meta])*
+                $field_variant ( $crate::prelude::Span, $field_ty ),
+            )*
+        }
+        impl $conf_item_enum {
+            /// Span to report errors on this item on.
+            pub fn span(&self) -> Span {
+                match self {
+                    $( Self::$field_variant(span, _) => span.clone(), )*
+                }
+            }
+        }
+
+        impl $conf_struct {
+            /// Updates a configuration value.
+            pub fn with(&mut self, item: $conf_item_enum) {
+                match item {
+                    $(
+                        $conf_item_enum::$field_variant(_, data) => self.$field_id = data,
+                    )*
+                }
+            }
+        }
+    };
 }
-impl Default for Conf {
-    fn default() -> Self {
-        Self {
-            propagation: Default::default(),
-            para: false,
-            component_para: Default::default(),
-            pub_components: false,
-            dump_code: None,
-            greusot: false,
-            test: false,
-            demo: false,
-            stats_depth: 0,
+
+build_conf! {
+    /// Compiler configuration.
+    Conf where Item = ConfItem {
+        propagation: Propagation = Propagation::default() =>
+            /// Item for the `propagation` configuration value.
+            Propagation,
+        para: bool = false =>
+            /// Item for the `para` configuration value.
+            Para,
+        component_para: ComponentPara = ComponentPara::default() =>
+            /// Item for the `component_para` configuration value.
+            ComponentPara,
+        pub_components: bool = false =>
+            /// Item for the `pub_components` configuration value.
+            PubComponent,
+        dump_code: Option<syn::LitStr> = None =>
+            /// Item for the `dump_code` configuration value.
+            DumpCode,
+        greusot: bool = false =>
+            /// Item for the `greusot` configuration value.
+            Greusot,
+        test: bool = false =>
+            /// Item for the `test` configuration value.
+            Test,
+        demo: bool = false =>
+            /// Item for the `demo` configuration value.
+            Demo,
+        stats_depth: usize = 0 =>
+            /// Item for the `stats_depth` configuration value.
+            StatsDepth,
+    }
+}
+
+impl Conf {
+    pub fn check_sanity(&self, report_on: Span) -> syn::Res<()> {
+        if self.greusot && (self.test || self.demo) {
+            return Err(syn::Error::new(
+                report_on,
+                "illegal configuration: `greusot` cannot be active in `test` or `demo` modes",
+            ));
+        }
+        if self.test && self.demo {
+            return Err(syn::Error::new(
+                report_on,
+                "illegal configuration: `test` and `demo` modes are incompatible",
+            ));
+        }
+        Ok(())
+    }
+}
+
+mod parsing {
+    use super::*;
+
+    impl syn::Parse for ConfItem {
+        fn parse(input: ParseStream) -> syn::Res<Self> {
+            let ident: Ident = input.parse()?;
+            let span = ident.span();
+            let item = match ident.to_string().as_str() {
+                "propag" => {
+                    let _: Token![=] = input.parse()?;
+                    let val: syn::LitStr = input.parse()?;
+                    match val.value().as_str() {
+                        "onchange" => Self::Propagation(span, Propagation::OnChange),
+                        "onevent" => Self::Propagation(span, Propagation::EventIsles),
+                        _ => {
+                            return Err(syn::Error::new_spanned(
+                                val,
+                                "unexpected propagation configuration, \
+                                expected `onchange` or `onevent`",
+                            ));
+                        }
+                    }
+                }
+                "dump" => {
+                    let _: Token![=] = input.parse()?;
+                    let val: syn::LitStr = input.parse()?;
+                    Self::DumpCode(span, Some(val))
+                }
+                "stats_depth" => {
+                    let _: Token![=] = input.parse()?;
+                    let val: syn::LitInt = input.parse()?;
+                    let val: usize = val.base10_parse()?;
+                    Self::StatsDepth(span, val)
+                }
+                "para" => Self::Para(span, true),
+                "component_para_none" => Self::ComponentPara(span, ComponentPara::None),
+                "component_para_threads" => Self::ComponentPara(span, ComponentPara::Threads),
+                "component_para_rayon1" => Self::ComponentPara(span, ComponentPara::Rayon1),
+                "component_para_rayon2" => Self::ComponentPara(span, ComponentPara::Rayon2),
+                "component_para_rayon3" => Self::ComponentPara(span, ComponentPara::Rayon3),
+                "component_para_mixed" => Self::ComponentPara(span, ComponentPara::Mixed),
+                "pub" => Self::PubComponent(span, true),
+                "greusot" => Self::Greusot(span, true),
+                "test" => Self::Test(span, true),
+                "demo" => Self::Test(span, true),
+                _ => {
+                    return Err(syn::Error::new_spanned(
+                        ident,
+                        "unexpected configuration key",
+                    ))
+                }
+            };
+            Ok(item)
         }
     }
-}
 
-lazy_static! {
-    /// Configuration.
-    static ref CONF : RwLock<Conf> = RwLock::new(Conf::default());
-}
-
-fn read<T>(f: impl FnOnce(&Conf) -> T) -> T {
-    let conf = CONF.read().expect("configuration lock is poisoned");
-    f(&*conf)
-}
-fn write<T>(f: impl FnOnce(&mut Conf) -> T) -> T {
-    let mut conf = CONF.write().expect("configuration lock is poisoned");
-    f(&mut *conf)
-}
-
-/// Resets the global configuration to its default value.
-///
-/// The global state is maintained between proc-macro expansions, we need to reset before parsing a
-/// new configuration to avoid errors such as "code-dump target already defined".
-pub fn reset() {
-    write(|conf| *conf = Conf::default())
-}
-
-macro_rules! def {
-    { $(
-        $typ:ty { $(
-            $(#[$read_meta:meta])*
-            $read_field:ident
-            $(#[$write_meta:meta])*
-            $write_field:ident
-        )+ }
-    )+ } => { $($(
-        $(#[$read_meta])*
-        pub fn $read_field() -> $typ {
-            read(|conf| conf.$read_field.clone())
+    impl syn::Parse for Conf {
+        fn parse(input: ParseStream) -> ::syn::Result<Self> {
+            let mut slf = Self::default();
+            if let Ok(true) = input
+                .fork()
+                .call(syn::Attribute::parse_inner)
+                .map(|attrs| !attrs.is_empty())
+            {
+                let _: Token![#] = input.parse()?;
+                let _: Token![!] = input.parse()?;
+                let content;
+                let _ = bracketed!(content in input);
+                let items: syn::Punctuated<ConfItem, Token![,]> =
+                    syn::Punctuated::parse_terminated(&content)?;
+                for item in items {
+                    let span = item.span();
+                    slf.with(item);
+                    slf.check_sanity(span)?;
+                }
+            }
+            Ok(slf)
         }
-        $(#[$write_meta])*
-        pub fn $write_field(val : $typ) {
-            write(|conf| conf.$read_field = val)
-        }
-    )* )+ };
-}
-
-def! {
-    Propagation {
-        #[doc = "Returns the propagation configuration."]
-        propagation
-        #[doc = "Set the propagation configuration."]
-        set_propagation
-    }
-    bool {
-        #[doc = "Tells if services' instructions are parallelized."]
-        para
-        #[doc = "Set parallelization in configuration."]
-        set_para
-    }
-    ComponentPara {
-        #[doc = "Specifies how to parallelize component code."]
-        component_para
-        #[doc = "Set component parallelization strategy."]
-        set_component_para
-    }
-    bool {
-        #[doc = "Tells if the components are public."]
-        pub_components
-        #[doc = "Set in configuration if the components are public."]
-        set_pub_components
-    }
-    Option<String> {
-        #[doc = "Returns `Some(path)` if the code should be written at `path`, \
-        returns `None` if code should not be written."]
-        dump_code
-        #[doc = "Set in configuration where the code should be written."]
-        set_dump_code
-    }
-    bool {
-        #[doc = "Tells if greusot is used."]
-        greusot
-        #[doc = "Set in configuration if greusot is used."]
-        set_greusot
-    }
-    bool {
-        #[doc = "Tells if we are in test mode."]
-        test
-        #[doc = "Set test mode."]
-        set_test
-    }
-    bool {
-        #[doc = "Tells if we are in demo mode."]
-        demo
-        #[doc = "Set demo mode."]
-        set_demo
-    }
-    usize {
-        #[doc = "Stats printing depth, no output on `0`."]
-        stats_depth
-        #[doc = "Set `stats_depth`."]
-        set_stats_depth
     }
 }

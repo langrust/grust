@@ -20,8 +20,8 @@ mk_new! { impl Enumeration =>
 
 impl Enumeration {
     /// Transform [ir2] enumeration into RustAST enumeration.
-    pub fn into_syn(self) -> syn::ItemEnum {
-        let attribute: syn::Attribute = if conf::greusot() {
+    pub fn into_syn(self, ctx: &ir0::Ctx) -> syn::ItemEnum {
+        let attribute: syn::Attribute = if ctx.conf.greusot {
             // todo: when v0.1.1 then
             // ```
             // parse_quote!(
@@ -86,6 +86,6 @@ mod test {
             Red,
             Green
         }};
-        assert_eq!(enumeration.into_syn(), control)
+        assert_eq!(enumeration.into_syn(&ir0::Ctx::empty()), control)
     }
 }
