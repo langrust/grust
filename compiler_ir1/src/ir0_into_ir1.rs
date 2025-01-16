@@ -1058,20 +1058,8 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                 let init_signal_vals =
                     if let Some(ir0::equation::InitArmWhen { equations, .. }) = init {
                         let mut map = HashMap::new();
-                        for eq in equations {
-                            match eq {
-                                ir0::Eq::LocalDef(ir0::stmt::LetDecl {
-                                    typed_pattern: pattern,
-                                    expr,
-                                    ..
-                                })
-                                | ir0::Eq::OutputDef(ir0::equation::Instantiation {
-                                    pattern,
-                                    expr,
-                                    ..
-                                }) => pattern.set_init_expr(expr, &mut map, ctx)?,
-                                ir0::Eq::Match(_) => todo!("unsupported"),
-                            }
+                        for ir0::equation::Instantiation { pattern, expr, .. } in equations {
+                            pattern.set_init_expr(expr, &mut map, ctx)?;
                         }
                         map
                     } else {
