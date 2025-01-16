@@ -17,8 +17,8 @@ mk_new! { impl Import => new {
 impl Import {
     pub fn into_syn(self) -> syn::ItemUse {
         let Import { name, path } = self;
-        let state_name = format_ident!("{}", to_camel_case(&format!("{}State", name)));
-        let input_name = format_ident!("{}", to_camel_case(&format!("{}Input", name)));
+        let state_name = name.to_state_ty();
+        let input_name = name.to_input_ty();
         parse_quote! { use #path::{ #input_name, #state_name }; }
     }
 }

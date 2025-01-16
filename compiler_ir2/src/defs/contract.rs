@@ -156,7 +156,7 @@ impl Term {
                 if function_like {
                     unreachable!()
                 } else {
-                    let id = format_ident!("last_{}", identifier);
+                    let id = identifier.to_last_var();
                     if prophecy {
                         quote!((^self).#id)
                     } else {

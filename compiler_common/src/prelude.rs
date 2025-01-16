@@ -120,7 +120,7 @@ pub use crate::{
     // codespan_reporting,
     conf::{self, Conf},
     constant::Constant,
-    convert_case::to_camel_case,
+    convert_case::{to_camel_case, to_snake_case},
     err::*,
     error,
     graph,
@@ -300,6 +300,114 @@ impl<T> VecExt<T> for Vec<T> {
         } else {
             None
         }
+    }
+}
+
+pub trait IdentExt: Sized {
+    fn to_snake_with(&self, pref: impl AsRef<str>, suff: impl AsRef<str>) -> Self;
+    fn to_camel_with(&self, pref: impl AsRef<str>, suff: impl AsRef<str>) -> Self;
+
+    fn instant_var() -> Self;
+    fn init_instant_var() -> Self;
+
+    fn to_snake_pref(&self, pref: impl AsRef<str>) -> Self {
+        self.to_snake_with(pref, "")
+    }
+    fn to_snake_suff(&self, suff: impl AsRef<str>) -> Self {
+        self.to_snake_with("", suff)
+    }
+    fn to_snake(&self) -> Self {
+        self.to_snake_with("", "")
+    }
+
+    fn to_camel_pref(&self, pref: impl AsRef<str>) -> Self {
+        self.to_camel_with(pref, "")
+    }
+    fn to_camel_suff(&self, suff: impl AsRef<str>) -> Self {
+        self.to_camel_with("", suff)
+    }
+    fn to_camel(&self) -> Self {
+        self.to_camel_with("", "")
+    }
+
+    /// Alias for [IdentExt::to_snake].
+    fn to_field(&self) -> Self {
+        self.to_snake()
+    }
+    /// Alias for [IdentExt::to_snake].
+    fn to_var(&self) -> Self {
+        self.to_snake()
+    }
+    /// Alias for [IdentExt::to_camel].
+    fn to_ty(&self) -> Self {
+        self.to_camel()
+    }
+
+    /// Adapts the identifier to one for a state type, typically for a component/state-machine.
+    fn to_state_ty(&self) -> Self {
+        self.to_camel_suff("State")
+    }
+    /// Adapts the identifier to one for an input type, typically for a component/state-machine.
+    fn to_input_ty(&self) -> Self {
+        self.to_camel_suff("Input")
+    }
+
+    /// Adapts the identifier to one for a service store type.
+    fn to_service_store_ty(&self) -> Self {
+        self.to_camel_suff("ServiceStore")
+    }
+    /// Adapts the identifier to one for a service state type.
+    fn to_service_state_ty(&self) -> Self {
+        self.to_camel_suff("Service")
+    }
+    /// Adapts the identifier to one for a service module.
+    fn to_service_mod(&self) -> Self {
+        self.to_snake_suff("_service")
+    }
+
+    fn to_last_var(&self) -> Self {
+        self.to_snake_pref("last_")
+    }
+    fn to_instant_var(&self) -> Self {
+        self.to_snake_suff("_instant")
+    }
+    fn to_ref_var(&self) -> Self {
+        self.to_snake_suff("_ref")
+    }
+    fn to_handle_fn(&self) -> Self {
+        self.to_snake_pref("handle_")
+    }
+}
+
+impl IdentExt for Ident {
+    fn instant_var() -> Self {
+        Ident::new("_grust_reserved_instant", Span::mixed_site())
+    }
+    fn init_instant_var() -> Self {
+        Ident::new("_grust_reserved_init_instant", Span::mixed_site())
+    }
+
+    fn to_camel_with(&self, pref: impl AsRef<str>, suff: impl AsRef<str>) -> Self {
+        Self::new(
+            &format!(
+                "{}{}{}",
+                pref.as_ref(),
+                to_camel_case(self.to_string()),
+                suff.as_ref()
+            ),
+            self.span(),
+        )
+    }
+    fn to_snake_with(&self, pref: impl AsRef<str>, suff: impl AsRef<str>) -> Self {
+        Self::new(
+            &format!(
+                "{}{}{}",
+                pref.as_ref(),
+                to_snake_case(self.to_string()),
+                suff.as_ref()
+            ),
+            self.span(),
+        )
     }
 }
 

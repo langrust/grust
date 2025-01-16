@@ -310,18 +310,16 @@ impl Expr {
             }
             Self::None => parse_quote! { None },
             Self::MemoryAccess { identifier } => {
-                let id = format_ident!("last_{}", identifier);
+                let id = identifier.to_last_var();
                 parse_quote!( self.#id )
             }
             Self::InputAccess { identifier } => {
-                let identifier = format_ident!("{identifier}");
                 parse_quote!( input.#identifier )
             }
             Self::Structure { name, fields } => {
                 let fields: Vec<syn::FieldValue> = fields
                     .into_iter()
                     .map(|(name, expr)| {
-                        let name = format_ident!("{name}");
                         let expr = expr.into_syn(crates);
                         parse_quote!(#name : #expr)
                     })
@@ -330,7 +328,7 @@ impl Expr {
                 parse_quote!(#name { #(#fields),* })
             }
             Self::Enumeration { name, element } => {
-                syn::parse_str(&format!("{name}::{element}")).unwrap()
+                parse_quote!(#name :: #element)
             }
             Self::Array { elements } => {
                 let elements = elements.into_iter().map(|expr| expr.into_syn(crates));

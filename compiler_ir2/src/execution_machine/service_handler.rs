@@ -3,38 +3,77 @@ prelude! {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct ServiceHandler {
-    /// The service name.
-    pub service: Ident,
-    /// Its components.
-    pub components: Vec<Ident>,
-    /// The flows handling.
-    pub flows_handling: Vec<FlowHandler>,
-    /// The signals context from where components will get their inputs.
-    pub flows_context: ir1::ctx::Flows,
+pub struct ComponentInfo {
+    pub ty_ident: Ident,
+    pub state_ty_ident: Ident,
+    pub field_ident: Ident,
+}
+impl ComponentInfo {
+    pub fn new(ty_ident: Ident) -> Self {
+        let field_ident = ty_ident.to_field();
+        let state_ty_ident = ty_ident.to_state_ty();
+        Self {
+            ty_ident,
+            field_ident,
+            state_ty_ident,
+        }
+    }
 }
 
-mk_new! { impl ServiceHandler => new {
-    service: impl Into<Ident> = service.into(),
-    components: Vec<Ident>,
-    flows_handling: Vec<FlowHandler>,
-    flows_context: ir1::ctx::Flows,
-} }
+#[derive(Debug, PartialEq)]
+pub struct ServiceHandler {
+    /// The service name.
+    pub service_ident: Ident,
+    /// The flows handling.
+    pub flow_handlers: Vec<FlowHandler>,
+    /// The signals context from where components will get their inputs.
+    pub flow_context: ir1::ctx::Flows,
+
+    pub components_info: Vec<ComponentInfo>,
+    pub service_store_ident: Ident,
+    pub service_struct_ident: Ident,
+    pub service_mod_ident: Ident,
+}
 
 impl ServiceHandler {
+    pub fn new(
+        service: impl Into<Ident>,
+        components: Vec<Ident>,
+        flow_handlers: Vec<FlowHandler>,
+        flow_context: ir1::ctx::Flows,
+    ) -> Self {
+        let service = service.into();
+        let components_info = components
+            .iter()
+            .map(|ty_ident| ComponentInfo::new(ty_ident.clone()))
+            .collect();
+        let service_store_ident = service.to_service_store_ty();
+        let service_struct_ident = service.to_service_state_ty();
+        let service_mod_ident = service.to_service_mod();
+        Self {
+            service_ident: service,
+            flow_handlers,
+            flow_context,
+            components_info,
+            service_store_ident,
+            service_struct_ident,
+            service_mod_ident,
+        }
+    }
+
     /// Transform [ir2] run-loop into an async function performing a loop over events.
     pub fn into_syn(self, stats: &mut StatsMut) -> syn::Item {
         // result
-        let mut items = self.flows_context.into_syn().collect::<Vec<_>>();
+        let mut items = self.flow_context.into_syn().collect::<Vec<_>>();
 
         // store all inputs in a service_store
         let stitem = stats.start(format!(
             "store inputs in `service_store` ({})",
-            self.flows_handling.len()
+            self.flow_handlers.len()
         ));
         let mut service_store_fields: Vec<syn::Field> = vec![];
         let mut service_store_is_some_s: Vec<syn::Expr> = vec![];
-        self.flows_handling.iter().for_each(
+        self.flow_handlers.iter().for_each(
             |FlowHandler { arriving_flow, .. }| match arriving_flow {
                 ArrivingFlow::Channel(flow_name, flow_type, _) => {
                     let ident = flow_name;
@@ -53,19 +92,16 @@ impl ServiceHandler {
             },
         );
         // service store
-        let service_store_name = format_ident!(
-            "{}",
-            to_camel_case(&format!("{}ServiceStore", self.service))
-        );
+        let service_store_ident = &self.service_store_ident;
         items.push(syn::Item::Struct(parse_quote! {
             #[derive(Default)]
-            pub struct #service_store_name {
+            pub struct #service_store_ident {
                 #(#service_store_fields),*
             }
         }));
         // tells is the service_store is not empty
         items.push(syn::Item::Impl(parse_quote! {
-            impl #service_store_name {
+            impl #service_store_ident {
                 pub fn not_empty(&self) -> bool {
                     #(#service_store_is_some_s)||*
                 }
@@ -78,7 +114,7 @@ impl ServiceHandler {
         let mut service_fields: Vec<syn::Field> = vec![
             parse_quote! { context: Context },
             parse_quote! { delayed: bool },
-            parse_quote! { input_store: #service_store_name },
+            parse_quote! { input_store: #service_store_ident },
         ];
         let mut field_values: Vec<syn::FieldValue> = vec![
             parse_quote! { context },
@@ -86,22 +122,25 @@ impl ServiceHandler {
             parse_quote! { input_store },
         ];
         // with components states
-        self.components.iter().for_each(|component_name| {
-            let component_state_struct =
-                format_ident!("{}", to_camel_case(&format!("{}State", component_name)));
-            let component_name = format_ident!("{}", component_name);
-            service_fields.push(parse_quote! {
-                #component_name: #component_state_struct
-            });
-            field_values.push(parse_quote! { #component_name });
-        });
+        self.components_info.iter().for_each(
+            |ComponentInfo {
+                 state_ty_ident,
+                 field_ident,
+                 ..
+             }| {
+                service_fields.push(parse_quote! {
+                    #field_ident: #state_ty_ident
+                });
+                field_values.push(parse_quote! { #field_ident });
+            },
+        );
         // and sending channels
         service_fields.push(parse_quote! { output: futures::channel::mpsc::Sender<O> });
         service_fields
             .push(parse_quote! { timer: futures::channel::mpsc::Sender<(T, std::time::Instant)> });
         field_values.push(parse_quote! { output });
         field_values.push(parse_quote! { timer });
-        let service_name = format_ident!("{}", to_camel_case(&format!("{}Service", self.service)));
+        let service_name = &self.service_struct_ident;
         items.push(syn::Item::Struct(parse_quote! {
             pub struct #service_name {
                 #(#service_fields),*
@@ -114,15 +153,18 @@ impl ServiceHandler {
 
         // create components states
         let stitem = stats.start("component states");
-        let components_states = self.components.into_iter().map(|component_name| {
-            let component_state_struct =
-                format_ident!("{}", to_camel_case(&format!("{}State", component_name)));
-            let component_name = format_ident!("{}", component_name);
-            let state: syn::Stmt = parse_quote! {
-                let #component_name = #component_state_struct::init();
-            };
-            state
-        });
+        let components_states = self.components_info.into_iter().map(
+            |ComponentInfo {
+                 state_ty_ident,
+                 field_ident,
+                 ..
+             }| {
+                let state: syn::Stmt = parse_quote! {
+                    let #field_ident = #state_ty_ident::init();
+                };
+                state
+            },
+        );
         stats.augment_end(stitem);
 
         // `init` function
@@ -145,82 +187,87 @@ impl ServiceHandler {
 
         // flows handler functions
         stats.timed_with(
-            format!("flow handler functions ({})", self.flows_handling.len()),
+            format!("flow handler functions ({})", self.flow_handlers.len()),
             |mut stats| {
-                self.flows_handling.into_iter().for_each(
+                self.flow_handlers.into_iter().for_each(
                     |FlowHandler {
                          arriving_flow,
                          instruction,
                          ..
                      }| {
-                        let stmts = stats.timed_with(
-                            format!("instruction to syn ({})", arriving_flow.ident()),
-                            |stats| instruction.into_syn2(stats),
-                        );
+                        // let stmts = stats.timed_with(
+                        //     format!("instruction to syn ({})", arriving_flow.ident()),
+                        //     |stats| instruction.into_syn2(stats),
+                        // );
+                        let stmts = instruction.into_syn2(stats.as_mut());
                         match arriving_flow {
                             ArrivingFlow::Channel(flow_name, flow_type, _) => {
-                                let instant = format_ident!("{flow_name}_instant");
-                                let function_name: Ident = format_ident!("handle_{flow_name}");
+                                let instant = flow_name.to_instant_var();
+                                let function_name: Ident = flow_name.to_handle_fn();
                                 let ty = flow_type.into_syn();
                                 let message = syn::LitStr::new(
-                                    format!("{flow_name} changes too frequently").as_str(),
+                                    format!("flow `{flow_name}` changes too frequently").as_str(),
                                     Span::call_site(),
                                 );
                                 impl_items.push(parse_quote! {
-pub async fn #function_name(
-    &mut self, #instant: std::time::Instant, #flow_name: #ty
-) -> Result<(), futures::channel::mpsc::SendError> {
-    if self.delayed {
-        // reset time constraints
-        self.reset_time_constraints(#instant).await?;
-        // reset all signals' update
-        self.context.reset();
-        // propagate changes
-        #(#stmts)*
-    } else {
-        // store in input_store
-        let unique =
-            self.input_store.#flow_name.replace((#flow_name, #instant));
-        assert!(unique.is_none(), #message);
-    }
-    Ok(())
-}
+                                    pub async fn #function_name(
+                                        &mut self, #instant: std::time::Instant, #flow_name: #ty
+                                    ) -> Result<(), futures::channel::mpsc::SendError> {
+                                        if self.delayed {
+                                            // reset time constraints
+                                            self.reset_time_constraints(#instant).await?;
+                                            // reset all signals' update
+                                            self.context.reset();
+                                            // propagate changes
+                                            #(#stmts)*
+                                        } else {
+                                            // store in input_store
+                                            let unique =
+                                                self.input_store.#flow_name
+                                                    .replace((#flow_name, #instant));
+                                            assert!(unique.is_none(), #message);
+                                        }
+                                        Ok(())
+                                    }
                                 })
                             }
                             ArrivingFlow::Period(time_flow_name)
                             | ArrivingFlow::Deadline(time_flow_name) => {
-                                let instant = format_ident!("{time_flow_name}_instant");
-                                let function_name: Ident = format_ident!("handle_{time_flow_name}");
+                                let instant = time_flow_name.to_instant_var();
+                                let function_name: Ident = time_flow_name.to_handle_fn();
                                 let message = syn::LitStr::new(
-                                    format!("{time_flow_name} changes too frequently").as_str(),
+                                    format!("flow `{time_flow_name}` changes too frequently")
+                                        .as_str(),
                                     Span::call_site(),
                                 );
                                 impl_items.push(parse_quote! {
-pub async fn #function_name(
-    &mut self,  #instant: std::time::Instant
-) -> Result<(), futures::channel::mpsc::SendError> {
-    if self.delayed {
-        // reset time constraints
-        self.reset_time_constraints(#instant).await?;
-        // reset all signals' update
-        self.context.reset();
-        // propagate changes
-    #(#stmts)*
-    } else {
-        // store in input_store
-        let unique =
-            self.input_store.#time_flow_name.replace(((), #instant));
-        assert!(unique.is_none(), #message);
-    }
-    Ok(())
-}
+                                    pub async fn #function_name(
+                                        &mut self,  #instant: std::time::Instant
+                                    ) -> Result<(), futures::channel::mpsc::SendError> {
+                                        if self.delayed {
+                                            // reset time constraints
+                                            self.reset_time_constraints(#instant).await?;
+                                            // reset all signals' update
+                                            self.context.reset();
+                                            // propagate changes
+                                        #(#stmts)*
+                                        } else {
+                                            // store in input_store
+                                            let unique =
+                                                self.input_store.#time_flow_name
+                                                    .replace(((), #instant));
+                                            assert!(unique.is_none(), #message);
+                                        }
+                                        Ok(())
+                                    }
                                 })
                             }
                             ArrivingFlow::ServiceDelay(service_delay) => {
-                                let function_name: Ident = format_ident!("handle_{service_delay}");
+                                let instant = Ident::instant_var();
+                                let function_name = service_delay.to_handle_fn();
                                 impl_items.push(parse_quote! {
                                     pub async fn #function_name(
-                                        &mut self, instant: std::time::Instant
+                                        &mut self, #instant: std::time::Instant
                                     ) -> Result<(), futures::channel::mpsc::SendError> {
                                         // reset all signals' update
                                         self.context.reset();
@@ -229,24 +276,20 @@ pub async fn #function_name(
                                         Ok(())
                                     }
                                 });
-                                let enum_ident = Ident::new(
-                                    &to_camel_case(service_delay.to_string()),
-                                    service_delay.span(),
-                                );
+                                let enum_ident = service_delay.to_ty();
                                 impl_items.push(parse_quote! {
                                     #[inline]
                                     pub async fn reset_service_delay(
-                                        &mut self, instant: std::time::Instant
+                                        &mut self, #instant: std::time::Instant
                                     ) -> Result<(), futures::channel::mpsc::SendError> {
-                                        self.timer.send((T::#enum_ident, instant)).await?;
+                                        self.timer.send((T::#enum_ident, #instant)).await?;
                                         Ok(())
                                     }
                                 })
                             }
                             ArrivingFlow::ServiceTimeout(service_timeout) => {
-                                let instant = format_ident!("{service_timeout}_instant");
-                                let function_name: Ident =
-                                    format_ident!("handle_{service_timeout}");
+                                let instant = service_timeout.to_instant_var();
+                                let function_name = service_timeout.to_handle_fn();
                                 impl_items.push(parse_quote! {
                                     pub async fn #function_name(
                                         &mut self, #instant: std::time::Instant
@@ -260,16 +303,13 @@ pub async fn #function_name(
                                         Ok(())
                                     }
                                 });
-                                let enum_ident = Ident::new(
-                                    &to_camel_case(service_timeout.to_string()),
-                                    service_timeout.span(),
-                                );
+                                let enum_ident = service_timeout.to_ty();
                                 impl_items.push(parse_quote! {
                                     #[inline]
                                     pub async fn reset_service_timeout(
-                                        &mut self, instant: std::time::Instant
+                                        &mut self, #instant: std::time::Instant
                                     ) -> Result<(), futures::channel::mpsc::SendError> {
-                                        self.timer.send((T::#enum_ident, instant)).await?;
+                                        self.timer.send((T::#enum_ident, #instant)).await?;
                                         Ok(())
                                     }
                                 })
@@ -313,7 +353,7 @@ pub async fn #function_name(
         stats.augment_end(stitem);
 
         // service module
-        let module_name = format_ident!("{}_service", self.service);
+        let module_name = &self.service_mod_ident;
         syn::Item::Mod(parse_quote! {
            pub mod #module_name {
                 use futures::{stream::StreamExt, sink::SinkExt};
@@ -370,11 +410,11 @@ impl FlowInstruction {
                 parse_quote! { let #ident = #expression; }
             }
             FlowInstruction::InitEvent(ident) => {
-                let ident = format_ident!("{}_ref", ident);
+                let ident = ident.to_ref_var();
                 parse_quote! { let #ident = &mut None; }
             }
             FlowInstruction::UpdateEvent(ident, expr) => {
-                let ident = format_ident!("{}_ref", ident);
+                let ident = ident.to_ref_var();
                 let expression = expr.into_syn();
                 parse_quote! { *#ident = #expression; }
             }
@@ -383,23 +423,23 @@ impl FlowInstruction {
                 parse_quote! { self.context.#ident.set(#expression); }
             }
             FlowInstruction::SendSignal(name, send_expr, instant) => {
-                let enum_ident = Ident::new(&to_camel_case(name.to_string()), name.span());
+                let enum_ident = name.to_ty();
                 let send_expr = send_expr.into_syn();
                 let instant = if let Some(instant) = instant {
-                    format_ident!("{instant}_instant")
+                    instant.to_instant_var()
                 } else {
-                    Ident::new("instant", Span::call_site())
+                    Ident::instant_var()
                 };
                 parse_quote! { self.send_output(O::#enum_ident(#send_expr, #instant)).await?; }
             }
             FlowInstruction::SendEvent(name, event_expr, send_expr, instant) => {
-                let enum_ident = Ident::new(&to_camel_case(name.to_string()), name.span());
+                let enum_ident = name.to_ty();
                 let event_expr = event_expr.into_syn();
                 let send_expr = send_expr.into_syn();
                 let instant = if let Some(instant) = instant {
-                    format_ident!("{instant}_instant")
+                    instant.to_instant_var()
                 } else {
-                    Ident::new("instant", Span::call_site())
+                    Ident::instant_var()
                 };
                 parse_quote! {
                     if let Some(#name) = #event_expr {
@@ -432,9 +472,8 @@ impl FlowInstruction {
                 }
             }
             FlowInstruction::ResetTimer(timer_name, import_name) => {
-                let enum_ident =
-                    Ident::new(&to_camel_case(timer_name.to_string()), timer_name.span());
-                let instant = format_ident!("{import_name}_instant");
+                let enum_ident = timer_name.to_ty();
+                let instant = import_name.to_instant_var();
                 parse_quote! { self.send_timer(T::#enum_ident, #instant).await?; }
             }
             FlowInstruction::ComponentCall(
@@ -444,11 +483,8 @@ impl FlowInstruction {
                 events_fields,
             ) => {
                 let outputs = pattern.into_syn();
-                let component_ident = component_name;
-                let component_input_name = Ident::new(
-                    &to_camel_case(format!("{}Input", component_ident.to_string())),
-                    component_ident.span(),
-                );
+                let component_ident = component_name.to_field();
+                let component_input_name = component_ident.to_input_ty();
 
                 let input_fields = signals_fields
                     .into_iter()
@@ -461,7 +497,7 @@ impl FlowInstruction {
                     .chain(events_fields.into_iter().map(|(field_name, opt_event)| {
                         let field_id = field_name;
                         if let Some(event_name) = opt_event {
-                            let event_id = format_ident!("{event_name}_ref");
+                            let event_id = event_name.to_ref_var();
                             parse_quote! { #field_id : *#event_id }
                         } else {
                             parse_quote! { #field_id : None }
@@ -484,9 +520,10 @@ impl FlowInstruction {
                 let arms = match_arms
                     .into_iter()
                     .map(|arm| arm.into_syn(stats.as_mut()));
+                let instant = Ident::instant_var();
                 parse_quote! {
                     if self.input_store.not_empty() {
-                        self.reset_time_constraints(instant).await?;
+                        self.reset_time_constraints(#instant).await?;
                         match (#(#input_flows),*) {
                             #(#arms)*
                         }
@@ -499,7 +536,7 @@ impl FlowInstruction {
                 let activation_cond = events
                     .iter()
                     .map(|e| -> syn::Expr {
-                        let ident = format_ident!("{e}_ref");
+                        let ident = e.to_ref_var();
                         parse_quote! { #ident.is_some() }
                     })
                     .chain(signals.iter().map(|s| -> syn::Expr {
@@ -516,7 +553,7 @@ impl FlowInstruction {
                 } else {
                     if let Some(instr) = els {
                         let els_instrs = stats
-                            .timed_with("els in if activated", |stats| instr.into_syn_old(stats));
+                            .timed_with("else in if activated", |stats| instr.into_syn_old(stats));
                         parse_quote! {
                             if #(#activation_cond)||* {
                                 #(#then_instrs)*
@@ -575,11 +612,11 @@ impl FlowInstruction {
                 parse_quote! { let #ident = #expression; }
             }),
             FlowInstruction::InitEvent(ident) => stats.timed("init event", || {
-                let ident = format_ident!("{}_ref", ident);
+                let ident = ident.to_ref_var();
                 parse_quote! { let #ident = &mut None; }
             }),
             FlowInstruction::UpdateEvent(ident, expr) => stats.timed("update event", || {
-                let ident = format_ident!("{}_ref", ident);
+                let ident = ident.to_ref_var();
                 let expression = expr.into_syn();
                 parse_quote! { *#ident = #expression; }
             }),
@@ -594,9 +631,9 @@ impl FlowInstruction {
                     let enum_ident = Ident::new(&to_camel_case(name.to_string()), name.span());
                     let send_expr = send_expr.into_syn();
                     let instant = if let Some(instant) = instant {
-                        format_ident!("{instant}_instant")
+                        instant.to_instant_var()
                     } else {
-                        Ident::new("instant", Span::call_site())
+                        Ident::instant_var()
                     };
                     parse_quote! { self.send_output(O::#enum_ident(#send_expr, #instant)).await?; }
                 })
@@ -607,9 +644,9 @@ impl FlowInstruction {
                     let event_expr = event_expr.into_syn();
                     let send_expr = send_expr.into_syn();
                     let instant = if let Some(instant) = instant {
-                        format_ident!("{instant}_instant")
+                        instant.to_instant_var()
                     } else {
-                        Ident::new("instant", Span::call_site())
+                        Ident::instant_var()
                     };
                     parse_quote! {
                         if let Some(#name) = #event_expr {
@@ -647,9 +684,8 @@ impl FlowInstruction {
                 }
             }
             FlowInstruction::ResetTimer(timer_name, import_name) => {
-                let enum_ident =
-                    Ident::new(&to_camel_case(timer_name.to_string()), timer_name.span());
-                let instant = format_ident!("{import_name}_instant");
+                let enum_ident = timer_name.to_ty();
+                let instant = import_name.to_instant_var();
                 parse_quote! { self.send_timer(T::#enum_ident, #instant).await?; }
             }
             FlowInstruction::ComponentCall(
@@ -659,11 +695,8 @@ impl FlowInstruction {
                 events_fields,
             ) => {
                 let outputs = pattern.into_syn();
-                let component_ident = component_name;
-                let component_input_name = Ident::new(
-                    &to_camel_case(format!("{}Input", component_ident.to_string())),
-                    component_ident.span(),
-                );
+                let component_ident = component_name.to_field();
+                let component_input_name = component_ident.to_input_ty();
 
                 let input_fields = signals_fields
                     .into_iter()
@@ -676,7 +709,7 @@ impl FlowInstruction {
                     .chain(events_fields.into_iter().map(|(field_name, opt_event)| {
                         let field_id = field_name;
                         if let Some(event_name) = opt_event {
-                            let event_id = format_ident!("{event_name}_ref");
+                            let event_id = event_name.to_ref_var();
                             parse_quote! { #field_id : *#event_id }
                         } else {
                             parse_quote! { #field_id : None }
@@ -700,9 +733,10 @@ impl FlowInstruction {
                     let arms = match_arms
                         .into_iter()
                         .map(|arm| arm.into_syn(stats.as_mut()));
+                    let instant = Ident::instant_var();
                     parse_quote! {
                         if self.input_store.not_empty() {
-                            self.reset_time_constraints(instant).await?;
+                            self.reset_time_constraints(#instant).await?;
                             match (#(#input_flows),*) {
                                 #(#arms)*
                             }
@@ -718,7 +752,7 @@ impl FlowInstruction {
                     let activation_cond = events
                         .iter()
                         .map(|e| -> syn::Expr {
-                            let ident = format_ident!("{e}_ref");
+                            let ident = e.to_ref_var();
                             parse_quote! { #ident.is_some() }
                         })
                         .chain(signals.iter().map(|s| -> syn::Expr {
@@ -737,9 +771,9 @@ impl FlowInstruction {
                     } else {
                         if let Some(instr) = els {
                             let mut els_instrs = vec![];
-                            stats.augment_timed_with("els in if activated", |stats| {
-                                instr.into_syn_mut(&mut els_instrs, stats)
-                            });
+                            // stats.augment_timed_with("els in if activated", |stats| {
+                            instr.into_syn_mut(&mut els_instrs, stats.as_mut());
+                            // });
                             stats.augment_end(stitem);
                             parse_quote! {
                                 if #(#activation_cond)||* {
@@ -760,23 +794,23 @@ impl FlowInstruction {
                 }
             }
             FlowInstruction::Seq(instrs) => {
-                stats.augment_timed_with(
-                    format!("instruction in seq ({})", instrs.len()),
-                    |mut stats| {
-                        let mut stack = vec![instrs.into_iter()];
-                        while let Some(mut iter) = stack.pop() {
-                            if let Some(instr) = iter.next() {
-                                stack.push(iter);
-                                if let Self::Seq(subs) = instr {
-                                    stack.push(subs.into_iter());
-                                    continue;
-                                } else {
-                                    instr.into_syn_mut(vec, stats.as_mut())
-                                }
-                            }
+                // stats.augment_timed_with(
+                //     format!("instruction in seq ({})", instrs.len()),
+                //     |mut stats| {
+                let mut stack = vec![instrs.into_iter()];
+                while let Some(mut iter) = stack.pop() {
+                    if let Some(instr) = iter.next() {
+                        stack.push(iter);
+                        if let Self::Seq(subs) = instr {
+                            stack.push(subs.into_iter());
+                            continue;
+                        } else {
+                            instr.into_syn_mut(vec, stats.as_mut())
                         }
-                    },
-                );
+                    }
+                }
+                //     },
+                // );
                 return ();
             }
             FlowInstruction::Para(method_map) => {
@@ -976,7 +1010,7 @@ impl Expression {
         match self {
             Expression::Literal { literal } => literal.into_syn(),
             Expression::Event { identifier } => {
-                let identifier = format_ident!("{}_ref", identifier);
+                let identifier = identifier.to_ref_var();
                 parse_quote! { *#identifier }
             }
             Expression::Identifier { identifier } => {

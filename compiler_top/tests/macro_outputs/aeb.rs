@@ -97,10 +97,10 @@ pub mod runtime {
     impl RuntimeInput {
         pub fn get_instant(&self) -> std::time::Instant {
             match self {
-                I::PedestrianL(_, instant) => *instant,
-                I::PedestrianR(_, instant) => *instant,
-                I::SpeedKmH(_, instant) => *instant,
-                I::Timer(_, instant) => *instant,
+                I::PedestrianL(_, _grust_reserved_instant) => *_grust_reserved_instant,
+                I::PedestrianR(_, _grust_reserved_instant) => *_grust_reserved_instant,
+                I::SpeedKmH(_, _grust_reserved_instant) => *_grust_reserved_instant,
+                I::Timer(_, _grust_reserved_instant) => *_grust_reserved_instant,
             }
         }
         pub fn order(v1: &Self, v2: &Self) -> std::cmp::Ordering {
@@ -133,43 +133,54 @@ pub mod runtime {
         }
         pub async fn run_loop(
             self,
-            init_instant: std::time::Instant,
+            _grust_reserved_init_instant: std::time::Instant,
             input: impl futures::Stream<Item = I>,
         ) -> Result<(), futures::channel::mpsc::SendError> {
             futures::pin_mut!(input);
             let mut runtime = self;
             runtime
-                .send_timer(T::TimeoutTimeoutPedestrian, init_instant)
+                .send_timer(T::TimeoutTimeoutPedestrian, _grust_reserved_init_instant)
                 .await?;
-            runtime.send_timer(T::TimeoutAeb, init_instant).await?;
+            runtime
+                .send_timer(T::TimeoutAeb, _grust_reserved_init_instant)
+                .await?;
             while let Some(input) = input.next().await {
                 match input {
-                    I::PedestrianL(pedestrian_l, instant) => {
+                    I::PedestrianL(pedestrian_l, _grust_reserved_instant) => {
                         runtime
                             .aeb
-                            .handle_pedestrian_l(instant, pedestrian_l)
+                            .handle_pedestrian_l(_grust_reserved_instant, pedestrian_l)
                             .await?;
                     }
-                    I::PedestrianR(pedestrian_r, instant) => {
+                    I::PedestrianR(pedestrian_r, _grust_reserved_instant) => {
                         runtime
                             .aeb
-                            .handle_pedestrian_r(instant, pedestrian_r)
+                            .handle_pedestrian_r(_grust_reserved_instant, pedestrian_r)
                             .await?;
                     }
-                    I::Timer(T::TimeoutTimeoutPedestrian, instant) => {
+                    I::Timer(T::TimeoutTimeoutPedestrian, _grust_reserved_instant) => {
                         runtime
                             .aeb
-                            .handle_timeout_timeout_pedestrian(instant)
+                            .handle_timeout_timeout_pedestrian(_grust_reserved_instant)
                             .await?;
                     }
-                    I::Timer(T::DelayAeb, instant) => {
-                        runtime.aeb.handle_delay_aeb(instant).await?;
+                    I::Timer(T::DelayAeb, _grust_reserved_instant) => {
+                        runtime
+                            .aeb
+                            .handle_delay_aeb(_grust_reserved_instant)
+                            .await?;
                     }
-                    I::Timer(T::TimeoutAeb, instant) => {
-                        runtime.aeb.handle_timeout_aeb(instant).await?;
+                    I::Timer(T::TimeoutAeb, _grust_reserved_instant) => {
+                        runtime
+                            .aeb
+                            .handle_timeout_aeb(_grust_reserved_instant)
+                            .await?;
                     }
-                    I::SpeedKmH(speed_km_h, instant) => {
-                        runtime.aeb.handle_speed_km_h(instant, speed_km_h).await?;
+                    I::SpeedKmH(speed_km_h, _grust_reserved_instant) => {
+                        runtime
+                            .aeb
+                            .handle_speed_km_h(_grust_reserved_instant, speed_km_h)
+                            .await?;
                     }
                 }
             }
@@ -299,17 +310,20 @@ pub mod runtime {
                         .input_store
                         .pedestrian_l
                         .replace((pedestrian_l, pedestrian_l_instant));
-                    assert!(unique.is_none(), "pedestrian_l changes too frequently");
+                    assert!(
+                        unique.is_none(),
+                        "flow `pedestrian_l` changes too frequently"
+                    );
                 }
                 Ok(())
             }
             pub async fn handle_delay_aeb(
                 &mut self,
-                instant: std::time::Instant,
+                _grust_reserved_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.context.reset();
                 if self.input_store.not_empty() {
-                    self.reset_time_constraints(instant).await?;
+                    self.reset_time_constraints(_grust_reserved_instant).await?;
                     match (
                         self.input_store.pedestrian_l.take(),
                         self.input_store.pedestrian_r.take(),
@@ -334,8 +348,11 @@ pub mod runtime {
                                 timeout_pedestrian: None,
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
+                            self.send_output(O::Brakes(
+                                self.context.brakes.get(),
+                                _grust_reserved_instant,
+                            ))
+                            .await?;
                         }
                         (None, Some((pedestrian_r, pedestrian_r_instant)), None, None) => {
                             let pedestrian_r_ref = &mut None;
@@ -354,8 +371,11 @@ pub mod runtime {
                                 timeout_pedestrian: None,
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
+                            self.send_output(O::Brakes(
+                                self.context.brakes.get(),
+                                _grust_reserved_instant,
+                            ))
+                            .await?;
                         }
                         (
                             Some((pedestrian_l, pedestrian_l_instant)),
@@ -385,8 +405,11 @@ pub mod runtime {
                                 timeout_pedestrian: None,
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
+                            self.send_output(O::Brakes(
+                                self.context.brakes.get(),
+                                _grust_reserved_instant,
+                            ))
+                            .await?;
                         }
                         (None, None, Some((speed_km_h, speed_km_h_instant)), None) => {
                             self.context.speed_km_h.set(speed_km_h);
@@ -414,8 +437,11 @@ pub mod runtime {
                                 timeout_pedestrian: None,
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
+                            self.send_output(O::Brakes(
+                                self.context.brakes.get(),
+                                _grust_reserved_instant,
+                            ))
+                            .await?;
                         }
                         (
                             None,
@@ -440,8 +466,11 @@ pub mod runtime {
                                 timeout_pedestrian: None,
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
+                            self.send_output(O::Brakes(
+                                self.context.brakes.get(),
+                                _grust_reserved_instant,
+                            ))
+                            .await?;
                         }
                         (
                             Some((pedestrian_l, pedestrian_l_instant)),
@@ -472,8 +501,11 @@ pub mod runtime {
                                 timeout_pedestrian: None,
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
+                            self.send_output(O::Brakes(
+                                self.context.brakes.get(),
+                                _grust_reserved_instant,
+                            ))
+                            .await?;
                         }
                         (None, None, None, Some(((), timeout_timeout_pedestrian_instant))) => {
                             let timeout_pedestrian_ref = &mut None;
@@ -489,8 +521,11 @@ pub mod runtime {
                                 timeout_pedestrian: *timeout_pedestrian_ref,
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
+                            self.send_output(O::Brakes(
+                                self.context.brakes.get(),
+                                _grust_reserved_instant,
+                            ))
+                            .await?;
                         }
                         (
                             Some((pedestrian_l, pedestrian_l_instant)),
@@ -519,8 +554,11 @@ pub mod runtime {
                                 timeout_pedestrian: *timeout_pedestrian_ref,
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
+                            self.send_output(O::Brakes(
+                                self.context.brakes.get(),
+                                _grust_reserved_instant,
+                            ))
+                            .await?;
                         }
                         (
                             None,
@@ -549,8 +587,11 @@ pub mod runtime {
                                 timeout_pedestrian: *timeout_pedestrian_ref,
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
+                            self.send_output(O::Brakes(
+                                self.context.brakes.get(),
+                                _grust_reserved_instant,
+                            ))
+                            .await?;
                         }
                         (
                             Some((pedestrian_l, pedestrian_l_instant)),
@@ -585,8 +626,11 @@ pub mod runtime {
                                 timeout_pedestrian: *timeout_pedestrian_ref,
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
+                            self.send_output(O::Brakes(
+                                self.context.brakes.get(),
+                                _grust_reserved_instant,
+                            ))
+                            .await?;
                         }
                         (
                             None,
@@ -608,8 +652,11 @@ pub mod runtime {
                                 timeout_pedestrian: *timeout_pedestrian_ref,
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
+                            self.send_output(O::Brakes(
+                                self.context.brakes.get(),
+                                _grust_reserved_instant,
+                            ))
+                            .await?;
                         }
                         (
                             Some((pedestrian_l, pedestrian_l_instant)),
@@ -639,8 +686,11 @@ pub mod runtime {
                                 timeout_pedestrian: *timeout_pedestrian_ref,
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
+                            self.send_output(O::Brakes(
+                                self.context.brakes.get(),
+                                _grust_reserved_instant,
+                            ))
+                            .await?;
                         }
                         (
                             None,
@@ -670,8 +720,11 @@ pub mod runtime {
                                 timeout_pedestrian: *timeout_pedestrian_ref,
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
+                            self.send_output(O::Brakes(
+                                self.context.brakes.get(),
+                                _grust_reserved_instant,
+                            ))
+                            .await?;
                         }
                         (
                             Some((pedestrian_l, pedestrian_l_instant)),
@@ -707,8 +760,11 @@ pub mod runtime {
                                 timeout_pedestrian: *timeout_pedestrian_ref,
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(self.context.brakes.get(), instant))
-                                .await?;
+                            self.send_output(O::Brakes(
+                                self.context.brakes.get(),
+                                _grust_reserved_instant,
+                            ))
+                            .await?;
                         }
                     }
                 } else {
@@ -719,9 +775,11 @@ pub mod runtime {
             #[inline]
             pub async fn reset_service_delay(
                 &mut self,
-                instant: std::time::Instant,
+                _grust_reserved_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.timer.send((T::DelayAeb, instant)).await?;
+                self.timer
+                    .send((T::DelayAeb, _grust_reserved_instant))
+                    .await?;
                 Ok(())
             }
             pub async fn handle_pedestrian_r(
@@ -755,7 +813,10 @@ pub mod runtime {
                         .input_store
                         .pedestrian_r
                         .replace((pedestrian_r, pedestrian_r_instant));
-                    assert!(unique.is_none(), "pedestrian_r changes too frequently");
+                    assert!(
+                        unique.is_none(),
+                        "flow `pedestrian_r` changes too frequently"
+                    );
                 }
                 Ok(())
             }
@@ -778,9 +839,11 @@ pub mod runtime {
             #[inline]
             pub async fn reset_service_timeout(
                 &mut self,
-                instant: std::time::Instant,
+                timeout_aeb_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.timer.send((T::TimeoutAeb, instant)).await?;
+                self.timer
+                    .send((T::TimeoutAeb, timeout_aeb_instant))
+                    .await?;
                 Ok(())
             }
             pub async fn handle_speed_km_h(
@@ -797,7 +860,7 @@ pub mod runtime {
                         .input_store
                         .speed_km_h
                         .replace((speed_km_h, speed_km_h_instant));
-                    assert!(unique.is_none(), "speed_km_h changes too frequently");
+                    assert!(unique.is_none(), "flow `speed_km_h` changes too frequently");
                 }
                 Ok(())
             }
@@ -834,7 +897,7 @@ pub mod runtime {
                         .replace(((), timeout_timeout_pedestrian_instant));
                     assert!(
                         unique.is_none(),
-                        "timeout_timeout_pedestrian changes too frequently"
+                        "flow `timeout_timeout_pedestrian` changes too frequently"
                     );
                 }
                 Ok(())

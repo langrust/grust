@@ -28,13 +28,13 @@ impl Ir1IntoIr2<&mut Ctx> for Interface {
         let mut input_handlers = HashMap::new();
         services_handlers.iter().for_each(|service_handler| {
             service_handler
-                .flows_handling
+                .flow_handlers
                 .iter()
                 .for_each(|flow_handler| {
                     input_handlers
                         .entry(&flow_handler.arriving_flow)
                         .or_insert_with(|| vec![])
-                        .push(service_handler.service.clone())
+                        .push(service_handler.service_ident.clone())
                 })
         });
         let input_flows = self
@@ -175,10 +175,7 @@ mod service_handler {
                 .map(|(stmt_id, import_id)| {
                     if imports.contains(stmt_id) {
                         let flow_name = ctx0.get_name(*import_id);
-                        let instant = Ident::new(
-                            &format!("{}_instant", flow_name.to_string()),
-                            flow_name.span(),
-                        );
+                        let instant = flow_name.to_instant_var();
                         if ctx0.is_timer(*import_id) {
                             Pattern::some(Pattern::tuple(vec![
                                 Pattern::literal(Constant::unit(Default::default())),
@@ -278,19 +275,14 @@ mod service_handler {
         // get service's name
         let service = ctx.service_name().clone();
         // create flow handlers according to propagations of every incoming flows
-        let flows_handling: Vec<_> = ctx
+        let flow_handlers: Vec<_> = ctx
             .service_imports()
             .map(|(stmt_id, import_id)| flow_handler(&mut ctx, stmt_id, import_id))
             .collect();
         // destroy 'ctx'
         let (flows_context, components) = ctx.destroy();
 
-        ServiceHandler {
-            service,
-            components,
-            flows_handling,
-            flows_context,
-        }
+        ServiceHandler::new(service, components, flow_handlers, flows_context)
     }
 }
 
