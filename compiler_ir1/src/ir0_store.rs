@@ -209,22 +209,34 @@ pub trait Ir0StoreSignals {
         errors: &mut Vec<Error>,
     ) -> TRes<()>;
 
-    /// Collects the identifiers of the equation from the symbol table.
-    ///
-    /// # Example
-    ///
-    /// ```grust
-    /// match e {
-    ///     pat1 => { let a: int = e_a; let b: float = e_b; },
-    ///     pat2 => { let (a: int, b: float) = e_ab; },
-    /// }
-    /// ```
-    ///
-    /// If the symbol table contains [ a -> id_a ] and [ b -> id_b ], with the above equations,
-    /// the algorithm insert in the `signals` map [ a -> id_a ] and [ b -> id_b ].
+    /// Collects the identifiers of the equation.
     fn get_signals(
         &self,
         signals: &mut HashMap<Ident, ir0::stmt::Pattern>,
+        symbol_table: &Ctx,
+        errors: &mut Vec<Error>,
+    ) -> TRes<()>;
+
+    /// Collects the initializations.
+    fn get_inits(
+        &self,
+        inits: &mut HashMap<Ident, ir0::stmt::Pattern>,
+        symbol_table: &Ctx,
+        errors: &mut Vec<Error>,
+    ) -> TRes<()>;
+}
+
+pub trait Ir0StoreInit: Sized {
+    fn store_inits(
+        &self,
+        inits: &mut HashMap<Ident, usize>,
+        symbol_table: &mut Ctx,
+        errors: &mut Vec<Error>,
+    ) -> TRes<()>;
+
+    fn get_inits(
+        &self,
+        inits: &mut HashMap<Ident, ir0::stmt::Pattern>,
         symbol_table: &Ctx,
         errors: &mut Vec<Error>,
     ) -> TRes<()>;
@@ -287,6 +299,43 @@ mod equation {
                 }
             }
         }
+
+        fn get_inits(
+            &self,
+            _inits: &mut HashMap<Ident, ir0::stmt::Pattern>,
+            _symbol_table: &Ctx,
+            _errors: &mut Vec<Error>,
+        ) -> TRes<()> {
+            Ok(())
+        }
+    }
+
+    impl Ir0StoreInit for InitArmWhen {
+        fn store_inits(
+            &self,
+            inits: &mut HashMap<Ident, usize>,
+            symbol_table: &mut Ctx,
+            errors: &mut Vec<Error>,
+        ) -> TRes<()> {
+            for init in &self.equations {
+                let idents = init.pattern.store_inits(symbol_table, errors)?;
+                inits.extend(idents);
+            }
+            Ok(())
+        }
+
+        fn get_inits(
+            &self,
+            inits: &mut HashMap<Ident, ir0::stmt::Pattern>,
+            symbol_table: &Ctx,
+            errors: &mut Vec<Error>,
+        ) -> TRes<()> {
+            for init in &self.equations {
+                let idents = init.pattern.get_signals(symbol_table, errors)?;
+                inits.extend(idents);
+            }
+            Ok(())
+        }
     }
 
     impl Ir0StoreSignals for ReactEq {
@@ -300,7 +349,7 @@ mod equation {
             match self {
                 ReactEq::Init(init) => init
                     .pattern
-                    .store_init(symbol_table, errors)
+                    .store_inits(symbol_table, errors)
                     .map(|idents| signals.extend(idents)),
                 // output definitions should be stored
                 ReactEq::OutputDef(instantiation) if store_outputs => instantiation
@@ -320,7 +369,12 @@ mod equation {
                     }
                     Ok(())
                 }
-                ReactEq::MatchWhen(MatchWhen { arms, .. }) => {
+                ReactEq::MatchWhen(MatchWhen { init, arms, .. }) => {
+                    // store initializations
+                    if let Some(init) = init {
+                        init.store_inits(signals, symbol_table, errors)?;
+                    }
+
                     // we want to collect every identifier, but events might be declared in only one
                     // branch then, it is needed to explore all branches
                     let mut when_signals = HashMap::new();
@@ -393,6 +447,29 @@ mod equation {
                     }
                     Ok(())
                 }
+                ReactEq::Init(_) => Ok(()),
+            }
+        }
+
+        fn get_inits(
+            &self,
+            inits: &mut HashMap<Ident, ir0::stmt::Pattern>,
+            symbol_table: &Ctx,
+            errors: &mut Vec<Error>,
+        ) -> TRes<()> {
+            match self {
+                ReactEq::OutputDef(_) | ReactEq::LocalDef(_) | ReactEq::Match(_) => Ok(()),
+                ReactEq::MatchWhen(MatchWhen { init, .. }) => {
+                    if let Some(init) = init {
+                        init.get_inits(inits, symbol_table, errors)
+                    } else {
+                        Ok(())
+                    }
+                }
+                ReactEq::Init(init) => init
+                    .pattern
+                    .get_signals(symbol_table, errors)
+                    .map(|idents| inits.extend(idents)),
             }
         }
     }
@@ -547,7 +624,7 @@ pub trait Ir0StoreStmtPattern: Sized {
         errors: &mut Vec<Error>,
     ) -> TRes<Vec<(Ident, usize)>>;
 
-    fn store_init(
+    fn store_inits(
         &self,
         symbol_table: &mut Ctx,
         errors: &mut Vec<Error>,
@@ -620,7 +697,7 @@ mod stmt_pattern {
             }
         }
 
-        fn store_init(
+        fn store_inits(
             &self,
             symbol_table: &mut Ctx,
             errors: &mut Vec<Error>,
@@ -646,7 +723,7 @@ mod stmt_pattern {
                 }
                 Pattern::Tuple(Tuple { elements, .. }) => Ok(elements
                     .iter()
-                    .map(|pattern| pattern.store_init(symbol_table, errors))
+                    .map(|pattern| pattern.store_inits(symbol_table, errors))
                     .collect::<TRes<Vec<_>>>()?
                     .into_iter()
                     .flatten()
