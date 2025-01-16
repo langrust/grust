@@ -22,6 +22,8 @@ mod mk_new_def;
 mod constant;
 mod convert_case;
 mod err;
+mod ext;
+mod stats;
 // mod error;
 pub mod check;
 mod hash_map;

@@ -741,11 +741,11 @@ pub mod runtime {
             }
             pub async fn handle_kickdown(
                 &mut self,
-                kickdown_instant: std::time::Instant,
+                _kickdown_instant: std::time::Instant,
                 kickdown: Kickdown,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constraints(kickdown_instant).await?;
+                    self.reset_time_constraints(_kickdown_instant).await?;
                     self.context.reset();
                     let kickdown_ref = &mut None;
                     *kickdown_ref = Some(kickdown);
@@ -767,7 +767,7 @@ pub mod runtime {
                     let unique = self
                         .input_store
                         .kickdown
-                        .replace((kickdown, kickdown_instant));
+                        .replace((kickdown, _kickdown_instant));
                     assert!(unique.is_none(), "flow `kickdown` changes too frequently");
                 }
                 Ok(())
@@ -792,7 +792,7 @@ pub mod runtime {
                     ) {
                         (None, None, None, None, None, None, None, None, None) => {}
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
@@ -821,7 +821,7 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
@@ -850,8 +850,8 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
@@ -898,7 +898,7 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
@@ -924,9 +924,9 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
@@ -955,8 +955,8 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
@@ -1000,9 +1000,9 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
@@ -1051,7 +1051,7 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
@@ -1061,10 +1061,10 @@ pub mod runtime {
                             self.context.speed.set(speed);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
@@ -1091,9 +1091,9 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
@@ -1121,10 +1121,10 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
@@ -1170,8 +1170,8 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
@@ -1197,10 +1197,10 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
@@ -1229,9 +1229,9 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
@@ -1275,10 +1275,10 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
@@ -1328,13 +1328,13 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
                             None,
                         ) => {
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
@@ -1352,18 +1352,18 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
                             None,
                         ) => {
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -1383,17 +1383,17 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -1428,11 +1428,11 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
@@ -1440,7 +1440,7 @@ pub mod runtime {
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -1478,16 +1478,16 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
                             None,
                         ) => {
                             let failure_ref = &mut None;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -1506,11 +1506,11 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
@@ -1518,7 +1518,7 @@ pub mod runtime {
                         ) => {
                             let failure_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             *kickdown_ref = Some(kickdown);
@@ -1539,10 +1539,10 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
@@ -1550,7 +1550,7 @@ pub mod runtime {
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -1586,11 +1586,11 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
@@ -1599,7 +1599,7 @@ pub mod runtime {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -1639,14 +1639,14 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
                             None,
                         ) => {
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -1665,18 +1665,18 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
                             None,
                         ) => {
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *kickdown_ref = Some(kickdown);
@@ -1697,17 +1697,17 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -1743,11 +1743,11 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
@@ -1755,7 +1755,7 @@ pub mod runtime {
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -1794,16 +1794,16 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
                             None,
                         ) => {
                             let failure_ref = &mut None;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -1823,11 +1823,11 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
@@ -1835,7 +1835,7 @@ pub mod runtime {
                         ) => {
                             let failure_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -1857,10 +1857,10 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
@@ -1868,7 +1868,7 @@ pub mod runtime {
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -1905,11 +1905,11 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
@@ -1918,7 +1918,7 @@ pub mod runtime {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -1961,7 +1961,7 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
@@ -1969,12 +1969,12 @@ pub mod runtime {
                             self.context.vdc.set(vdc);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
@@ -1999,11 +1999,11 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
@@ -2029,12 +2029,12 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
@@ -2078,10 +2078,10 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
@@ -2105,12 +2105,12 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
@@ -2137,11 +2137,11 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
@@ -2183,12 +2183,12 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
@@ -2235,9 +2235,9 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
@@ -2246,12 +2246,12 @@ pub mod runtime {
                             self.context.speed.set(speed);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
@@ -2277,11 +2277,11 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
@@ -2308,12 +2308,12 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
@@ -2358,10 +2358,10 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
@@ -2386,12 +2386,12 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
@@ -2419,11 +2419,11 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
@@ -2466,12 +2466,12 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
@@ -2520,14 +2520,14 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
                         ) => {
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
@@ -2545,19 +2545,19 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
                         ) => {
                             let kickdown_ref = &mut None;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -2577,18 +2577,18 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -2623,12 +2623,12 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
@@ -2636,7 +2636,7 @@ pub mod runtime {
                             let changed_set_speed_ref = &mut None;
                             let kickdown_ref = &mut None;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -2674,17 +2674,17 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -2703,12 +2703,12 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
@@ -2716,7 +2716,7 @@ pub mod runtime {
                             let failure_ref = &mut None;
                             let kickdown_ref = &mut None;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             *kickdown_ref = Some(kickdown);
@@ -2737,11 +2737,11 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
@@ -2749,7 +2749,7 @@ pub mod runtime {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -2785,12 +2785,12 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
@@ -2799,7 +2799,7 @@ pub mod runtime {
                             let changed_set_speed_ref = &mut None;
                             let kickdown_ref = &mut None;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -2839,15 +2839,15 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
                         ) => {
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -2866,19 +2866,19 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
                         ) => {
                             let kickdown_ref = &mut None;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *kickdown_ref = Some(kickdown);
@@ -2899,18 +2899,18 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -2946,12 +2946,12 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
@@ -2959,7 +2959,7 @@ pub mod runtime {
                             let changed_set_speed_ref = &mut None;
                             let kickdown_ref = &mut None;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -2998,17 +2998,17 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -3028,12 +3028,12 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
@@ -3041,7 +3041,7 @@ pub mod runtime {
                             let failure_ref = &mut None;
                             let kickdown_ref = &mut None;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -3063,11 +3063,11 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
@@ -3075,7 +3075,7 @@ pub mod runtime {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -3112,12 +3112,12 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
                             None,
@@ -3126,7 +3126,7 @@ pub mod runtime {
                             let changed_set_speed_ref = &mut None;
                             let kickdown_ref = &mut None;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -3170,20 +3170,20 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -3207,12 +3207,12 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -3237,13 +3237,13 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -3286,11 +3286,11 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -3313,13 +3313,13 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -3345,12 +3345,12 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -3391,13 +3391,13 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -3443,10 +3443,10 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -3454,13 +3454,13 @@ pub mod runtime {
                             self.context.speed.set(speed);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -3485,12 +3485,12 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -3516,13 +3516,13 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -3566,11 +3566,11 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -3594,13 +3594,13 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -3627,12 +3627,12 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -3674,13 +3674,13 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -3728,14 +3728,14 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
@@ -3753,19 +3753,19 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
                             let kickdown_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -3785,18 +3785,18 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -3831,20 +3831,20 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let kickdown_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -3882,17 +3882,17 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -3911,20 +3911,20 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let kickdown_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             *kickdown_ref = Some(kickdown);
@@ -3945,19 +3945,19 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -3993,13 +3993,13 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -4007,7 +4007,7 @@ pub mod runtime {
                             let changed_set_speed_ref = &mut None;
                             let kickdown_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -4047,15 +4047,15 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -4074,19 +4074,19 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
                             let kickdown_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *kickdown_ref = Some(kickdown);
@@ -4107,18 +4107,18 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -4154,20 +4154,20 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let kickdown_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -4206,17 +4206,17 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -4236,20 +4236,20 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let kickdown_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -4271,19 +4271,19 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -4320,13 +4320,13 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -4334,7 +4334,7 @@ pub mod runtime {
                             let changed_set_speed_ref = &mut None;
                             let kickdown_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -4377,8 +4377,8 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -4386,13 +4386,13 @@ pub mod runtime {
                             self.context.vdc.set(vdc);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -4417,12 +4417,12 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -4448,13 +4448,13 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -4498,11 +4498,11 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -4526,13 +4526,13 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -4559,12 +4559,12 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -4606,13 +4606,13 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -4659,10 +4659,10 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -4671,13 +4671,13 @@ pub mod runtime {
                             self.context.speed.set(speed);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -4703,12 +4703,12 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -4735,13 +4735,13 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -4786,11 +4786,11 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -4815,13 +4815,13 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -4849,12 +4849,12 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -4897,13 +4897,13 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -4952,15 +4952,15 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
@@ -4978,20 +4978,20 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
                             let kickdown_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -5011,19 +5011,19 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -5058,13 +5058,13 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -5072,7 +5072,7 @@ pub mod runtime {
                             let kickdown_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -5110,18 +5110,18 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -5140,13 +5140,13 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -5154,7 +5154,7 @@ pub mod runtime {
                             let kickdown_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             *kickdown_ref = Some(kickdown);
@@ -5175,12 +5175,12 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -5188,7 +5188,7 @@ pub mod runtime {
                             let changed_set_speed_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -5224,13 +5224,13 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -5239,7 +5239,7 @@ pub mod runtime {
                             let kickdown_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -5279,16 +5279,16 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -5307,20 +5307,20 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
                             let kickdown_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *kickdown_ref = Some(kickdown);
@@ -5341,19 +5341,19 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -5389,13 +5389,13 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -5403,7 +5403,7 @@ pub mod runtime {
                             let kickdown_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -5442,18 +5442,18 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -5473,13 +5473,13 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -5487,7 +5487,7 @@ pub mod runtime {
                             let kickdown_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -5509,12 +5509,12 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -5522,7 +5522,7 @@ pub mod runtime {
                             let changed_set_speed_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -5559,13 +5559,13 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
                             None,
                         ) => {
@@ -5574,7 +5574,7 @@ pub mod runtime {
                             let kickdown_ref = &mut None;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -5619,11 +5619,11 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             if let Some(in_regulation) = *in_regulation_ref {
@@ -5635,19 +5635,19 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -5675,18 +5675,18 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             if let Some(in_regulation) = *in_regulation_ref {
@@ -5715,20 +5715,20 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -5774,17 +5774,17 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -5811,20 +5811,20 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             *kickdown_ref = Some(kickdown);
@@ -5853,19 +5853,19 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -5909,21 +5909,21 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -5971,15 +5971,15 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             if let Some(in_regulation) = *in_regulation_ref {
@@ -5992,19 +5992,19 @@ pub mod runtime {
                             self.context.speed.set(speed);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *kickdown_ref = Some(kickdown);
@@ -6033,18 +6033,18 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             if let Some(in_regulation) = *in_regulation_ref {
@@ -6074,20 +6074,20 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -6134,17 +6134,17 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -6172,20 +6172,20 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -6215,19 +6215,19 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -6272,21 +6272,21 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -6336,16 +6336,16 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
@@ -6371,21 +6371,21 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -6413,20 +6413,20 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -6469,22 +6469,22 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -6530,19 +6530,19 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -6569,22 +6569,22 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             *kickdown_ref = Some(kickdown);
@@ -6613,21 +6613,21 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -6671,23 +6671,23 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -6735,17 +6735,17 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -6772,21 +6772,21 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *kickdown_ref = Some(kickdown);
@@ -6815,20 +6815,20 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -6872,22 +6872,22 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -6934,19 +6934,19 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -6974,22 +6974,22 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -7019,21 +7019,21 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -7078,23 +7078,23 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -7145,13 +7145,13 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             if let Some(in_regulation) = *in_regulation_ref {
@@ -7164,19 +7164,19 @@ pub mod runtime {
                             self.context.vdc.set(vdc);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             *kickdown_ref = Some(kickdown);
@@ -7205,18 +7205,18 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             if let Some(in_regulation) = *in_regulation_ref {
@@ -7246,20 +7246,20 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -7306,17 +7306,17 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             *failure_ref = Some(failure);
@@ -7344,20 +7344,20 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             *failure_ref = Some(failure);
@@ -7387,19 +7387,19 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             *failure_ref = Some(failure);
@@ -7444,21 +7444,21 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             *failure_ref = Some(failure);
@@ -7507,15 +7507,15 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             if let Some(in_regulation) = *in_regulation_ref {
@@ -7529,19 +7529,19 @@ pub mod runtime {
                             self.context.speed.set(speed);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             self.context.speed.set(speed);
@@ -7571,18 +7571,18 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             if let Some(in_regulation) = *in_regulation_ref {
@@ -7613,20 +7613,20 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             self.context.speed.set(speed);
@@ -7674,17 +7674,17 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             self.context.speed.set(speed);
@@ -7713,20 +7713,20 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             self.context.speed.set(speed);
@@ -7757,19 +7757,19 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             self.context.speed.set(speed);
@@ -7815,21 +7815,21 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             self.context.speed.set(speed);
@@ -7880,17 +7880,17 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
@@ -7916,22 +7916,22 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -7959,21 +7959,21 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -8016,23 +8016,23 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -8078,20 +8078,20 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -8118,23 +8118,23 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             *kickdown_ref = Some(kickdown);
@@ -8163,22 +8163,22 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -8222,24 +8222,24 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -8287,18 +8287,18 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -8325,22 +8325,22 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *kickdown_ref = Some(kickdown);
@@ -8369,21 +8369,21 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -8427,23 +8427,23 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -8490,20 +8490,20 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -8531,23 +8531,23 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -8577,22 +8577,22 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -8637,24 +8637,24 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -8706,12 +8706,12 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             if let Some(in_regulation) = *in_regulation_ref {
@@ -8724,19 +8724,19 @@ pub mod runtime {
                             self.context.vacuum_brake.set(vacuum_brake);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             *kickdown_ref = Some(kickdown);
@@ -8765,18 +8765,18 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             if let Some(in_regulation) = *in_regulation_ref {
@@ -8806,20 +8806,20 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -8866,17 +8866,17 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             *failure_ref = Some(failure);
@@ -8904,20 +8904,20 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             *failure_ref = Some(failure);
@@ -8947,19 +8947,19 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             *failure_ref = Some(failure);
@@ -9004,21 +9004,21 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             *failure_ref = Some(failure);
@@ -9067,15 +9067,15 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             if let Some(in_regulation) = *in_regulation_ref {
@@ -9089,19 +9089,19 @@ pub mod runtime {
                             self.context.speed.set(speed);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.speed.set(speed);
@@ -9131,18 +9131,18 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             if let Some(in_regulation) = *in_regulation_ref {
@@ -9173,20 +9173,20 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.speed.set(speed);
@@ -9234,17 +9234,17 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.speed.set(speed);
@@ -9273,20 +9273,20 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.speed.set(speed);
@@ -9317,19 +9317,19 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.speed.set(speed);
@@ -9375,21 +9375,21 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.speed.set(speed);
@@ -9440,17 +9440,17 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
@@ -9476,22 +9476,22 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -9519,21 +9519,21 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -9576,23 +9576,23 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -9638,20 +9638,20 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -9678,23 +9678,23 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             *kickdown_ref = Some(kickdown);
@@ -9723,22 +9723,22 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -9782,24 +9782,24 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -9847,18 +9847,18 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -9885,22 +9885,22 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *kickdown_ref = Some(kickdown);
@@ -9929,21 +9929,21 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -9987,23 +9987,23 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -10050,20 +10050,20 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -10091,23 +10091,23 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -10137,22 +10137,22 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -10197,24 +10197,24 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -10265,13 +10265,13 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             if let Some(in_regulation) = *in_regulation_ref {
@@ -10285,19 +10285,19 @@ pub mod runtime {
                             self.context.vdc.set(vdc);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -10327,18 +10327,18 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             if let Some(in_regulation) = *in_regulation_ref {
@@ -10369,20 +10369,20 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -10430,17 +10430,17 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -10469,20 +10469,20 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -10513,19 +10513,19 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -10571,21 +10571,21 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -10635,15 +10635,15 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             if let Some(in_regulation) = *in_regulation_ref {
@@ -10658,19 +10658,19 @@ pub mod runtime {
                             self.context.speed.set(speed);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -10701,18 +10701,18 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             if let Some(in_regulation) = *in_regulation_ref {
@@ -10744,20 +10744,20 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -10806,17 +10806,17 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -10846,20 +10846,20 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -10891,19 +10891,19 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -10950,21 +10950,21 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -11016,18 +11016,18 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
@@ -11053,23 +11053,23 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -11097,22 +11097,22 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -11155,24 +11155,24 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -11218,21 +11218,21 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -11259,24 +11259,24 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             *kickdown_ref = Some(kickdown);
@@ -11305,23 +11305,23 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -11365,25 +11365,25 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -11431,19 +11431,19 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -11470,23 +11470,23 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *kickdown_ref = Some(kickdown);
@@ -11515,22 +11515,22 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -11574,24 +11574,24 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -11638,21 +11638,21 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -11680,24 +11680,24 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -11727,23 +11727,23 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -11788,25 +11788,25 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
                             None,
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let kickdown_ref = &mut None;
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -11860,7 +11860,7 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
@@ -11880,7 +11880,7 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
@@ -11888,7 +11888,7 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let activation_ref = &mut None;
@@ -11911,14 +11911,14 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
@@ -11956,15 +11956,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
@@ -12006,13 +12006,13 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let activation_ref = &mut None;
@@ -12034,15 +12034,15 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -12067,14 +12067,14 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
@@ -12114,15 +12114,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -12167,12 +12167,12 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
@@ -12193,15 +12193,15 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let activation_ref = &mut None;
@@ -12225,14 +12225,14 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
@@ -12271,15 +12271,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
@@ -12322,13 +12322,13 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let activation_ref = &mut None;
@@ -12351,15 +12351,15 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -12385,14 +12385,14 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
@@ -12433,15 +12433,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -12488,15 +12488,15 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
@@ -12514,20 +12514,20 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -12547,19 +12547,19 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -12594,21 +12594,21 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -12646,18 +12646,18 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -12676,21 +12676,21 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             *kickdown_ref = Some(kickdown);
@@ -12711,20 +12711,20 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -12760,22 +12760,22 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -12815,16 +12815,16 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -12843,20 +12843,20 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *kickdown_ref = Some(kickdown);
@@ -12877,19 +12877,19 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -12925,21 +12925,21 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -12978,18 +12978,18 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -13009,21 +13009,21 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -13045,20 +13045,20 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -13095,22 +13095,22 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -13153,10 +13153,10 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
@@ -13177,15 +13177,15 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let activation_ref = &mut None;
@@ -13209,14 +13209,14 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
@@ -13255,15 +13255,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
@@ -13306,13 +13306,13 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let activation_ref = &mut None;
@@ -13335,15 +13335,15 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -13369,14 +13369,14 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
@@ -13417,15 +13417,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -13471,12 +13471,12 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
@@ -13498,15 +13498,15 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let activation_ref = &mut None;
@@ -13531,14 +13531,14 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
@@ -13578,15 +13578,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
@@ -13630,13 +13630,13 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let activation_ref = &mut None;
@@ -13660,15 +13660,15 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -13695,14 +13695,14 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
@@ -13744,15 +13744,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -13800,16 +13800,16 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
@@ -13827,21 +13827,21 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -13861,20 +13861,20 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -13909,22 +13909,22 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -13962,19 +13962,19 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -13993,22 +13993,22 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             *kickdown_ref = Some(kickdown);
@@ -14029,21 +14029,21 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -14079,15 +14079,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -14095,7 +14095,7 @@ pub mod runtime {
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -14135,17 +14135,17 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -14164,21 +14164,21 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *kickdown_ref = Some(kickdown);
@@ -14199,20 +14199,20 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -14248,22 +14248,22 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -14302,19 +14302,19 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -14334,22 +14334,22 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -14371,21 +14371,21 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -14422,15 +14422,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -14438,7 +14438,7 @@ pub mod runtime {
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -14482,9 +14482,9 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
@@ -14505,15 +14505,15 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let activation_ref = &mut None;
@@ -14537,14 +14537,14 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
@@ -14583,15 +14583,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
@@ -14634,13 +14634,13 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let activation_ref = &mut None;
@@ -14663,15 +14663,15 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -14697,14 +14697,14 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
@@ -14745,15 +14745,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -14799,12 +14799,12 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
@@ -14826,15 +14826,15 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let activation_ref = &mut None;
@@ -14859,14 +14859,14 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
@@ -14906,15 +14906,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
@@ -14958,13 +14958,13 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let activation_ref = &mut None;
@@ -14988,15 +14988,15 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -15023,14 +15023,14 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
@@ -15072,15 +15072,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -15128,16 +15128,16 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
@@ -15155,21 +15155,21 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -15189,20 +15189,20 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -15237,22 +15237,22 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -15290,19 +15290,19 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -15321,22 +15321,22 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             *kickdown_ref = Some(kickdown);
@@ -15357,21 +15357,21 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -15407,15 +15407,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -15423,7 +15423,7 @@ pub mod runtime {
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -15463,17 +15463,17 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -15492,21 +15492,21 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *kickdown_ref = Some(kickdown);
@@ -15527,20 +15527,20 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -15576,22 +15576,22 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -15630,19 +15630,19 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -15662,22 +15662,22 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -15699,21 +15699,21 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -15750,15 +15750,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -15766,7 +15766,7 @@ pub mod runtime {
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -15809,10 +15809,10 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
@@ -15834,15 +15834,15 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let activation_ref = &mut None;
@@ -15867,14 +15867,14 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
@@ -15914,15 +15914,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
@@ -15966,13 +15966,13 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let activation_ref = &mut None;
@@ -15996,15 +15996,15 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -16031,14 +16031,14 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
@@ -16080,15 +16080,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -16135,12 +16135,12 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
@@ -16163,15 +16163,15 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let activation_ref = &mut None;
@@ -16197,14 +16197,14 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
@@ -16245,15 +16245,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
@@ -16298,13 +16298,13 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let activation_ref = &mut None;
@@ -16329,15 +16329,15 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -16365,14 +16365,14 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
@@ -16415,15 +16415,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -16472,17 +16472,17 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
@@ -16500,22 +16500,22 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -16535,21 +16535,21 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -16584,15 +16584,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
@@ -16600,7 +16600,7 @@ pub mod runtime {
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -16638,20 +16638,20 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -16670,15 +16670,15 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -16686,7 +16686,7 @@ pub mod runtime {
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             *kickdown_ref = Some(kickdown);
@@ -16707,14 +16707,14 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
@@ -16722,7 +16722,7 @@ pub mod runtime {
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -16758,15 +16758,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -16775,7 +16775,7 @@ pub mod runtime {
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -16815,18 +16815,18 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -16845,22 +16845,22 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *kickdown_ref = Some(kickdown);
@@ -16881,21 +16881,21 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -16931,15 +16931,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
@@ -16947,7 +16947,7 @@ pub mod runtime {
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -16986,20 +16986,20 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -17019,15 +17019,15 @@ pub mod runtime {
                             self.context.state_update.set(state_update);
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -17035,7 +17035,7 @@ pub mod runtime {
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -17057,14 +17057,14 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
@@ -17072,7 +17072,7 @@ pub mod runtime {
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -17109,15 +17109,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((activation, activation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -17126,7 +17126,7 @@ pub mod runtime {
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -17171,8 +17171,8 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
@@ -17191,7 +17191,7 @@ pub mod runtime {
                             self.context.on_state.set(on_state);
                             self.context.in_regulation_aux.set(in_regulation_aux);
                             self.context.state_update.set(state_update);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             if let Some(in_regulation) = *in_regulation_ref {
@@ -17203,21 +17203,21 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -17245,20 +17245,20 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -17301,22 +17301,22 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -17362,19 +17362,19 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -17401,22 +17401,22 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             *kickdown_ref = Some(kickdown);
@@ -17445,21 +17445,21 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -17503,15 +17503,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -17519,7 +17519,7 @@ pub mod runtime {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -17567,17 +17567,17 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -17604,21 +17604,21 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *kickdown_ref = Some(kickdown);
@@ -17647,20 +17647,20 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -17704,22 +17704,22 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -17766,19 +17766,19 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -17806,22 +17806,22 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -17851,21 +17851,21 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -17910,15 +17910,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -17926,7 +17926,7 @@ pub mod runtime {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -17976,18 +17976,18 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
@@ -18013,23 +18013,23 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -18057,22 +18057,22 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -18115,24 +18115,24 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -18178,21 +18178,21 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -18219,24 +18219,24 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             *kickdown_ref = Some(kickdown);
@@ -18265,23 +18265,23 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -18325,15 +18325,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -18341,9 +18341,9 @@ pub mod runtime {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -18391,19 +18391,19 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -18430,23 +18430,23 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *kickdown_ref = Some(kickdown);
@@ -18475,22 +18475,22 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -18534,24 +18534,24 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -18598,21 +18598,21 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -18640,24 +18640,24 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -18687,23 +18687,23 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -18748,15 +18748,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -18764,9 +18764,9 @@ pub mod runtime {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -18817,15 +18817,15 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -18852,21 +18852,21 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             *kickdown_ref = Some(kickdown);
@@ -18895,20 +18895,20 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -18952,22 +18952,22 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -19014,19 +19014,19 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             *failure_ref = Some(failure);
@@ -19054,22 +19054,22 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             *failure_ref = Some(failure);
@@ -19099,21 +19099,21 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             *failure_ref = Some(failure);
@@ -19158,15 +19158,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -19174,7 +19174,7 @@ pub mod runtime {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             *failure_ref = Some(failure);
@@ -19223,17 +19223,17 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             self.context.speed.set(speed);
@@ -19261,21 +19261,21 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             self.context.speed.set(speed);
@@ -19305,20 +19305,20 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             self.context.speed.set(speed);
@@ -19363,22 +19363,22 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             self.context.speed.set(speed);
@@ -19426,19 +19426,19 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             self.context.speed.set(speed);
@@ -19467,22 +19467,22 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             self.context.speed.set(speed);
@@ -19513,21 +19513,21 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             self.context.speed.set(speed);
@@ -19573,15 +19573,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -19589,7 +19589,7 @@ pub mod runtime {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
                             self.context.speed.set(speed);
@@ -19640,19 +19640,19 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
@@ -19678,24 +19678,24 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -19723,23 +19723,23 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -19782,25 +19782,25 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -19846,22 +19846,22 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -19888,25 +19888,25 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             *kickdown_ref = Some(kickdown);
@@ -19935,24 +19935,24 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -19996,15 +19996,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -20012,10 +20012,10 @@ pub mod runtime {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -20063,20 +20063,20 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -20103,24 +20103,24 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *kickdown_ref = Some(kickdown);
@@ -20149,23 +20149,23 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -20209,25 +20209,25 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -20274,22 +20274,22 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -20317,25 +20317,25 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -20365,24 +20365,24 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -20427,15 +20427,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
                             None,
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -20443,10 +20443,10 @@ pub mod runtime {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -20498,14 +20498,14 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -20532,21 +20532,21 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             *kickdown_ref = Some(kickdown);
@@ -20575,20 +20575,20 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -20632,22 +20632,22 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -20694,19 +20694,19 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             *failure_ref = Some(failure);
@@ -20734,22 +20734,22 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             *failure_ref = Some(failure);
@@ -20779,21 +20779,21 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             *failure_ref = Some(failure);
@@ -20838,15 +20838,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -20854,7 +20854,7 @@ pub mod runtime {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             *failure_ref = Some(failure);
@@ -20903,17 +20903,17 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.speed.set(speed);
@@ -20941,21 +20941,21 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.speed.set(speed);
@@ -20985,20 +20985,20 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.speed.set(speed);
@@ -21043,22 +21043,22 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.speed.set(speed);
@@ -21106,19 +21106,19 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.speed.set(speed);
@@ -21147,22 +21147,22 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.speed.set(speed);
@@ -21193,21 +21193,21 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.speed.set(speed);
@@ -21253,15 +21253,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -21269,7 +21269,7 @@ pub mod runtime {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.speed.set(speed);
@@ -21320,19 +21320,19 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
@@ -21358,24 +21358,24 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -21403,23 +21403,23 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -21462,25 +21462,25 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -21526,22 +21526,22 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -21568,25 +21568,25 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             *kickdown_ref = Some(kickdown);
@@ -21615,24 +21615,24 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -21676,15 +21676,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -21692,10 +21692,10 @@ pub mod runtime {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -21743,20 +21743,20 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -21783,24 +21783,24 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *kickdown_ref = Some(kickdown);
@@ -21829,23 +21829,23 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -21889,25 +21889,25 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -21954,22 +21954,22 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -21997,25 +21997,25 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -22045,24 +22045,24 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -22107,15 +22107,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
                             None,
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -22123,10 +22123,10 @@ pub mod runtime {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -22177,15 +22177,15 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -22213,21 +22213,21 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -22257,20 +22257,20 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -22315,22 +22315,22 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -22378,19 +22378,19 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -22419,22 +22419,22 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -22465,21 +22465,21 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -22525,15 +22525,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -22541,7 +22541,7 @@ pub mod runtime {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -22591,17 +22591,17 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -22630,21 +22630,21 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -22675,20 +22675,20 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -22734,22 +22734,22 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -22798,19 +22798,19 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -22840,22 +22840,22 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -22887,21 +22887,21 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -22948,15 +22948,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
                             None,
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -22964,7 +22964,7 @@ pub mod runtime {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -23016,20 +23016,20 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
@@ -23055,25 +23055,25 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -23101,24 +23101,24 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -23161,26 +23161,26 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -23226,23 +23226,23 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -23269,26 +23269,26 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             *kickdown_ref = Some(kickdown);
@@ -23317,25 +23317,25 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -23379,15 +23379,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
                             None,
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -23395,11 +23395,11 @@ pub mod runtime {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *failure_ref = Some(failure);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -23447,21 +23447,21 @@ pub mod runtime {
                             None,
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -23488,25 +23488,25 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *kickdown_ref = Some(kickdown);
@@ -23535,24 +23535,24 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -23596,26 +23596,26 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
                             None,
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -23662,23 +23662,23 @@ pub mod runtime {
                         (
                             None,
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -23706,26 +23706,26 @@ pub mod runtime {
                             }
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
+                            Some((kickdown, _kickdown_instant)),
                             None,
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -23755,25 +23755,25 @@ pub mod runtime {
                         }
                         (
                             None,
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let failure_ref = &mut None;
                             let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -23818,15 +23818,15 @@ pub mod runtime {
                                 .await?;
                         }
                         (
-                            Some((kickdown, kickdown_instant)),
-                            Some((set_speed, set_speed_instant)),
-                            Some((failure, failure_instant)),
-                            Some((speed, speed_instant)),
-                            Some(((), period_speed_limiter_instant)),
-                            Some((vdc, vdc_instant)),
-                            Some((vacuum_brake, vacuum_brake_instant)),
-                            Some(((), period_in_regulation_instant)),
-                            Some((activation, activation_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            Some((set_speed, _set_speed_instant)),
+                            Some((failure, _failure_instant)),
+                            Some((speed, _speed_instant)),
+                            Some(((), _period_speed_limiter_instant)),
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some(((), _period_in_regulation_instant)),
+                            Some((activation, _activation_instant)),
                         ) => {
                             let kickdown_ref = &mut None;
                             let failure_ref = &mut None;
@@ -23834,11 +23834,11 @@ pub mod runtime {
                             let in_regulation_ref = &mut None;
                             let activation_ref = &mut None;
                             *activation_ref = Some(activation);
-                            self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                            self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                            self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
@@ -23901,11 +23901,11 @@ pub mod runtime {
             }
             pub async fn handle_set_speed(
                 &mut self,
-                set_speed_instant: std::time::Instant,
+                _set_speed_instant: std::time::Instant,
                 set_speed: f64,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constraints(set_speed_instant).await?;
+                    self.reset_time_constraints(_set_speed_instant).await?;
                     self.context.reset();
                     let changed_set_speed_ref = &mut None;
                     if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
@@ -23922,23 +23922,23 @@ pub mod runtime {
                     self.context.v_update.set(v_update);
                     let v_set = self.context.v_set_aux.get();
                     self.context.v_set.set(v_set);
-                    self.send_output(O::VSet(v_set, set_speed_instant)).await?;
+                    self.send_output(O::VSet(v_set, _set_speed_instant)).await?;
                 } else {
                     let unique = self
                         .input_store
                         .set_speed
-                        .replace((set_speed, set_speed_instant));
+                        .replace((set_speed, _set_speed_instant));
                     assert!(unique.is_none(), "flow `set_speed` changes too frequently");
                 }
                 Ok(())
             }
             pub async fn handle_failure(
                 &mut self,
-                failure_instant: std::time::Instant,
+                _failure_instant: std::time::Instant,
                 failure: Failure,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constraints(failure_instant).await?;
+                    self.reset_time_constraints(_failure_instant).await?;
                     self.context.reset();
                     let failure_ref = &mut None;
                     *failure_ref = Some(failure);
@@ -23957,16 +23957,19 @@ pub mod runtime {
                     self.context.in_regulation_aux.set(in_regulation_aux);
                     self.context.state_update.set(state_update);
                 } else {
-                    let unique = self.input_store.failure.replace((failure, failure_instant));
+                    let unique = self
+                        .input_store
+                        .failure
+                        .replace((failure, _failure_instant));
                     assert!(unique.is_none(), "flow `failure` changes too frequently");
                 }
                 Ok(())
             }
             pub async fn handle_timeout_speed_limiter(
                 &mut self,
-                timeout_speed_limiter_instant: std::time::Instant,
+                _timeout_speed_limiter_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.reset_time_constraints(timeout_speed_limiter_instant)
+                self.reset_time_constraints(_timeout_speed_limiter_instant)
                     .await?;
                 self.context.reset();
                 let (v_set_aux, v_update) = self
@@ -23990,44 +23993,44 @@ pub mod runtime {
                 self.context.on_state.set(on_state);
                 self.context.in_regulation_aux.set(in_regulation_aux);
                 self.context.state_update.set(state_update);
-                self.send_output(O::VSet(v_set, timeout_speed_limiter_instant))
+                self.send_output(O::VSet(v_set, _timeout_speed_limiter_instant))
                     .await?;
                 Ok(())
             }
             #[inline]
             pub async fn reset_service_timeout(
                 &mut self,
-                timeout_speed_limiter_instant: std::time::Instant,
+                _timeout_speed_limiter_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.timer
-                    .send((T::TimeoutSpeedLimiter, timeout_speed_limiter_instant))
+                    .send((T::TimeoutSpeedLimiter, _timeout_speed_limiter_instant))
                     .await?;
                 Ok(())
             }
             pub async fn handle_speed(
                 &mut self,
-                speed_instant: std::time::Instant,
+                _speed_instant: std::time::Instant,
                 speed: f64,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constraints(speed_instant).await?;
+                    self.reset_time_constraints(_speed_instant).await?;
                     self.context.reset();
                     self.context.speed.set(speed);
                 } else {
-                    let unique = self.input_store.speed.replace((speed, speed_instant));
+                    let unique = self.input_store.speed.replace((speed, _speed_instant));
                     assert!(unique.is_none(), "flow `speed` changes too frequently");
                 }
                 Ok(())
             }
             pub async fn handle_period_speed_limiter(
                 &mut self,
-                period_speed_limiter_instant: std::time::Instant,
+                _period_speed_limiter_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constraints(period_speed_limiter_instant)
+                    self.reset_time_constraints(_period_speed_limiter_instant)
                         .await?;
                     self.context.reset();
-                    self.send_timer(T::PeriodSpeedLimiter, period_speed_limiter_instant)
+                    self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                         .await?;
                     let (state, on_state, in_regulation_aux, state_update) =
                         self.speed_limiter.step(SpeedLimiterInput {
@@ -24047,7 +24050,7 @@ pub mod runtime {
                     let unique = self
                         .input_store
                         .period_speed_limiter
-                        .replace(((), period_speed_limiter_instant));
+                        .replace(((), _period_speed_limiter_instant));
                     assert!(
                         unique.is_none(),
                         "flow `period_speed_limiter` changes too frequently"
@@ -24057,33 +24060,33 @@ pub mod runtime {
             }
             pub async fn handle_vdc(
                 &mut self,
-                vdc_instant: std::time::Instant,
+                _vdc_instant: std::time::Instant,
                 vdc: VdcState,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constraints(vdc_instant).await?;
+                    self.reset_time_constraints(_vdc_instant).await?;
                     self.context.reset();
                     self.context.vdc.set(vdc);
                 } else {
-                    let unique = self.input_store.vdc.replace((vdc, vdc_instant));
+                    let unique = self.input_store.vdc.replace((vdc, _vdc_instant));
                     assert!(unique.is_none(), "flow `vdc` changes too frequently");
                 }
                 Ok(())
             }
             pub async fn handle_vacuum_brake(
                 &mut self,
-                vacuum_brake_instant: std::time::Instant,
+                _vacuum_brake_instant: std::time::Instant,
                 vacuum_brake: VacuumBrakeState,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constraints(vacuum_brake_instant).await?;
+                    self.reset_time_constraints(_vacuum_brake_instant).await?;
                     self.context.reset();
                     self.context.vacuum_brake.set(vacuum_brake);
                 } else {
                     let unique = self
                         .input_store
                         .vacuum_brake
-                        .replace((vacuum_brake, vacuum_brake_instant));
+                        .replace((vacuum_brake, _vacuum_brake_instant));
                     assert!(
                         unique.is_none(),
                         "flow `vacuum_brake` changes too frequently"
@@ -24093,20 +24096,20 @@ pub mod runtime {
             }
             pub async fn handle_period_in_regulation(
                 &mut self,
-                period_in_regulation_instant: std::time::Instant,
+                _period_in_regulation_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constraints(period_in_regulation_instant)
+                    self.reset_time_constraints(_period_in_regulation_instant)
                         .await?;
                     self.context.reset();
                     let in_regulation_ref = &mut None;
-                    self.send_timer(T::PeriodInRegulation, period_in_regulation_instant)
+                    self.send_timer(T::PeriodInRegulation, _period_in_regulation_instant)
                         .await?;
                     *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                     if let Some(in_regulation) = *in_regulation_ref {
                         self.send_output(O::InRegulation(
                             in_regulation,
-                            period_in_regulation_instant,
+                            _period_in_regulation_instant,
                         ))
                         .await?;
                     }
@@ -24114,7 +24117,7 @@ pub mod runtime {
                     let unique = self
                         .input_store
                         .period_in_regulation
-                        .replace(((), period_in_regulation_instant));
+                        .replace(((), _period_in_regulation_instant));
                     assert!(
                         unique.is_none(),
                         "flow `period_in_regulation` changes too frequently"
@@ -24124,11 +24127,11 @@ pub mod runtime {
             }
             pub async fn handle_activation(
                 &mut self,
-                activation_instant: std::time::Instant,
+                _activation_instant: std::time::Instant,
                 activation: ActivationRequest,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constraints(activation_instant).await?;
+                    self.reset_time_constraints(_activation_instant).await?;
                     self.context.reset();
                     let activation_ref = &mut None;
                     *activation_ref = Some(activation);
@@ -24150,7 +24153,7 @@ pub mod runtime {
                     let unique = self
                         .input_store
                         .activation
-                        .replace((activation, activation_instant));
+                        .replace((activation, _activation_instant));
                     assert!(unique.is_none(), "flow `activation` changes too frequently");
                 }
                 Ok(())

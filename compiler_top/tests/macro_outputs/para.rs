@@ -453,9 +453,9 @@ pub mod runtime {
             }
             pub async fn handle_timeout_para_mess(
                 &mut self,
-                timeout_para_mess_instant: std::time::Instant,
+                _timeout_para_mess_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.reset_time_constraints(timeout_para_mess_instant)
+                self.reset_time_constraints(_timeout_para_mess_instant)
                     .await?;
                 self.context.reset();
                 let e3_ref = &mut None;
@@ -490,27 +490,27 @@ pub mod runtime {
                     });
                     self.context.o1.set(o1);
                 }
-                self.send_output(O::O1(self.context.o1.get(), timeout_para_mess_instant))
+                self.send_output(O::O1(self.context.o1.get(), _timeout_para_mess_instant))
                     .await?;
                 Ok(())
             }
             #[inline]
             pub async fn reset_service_timeout(
                 &mut self,
-                timeout_para_mess_instant: std::time::Instant,
+                _timeout_para_mess_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.timer
-                    .send((T::TimeoutParaMess, timeout_para_mess_instant))
+                    .send((T::TimeoutParaMess, _timeout_para_mess_instant))
                     .await?;
                 Ok(())
             }
             pub async fn handle_e0(
                 &mut self,
-                e0_instant: std::time::Instant,
+                _e0_instant: std::time::Instant,
                 e0: i64,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constraints(e0_instant).await?;
+                    self.reset_time_constraints(_e0_instant).await?;
                     self.context.reset();
                     let e3_ref = &mut None;
                     let e1_ref = &mut None;
@@ -551,10 +551,10 @@ pub mod runtime {
                         });
                         self.context.o1.set(o1);
                     }
-                    self.send_output(O::O1(self.context.o1.get(), e0_instant))
+                    self.send_output(O::O1(self.context.o1.get(), _e0_instant))
                         .await?;
                 } else {
-                    let unique = self.input_store.e0.replace((e0, e0_instant));
+                    let unique = self.input_store.e0.replace((e0, _e0_instant));
                     assert!(unique.is_none(), "flow `e0` changes too frequently");
                 }
                 Ok(())
@@ -568,7 +568,7 @@ pub mod runtime {
                     self.reset_time_constraints(_grust_reserved_instant).await?;
                     match (self.input_store.e0.take()) {
                         (None) => {}
-                        (Some((e0, e0_instant))) => {
+                        (Some((e0, _e0_instant))) => {
                             let e3_ref = &mut None;
                             let e1_ref = &mut None;
                             let e2_ref = &mut None;
