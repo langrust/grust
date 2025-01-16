@@ -68,14 +68,15 @@ impl Pattern {
 }
 
 /// GRust declaration AST.
+#[derive(Debug, PartialEq)]
 pub struct LetDecl<E> {
-    pub let_token: Token![let],
+    pub let_token: syn::token::Let,
     /// Pattern of instantiated signals and their type.
     pub typed_pattern: Pattern,
-    pub eq_token: Token![=],
+    pub eq_token: syn::token::Eq,
     /// The stream expression defining the signal.
     pub expr: E,
-    pub semi_token: Token![;],
+    pub semi_token: syn::token::Semi,
 }
 impl<E> HasLoc for LetDecl<E> {
     fn loc(&self) -> Loc {
