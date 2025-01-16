@@ -242,7 +242,7 @@ mod equation {
             errors: &mut Vec<Error>,
         ) -> TRes<()> {
             match self {
-                // output definitions should be stored
+                // when output definitions should be stored
                 Eq::OutputDef(instantiation) if store_outputs => instantiation
                     .pattern
                     .store(false, symbol_table, errors)
@@ -298,6 +298,10 @@ mod equation {
             errors: &mut Vec<Error>,
         ) -> TRes<()> {
             match self {
+                ReactEq::Init(init) => init
+                    .pattern
+                    .store_init(symbol_table, errors)
+                    .map(|idents| signals.extend(idents)),
                 // output definitions should be stored
                 ReactEq::OutputDef(instantiation) if store_outputs => instantiation
                     .pattern
@@ -321,7 +325,7 @@ mod equation {
                     // branch then, it is needed to explore all branches
                     let mut when_signals = HashMap::new();
                     let mut add_signals = |equations: &Vec<Eq>| {
-                        // non-events are defined in all branches so we don't want them to trigger
+                        // some flows are defined in multiple branches so we don't want them to trigger
                         // the *duplicated definition* error.
                         symbol_table.local();
                         for eq in equations {
@@ -543,6 +547,12 @@ pub trait Ir0StoreStmtPattern: Sized {
         errors: &mut Vec<Error>,
     ) -> TRes<Vec<(Ident, usize)>>;
 
+    fn store_init(
+        &self,
+        symbol_table: &mut Ctx,
+        errors: &mut Vec<Error>,
+    ) -> TRes<Vec<(Ident, usize)>>;
+
     fn get_signals(&self, symbol_table: &Ctx, errors: &mut Vec<Error>) -> TRes<Vec<(Ident, Self)>>;
 }
 
@@ -603,6 +613,40 @@ mod stmt_pattern {
                 Pattern::Tuple(Tuple { elements, .. }) => Ok(elements
                     .iter()
                     .map(|pattern| pattern.store(is_declaration, symbol_table, errors))
+                    .collect::<TRes<Vec<_>>>()?
+                    .into_iter()
+                    .flatten()
+                    .collect()),
+            }
+        }
+
+        fn store_init(
+            &self,
+            symbol_table: &mut Ctx,
+            errors: &mut Vec<Error>,
+        ) -> TRes<Vec<(Ident, usize)>> {
+            let loc = self.loc();
+
+            match self {
+                Pattern::Identifier(ident) => {
+                    let id = symbol_table.get_identifier_id(ident, false, errors)?;
+                    // outputs should be already typed
+                    let typ = symbol_table.get_typ(id).clone();
+                    let id = symbol_table.insert_init(ident.clone(), Some(typ), true, errors)?;
+                    Ok(vec![(ident.clone(), id)])
+                }
+                Pattern::Typed(Typed { ident, typ, .. }) => {
+                    let typ = typ.clone().into_ir1(&mut ir1::ctx::WithLoc::new(
+                        loc,
+                        symbol_table,
+                        errors,
+                    ))?;
+                    let id = symbol_table.insert_init(ident.clone(), Some(typ), true, errors)?;
+                    Ok(vec![(ident.clone(), id)])
+                }
+                Pattern::Tuple(Tuple { elements, .. }) => Ok(elements
+                    .iter()
+                    .map(|pattern| pattern.store_init(symbol_table, errors))
                     .collect::<TRes<Vec<_>>>()?
                     .into_iter()
                     .flatten()
