@@ -222,12 +222,37 @@ mk_new! { impl MatchWhen =>
     }
 }
 
+pub struct InitSignal {
+    pub init_token: keyword::init,
+    /// Pattern of instantiated signals.
+    pub pattern: Pattern,
+    pub eq_token: Token![=],
+    /// The stream expression defining the signal.
+    pub expr: stream::Expr,
+    pub semi_token: Token![;],
+}
+impl HasLoc for InitSignal {
+    fn loc(&self) -> Loc {
+        Loc::from(self.init_token.span).join(self.semi_token.span)
+    }
+}
+mk_new! { impl InitSignal =>
+    new {
+        init_token: keyword::init,
+        pattern: Pattern,
+        eq_token: Token![=],
+        expr: stream::Expr,
+        semi_token: Token![;],
+    }
+}
+
 /// GRust reactive equation AST.
 pub enum ReactEq {
     LocalDef(LetDecl<stream::ReactExpr>),
     OutputDef(Instantiation<stream::ReactExpr>),
     MatchWhen(MatchWhen),
     Match(Match),
+    Init(InitSignal),
 }
 impl HasLoc for ReactEq {
     fn loc(&self) -> Loc {
@@ -236,6 +261,7 @@ impl HasLoc for ReactEq {
             Self::OutputDef(od) => od.loc(),
             Self::MatchWhen(mw) => mw.loc(),
             Self::Match(m) => m.loc(),
+            Self::Init(i) => i.loc(),
         }
     }
 }
@@ -244,6 +270,7 @@ mk_new! { impl ReactEq =>
     OutputDef: out_def(i: Instantiation<stream::ReactExpr> = i)
     MatchWhen: match_when(m : MatchWhen = m)
     Match: pat_match(m : Match = m)
+    Init: init(i: InitSignal = i)
 }
 
 impl PartialEq for Eq {
@@ -323,6 +350,9 @@ impl PartialEq for ReactEq {
                     l0.pattern == r0.pattern && l0.guard == r0.guard && l0.equations == r0.equations
                 })
             }
+            (Self::Init(l0), Self::Init(r0)) => {
+                l0.expr == r0.expr && l0.pattern == r0.pattern
+            }
             _ => false,
         }
     }
@@ -371,6 +401,11 @@ impl std::fmt::Debug for ReactEq {
                         })
                         .collect::<Vec<_>>(),
                 )
+                .finish(),
+            Self::Init(arg0) => f
+                .debug_tuple("InitSignal")
+                .field(&arg0.pattern)
+                .field(&arg0.expr)
                 .finish(),
         }
     }
