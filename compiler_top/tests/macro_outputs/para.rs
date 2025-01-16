@@ -191,8 +191,8 @@ pub mod runtime {
     impl RuntimeInput {
         pub fn get_instant(&self) -> std::time::Instant {
             match self {
-                I::E0(_, instant) => *instant,
-                I::Timer(_, instant) => *instant,
+                I::E0(_, _grust_reserved_instant) => *_grust_reserved_instant,
+                I::Timer(_, _grust_reserved_instant) => *_grust_reserved_instant,
             }
         }
         pub fn order(v1: &Self, v2: &Self) -> std::cmp::Ordering {
@@ -225,22 +225,33 @@ pub mod runtime {
         }
         pub async fn run_loop(
             self,
-            init_instant: std::time::Instant,
+            _grust_reserved_init_instant: std::time::Instant,
             input: impl futures::Stream<Item = I>,
         ) -> Result<(), futures::channel::mpsc::SendError> {
             futures::pin_mut!(input);
             let mut runtime = self;
-            runtime.send_timer(T::TimeoutParaMess, init_instant).await?;
+            runtime
+                .send_timer(T::TimeoutParaMess, _grust_reserved_init_instant)
+                .await?;
             while let Some(input) = input.next().await {
                 match input {
-                    I::Timer(T::DelayParaMess, instant) => {
-                        runtime.para_mess.handle_delay_para_mess(instant).await?;
+                    I::Timer(T::DelayParaMess, _grust_reserved_instant) => {
+                        runtime
+                            .para_mess
+                            .handle_delay_para_mess(_grust_reserved_instant)
+                            .await?;
                     }
-                    I::Timer(T::TimeoutParaMess, instant) => {
-                        runtime.para_mess.handle_timeout_para_mess(instant).await?;
+                    I::Timer(T::TimeoutParaMess, _grust_reserved_instant) => {
+                        runtime
+                            .para_mess
+                            .handle_timeout_para_mess(_grust_reserved_instant)
+                            .await?;
                     }
-                    I::E0(e0, instant) => {
-                        runtime.para_mess.handle_e0(instant, e0).await?;
+                    I::E0(e0, _grust_reserved_instant) => {
+                        runtime
+                            .para_mess
+                            .handle_e0(_grust_reserved_instant, e0)
+                            .await?;
                     }
                 }
             }
@@ -406,11 +417,11 @@ pub mod runtime {
             context: Context,
             delayed: bool,
             input_store: ParaMessServiceStore,
-            C3: C3State,
-            C4: C4State,
-            C1: C1State,
-            C5: C5State,
-            C2: C2State,
+            c_3: C3State,
+            c_4: C4State,
+            c_1: C1State,
+            c_5: C5State,
+            c_2: C2State,
             output: futures::channel::mpsc::Sender<O>,
             timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
         }
@@ -422,20 +433,20 @@ pub mod runtime {
                 let context = Context::init();
                 let delayed = true;
                 let input_store = Default::default();
-                let C3 = C3State::init();
-                let C4 = C4State::init();
-                let C1 = C1State::init();
-                let C5 = C5State::init();
-                let C2 = C2State::init();
+                let c_3 = C3State::init();
+                let c_4 = C4State::init();
+                let c_1 = C1State::init();
+                let c_5 = C5State::init();
+                let c_2 = C2State::init();
                 ParaMessService {
                     context,
                     delayed,
                     input_store,
-                    C3,
-                    C4,
-                    C1,
-                    C5,
-                    C2,
+                    c_3,
+                    c_4,
+                    c_1,
+                    c_5,
+                    c_2,
                     output,
                     timer,
                 }
@@ -453,26 +464,26 @@ pub mod runtime {
                 tokio::join!(
                     async {
                         if e1_ref.is_some() {
-                            let (s3, e3) = self.C2.step(C2Input { e1: *e1_ref });
+                            let (s3, e3) = self.c_2.step(C2Input { e1: *e1_ref });
                             self.context.s3.set(s3);
                             *e3_ref = e3;
                         }
                     },
                     async {
                         if self.context.s2.is_new() {
-                            let (e2) = self.C3.step(C3Input {
+                            let (e2) = self.c_3.step(C3Input {
                                 s2: self.context.s2.get(),
                             });
                             *e2_ref = e2;
                         }
                         if e2_ref.is_some() {
-                            let (s4) = self.C4.step(C4Input { e2: *e2_ref });
+                            let (s4) = self.c_4.step(C4Input { e2: *e2_ref });
                             self.context.s4.set(s4);
                         }
                     }
                 );
                 if e3_ref.is_some() || self.context.s4.is_new() || self.context.s3.is_new() {
-                    let o1 = self.C5.step(C5Input {
+                    let o1 = self.c_5.step(C5Input {
                         s4: self.context.s4.get(),
                         s3: self.context.s3.get(),
                         e3: *e3_ref,
@@ -486,9 +497,11 @@ pub mod runtime {
             #[inline]
             pub async fn reset_service_timeout(
                 &mut self,
-                instant: std::time::Instant,
+                timeout_para_mess_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.timer.send((T::TimeoutParaMess, instant)).await?;
+                self.timer
+                    .send((T::TimeoutParaMess, timeout_para_mess_instant))
+                    .await?;
                 Ok(())
             }
             pub async fn handle_e0(
@@ -505,33 +518,33 @@ pub mod runtime {
                     let e0_ref = &mut None;
                     *e0_ref = Some(e0);
                     if e0_ref.is_some() {
-                        let (s2, e1) = self.C1.step(C1Input { e0: *e0_ref });
+                        let (s2, e1) = self.c_1.step(C1Input { e0: *e0_ref });
                         self.context.s2.set(s2);
                         *e1_ref = e1;
                     }
                     tokio::join!(
                         async {
                             if e1_ref.is_some() {
-                                let (s3, e3) = self.C2.step(C2Input { e1: *e1_ref });
+                                let (s3, e3) = self.c_2.step(C2Input { e1: *e1_ref });
                                 self.context.s3.set(s3);
                                 *e3_ref = e3;
                             }
                         },
                         async {
                             if self.context.s2.is_new() {
-                                let (e2) = self.C3.step(C3Input {
+                                let (e2) = self.c_3.step(C3Input {
                                     s2: self.context.s2.get(),
                                 });
                                 *e2_ref = e2;
                             }
                             if e2_ref.is_some() {
-                                let (s4) = self.C4.step(C4Input { e2: *e2_ref });
+                                let (s4) = self.c_4.step(C4Input { e2: *e2_ref });
                                 self.context.s4.set(s4);
                             }
                         }
                     );
                     if e3_ref.is_some() || self.context.s4.is_new() || self.context.s3.is_new() {
-                        let o1 = self.C5.step(C5Input {
+                        let o1 = self.c_5.step(C5Input {
                             s4: self.context.s4.get(),
                             s3: self.context.s3.get(),
                             e3: *e3_ref,
@@ -542,17 +555,17 @@ pub mod runtime {
                         .await?;
                 } else {
                     let unique = self.input_store.e0.replace((e0, e0_instant));
-                    assert!(unique.is_none(), "e0 changes too frequently");
+                    assert!(unique.is_none(), "flow `e0` changes too frequently");
                 }
                 Ok(())
             }
             pub async fn handle_delay_para_mess(
                 &mut self,
-                instant: std::time::Instant,
+                _grust_reserved_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.context.reset();
                 if self.input_store.not_empty() {
-                    self.reset_time_constraints(instant).await?;
+                    self.reset_time_constraints(_grust_reserved_instant).await?;
                     match (self.input_store.e0.take()) {
                         (None) => {}
                         (Some((e0, e0_instant))) => {
@@ -562,27 +575,27 @@ pub mod runtime {
                             let e0_ref = &mut None;
                             *e0_ref = Some(e0);
                             if e0_ref.is_some() {
-                                let (s2, e1) = self.C1.step(C1Input { e0: *e0_ref });
+                                let (s2, e1) = self.c_1.step(C1Input { e0: *e0_ref });
                                 self.context.s2.set(s2);
                                 *e1_ref = e1;
                             }
                             tokio::join!(
                                 async {
                                     if e1_ref.is_some() {
-                                        let (s3, e3) = self.C2.step(C2Input { e1: *e1_ref });
+                                        let (s3, e3) = self.c_2.step(C2Input { e1: *e1_ref });
                                         self.context.s3.set(s3);
                                         *e3_ref = e3;
                                     }
                                 },
                                 async {
                                     if self.context.s2.is_new() {
-                                        let (e2) = self.C3.step(C3Input {
+                                        let (e2) = self.c_3.step(C3Input {
                                             s2: self.context.s2.get(),
                                         });
                                         *e2_ref = e2;
                                     }
                                     if e2_ref.is_some() {
-                                        let (s4) = self.C4.step(C4Input { e2: *e2_ref });
+                                        let (s4) = self.c_4.step(C4Input { e2: *e2_ref });
                                         self.context.s4.set(s4);
                                     }
                                 }
@@ -591,14 +604,14 @@ pub mod runtime {
                                 || self.context.s4.is_new()
                                 || self.context.s3.is_new()
                             {
-                                let o1 = self.C5.step(C5Input {
+                                let o1 = self.c_5.step(C5Input {
                                     s4: self.context.s4.get(),
                                     s3: self.context.s3.get(),
                                     e3: *e3_ref,
                                 });
                                 self.context.o1.set(o1);
                             }
-                            self.send_output(O::O1(self.context.o1.get(), instant))
+                            self.send_output(O::O1(self.context.o1.get(), _grust_reserved_instant))
                                 .await?;
                         }
                     }
@@ -610,9 +623,11 @@ pub mod runtime {
             #[inline]
             pub async fn reset_service_delay(
                 &mut self,
-                instant: std::time::Instant,
+                _grust_reserved_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.timer.send((T::DelayParaMess, instant)).await?;
+                self.timer
+                    .send((T::DelayParaMess, _grust_reserved_instant))
+                    .await?;
                 Ok(())
             }
             #[inline]

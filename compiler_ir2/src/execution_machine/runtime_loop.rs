@@ -23,7 +23,8 @@ impl RuntimeLoop {
                         &to_camel_case(time_flow_name.to_string()),
                         Span::call_site(),
                     );
-                    Some(parse_quote! { runtime.send_timer(T::#enum_ident, init_instant).await?; })
+                    let init_instant = Ident::init_instant_var();
+                    Some(parse_quote! { runtime.send_timer(T::#enum_ident, #init_instant).await?; })
                 }
             }
         });
@@ -37,18 +38,18 @@ impl RuntimeLoop {
             {
                 match arriving_flow {
                     ArrivingFlow::Channel(flow_name, _, _) => {
-                        let enum_ident =
-                            Ident::new(&to_camel_case(flow_name.to_string()), Span::call_site());
+                        let enum_ident = flow_name.to_ty();
                         let ident = flow_name;
-                        let function_name: Ident = format_ident!("handle_{flow_name}");
+                        let function_name = flow_name.to_handle_fn();
+                        let instant = Ident::instant_var();
                         let call_services_handlers =
                             services.iter().map(|service_name| -> syn::Stmt {
                                 parse_quote! {
-                                    runtime.#service_name.#function_name(instant, #ident).await?;
+                                    runtime.#service_name.#function_name(#instant, #ident).await?;
                                 }
                             });
                         input_arms.push(parse_quote! {
-                            I::#enum_ident(#ident, instant) => {
+                            I::#enum_ident(#ident, #instant) => {
                                 #(#call_services_handlers)*
                             }
                         })
@@ -61,15 +62,16 @@ impl RuntimeLoop {
                             to_camel_case(time_flow_name.to_string()).as_str(),
                             Span::call_site(),
                         );
-                        let function_name: Ident = format_ident!("handle_{time_flow_name}");
+                        let instant = Ident::instant_var();
+                        let function_name = time_flow_name.to_handle_fn();
                         let call_services_handlers =
                             services.iter().map(|service_name| -> syn::Stmt {
                                 parse_quote! {
-                                    runtime.#service_name.#function_name(instant).await?;
+                                    runtime.#service_name.#function_name(#instant).await?;
                                 }
                             });
                         input_arms.push(parse_quote! {
-                            I::Timer(T::#enum_ident, instant) => {
+                            I::Timer(T::#enum_ident, #instant) => {
                                 #(#call_services_handlers)*
                             }
                         })
@@ -85,11 +87,12 @@ impl RuntimeLoop {
                 }
             }
         };
+        let init_instant = Ident::init_instant_var();
 
         // `run_loop` function
         syn::ImplItem::Fn(parse_quote! {
             pub async fn run_loop(
-                self, init_instant: std::time::Instant, input: impl futures::Stream<Item = I>
+                self, #init_instant: std::time::Instant, input: impl futures::Stream<Item = I>
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 futures::pin_mut!(input);
                 let mut runtime = self;

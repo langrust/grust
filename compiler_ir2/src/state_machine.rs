@@ -81,7 +81,7 @@ impl Input {
             fields.push(parse_quote! { pub #identifier : #typ });
         }
 
-        let name = format_ident!("{}", to_camel_case(&format!("{}Input", self.node_name)));
+        let name = self.node_name.to_input_ty();
         parse_quote! {
             pub struct #name {
                 #(#fields,)*
@@ -339,7 +339,7 @@ impl State {
                     memory_ident,
                     node_name,
                 } => {
-                    let name = format_ident!("{}", to_camel_case(&format!("{}State", node_name)));
+                    let name = node_name.to_state_ty();
                     let memory_ident = format_ident!("{memory_ident}");
 
                     parse_quote! { #memory_ident : #name }
@@ -347,7 +347,7 @@ impl State {
             })
             .collect();
 
-        let name = format_ident!("{}", to_camel_case(&format!("{}State", self.node_name)));
+        let name = self.node_name.to_state_ty();
         let structure = parse_quote!(
             pub struct #name { #(#fields),* }
         );
