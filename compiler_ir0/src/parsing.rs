@@ -1988,6 +1988,19 @@ mod parse_equation {
         }
     }
 
+    impl Parse for InitSignal {
+        fn parse(input: ParseStream) -> syn::Res<Self> {
+            let init_token: keyword::init = input.parse()?;
+            let pattern: stmt::Pattern = input.parse()?;
+            let eq_token: token::Eq = input.parse()?;
+            let expr: stream::Expr = input.parse()?;
+            let semi_token: token::Semi = input.parse()?;
+            Ok(InitSignal::new(
+                init_token, pattern, eq_token, expr, semi_token,
+            ))
+        }
+    }
+
     impl Parse for ReactEq {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             if input.peek(Token![match]) {
@@ -1996,6 +2009,8 @@ mod parse_equation {
                 Ok(ReactEq::match_when(input.parse()?))
             } else if input.peek(Token![let]) {
                 Ok(ReactEq::local_def(input.parse()?))
+            } else if input.peek(keyword::init) {
+                Ok(ReactEq::init(input.parse()?))
             } else {
                 Ok(ReactEq::out_def(input.parse()?))
             }
@@ -3250,6 +3265,41 @@ mod parsing_tests {
                 parse_quote! {;},
             ));
             assert_eq!(equation, control)
+        }
+
+        #[test]
+        fn should_parse_initialization() {
+            let equation: ReactEq = parse_quote! {
+                init (o1: int, o2: int) = (0, 0);
+            };
+            let control = ReactEq::init(equation::InitSignal::new(
+                parse_quote!(init),
+                stmt::Pattern::tuple(stmt::Tuple::new(
+                    Loc::test_dummy(),
+                    vec![
+                        stmt::Pattern::Typed(stmt::Typed {
+                            ident: parse_quote!(o1),
+                            colon_token: parse_quote!(:),
+                            typ: Typ::int(),
+                        }),
+                        stmt::Pattern::Typed(stmt::Typed {
+                            ident: parse_quote!(o2),
+                            colon_token: parse_quote!(:),
+                            typ: Typ::int(),
+                        }),
+                    ],
+                )),
+                parse_quote!(=),
+                stream::Expr::tuple(expr::Tuple::new(
+                    Loc::test_dummy(),
+                    vec![
+                        stream::Expr::cst(Constant::int(parse_quote! {0})),
+                        stream::Expr::cst(Constant::int(parse_quote! {0})),
+                    ],
+                )),
+                parse_quote! {;},
+            ));
+            assert_eq!(equation, control);
         }
     }
 
