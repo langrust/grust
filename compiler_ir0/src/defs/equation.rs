@@ -4,13 +4,14 @@ prelude! {
 
 use super::keyword;
 
+#[derive(Debug, PartialEq)]
 pub struct Instantiation<E> {
     /// Pattern of instantiated signals.
     pub pattern: Pattern,
-    pub eq_token: Token![=],
+    pub eq_token: syn::token::Eq,
     /// The stream expression defining the signals.
     pub expr: E,
-    pub semi_token: Token![;],
+    pub semi_token: syn::token::Semi,
 }
 impl<E> HasLoc for Instantiation<E> {
     fn loc(&self) -> Loc {
@@ -27,6 +28,7 @@ mk_new! { impl{E} Instantiation<E> =>
 }
 
 /// Arm for matching expression.
+#[derive(Debug, PartialEq)]
 pub struct Arm {
     /// The pattern to match.
     pub pattern: expr::Pattern,
@@ -48,6 +50,7 @@ mk_new! { impl Arm =>
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct Match {
     pub match_token: Token![match],
     /// The stream expression defining the signals.
@@ -71,6 +74,7 @@ mk_new! { impl Match =>
 }
 
 /// GRust simpl equation AST.
+#[derive(Debug, PartialEq)]
 pub enum Eq {
     LocalDef(LetDecl<stream::Expr>),
     OutputDef(Instantiation<stream::Expr>),
@@ -163,6 +167,7 @@ impl std::fmt::Debug for EventPattern {
 }
 
 /// EventArmWhen for matching event.
+#[derive(Debug, PartialEq)]
 pub struct EventArmWhen {
     pub pattern: EventPattern,
     /// The optional guard.
@@ -188,18 +193,19 @@ pub struct InitArmWhen {
     pub init_token: keyword::init,
     pub arrow_token: Token![=>],
     pub brace_token: syn::token::Brace,
-    /// The initialequations.
-    pub equations: Vec<Eq>,
+    /// The initial equations.
+    pub equations: Vec<Instantiation<stream::Expr>>,
 }
 mk_new! { impl InitArmWhen =>
     new {
         init_token: keyword::init,
         arrow_token: Token![=>],
         brace_token: syn::token::Brace,
-        equations: Vec<Eq>,
+        equations: Vec<Instantiation<stream::Expr>>,
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct MatchWhen {
     pub when_token: keyword::when,
     pub brace_token: syn::token::Brace,
@@ -222,6 +228,7 @@ mk_new! { impl MatchWhen =>
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct InitSignal {
     pub init_token: keyword::init,
     /// Pattern of instantiated signals.
@@ -247,6 +254,7 @@ mk_new! { impl InitSignal =>
 }
 
 /// GRust reactive equation AST.
+#[derive(Debug, PartialEq)]
 pub enum ReactEq {
     LocalDef(LetDecl<stream::ReactExpr>),
     OutputDef(Instantiation<stream::ReactExpr>),
@@ -271,142 +279,4 @@ mk_new! { impl ReactEq =>
     MatchWhen: match_when(m : MatchWhen = m)
     Match: pat_match(m : Match = m)
     Init: init(i: InitSignal = i)
-}
-
-impl PartialEq for Eq {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::LocalDef(l0), Self::LocalDef(r0)) => {
-                l0.expr == r0.expr && l0.typed_pattern == r0.typed_pattern
-            }
-            (Self::OutputDef(l0), Self::OutputDef(r0)) => {
-                l0.expr == r0.expr && l0.pattern == r0.pattern
-            }
-            (Self::Match(l0), Self::Match(r0)) => {
-                l0.expr == r0.expr
-                    && l0.arms.iter().zip(r0.arms.iter()).all(|(l0, r0)| {
-                        l0.pattern == r0.pattern
-                            && l0.guard == r0.guard
-                            && l0.equations == r0.equations
-                    })
-            }
-            _ => false,
-        }
-    }
-}
-impl std::fmt::Debug for Eq {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::LocalDef(arg0) => f
-                .debug_tuple("LocalDef")
-                .field(&arg0.typed_pattern)
-                .field(&arg0.expr)
-                .finish(),
-            Self::OutputDef(arg0) => f
-                .debug_tuple("OutputDef")
-                .field(&arg0.pattern)
-                .field(&arg0.expr)
-                .finish(),
-            Self::Match(arg0) => f
-                .debug_tuple("Match")
-                .field(&arg0.expr)
-                .field(
-                    &arg0
-                        .arms
-                        .iter()
-                        .map(|arm| {
-                            (
-                                &arm.pattern,
-                                arm.guard.as_ref().map(|(_, expr)| expr),
-                                &arm.equations,
-                            )
-                        })
-                        .collect::<Vec<_>>(),
-                )
-                .finish(),
-        }
-    }
-}
-
-impl PartialEq for ReactEq {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::LocalDef(l0), Self::LocalDef(r0)) => {
-                l0.expr == r0.expr && l0.typed_pattern == r0.typed_pattern
-            }
-            (Self::OutputDef(l0), Self::OutputDef(r0)) => {
-                l0.expr == r0.expr && l0.pattern == r0.pattern
-            }
-            (Self::Match(l0), Self::Match(r0)) => {
-                l0.expr == r0.expr
-                    && l0.arms.iter().zip(r0.arms.iter()).all(|(l0, r0)| {
-                        l0.pattern == r0.pattern
-                            && l0.guard == r0.guard
-                            && l0.equations == r0.equations
-                    })
-            }
-            (Self::MatchWhen(l0), Self::MatchWhen(r0)) => {
-                l0.arms.iter().zip(r0.arms.iter()).all(|(l0, r0)| {
-                    l0.pattern == r0.pattern && l0.guard == r0.guard && l0.equations == r0.equations
-                })
-            }
-            (Self::Init(l0), Self::Init(r0)) => {
-                l0.expr == r0.expr && l0.pattern == r0.pattern
-            }
-            _ => false,
-        }
-    }
-}
-impl std::fmt::Debug for ReactEq {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::LocalDef(arg0) => f
-                .debug_tuple("LocalDef")
-                .field(&arg0.typed_pattern)
-                .field(&arg0.expr)
-                .finish(),
-            Self::OutputDef(arg0) => f
-                .debug_tuple("OutputDef")
-                .field(&arg0.pattern)
-                .field(&arg0.expr)
-                .finish(),
-            Self::Match(arg0) => f
-                .debug_tuple("Match")
-                .field(&arg0.expr)
-                .field(
-                    &arg0
-                        .arms
-                        .iter()
-                        .map(|arm| {
-                            (
-                                &arm.pattern,
-                                arm.guard.as_ref().map(|(_, expr)| expr),
-                                &arm.equations,
-                            )
-                        })
-                        .collect::<Vec<_>>(),
-                )
-                .finish(),
-            Self::MatchWhen(arg0) => f
-                .debug_tuple("MatchWhen")
-                .field(
-                    &arg0
-                        .arms
-                        .iter()
-                        .map(|arm| {
-                            (
-                                Some((&arm.pattern, arm.guard.as_ref().map(|(_, expr)| expr))),
-                                &arm.equations,
-                            )
-                        })
-                        .collect::<Vec<_>>(),
-                )
-                .finish(),
-            Self::Init(arg0) => f
-                .debug_tuple("InitSignal")
-                .field(&arg0.pattern)
-                .field(&arg0.expr)
-                .finish(),
-        }
-    }
 }
