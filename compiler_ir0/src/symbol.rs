@@ -20,6 +20,13 @@ pub enum SymbolKind {
         /// Identifier type.
         typing: Option<Typ>,
     },
+    /// Initialization kind.
+    Init {
+        /// Identifier scope.
+        scope: Scope,
+        /// Identifier type.
+        typing: Option<Typ>,
+    },
     /// Flow kind.
     Flow {
         /// Flow path (local flows don't have path in real system).
@@ -147,6 +154,9 @@ impl Symbol {
             SymbolKind::Identifier { .. } => SymbolKey::Identifier {
                 name: self.name.clone(),
             },
+            SymbolKind::Init { .. } => SymbolKey::Init {
+                name: self.name.clone(),
+            },
             SymbolKind::Flow { .. } => SymbolKey::Flow {
                 name: self.name.clone(),
             },
@@ -182,6 +192,7 @@ pub enum SymbolKey {
     Period,
     Deadline,
     Identifier { name: Ident },
+    Init { name: Ident },
     Flow { name: Ident },
     Function { name: Ident },
     Node { name: Ident },
@@ -422,6 +433,25 @@ impl Table {
     ) -> TRes<usize> {
         let symbol = Symbol::new(
             SymbolKind::Identifier {
+                scope: Scope::Local,
+                typing,
+            },
+            name,
+        );
+
+        self.insert_symbol(symbol, local, errors)
+    }
+
+    /// Insert identifier in symbol table.
+    pub fn insert_init(
+        &mut self,
+        name: Ident,
+        typing: Option<Typ>,
+        local: bool,
+        errors: &mut Vec<Error>,
+    ) -> TRes<usize> {
+        let symbol = Symbol::new(
+            SymbolKind::Init {
                 scope: Scope::Local,
                 typing,
             },
