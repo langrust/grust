@@ -379,18 +379,26 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Component {
         ctx.local();
         ctx.restore_context(id);
 
-        let statements = res_vec!(
-            self.equations.len(),
-            self.equations
-                .into_iter()
-                .map(|equation| equation.into_ir1(ctx)),
-        );
+        let mut inits = Vec::with_capacity(self.equations.len());
+        let mut statements = Vec::with_capacity(self.equations.len());
+        for react_eq in self.equations {
+            let (opt_inits, opt_stmt) = react_eq.into_ir1(ctx)?;
+            if let Some(stmt) = opt_stmt {
+                statements.push(stmt);
+            }
+            if let Some(init_stmts) = opt_inits {
+                inits.extend(init_stmts);
+            }
+        }
+        statements.shrink_to_fit();
+
         let contract = self.contract.into_ir1(ctx)?;
 
         ctx.global();
 
         Ok(ir1::Component::Definition(ir1::ComponentDefinition {
             id,
+            inits,
             statements,
             contract,
             loc,
