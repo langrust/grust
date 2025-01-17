@@ -334,6 +334,22 @@ impl Stmt {
     }
 }
 
+#[derive(Debug, Clone)]
+/// Initialization statement.
+pub struct InitStmt {
+    /// Pattern of elements to initialize.
+    pub pattern: stmt::Pattern,
+    /// The expression initializing the element.
+    pub expr: Expr,
+    /// InitStmt location.
+    pub loc: Loc,
+}
+impl PartialEq for InitStmt {
+    fn eq(&self, other: &Self) -> bool {
+        self.pattern == other.pattern && self.expr == other.expr
+    }
+}
+
 pub type ExprKind = expr::Kind<Expr>;
 
 impl ExprKind {

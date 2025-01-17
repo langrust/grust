@@ -872,7 +872,9 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Eq {
 }
 
 impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
-    type Ir1 = stream::Stmt;
+    /// Reactive equations like `init` or `when` contains initializations (one or many) that are
+    /// also part of their [ir1] representation, along the (optional) [ir1::stmt::Stmt].
+    type Ir1 = (Option<Vec<stream::InitStmt>>, Option<stream::Stmt>);
 
     /// Pre-condition: equation's signal is already stored in symbol table.
     ///
@@ -896,9 +898,12 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                 ..
             })
             | ReactEq::OutputDef(Instantiation { expr, pattern, .. }) => {
-                let expr = expr.into_ir1(&mut ctx.add_pat_loc(Some(&pattern), loc))?;
+                let (opt_init, expr) = expr.into_ir1(&mut ctx.add_pat_loc(Some(&pattern), loc))?;
                 let pattern = pattern.into_ir1(&mut ctx.add_loc(loc))?;
-                Ok(ir1::Stmt { pattern, expr, loc })
+                Ok((
+                    opt_init.map(|init| vec![init]),
+                    Some(stream::Stmt { pattern, expr, loc }),
+                ))
             }
             ReactEq::Match(ir0::equation::Match { expr, arms, .. }) => {
                 // create the receiving pattern for the equation
@@ -1011,7 +1016,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                     )),
                 );
 
-                Ok(ir1::Stmt { pattern, expr, loc })
+                Ok((None, Some(stream::Stmt { pattern, expr, loc })))
             }
             ReactEq::MatchWhen(MatchWhen { init, arms, .. }) => {
                 // create the pattern defined by the equation
@@ -1055,15 +1060,24 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                 };
 
                 // signals initial values
-                let init_signal_vals =
+                let (init_signals, init_stmts) =
                     if let Some(ir0::equation::InitArmWhen { equations, .. }) = init {
-                        let mut map = HashMap::new();
+                        let mut init_signals = Vec::new();
+                        let mut init_stmts = Vec::new();
                         for ir0::equation::Instantiation { pattern, expr, .. } in equations {
-                            pattern.set_init_expr(expr, &mut map, ctx)?;
+                            pattern.get_inits(&mut init_signals);
+                            expr.check_is_constant(ctx.ctx0, ctx.errors)?;
+                            let ir1_pat = pattern.into_ir1(&mut ctx.add_loc(loc))?;
+                            let ir1_expr = expr.into_ir1(&mut ctx.add_pat_loc(None, loc))?;
+                            init_stmts.push(stream::InitStmt {
+                                pattern: ir1_pat,
+                                expr: ir1_expr,
+                                loc,
+                            });
                         }
-                        map
+                        (init_signals, Some(init_stmts))
                     } else {
-                        HashMap::new()
+                        (vec![], None)
                     };
 
                 // default arm
@@ -1075,7 +1089,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                     let guard = None;
                     // create the tuple expression
                     let expression =
-                        def_eq_pat.into_default_expr(&HashMap::new(), &init_signal_vals, ctx)?;
+                        def_eq_pat.into_default_expr(&HashMap::new(), &init_signals, ctx)?;
 
                     (pattern, guard, vec![], expression)
                 };
@@ -1158,7 +1172,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
 
                             // create the tuple expression
                             let expression =
-                                def_eq_pat.into_default_expr(&signals, &init_signal_vals, ctx)?;
+                                def_eq_pat.into_default_expr(&signals, &init_signals, ctx)?;
 
                             Ok((matched_pattern, guard, statements, expression))
                         },
@@ -1190,11 +1204,25 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
 
                 let pattern = def_eq_pat.into_ir1(&mut ctx.add_loc(&loc))?;
 
-                Ok(ir1::Stmt {
-                    pattern,
-                    expr: match_expr,
+                Ok((
+                    init_stmts,
+                    Some(stream::Stmt {
+                        pattern,
+                        expr: match_expr,
+                        loc,
+                    }),
+                ))
+            }
+            ReactEq::Init(init_signal) => {
+                init_signal.expr.check_is_constant(ctx.ctx0, ctx.errors)?;
+                let ir1_pat = init_signal.pattern.into_ir1(&mut ctx.add_loc(loc))?;
+                let ir1_expr = init_signal.expr.into_ir1(&mut ctx.add_pat_loc(None, loc))?;
+                let init_stmt = stream::InitStmt {
+                    pattern: ir1_pat,
+                    expr: ir1_expr,
                     loc,
-                })
+                };
+                Ok((Some(vec![init_stmt]), None))
             }
         }
     }
@@ -1700,17 +1728,12 @@ mod expr_pattern_impl {
 }
 
 trait Helper: Sized {
-    fn set_init_expr(
-        self,
-        expr: ir0::stream::Expr,
-        init_map: &mut HashMap<Ident, ir1::stream::Expr>,
-        ctx: &mut ctx::Simple,
-    ) -> TRes<()>;
+    fn get_inits(&self, init_signals: &mut Vec<Ident>);
 
     fn into_default_expr(
         &self,
         defined_signals: &HashMap<Ident, usize>,
-        init_signal_vals: &HashMap<Ident, ir1::stream::Expr>,
+        init_signals: &Vec<Ident>,
         ctx: &mut ctx::Simple,
     ) -> TRes<ir1::stream::Expr>;
 }
@@ -1726,7 +1749,7 @@ mod stmt_pattern_impl {
         fn into_default_expr(
             &self,
             defined_signals: &HashMap<Ident, usize>,
-            init_signal_vals: &HashMap<Ident, ir1::stream::Expr>,
+            init_signals: &Vec<Ident>,
             ctx: &mut ctx::Simple,
         ) -> TRes<ir1::stream::Expr> {
             let kind = match self {
@@ -1735,8 +1758,8 @@ mod stmt_pattern_impl {
                         ir1::stream::Kind::expr(ir1::expr::Kind::ident(*id))
                     } else {
                         let id = ctx.ctx0.get_identifier_id(&ident, false, ctx.errors)?;
-                        if init_signal_vals.contains_key(ident) {
-                            ir1::stream::Kind::fby(id, init_signal_vals[ident].clone())
+                        if init_signals.contains(ident) {
+                            ir1::stream::Kind::fby(id, todo!())
                         } else {
                             ir1::stream::Kind::none_event()
                         }
@@ -1747,8 +1770,8 @@ mod stmt_pattern_impl {
                         ir1::stream::Kind::expr(ir1::expr::Kind::ident(*id))
                     } else {
                         let id = ctx.ctx0.get_identifier_id(&ident, false, ctx.errors)?;
-                        if init_signal_vals.contains_key(ident) {
-                            ir1::stream::Kind::fby(id, init_signal_vals[ident].clone())
+                        if init_signals.contains(ident) {
+                            ir1::stream::Kind::fby(id, todo!())
                         } else {
                             ir1::stream::Kind::none_event()
                         }
@@ -1759,7 +1782,7 @@ mod stmt_pattern_impl {
                         elements.len(),
                         elements.iter().map(|pat| pat.into_default_expr(
                             defined_signals,
-                            init_signal_vals,
+                            init_signals,
                             ctx
                         )),
                     );
@@ -1769,63 +1792,19 @@ mod stmt_pattern_impl {
             Ok(stream::Expr::new(self.loc(), kind))
         }
 
-        fn set_init_expr(
-            self,
-            expr: ir0::stream::Expr,
-            init_map: &mut HashMap<Ident, ir1::stream::Expr>,
-            ctx: &mut ctx::Simple,
-        ) -> TRes<()> {
+        fn get_inits(&self, init_signals: &mut Vec<Ident>) {
             match self {
                 Self::Identifier(ident) => {
-                    expr.check_is_constant(ctx.ctx0, ctx.errors)?;
-
-                    let loc: Loc = ident.span().into();
-                    let unique = init_map.insert(
-                        ident,
-                        expr.into_ir1(&mut ctx.add_pat_loc(None, &Location::default()))?,
-                    );
-                    if unique.is_some() {
-                        ctx.errors.push(error);
-                        return Err(TerminationError);
-                    }
-                    Ok(())
+                    init_signals.push(ident.clone());
                 }
                 Self::Typed(typed) => {
-                    let ident = typed.ident.clone();
-                    let loc: Loc = ident.span().into();
-                    expr.check_is_constant(ctx.ctx0, ctx.errors)?;
-                    let unique = init_map
-                        .insert(typed.ident, expr.into_ir1(&mut ctx.add_pat_loc(None, loc))?);
-                    if unique.is_some() {
-                        ctx.errors.push(error);
-                        return Err(TerminationError);
-                    }
-                    Ok(())
+                    init_signals.push(typed.ident.clone());
                 }
                 ir0::stmt::Pattern::Tuple(ir0::stmt::Tuple {
                     elements: pat_elems,
                     ..
                 }) => {
-                    if let ir0::stream::Expr::Tuple(ir0::expr::Tuple {
-                        elements: expr_elems,
-                        loc,
-                    }) = expr
-                    {
-                        if expr_elems.len() != pat_elems.len() {
-                            bad!(ctx.errors, @loc => ErrorKind::incompatible_tuple())
-                        }
-                        for (pat, expr) in pat_elems.into_iter().zip(expr_elems) {
-                            pat.set_init_expr(expr, init_map, ctx)?
-                        }
-                        Ok(())
-                    } else {
-                        let error = Error::ExpectTuple {
-                            given_type: Typ::Any,
-                            loc: Location::default(),
-                        };
-                        ctx.errors.push(error);
-                        Err(TerminationError)
-                    }
+                    pat_elems.iter().for_each(|pat| pat.get_inits(init_signals));
                 }
             }
         }
@@ -1905,7 +1884,9 @@ mod stream_impl {
     }
 
     impl Ir0IntoIr1<ir1::ctx::PatLoc<'_>> for stream::When {
-        type Ir1 = ir1::stream::Kind;
+        /// Reactive expressions `when` can contain initializations that are
+        /// also part of their [ir1] representation, along the [ir1::stream::Kind].
+        type Ir1 = (Option<ir1::stream::InitStmt>, ir1::stream::Kind);
 
         /// Transforms AST into [ir1] and check identifiers good use.
         fn into_ir1(self, ctx: &mut ir1::ctx::PatLoc) -> TRes<Self::Ir1> {
@@ -1948,14 +1929,21 @@ mod stream_impl {
             };
 
             // signals initial values
-            let init_signal_vals = if let Some(ir0::stream::InitArmWhen { expr, .. }) = init {
-                let mut map = HashMap::new();
-                def_eq_pat
-                    .clone()
-                    .set_init_expr(expr, &mut map, &mut ctx.remove_pat_loc())?;
-                map
+            let (opt_init, init_signals) = if let Some(ir0::stream::InitArmWhen { expr, .. }) = init
+            {
+                let mut init_signals = vec![];
+                def_eq_pat.get_inits(&mut init_signals);
+                expr.check_is_constant(ctx.ctx0, ctx.errors)?;
+                let ir1_pat = def_eq_pat.clone().into_ir1(&mut ctx.remove_pat())?;
+                let ir1_expr = expr.into_ir1(ctx)?;
+                let init_stmt = ir1::stream::InitStmt {
+                    pattern: ir1_pat,
+                    expr: ir1_expr,
+                    loc: ctx.loc,
+                };
+                (Some(init_stmt), init_signals)
             } else {
-                HashMap::new()
+                (None, vec![])
             };
 
             // default arm
@@ -1968,7 +1956,7 @@ mod stream_impl {
                 // create the tuple expression
                 let expression = def_eq_pat.into_default_expr(
                     &HashMap::new(),
-                    &init_signal_vals,
+                    &init_signals,
                     &mut ctx.remove_pat_loc(),
                 )?;
 
@@ -2056,7 +2044,7 @@ mod stream_impl {
                 ir1::stream::Kind::expr(ir1::expr::Kind::match_expr(tuple_expr, match_arms))
             };
 
-            Ok(match_expr)
+            Ok((opt_init, match_expr))
         }
     }
 
@@ -2159,21 +2147,26 @@ mod stream_impl {
     }
 
     impl Ir0IntoIr1<ir1::ctx::PatLoc<'_>> for stream::ReactExpr {
-        type Ir1 = ir1::stream::Expr;
+        /// Reactive expressions `when` can contain initializations that are
+        /// also part of their [ir1] representation, along the [ir1::stream::Expr].
+        type Ir1 = (Option<ir1::stream::InitStmt>, ir1::stream::Expr);
 
         // pre-condition: identifiers are stored in symbol table
         // post-condition: construct [ir1] stream expression and check identifiers good use
         fn into_ir1(self, ctx: &mut ir1::ctx::PatLoc) -> TRes<Self::Ir1> {
             match self {
-                stream::ReactExpr::Expr(expr) => expr.into_ir1(ctx),
+                stream::ReactExpr::Expr(expr) => Ok((None, expr.into_ir1(ctx)?)),
                 stream::ReactExpr::When(expr) => {
-                    let kind = expr.into_ir1(ctx)?;
-                    Ok(ir1::stream::Expr {
-                        kind,
-                        typ: None,
-                        loc: ctx.loc,
-                        dependencies: ir1::Dependencies::new(),
-                    })
+                    let (opt_init, kind) = expr.into_ir1(ctx)?;
+                    Ok((
+                        opt_init,
+                        ir1::stream::Expr {
+                            kind,
+                            typ: None,
+                            loc: ctx.loc,
+                            dependencies: ir1::Dependencies::new(),
+                        },
+                    ))
                 }
             }
         }
