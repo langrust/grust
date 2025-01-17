@@ -119,6 +119,19 @@ mk_new! { impl Merge =>
 
 }
 
+/// GReact `time` operator.
+pub struct Time {
+    pub time_token: keyword::time,
+    pub paren_token: token::Paren,
+}
+mk_new! { impl Time =>
+    new {
+        time_token: keyword::time,
+        paren_token: token::Paren,
+    }
+
+}
+
 /// Component call.
 pub struct ComponentCall {
     /// Identifier to the component to call.
@@ -146,6 +159,8 @@ pub enum FlowExpression {
     ComponentCall(ComponentCall),
     /// Identifier to flow.
     Ident(Ident),
+    /// Time flow.
+    Time(Time)
 }
 
 mk_new! { impl FlowExpression =>
@@ -156,6 +171,7 @@ mk_new! { impl FlowExpression =>
     Throttle: throttle (val: Throttle = val)
     OnChange: on_change (val: OnChange = val)
     Merge: merge (val: Merge = val)
+    Time: time (val: Time = val)
     ComponentCall: comp_call (val: ComponentCall = val)
 }
 

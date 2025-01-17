@@ -32,6 +32,7 @@ custom_keyword!(timeout);
 custom_keyword!(throttle);
 custom_keyword!(on_change);
 custom_keyword!(merge);
+custom_keyword!(time);
 
 // Types
 custom_keyword!(int);

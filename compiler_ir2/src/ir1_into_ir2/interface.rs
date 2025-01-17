@@ -498,7 +498,8 @@ mod flow_instr {
                         match &expr.kind {
                             flow::Kind::Ident { .. }
                             | flow::Kind::Throttle { .. }
-                            | flow::Kind::Merge { .. } => (),
+                            | flow::Kind::Merge { .. }
+                            | flow::Kind::Time { .. } => (),
                             flow::Kind::OnChange { .. } => {
                                 // get the identifier of the created event
                                 let mut ids = pattern.identifiers();
@@ -798,6 +799,7 @@ mod flow_instr {
                 }
                 flow::Kind::OnChange { .. } => self.handle_on_change(pattern, dependencies),
                 flow::Kind::Merge { .. } => self.handle_merge(pattern, dependencies),
+                flow::Kind::Time { loc } => self.handle_time(pattern, *loc),
                 flow::Kind::ComponentCall {
                     component_id,
                     inputs,
@@ -1059,6 +1061,17 @@ mod flow_instr {
                 }
                 (false, false) => unreachable!("'merge' should be activated by one of its sources"),
             }
+        }
+
+        /// Compute the instruction from a time expression.
+        fn handle_time(&mut self, pattern: &ir1::stmt::Pattern, loc: Loc) -> FlowInstruction {
+            // get the id of pattern's flow, debug-check there is only one flow
+            let mut ids = pattern.identifiers();
+            debug_assert!(ids.len() == 1);
+            let id_pattern = ids.pop().unwrap();
+            // retrieve the instant of computation
+            let expr = Expression::instant(Ident::new("instant", loc.into()));
+            self.define_signal(id_pattern, expr)
         }
 
         /// Compute the instruction from a component call.

@@ -980,6 +980,8 @@ pub enum Expression {
     },
     /// None expression: `None`.
     None,
+    /// Retrieve the instant of computation.
+    Instant { ident: Ident },
 }
 
 mk_new! { impl Expression =>
@@ -1002,6 +1004,7 @@ mk_new! { impl Expression =>
         expression: Expression = expression.into()
     }
     None: none {}
+    Instant: instant { ident: Ident }
 }
 
 impl Expression {
@@ -1027,6 +1030,7 @@ impl Expression {
                 parse_quote! { Some(#expression) }
             }
             Expression::None => parse_quote! { None },
+            Expression::Instant { ident } => parse_quote! { #ident },
         }
     }
 }

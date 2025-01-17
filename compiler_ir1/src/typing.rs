@@ -290,6 +290,10 @@ impl Typing for flow::Expr {
                     }
                 }
             }
+            flow::Kind::Time { .. } => {
+                self.typ = Some(Typ::signal(Typ::float()));
+                Ok(())
+            }
             flow::Kind::ComponentCall {
                 ref component_id,
                 ref mut inputs,

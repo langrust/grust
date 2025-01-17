@@ -49,6 +49,8 @@ pub enum Kind {
         expr_1: Box<Expr>,
         expr_2: Box<Expr>,
     },
+    /// GReact `time` operator.
+    Time { loc: Loc },
     /// Component call.
     ComponentCall {
         /// Identifier to the component to call.
@@ -95,12 +97,13 @@ impl Expr {
                 .iter()
                 .flat_map(|(_, expr)| expr.get_dependencies())
                 .collect(),
+            Kind::Time { .. } => vec![],
         }
     }
 
     pub fn is_normal(&self) -> bool {
         match &self.kind {
-            flow::Kind::Ident { .. } => true,
+            flow::Kind::Ident { .. } | Kind::Time { .. } => true,
             flow::Kind::Sample { expr, .. }
             | flow::Kind::Scan { expr, .. }
             | flow::Kind::Timeout { expr, .. }
@@ -149,7 +152,7 @@ impl Expr {
         ctx: &mut Ctx,
     ) -> Vec<interface::FlowStatement> {
         match &mut self.kind {
-            flow::Kind::Ident { .. } => vec![],
+            flow::Kind::Ident { .. } | Kind::Time { .. } => vec![],
             flow::Kind::Sample { expr, .. } => expr.into_flow_call(identifier_creator, ctx),
             flow::Kind::Scan { expr, .. } => expr.into_flow_call(identifier_creator, ctx),
             flow::Kind::Timeout { expr, .. } => expr.into_flow_call(identifier_creator, ctx),
