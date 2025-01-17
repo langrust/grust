@@ -75,12 +75,22 @@ mod component {
 
             // store locals and get their ids
             let locals = {
-                let mut map = HashMap::with_capacity(25);
+                let mut locals = HashMap::with_capacity(25);
                 for equation in self.equations.iter() {
-                    equation.store_signals(false, &mut map, ctx.ctx0, ctx.errors)?;
+                    equation.store_signals(false, &mut locals, ctx.ctx0, ctx.errors)?;
                 }
-                map.shrink_to_fit();
-                map
+                locals.shrink_to_fit();
+                locals
+            };
+
+            // store inits and get their ids
+            let inits = {
+                let mut inits = HashMap::with_capacity(5);
+                for equation in self.equations.iter() {
+                    equation.store_inits(&mut inits, ctx.ctx0, ctx.errors)?;
+                }
+                inits.shrink_to_fit();
+                inits
             };
 
             ctx.global();
@@ -92,6 +102,7 @@ mod component {
                 eventful,
                 outputs,
                 locals,
+                inits,
                 period,
                 ctx.errors,
             )?;
@@ -168,6 +179,7 @@ mod component {
                 .collect::<TRes<Vec<_>>>()?;
 
             let locals = Default::default();
+            let inits = Default::default();
 
             symbol_table.global();
 
@@ -178,6 +190,7 @@ mod component {
                 eventful,
                 outputs,
                 locals,
+                inits,
                 period,
                 errors,
             )?;
@@ -205,6 +218,13 @@ pub trait Ir0StoreSignals {
         &self,
         store_outputs: bool,
         signals: &mut HashMap<Ident, usize>,
+        symbol_table: &mut Ctx,
+        errors: &mut Vec<Error>,
+    ) -> TRes<()>;
+
+    fn store_inits(
+        &self,
+        inits: &mut HashMap<Ident, usize>,
         symbol_table: &mut Ctx,
         errors: &mut Vec<Error>,
     ) -> TRes<()>;
@@ -273,6 +293,15 @@ mod equation {
                     Ok(())
                 }
             }
+        }
+
+        fn store_inits(
+            &self,
+            _inits: &mut HashMap<Ident, usize>,
+            _symbol_table: &mut Ctx,
+            _errors: &mut Vec<Error>,
+        ) -> TRes<()> {
+            Ok(())
         }
 
         fn get_signals(
@@ -347,17 +376,13 @@ mod equation {
             errors: &mut Vec<Error>,
         ) -> TRes<()> {
             match self {
-                ReactEq::Init(init) => init
-                    .pattern
-                    .store_inits(symbol_table, errors)
-                    .map(|idents| signals.extend(idents)),
                 // output definitions should be stored
                 ReactEq::OutputDef(instantiation) if store_outputs => instantiation
                     .pattern
                     .store(false, symbol_table, errors)
                     .map(|idents| signals.extend(idents)),
                 // when output definitions are already stored (as component's outputs)
-                ReactEq::OutputDef(_) => Ok(()),
+                ReactEq::OutputDef(_) | ReactEq::Init(_) => Ok(()),
                 ReactEq::LocalDef(declaration) => declaration
                     .typed_pattern
                     .store(true, symbol_table, errors)
@@ -369,12 +394,7 @@ mod equation {
                     }
                     Ok(())
                 }
-                ReactEq::MatchWhen(MatchWhen { init, arms, .. }) => {
-                    // store initializations
-                    if let Some(init) = init {
-                        init.store_inits(signals, symbol_table, errors)?;
-                    }
-
+                ReactEq::MatchWhen(MatchWhen { arms, .. }) => {
                     // we want to collect every identifier, but events might be declared in only one
                     // branch then, it is needed to explore all branches
                     let mut when_signals = HashMap::new();
@@ -405,6 +425,52 @@ mod equation {
                             signals.insert(k, v);
                             symbol_table.put_back_in_context(v, false, loc, errors)?;
                         }
+                    }
+                    Ok(())
+                }
+            }
+        }
+
+        fn store_inits(
+            &self,
+            inits: &mut HashMap<Ident, usize>,
+            symbol_table: &mut Ctx,
+            errors: &mut Vec<Error>,
+        ) -> TRes<()> {
+            match self {
+                ReactEq::Init(init) => init
+                    .pattern
+                    .store_inits(symbol_table, errors)
+                    .map(|idents| inits.extend(idents)),
+                ReactEq::OutputDef(instantiation) => {
+                    if let ir0::stream::ReactExpr::When(ir0::stream::When {
+                        init: Some(_), ..
+                    }) = instantiation.expr
+                    {
+                        instantiation
+                            .pattern
+                            .store_inits(symbol_table, errors)
+                            .map(|idents| inits.extend(idents))?;
+                    }
+                    Ok(())
+                }
+                ReactEq::LocalDef(declaration) => {
+                    if let ir0::stream::ReactExpr::When(ir0::stream::When {
+                        init: Some(_), ..
+                    }) = declaration.expr
+                    {
+                        declaration
+                            .typed_pattern
+                            .store_inits(symbol_table, errors)
+                            .map(|idents| inits.extend(idents))?;
+                    }
+                    Ok(())
+                }
+                ReactEq::Match(Match { .. }) => Ok(()),
+                ReactEq::MatchWhen(MatchWhen { init, .. }) => {
+                    // store initializations
+                    if let Some(init) = init {
+                        init.store_inits(inits, symbol_table, errors)?;
                     }
                     Ok(())
                 }

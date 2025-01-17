@@ -57,6 +57,8 @@ pub enum SymbolKind {
         outputs: Vec<(Ident, usize)>,
         /// Node's local identifiers.
         locals: HashMap<Ident, usize>,
+        /// Node's initialized identifiers.
+        inits: HashMap<Ident, usize>,
         /// Node's period of execution.
         period: Option<u64>,
         /// Node's periodic timer identifier.
@@ -317,6 +319,19 @@ impl Table {
         }
     }
 
+    pub fn unknown_init_error<T>(&self, id: &Ident) -> Res<T> {
+        let str = id.to_string();
+        let max_levenshtein_distance = 2;
+        let e = error!(@id.loc() => ErrorKind::unknown_init(str.clone()));
+        if let Some(symbol) = self.levenshtein_closest(&str, max_levenshtein_distance) {
+            Err(e
+                .add_note(note!("did you mean `{}`?", symbol.name_string))
+                .add_note(note!(@symbol.name.loc() => "declared here")))
+        } else {
+            Err(e)
+        }
+    }
+
     /// Initialize symbol table with builtin operators.
     pub fn initialize(&mut self) {
         // initialize with unary, binary and other operators
@@ -533,6 +548,7 @@ impl Table {
         eventful: bool,
         outputs: Vec<(Ident, usize)>,
         locals: HashMap<Ident, usize>,
+        inits: HashMap<Ident, usize>,
         period: Option<u64>,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
@@ -542,6 +558,7 @@ impl Table {
                 eventful,
                 outputs,
                 locals,
+                inits,
                 period,
                 period_id: None,
             },
@@ -762,11 +779,13 @@ impl Table {
                 inputs,
                 outputs,
                 locals,
+                inits,
                 ..
             } => {
                 self.restore_context_from(inputs.iter());
                 self.restore_context_from(outputs.iter().map(|(_, id)| id));
                 self.restore_context_from(locals.values());
+                self.restore_context_from(inits.values());
             }
             _ => unreachable!(),
         }
@@ -796,6 +815,9 @@ impl Table {
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Identifier { typing, .. } => typing
+                .as_ref()
+                .expect(&format!("{} should be typed", symbol.name)),
+            SymbolKind::Init { typing, .. } => typing
                 .as_ref()
                 .expect(&format!("{} should be typed", symbol.name)),
             SymbolKind::Flow { typing, .. } => typing,
@@ -1329,6 +1351,16 @@ impl Table {
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
             None => self.unknown_ident_error(name).dewrap(errors),
+            // bad!(errors, @name.loc() => ErrorKind::unknown_ident(name.to_string())),
+        }
+    }
+
+    /// Get init symbol identifier.
+    pub fn get_init_id(&self, name: &Ident, local: bool, errors: &mut Vec<Error>) -> TRes<usize> {
+        let symbol_hash = SymbolKey::Init { name: name.clone() };
+        match self.known_symbols.get_id(&symbol_hash, local) {
+            Some(id) => Ok(id),
+            None => self.unknown_init_error(name).dewrap(errors),
             // bad!(errors, @name.loc() => ErrorKind::unknown_ident(name.to_string())),
         }
     }

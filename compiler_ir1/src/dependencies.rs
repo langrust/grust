@@ -917,7 +917,7 @@ impl stream::Expr {
             stream::Kind::SomeEvent { expr } | stream::Kind::RisingEdge { expr } => {
                 expr.get_called_nodes(target)
             }
-            stream::Kind::FollowedBy { .. } | stream::Kind::NoneEvent => (),
+            stream::Kind::Last { .. } | stream::Kind::NoneEvent => (),
             stream::Kind::NodeApplication {
                 called_node_id,
                 inputs,
@@ -949,13 +949,9 @@ impl stream::Expr {
     /// of the memory of `x` (the signal is behind 2 fby operations).
     pub fn compute_dependencies(&self, ctx: &mut GraphProcCtx) -> TRes<()> {
         match &self.kind {
-            stream::Kind::FollowedBy { ref constant, id } => {
-                // constant should not have dependencies
-                constant.compute_dependencies(ctx)?;
-                debug_assert!({ constant.get_dependencies().is_empty() });
-
+            stream::Kind::Last { signal_id, .. } => {
                 // dependencies with the memory delay
-                self.dependencies.set(vec![(*id, Label::Weight(1))]);
+                self.dependencies.set(vec![(*signal_id, Label::Weight(1))]);
                 Ok(())
             }
             stream::Kind::RisingEdge { ref expr } => {

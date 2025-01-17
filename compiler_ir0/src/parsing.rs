@@ -703,15 +703,7 @@ mod parse_stream {
             let mut loc = Loc::from(kw.span);
             let ident: Ident = input.parse()?;
             loc = loc.join(ident.loc());
-            let constant = if input.peek(keyword::init) {
-                let _: keyword::init = input.parse()?;
-                let constant: stream::Expr = input.parse()?;
-                loc = loc.join(constant.loc());
-                Some(constant)
-            } else {
-                None
-            };
-            Ok(Last::new(loc, ident, constant))
+            Ok(Last::new(loc, ident))
         }
     }
 
@@ -2316,7 +2308,8 @@ mod parsing_tests {
     fn component() {
         let _: Component = parse_quote! {
             component counter(res: bool, tick: bool) -> (o: int) {
-                o = if res then 0 else (last o init 0) + inc;
+                init o = 0;
+                o = if res then 0 else (last o) + inc;
                 let inc: int = if tick then 1 else 0;
             }
         };
@@ -2342,18 +2335,6 @@ mod parsing_tests {
             let control = ReactExpr::expr(Expr::last(Last::new(
                 Loc::test_dummy(),
                 syn::parse_quote! {x},
-                None,
-            )));
-            assert_eq!(expression, control)
-        }
-
-        #[test]
-        fn should_parse_initialized_last() {
-            let expression: ReactExpr = syn::parse_quote! {last x init 0};
-            let control = ReactExpr::expr(Expr::last(Last::new(
-                Loc::test_dummy(),
-                syn::parse_quote! {x},
-                Some(Expr::cst(Constant::int(syn::parse_quote! {0}))),
             )));
             assert_eq!(expression, control)
         }
@@ -3093,7 +3074,7 @@ mod parsing_tests {
 
         #[test]
         fn should_parse_output_definition() {
-            let equation: ReactEq = parse_quote! {o = if res then 0 else (last o init 0) + inc;};
+            let equation: ReactEq = parse_quote! {o = if res then 0 else (last o) + inc;};
             let control = ReactEq::out_def(Instantiation {
                 pattern: parse_quote! {o},
                 eq_token: parse_quote! {=},
@@ -3104,11 +3085,7 @@ mod parsing_tests {
                     stream::Expr::binop(expr::BinOp::new(
                         BOp::Add,
                         Loc::test_dummy(),
-                        stream::Expr::last(stream::Last::new(
-                            Loc::test_dummy(),
-                            parse_quote! {o},
-                            Some(stream::Expr::cst(Constant::int(parse_quote! {0}))),
-                        )),
+                        stream::Expr::last(stream::Last::new(Loc::test_dummy(), parse_quote! {o})),
                         stream::Expr::test_ident("inc"),
                     )),
                 ))),
@@ -3120,7 +3097,7 @@ mod parsing_tests {
         #[test]
         fn should_parse_tuple_instantiation() {
             let equation: ReactEq = parse_quote! {
-                (o1, o2) = if res then (0, 0) else ((last o1 init 0) + inc1, last o2 + inc2);
+                (o1, o2) = if res then (0, 0) else ((last o1) + inc1, last o2 + inc2);
             };
             let control = ReactEq::out_def(Instantiation {
                 pattern: stmt::Pattern::tuple(stmt::Tuple::new(
@@ -3147,7 +3124,6 @@ mod parsing_tests {
                                 stream::Expr::last(stream::Last::new(
                                     Loc::test_dummy(),
                                     parse_quote! {o1},
-                                    Some(stream::Expr::cst(Constant::int(parse_quote! {0}))),
                                 )),
                                 stream::Expr::test_ident("inc1"),
                             )),
@@ -3157,7 +3133,6 @@ mod parsing_tests {
                                 stream::Expr::last(stream::Last::new(
                                     Loc::test_dummy(),
                                     parse_quote! {o2},
-                                    None,
                                 )),
                                 stream::Expr::test_ident("inc2"),
                             )),
@@ -3189,11 +3164,7 @@ mod parsing_tests {
                     stream::Expr::binop(expr::BinOp::new(
                         BOp::Add,
                         Loc::test_dummy(),
-                        stream::Expr::last(stream::Last::new(
-                            Loc::test_dummy(),
-                            parse_quote! {o},
-                            None,
-                        )),
+                        stream::Expr::last(stream::Last::new(Loc::test_dummy(), parse_quote! {o})),
                         stream::Expr::test_ident("inc"),
                     )),
                 ))),
@@ -3206,7 +3177,7 @@ mod parsing_tests {
         fn should_parse_multiple_definitions() {
             let equation: ReactEq = parse_quote! {
                 let (o1: int, o2: int) =
-                    if res then (0, 0) else ((last o1 init 0) + inc1, last o2 + inc2);
+                    if res then (0, 0) else ((last o1) + inc1, last o2 + inc2);
             };
             let control = ReactEq::local_def(stmt::LetDecl::new(
                 parse_quote!(let),
@@ -3245,7 +3216,6 @@ mod parsing_tests {
                                 stream::Expr::last(stream::Last::new(
                                     Loc::test_dummy(),
                                     parse_quote! {o1},
-                                    Some(stream::Expr::cst(Constant::int(parse_quote! {0}))),
                                 )),
                                 stream::Expr::test_ident("inc1"),
                             )),
@@ -3255,7 +3225,6 @@ mod parsing_tests {
                                 stream::Expr::last(stream::Last::new(
                                     Loc::test_dummy(),
                                     parse_quote! {o2},
-                                    None,
                                 )),
                                 stream::Expr::test_ident("inc2"),
                             )),

@@ -660,8 +660,8 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::stream::Expr {
             Expression { expr } => expr.into_ir2(ctx),
             SomeEvent { expr } => ir2::Expr::some(expr.into_ir2(ctx)),
             NoneEvent => ir2::Expr::none(),
-            FollowedBy { id, .. } => {
-                let name = ctx.get_name(id).clone();
+            Last { signal_id, .. } => {
+                let name = ctx.get_name(signal_id).clone();
                 ir2::Expr::MemoryAccess { identifier: name }
             }
             RisingEdge { .. } => unreachable!(),
