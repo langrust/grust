@@ -10,7 +10,7 @@ fn should_compile_multiple_events() {
             d = when { init => 0, (a?, b?) => 10 * a + b };
             when {
                 init => {
-                    let z: int = 0;
+                    z = 0;
                 }
                 (let a = a?, let b = b?) if v > 50 => {
                     let z: int = 1;

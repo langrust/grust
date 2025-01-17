@@ -8,7 +8,7 @@ grust! {
         let y: unit? = when { v > 50 => emit () };
         when {
             init => {
-                let (aux1: int, aux2: int, aux3: int, z: int) = (0,0,0,0);
+                (aux1, aux2, aux3, z) = (0,0,0,0);
             }
             (let a = a?, let b = b?) => {
                 let aux1: int = a;
@@ -34,7 +34,7 @@ grust! {
         d = when { init => 0.0, let a = y? => 0.1 };
         when {
             init => {
-                let z: int = 0;
+                z = 0;
             }
             (a?, let e = b?) => {
                 let z: int =  if v > 50 then e else a;
@@ -63,7 +63,7 @@ grust! {
 
         when {
             init => {
-                let z: int = 0;
+                z = 0;
             }
             (a?, let _ = b?) => {
                 let z: int = if v > 50 then 1 else 0;

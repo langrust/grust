@@ -128,6 +128,7 @@ grust! {
     ) @ 10 ms {
         let prev_state: SpeedLimiter = last state;
         let prev_on_state: SpeedLimiterOn = last on_state;
+        init on_state = SpeedLimiterOn::StandBy;
         state = when {
             init => SpeedLimiter::Off,
             activation_req? if activation_req == ActivationRequest::Off => SpeedLimiter::Off,
@@ -164,7 +165,8 @@ grust! {
         state_update: bool,
     ) {
         state_update = prev_on_state != on_state;
-        let prev_hysterisis: Hysterisis = last hysterisis init new_hysterisis(0.0);
+        init hysterisis = new_hysterisis(0.0);
+        let prev_hysterisis: Hysterisis = last hysterisis;
         in_reg = in_regulation(hysterisis);
         let kickdown_state: Kickdown = when {
             init => Kickdown::Deactivated,

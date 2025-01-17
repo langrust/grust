@@ -14,7 +14,7 @@ fn should_compile_define_events() {
             d = when { y? => emit 0.1 };
             when {
                 init             => {
-                    let z: int = 0;
+                    z = 0;
                 }
                 (a?, let e = b?) => {
                     let z: int =  if v > 50 then e else a;

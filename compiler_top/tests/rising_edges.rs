@@ -15,7 +15,7 @@ fn should_compile_rising_edges() {
             let w: int? = when { v > 50 => emit v + (last c) };
             when {
                 init => {
-                    let z: int = 0;
+                    z = 0;
                 }
                 (a?, let e = b?, v > 50) => {
                     let z: int =  if v > 80 then e else a;
