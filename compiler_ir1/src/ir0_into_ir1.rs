@@ -806,7 +806,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Eq {
                                 // store equations' signals in the local context
                                 equation.store_signals(true, &mut signals, ctx.ctx0, ctx.errors)
                             })
-                            .collect::<TRes<()>>()?;
+                            .collect_res()?;
 
                         // transform pattern guard and equations into [ir1] with local
                         // context
@@ -1153,22 +1153,14 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                             };
 
                             // set and get local context: equations' signals
-                            let signals = {
-                                let mut signals = HashMap::new();
-                                equations
-                                    .iter()
-                                    .map(|equation| {
-                                        // store equations' signals in the local context
-                                        equation.store_signals(
-                                            true,
-                                            &mut signals,
-                                            ctx.ctx0,
-                                            ctx.errors,
-                                        )
-                                    })
-                                    .collect_res()?;
-                                signals
-                            };
+                            let mut signals = HashMap::new();
+                            equations
+                                .iter()
+                                .map(|equation| {
+                                    // store equations' signals in the local context
+                                    equation.store_signals(true, &mut signals, ctx.ctx0, ctx.errors)
+                                })
+                                .collect_res()?;
 
                             // transform equations into [ir1] with local context
                             let statements = res_vec!(
@@ -1761,25 +1753,15 @@ mod stmt_pattern_impl {
             ctx: &mut ctx::Simple,
         ) -> TRes<ir1::stream::Expr> {
             let kind = match self {
-                ir0::stmt::Pattern::Identifier(ident) => {
+                ir0::stmt::Pattern::Identifier(ident)
+                | ir0::stmt::Pattern::Typed(Typed { ident, .. }) => {
                     if let Some(id) = defined_signals.get(&ident) {
                         ir1::stream::Kind::expr(ir1::expr::Kind::ident(*id))
                     } else {
-                        let id = ctx.ctx0.get_identifier_id(&ident, false, ctx.errors)?;
+                        let signal_id = ctx.ctx0.get_identifier_id(&ident, false, ctx.errors)?;
                         if init_signals.contains(ident) {
-                            ir1::stream::Kind::fby(id, todo!())
-                        } else {
-                            ir1::stream::Kind::none_event()
-                        }
-                    }
-                }
-                ir0::stmt::Pattern::Typed(Typed { ident, .. }) => {
-                    if let Some(id) = defined_signals.get(&ident) {
-                        ir1::stream::Kind::expr(ir1::expr::Kind::ident(*id))
-                    } else {
-                        let id = ctx.ctx0.get_identifier_id(&ident, false, ctx.errors)?;
-                        if init_signals.contains(ident) {
-                            ir1::stream::Kind::fby(id, todo!())
+                            let init_id = ctx.ctx0.get_init_id(&ident, false, ctx.errors)?;
+                            ir1::stream::Kind::last(init_id, signal_id)
                         } else {
                             ir1::stream::Kind::none_event()
                         }
@@ -2105,21 +2087,9 @@ mod stream_impl {
                     )),
                 },
                 stream::Expr::Last(last) => {
-                    let loc = last.ident.loc();
-                    let default = Kind::expr(ir1::expr::Kind::constant(Constant::Default(loc)));
-                    let constant =
-                        last.constant
-                            .map_or(Ok(ir1::stream::Expr::new(loc, default)), |cst| {
-                                // check the constant expression is indeed constant
-                                cst.check_is_constant(ctx.ctx0, ctx.errors)?;
-                                cst.into_ir1(ctx)
-                            })?;
-
-                    let id = ctx.ctx0.get_identifier_id(&last.ident, false, ctx.errors)?;
-                    Kind::FollowedBy {
-                        constant: Box::new(constant),
-                        id,
-                    }
+                    let init_id = ctx.ctx0.get_init_id(&last.ident, false, ctx.errors)?;
+                    let signal_id = ctx.ctx0.get_ident(&last.ident, false, false, ctx.errors)?;
+                    Kind::last(init_id, signal_id)
                 }
                 stream::Expr::Emit(emit) => Kind::some_event(emit.expr.into_ir1(ctx)?),
                 stream::Expr::Constant(constant) => Kind::Expression {

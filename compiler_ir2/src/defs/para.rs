@@ -58,7 +58,7 @@ impl<'a> synced::CtxSpec for Ctx<'a> {
                 }
             }
             Kind::RisingEdge { .. } => 10,
-            Kind::FollowedBy { .. } => 0,
+            Kind::Last { .. } => 0,
             Kind::NoneEvent => 0,
             Kind::SomeEvent { .. } => 0,
         }

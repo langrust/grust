@@ -10,8 +10,6 @@ pub struct Last {
     pub loc: Loc,
     /// Signal identifier.
     pub ident: Ident,
-    /// The initialization constant.
-    pub constant: Option<Box<Expr>>,
 }
 impl HasLoc for Last {
     fn loc(&self) -> Loc {
@@ -22,7 +20,6 @@ mk_new! { impl Last =>
     new {
         loc: impl Into<Loc> = loc.into(),
         ident: Ident,
-        constant: Option<Expr> = constant.map(Expr::into),
     }
 }
 

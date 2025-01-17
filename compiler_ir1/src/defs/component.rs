@@ -398,6 +398,10 @@ impl ComponentDefinition {
         symbol_table.local();
         let mut memory = Memory::new();
 
+        for init in self.inits.drain(..) {
+            init.memorize(&mut memory, symbol_table)?;
+        }
+
         for statement in self.statements.iter_mut() {
             statement.memorize(
                 &mut identifier_creator,
@@ -471,14 +475,19 @@ impl ComponentDefinition {
         let mut identifier_creator = IdentifierCreator::from(self.get_signals_names(symbol_table));
         symbol_table.local();
 
-        self.statements = self
-            .statements
-            .clone()
-            .into_iter()
-            .flat_map(|equation| {
-                equation.normal_form(nodes_reduced_graphs, &mut identifier_creator, symbol_table)
-            })
-            .collect();
+        for init in &self.inits {
+            // initialization expressions should already be in normal form
+            debug_assert!(init.expr.is_normal_form());
+        }
+
+        let mut new_stmts = vec![];
+        for stmt in self.statements.drain(..) {
+            let (add_stmts, add_inits) =
+                stmt.normal_form(nodes_reduced_graphs, &mut identifier_creator, symbol_table);
+            new_stmts.extend(add_stmts);
+            self.inits.extend(add_inits);
+        }
+        self.statements = new_stmts;
 
         // drop IdentifierCreator (auto) and local Ctx
         symbol_table.global();

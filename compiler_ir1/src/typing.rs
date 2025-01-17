@@ -61,6 +61,9 @@ impl Typing for Component {
 
 impl Typing for ComponentDefinition {
     fn typ_check(&mut self, symbols: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
+        for init in self.inits.iter_mut() {
+            init.typ_check(symbols, errors)?;
+        }
         for stmt in self.statements.iter_mut() {
             stmt.typ_check(symbols, errors)?;
         }
@@ -338,21 +341,9 @@ impl Typing for flow::Expr {
 impl Typing for stream::Expr {
     fn typ_check(&mut self, symbols: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         match self.kind {
-            stream::Kind::FollowedBy {
-                id,
-                ref mut constant,
-            } => {
-                // type expressions
-                constant.typ_check(symbols, errors)?;
-
-                // check it is equal to constant type
-                let id_type = symbols.get_typ(id);
-                // #TODO no `unwrap`
-                let constant_type = constant.get_typ().unwrap();
-                id_type.expect(self.loc, constant_type).dewrap(errors)?;
-
+            stream::Kind::Last { signal_id, .. } => {
                 // check the scope is not 'very_local'
-                let sym = symbols.resolve_symbol(self.loc, id).dewrap(errors)?;
+                let sym = symbols.resolve_symbol(self.loc, signal_id).dewrap(errors)?;
                 if sym
                     .kind()
                     .scope()
@@ -364,7 +355,8 @@ impl Typing for stream::Expr {
                     )
                 }
 
-                self.typ = Some(constant_type.clone());
+                let id_type = symbols.get_typ(signal_id);
+                self.typ = Some(id_type.clone());
                 Ok(())
             }
 
@@ -442,6 +434,22 @@ impl Typing for stream::Expr {
 }
 
 impl<E: Typing> Typing for Stmt<E> {
+    // pre-condition: identifiers associated with statement is already typed
+    // post-condition: expression associated with statement is typed and checked
+    fn typ_check(&mut self, symbols: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
+        self.pattern.typ_check(symbols, errors)?;
+        let expected_type = self.pattern.typ.as_ref().unwrap();
+
+        self.expr.typ_check(symbols, errors)?;
+        let expr_type = self.expr.get_typ().unwrap();
+
+        expr_type.expect(self.loc, expected_type).dewrap(errors)?;
+
+        Ok(())
+    }
+}
+
+impl Typing for stream::InitStmt {
     // pre-condition: identifiers associated with statement is already typed
     // post-condition: expression associated with statement is typed and checked
     fn typ_check(&mut self, symbols: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {

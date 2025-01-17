@@ -86,6 +86,11 @@ pub enum ErrorKind {
         /// The unknown identifier.
         name: String,
     },
+    /// Unknown initialization.
+    UnknownInit {
+        /// The unknown initialization.
+        name: String,
+    },
     /// Encountering an unknown signal.
     UnknownSignal {
         /// The unknown identifier.
@@ -312,6 +317,9 @@ mk_new! { impl ErrorKind =>
     UnknownIdent: unknown_ident {
         name: impl Into<String> = name.into(),
     }
+    UnknownInit: unknown_init {
+        name: impl Into<String> = name.into(),
+    }
     UnknownEnumerationElement: unknown_enum_elem {
         name: impl Into<String> = name.into(),
         variant: impl Into<String> = variant.into(),
@@ -355,6 +363,7 @@ impl Display for ErrorKind {
         match self {
             Msg { msg } => msg.fmt(f),
             UnknownIdent { name } => write!(f, "unknown identifier `{name}`"),
+            UnknownInit { name } => write!(f, "identifier `{name}` not initialized"),
             UnknownEnumerationElement { name, variant } => {
                 write!(f, "unknown enumeration variant `{name}::{variant}`")
             }
