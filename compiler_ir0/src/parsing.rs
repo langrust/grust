@@ -267,6 +267,24 @@ mod interface {
         }
     }
 
+    impl Time {
+        pub fn peek(input: ParseStream) -> bool {
+            input.peek(keyword::time)
+        }
+    }
+    impl Parse for Time {
+        fn parse(input: ParseStream) -> syn::Res<Self> {
+            let time_token: keyword::time = input.parse()?;
+            let content;
+            let paren_token: token::Paren = parenthesized!(content in input);
+            if content.is_empty() {
+                Ok(Time::new(time_token, paren_token))
+            } else {
+                Err(content.error("no input expected"))
+            }
+        }
+    }
+
     impl Parse for ComponentCall {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let ident_component: Ident = input.parse()?;
@@ -274,13 +292,6 @@ mod interface {
             let paren_token: token::Paren = parenthesized!(content in input);
             let inputs: Punctuated<FlowExpression, Token![,]> =
                 Punctuated::parse_terminated(&content)?;
-            // let ident_signal: Option<(Token![.], Ident)> = {
-            //     if input.peek(Token![.]) {
-            //         Some((input.parse()?, input.parse()?))
-            //     } else {
-            //         None
-            //     }
-            // };
             Ok(ComponentCall {
                 ident_component,
                 paren_token,
@@ -303,6 +314,8 @@ mod interface {
                 Ok(Self::on_change(input.parse()?))
             } else if Merge::peek(input) {
                 Ok(Self::merge(input.parse()?))
+            } else if Time::peek(input) {
+                Ok(Self::time(input.parse()?))
             } else if input.fork().call(ComponentCall::parse).is_ok() {
                 Ok(Self::comp_call(input.parse()?))
             } else {
@@ -2298,6 +2311,7 @@ mod parsing_tests {
         let _: Service = parse_quote! {
             service aeb {
                 let event pedestrian: float = merge(pedestrian_l, pedestrian_r);
+                let signal t: float = time();
                 let event timeout_pedestrian: unit = timeout(pedestrian, 2000);
                 brakes = braking_state(pedestrian, timeout_pedestrian, speed_km_h);
             }

@@ -459,7 +459,8 @@ impl FlowStatement {
                     flow::Kind::Ident { .. }
                     | flow::Kind::OnChange { .. }
                     | flow::Kind::Timeout { .. }
-                    | flow::Kind::Merge { .. } => (),
+                    | flow::Kind::Merge { .. }
+                    | flow::Kind::Time { .. } => (),
                 }
             }
         }

@@ -434,7 +434,7 @@ mod flow_expr_impl {
     prelude! {
         ir0::interface::{
             FlowExpression, ComponentCall, OnChange, Merge,
-            Scan, Throttle, Timeout,
+            Scan, Throttle, Timeout, Time,
         },
         ir1::flow,
     }
@@ -510,6 +510,17 @@ mod flow_expr_impl {
         }
     }
 
+    impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for Time {
+        type Ir1 = ir1::flow::Kind;
+
+        /// Transforms AST into [ir1] and check identifiers good use.
+        fn into_ir1(self, _ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
+            Ok(ir1::flow::Kind::Time {
+                loc: self.time_token.span.into(),
+            })
+        }
+    }
+
     impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for ComponentCall {
         type Ir1 = ir1::flow::Kind;
 
@@ -563,6 +574,7 @@ mod flow_expr_impl {
                 FlowExpression::Throttle(expr) => expr.into_ir1(ctx)?,
                 FlowExpression::OnChange(expr) => expr.into_ir1(ctx)?,
                 FlowExpression::Merge(expr) => expr.into_ir1(ctx)?,
+                FlowExpression::Time(expr) => expr.into_ir1(ctx)?,
             };
             Ok(flow::Expr {
                 kind,
