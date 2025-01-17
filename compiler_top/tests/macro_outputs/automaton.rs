@@ -17,9 +17,7 @@ pub struct SumState {
 }
 impl SumState {
     pub fn init() -> SumState {
-        SumState {
-            last_o: Default::default(),
-        }
+        SumState { last_o: 0i64 }
     }
     pub fn step(&mut self, input: SumInput) -> i64 {
         let x = add(self.last_o, input.i);
@@ -40,8 +38,8 @@ pub struct AutomatonState {
 impl AutomatonState {
     pub fn init() -> AutomatonState {
         AutomatonState {
-            last_next_state: Default::default(),
-            last_x: Default::default(),
+            last_next_state: State::Off,
+            last_x: 0i64,
             sum: SumState::init(),
         }
     }

@@ -4,12 +4,14 @@ use grust::grust;
 
 grust! {
     component next(i: int) -> (next_o: int) {
-        next_o = i + last i init 1;
+        init i = 1;
+        next_o = i + last i;
     }
 
     component semi_fib(i: int) -> (o: int) {
         let next_o: int = next(i);
         o = last next_o;
+        init next_o = 0;
     }
 
     component fib_call() -> (fib: int) {
@@ -18,7 +20,8 @@ grust! {
     }
 
     component fib() -> (fib: int) {
-        let next_o: int = fib + last fib init 1;
+        init (fib, next_o) = (1, 0);
+        let next_o: int = fib + last fib;
         fib = last next_o;
     }
 }

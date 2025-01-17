@@ -16,11 +16,14 @@ fn should_compile_automaton() {
         }
 
         component sum(reset: bool, i: int) -> (o: int) {
+            init o = 0;
             o = if reset then 0 else x;
             let x: int = add(last o, i);
         }
 
         component automaton(switch: bool, i: int) -> (o: int) {
+            init next_state: State = State::Off;
+            init x: int = 0;
             let state: State = last next_state;
             match state {
                 State::Off => {

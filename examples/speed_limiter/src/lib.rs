@@ -134,6 +134,7 @@ grust! {
         v_set = threshold_set_speed(set_speed);
         v_update = prev_v_set != v_set;
         let prev_v_set: float = last v_set;
+        init v_set = 0.;
     }
 
     // Speed limiter state machine.
@@ -153,6 +154,7 @@ grust! {
         let failure: bool = false;
         let prev_state: SpeedLimiter = last state;
         let prev_on_state: SpeedLimiterOn = last on_state;
+        init (state, on_state, in_regulation) = (SpeedLimiter::Off, SpeedLimiterOn::StandBy, true);
         match prev_state {
             _ if off_condition(activation_req, vdc_disabled) => {
                 state = SpeedLimiter::Off;
@@ -212,7 +214,8 @@ grust! {
         on_state: SpeedLimiterOn,
         in_reg: bool
     ) {
-        let prev_hysterisis: Hysterisis = last hysterisis init new_hysterisis(0.0);
+        init hysterisis = new_hysterisis(0.0);
+        let prev_hysterisis: Hysterisis = last hysterisis;
         in_reg = in_regulation(hysterisis);
         match prev_on_state {
             SpeedLimiterOn::StandBy if activation_condition(activation_req, vacuum_brake_state, v_set) => {

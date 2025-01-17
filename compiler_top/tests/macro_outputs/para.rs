@@ -235,10 +235,10 @@ pub mod runtime {
                 .await?;
             while let Some(input) = input.next().await {
                 match input {
-                    I::Timer(T::DelayParaMess, _grust_reserved_instant) => {
+                    I::E0(e0, _grust_reserved_instant) => {
                         runtime
                             .para_mess
-                            .handle_delay_para_mess(_grust_reserved_instant)
+                            .handle_e0(_grust_reserved_instant, e0)
                             .await?;
                     }
                     I::Timer(T::TimeoutParaMess, _grust_reserved_instant) => {
@@ -247,10 +247,10 @@ pub mod runtime {
                             .handle_timeout_para_mess(_grust_reserved_instant)
                             .await?;
                     }
-                    I::E0(e0, _grust_reserved_instant) => {
+                    I::Timer(T::DelayParaMess, _grust_reserved_instant) => {
                         runtime
                             .para_mess
-                            .handle_e0(_grust_reserved_instant, e0)
+                            .handle_delay_para_mess(_grust_reserved_instant)
                             .await?;
                     }
                 }
@@ -279,10 +279,27 @@ pub mod runtime {
             }
         }
         #[derive(Clone, Copy, PartialEq, Default)]
-        pub struct E3(i64, bool);
-        impl E3 {
-            fn set(&mut self, e3: i64) {
-                self.0 = e3;
+        pub struct S4(i64, bool);
+        impl S4 {
+            fn set(&mut self, s4: i64) {
+                self.0 = s4;
+                self.1 = true;
+            }
+            fn get(&self) -> i64 {
+                self.0
+            }
+            fn is_new(&self) -> bool {
+                self.1
+            }
+            fn reset(&mut self) {
+                self.1 = false;
+            }
+        }
+        #[derive(Clone, Copy, PartialEq, Default)]
+        pub struct S3(i64, bool);
+        impl S3 {
+            fn set(&mut self, s3: i64) {
+                self.0 = s3;
                 self.1 = true;
             }
             fn get(&self) -> i64 {
@@ -330,10 +347,10 @@ pub mod runtime {
             }
         }
         #[derive(Clone, Copy, PartialEq, Default)]
-        pub struct S4(i64, bool);
-        impl S4 {
-            fn set(&mut self, s4: i64) {
-                self.0 = s4;
+        pub struct E3(i64, bool);
+        impl E3 {
+            fn set(&mut self, e3: i64) {
+                self.0 = e3;
                 self.1 = true;
             }
             fn get(&self) -> i64 {
@@ -364,31 +381,14 @@ pub mod runtime {
             }
         }
         #[derive(Clone, Copy, PartialEq, Default)]
-        pub struct S3(i64, bool);
-        impl S3 {
-            fn set(&mut self, s3: i64) {
-                self.0 = s3;
-                self.1 = true;
-            }
-            fn get(&self) -> i64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default)]
         pub struct Context {
             pub s2: S2,
-            pub e3: E3,
+            pub s4: S4,
+            pub s3: S3,
             pub e2: E2,
             pub e1: E1,
-            pub s4: S4,
+            pub e3: E3,
             pub o1: O1,
-            pub s3: S3,
         }
         impl Context {
             fn init() -> Context {
@@ -396,12 +396,12 @@ pub mod runtime {
             }
             fn reset(&mut self) {
                 self.s2.reset();
-                self.e3.reset();
+                self.s4.reset();
+                self.s3.reset();
                 self.e2.reset();
                 self.e1.reset();
-                self.s4.reset();
+                self.e3.reset();
                 self.o1.reset();
-                self.s3.reset();
             }
         }
         #[derive(Default)]
@@ -417,11 +417,11 @@ pub mod runtime {
             context: Context,
             delayed: bool,
             input_store: ParaMessServiceStore,
-            c_3: C3State,
             c_4: C4State,
             c_1: C1State,
             c_5: C5State,
             c_2: C2State,
+            c_3: C3State,
             output: futures::channel::mpsc::Sender<O>,
             timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
         }
@@ -433,131 +433,23 @@ pub mod runtime {
                 let context = Context::init();
                 let delayed = true;
                 let input_store = Default::default();
-                let c_3 = C3State::init();
                 let c_4 = C4State::init();
                 let c_1 = C1State::init();
                 let c_5 = C5State::init();
                 let c_2 = C2State::init();
+                let c_3 = C3State::init();
                 ParaMessService {
                     context,
                     delayed,
                     input_store,
-                    c_3,
                     c_4,
                     c_1,
                     c_5,
                     c_2,
+                    c_3,
                     output,
                     timer,
                 }
-            }
-            pub async fn handle_timeout_para_mess(
-                &mut self,
-                _timeout_para_mess_instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.reset_time_constraints(_timeout_para_mess_instant)
-                    .await?;
-                self.context.reset();
-                let e3_ref = &mut None;
-                let e1_ref = &mut None;
-                let e2_ref = &mut None;
-                tokio::join!(
-                    async {
-                        if e1_ref.is_some() {
-                            let (s3, e3) = self.c_2.step(C2Input { e1: *e1_ref });
-                            self.context.s3.set(s3);
-                            *e3_ref = e3;
-                        }
-                    },
-                    async {
-                        if self.context.s2.is_new() {
-                            let (e2) = self.c_3.step(C3Input {
-                                s2: self.context.s2.get(),
-                            });
-                            *e2_ref = e2;
-                        }
-                        if e2_ref.is_some() {
-                            let (s4) = self.c_4.step(C4Input { e2: *e2_ref });
-                            self.context.s4.set(s4);
-                        }
-                    }
-                );
-                if e3_ref.is_some() || self.context.s4.is_new() || self.context.s3.is_new() {
-                    let o1 = self.c_5.step(C5Input {
-                        s4: self.context.s4.get(),
-                        s3: self.context.s3.get(),
-                        e3: *e3_ref,
-                    });
-                    self.context.o1.set(o1);
-                }
-                self.send_output(O::O1(self.context.o1.get(), _timeout_para_mess_instant))
-                    .await?;
-                Ok(())
-            }
-            #[inline]
-            pub async fn reset_service_timeout(
-                &mut self,
-                _timeout_para_mess_instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.timer
-                    .send((T::TimeoutParaMess, _timeout_para_mess_instant))
-                    .await?;
-                Ok(())
-            }
-            pub async fn handle_e0(
-                &mut self,
-                _e0_instant: std::time::Instant,
-                e0: i64,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                if self.delayed {
-                    self.reset_time_constraints(_e0_instant).await?;
-                    self.context.reset();
-                    let e3_ref = &mut None;
-                    let e1_ref = &mut None;
-                    let e2_ref = &mut None;
-                    let e0_ref = &mut None;
-                    *e0_ref = Some(e0);
-                    if e0_ref.is_some() {
-                        let (s2, e1) = self.c_1.step(C1Input { e0: *e0_ref });
-                        self.context.s2.set(s2);
-                        *e1_ref = e1;
-                    }
-                    tokio::join!(
-                        async {
-                            if e1_ref.is_some() {
-                                let (s3, e3) = self.c_2.step(C2Input { e1: *e1_ref });
-                                self.context.s3.set(s3);
-                                *e3_ref = e3;
-                            }
-                        },
-                        async {
-                            if self.context.s2.is_new() {
-                                let (e2) = self.c_3.step(C3Input {
-                                    s2: self.context.s2.get(),
-                                });
-                                *e2_ref = e2;
-                            }
-                            if e2_ref.is_some() {
-                                let (s4) = self.c_4.step(C4Input { e2: *e2_ref });
-                                self.context.s4.set(s4);
-                            }
-                        }
-                    );
-                    if e3_ref.is_some() || self.context.s4.is_new() || self.context.s3.is_new() {
-                        let o1 = self.c_5.step(C5Input {
-                            s4: self.context.s4.get(),
-                            s3: self.context.s3.get(),
-                            e3: *e3_ref,
-                        });
-                        self.context.o1.set(o1);
-                    }
-                    self.send_output(O::O1(self.context.o1.get(), _e0_instant))
-                        .await?;
-                } else {
-                    let unique = self.input_store.e0.replace((e0, _e0_instant));
-                    assert!(unique.is_none(), "flow `e0` changes too frequently");
-                }
-                Ok(())
             }
             pub async fn handle_delay_para_mess(
                 &mut self,
@@ -569,10 +461,10 @@ pub mod runtime {
                     match (self.input_store.e0.take()) {
                         (None) => {}
                         (Some((e0, _e0_instant))) => {
+                            let e0_ref = &mut None;
                             let e3_ref = &mut None;
                             let e1_ref = &mut None;
                             let e2_ref = &mut None;
-                            let e0_ref = &mut None;
                             *e0_ref = Some(e0);
                             if e0_ref.is_some() {
                                 let (s2, e1) = self.c_1.step(C1Input { e0: *e0_ref });
@@ -628,6 +520,114 @@ pub mod runtime {
                 self.timer
                     .send((T::DelayParaMess, _grust_reserved_instant))
                     .await?;
+                Ok(())
+            }
+            pub async fn handle_timeout_para_mess(
+                &mut self,
+                _timeout_para_mess_instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.reset_time_constraints(_timeout_para_mess_instant)
+                    .await?;
+                self.context.reset();
+                let e2_ref = &mut None;
+                let e3_ref = &mut None;
+                let e1_ref = &mut None;
+                tokio::join!(
+                    async {
+                        if e1_ref.is_some() {
+                            let (s3, e3) = self.c_2.step(C2Input { e1: *e1_ref });
+                            self.context.s3.set(s3);
+                            *e3_ref = e3;
+                        }
+                    },
+                    async {
+                        if self.context.s2.is_new() {
+                            let (e2) = self.c_3.step(C3Input {
+                                s2: self.context.s2.get(),
+                            });
+                            *e2_ref = e2;
+                        }
+                        if e2_ref.is_some() {
+                            let (s4) = self.c_4.step(C4Input { e2: *e2_ref });
+                            self.context.s4.set(s4);
+                        }
+                    }
+                );
+                if e3_ref.is_some() || self.context.s4.is_new() || self.context.s3.is_new() {
+                    let o1 = self.c_5.step(C5Input {
+                        s4: self.context.s4.get(),
+                        s3: self.context.s3.get(),
+                        e3: *e3_ref,
+                    });
+                    self.context.o1.set(o1);
+                }
+                self.send_output(O::O1(self.context.o1.get(), _timeout_para_mess_instant))
+                    .await?;
+                Ok(())
+            }
+            #[inline]
+            pub async fn reset_service_timeout(
+                &mut self,
+                _timeout_para_mess_instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.timer
+                    .send((T::TimeoutParaMess, _timeout_para_mess_instant))
+                    .await?;
+                Ok(())
+            }
+            pub async fn handle_e0(
+                &mut self,
+                _e0_instant: std::time::Instant,
+                e0: i64,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                if self.delayed {
+                    self.reset_time_constraints(_e0_instant).await?;
+                    self.context.reset();
+                    let e0_ref = &mut None;
+                    let e3_ref = &mut None;
+                    let e1_ref = &mut None;
+                    let e2_ref = &mut None;
+                    *e0_ref = Some(e0);
+                    if e0_ref.is_some() {
+                        let (s2, e1) = self.c_1.step(C1Input { e0: *e0_ref });
+                        self.context.s2.set(s2);
+                        *e1_ref = e1;
+                    }
+                    tokio::join!(
+                        async {
+                            if e1_ref.is_some() {
+                                let (s3, e3) = self.c_2.step(C2Input { e1: *e1_ref });
+                                self.context.s3.set(s3);
+                                *e3_ref = e3;
+                            }
+                        },
+                        async {
+                            if self.context.s2.is_new() {
+                                let (e2) = self.c_3.step(C3Input {
+                                    s2: self.context.s2.get(),
+                                });
+                                *e2_ref = e2;
+                            }
+                            if e2_ref.is_some() {
+                                let (s4) = self.c_4.step(C4Input { e2: *e2_ref });
+                                self.context.s4.set(s4);
+                            }
+                        }
+                    );
+                    if e3_ref.is_some() || self.context.s4.is_new() || self.context.s3.is_new() {
+                        let o1 = self.c_5.step(C5Input {
+                            s4: self.context.s4.get(),
+                            s3: self.context.s3.get(),
+                            e3: *e3_ref,
+                        });
+                        self.context.o1.set(o1);
+                    }
+                    self.send_output(O::O1(self.context.o1.get(), _e0_instant))
+                        .await?;
+                } else {
+                    let unique = self.input_store.e0.replace((e0, _e0_instant));
+                    assert!(unique.is_none(), "flow `e0` changes too frequently");
+                }
                 Ok(())
             }
             #[inline]

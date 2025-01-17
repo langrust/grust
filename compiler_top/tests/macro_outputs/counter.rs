@@ -11,9 +11,7 @@ pub struct CounterState {
 }
 impl CounterState {
     pub fn init() -> CounterState {
-        CounterState {
-            last_o: Default::default(),
-        }
+        CounterState { last_o: 0i64 }
     }
     pub fn step(&mut self, input: CounterInput) -> i64 {
         let inc = if input.tick { 1i64 } else { 0i64 };
@@ -35,8 +33,8 @@ pub struct TestState {
 impl TestState {
     pub fn init() -> TestState {
         TestState {
-            last_not_half: Default::default(),
-            last_stop: Default::default(),
+            last_not_half: false,
+            last_stop: false,
             counter: CounterState::init(),
         }
     }

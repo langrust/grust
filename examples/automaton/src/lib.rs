@@ -15,10 +15,12 @@ grust! {
 
     component sum(reset: bool, i: int) -> (o: int) {
         o = if reset then 0 else x;
+        init o = 0;
         let x: int = add(last o, i);
     }
 
     component automaton(switch: bool, i: int) -> (o: int) {
+        init (next_state, x) = (State::Off, 0);
         let state: State = last next_state;
         match state {
             State::Off => {

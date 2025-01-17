@@ -91,9 +91,10 @@ fn should_compile_para() {
             let i12: int = i1 + i;
             let i23: int = i2 + i3;
             let i123: int = i12 + 2 * i3 + i23;
+            init i = 0;
             match i {
                 0 => {
-                    next_o = 1 + last i init 0;
+                    next_o = 1 + last i;
                 },
                 7 => {
                     next_o = i123;
@@ -112,9 +113,11 @@ fn should_compile_para() {
             let i2_1: int = test_threads_aux(i1_1 + i1_2 - i1_3);
             let i2_2: int = test_threads_aux(i1_2 - i1_2 + i1_3);
 
+            init i = 0;
+
             match i {
                 0 => {
-                    next_o = 1 + last i init 0;
+                    next_o = 1 + last i;
                 },
                 7 => {
                     next_o = i2_1;
@@ -142,9 +145,10 @@ fn should_compile_para() {
             let i12: int = i1 + i2;
             let i23: int = i2 + i3;
             let i123: int = i12 + 2 * i3 + i23;
+            init i = 0;
             match i {
                 0 => {
-                    next_o = 1 + last i init 0;
+                    next_o = 1 + last i;
                 },
                 7 => {
                     next_o = i123;
@@ -163,9 +167,11 @@ fn should_compile_para() {
             let i2_1: int = test_rayon1_aux(i1_1 + i1_2 - i1_3);
             let i2_2: int = test_rayon1_aux(i1_2 - i1_2 + i1_3);
 
+            init i = 0;
+
             match i {
                 0 => {
-                    next_o = 1 + last i init 0;
+                    next_o = 1 + last i;
                 },
                 7 => {
                     next_o = i2_1;
@@ -193,9 +199,10 @@ fn should_compile_para() {
             let i12: int = i1 + i2;
             let i23: int = i2 + i3;
             let i123: int = i12 + 2 * i3 + i23;
+            init i = 0;
             match i {
                 0 => {
-                    next_o = 1 + last i init 0;
+                    next_o = 1 + last i;
                 },
                 7 => {
                     next_o = i123;
@@ -214,9 +221,11 @@ fn should_compile_para() {
             let i2_1: int = test_rayon2_aux(i1_1 + i1_2 - i1_3);
             let i2_2: int = test_rayon2_aux(i1_2 - i1_2 + i1_3);
 
+            init i = 0;
+
             match i {
                 0 => {
-                    next_o = 1 + last i init 0;
+                    next_o = 1 + last i;
                 },
                 7 => {
                     next_o = i2_1;
@@ -244,9 +253,10 @@ fn should_compile_para() {
             let i12: int = i1 + i2;
             let i23: int = i2 + i3;
             let i123: int = i12 + 2 * i3 + i23;
+            init i = 0;
             match i {
                 0 => {
-                    next_o = 1 + last i init 0;
+                    next_o = 1 + last i;
                 },
                 7 => {
                     next_o = i123;
@@ -265,9 +275,11 @@ fn should_compile_para() {
             let i2_1: int = test_rayon3_aux(i1_1 + i1_2 - i1_3);
             let i2_2: int = test_rayon3_aux(i1_2 - i1_2 + i1_3);
 
+            init i = 0;
+
             match i {
                 0 => {
-                    next_o = 1 + last i init 0;
+                    next_o = 1 + last i;
                 },
                 7 => {
                     next_o = i2_1;
@@ -295,9 +307,10 @@ fn should_compile_para() {
             let i12: int = i1 + i2;
             let i23: int = i2 + i3;
             let i123: int = i12 + 2 * i3 + i23;
+            init i = 0;
             match i {
                 0 => {
-                    next_o = 1 + last i init 0;
+                    next_o = 1 + last i;
                 },
                 7 => {
                     next_o = i123;
@@ -316,9 +329,11 @@ fn should_compile_para() {
             let i2_1: int = test_mixed_aux(i1_1 + i1_2 - i1_3);
             let i2_2: int = test_mixed_aux(i1_2 - i1_2 + i1_3);
 
+            init i = 0;
+
             match i {
                 0 => {
-                    next_o = 1 + last i init 0;
+                    next_o = 1 + last i;
                 },
                 7 => {
                     next_o = i2_1;

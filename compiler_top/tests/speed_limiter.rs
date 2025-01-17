@@ -132,6 +132,7 @@ fn should_compile_speed_limiter() {
 
         // Processes the speed setted by the driver.
         component process_set_speed(set_speed: float) -> (v_set: float, v_update: bool) {
+            init v_set = 0.0;
             v_set = threshold_set_speed(set_speed);
             v_update = prev_v_set != v_set;
             let prev_v_set: float = last v_set;
@@ -154,6 +155,8 @@ fn should_compile_speed_limiter() {
             let failure: bool = false;
             let prev_state: SpeedLimiter = last state;
             let prev_on_state: SpeedLimiterOn = last on_state;
+            init (state, on_state) = (SpeedLimiter::Off, SpeedLimiterOn::StandBy);
+            init in_regulation = true;
             match prev_state {
                 _ if off_condition(activation_req, vdc_disabled) => {
                     state = SpeedLimiter::Off;
@@ -213,7 +216,8 @@ fn should_compile_speed_limiter() {
             on_state: SpeedLimiterOn,
             in_reg: bool
         ) {
-            let prev_hysterisis: Hysterisis = last hysterisis init new_hysterisis(0.0);
+            init hysterisis = new_hysterisis(0.0);
+            let prev_hysterisis: Hysterisis = last hysterisis;
             in_reg = in_regulation(hysterisis);
             match prev_on_state {
                 SpeedLimiterOn::StandBy if activation_condition(activation_req, vacuum_brake_state, v_set) => {
