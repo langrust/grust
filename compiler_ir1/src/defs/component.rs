@@ -293,6 +293,8 @@ impl Component {
 pub struct ComponentDefinition {
     /// Component identifier.
     pub id: usize,
+    /// Component's initialization statements.
+    pub inits: Vec<ir1::stream::InitStmt>,
     /// Component's statements.
     pub statements: Vec<ir1::stream::Stmt>,
     /// Component's contract.
@@ -310,6 +312,7 @@ pub struct ComponentDefinition {
 impl PartialEq for ComponentDefinition {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id
+            && self.inits == other.inits
             && self.statements == other.statements
             && self.contract == other.contract
             && self.loc == other.loc
