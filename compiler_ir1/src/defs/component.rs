@@ -38,40 +38,40 @@ impl Component {
         }
     }
 
-    /// Check the causality of the node.
+    /// Check the causality of the component.
     ///
     /// # Example
     ///
-    /// The following simple node is causal, there is no causality loop.
+    /// The following simple component is causal, there is no causality loop.
     ///
     /// ```GR
-    /// node causal_node1(i: int) {
+    /// component causal_node1(i: int) {
     ///     out o: int = x;
     ///     x: int = i;
     /// }
     /// ```
     ///
-    /// The next node is causal as well, `x` does not depends on `o` but depends on the memory of
+    /// The next component is causal as well, `x` does not depends on `o` but depends on the memory of
     /// `o`. Then there is no causality loop.
     ///
     /// ```GR
-    /// node causal_node2() {
+    /// component causal_node2() {
     ///     out o: int = x;
     ///     x: int = 0 fby o;
     /// }
     /// ```
     ///
-    /// But the node that follows is not causal, `o` depends on `x` which depends on `o`. Values of
+    /// But the component that follows is not causal, `o` depends on `x` which depends on `o`. Values of
     /// signals can not be determined, then the compilation raises a causality error.
     ///
     /// ```GR
-    /// node not_causal_node(i: int) {
+    /// component not_causal_node(i: int) {
     ///     out o: int = x;
     ///     x: int = o;
     /// }
     /// ```
     pub fn causal(&self, symbol_table: &Ctx, errors: &mut Vec<Error>) -> TRes<()> {
-        // construct node's subgraph containing only 0-label weight
+        // construct component's subgraph containing only 0-label weight
         let graph = self.get_graph();
         let mut subgraph = graph.clone();
         graph.all_edges().for_each(|(from, to, label)| match label {
@@ -82,7 +82,7 @@ impl Component {
             }
         });
 
-        // if a schedule exists, then the node is causal
+        // if a schedule exists, then the component is causal
         let res = graph::toposort(&subgraph, None);
         if let Err(signal) = res {
             let name = symbol_table.get_name(signal.node_id());
@@ -92,15 +92,15 @@ impl Component {
         Ok(())
     }
 
-    /// Create memory for [ir1] node's unitary nodes.
+    /// Create memory for [ir1] component.
     ///
-    /// Store buffer for followed by expressions and unitary node applications.
+    /// Store buffer for followed by expressions and component applications.
     /// Transform followed by expressions in signal call.
     ///
     /// # Example
     ///
     /// ```GR
-    /// node test(s: int, v: int) {
+    /// component test(s: int, v: int) {
     ///     x_1: int = 0 fby v;
     ///     x_2: int = my_node(s, x_1).o;
     ///     out x: int = 1 + x_2;
@@ -110,7 +110,7 @@ impl Component {
     /// The above example becomes:
     ///
     /// ```GR
-    /// node test(s: int, v: int) {
+    /// component test(s: int, v: int) {
     ///     x_1: int = mem;
     ///     x_2: int = my_node(s, x_1).o;
     ///     out x: int = 1 + x_2;
@@ -131,28 +131,28 @@ impl Component {
         }
     }
 
-    /// Change [ir1] node into a normal form.
+    /// Change [ir1] component into a normal form.
     ///
-    /// The normal form of a node is as follows:
-    /// - node application can only append at root expression
-    /// - node application inputs are signal calls
+    /// The normal form of a component is as follows:
+    /// - component application can only append at root expression
+    /// - component application inputs are signal calls
     ///
     /// # Example
     ///
     /// ```GR
-    /// node test(s: int, v: int, g: int) {
+    /// component test(s: int, v: int, g: int) {
     ///     out x: int = 1 + my_node(s, v*2).o;
     ///     out y: int = other_node(g-1, v).o;
     /// }
     /// ```
     ///
-    /// The above node contains the following unitary nodes:
+    /// The above component contains the following components:
     ///
     /// ```GR
-    /// node test_x(s: int, v: int) {
+    /// component test_x(s: int, v: int) {
     ///     out x: int = 1 + my_node(s, v*2).o;
     /// }
-    /// node test_y(v: int, g: int) {
+    /// component test_y(v: int, g: int) {
     ///     out y: int = other_node(g-1, v).o;
     /// }
     /// ```
@@ -160,12 +160,12 @@ impl Component {
     /// Which are transformed into:
     ///
     /// ```GR
-    /// node test_x(s: int, v: int) {
+    /// component test_x(s: int, v: int) {
     ///     x_1: int = v*2;
     ///     x_2: int = my_node(s, x_1).o;
     ///     out x: int = 1 + x_2;
     /// }
-    /// node test_y(v: int, g: int) {
+    /// component test_y(v: int, g: int) {
     ///     x: int = g-1;
     ///     out y: int = other_node(x_1, v).o;
     /// }
@@ -183,16 +183,16 @@ impl Component {
         }
     }
 
-    /// Inline node application when it is needed.
+    /// Inline component application when it is needed.
     ///
     /// Inlining needed for "shifted causality loop".
     ///
     /// # Example:
     /// ```GR
-    /// node semi_fib(i: int) {
+    /// component semi_fib(i: int) {
     ///     out o: int = 0 fby (i + 1 fby i);
     /// }
-    /// node fib_call() {
+    /// component fib_call() {
     ///    out fib: int = semi_fib(fib).o;
     /// }
     /// ```
@@ -203,31 +203,31 @@ impl Component {
     /// not be computed by a function call.
     pub fn inline_when_needed(
         &mut self,
-        unitary_nodes: &HashMap<usize, Component>,
+        components: &HashMap<usize, Component>,
         symbol_table: &mut Ctx,
     ) {
         match self {
             Component::Definition(comp_def) => {
-                comp_def.inline_when_needed(unitary_nodes, symbol_table)
+                comp_def.inline_when_needed(components, symbol_table)
             }
             Component::Import(_) => (),
         }
     }
 
-    /// Instantiate unitary node's statements with inputs.
+    /// Instantiate component's statements with inputs.
     ///
     /// It will return new statements where the input signals are instantiated by expressions. New
-    /// statements should have fresh id according to the calling node.
+    /// statements should have fresh id according to the calling component.
     ///
     /// # Example
     ///
     /// ```GR
-    /// node to_be_inlined(i: int) {
+    /// component to_be_inlined(i: int) {
     ///     o: int = 0 fby j;
     ///     out j: int = i + 1;
     /// }
     ///
-    /// node calling_node(i: int) {
+    /// component calling_node(i: int) {
     ///     out o: int = to_be_inlined(o);
     ///     j: int = i * o;
     /// }
@@ -262,19 +262,19 @@ impl Component {
     /// # Example.
     ///
     /// ```GR
-    /// node test(v: int) {
+    /// component test(v: int) {
     ///     out y: int = x-1
     ///     o_1: int = 0 fby x
     ///     x: int = v*2 + o_1
     /// }
     /// ```
     ///
-    /// In the node above, signal `y` depends on the current value of `x`, `o_1` depends on the
-    /// memory of `x` and `x` depends on `v` and `o_1`. The node is causal and should be scheduled
+    /// In the component above, signal `y` depends on the current value of `x`, `o_1` depends on the
+    /// memory of `x` and `x` depends on `v` and `o_1`. The component is causal and should be scheduled
     /// as bellow:
     ///
     /// ```GR
-    /// node test(v: int) {
+    /// component test(v: int) {
     ///     o_1: int = 0 fby x  // depends on no current values of signals
     ///     x: int = v*2 + o_1  // depends on the computed value of `o_1` and given `v`
     ///     out y: int = x-1    // depends on the computed value of `x`
@@ -321,7 +321,7 @@ impl PartialEq for ComponentDefinition {
 }
 
 impl ComponentDefinition {
-    /// Return vector of unitary node's signals id.
+    /// Return vector of component's signals id.
     pub fn get_signals_id(&self) -> Vec<usize> {
         self.statements
             .iter()
@@ -329,7 +329,7 @@ impl ComponentDefinition {
             .collect()
     }
 
-    /// Return vector of unitary node's signals name.
+    /// Return vector of component's signals name.
     pub fn get_signals_names(&self, symbol_table: &Ctx) -> Vec<Ident> {
         self.statements
             .iter()
@@ -360,15 +360,15 @@ impl ComponentDefinition {
             .all(|statement| statement.no_component_application())
     }
 
-    /// Create memory for [ir1] node's unitary nodes.
+    /// Create memory for [ir1] component.
     ///
-    /// Store buffer for followed by expressions and unitary node applications.
+    /// Store buffer for followed by expressions and component applications.
     /// Transform followed by expressions in signal call.
     ///
     /// # Example
     ///
     /// ```GR
-    /// node test(s: int, v: int) {
+    /// component test(s: int, v: int) {
     ///     x_1: int = 0 fby v;
     ///     x_2: int = my_node(s, x_1).o;
     ///     out x: int = 1 + x_2;
@@ -378,7 +378,7 @@ impl ComponentDefinition {
     /// The above example becomes:
     ///
     /// ```GR
-    /// node test(s: int, v: int) {
+    /// component test(s: int, v: int) {
     ///     x_1: int = mem;
     ///     x_2: int = my_node(s, x_1).o;
     ///     out x: int = 1 + x_2;
@@ -411,7 +411,7 @@ impl ComponentDefinition {
         symbol_table.global();
         self.memory = memory;
 
-        // add a dependency graph to the unitary node
+        // add a dependency graph to the component
         let mut graph = GraphMap::new();
         self.get_signals_id().iter().for_each(|signal_id| {
             graph.add_node(*signal_id);
@@ -423,28 +423,28 @@ impl ComponentDefinition {
         Ok(())
     }
 
-    /// Change [ir1] node into a normal form.
+    /// Change [ir1] component into a normal form.
     ///
-    /// The normal form of a node is as follows:
-    /// - node application can only append at root expression
-    /// - node application inputs are signal calls
+    /// The normal form of a component is as follows:
+    /// - component application can only append at root expression
+    /// - component application inputs are signal calls
     ///
     /// # Example
     ///
     /// ```GR
-    /// node test(s: int, v: int, g: int) {
+    /// component test(s: int, v: int, g: int) {
     ///     out x: int = 1 + my_node(s, v*2).o;
     ///     out y: int = other_node(g-1, v).o;
     /// }
     /// ```
     ///
-    /// The above node contains the following unitary nodes:
+    /// The above component contains the following components:
     ///
     /// ```GR
-    /// node test_x(s: int, v: int) {
+    /// component test_x(s: int, v: int) {
     ///     out x: int = 1 + my_node(s, v*2).o;
     /// }
-    /// node test_y(v: int, g: int) {
+    /// component test_y(v: int, g: int) {
     ///     out y: int = other_node(g-1, v).o;
     /// }
     /// ```
@@ -452,12 +452,12 @@ impl ComponentDefinition {
     /// Which are transformed into:
     ///
     /// ```GR
-    /// node test_x(s: int, v: int) {
+    /// component test_x(s: int, v: int) {
     ///     x_1: int = v*2;
     ///     x_2: int = my_node(s, x_1).o;
     ///     out x: int = 1 + x_2;
     /// }
-    /// node test_y(v: int, g: int) {
+    /// component test_y(v: int, g: int) {
     ///     x: int = g-1;
     ///     out y: int = other_node(x_1, v).o;
     /// }
@@ -483,7 +483,7 @@ impl ComponentDefinition {
         // drop IdentifierCreator (auto) and local Ctx
         symbol_table.global();
 
-        // add a dependency graph to the node
+        // add a dependency graph to the component
         let mut graph = GraphMap::new();
         self.get_signals_id().iter().for_each(|signal_id| {
             graph.add_node(*signal_id);
@@ -494,16 +494,16 @@ impl ComponentDefinition {
         self.graph = graph;
     }
 
-    /// Inline node application when it is needed.
+    /// Inline component application when it is needed.
     ///
     /// Inlining needed for "shifted causality loop".
     ///
     /// # Example:
     /// ```GR
-    /// node semi_fib(i: int) {
+    /// component semi_fib(i: int) {
     ///     out o: int = 0 fby (i + 1 fby i);
     /// }
-    /// node fib_call() {
+    /// component fib_call() {
     ///    out fib: int = semi_fib(fib).o;
     /// }
     /// ```
@@ -514,13 +514,13 @@ impl ComponentDefinition {
     /// not be computed by a function call.
     pub fn inline_when_needed(
         &mut self,
-        unitary_nodes: &HashMap<usize, Component>,
+        components: &HashMap<usize, Component>,
         symbol_table: &mut Ctx,
     ) {
         // create identifier creator containing the signals
         let mut identifier_creator = IdentifierCreator::from(self.get_signals_names(symbol_table));
 
-        // compute new statements for the unitary node
+        // compute new statements for the component
         let mut new_statements: Vec<stream::Stmt> = vec![];
         std::mem::take(&mut self.statements)
             .into_iter()
@@ -529,29 +529,29 @@ impl ComponentDefinition {
                     &mut self.memory,
                     &mut identifier_creator,
                     symbol_table,
-                    unitary_nodes,
+                    components,
                 );
                 new_statements.append(&mut retrieved_statements)
             });
 
-        // update node's unitary node
+        // update component's stmt
         self.update_statements(&new_statements)
     }
 
-    /// Instantiate unitary node's statements with inputs.
+    /// Instantiate component's statements with inputs.
     ///
     /// It will return new statements where the input signals are instantiated by expressions. New
-    /// statements should have fresh id according to the calling node.
+    /// statements should have fresh id according to the calling component.
     ///
     /// # Example
     ///
     /// ```GR
-    /// node to_be_inlined(i: int) {
+    /// component to_be_inlined(i: int) {
     ///     o: int = 0 fby j;
     ///     out j: int = i + 1;
     /// }
     ///
-    /// node calling_node(i: int) {
+    /// component calling_node(i: int) {
     ///     out o: int = to_be_inlined(o);
     ///     j: int = i * o;
     /// }
@@ -609,11 +609,11 @@ impl ComponentDefinition {
         (statements, memory)
     }
 
-    /// Update unitary node statements and add the corresponding dependency graph.
+    /// Update component statements and add the corresponding dependency graph.
     fn update_statements(&mut self, new_statements: &[stream::Stmt]) {
-        // put new statements in unitary node
+        // put new statements in component
         self.statements = new_statements.to_vec();
-        // add a dependency graph to the unitary node
+        // add a dependency graph to the component
         let mut graph = GraphMap::new();
         self.get_signals_id().iter().for_each(|signal_id| {
             graph.add_node(*signal_id);
@@ -629,19 +629,19 @@ impl ComponentDefinition {
     /// # Example.
     ///
     /// ```GR
-    /// node test(v: int) {
+    /// component test(v: int) {
     ///     out y: int = x-1
     ///     o_1: int = 0 fby x
     ///     x: int = v*2 + o_1
     /// }
     /// ```
     ///
-    /// In the node above, signal `y` depends on the current value of `x`, `o_1` depends on the
-    /// memory of `x` and `x` depends on `v` and `o_1`. The node is causal and should be scheduled
+    /// In the component above, signal `y` depends on the current value of `x`, `o_1` depends on the
+    /// memory of `x` and `x` depends on `v` and `o_1`. The component is causal and should be scheduled
     /// as bellow:
     ///
     /// ```GR
-    /// node test(v: int) {
+    /// component test(v: int) {
     ///     o_1: int = 0 fby x  // depends on no current values of signals
     ///     x: int = v*2 + o_1  // depends on the computed value of `o_1` and given `v`
     ///     out y: int = x-1    // depends on the computed value of `x`
