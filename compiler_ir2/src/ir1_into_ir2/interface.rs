@@ -11,8 +11,11 @@ impl Ir1IntoIr2<&mut Ctx> for Interface {
         if self.services.is_empty() {
             return Default::default();
         }
+
+        // used to store timers from every `sample`, `scan`, `timeout` operators (etc)
         let mut timing_events = vec![];
 
+        // get functions to propagate input flows inside every service
         let services_handlers: Vec<ServiceHandler> = self
             .services
             .into_iter()
@@ -25,6 +28,8 @@ impl Ir1IntoIr2<&mut Ctx> for Interface {
                 ))
             })
             .collect();
+
+        // get functions to call the right services for every input arrival
         let mut input_handlers = HashMap::new();
         services_handlers.iter().for_each(|service_handler| {
             service_handler
@@ -37,6 +42,18 @@ impl Ir1IntoIr2<&mut Ctx> for Interface {
                         .push(service_handler.service_ident.clone())
                 })
         });
+        // put the latest in a runtime loop
+        let runtime_loop = RuntimeLoop {
+            input_handlers: input_handlers
+                .into_iter()
+                .map(|(ref_to, services)| InputHandler {
+                    arriving_flow: ref_to.clone(),
+                    services,
+                })
+                .collect(),
+        };
+
+        // get input and output flows
         let input_flows = self
             .imports
             .into_values()
@@ -48,16 +65,7 @@ impl Ir1IntoIr2<&mut Ctx> for Interface {
             .map(|export| export.into_ir2(symbol_table))
             .collect();
 
-        let runtime_loop = RuntimeLoop {
-            input_handlers: input_handlers
-                .into_iter()
-                .map(|(ref_to, services)| InputHandler {
-                    arriving_flow: ref_to.clone(),
-                    services,
-                })
-                .collect(),
-        };
-
+        // construct execution machine
         ExecutionMachine {
             runtime_loop,
             services_handlers,
