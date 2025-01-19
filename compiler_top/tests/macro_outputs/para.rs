@@ -414,6 +414,7 @@ pub mod runtime {
             }
         }
         pub struct ParaMessService {
+            begin: std::time::Instant,
             context: Context,
             delayed: bool,
             input_store: ParaMessServiceStore,
@@ -439,6 +440,7 @@ pub mod runtime {
                 let c_2 = C2State::init();
                 let c_3 = C3State::init();
                 ParaMessService {
+                    begin: std::time::Instant::now(),
                     context,
                     delayed,
                     input_store,
