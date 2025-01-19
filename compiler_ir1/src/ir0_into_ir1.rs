@@ -434,7 +434,7 @@ mod flow_expr_impl {
     prelude! {
         ir0::interface::{
             FlowExpression, ComponentCall, OnChange, Merge,
-            Scan, Throttle, Timeout, Time,
+            Scan, Throttle, Timeout, Time, Persist,
         },
         ir1::flow,
     }
@@ -493,6 +493,17 @@ mod flow_expr_impl {
         /// Transforms AST into [ir1] and check identifiers good use.
         fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
             Ok(ir1::flow::Kind::OnChange {
+                expr: Box::new(self.expr.into_ir1(ctx)?),
+            })
+        }
+    }
+
+    impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for Persist {
+        type Ir1 = ir1::flow::Kind;
+
+        /// Transforms AST into [ir1] and check identifiers good use.
+        fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
+            Ok(ir1::flow::Kind::Persist {
                 expr: Box::new(self.expr.into_ir1(ctx)?),
             })
         }
@@ -573,6 +584,7 @@ mod flow_expr_impl {
                 FlowExpression::Timeout(expr) => expr.into_ir1(ctx)?,
                 FlowExpression::Throttle(expr) => expr.into_ir1(ctx)?,
                 FlowExpression::OnChange(expr) => expr.into_ir1(ctx)?,
+                FlowExpression::Persist(expr) => expr.into_ir1(ctx)?,
                 FlowExpression::Merge(expr) => expr.into_ir1(ctx)?,
                 FlowExpression::Time(expr) => expr.into_ir1(ctx)?,
             };

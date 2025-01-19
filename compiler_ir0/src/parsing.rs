@@ -221,6 +221,7 @@ mod interface {
             }
         }
     }
+
     impl OnChange {
         pub fn peek(input: ParseStream) -> bool {
             input.peek(keyword::on_change)
@@ -234,6 +235,25 @@ mod interface {
             let expr: FlowExpression = content.parse()?;
             if content.is_empty() {
                 Ok(OnChange::new(on_change_token, paren_token, expr))
+            } else {
+                Err(content.error("expected one input expression"))
+            }
+        }
+    }
+
+    impl Persist {
+        pub fn peek(input: ParseStream) -> bool {
+            input.peek(keyword::persist)
+        }
+    }
+    impl Parse for Persist {
+        fn parse(input: ParseStream) -> syn::Res<Self> {
+            let persist_token: keyword::persist = input.parse()?;
+            let content;
+            let paren_token: token::Paren = parenthesized!(content in input);
+            let expr: FlowExpression = content.parse()?;
+            if content.is_empty() {
+                Ok(Persist::new(persist_token, paren_token, expr))
             } else {
                 Err(content.error("expected one input expression"))
             }
@@ -312,6 +332,8 @@ mod interface {
                 Ok(Self::throttle(input.parse()?))
             } else if OnChange::peek(input) {
                 Ok(Self::on_change(input.parse()?))
+            } else if Persist::peek(input) {
+                Ok(Self::persist(input.parse()?))
             } else if Merge::peek(input) {
                 Ok(Self::merge(input.parse()?))
             } else if Time::peek(input) {

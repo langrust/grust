@@ -529,7 +529,8 @@ mod flow_instr {
                             flow::Kind::Ident { .. }
                             | flow::Kind::Throttle { .. }
                             | flow::Kind::Merge { .. }
-                            | flow::Kind::Time { .. } => (),
+                            | flow::Kind::Time { .. }
+                            | flow::Kind::Persist { .. } => (),
                             flow::Kind::OnChange { .. } => {
                                 // get the identifier of the created event
                                 let mut ids = pattern.identifiers();
@@ -831,6 +832,7 @@ mod flow_instr {
                     self.handle_throttle(pattern, dependencies, delta.clone())
                 }
                 flow::Kind::OnChange { .. } => self.handle_on_change(pattern, dependencies),
+                flow::Kind::Persist { .. } => self.handle_persist(pattern, dependencies),
                 flow::Kind::Merge { .. } => self.handle_merge(pattern, dependencies),
                 flow::Kind::Time { loc } => self.handle_time(stmt_id, pattern, *loc),
                 flow::Kind::ComponentCall {
@@ -1047,6 +1049,31 @@ mod flow_instr {
                 old_event_name.clone(),
                 self.get_signal(id_source),
                 FlowInstruction::seq(then),
+            )
+        }
+
+        /// Compute the instruction from a persist expression.
+        fn handle_persist(
+            &mut self,
+            pattern: &ir1::stmt::Pattern,
+            mut dependencies: Vec<usize>,
+        ) -> FlowInstruction {
+            // get the id of pattern's flow, debug-check there is only one flow
+            let mut ids = pattern.identifiers();
+            debug_assert!(ids.len() == 1);
+            let id_pattern = ids.pop().unwrap();
+            let flow_name = self.get_name(id_pattern);
+
+            // get the source id, debug-check there is only one flow
+            debug_assert!(dependencies.len() == 1);
+            let id_source = dependencies.pop().unwrap();
+
+            // update created signal
+            let expr = self.get_event(id_source);
+            FlowInstruction::if_change(
+                flow_name.clone(),
+                self.get_event(id_source),
+                FlowInstruction::update_ctx(flow_name.clone(), expr),
             )
         }
 

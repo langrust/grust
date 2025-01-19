@@ -33,6 +33,7 @@ custom_keyword!(throttle);
 custom_keyword!(on_change);
 custom_keyword!(merge);
 custom_keyword!(time);
+custom_keyword!(persist);
 
 // Types
 custom_keyword!(int);

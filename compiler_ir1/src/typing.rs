@@ -267,6 +267,21 @@ impl Typing for flow::Expr {
                     }
                 }
             }
+            flow::Kind::Persist { expr } => {
+                expr.typ_check(symbols, errors)?;
+                // get expression type
+                let typ = expr.get_typ().unwrap();
+                match typ {
+                    Typ::Event { ty: typ, .. } => {
+                        // set typing
+                        self.typ = Some(Typ::signal((**typ).clone()));
+                        Ok(())
+                    }
+                    given_type => {
+                        bad!(errors, @loc => ErrorKind::expected_event(given_type.clone()))
+                    }
+                }
+            }
             flow::Kind::Merge { expr_1, expr_2, .. } => {
                 expr_1.typ_check(symbols, errors)?;
                 expr_2.typ_check(symbols, errors)?;
