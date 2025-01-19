@@ -43,6 +43,11 @@ pub enum Kind {
         /// Input expression.
         expr: Box<Expr>,
     },
+    /// GReact `persist` operator.
+    Persist {
+        /// Input expression.
+        expr: Box<Expr>,
+    },
     /// GReact `merge` operator.
     Merge {
         /// Input expressions.
@@ -87,7 +92,8 @@ impl Expr {
             | Kind::Scan { expr, .. }
             | Kind::Timeout { expr, .. }
             | Kind::Throttle { expr, .. }
-            | Kind::OnChange { expr } => expr.get_dependencies(),
+            | Kind::OnChange { expr }
+            | Kind::Persist { expr } => expr.get_dependencies(),
             Kind::Merge { expr_1, expr_2 } => {
                 let mut dependencies = expr_1.get_dependencies();
                 dependencies.extend(expr_2.get_dependencies());
@@ -108,7 +114,8 @@ impl Expr {
             | flow::Kind::Scan { expr, .. }
             | flow::Kind::Timeout { expr, .. }
             | flow::Kind::Throttle { expr, .. }
-            | flow::Kind::OnChange { expr } => expr.is_ident(),
+            | flow::Kind::OnChange { expr }
+            | flow::Kind::Persist { expr } => expr.is_ident(),
             flow::Kind::Merge { expr_1, expr_2 } => expr_1.is_ident() && expr_2.is_ident(),
             flow::Kind::ComponentCall { inputs, .. } => {
                 inputs.iter().all(|(_, expr)| expr.is_ident())
@@ -158,6 +165,7 @@ impl Expr {
             flow::Kind::Timeout { expr, .. } => expr.into_flow_call(identifier_creator, ctx),
             flow::Kind::Throttle { expr, .. } => expr.into_flow_call(identifier_creator, ctx),
             flow::Kind::OnChange { expr } => expr.into_flow_call(identifier_creator, ctx),
+            flow::Kind::Persist { expr } => expr.into_flow_call(identifier_creator, ctx),
             flow::Kind::Merge { expr_1, expr_2 } => {
                 let mut stmts = expr_1.into_flow_call(identifier_creator, ctx);
                 stmts.extend(expr_2.into_flow_call(identifier_creator, ctx));

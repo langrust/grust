@@ -99,6 +99,22 @@ mk_new! { impl OnChange =>
 
 }
 
+/// GReact `persist` operator.
+pub struct Persist {
+    pub persist_token: keyword::persist,
+    pub paren_token: token::Paren,
+    /// Input expression.
+    pub expr: Box<FlowExpression>,
+}
+mk_new! { impl Persist =>
+    new {
+        persist_token: keyword::persist,
+        paren_token: token::Paren,
+        expr: FlowExpression = expr.into(),
+    }
+
+}
+
 /// GReact `merge` operator.
 pub struct Merge {
     pub merge_token: keyword::merge,
@@ -153,6 +169,8 @@ pub enum FlowExpression {
     Throttle(Throttle),
     /// GReact `on_change` operator.
     OnChange(OnChange),
+    /// GReact `persist` operator.
+    Persist(Persist),
     /// GReact `merge` operator.
     Merge(Merge),
     /// Component call.
@@ -170,6 +188,7 @@ mk_new! { impl FlowExpression =>
     Timeout: timeout (val: Timeout = val)
     Throttle: throttle (val: Throttle = val)
     OnChange: on_change (val: OnChange = val)
+    Persist: persist (val: Persist = val)
     Merge: merge (val: Merge = val)
     Time: time (val: Time = val)
     ComponentCall: comp_call (val: ComponentCall = val)

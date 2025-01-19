@@ -397,6 +397,17 @@ impl FlowStatement {
                         let ty = ctx.get_typ(pattern_id);
                         flows_context.add_element(flow_name.clone(), ty);
                     }
+                    flow::Kind::Persist { .. } => {
+                        // get the id of pattern's flow (and check their is only one flow)
+                        let mut ids = pattern.identifiers();
+                        debug_assert!(ids.len() == 1);
+                        let pattern_id = ids.pop().unwrap();
+
+                        // push in signals context
+                        let flow_name = ctx.get_name(pattern_id).clone();
+                        let ty = ctx.get_typ(pattern_id);
+                        flows_context.add_element(flow_name.clone(), ty);
+                    }
                     flow::Kind::Sample { expr, .. } => {
                         // get the id of expr (and check it is an identifier, from
                         // normalization)
