@@ -112,11 +112,13 @@ impl ServiceHandler {
         // create service structure
         let stitem = stats.start("create service structure");
         let mut service_fields: Vec<syn::Field> = vec![
+            parse_quote! { begin: std::time::Instant },
             parse_quote! { context: Context },
             parse_quote! { delayed: bool },
             parse_quote! { input_store: #service_store_ident },
         ];
         let mut field_values: Vec<syn::FieldValue> = vec![
+            parse_quote! { begin: std::time::Instant::now() },
             parse_quote! { context },
             parse_quote! { delayed },
             parse_quote! { input_store },
@@ -383,12 +385,7 @@ pub enum FlowInstruction {
     IfChange(Ident, Expression, Box<Self>),
     IfActivated(Vec<Ident>, Vec<Ident>, Box<Self>, Option<Box<Self>>),
     ResetTimer(Ident, Ident),
-    ComponentCall(
-        Pattern,
-        Ident,
-        Vec<(Ident, Ident)>,
-        Vec<(Ident, Option<Ident>)>,
-    ),
+    ComponentCall(Pattern, Ident, Vec<(Ident, Expression)>),
     HandleDelay(Vec<Ident>, Vec<MatchArm>),
     Seq(Vec<Self>),
     Para(BTreeMap<ParaMethod, Vec<Self>>),
@@ -476,33 +473,19 @@ impl FlowInstruction {
                 let instant = import_name.to_instant_var();
                 parse_quote! { self.send_timer(T::#enum_ident, #instant).await?; }
             }
-            FlowInstruction::ComponentCall(
-                pattern,
-                component_name,
-                signals_fields,
-                events_fields,
-            ) => {
+            FlowInstruction::ComponentCall(pattern, component_name, inputs_fields) => {
                 let outputs = pattern.into_syn();
                 let component_ident = component_name.to_field();
                 let component_input_name = component_ident.to_input_ty();
 
-                let input_fields = signals_fields
-                    .into_iter()
-                    .map(|(field_name, in_context)| -> syn::FieldValue {
-                        let field_id = field_name;
-                        let in_context_id = in_context;
-                        let expr: syn::Expr = parse_quote!(self.context.#in_context_id.get());
-                        parse_quote! { #field_id : #expr }
-                    })
-                    .chain(events_fields.into_iter().map(|(field_name, opt_event)| {
-                        let field_id = field_name;
-                        if let Some(event_name) = opt_event {
-                            let event_id = event_name.to_ref_var();
-                            parse_quote! { #field_id : *#event_id }
-                        } else {
-                            parse_quote! { #field_id : None }
-                        }
-                    }));
+                let input_fields =
+                    inputs_fields
+                        .into_iter()
+                        .map(|(field_name, input)| -> syn::FieldValue {
+                            let field_id = field_name;
+                            let expr: syn::Expr = input.into_syn();
+                            parse_quote! { #field_id : #expr }
+                        });
 
                 parse_quote! {
                     let #outputs = self.#component_ident.step(
@@ -688,33 +671,19 @@ impl FlowInstruction {
                 let instant = import_name.to_instant_var();
                 parse_quote! { self.send_timer(T::#enum_ident, #instant).await?; }
             }
-            FlowInstruction::ComponentCall(
-                pattern,
-                component_name,
-                signals_fields,
-                events_fields,
-            ) => {
+            FlowInstruction::ComponentCall(pattern, component_name, inputs_fields) => {
                 let outputs = pattern.into_syn();
                 let component_ident = component_name.to_field();
                 let component_input_name = component_ident.to_input_ty();
 
-                let input_fields = signals_fields
-                    .into_iter()
-                    .map(|(field_name, in_context)| -> syn::FieldValue {
-                        let field_id = field_name;
-                        let in_context_id = in_context;
-                        let expr: syn::Expr = parse_quote!(self.context.#in_context_id.get());
-                        parse_quote! { #field_id : #expr }
-                    })
-                    .chain(events_fields.into_iter().map(|(field_name, opt_event)| {
-                        let field_id = field_name;
-                        if let Some(event_name) = opt_event {
-                            let event_id = event_name.to_ref_var();
-                            parse_quote! { #field_id : *#event_id }
-                        } else {
-                            parse_quote! { #field_id : None }
-                        }
-                    }));
+                let input_fields =
+                    inputs_fields
+                        .into_iter()
+                        .map(|(field_name, input)| -> syn::FieldValue {
+                            let field_id = field_name;
+                            let expr: syn::Expr = input.into_syn();
+                            parse_quote! { #field_id : #expr }
+                        });
 
                 parse_quote! {
                     let #outputs = self.#component_ident.step(
@@ -896,8 +865,7 @@ mk_new! { impl FlowInstruction =>
     ComponentCall: comp_call (
         pat: Pattern = pat,
         name: impl Into<Ident> = name.into(),
-        signals: impl Into<Vec<(Ident, Ident)>> = signals.into(),
-        events: impl Into<Vec<(Ident, Option<Ident>)>> = events.into(),
+        inputs: impl Into<Vec<(Ident, Expression)>> = inputs.into(),
     )
     HandleDelay: handle_delay(
         input_names: impl Iterator<Item = Ident> = input_names.collect(),
@@ -1030,7 +998,12 @@ impl Expression {
                 parse_quote! { Some(#expression) }
             }
             Expression::None => parse_quote! { None },
-            Expression::Instant { ident } => parse_quote! { #ident },
+            Expression::Instant { ident } => {
+                // let test = std::time::Instant::now();
+                // let truc = (test.duration_since(std::time::Instant::now()).as_millis()) as f64;
+                let instant = ident.to_instant_var();
+                parse_quote! { (#instant.duration_since(self.begin).as_millis()) as f64 }
+            }
         }
     }
 }

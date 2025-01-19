@@ -388,6 +388,26 @@ mod flow_instr {
                 imports,
                 timing_events,
             );
+            // add edge in graph between any import (excluding service delay) and `time` stmts
+            service
+                .statements
+                .iter()
+                .filter(|(_, stmt)| match stmt {
+                    FlowStatement::Declaration(FlowDeclaration { expr, .. })
+                    | FlowStatement::Instantiation(FlowInstantiation { expr, .. }) => {
+                        match expr.kind {
+                            flow::Kind::Time { .. } => true,
+                            _ => false,
+                        }
+                    }
+                })
+                .for_each(|(stmt_id, _)| {
+                    for import_stmt_id in imports.keys() {
+                        if service.graph.edges(*import_stmt_id).next().is_some() {
+                            service.graph.add_edge(*import_stmt_id, *stmt_id, ());
+                        }
+                    }
+                });
 
             // create triggered graph
             let graph = trigger::Graph::new(ctx0, service, imports);
@@ -469,18 +489,20 @@ mod flow_instr {
             imports: &HashMap<usize, FlowImport>,
         ) -> HashMap<usize, Vec<(usize, usize)>> {
             let mut stmts_imports = HashMap::new();
-            for (stmt_id, import) in imports.iter() {
-                graph::visit::depth_first_search(graph, std::iter::once(*stmt_id), |event| {
-                    match event {
+            for (import_stmt_id, import) in imports.iter() {
+                graph::visit::depth_first_search(
+                    graph,
+                    std::iter::once(*import_stmt_id),
+                    |event| match event {
                         CrossForwardEdge(_, child) | BackEdge(_, child) | TreeEdge(_, child) => {
                             stmts_imports
                                 .entry(child)
                                 .or_insert(vec![])
-                                .push((*stmt_id, import.id))
+                                .push((*import_stmt_id, import.id))
                         }
                         Discover(_, _) | Finish(_, _) => {}
-                    }
-                });
+                    },
+                );
             }
             stmts_imports
         }
@@ -669,6 +691,7 @@ mod flow_instr {
             imports: &mut HashMap<usize, FlowImport>,
             timing_events: &mut Vec<TimingEvent>,
         ) {
+            // add service delay
             let min_delay = service.time_range.0;
             // add new timing event into the identifier creator
             let fresh_name = {
@@ -698,6 +721,7 @@ mod flow_instr {
                 kind: TimingEventKind::ServiceDelay(min_delay),
             });
 
+            // add service timeout
             let max_timeout = service.time_range.1;
             // add new timing event into the identifier creator
             let fresh_name = {
@@ -724,6 +748,7 @@ mod flow_instr {
             service.graph.add_node(fresh_statement_id);
             service.statements.iter().for_each(|(stmt_id, stmt)| {
                 if stmt.is_comp_call() {
+                    // todo: why particularly components?
                     service.graph.add_edge(fresh_statement_id, *stmt_id, ());
                 }
             });
@@ -807,7 +832,7 @@ mod flow_instr {
                 }
                 flow::Kind::OnChange { .. } => self.handle_on_change(pattern, dependencies),
                 flow::Kind::Merge { .. } => self.handle_merge(pattern, dependencies),
-                flow::Kind::Time { loc } => self.handle_time(pattern, *loc),
+                flow::Kind::Time { loc } => self.handle_time(stmt_id, pattern, *loc),
                 flow::Kind::ComponentCall {
                     component_id,
                     inputs,
@@ -1072,14 +1097,31 @@ mod flow_instr {
         }
 
         /// Compute the instruction from a time expression.
-        fn handle_time(&mut self, pattern: &ir1::stmt::Pattern, loc: Loc) -> FlowInstruction {
+        fn handle_time(
+            &mut self,
+            stmt_id: usize,
+            pattern: &ir1::stmt::Pattern,
+            loc: Loc,
+        ) -> FlowInstruction {
             // get the id of pattern's flow, debug-check there is only one flow
             let mut ids = pattern.identifiers();
             debug_assert!(ids.len() == 1);
             let id_pattern = ids.pop().unwrap();
+            // get the import flow that triggered ``time``
+            let import_flow = self.get_stmt_import(stmt_id);
+            let mut import_name = self.get_name(import_flow).clone();
+
             // retrieve the instant of computation
-            let expr = Expression::instant(Ident::new("instant", loc.into()));
-            self.define_signal(id_pattern, expr)
+            import_name.set_span(loc.span);
+            let expr = Expression::instant(import_name);
+            // define a nex signal
+            let def = self.define_signal(id_pattern, expr);
+            // update context if needed
+            if let Some(update) = self.update_ctx(id_pattern) {
+                FlowInstruction::seq(vec![def, update])
+            } else {
+                def
+            }
         }
 
         /// Compute the instruction from a component call.
@@ -1090,7 +1132,7 @@ mod flow_instr {
             inputs: &Vec<(usize, flow::Expr)>,
         ) -> FlowInstruction {
             // get events that might call the component
-            let (mut signals, mut events) = (vec![], vec![]);
+            let (mut comp_inputs, mut signals, mut events) = (vec![], vec![], vec![]);
             inputs.iter().for_each(|(input_id, flow_expr)| {
                 match flow_expr.kind {
                     flow::Kind::Ident { id } => {
@@ -1098,13 +1140,18 @@ mod flow_instr {
                         if self.get_flow_kind(id).is_event() {
                             if self.events.contains(&id) {
                                 let event_name = self.get_name(id).clone();
-                                events.push((input_name, Some(event_name)));
+                                events.push(event_name);
+                                let input_expr = self.get_event(id);
+                                comp_inputs.push((input_name, input_expr));
                             } else {
-                                events.push((input_name, None));
+                                let input_expr = Expression::none();
+                                comp_inputs.push((input_name, input_expr));
                             }
                         } else {
                             let signal_name = self.get_name(id).clone();
-                            signals.push((input_name, signal_name));
+                            signals.push(signal_name);
+                            let input_expr = self.get_signal(id);
+                            comp_inputs.push((input_name, input_expr));
                         }
                     }
                     _ => unreachable!(), // normalized
@@ -1112,7 +1159,7 @@ mod flow_instr {
             });
 
             // call component with the events and update output signals
-            self.call_component(component_id, pattern.clone(), signals, events)
+            self.call_component(component_id, pattern.clone(), comp_inputs, signals, events)
         }
 
         /// Add signal definition in current propagation branch.
@@ -1158,8 +1205,9 @@ mod flow_instr {
             &mut self,
             component_id: usize,
             output_pattern: ir1::stmt::Pattern,
-            signals: Vec<(Ident, Ident)>,
-            events: Vec<(Ident, Option<Ident>)>,
+            inputs: Vec<(Ident, Expression)>,
+            signals: Vec<Ident>,
+            events: Vec<Ident>,
         ) -> FlowInstruction {
             let component_name = self.get_name(component_id);
             let outputs_ids = output_pattern.identifiers();
@@ -1168,8 +1216,7 @@ mod flow_instr {
             let mut instrs = vec![FlowInstruction::comp_call(
                 output_pattern.into_ir2(self),
                 component_name.clone(),
-                signals.clone(),
-                events.clone(),
+                inputs,
             )];
             // update outputs: context signals and all events
             let updates = outputs_ids.into_iter().filter_map(|output_id| {
@@ -1197,12 +1244,6 @@ mod flow_instr {
                         }
                     }
                     // call component when activated by inputs
-                    let events: Vec<Ident> = events
-                        .into_iter()
-                        .filter_map(|(_, opt_event)| opt_event)
-                        .collect();
-                    let signals: Vec<Ident> =
-                        signals.into_iter().map(|(_, signal)| signal).collect();
                     FlowInstruction::if_activated(events, signals, comp_call, None)
                 }
             }

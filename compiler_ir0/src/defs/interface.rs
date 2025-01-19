@@ -160,7 +160,7 @@ pub enum FlowExpression {
     /// Identifier to flow.
     Ident(Ident),
     /// Time flow.
-    Time(Time)
+    Time(Time),
 }
 
 mk_new! { impl FlowExpression =>

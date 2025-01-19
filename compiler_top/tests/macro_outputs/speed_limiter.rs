@@ -802,6 +802,7 @@ pub mod runtime {
             }
         }
         pub struct SpeedLimiterService {
+            begin: std::time::Instant,
             context: Context,
             delayed: bool,
             input_store: SpeedLimiterServiceStore,
@@ -821,6 +822,7 @@ pub mod runtime {
                 let process_set_speed = ProcessSetSpeedState::init();
                 let speed_limiter = SpeedLimiterState::init();
                 SpeedLimiterService {
+                    begin: std::time::Instant::now(),
                     context,
                     delayed,
                     input_store,
@@ -1041,7 +1043,7 @@ pub mod runtime {
                                     kickdown: self.context.kickdown.get(),
                                     vdc_disabled: self.context.vdc.get(),
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -1081,9 +1083,9 @@ pub mod runtime {
                                     activation_req: self.context.activation.get(),
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
                                     kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
+                                    vdc_disabled: vdc,
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -1124,8 +1126,8 @@ pub mod runtime {
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
                                     kickdown: self.context.kickdown.get(),
                                     vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -1166,9 +1168,9 @@ pub mod runtime {
                                     activation_req: self.context.activation.get(),
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
                                     kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    vdc_disabled: vdc,
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -1206,11 +1208,11 @@ pub mod runtime {
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
                                     activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
+                                    vacuum_brake_state: vacuum_brake,
                                     kickdown: self.context.kickdown.get(),
                                     vdc_disabled: self.context.vdc.get(),
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -1249,11 +1251,11 @@ pub mod runtime {
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
                                     activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
+                                    vacuum_brake_state: vacuum_brake,
                                     kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
+                                    vdc_disabled: vdc,
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -1292,11 +1294,11 @@ pub mod runtime {
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
                                     activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
+                                    vacuum_brake_state: vacuum_brake,
                                     kickdown: self.context.kickdown.get(),
                                     vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -1336,11 +1338,11 @@ pub mod runtime {
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
                                     activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
+                                    vacuum_brake_state: vacuum_brake,
                                     kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    vdc_disabled: vdc,
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -1377,12 +1379,12 @@ pub mod runtime {
                             self.context.activation.set(activation);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
+                                    activation_req: activation,
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
                                     kickdown: self.context.kickdown.get(),
                                     vdc_disabled: self.context.vdc.get(),
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -1420,12 +1422,12 @@ pub mod runtime {
                             self.context.vdc.set(vdc);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
+                                    activation_req: activation,
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
                                     kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
+                                    vdc_disabled: vdc,
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -1463,12 +1465,12 @@ pub mod runtime {
                             self.context.speed.set(speed);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
+                                    activation_req: activation,
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
                                     kickdown: self.context.kickdown.get(),
                                     vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -1507,12 +1509,12 @@ pub mod runtime {
                             self.context.vdc.set(vdc);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
+                                    activation_req: activation,
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
                                     kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    vdc_disabled: vdc,
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -1550,12 +1552,12 @@ pub mod runtime {
                             self.context.vacuum_brake.set(vacuum_brake);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
+                                    activation_req: activation,
+                                    vacuum_brake_state: vacuum_brake,
                                     kickdown: self.context.kickdown.get(),
                                     vdc_disabled: self.context.vdc.get(),
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -1594,12 +1596,12 @@ pub mod runtime {
                             self.context.vdc.set(vdc);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
+                                    activation_req: activation,
+                                    vacuum_brake_state: vacuum_brake,
                                     kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
+                                    vdc_disabled: vdc,
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -1638,12 +1640,12 @@ pub mod runtime {
                             self.context.speed.set(speed);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
+                                    activation_req: activation,
+                                    vacuum_brake_state: vacuum_brake,
                                     kickdown: self.context.kickdown.get(),
                                     vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -1683,12 +1685,12 @@ pub mod runtime {
                             self.context.vdc.set(vdc);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
+                                    activation_req: activation,
+                                    vacuum_brake_state: vacuum_brake,
                                     kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    vdc_disabled: vdc,
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -1935,10 +1937,10 @@ pub mod runtime {
                                 self.speed_limiter.step(SpeedLimiterInput {
                                     activation_req: self.context.activation.get(),
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
+                                    kickdown: kickdown,
                                     vdc_disabled: self.context.vdc.get(),
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -1978,10 +1980,10 @@ pub mod runtime {
                                 self.speed_limiter.step(SpeedLimiterInput {
                                     activation_req: self.context.activation.get(),
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
+                                    kickdown: kickdown,
+                                    vdc_disabled: vdc,
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -2021,10 +2023,10 @@ pub mod runtime {
                                 self.speed_limiter.step(SpeedLimiterInput {
                                     activation_req: self.context.activation.get(),
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
+                                    kickdown: kickdown,
                                     vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -2065,10 +2067,10 @@ pub mod runtime {
                                 self.speed_limiter.step(SpeedLimiterInput {
                                     activation_req: self.context.activation.get(),
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    kickdown: kickdown,
+                                    vdc_disabled: vdc,
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -2107,11 +2109,11 @@ pub mod runtime {
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
                                     activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
+                                    vacuum_brake_state: vacuum_brake,
+                                    kickdown: kickdown,
                                     vdc_disabled: self.context.vdc.get(),
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -2151,11 +2153,11 @@ pub mod runtime {
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
                                     activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
+                                    vacuum_brake_state: vacuum_brake,
+                                    kickdown: kickdown,
+                                    vdc_disabled: vdc,
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -2195,11 +2197,11 @@ pub mod runtime {
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
                                     activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
+                                    vacuum_brake_state: vacuum_brake,
+                                    kickdown: kickdown,
                                     vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -2240,11 +2242,11 @@ pub mod runtime {
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
                                     activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    vacuum_brake_state: vacuum_brake,
+                                    kickdown: kickdown,
+                                    vdc_disabled: vdc,
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -2282,12 +2284,12 @@ pub mod runtime {
                             self.context.activation.set(activation);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
+                                    activation_req: activation,
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
+                                    kickdown: kickdown,
                                     vdc_disabled: self.context.vdc.get(),
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -2326,12 +2328,12 @@ pub mod runtime {
                             self.context.vdc.set(vdc);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
+                                    activation_req: activation,
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
+                                    kickdown: kickdown,
+                                    vdc_disabled: vdc,
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -2370,12 +2372,12 @@ pub mod runtime {
                             self.context.speed.set(speed);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
+                                    activation_req: activation,
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
+                                    kickdown: kickdown,
                                     vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -2415,12 +2417,12 @@ pub mod runtime {
                             self.context.vdc.set(vdc);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
+                                    activation_req: activation,
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    kickdown: kickdown,
+                                    vdc_disabled: vdc,
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -2459,12 +2461,12 @@ pub mod runtime {
                             self.context.vacuum_brake.set(vacuum_brake);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
+                                    activation_req: activation,
+                                    vacuum_brake_state: vacuum_brake,
+                                    kickdown: kickdown,
                                     vdc_disabled: self.context.vdc.get(),
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -2504,12 +2506,12 @@ pub mod runtime {
                             self.context.vdc.set(vdc);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
+                                    activation_req: activation,
+                                    vacuum_brake_state: vacuum_brake,
+                                    kickdown: kickdown,
+                                    vdc_disabled: vdc,
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -2549,12 +2551,12 @@ pub mod runtime {
                             self.context.speed.set(speed);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
+                                    activation_req: activation,
+                                    vacuum_brake_state: vacuum_brake,
+                                    kickdown: kickdown,
                                     vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -2595,12 +2597,12 @@ pub mod runtime {
                             self.context.vdc.set(vdc);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    activation_req: activation,
+                                    vacuum_brake_state: vacuum_brake,
+                                    kickdown: kickdown,
+                                    vdc_disabled: vdc,
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -2835,7 +2837,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -2850,7 +2852,7 @@ pub mod runtime {
                                     kickdown: self.context.kickdown.get(),
                                     vdc_disabled: self.context.vdc.get(),
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -2877,7 +2879,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -2891,9 +2893,9 @@ pub mod runtime {
                                     activation_req: self.context.activation.get(),
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
                                     kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
+                                    vdc_disabled: vdc,
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -2920,7 +2922,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -2935,8 +2937,8 @@ pub mod runtime {
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
                                     kickdown: self.context.kickdown.get(),
                                     vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -2963,7 +2965,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -2978,9 +2980,9 @@ pub mod runtime {
                                     activation_req: self.context.activation.get(),
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
                                     kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    vdc_disabled: vdc,
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -3007,7 +3009,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -3019,11 +3021,11 @@ pub mod runtime {
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
                                     activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
+                                    vacuum_brake_state: vacuum_brake,
                                     kickdown: self.context.kickdown.get(),
                                     vdc_disabled: self.context.vdc.get(),
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -3050,7 +3052,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -3063,11 +3065,11 @@ pub mod runtime {
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
                                     activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
+                                    vacuum_brake_state: vacuum_brake,
                                     kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
+                                    vdc_disabled: vdc,
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -3094,7 +3096,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -3107,11 +3109,11 @@ pub mod runtime {
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
                                     activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
+                                    vacuum_brake_state: vacuum_brake,
                                     kickdown: self.context.kickdown.get(),
                                     vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -3138,7 +3140,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -3152,11 +3154,11 @@ pub mod runtime {
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
                                     activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
+                                    vacuum_brake_state: vacuum_brake,
                                     kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    vdc_disabled: vdc,
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -3183,7 +3185,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -3194,12 +3196,12 @@ pub mod runtime {
                             self.context.activation.set(activation);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
+                                    activation_req: activation,
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
                                     kickdown: self.context.kickdown.get(),
                                     vdc_disabled: self.context.vdc.get(),
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -3226,7 +3228,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -3238,12 +3240,12 @@ pub mod runtime {
                             self.context.vdc.set(vdc);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
+                                    activation_req: activation,
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
                                     kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
+                                    vdc_disabled: vdc,
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -3270,7 +3272,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -3282,12 +3284,12 @@ pub mod runtime {
                             self.context.speed.set(speed);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
+                                    activation_req: activation,
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
                                     kickdown: self.context.kickdown.get(),
                                     vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -3314,7 +3316,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -3327,12 +3329,12 @@ pub mod runtime {
                             self.context.vdc.set(vdc);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
+                                    activation_req: activation,
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
                                     kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    vdc_disabled: vdc,
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -3359,7 +3361,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -3371,12 +3373,12 @@ pub mod runtime {
                             self.context.vacuum_brake.set(vacuum_brake);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
+                                    activation_req: activation,
+                                    vacuum_brake_state: vacuum_brake,
                                     kickdown: self.context.kickdown.get(),
                                     vdc_disabled: self.context.vdc.get(),
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -3403,7 +3405,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -3416,12 +3418,12 @@ pub mod runtime {
                             self.context.vdc.set(vdc);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
+                                    activation_req: activation,
+                                    vacuum_brake_state: vacuum_brake,
                                     kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
+                                    vdc_disabled: vdc,
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -3448,7 +3450,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -3461,12 +3463,12 @@ pub mod runtime {
                             self.context.speed.set(speed);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
+                                    activation_req: activation,
+                                    vacuum_brake_state: vacuum_brake,
                                     kickdown: self.context.kickdown.get(),
                                     vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -3493,7 +3495,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -3507,12 +3509,12 @@ pub mod runtime {
                             self.context.vdc.set(vdc);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
+                                    activation_req: activation,
+                                    vacuum_brake_state: vacuum_brake,
                                     kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    vdc_disabled: vdc,
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -3764,7 +3766,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -3776,10 +3778,10 @@ pub mod runtime {
                                 self.speed_limiter.step(SpeedLimiterInput {
                                     activation_req: self.context.activation.get(),
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
+                                    kickdown: kickdown,
                                     vdc_disabled: self.context.vdc.get(),
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -3807,7 +3809,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -3820,10 +3822,10 @@ pub mod runtime {
                                 self.speed_limiter.step(SpeedLimiterInput {
                                     activation_req: self.context.activation.get(),
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
+                                    kickdown: kickdown,
+                                    vdc_disabled: vdc,
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -3851,7 +3853,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -3864,10 +3866,10 @@ pub mod runtime {
                                 self.speed_limiter.step(SpeedLimiterInput {
                                     activation_req: self.context.activation.get(),
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
+                                    kickdown: kickdown,
                                     vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -3895,7 +3897,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -3909,10 +3911,10 @@ pub mod runtime {
                                 self.speed_limiter.step(SpeedLimiterInput {
                                     activation_req: self.context.activation.get(),
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    kickdown: kickdown,
+                                    vdc_disabled: vdc,
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -3940,7 +3942,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -3952,11 +3954,11 @@ pub mod runtime {
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
                                     activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
+                                    vacuum_brake_state: vacuum_brake,
+                                    kickdown: kickdown,
                                     vdc_disabled: self.context.vdc.get(),
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -3984,7 +3986,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -3997,11 +3999,11 @@ pub mod runtime {
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
                                     activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
+                                    vacuum_brake_state: vacuum_brake,
+                                    kickdown: kickdown,
+                                    vdc_disabled: vdc,
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -4029,7 +4031,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -4042,11 +4044,11 @@ pub mod runtime {
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
                                     activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
+                                    vacuum_brake_state: vacuum_brake,
+                                    kickdown: kickdown,
                                     vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -4074,7 +4076,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -4088,11 +4090,11 @@ pub mod runtime {
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
                                     activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    vacuum_brake_state: vacuum_brake,
+                                    kickdown: kickdown,
+                                    vdc_disabled: vdc,
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -4120,7 +4122,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -4131,12 +4133,12 @@ pub mod runtime {
                             self.context.activation.set(activation);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
+                                    activation_req: activation,
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
+                                    kickdown: kickdown,
                                     vdc_disabled: self.context.vdc.get(),
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -4164,7 +4166,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -4176,12 +4178,12 @@ pub mod runtime {
                             self.context.vdc.set(vdc);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
+                                    activation_req: activation,
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
+                                    kickdown: kickdown,
+                                    vdc_disabled: vdc,
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -4209,7 +4211,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -4221,12 +4223,12 @@ pub mod runtime {
                             self.context.speed.set(speed);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
+                                    activation_req: activation,
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
+                                    kickdown: kickdown,
                                     vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -4254,7 +4256,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -4267,12 +4269,12 @@ pub mod runtime {
                             self.context.vdc.set(vdc);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
+                                    activation_req: activation,
                                     vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    kickdown: kickdown,
+                                    vdc_disabled: vdc,
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -4300,7 +4302,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -4312,12 +4314,12 @@ pub mod runtime {
                             self.context.vacuum_brake.set(vacuum_brake);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
+                                    activation_req: activation,
+                                    vacuum_brake_state: vacuum_brake,
+                                    kickdown: kickdown,
                                     vdc_disabled: self.context.vdc.get(),
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -4345,7 +4347,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -4358,12 +4360,12 @@ pub mod runtime {
                             self.context.vdc.set(vdc);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
+                                    activation_req: activation,
+                                    vacuum_brake_state: vacuum_brake,
+                                    kickdown: kickdown,
+                                    vdc_disabled: vdc,
                                     speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -4391,7 +4393,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -4404,12 +4406,12 @@ pub mod runtime {
                             self.context.speed.set(speed);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
+                                    activation_req: activation,
+                                    vacuum_brake_state: vacuum_brake,
+                                    kickdown: kickdown,
                                     vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -4437,7 +4439,7 @@ pub mod runtime {
                                 .await?;
                             let (v_set_aux, v_update) =
                                 self.process_set_speed.step(ProcessSetSpeedInput {
-                                    set_speed: self.context.set_speed.get(),
+                                    set_speed: set_speed,
                                 });
                             self.context.v_set_aux.set(v_set_aux);
                             self.context.v_update.set(v_update);
@@ -4451,12 +4453,12 @@ pub mod runtime {
                             self.context.vdc.set(vdc);
                             let (state, on_state, in_regulation_aux, state_update) =
                                 self.speed_limiter.step(SpeedLimiterInput {
-                                    activation_req: self.context.activation.get(),
-                                    vacuum_brake_state: self.context.vacuum_brake.get(),
-                                    kickdown: self.context.kickdown.get(),
-                                    vdc_disabled: self.context.vdc.get(),
-                                    speed: self.context.speed.get(),
-                                    v_set: self.context.v_set.get(),
+                                    activation_req: activation,
+                                    vacuum_brake_state: vacuum_brake,
+                                    kickdown: kickdown,
+                                    vdc_disabled: vdc,
+                                    speed: speed,
+                                    v_set: v_set,
                                 });
                             self.context.state.set(state);
                             self.context.on_state.set(on_state);
@@ -4538,7 +4540,7 @@ pub mod runtime {
                         kickdown: self.context.kickdown.get(),
                         vdc_disabled: self.context.vdc.get(),
                         speed: self.context.speed.get(),
-                        v_set: self.context.v_set.get(),
+                        v_set: v_set,
                     });
                 self.context.state.set(state);
                 self.context.on_state.set(on_state);
@@ -4627,7 +4629,7 @@ pub mod runtime {
                             kickdown: self.context.kickdown.get(),
                             vdc_disabled: self.context.vdc.get(),
                             speed: self.context.speed.get(),
-                            v_set: self.context.v_set.get(),
+                            v_set: v_set,
                         });
                     self.context.state.set(state);
                     self.context.on_state.set(on_state);
