@@ -3,14 +3,19 @@ compiler_top::prelude! {}
 #[test]
 fn should_compile_acc() {
     let top: ir0::Top = parse_quote! {
-        #![dump = "tests/macro_outputs/acc.rs", demo]
+        #![dump = "tests/macro_outputs/acc.rs", demo, propag = "onchange"]
 
         // Vehicle speed, computed by another service.
         import signal car::state::speed_km_h                : float;
         // Front distance, from radar sensor.
         import signal car::sensors::radar::distance_m       : float;
+        // Activation status by the driver.
+        import event  car::cluster::acc_active              : Activation;
         // Braking to reach to maintain safety distance.
         export signal car::actuators::control::brakes_m_s   : float;
+
+        // Activation type.
+        enum Activation{ On, Off }
 
         // Derivation component.
         component derive(x: float, t_ms: float) -> (v_s: float) {
@@ -76,6 +81,29 @@ fn should_compile_acc() {
             b_m_s_control = 1.*p_e + 0.1*i_e + 0.05*d_e;
         }
 
+        component activate(acc_active: Activation?, distance_m: float) -> (condition: bool) {
+            let active: bool = when {
+                init => false,
+                acc_active? => acc_active == Activation::On,
+            };
+            init distance_m = 0.;
+            let approaching: bool = distance_m < last distance_m;
+            condition = active && approaching;
+        }
+
+        component filtered_acc(condition: bool, distance_m: float, sv_v_km_h: float, t_ms: float) -> (brakes_m_s: float) {
+            match condition {
+                true => {
+                    let brakes_command_m_s: float = command(distance_m, sv_v_km_h, t_ms);
+                    brakes_m_s = pid(sv_v_km_h, brakes_command_m_s, t_ms);
+                },
+                false => {
+                    let brakes_command_m_s: float = 0.;
+                    brakes_m_s = 0.;
+                },
+            }
+        }
+
         // Adaptive Cruise Control
         //
         // This service computes the braking acceleration to perform
@@ -89,8 +117,9 @@ fn should_compile_acc() {
         //
         // Our goal is to keep `d_grace` above zero, by controlling the brakes.
         service adaptive_cruise_control @ [10, 3000] {
-            let signal brakes_command_m_s: float = command(distance_m, speed_km_h, time());
-            brakes_m_s = pid(speed_km_h, brakes_command_m_s, time());
+            let signal t: float = time();
+            let signal condition: bool = activate(acc_active, distance_m);
+            brakes_m_s = filtered_acc(condition, distance_m, speed_km_h, t);
         }
     };
     let (ast, mut ctx) = top.init();
