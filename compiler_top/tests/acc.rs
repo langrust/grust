@@ -81,16 +81,28 @@ fn should_compile_acc() {
             b_m_s_control = 1.*p_e + 0.1*i_e + 0.05*d_e;
         }
 
+        // Returns the activation condition of the ACC.
         component activate(acc_active: Activation?, distance_m: float) -> (condition: bool) {
-            let active: bool = when {
-                init => false,
-                acc_active? => acc_active == Activation::On,
-            };
             init distance_m = 0.;
-            let approaching: bool = distance_m < last distance_m;
+            when {
+                init => {
+                    active = false;
+                    approaching = false;
+                }
+                acc_active? => {
+                    let active: bool = acc_active == Activation::On;
+                }
+                distance_m < last distance_m => {
+                    let approaching: bool = true;
+                }
+                distance_m >= last distance_m => {
+                    let approaching: bool = false;
+                }
+            }
             condition = active && approaching;
         }
 
+        // Filters the ACC to activated only when activated and our vehicle approaches the front vehicle.
         component filtered_acc(condition: bool, distance_m: float, sv_v_km_h: float, t_ms: float) -> (brakes_m_s: float) {
             match condition {
                 true => {
