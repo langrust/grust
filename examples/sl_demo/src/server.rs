@@ -222,7 +222,7 @@ mod sl {
                 v_set,
             );
             v_set = v_set_aux;
-            in_regulation = scan(in_regulation_aux, 10);
+            in_regulation = on_change(in_regulation_aux);
             sl_state = on_state;
         }
     }

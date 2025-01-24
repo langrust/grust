@@ -199,7 +199,7 @@ impl Typing for flow::Expr {
                 match typ {
                     Typ::Event { ty: typ, .. } => {
                         // set typing
-                        self.typ = Some(Typ::signal((**typ).clone()));
+                        self.typ = Some(Typ::event((**typ).clone()));
                         Ok(())
                     }
                     given_type => {
@@ -214,7 +214,7 @@ impl Typing for flow::Expr {
                 match typ {
                     Typ::Signal { ty: typ, .. } => {
                         // set typ
-                        self.typ = Some(Typ::event((**typ).clone()));
+                        self.typ = Some(Typ::signal((**typ).clone()));
                         Ok(())
                     }
                     given_type => {

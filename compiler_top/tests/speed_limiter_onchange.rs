@@ -222,7 +222,7 @@ fn should_compile_speed_limiter_onchange() {
                 v_set,
             );
             v_set = v_set_aux;
-            in_regulation = scan(in_regulation_aux, 10);
+            in_regulation = on_change(in_regulation_aux);
         }
     };
     let (ast, mut ctx) = top.init();
