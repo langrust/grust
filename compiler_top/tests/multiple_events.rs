@@ -11,11 +11,14 @@ fn should_compile_multiple_events() {
             when {
                 init => {
                     z = 0;
+                    a_bis = 0;
                 }
                 (let a = a?, let b = b?) if v > 50 => {
-                    let z: int = 1;
+                    let a_bis: int = a;
+                    let z: int = last a_bis;
                 }
                 let a = a? => {
+                    let a_bis: int = a;
                     let z: int = 2;
                 }
                 let b = b? => {
