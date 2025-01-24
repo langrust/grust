@@ -162,24 +162,45 @@ pub struct ActivateInput {
 }
 pub struct ActivateState {
     last_active: bool,
+    last_approaching: bool,
     last_distance_m: f64,
+    last_x: bool,
+    last_x_1: bool,
 }
 impl ActivateState {
     pub fn init() -> ActivateState {
         ActivateState {
             last_active: false,
+            last_approaching: false,
             last_distance_m: 0.0f64,
+            last_x: false,
+            last_x_1: false,
         }
     }
     pub fn step(&mut self, input: ActivateInput) -> bool {
-        let active = match (input.acc_active) {
-            (Some(acc_active)) => acc_active == Activation::On,
-            (_) => self.last_active,
+        let x = input.distance_m < self.last_distance_m;
+        let x_1 = input.distance_m >= self.last_distance_m;
+        let (active, approaching) = match (input.acc_active) {
+            (Some(acc_active)) => {
+                let active = acc_active == Activation::On;
+                (active, self.last_approaching)
+            }
+            (_) if x && !(self.last_x) => {
+                let approaching = true;
+                (self.last_active, approaching)
+            }
+            (_) if x_1 && !(self.last_x_1) => {
+                let approaching = false;
+                (self.last_active, approaching)
+            }
+            (_) => (self.last_active, self.last_approaching),
         };
-        let approaching = input.distance_m < self.last_distance_m;
         let condition = active && approaching;
         self.last_active = active;
+        self.last_approaching = approaching;
         self.last_distance_m = input.distance_m;
+        self.last_x = x;
+        self.last_x_1 = x_1;
         condition
     }
 }
@@ -517,6 +538,57 @@ pub mod runtime {
                     output,
                     timer,
                 }
+            }
+            pub async fn handle_timeout_adaptive_cruise_control(
+                &mut self,
+                _timeout_adaptive_cruise_control_instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.reset_time_constraints(_timeout_adaptive_cruise_control_instant)
+                    .await?;
+                self.context.reset();
+                if self.context.distance_m.is_new() {
+                    let condition = self.activate.step(ActivateInput {
+                        acc_active: None,
+                        distance_m: self.context.distance_m.get(),
+                    });
+                    self.context.condition.set(condition);
+                }
+                let t = (_timeout_adaptive_cruise_control_instant
+                    .duration_since(self.begin)
+                    .as_millis()) as f64;
+                self.context.t.set(t);
+                if self.context.condition.is_new()
+                    || self.context.distance_m.is_new()
+                    || self.context.speed_km_h.is_new()
+                    || self.context.t.is_new()
+                {
+                    let brakes_m_s = self.filtered_acc.step(FilteredAccInput {
+                        condition: self.context.condition.get(),
+                        distance_m: self.context.distance_m.get(),
+                        sv_v_km_h: self.context.speed_km_h.get(),
+                        t_ms: t,
+                    });
+                    self.context.brakes_m_s.set(brakes_m_s);
+                }
+                self.send_output(O::BrakesMS(
+                    self.context.brakes_m_s.get(),
+                    _timeout_adaptive_cruise_control_instant,
+                ))
+                .await?;
+                Ok(())
+            }
+            #[inline]
+            pub async fn reset_service_timeout(
+                &mut self,
+                _timeout_adaptive_cruise_control_instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.timer
+                    .send((
+                        T::TimeoutAdaptiveCruiseControl,
+                        _timeout_adaptive_cruise_control_instant,
+                    ))
+                    .await?;
+                Ok(())
             }
             pub async fn handle_speed_km_h(
                 &mut self,
@@ -909,57 +981,6 @@ pub mod runtime {
                         .replace((acc_active, _acc_active_instant));
                     assert!(unique.is_none(), "flow `acc_active` changes too frequently");
                 }
-                Ok(())
-            }
-            pub async fn handle_timeout_adaptive_cruise_control(
-                &mut self,
-                _timeout_adaptive_cruise_control_instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.reset_time_constraints(_timeout_adaptive_cruise_control_instant)
-                    .await?;
-                self.context.reset();
-                if self.context.distance_m.is_new() {
-                    let condition = self.activate.step(ActivateInput {
-                        acc_active: None,
-                        distance_m: self.context.distance_m.get(),
-                    });
-                    self.context.condition.set(condition);
-                }
-                let t = (_timeout_adaptive_cruise_control_instant
-                    .duration_since(self.begin)
-                    .as_millis()) as f64;
-                self.context.t.set(t);
-                if self.context.condition.is_new()
-                    || self.context.distance_m.is_new()
-                    || self.context.speed_km_h.is_new()
-                    || self.context.t.is_new()
-                {
-                    let brakes_m_s = self.filtered_acc.step(FilteredAccInput {
-                        condition: self.context.condition.get(),
-                        distance_m: self.context.distance_m.get(),
-                        sv_v_km_h: self.context.speed_km_h.get(),
-                        t_ms: t,
-                    });
-                    self.context.brakes_m_s.set(brakes_m_s);
-                }
-                self.send_output(O::BrakesMS(
-                    self.context.brakes_m_s.get(),
-                    _timeout_adaptive_cruise_control_instant,
-                ))
-                .await?;
-                Ok(())
-            }
-            #[inline]
-            pub async fn reset_service_timeout(
-                &mut self,
-                _timeout_adaptive_cruise_control_instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.timer
-                    .send((
-                        T::TimeoutAdaptiveCruiseControl,
-                        _timeout_adaptive_cruise_control_instant,
-                    ))
-                    .await?;
                 Ok(())
             }
             #[inline]
