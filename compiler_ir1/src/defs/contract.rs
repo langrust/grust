@@ -18,6 +18,13 @@ pub enum Kind {
         /// Signal's identifier in Symbol Table.
         id: usize,
     },
+    /// Last term: last x
+    Last {
+        /// Signal's memory in Symbol Table.
+        init_id: usize,
+        /// Signal's identifier in Symbol Table.
+        signal_id: usize,
+    },
     /// Enumeration term
     Enumeration {
         /// The enumeration id.
@@ -57,6 +64,7 @@ pub enum Kind {
 mk_new! { impl Kind =>
     Constant: constant { constant: Constant }
     Identifier: ident { id: usize }
+    Last: last { init_id: usize, signal_id: usize }
     Enumeration: enumeration {
         enum_id: usize,
         element_id: usize,
@@ -123,6 +131,7 @@ impl Term {
                 .into_iter()
                 .filter(|signal| id != signal)
                 .collect(),
+            Kind::Last { .. } => vec![],
         }
     }
 
@@ -153,6 +162,17 @@ impl Term {
             } => {
                 if *id == old_id {
                     *id = new_id
+                }
+            }
+            Kind::Last {
+                ref mut init_id,
+                ref mut signal_id,
+            } => {
+                if *signal_id == old_id {
+                    *signal_id = new_id
+                }
+                if *init_id == old_id {
+                    *init_id = new_id
                 }
             }
             Kind::Unary { ref mut term, .. } => {

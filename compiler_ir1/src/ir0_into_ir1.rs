@@ -696,6 +696,15 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
                     loc,
                 ))
             }
+            Term::Last(ident) => {
+                let init_id = ctx.ctx0.get_init_id(&ident, false, ctx.errors)?;
+                let signal_id = ctx.ctx0.get_ident(&ident, false, false, ctx.errors)?;
+                Ok(ir1::contract::Term::new(
+                    ir1::contract::Kind::last(init_id, signal_id),
+                    None,
+                    loc,
+                ))
+            }
             Term::ForAll(ForAll {
                 ident, ty, term, ..
             }) => {

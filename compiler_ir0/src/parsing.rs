@@ -2181,8 +2181,17 @@ mod parse_contract {
 
     impl ParsePrec for Term {
         fn parse_term(input: ParseStream) -> syn::Res<Self> {
+            if input.peek(token::Brace) {
+                let content;
+                let _ = braced!(content in input);
+                return Term::parse_term(&content);
+            }
             let term = if input.peek(keyword::result) {
                 Term::result(input.parse()?)
+            } else if input.peek(keyword::last) {
+                let _: keyword::last = input.parse()?;
+                let ident: Ident = input.parse()?;
+                Term::last(ident)
             } else if input.fork().call(Constant::parse).is_ok() {
                 Term::constant(input.parse()?)
             } else if Enumeration::peek(input) {

@@ -248,6 +248,10 @@ mod term {
                         Scope::VeryLocal => unreachable!("you should not do that with this ident"),
                     }
                 }
+                Kind::Last { signal_id, .. } => {
+                    let name = ctx.get_name(signal_id).clone();
+                    contract::Term::MemoryAccess { identifier: name }
+                }
                 Kind::Enumeration {
                     enum_id,
                     element_id,

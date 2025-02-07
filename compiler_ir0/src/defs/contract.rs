@@ -151,6 +151,7 @@ pub enum Term {
     Constant(Constant),
     Result(keyword::result),
     Identifier(Ident),
+    Last(Ident),
     Enumeration(Enumeration),
     Unary(Unary),
     Binary(Binary),
@@ -164,6 +165,7 @@ impl HasLoc for Term {
             Self::Constant(c) => c.loc(),
             Self::Result(r) => r.span.into(),
             Self::Identifier(i) => i.loc(),
+            Self::Last(i) => i.loc(),
             Self::Enumeration(e) => e.loc(),
             Self::Unary(u) => u.loc(),
             Self::Binary(b) => b.loc(),
@@ -181,6 +183,7 @@ mk_new! { impl Term =>
     Identifier: test_ident (
         val: impl AsRef<str> = Ident::new(val.as_ref(), Loc::test_dummy().into()),
     )
+    Last: last (val: impl Into<Ident> = val.into())
     Enumeration: enumeration (val: Enumeration = val)
     Unary: unary (val: Unary = val)
     Binary: binary (val: Binary = val)
