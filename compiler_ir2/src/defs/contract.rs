@@ -80,6 +80,13 @@ pub enum Term {
     },
     /// None term.
     None,
+    /// A function call: `foo(x, y)`.
+    FunctionCall {
+        /// The function called.
+        function: Box<Self>,
+        /// The arguments.
+        arguments: Vec<Self>,
+    },
 }
 
 mk_new! { impl Term =>
@@ -117,6 +124,10 @@ mk_new! { impl Term =>
         enum_name: impl Into<Ident> = enum_name.into(),
         elem_name: impl Into<Ident> = elem_name.into(),
         element: Option<Term> = element.map(Term::into),
+    }
+    FunctionCall: fun_call {
+        function: Self = function.into(),
+        arguments: impl Into<Vec<Self>> = arguments.into(),
     }
     Ok: ok { term: Term = term.into() }
     Err: err {}
@@ -207,6 +218,16 @@ impl Term {
                 parse_quote! { Some(#ts_term) }
             }
             Self::None => parse_quote! { None },
+            Self::FunctionCall {
+                function,
+                arguments,
+            } => {
+                let function = function.to_token_stream(prophecy, function_like);
+                let arguments = arguments
+                    .into_iter()
+                    .map(|term| term.to_token_stream(prophecy, function_like));
+                parse_quote! { (#function)(#(#arguments),*) }
+            }
         }
     }
 }

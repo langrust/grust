@@ -140,6 +140,28 @@ impl Typing for contract::Term {
                 };
                 typing
             }
+            contract::Kind::Application { fun, inputs } => {
+                // type all inputs
+                for input in inputs.iter_mut() {
+                    input.typ_check(symbols, errors)?;
+                }
+
+                let input_types = inputs
+                    .iter()
+                    .map(|input| input.get_typ().unwrap().clone())
+                    .collect::<Vec<_>>();
+
+                // type the function expression
+                fun.typ_check(symbols, errors)?;
+
+                // compute the application type
+                let application_type =
+                    fun.get_typ_mut()
+                        .unwrap()
+                        .apply(input_types, self.loc, errors)?;
+
+                application_type
+            }
         };
         self.typing = Some(ty);
         Ok(())
