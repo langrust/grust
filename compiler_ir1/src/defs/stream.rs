@@ -48,11 +48,9 @@ impl Stmt {
         &mut self,
         identifier_creator: &mut IdentifierCreator,
         memory: &mut Memory,
-        contract: &mut Contract,
         ctx: &mut Ctx,
     ) -> Res<()> {
-        self.expr
-            .memorize(identifier_creator, memory, contract, ctx)
+        self.expr.memorize(identifier_creator, memory, ctx)
     }
 
     /// Change [ir1] statement into a normal form.
@@ -391,7 +389,6 @@ impl ExprKind {
         &mut self,
         identifier_creator: &mut IdentifierCreator,
         memory: &mut Memory,
-        contract: &mut Contract,
         ctx: &mut Ctx,
     ) -> Res<()> {
         match self {
@@ -400,67 +397,67 @@ impl ExprKind {
             | Self::Abstraction { .. }
             | Self::Enumeration { .. } => (),
             Self::UnOp { expr, .. } => {
-                expr.memorize(identifier_creator, memory, contract, ctx)?;
+                expr.memorize(identifier_creator, memory, ctx)?;
             }
             Self::BinOp { lft, rgt, .. } => {
-                lft.memorize(identifier_creator, memory, contract, ctx)?;
-                rgt.memorize(identifier_creator, memory, contract, ctx)?;
+                lft.memorize(identifier_creator, memory, ctx)?;
+                rgt.memorize(identifier_creator, memory, ctx)?;
             }
             Self::IfThenElse { cnd, thn, els } => {
-                cnd.memorize(identifier_creator, memory, contract, ctx)?;
-                thn.memorize(identifier_creator, memory, contract, ctx)?;
-                els.memorize(identifier_creator, memory, contract, ctx)?;
+                cnd.memorize(identifier_creator, memory, ctx)?;
+                thn.memorize(identifier_creator, memory, ctx)?;
+                els.memorize(identifier_creator, memory, ctx)?;
             }
             Self::Application { fun, inputs } => {
-                fun.memorize(identifier_creator, memory, contract, ctx)?;
+                fun.memorize(identifier_creator, memory, ctx)?;
                 for expr in inputs.iter_mut() {
-                    expr.memorize(identifier_creator, memory, contract, ctx)?;
+                    expr.memorize(identifier_creator, memory, ctx)?;
                 }
             }
             Self::Structure { fields, .. } => {
                 for (_, expr) in fields.iter_mut() {
-                    expr.memorize(identifier_creator, memory, contract, ctx)?;
+                    expr.memorize(identifier_creator, memory, ctx)?;
                 }
             }
             Self::Array { elements } | Self::Tuple { elements } => {
                 for expr in elements {
-                    expr.memorize(identifier_creator, memory, contract, ctx)?;
+                    expr.memorize(identifier_creator, memory, ctx)?;
                 }
             }
             Self::Match { expr, arms } => {
-                expr.memorize(identifier_creator, memory, contract, ctx)?;
+                expr.memorize(identifier_creator, memory, ctx)?;
                 for (_, option, block, expr) in arms.iter_mut() {
                     if let Some(expr) = option.as_mut() {
-                        expr.memorize(identifier_creator, memory, contract, ctx)?;
+                        expr.memorize(identifier_creator, memory, ctx)?;
                     }
                     for statement in block.iter_mut() {
-                        statement.memorize(identifier_creator, memory, contract, ctx)?;
+                        statement.memorize(identifier_creator, memory, ctx)?;
                     }
-                    expr.memorize(identifier_creator, memory, contract, ctx)?;
+                    expr.memorize(identifier_creator, memory, ctx)?;
                 }
             }
             Self::FieldAccess { expr, .. } => {
-                expr.memorize(identifier_creator, memory, contract, ctx)?;
+                expr.memorize(identifier_creator, memory, ctx)?;
             }
             Self::TupleElementAccess { expr, .. } => {
-                expr.memorize(identifier_creator, memory, contract, ctx)?;
+                expr.memorize(identifier_creator, memory, ctx)?;
             }
             Self::Map { expr, fun } => {
-                expr.memorize(identifier_creator, memory, contract, ctx)?;
-                fun.memorize(identifier_creator, memory, contract, ctx)?;
+                expr.memorize(identifier_creator, memory, ctx)?;
+                fun.memorize(identifier_creator, memory, ctx)?;
             }
             Self::Fold { array, init, fun } => {
-                array.memorize(identifier_creator, memory, contract, ctx)?;
-                init.memorize(identifier_creator, memory, contract, ctx)?;
-                fun.memorize(identifier_creator, memory, contract, ctx)?;
+                array.memorize(identifier_creator, memory, ctx)?;
+                init.memorize(identifier_creator, memory, ctx)?;
+                fun.memorize(identifier_creator, memory, ctx)?;
             }
             Self::Sort { expr, fun } => {
-                expr.memorize(identifier_creator, memory, contract, ctx)?;
-                fun.memorize(identifier_creator, memory, contract, ctx)?;
+                expr.memorize(identifier_creator, memory, ctx)?;
+                fun.memorize(identifier_creator, memory, ctx)?;
             }
             Self::Zip { arrays } => {
                 for expr in arrays {
-                    expr.memorize(identifier_creator, memory, contract, ctx)?;
+                    expr.memorize(identifier_creator, memory, ctx)?;
                 }
             }
         }
@@ -1123,12 +1120,11 @@ impl Expr {
         &mut self,
         identifier_creator: &mut IdentifierCreator,
         memory: &mut Memory,
-        contract: &mut Contract,
         ctx: &mut Ctx,
     ) -> Res<()> {
         match &mut self.kind {
             stream::Kind::Expression { expr } => {
-                expr.memorize(identifier_creator, memory, contract, ctx)?;
+                expr.memorize(identifier_creator, memory, ctx)?;
             }
             stream::Kind::Last { .. } => (),
             stream::Kind::NodeApplication {
@@ -1147,7 +1143,7 @@ impl Expr {
                 *node_memory_id = Some(memory_id);
             }
             stream::Kind::SomeEvent { expr } => {
-                expr.memorize(identifier_creator, memory, contract, ctx)?;
+                expr.memorize(identifier_creator, memory, ctx)?;
             }
             stream::Kind::NoneEvent => (),
             stream::Kind::RisingEdge { .. } => unreachable!(),

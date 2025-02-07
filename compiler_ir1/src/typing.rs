@@ -162,6 +162,37 @@ impl Typing for contract::Term {
 
                 application_type
             }
+            contract::Kind::ComponentCall {
+                comp_id, inputs, ..
+            } => {
+                // type all inputs and check their types
+                inputs
+                    .iter_mut()
+                    .map(|(id, input)| {
+                        input.typ_check(symbols, errors)?;
+
+                        let input_type = input.typing.as_ref().unwrap();
+                        let expected_type = symbols.get_typ(*id);
+                        input_type.expect(self.loc, expected_type).dewrap(errors)
+                    })
+                    .collect::<TRes<()>>()?;
+
+                // get the called signal type
+                let comp_call_type = {
+                    let mut outputs_types = symbols
+                        .get_node_outputs(*comp_id)
+                        .iter()
+                        .map(|(_, output_signal)| symbols.get_typ(*output_signal).clone())
+                        .collect::<Vec<_>>();
+                    if outputs_types.len() == 1 {
+                        outputs_types.pop().unwrap()
+                    } else {
+                        Typ::tuple(outputs_types)
+                    }
+                };
+
+                comp_call_type
+            }
         };
         self.typing = Some(ty);
         Ok(())
