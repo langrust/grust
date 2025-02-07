@@ -2,16 +2,17 @@
 
 prelude! {}
 
-/// Memory of an unitary node.
+/// Memory of an node.
 ///
-/// Memory structure for unitary node. It stores buffers and called unitary nodes'
-/// names.
+/// It stores buffers and called nodes' names.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Memory {
     /// Initialized buffers.
     pub buffers: HashMap<Ident, Buffer>,
-    /// Called unitary nodes' names.
+    /// Called nodes' names.
     pub called_nodes: HashMap<usize, CalledNode>,
+    /// Ghost nodes' names.
+    pub ghost_nodes: HashMap<usize, GhostNode>,
 }
 
 impl Memory {
@@ -115,9 +116,32 @@ impl Memory {
             })
             .collect();
 
+        let ghost_nodes = self
+            .ghost_nodes
+            .iter()
+            .map(|(memory_id, ghost_node)| {
+                if let Some(element) = context_map.get(memory_id) {
+                    match element {
+                        Either::Left(new_id)
+                        | Either::Right(stream::Expr {
+                            kind:
+                                stream::Kind::Expression {
+                                    expr: ir1::expr::Kind::Identifier { id: new_id },
+                                },
+                            ..
+                        }) => (new_id.clone(), ghost_node.clone()),
+                        Either::Right(_) => unreachable!(),
+                    }
+                } else {
+                    (memory_id.clone(), ghost_node.clone())
+                }
+            })
+            .collect();
+
         Memory {
             buffers,
             called_nodes,
+            ghost_nodes,
         }
     }
 
@@ -146,12 +170,16 @@ pub struct Buffer {
     pub init: ir1::stream::Expr,
 }
 
-/// Called unitary node' name.
-///
-/// Unitary node's name is composed of the name of the mother node and the name of the called output
-/// signal.
+/// Called node' name.
 #[derive(Debug, PartialEq, Clone)]
 pub struct CalledNode {
+    /// Node name.
+    pub node_id: usize,
+}
+
+/// Called ghost node' name.
+#[derive(Debug, PartialEq, Clone)]
+pub struct GhostNode {
     /// Node name.
     pub node_id: usize,
 }
@@ -169,6 +197,7 @@ impl Memory {
         Memory {
             buffers: HashMap::new(),
             called_nodes: HashMap::new(),
+            ghost_nodes: HashMap::new(),
         }
     }
 
@@ -215,6 +244,12 @@ impl Memory {
     /// Adds called node to memory.
     pub fn add_called_node(&mut self, memory_id: usize, node_id: usize) {
         let _unique = self.called_nodes.insert(memory_id, CalledNode { node_id });
+        debug_assert!(_unique.is_none());
+    }
+
+    /// Adds a ghost node to memory.
+    pub fn add_ghost_node(&mut self, memory_id: usize, node_id: usize) {
+        let _unique = self.ghost_nodes.insert(memory_id, GhostNode { node_id });
         debug_assert!(_unique.is_none());
     }
 }

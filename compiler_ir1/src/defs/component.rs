@@ -403,13 +403,11 @@ impl ComponentDefinition {
         }
 
         for statement in self.statements.iter_mut() {
-            statement.memorize(
-                &mut identifier_creator,
-                &mut memory,
-                &mut self.contract,
-                symbol_table,
-            )?;
+            statement.memorize(&mut identifier_creator, &mut memory, symbol_table)?;
         }
+
+        self.contract
+            .memorize(&mut identifier_creator, &mut memory, symbol_table);
 
         // drop IdentifierCreator (auto), local Ctx and set Memory
         symbol_table.global();

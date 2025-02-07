@@ -1,6 +1,7 @@
 //! [Contract] module.
 
 //! [Term] module.
+
 prelude! {
     graph::*,
 }
@@ -66,6 +67,15 @@ pub enum Kind {
         /// The inputs to the term.
         inputs: Vec<Term>,
     },
+    /// Component call term.
+    ComponentCall {
+        /// Identifier to the memory location of the component.
+        memory_id: Option<usize>,
+        /// The called component identifier.
+        comp_id: usize,
+        /// The inputs to the term.
+        inputs: Vec<(usize, Term)>,
+    },
 }
 
 mk_new! { impl Kind =>
@@ -100,6 +110,11 @@ mk_new! { impl Kind =>
     Application: app {
         fun: Term = fun.into(),
         inputs: impl Into<Vec<Term>> = inputs.into(),
+    }
+    ComponentCall: call {
+        memory_id = None,
+        comp_id: usize,
+        inputs: Vec<(usize, Term)>,
     }
 }
 
@@ -147,6 +162,10 @@ impl Term {
                 dependencies.extend(inputs.iter().flat_map(Term::compute_dependencies));
                 dependencies
             }
+            Kind::ComponentCall { inputs, .. } => inputs
+                .iter()
+                .flat_map(|(_, term)| term.compute_dependencies())
+                .collect(),
         }
     }
 
@@ -163,9 +182,51 @@ impl Term {
             })
         })
     }
-}
 
-impl Term {
+    /// Increment memory with ghost component applications.
+    pub fn memorize(
+        &mut self,
+        identifier_creator: &mut IdentifierCreator,
+        memory: &mut Memory,
+        ctx: &mut Ctx,
+    ) {
+        match &mut self.kind {
+            contract::Kind::ComponentCall {
+                comp_id,
+                memory_id: comp_memory_id,
+                ..
+            } => {
+                debug_assert!(comp_memory_id.is_none());
+                // create fresh identifier for the new memory buffer
+                let comp_name = ctx.get_name(*comp_id);
+                let memory_name =
+                    identifier_creator.new_identifier(comp_name.loc(), &comp_name.to_string());
+                let memory_id = ctx.insert_fresh_signal(memory_name, Scope::Local, None);
+                memory.add_ghost_node(memory_id, *comp_id);
+                // put the 'memory_id' of the called node
+                *comp_memory_id = Some(memory_id);
+            }
+            Kind::Constant { .. }
+            | Kind::Identifier { .. }
+            | Kind::Last { .. }
+            | Kind::Enumeration { .. }
+            | Kind::PresentEvent { .. } => (),
+            Kind::Unary { term, .. } | Kind::ForAll { term, .. } => {
+                term.memorize(identifier_creator, memory, ctx)
+            }
+            Kind::Binary { left, right, .. } | Kind::Implication { left, right, .. } => {
+                left.memorize(identifier_creator, memory, ctx);
+                right.memorize(identifier_creator, memory, ctx);
+            }
+            Kind::Application { fun, inputs } => {
+                fun.memorize(identifier_creator, memory, ctx);
+                inputs
+                    .iter_mut()
+                    .for_each(|term| term.memorize(identifier_creator, memory, ctx));
+            }
+        }
+    }
+
     /// Substitute an identifier with another one.
     pub fn substitution(&mut self, old_id: usize, new_id: usize) {
         match &mut self.kind {
@@ -218,6 +279,16 @@ impl Term {
                     .iter_mut()
                     .for_each(|term| term.substitution(old_id, new_id));
             }
+            Kind::ComponentCall {
+                memory_id, inputs, ..
+            } => {
+                if *memory_id == Some(old_id) {
+                    *memory_id = Some(new_id)
+                }
+                inputs
+                    .iter_mut()
+                    .for_each(|(_, term)| term.substitution(old_id, new_id));
+            }
         }
     }
 }
@@ -258,5 +329,23 @@ impl Contract {
         self.invariant
             .iter()
             .for_each(|term| term.add_term_dependencies(node_graph));
+    }
+
+    /// Increment memory with ghost component applications.
+    pub fn memorize(
+        &mut self,
+        identifier_creator: &mut IdentifierCreator,
+        memory: &mut Memory,
+        ctx: &mut Ctx,
+    ) {
+        self.requires
+            .iter_mut()
+            .for_each(|term| term.memorize(identifier_creator, memory, ctx));
+        self.ensures
+            .iter_mut()
+            .for_each(|term| term.memorize(identifier_creator, memory, ctx));
+        self.invariant
+            .iter_mut()
+            .for_each(|term| term.memorize(identifier_creator, memory, ctx));
     }
 }

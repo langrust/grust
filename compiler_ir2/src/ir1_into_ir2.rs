@@ -197,6 +197,21 @@ pub fn memory_state_elements(
                 node_name.clone(),
             ));
         });
+    mem.ghost_nodes
+        .into_iter()
+        .sorted_by_key(|(id, _)| *id)
+        .for_each(|(memory_id, GhostNode { node_id, .. })| {
+            let memory_name = ctx.get_name(memory_id);
+            let node_name = ctx.get_name(node_id);
+            elements.push(StateElmInfo::called_node(
+                memory_name.clone(),
+                node_name.clone(),
+            ));
+            inits.push(StateElmInit::called_node(
+                memory_name.clone(),
+                node_name.clone(),
+            ));
+        });
 
     (elements, inits, steps)
 }
@@ -286,6 +301,31 @@ mod term {
                         .map(|input| input.into_ir2(ctx))
                         .collect::<Vec<_>>();
                     contract::Term::fun_call(function, arguments)
+                }
+                Kind::ComponentCall {
+                    memory_id,
+                    comp_id,
+                    inputs,
+                } => {
+                    let memory_ident = ctx
+                        .get_name(
+                            memory_id.expect("should be defined in `ir1::contract::Term::memorize`"),
+                        )
+                        .clone();
+                    let comp_name = ctx.get_name(comp_id).clone();
+                    let input_fields = inputs
+                        .into_iter()
+                        .map(|(id, term)| {
+                            (ctx.get_name(id).clone(), term.into_ir2(ctx))
+                        })
+                        .collect_vec();
+                    let input_name = {
+                        Ident::new(
+                            &to_camel_case(&format!("{}Input", comp_name.to_string())),
+                            comp_name.span(),
+                        )
+                    };
+                    contract::Term::comp_call(memory_ident, comp_name, input_name, input_fields)
                 }
             }
         }

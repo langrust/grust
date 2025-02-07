@@ -87,6 +87,17 @@ pub enum Term {
         /// The arguments.
         arguments: Vec<Self>,
     },
+    /// A component call: `self.called_node.step(inputs)`.
+    ComponentCall {
+        /// Component's identifier in memory.
+        memory_ident: Ident,
+        /// The identifier to the node.
+        comp_name: Ident,
+        /// The name of the input structure of the called node.
+        input_name: Ident,
+        /// The filled input's fields.
+        input_fields: Vec<(Ident, Self)>,
+    },
 }
 
 mk_new! { impl Term =>
@@ -128,6 +139,12 @@ mk_new! { impl Term =>
     FunctionCall: fun_call {
         function: Self = function.into(),
         arguments: impl Into<Vec<Self>> = arguments.into(),
+    }
+    ComponentCall: comp_call {
+        memory_ident: impl Into<Ident> = memory_ident.into() ,
+        comp_name: impl Into<Ident> = comp_name.into(),
+        input_name: impl Into<Ident> = input_name.into(),
+        input_fields: impl Into<Vec<(Ident, Self)>> = input_fields.into(),
     }
     Ok: ok { term: Term = term.into() }
     Err: err {}
@@ -227,6 +244,28 @@ impl Term {
                     .into_iter()
                     .map(|term| term.to_token_stream(prophecy, function_like));
                 parse_quote! { (#function)(#(#arguments),*) }
+            }
+            Self::ComponentCall {
+                memory_ident,
+                input_name,
+                input_fields,
+                ..
+            } => {
+                let ident = memory_ident;
+                let receiver: syn::ExprField = parse_quote! { self.#ident};
+                let input_fields: Vec<syn::FieldValue> = input_fields
+                    .into_iter()
+                    .map(|(name, term)| {
+                        let id = name;
+                        let expr = term.to_token_stream(prophecy, function_like);
+                        parse_quote! { #id : #expr }
+                    })
+                    .collect();
+
+                let input_name = input_name;
+                let argument: syn::ExprStruct = parse_quote! { #input_name { #(#input_fields),* }};
+
+                parse_quote! { #receiver.step (#argument) }
             }
         }
     }
