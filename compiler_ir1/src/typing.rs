@@ -91,6 +91,12 @@ impl Typing for contract::Term {
         let ty = match &mut self.kind {
             contract::Kind::Constant { constant } => constant.get_typ(),
             contract::Kind::Identifier { id } => symbols.get_typ(*id).clone(),
+            contract::Kind::Last { init_id, signal_id } => {
+                let signal_type = symbols.get_typ(*signal_id).clone();
+                let init_type = symbols.get_typ(*init_id);
+                check::typ::expect(self.loc, init_type, &signal_type).map_err(|_| ())?;
+                signal_type
+            }
             contract::Kind::Enumeration { enum_id, .. } => Typ::Enumeration {
                 name: symbols.get_name(*enum_id).clone(),
                 id: *enum_id,
