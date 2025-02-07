@@ -279,6 +279,14 @@ mod term {
                     }
                     _ => unreachable!(),
                 },
+                Kind::Application { fun, inputs, .. } => {
+                    let function = fun.into_ir2(ctx);
+                    let arguments = inputs
+                        .into_iter()
+                        .map(|input| input.into_ir2(ctx))
+                        .collect::<Vec<_>>();
+                    contract::Term::fun_call(function, arguments)
+                }
             }
         }
     }

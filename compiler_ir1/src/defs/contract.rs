@@ -59,6 +59,13 @@ pub enum Kind {
         /// The event pattern
         pattern: usize,
     },
+    /// Application term.
+    Application {
+        /// The term applied.
+        fun: Box<Term>,
+        /// The inputs to the term.
+        inputs: Vec<Term>,
+    },
 }
 
 mk_new! { impl Kind =>
@@ -90,6 +97,10 @@ mk_new! { impl Kind =>
         event_id: usize,
         pattern: usize,
     }
+    Application: app {
+        fun: Term = fun.into(),
+        inputs: impl Into<Vec<Term>> = inputs.into(),
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -117,9 +128,8 @@ impl Term {
         match &self.kind {
             Kind::Unary { term, .. } => term.compute_dependencies(),
             Kind::Binary { left, right, .. } | Kind::Implication { left, right, .. } => {
-                let mut dependencies_left = left.compute_dependencies();
                 let mut dependencies = right.compute_dependencies();
-                dependencies.append(&mut dependencies_left);
+                dependencies.extend(left.compute_dependencies());
                 dependencies
             }
             Kind::Constant { .. } | Kind::Enumeration { .. } => {
@@ -132,6 +142,11 @@ impl Term {
                 .filter(|signal| id != signal)
                 .collect(),
             Kind::Last { .. } => vec![],
+            Kind::Application { fun, inputs, .. } => {
+                let mut dependencies = fun.compute_dependencies();
+                dependencies.extend(inputs.iter().flat_map(Term::compute_dependencies));
+                dependencies
+            }
         }
     }
 
@@ -196,6 +211,12 @@ impl Term {
                     term.substitution(old_id, new_id)
                 }
                 // if 'id to replace' is equal to 'id of the forall' then nothing to do
+            }
+            Kind::Application { fun, inputs } => {
+                fun.substitution(old_id, new_id);
+                inputs
+                    .iter_mut()
+                    .for_each(|term| term.substitution(old_id, new_id));
             }
         }
     }

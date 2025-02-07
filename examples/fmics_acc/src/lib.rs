@@ -1,3 +1,5 @@
+#![allow(warnings)]
+
 use grust::grust;
 
 grust! {
@@ -36,14 +38,14 @@ grust! {
 
     // Filters the ACC on driver activation and when approaching FV
     component acc(c:bool, d:float, v:float, t:float) -> (b:float)
-        requires { c => 0. <= v && v <= 50. }
-        requires { c => -10. <= d_dt && d_dt <= 0. }
-        requires { c => d >= v*1. - v*d_dt/0.6*9.81 }
-        ensures  { c => forall _t: float, 0. < _t && _t <= -d_dt/b
-                    => d + d_dt*_t + b*_t*_t/2. >= d_s }
+        requires { c => (0. <= v && v <= 50.) }
+        requires { c => -10. <= derive(d, t/1000.) && derive(d, t/1000.) <= 0. }
+        requires { c => d >= v*1. - v*derive(d, t/1000.)/0.6*9.81 }
+        ensures  { c => forall _t: float, 0. < _t && _t <= -derive(d, t/1000.)/b
+                    => d + derive(d, t/1000.)*_t + b*_t*_t/2. >= d_s }
         ensures  { 0. <= b && b <= 0.6*9.81 }
     {
-        init (d_dt, fv_v) = (0., 0.);
+        init (d, t, d_dt, fv_v) = (0., 0., 0., 0.);
         match c {
             true => {
                 let d_dt: float = derive(d, t/1000.);

@@ -146,6 +146,29 @@ mk_new! { impl Binary =>
 }
 
 #[derive(Debug, PartialEq, Clone)]
+/// Application expression.
+pub struct Application {
+    /// Location.
+    pub loc: Loc,
+    /// The expression applied.
+    pub fun: Box<Term>,
+    /// The inputs to the expression.
+    pub inputs: Vec<Term>,
+}
+impl HasLoc for Application {
+    fn loc(&self) -> Loc {
+        self.loc
+    }
+}
+mk_new! { impl Application =>
+    new {
+        loc: impl Into<Loc> = loc.into(),
+        fun: impl Into<Box<Term>> = fun.into(),
+        inputs: Vec<Term>,
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
 /// GRust clause's term.
 pub enum Term {
     Constant(Constant),
@@ -158,6 +181,7 @@ pub enum Term {
     ForAll(ForAll),
     Implication(Implication),
     EventImplication(EventImplication),
+    Application(Application),
 }
 impl HasLoc for Term {
     fn loc(&self) -> Loc {
@@ -172,10 +196,10 @@ impl HasLoc for Term {
             Self::ForAll(f) => f.loc(),
             Self::Implication(i) => i.loc(),
             Self::EventImplication(ei) => ei.loc(),
+            Self::Application(app) => app.loc(),
         }
     }
 }
-
 mk_new! { impl Term =>
     Constant: constant (val: Constant = val)
     Result: result (val: keyword::result = val)
@@ -190,6 +214,7 @@ mk_new! { impl Term =>
     ForAll: forall (val: ForAll = val)
     Implication: implication (val: Implication = val)
     EventImplication: event (val: EventImplication = val)
+    Application: app (val: Application = val)
 }
 
 #[derive(Debug, PartialEq, Clone)]

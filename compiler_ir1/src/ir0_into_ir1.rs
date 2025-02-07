@@ -656,6 +656,19 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
                     loc,
                 ))
             }
+            Term::Application(Application { fun, inputs, .. }) => {
+                let fun = fun.into_ir1(ctx)?;
+                let inputs = res_vec!(
+                    inputs.len(),
+                    inputs.into_iter().map(|term| term.into_ir1(ctx))
+                );
+
+                Ok(ir1::contract::Term::new(
+                    ir1::contract::Kind::app(fun, inputs),
+                    None,
+                    loc,
+                ))
+            }
             Term::Enumeration(Enumeration {
                 enum_name,
                 elem_name,

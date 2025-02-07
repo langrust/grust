@@ -2179,14 +2179,30 @@ mod parse_contract {
         }
     }
 
+    impl Application {
+        fn peek(input: ParseStream) -> bool {
+            input.peek(token::Paren)
+        }
+        fn parse(function: Term, input: ParseStream) -> syn::Result<Self> {
+            let content;
+            let parens = parenthesized!(content in input);
+            let inputs: Punctuated<Term, Token![,]> = Punctuated::parse_terminated(&content)?;
+            Ok(Application::new(
+                function.loc().join(parens.span.join()),
+                function,
+                inputs.into_iter().collect(),
+            ))
+        }
+    }
+
     impl ParsePrec for Term {
         fn parse_term(input: ParseStream) -> syn::Res<Self> {
-            if input.peek(token::Brace) {
+            if input.peek(token::Paren) {
                 let content;
-                let _ = braced!(content in input);
-                return Term::parse_term(&content);
+                let _ = parenthesized!(content in input);
+                return content.parse();
             }
-            let term = if input.peek(keyword::result) {
+            let mut term = if input.peek(keyword::result) {
                 Term::result(input.parse()?)
             } else if input.peek(keyword::last) {
                 let _: keyword::last = input.parse()?;
@@ -2204,6 +2220,13 @@ mod parse_contract {
             } else {
                 return Err(input.error("expected expression"));
             };
+            loop {
+                if Application::peek(input) {
+                    term = Self::app(Application::parse(term, input)?)
+                } else {
+                    break;
+                }
+            }
 
             Ok(term)
         }
