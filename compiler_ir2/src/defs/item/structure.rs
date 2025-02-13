@@ -35,7 +35,7 @@ impl Structure {
         let name = self.name;
         let attribute: syn::Attribute = if ctx.conf.greusot {
             parse_quote!(
-                #[derive(prelude::Clone, Copy, prelude::PartialEq, prelude::Default, DeepModel)]
+                #[derive(prelude::Clone, Copy, prelude::PartialEq, DeepModel)]
             )
         } else {
             parse_quote!(#[derive(Clone, Copy, PartialEq, Default)])
