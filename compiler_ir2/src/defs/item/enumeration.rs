@@ -22,14 +22,8 @@ impl Enumeration {
     /// Transform [ir2] enumeration into RustAST enumeration.
     pub fn into_syn(self, ctx: &ir0::Ctx) -> syn::ItemEnum {
         let attribute: syn::Attribute = if ctx.conf.greusot {
-            // todo: when v0.1.1 then
-            // ```
-            // parse_quote!(
-            //     #[derive(prelude::Clone, Copy, prelude::PartialEq, prelude::Default, DeepModel)]
-            // )
-            // ```
             parse_quote!(
-                #[derive(prelude::Clone, Copy, prelude::PartialEq, prelude::Default, DeepModel)]
+                #[derive(prelude::Clone, Copy, prelude::PartialEq, DeepModel)]
             )
         } else {
             parse_quote!(#[derive(Clone, Copy, PartialEq, Default)])
@@ -46,7 +40,7 @@ impl Enumeration {
                 .iter()
                 .enumerate()
                 .map(|(index, element)| {
-                    let attrs: Vec<syn::Attribute> = if index == 0 {
+                    let attrs: Vec<syn::Attribute> = if !ctx.conf.greusot && (index == 0) {
                         vec![parse_quote!(#[default])]
                     } else {
                         vec![]
