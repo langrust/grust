@@ -521,13 +521,13 @@ pub mod runtime {
             }
         }
         #[derive(Clone, Copy, PartialEq, Default)]
-        pub struct InRegulation(bool, bool);
-        impl InRegulation {
-            fn set(&mut self, in_regulation: bool) {
-                self.1 = self.0 != in_regulation;
-                self.0 = in_regulation;
+        pub struct ChangedSetSpeedOld(f64, bool);
+        impl ChangedSetSpeedOld {
+            fn set(&mut self, changed_set_speed_old: f64) {
+                self.1 = self.0 != changed_set_speed_old;
+                self.0 = changed_set_speed_old;
             }
-            fn get(&self) -> bool {
+            fn get(&self) -> f64 {
                 self.0
             }
             fn is_new(&self) -> bool {
@@ -543,23 +543,6 @@ pub mod runtime {
             fn set(&mut self, v_set_aux: f64) {
                 self.1 = self.0 != v_set_aux;
                 self.0 = v_set_aux;
-            }
-            fn get(&self) -> f64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default)]
-        pub struct ChangedSetSpeedOld(f64, bool);
-        impl ChangedSetSpeedOld {
-            fn set(&mut self, changed_set_speed_old: f64) {
-                self.1 = self.0 != changed_set_speed_old;
-                self.0 = changed_set_speed_old;
             }
             fn get(&self) -> f64 {
                 self.0
@@ -680,9 +663,8 @@ pub mod runtime {
             pub vacuum_brake: VacuumBrake,
             pub vdc: Vdc,
             pub speed: Speed,
-            pub in_regulation: InRegulation,
-            pub v_set_aux: VSetAux,
             pub changed_set_speed_old: ChangedSetSpeedOld,
+            pub v_set_aux: VSetAux,
             pub in_regulation_old: InRegulationOld,
             pub v_set: VSet,
             pub in_regulation_aux: InRegulationAux,
@@ -700,9 +682,8 @@ pub mod runtime {
                 self.vacuum_brake.reset();
                 self.vdc.reset();
                 self.speed.reset();
-                self.in_regulation.reset();
-                self.v_set_aux.reset();
                 self.changed_set_speed_old.reset();
+                self.v_set_aux.reset();
                 self.in_regulation_old.reset();
                 self.v_set.reset();
                 self.in_regulation_aux.reset();
