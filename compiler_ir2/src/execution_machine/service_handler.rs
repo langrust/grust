@@ -332,14 +332,14 @@ impl ServiceHandler {
                     &mut self, instant: std::time::Instant
                 ) -> Result<(), futures::channel::mpsc::SendError> {
                     self.reset_service_delay(instant).await?;
-                    self.reset_service_timeout(instant).await?;
                     self.delayed = false;
                     Ok(())
                 }
                 #[inline]
                 pub async fn send_output(
-                    &mut self, output: O
+                    &mut self, output: O, instant: std::time::Instant
                 ) -> Result<(), futures::channel::mpsc::SendError> {
+                    self.reset_service_timeout(instant).await?;
                     self.output.send(output).await?;
                     Ok(())
                 }
@@ -618,7 +618,7 @@ impl FlowInstruction {
                     } else {
                         Ident::instant_var()
                     };
-                    parse_quote! { self.send_output(O::#enum_ident(#send_expr, #instant)).await?; }
+                    parse_quote! { self.send_output(O::#enum_ident(#send_expr, #instant), #instant).await?; }
                 })
             }
             FlowInstruction::SendEvent(name, event_expr, send_expr, instant) => {
@@ -633,7 +633,7 @@ impl FlowInstruction {
                     };
                     parse_quote! {
                         if let Some(#name) = #event_expr {
-                            self.send_output(O::#enum_ident(#send_expr, #instant)).await?;
+                            self.send_output(O::#enum_ident(#send_expr, #instant), #instant).await?;
                         }
                     }
                 })
