@@ -107,7 +107,7 @@ impl Ir1IntoIr2<&'_ Ctx> for FlowExport {
 impl Ir1IntoIr2<ir1::ctx::Full<'_, TimingEvent>> for Service {
     type Ir2 = ServiceHandler;
     fn into_ir2(mut self, mut ctx: ir1::ctx::Full<TimingEvent>) -> ServiceHandler {
-        let flows_context = self.get_flows_context(&ctx);
+        let flows_context = self.get_flows_context(&ctx, ctx.exports.values());
         ctx.local();
         let builder: flow_instr::Builder<'_> = flow_instr::Builder::new(
             &mut self,
