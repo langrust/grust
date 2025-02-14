@@ -52,11 +52,13 @@ impl Service {
             .values()
             .for_each(|statement| statement.add_flows_context(&mut flows_context, ctx));
         exports.for_each(|export| {
+            // if signal push in context
             let id = export.id;
-            // push in signals context
             let flow_name = ctx.get_name(id).clone();
             let ty = ctx.get_typ(id);
-            flows_context.add_element(flow_name.clone(), ty);
+            if ctx.get_flow_kind(id).is_signal() {
+                flows_context.add_element(flow_name.clone(), ty);
+            }
         });
         flows_context
     }
