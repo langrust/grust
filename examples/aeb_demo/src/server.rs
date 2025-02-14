@@ -2,7 +2,7 @@ mod aeb {
     use grust::grust;
 
     grust! {
-        #![demo]
+        #![demo, propag = "onchange"]
         import signal car::speed_km_h                   : float;
         import event  car::detect::left::pedestrian_l   : float;
         import event  car::detect::right::pedestrian_r  : float;
@@ -33,7 +33,8 @@ mod aeb {
             return response;
         }
 
-        component braking_state(pedest: float?, timeout_pedestrian: unit?, speed: float) -> (state: Braking)
+        component braking_state(pedest: float?, timeout_pedestrian: unit?, speed: float)
+                            -> (state: Braking)
             // requires { 0. <= speed && speed < 55. } // urban limit
             // ensures { pedest? => state != NoBrake } // safety
         {
@@ -147,7 +148,7 @@ impl Aeb for AebRuntime {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let addr = "[::1]:50051".parse().unwrap();
+    let addr = "[::1]:50052".parse().unwrap();
     println!("AebServer listening on {}", addr);
 
     Server::builder()

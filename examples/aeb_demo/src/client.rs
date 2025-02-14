@@ -20,7 +20,7 @@ lazy_static! {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // connect to server
-    let mut client = AebClient::connect("http://[::1]:50051").await.unwrap();
+    let mut client = AebClient::connect("http://[::1]:50052").await.unwrap();
     println!("\r\nBidirectional stream (kill client with CTLR+C):");
     // read inputs
     let in_stream = futures::stream::iter(read_json(INPATH)).filter_map(

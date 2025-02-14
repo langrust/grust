@@ -439,8 +439,8 @@ pub mod runtime {
         pub struct StateUpdate(bool, bool);
         impl StateUpdate {
             fn set(&mut self, state_update: bool) {
+                self.1 = self.0 != state_update;
                 self.0 = state_update;
-                self.1 = true;
             }
             fn get(&self) -> bool {
                 self.0
@@ -456,8 +456,8 @@ pub mod runtime {
         pub struct VUpdate(bool, bool);
         impl VUpdate {
             fn set(&mut self, v_update: bool) {
+                self.1 = self.0 != v_update;
                 self.0 = v_update;
-                self.1 = true;
             }
             fn get(&self) -> bool {
                 self.0
@@ -473,8 +473,8 @@ pub mod runtime {
         pub struct VacuumBrake(VacuumBrakeState, bool);
         impl VacuumBrake {
             fn set(&mut self, vacuum_brake: VacuumBrakeState) {
+                self.1 = self.0 != vacuum_brake;
                 self.0 = vacuum_brake;
-                self.1 = true;
             }
             fn get(&self) -> VacuumBrakeState {
                 self.0
@@ -490,8 +490,8 @@ pub mod runtime {
         pub struct Vdc(VdcState, bool);
         impl Vdc {
             fn set(&mut self, vdc: VdcState) {
+                self.1 = self.0 != vdc;
                 self.0 = vdc;
-                self.1 = true;
             }
             fn get(&self) -> VdcState {
                 self.0
@@ -507,8 +507,42 @@ pub mod runtime {
         pub struct Speed(f64, bool);
         impl Speed {
             fn set(&mut self, speed: f64) {
+                self.1 = self.0 != speed;
                 self.0 = speed;
-                self.1 = true;
+            }
+            fn get(&self) -> f64 {
+                self.0
+            }
+            fn is_new(&self) -> bool {
+                self.1
+            }
+            fn reset(&mut self) {
+                self.1 = false;
+            }
+        }
+        #[derive(Clone, Copy, PartialEq, Default)]
+        pub struct InRegulation(bool, bool);
+        impl InRegulation {
+            fn set(&mut self, in_regulation: bool) {
+                self.1 = self.0 != in_regulation;
+                self.0 = in_regulation;
+            }
+            fn get(&self) -> bool {
+                self.0
+            }
+            fn is_new(&self) -> bool {
+                self.1
+            }
+            fn reset(&mut self) {
+                self.1 = false;
+            }
+        }
+        #[derive(Clone, Copy, PartialEq, Default)]
+        pub struct VSetAux(f64, bool);
+        impl VSetAux {
+            fn set(&mut self, v_set_aux: f64) {
+                self.1 = self.0 != v_set_aux;
+                self.0 = v_set_aux;
             }
             fn get(&self) -> f64 {
                 self.0
@@ -524,25 +558,8 @@ pub mod runtime {
         pub struct ChangedSetSpeedOld(f64, bool);
         impl ChangedSetSpeedOld {
             fn set(&mut self, changed_set_speed_old: f64) {
+                self.1 = self.0 != changed_set_speed_old;
                 self.0 = changed_set_speed_old;
-                self.1 = true;
-            }
-            fn get(&self) -> f64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default)]
-        pub struct VSetAux(f64, bool);
-        impl VSetAux {
-            fn set(&mut self, v_set_aux: f64) {
-                self.0 = v_set_aux;
-                self.1 = true;
             }
             fn get(&self) -> f64 {
                 self.0
@@ -558,8 +575,8 @@ pub mod runtime {
         pub struct InRegulationOld(bool, bool);
         impl InRegulationOld {
             fn set(&mut self, in_regulation_old: bool) {
+                self.1 = self.0 != in_regulation_old;
                 self.0 = in_regulation_old;
-                self.1 = true;
             }
             fn get(&self) -> bool {
                 self.0
@@ -575,8 +592,8 @@ pub mod runtime {
         pub struct VSet(f64, bool);
         impl VSet {
             fn set(&mut self, v_set: f64) {
+                self.1 = self.0 != v_set;
                 self.0 = v_set;
-                self.1 = true;
             }
             fn get(&self) -> f64 {
                 self.0
@@ -592,8 +609,8 @@ pub mod runtime {
         pub struct InRegulationAux(bool, bool);
         impl InRegulationAux {
             fn set(&mut self, in_regulation_aux: bool) {
+                self.1 = self.0 != in_regulation_aux;
                 self.0 = in_regulation_aux;
-                self.1 = true;
             }
             fn get(&self) -> bool {
                 self.0
@@ -609,8 +626,8 @@ pub mod runtime {
         pub struct X(f64, bool);
         impl X {
             fn set(&mut self, x: f64) {
+                self.1 = self.0 != x;
                 self.0 = x;
-                self.1 = true;
             }
             fn get(&self) -> f64 {
                 self.0
@@ -626,8 +643,8 @@ pub mod runtime {
         pub struct OnState(SpeedLimiterOn, bool);
         impl OnState {
             fn set(&mut self, on_state: SpeedLimiterOn) {
+                self.1 = self.0 != on_state;
                 self.0 = on_state;
-                self.1 = true;
             }
             fn get(&self) -> SpeedLimiterOn {
                 self.0
@@ -643,8 +660,8 @@ pub mod runtime {
         pub struct State(SpeedLimiter, bool);
         impl State {
             fn set(&mut self, state: SpeedLimiter) {
+                self.1 = self.0 != state;
                 self.0 = state;
-                self.1 = true;
             }
             fn get(&self) -> SpeedLimiter {
                 self.0
@@ -663,8 +680,9 @@ pub mod runtime {
             pub vacuum_brake: VacuumBrake,
             pub vdc: Vdc,
             pub speed: Speed,
-            pub changed_set_speed_old: ChangedSetSpeedOld,
+            pub in_regulation: InRegulation,
             pub v_set_aux: VSetAux,
+            pub changed_set_speed_old: ChangedSetSpeedOld,
             pub in_regulation_old: InRegulationOld,
             pub v_set: VSet,
             pub in_regulation_aux: InRegulationAux,
@@ -682,8 +700,9 @@ pub mod runtime {
                 self.vacuum_brake.reset();
                 self.vdc.reset();
                 self.speed.reset();
-                self.changed_set_speed_old.reset();
+                self.in_regulation.reset();
                 self.v_set_aux.reset();
+                self.changed_set_speed_old.reset();
                 self.in_regulation_old.reset();
                 self.v_set.reset();
                 self.in_regulation_aux.reset();
@@ -784,8 +803,11 @@ pub mod runtime {
                         *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                     }
                     if let Some(in_regulation) = *in_regulation_ref {
-                        self.send_output(O::InRegulation(in_regulation, _vdc_instant))
-                            .await?;
+                        self.send_output(
+                            O::InRegulation(in_regulation, _vdc_instant),
+                            _vdc_instant,
+                        )
+                        .await?;
                     }
                 } else {
                     let unique = self.input_store.vdc.replace((vdc, _vdc_instant));
@@ -803,8 +825,11 @@ pub mod runtime {
                 let in_regulation_ref = &mut None;
                 let v_set = self.context.v_set_aux.get();
                 self.context.v_set.set(v_set);
-                self.send_output(O::VSet(v_set, _timeout_speed_limiter_instant))
-                    .await?;
+                self.send_output(
+                    O::VSet(v_set, _timeout_speed_limiter_instant),
+                    _timeout_speed_limiter_instant,
+                )
+                .await?;
                 if self.context.vacuum_brake.is_new()
                     || self.context.vdc.is_new()
                     || self.context.speed.is_new()
@@ -832,10 +857,10 @@ pub mod runtime {
                     *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                 }
                 if let Some(in_regulation) = *in_regulation_ref {
-                    self.send_output(O::InRegulation(
-                        in_regulation,
+                    self.send_output(
+                        O::InRegulation(in_regulation, _timeout_speed_limiter_instant),
                         _timeout_speed_limiter_instant,
-                    ))
+                    )
                     .await?;
                 }
                 Ok(())
@@ -888,8 +913,11 @@ pub mod runtime {
                         *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                     }
                     if let Some(in_regulation) = *in_regulation_ref {
-                        self.send_output(O::InRegulation(in_regulation, _vacuum_brake_instant))
-                            .await?;
+                        self.send_output(
+                            O::InRegulation(in_regulation, _vacuum_brake_instant),
+                            _vacuum_brake_instant,
+                        )
+                        .await?;
                     }
                 } else {
                     let unique = self
@@ -943,8 +971,11 @@ pub mod runtime {
                         *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                     }
                     if let Some(in_regulation) = *in_regulation_ref {
-                        self.send_output(O::InRegulation(in_regulation, _activation_instant))
-                            .await?;
+                        self.send_output(
+                            O::InRegulation(in_regulation, _activation_instant),
+                            _activation_instant,
+                        )
+                        .await?;
                     }
                 } else {
                     let unique = self
@@ -995,8 +1026,11 @@ pub mod runtime {
                         *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                     }
                     if let Some(in_regulation) = *in_regulation_ref {
-                        self.send_output(O::InRegulation(in_regulation, _kickdown_instant))
-                            .await?;
+                        self.send_output(
+                            O::InRegulation(in_regulation, _kickdown_instant),
+                            _kickdown_instant,
+                        )
+                        .await?;
                     }
                 } else {
                     let unique = self
@@ -1040,10 +1074,10 @@ pub mod runtime {
                         *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                     }
                     if let Some(in_regulation) = *in_regulation_ref {
-                        self.send_output(O::InRegulation(
-                            in_regulation,
+                        self.send_output(
+                            O::InRegulation(in_regulation, _period_speed_limiter_instant),
                             _period_speed_limiter_instant,
-                        ))
+                        )
                         .await?;
                     }
                 } else {
@@ -1085,7 +1119,10 @@ pub mod runtime {
                     }
                     let v_set = self.context.v_set_aux.get();
                     self.context.v_set.set(v_set);
-                    self.send_output(O::VSet(v_set, _set_speed_instant)).await?;
+                    if self.context.v_set.is_new() {
+                        self.send_output(O::VSet(v_set, _set_speed_instant), _set_speed_instant)
+                            .await?;
+                    }
                     if self.context.vacuum_brake.is_new()
                         || self.context.vdc.is_new()
                         || self.context.speed.is_new()
@@ -1114,8 +1151,11 @@ pub mod runtime {
                         *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                     }
                     if let Some(in_regulation) = *in_regulation_ref {
-                        self.send_output(O::InRegulation(in_regulation, _set_speed_instant))
-                            .await?;
+                        self.send_output(
+                            O::InRegulation(in_regulation, _set_speed_instant),
+                            _set_speed_instant,
+                        )
+                        .await?;
                     }
                 } else {
                     let unique = self
@@ -1166,8 +1206,11 @@ pub mod runtime {
                         *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                     }
                     if let Some(in_regulation) = *in_regulation_ref {
-                        self.send_output(O::InRegulation(in_regulation, _failure_instant))
-                            .await?;
+                        self.send_output(
+                            O::InRegulation(in_regulation, _failure_instant),
+                            _failure_instant,
+                        )
+                        .await?;
                     }
                 } else {
                     let unique = self
@@ -1228,10 +1271,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -1276,10 +1319,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -1325,10 +1368,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -1375,10 +1418,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -1426,10 +1469,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -1477,10 +1520,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -1529,10 +1572,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -1579,10 +1622,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -1630,10 +1673,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -1681,10 +1724,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -1733,10 +1776,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -1786,10 +1829,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -1840,10 +1883,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -1894,10 +1937,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -1949,10 +1992,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -1992,10 +2035,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -2036,10 +2079,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -2080,10 +2123,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -2125,10 +2168,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -2170,10 +2213,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -2216,10 +2259,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -2262,10 +2305,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -2309,10 +2352,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -2354,10 +2397,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -2400,10 +2443,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -2446,10 +2489,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -2493,10 +2536,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -2540,10 +2583,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -2588,10 +2631,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -2636,10 +2679,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -2685,10 +2728,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -2721,8 +2764,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             if self.context.vacuum_brake.is_new()
                                 || self.context.vdc.is_new()
                                 || self.context.speed.is_new()
@@ -2752,10 +2800,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -2788,8 +2836,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if self.context.vacuum_brake.is_new()
                                 || self.context.vdc.is_new()
@@ -2820,10 +2873,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -2856,8 +2909,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             if self.context.vacuum_brake.is_new()
                                 || self.context.vdc.is_new()
@@ -2888,10 +2946,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -2924,8 +2982,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if self.context.vacuum_brake.is_new()
@@ -2957,10 +3020,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -2994,8 +3057,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *activation_ref = Some(activation);
                             if activation_ref.is_some()
                                 || self.context.vacuum_brake.is_new()
@@ -3027,10 +3095,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -3064,8 +3132,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
                             if activation_ref.is_some()
@@ -3098,10 +3171,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -3135,8 +3208,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             if activation_ref.is_some()
@@ -3169,10 +3247,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -3206,8 +3284,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -3241,10 +3324,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -3278,8 +3361,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             if kickdown_ref.is_some()
                                 || self.context.vacuum_brake.is_new()
@@ -3311,10 +3399,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -3348,8 +3436,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             self.context.vdc.set(vdc);
                             if kickdown_ref.is_some()
@@ -3382,10 +3475,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -3419,8 +3512,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             self.context.vacuum_brake.set(vacuum_brake);
                             if kickdown_ref.is_some()
@@ -3453,10 +3551,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -3490,8 +3588,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -3525,10 +3628,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -3563,8 +3666,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             if activation_ref.is_some()
@@ -3598,10 +3706,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -3636,8 +3744,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
@@ -3672,10 +3785,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -3710,8 +3823,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
@@ -3746,10 +3864,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -3784,8 +3902,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
@@ -3821,10 +3944,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -3857,8 +3980,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -3884,10 +4012,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -3920,8 +4048,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
@@ -3948,10 +4081,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -3984,8 +4117,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
@@ -4012,10 +4150,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -4048,8 +4186,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
@@ -4077,10 +4220,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -4114,8 +4257,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *activation_ref = Some(activation);
@@ -4142,10 +4290,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -4179,8 +4327,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *activation_ref = Some(activation);
@@ -4208,10 +4361,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -4245,8 +4398,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *activation_ref = Some(activation);
@@ -4274,10 +4432,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -4311,8 +4469,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *activation_ref = Some(activation);
@@ -4341,10 +4504,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -4378,8 +4541,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -4406,10 +4574,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -4443,8 +4611,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -4472,10 +4645,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -4509,8 +4682,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -4538,10 +4716,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -4575,8 +4753,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -4605,10 +4788,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -4643,8 +4826,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -4672,10 +4860,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -4710,8 +4898,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -4740,10 +4933,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -4778,8 +4971,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -4808,10 +5006,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -4846,8 +5044,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -4877,10 +5080,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -4927,10 +5130,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -4978,10 +5181,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -5029,10 +5232,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -5081,10 +5284,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -5134,10 +5337,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -5188,10 +5391,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -5242,10 +5445,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -5297,10 +5500,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -5350,10 +5553,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -5404,10 +5607,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -5458,10 +5661,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -5513,10 +5716,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -5569,10 +5772,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -5626,10 +5829,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -5683,10 +5886,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -5741,10 +5944,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -5786,10 +5989,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -5832,10 +6035,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -5878,10 +6081,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -5925,10 +6128,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -5972,10 +6175,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -6020,10 +6223,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -6068,10 +6271,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -6117,10 +6320,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -6164,10 +6367,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -6212,10 +6415,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -6260,10 +6463,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -6309,10 +6512,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -6358,10 +6561,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -6408,10 +6611,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -6458,10 +6661,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -6509,10 +6712,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -6547,8 +6750,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             if failure_ref.is_some()
                                 || self.context.vacuum_brake.is_new()
                                 || self.context.vdc.is_new()
@@ -6579,10 +6787,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -6617,8 +6825,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if failure_ref.is_some()
                                 || self.context.vacuum_brake.is_new()
@@ -6650,10 +6863,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -6688,8 +6901,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             if failure_ref.is_some()
                                 || self.context.vacuum_brake.is_new()
@@ -6721,10 +6939,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -6759,8 +6977,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if failure_ref.is_some()
@@ -6793,10 +7016,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -6832,8 +7055,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *activation_ref = Some(activation);
                             if activation_ref.is_some()
                                 || failure_ref.is_some()
@@ -6866,10 +7094,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -6905,8 +7133,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
                             if activation_ref.is_some()
@@ -6940,10 +7173,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -6979,8 +7212,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             if activation_ref.is_some()
@@ -7014,10 +7252,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -7053,8 +7291,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -7089,10 +7332,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -7128,8 +7371,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             if kickdown_ref.is_some()
                                 || failure_ref.is_some()
@@ -7162,10 +7410,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -7201,8 +7449,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             self.context.vdc.set(vdc);
                             if kickdown_ref.is_some()
@@ -7236,10 +7489,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -7275,8 +7528,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             self.context.vacuum_brake.set(vacuum_brake);
                             if kickdown_ref.is_some()
@@ -7310,10 +7568,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -7349,8 +7607,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -7385,10 +7648,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -7425,8 +7688,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             if activation_ref.is_some()
@@ -7461,10 +7729,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -7501,8 +7769,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
@@ -7538,10 +7811,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -7578,8 +7851,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
@@ -7615,10 +7893,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -7655,8 +7933,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
@@ -7693,10 +7976,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -7731,8 +8014,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -7758,10 +8046,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -7796,8 +8084,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
@@ -7824,10 +8117,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -7862,8 +8155,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
@@ -7890,10 +8188,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -7928,8 +8226,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
@@ -7957,10 +8260,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -7996,8 +8299,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *activation_ref = Some(activation);
@@ -8024,10 +8332,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -8063,8 +8371,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *activation_ref = Some(activation);
@@ -8092,10 +8405,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -8131,8 +8444,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *activation_ref = Some(activation);
@@ -8160,10 +8478,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -8199,8 +8517,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *activation_ref = Some(activation);
@@ -8229,10 +8552,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -8268,8 +8591,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -8296,10 +8624,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -8335,8 +8663,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -8364,10 +8697,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -8403,8 +8736,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -8432,10 +8770,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -8471,8 +8809,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -8501,10 +8844,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -8541,8 +8884,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -8570,10 +8918,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -8610,8 +8958,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -8640,10 +8993,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -8680,8 +9033,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -8710,10 +9068,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -8750,8 +9108,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -8781,10 +9144,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -8829,10 +9192,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -8878,10 +9241,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -8927,10 +9290,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -8977,10 +9340,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -9028,10 +9391,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -9080,10 +9443,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -9132,10 +9495,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -9185,10 +9548,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -9236,10 +9599,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -9288,10 +9651,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -9340,10 +9703,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -9393,10 +9756,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -9447,10 +9810,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -9502,10 +9865,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -9557,10 +9920,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -9613,10 +9976,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -9657,10 +10020,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -9702,10 +10065,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -9747,10 +10110,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -9793,10 +10156,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -9839,10 +10202,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -9886,10 +10249,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -9933,10 +10296,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -9981,10 +10344,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -10027,10 +10390,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -10074,10 +10437,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -10121,10 +10484,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -10169,10 +10532,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -10217,10 +10580,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -10266,10 +10629,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -10315,10 +10678,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -10365,10 +10728,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -10402,8 +10765,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             if self.context.vacuum_brake.is_new()
                                 || self.context.vdc.is_new()
                                 || self.context.speed.is_new()
@@ -10433,10 +10801,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -10470,8 +10838,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if self.context.vacuum_brake.is_new()
                                 || self.context.vdc.is_new()
@@ -10502,10 +10875,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -10539,8 +10912,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             if self.context.vacuum_brake.is_new()
                                 || self.context.vdc.is_new()
@@ -10571,10 +10949,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -10608,8 +10986,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if self.context.vacuum_brake.is_new()
@@ -10641,10 +11024,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -10679,8 +11062,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *activation_ref = Some(activation);
                             if activation_ref.is_some()
                                 || self.context.vacuum_brake.is_new()
@@ -10712,10 +11100,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -10750,8 +11138,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
                             if activation_ref.is_some()
@@ -10784,10 +11177,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -10822,8 +11215,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             if activation_ref.is_some()
@@ -10856,10 +11254,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -10894,8 +11292,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -10929,10 +11332,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -10967,8 +11370,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             if kickdown_ref.is_some()
                                 || self.context.vacuum_brake.is_new()
@@ -11000,10 +11408,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -11038,8 +11446,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             self.context.vdc.set(vdc);
                             if kickdown_ref.is_some()
@@ -11072,10 +11485,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -11110,8 +11523,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             self.context.vacuum_brake.set(vacuum_brake);
                             if kickdown_ref.is_some()
@@ -11144,10 +11562,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -11182,8 +11600,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -11217,10 +11640,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -11256,8 +11679,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             if activation_ref.is_some()
@@ -11291,10 +11719,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -11330,8 +11758,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
@@ -11366,10 +11799,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -11405,8 +11838,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
@@ -11441,10 +11879,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -11480,8 +11918,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
@@ -11517,10 +11960,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -11554,8 +11997,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -11581,10 +12029,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -11618,8 +12066,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
@@ -11646,10 +12099,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -11683,8 +12136,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
@@ -11711,10 +12169,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -11748,8 +12206,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
@@ -11777,10 +12240,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -11815,8 +12278,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *activation_ref = Some(activation);
@@ -11843,10 +12311,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -11881,8 +12349,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *activation_ref = Some(activation);
@@ -11910,10 +12383,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -11948,8 +12421,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *activation_ref = Some(activation);
@@ -11977,10 +12455,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -12015,8 +12493,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *activation_ref = Some(activation);
@@ -12045,10 +12528,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -12083,8 +12566,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -12111,10 +12599,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -12149,8 +12637,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -12178,10 +12671,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -12216,8 +12709,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -12245,10 +12743,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -12283,8 +12781,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -12313,10 +12816,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -12352,8 +12855,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -12381,10 +12889,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -12420,8 +12928,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -12450,10 +12963,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -12489,8 +13002,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -12519,10 +13037,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -12558,8 +13076,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -12589,10 +13112,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -12640,10 +13163,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -12692,10 +13215,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -12744,10 +13267,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -12797,10 +13320,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -12851,10 +13374,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -12906,10 +13429,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -12961,10 +13484,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -13017,10 +13540,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -13071,10 +13594,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -13126,10 +13649,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -13181,10 +13704,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -13237,10 +13760,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -13294,10 +13817,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -13352,10 +13875,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -13410,10 +13933,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -13469,10 +13992,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -13515,10 +14038,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -13562,10 +14085,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -13609,10 +14132,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -13657,10 +14180,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -13705,10 +14228,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -13754,10 +14277,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -13803,10 +14326,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -13853,10 +14376,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -13901,10 +14424,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -13950,10 +14473,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -13999,10 +14522,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -14049,10 +14572,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -14099,10 +14622,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -14150,10 +14673,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -14201,10 +14724,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -14253,10 +14776,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -14292,8 +14815,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             if failure_ref.is_some()
                                 || self.context.vacuum_brake.is_new()
                                 || self.context.vdc.is_new()
@@ -14324,10 +14852,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -14363,8 +14891,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.context.vdc.set(vdc);
                             if failure_ref.is_some()
                                 || self.context.vacuum_brake.is_new()
@@ -14396,10 +14929,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -14435,8 +14968,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             if failure_ref.is_some()
                                 || self.context.vacuum_brake.is_new()
@@ -14468,10 +15006,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -14507,8 +15045,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
                             if failure_ref.is_some()
@@ -14541,10 +15084,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -14581,8 +15124,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *activation_ref = Some(activation);
                             if activation_ref.is_some()
                                 || failure_ref.is_some()
@@ -14615,10 +15163,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -14655,8 +15203,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
                             if activation_ref.is_some()
@@ -14690,10 +15243,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -14730,8 +15283,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             if activation_ref.is_some()
@@ -14765,10 +15323,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -14805,8 +15363,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -14841,10 +15404,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -14881,8 +15444,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             if kickdown_ref.is_some()
                                 || failure_ref.is_some()
@@ -14915,10 +15483,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -14955,8 +15523,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             self.context.vdc.set(vdc);
                             if kickdown_ref.is_some()
@@ -14990,10 +15563,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -15030,8 +15603,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             self.context.vacuum_brake.set(vacuum_brake);
                             if kickdown_ref.is_some()
@@ -15065,10 +15643,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -15105,8 +15683,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
@@ -15141,10 +15724,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -15182,8 +15765,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             if activation_ref.is_some()
@@ -15218,10 +15806,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -15259,8 +15847,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
@@ -15296,10 +15889,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -15337,8 +15930,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
@@ -15374,10 +15972,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -15415,8 +16013,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
@@ -15453,10 +16056,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -15492,8 +16095,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             let (state, on_state, in_regulation_aux, state_update) =
@@ -15519,10 +16127,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -15558,8 +16166,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.vdc.set(vdc);
@@ -15586,10 +16199,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -15625,8 +16238,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
@@ -15653,10 +16271,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -15692,8 +16310,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             self.context.vacuum_brake.set(vacuum_brake);
@@ -15721,10 +16344,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -15761,8 +16384,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *activation_ref = Some(activation);
@@ -15789,10 +16417,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -15829,8 +16457,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *activation_ref = Some(activation);
@@ -15858,10 +16491,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -15898,8 +16531,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *activation_ref = Some(activation);
@@ -15927,10 +16565,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -15967,8 +16605,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *activation_ref = Some(activation);
@@ -15997,10 +16640,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -16037,8 +16680,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -16065,10 +16713,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -16105,8 +16753,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -16134,10 +16787,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -16174,8 +16827,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -16203,10 +16861,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -16243,8 +16901,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -16273,10 +16936,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -16314,8 +16977,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -16343,10 +17011,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -16384,8 +17052,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -16414,10 +17087,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -16455,8 +17128,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -16485,10 +17163,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -16526,8 +17204,13 @@ pub mod runtime {
                             }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            self.send_output(O::VSet(v_set, _grust_reserved_instant))
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                             self.send_timer(T::PeriodSpeedLimiter, _period_speed_limiter_instant)
                                 .await?;
                             *kickdown_ref = Some(kickdown);
@@ -16557,10 +17240,10 @@ pub mod runtime {
                                 *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                             }
                             if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(O::InRegulation(
-                                    in_regulation,
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
-                                ))
+                                )
                                 .await?;
                             }
                         }
@@ -16618,8 +17301,11 @@ pub mod runtime {
                         *in_regulation_ref = Some(self.context.in_regulation_aux.get());
                     }
                     if let Some(in_regulation) = *in_regulation_ref {
-                        self.send_output(O::InRegulation(in_regulation, _speed_instant))
-                            .await?;
+                        self.send_output(
+                            O::InRegulation(in_regulation, _speed_instant),
+                            _speed_instant,
+                        )
+                        .await?;
                     }
                 } else {
                     let unique = self.input_store.speed.replace((speed, _speed_instant));
@@ -16633,7 +17319,6 @@ pub mod runtime {
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.reset_service_delay(instant).await?;
-                self.reset_service_timeout(instant).await?;
                 self.delayed = false;
                 Ok(())
             }
@@ -16641,7 +17326,9 @@ pub mod runtime {
             pub async fn send_output(
                 &mut self,
                 output: O,
+                instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.reset_service_timeout(instant).await?;
                 self.output.send(output).await?;
                 Ok(())
             }
