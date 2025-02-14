@@ -185,8 +185,8 @@ impl Flows {
                 let item_impl: syn::ItemImpl = {
                     let set_impl: syn::ImplItem = parse_quote! {
                         fn set(&mut self, #name: #ty) {
+                            self.1 = self.0 != #name;
                             self.0 = #name;
-                            self.1 = true;
                         }
                     };
                     let get_impl: syn::ImplItem = parse_quote! {

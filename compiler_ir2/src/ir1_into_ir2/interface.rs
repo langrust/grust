@@ -1280,11 +1280,20 @@ mod flow_instr {
         fn send_signal(&self, signal_id: usize, import_flow: usize) -> FlowInstruction {
             let signal_name = self.get_name(signal_id);
             let expr = self.get_signal(signal_id);
-            if self.multiple_inputs {
+            let send = if self.multiple_inputs {
                 FlowInstruction::send(signal_name.clone(), expr, false)
             } else {
                 let import_name = self.get_name(import_flow);
                 FlowInstruction::send_from(signal_name.clone(), expr, import_name.clone(), false)
+            };
+            if self
+                .events
+                .iter()
+                .any(|event_id| self.ctx0.is_timeout(*event_id))
+            {
+                send
+            } else {
+                FlowInstruction::if_activated([], vec![signal_name.clone()], send, None)
             }
         }
 
