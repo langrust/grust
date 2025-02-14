@@ -3,10 +3,6 @@
   "brakes": 2
 }
 ,{
-  "timestamp": 1000,
-  "brakes": 2
-}
-,{
   "timestamp": 2500,
   "brakes": 1
 }
@@ -27,11 +23,7 @@
   "brakes": 0
 }
 ,{
-  "timestamp": 9100,
-  "brakes": 0
-}
-,{
-  "timestamp": 11100,
+  "timestamp": 10100,
   "brakes": 0
 }
 ,{
@@ -39,7 +31,15 @@
   "brakes": 0
 }
 ,{
-  "timestamp": 15100,
+  "timestamp": 16100,
+  "brakes": 0
+}
+,{
+  "timestamp": 19100,
+  "brakes": 0
+}
+,{
+  "timestamp": 22100,
   "brakes": 0
 }
 ]

@@ -236,8 +236,8 @@ pub mod runtime {
         pub struct Brakes(Braking, bool);
         impl Brakes {
             fn set(&mut self, brakes: Braking) {
+                self.1 = self.0 != brakes;
                 self.0 = brakes;
-                self.1 = true;
             }
             fn get(&self) -> Braking {
                 self.0
@@ -253,8 +253,8 @@ pub mod runtime {
         pub struct SpeedKmH(f64, bool);
         impl SpeedKmH {
             fn set(&mut self, speed_km_h: f64) {
+                self.1 = self.0 != speed_km_h;
                 self.0 = speed_km_h;
-                self.1 = true;
             }
             fn get(&self) -> f64 {
                 self.0
@@ -270,8 +270,8 @@ pub mod runtime {
         pub struct X(f64, bool);
         impl X {
             fn set(&mut self, x: f64) {
+                self.1 = self.0 != x;
                 self.0 = x;
-                self.1 = true;
             }
             fn get(&self) -> f64 {
                 self.0
@@ -287,8 +287,8 @@ pub mod runtime {
         pub struct AccKmH(f64, bool);
         impl AccKmH {
             fn set(&mut self, acc_km_h: f64) {
+                self.1 = self.0 != acc_km_h;
                 self.0 = acc_km_h;
-                self.1 = true;
             }
             fn get(&self) -> f64 {
                 self.0
@@ -402,8 +402,11 @@ pub mod runtime {
                     acc: self.context.acc_km_h.get(),
                 });
                 self.context.brakes.set(brakes);
-                self.send_output(O::Brakes(self.context.brakes.get(), _timeout_aeb_instant))
-                    .await?;
+                self.send_output(
+                    O::Brakes(self.context.brakes.get(), _timeout_aeb_instant),
+                    _timeout_aeb_instant,
+                )
+                .await?;
                 Ok(())
             }
             #[inline]
@@ -448,8 +451,13 @@ pub mod runtime {
                         acc: self.context.acc_km_h.get(),
                     });
                     self.context.brakes.set(brakes);
-                    self.send_output(O::Brakes(self.context.brakes.get(), _pedestrian_l_instant))
+                    if self.context.brakes.is_new() {
+                        self.send_output(
+                            O::Brakes(self.context.brakes.get(), _pedestrian_l_instant),
+                            _pedestrian_l_instant,
+                        )
                         .await?;
+                    }
                 } else {
                     let unique = self
                         .input_store
@@ -490,11 +498,13 @@ pub mod runtime {
                         acc: self.context.acc_km_h.get(),
                     });
                     self.context.brakes.set(brakes);
-                    self.send_output(O::Brakes(
-                        self.context.brakes.get(),
-                        _timeout_timeout_pedest_instant,
-                    ))
-                    .await?;
+                    if self.context.brakes.is_new() {
+                        self.send_output(
+                            O::Brakes(self.context.brakes.get(), _timeout_timeout_pedest_instant),
+                            _timeout_timeout_pedest_instant,
+                        )
+                        .await?;
+                    }
                 } else {
                     let unique = self
                         .input_store
@@ -539,8 +549,13 @@ pub mod runtime {
                         acc: self.context.acc_km_h.get(),
                     });
                     self.context.brakes.set(brakes);
-                    self.send_output(O::Brakes(self.context.brakes.get(), _pedestrian_r_instant))
+                    if self.context.brakes.is_new() {
+                        self.send_output(
+                            O::Brakes(self.context.brakes.get(), _pedestrian_r_instant),
+                            _pedestrian_r_instant,
+                        )
                         .await?;
+                    }
                 } else {
                     let unique = self
                         .input_store
@@ -599,11 +614,13 @@ pub mod runtime {
                                 acc: self.context.acc_km_h.get(),
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(
-                                self.context.brakes.get(),
-                                _grust_reserved_instant,
-                            ))
-                            .await?;
+                            if self.context.brakes.is_new() {
+                                self.send_output(
+                                    O::Brakes(self.context.brakes.get(), _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
                         }
                         (
                             Some((speed_km_h, _speed_km_h_instant)),
@@ -637,11 +654,13 @@ pub mod runtime {
                                 acc: self.context.acc_km_h.get(),
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(
-                                self.context.brakes.get(),
-                                _grust_reserved_instant,
-                            ))
-                            .await?;
+                            if self.context.brakes.is_new() {
+                                self.send_output(
+                                    O::Brakes(self.context.brakes.get(), _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
                         }
                         (None, None, Some(((), _timeout_timeout_pedest_instant)), None) => {
                             let timeout_pedest_ref = &mut None;
@@ -667,11 +686,13 @@ pub mod runtime {
                                 acc: self.context.acc_km_h.get(),
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(
-                                self.context.brakes.get(),
-                                _grust_reserved_instant,
-                            ))
-                            .await?;
+                            if self.context.brakes.is_new() {
+                                self.send_output(
+                                    O::Brakes(self.context.brakes.get(), _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
                         }
                         (
                             Some((speed_km_h, _speed_km_h_instant)),
@@ -702,11 +723,13 @@ pub mod runtime {
                                 acc: self.context.acc_km_h.get(),
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(
-                                self.context.brakes.get(),
-                                _grust_reserved_instant,
-                            ))
-                            .await?;
+                            if self.context.brakes.is_new() {
+                                self.send_output(
+                                    O::Brakes(self.context.brakes.get(), _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
                         }
                         (
                             None,
@@ -744,11 +767,13 @@ pub mod runtime {
                                 acc: self.context.acc_km_h.get(),
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(
-                                self.context.brakes.get(),
-                                _grust_reserved_instant,
-                            ))
-                            .await?;
+                            if self.context.brakes.is_new() {
+                                self.send_output(
+                                    O::Brakes(self.context.brakes.get(), _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
                         }
                         (
                             Some((speed_km_h, _speed_km_h_instant)),
@@ -787,11 +812,13 @@ pub mod runtime {
                                 acc: self.context.acc_km_h.get(),
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(
-                                self.context.brakes.get(),
-                                _grust_reserved_instant,
-                            ))
-                            .await?;
+                            if self.context.brakes.is_new() {
+                                self.send_output(
+                                    O::Brakes(self.context.brakes.get(), _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
                         }
                         (None, None, None, Some((pedestrian_r, _pedestrian_r_instant))) => {
                             let pedestrian_r_ref = &mut None;
@@ -819,11 +846,13 @@ pub mod runtime {
                                 acc: self.context.acc_km_h.get(),
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(
-                                self.context.brakes.get(),
-                                _grust_reserved_instant,
-                            ))
-                            .await?;
+                            if self.context.brakes.is_new() {
+                                self.send_output(
+                                    O::Brakes(self.context.brakes.get(), _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
                         }
                         (
                             Some((speed_km_h, _speed_km_h_instant)),
@@ -857,11 +886,13 @@ pub mod runtime {
                                 acc: self.context.acc_km_h.get(),
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(
-                                self.context.brakes.get(),
-                                _grust_reserved_instant,
-                            ))
-                            .await?;
+                            if self.context.brakes.is_new() {
+                                self.send_output(
+                                    O::Brakes(self.context.brakes.get(), _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
                         }
                         (
                             None,
@@ -900,11 +931,13 @@ pub mod runtime {
                                 acc: self.context.acc_km_h.get(),
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(
-                                self.context.brakes.get(),
-                                _grust_reserved_instant,
-                            ))
-                            .await?;
+                            if self.context.brakes.is_new() {
+                                self.send_output(
+                                    O::Brakes(self.context.brakes.get(), _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
                         }
                         (
                             Some((speed_km_h, _speed_km_h_instant)),
@@ -944,11 +977,13 @@ pub mod runtime {
                                 acc: self.context.acc_km_h.get(),
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(
-                                self.context.brakes.get(),
-                                _grust_reserved_instant,
-                            ))
-                            .await?;
+                            if self.context.brakes.is_new() {
+                                self.send_output(
+                                    O::Brakes(self.context.brakes.get(), _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
                         }
                         (
                             None,
@@ -993,11 +1028,13 @@ pub mod runtime {
                                 acc: self.context.acc_km_h.get(),
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(
-                                self.context.brakes.get(),
-                                _grust_reserved_instant,
-                            ))
-                            .await?;
+                            if self.context.brakes.is_new() {
+                                self.send_output(
+                                    O::Brakes(self.context.brakes.get(), _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
                         }
                         (
                             Some((speed_km_h, _speed_km_h_instant)),
@@ -1042,11 +1079,13 @@ pub mod runtime {
                                 acc: self.context.acc_km_h.get(),
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(
-                                self.context.brakes.get(),
-                                _grust_reserved_instant,
-                            ))
-                            .await?;
+                            if self.context.brakes.is_new() {
+                                self.send_output(
+                                    O::Brakes(self.context.brakes.get(), _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
                         }
                         (
                             None,
@@ -1090,11 +1129,13 @@ pub mod runtime {
                                 acc: self.context.acc_km_h.get(),
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(
-                                self.context.brakes.get(),
-                                _grust_reserved_instant,
-                            ))
-                            .await?;
+                            if self.context.brakes.is_new() {
+                                self.send_output(
+                                    O::Brakes(self.context.brakes.get(), _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
                         }
                         (
                             Some((speed_km_h, _speed_km_h_instant)),
@@ -1139,11 +1180,13 @@ pub mod runtime {
                                 acc: self.context.acc_km_h.get(),
                             });
                             self.context.brakes.set(brakes);
-                            self.send_output(O::Brakes(
-                                self.context.brakes.get(),
-                                _grust_reserved_instant,
-                            ))
-                            .await?;
+                            if self.context.brakes.is_new() {
+                                self.send_output(
+                                    O::Brakes(self.context.brakes.get(), _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
                         }
                     }
                 } else {
@@ -1167,7 +1210,6 @@ pub mod runtime {
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.reset_service_delay(instant).await?;
-                self.reset_service_timeout(instant).await?;
                 self.delayed = false;
                 Ok(())
             }
@@ -1175,7 +1217,9 @@ pub mod runtime {
             pub async fn send_output(
                 &mut self,
                 output: O,
+                instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.reset_service_timeout(instant).await?;
                 self.output.send(output).await?;
                 Ok(())
             }

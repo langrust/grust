@@ -265,8 +265,8 @@ pub mod runtime {
         pub struct S2(i64, bool);
         impl S2 {
             fn set(&mut self, s2: i64) {
+                self.1 = self.0 != s2;
                 self.0 = s2;
-                self.1 = true;
             }
             fn get(&self) -> i64 {
                 self.0
@@ -282,8 +282,8 @@ pub mod runtime {
         pub struct S4(i64, bool);
         impl S4 {
             fn set(&mut self, s4: i64) {
+                self.1 = self.0 != s4;
                 self.0 = s4;
-                self.1 = true;
             }
             fn get(&self) -> i64 {
                 self.0
@@ -299,8 +299,8 @@ pub mod runtime {
         pub struct S3(i64, bool);
         impl S3 {
             fn set(&mut self, s3: i64) {
+                self.1 = self.0 != s3;
                 self.0 = s3;
-                self.1 = true;
             }
             fn get(&self) -> i64 {
                 self.0
@@ -316,8 +316,8 @@ pub mod runtime {
         pub struct E2(i64, bool);
         impl E2 {
             fn set(&mut self, e2: i64) {
+                self.1 = self.0 != e2;
                 self.0 = e2;
-                self.1 = true;
             }
             fn get(&self) -> i64 {
                 self.0
@@ -333,8 +333,8 @@ pub mod runtime {
         pub struct E1(i64, bool);
         impl E1 {
             fn set(&mut self, e1: i64) {
+                self.1 = self.0 != e1;
                 self.0 = e1;
-                self.1 = true;
             }
             fn get(&self) -> i64 {
                 self.0
@@ -350,8 +350,8 @@ pub mod runtime {
         pub struct E3(i64, bool);
         impl E3 {
             fn set(&mut self, e3: i64) {
+                self.1 = self.0 != e3;
                 self.0 = e3;
-                self.1 = true;
             }
             fn get(&self) -> i64 {
                 self.0
@@ -367,8 +367,8 @@ pub mod runtime {
         pub struct O1(i64, bool);
         impl O1 {
             fn set(&mut self, o1: i64) {
+                self.1 = self.0 != o1;
                 self.0 = o1;
-                self.1 = true;
             }
             fn get(&self) -> i64 {
                 self.0
@@ -505,8 +505,13 @@ pub mod runtime {
                                 });
                                 self.context.o1.set(o1);
                             }
-                            self.send_output(O::O1(self.context.o1.get(), _grust_reserved_instant))
+                            if self.context.o1.is_new() {
+                                self.send_output(
+                                    O::O1(self.context.o1.get(), _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
                                 .await?;
+                            }
                         }
                     }
                 } else {
@@ -563,8 +568,11 @@ pub mod runtime {
                     });
                     self.context.o1.set(o1);
                 }
-                self.send_output(O::O1(self.context.o1.get(), _timeout_para_mess_instant))
-                    .await?;
+                self.send_output(
+                    O::O1(self.context.o1.get(), _timeout_para_mess_instant),
+                    _timeout_para_mess_instant,
+                )
+                .await?;
                 Ok(())
             }
             #[inline]
@@ -624,8 +632,10 @@ pub mod runtime {
                         });
                         self.context.o1.set(o1);
                     }
-                    self.send_output(O::O1(self.context.o1.get(), _e0_instant))
-                        .await?;
+                    if self.context.o1.is_new() {
+                        self.send_output(O::O1(self.context.o1.get(), _e0_instant), _e0_instant)
+                            .await?;
+                    }
                 } else {
                     let unique = self.input_store.e0.replace((e0, _e0_instant));
                     assert!(unique.is_none(), "flow `e0` changes too frequently");
@@ -638,7 +648,6 @@ pub mod runtime {
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.reset_service_delay(instant).await?;
-                self.reset_service_timeout(instant).await?;
                 self.delayed = false;
                 Ok(())
             }
@@ -646,7 +655,9 @@ pub mod runtime {
             pub async fn send_output(
                 &mut self,
                 output: O,
+                instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.reset_service_timeout(instant).await?;
                 self.output.send(output).await?;
                 Ok(())
             }
