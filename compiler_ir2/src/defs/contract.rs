@@ -83,7 +83,7 @@ pub enum Term {
     /// A function call: `foo(x, y)`.
     FunctionCall {
         /// The function called.
-        function: Box<Self>,
+        function: Ident,
         /// The arguments.
         arguments: Vec<Self>,
     },
@@ -137,7 +137,7 @@ mk_new! { impl Term =>
         element: Option<Term> = element.map(Term::into),
     }
     FunctionCall: fun_call {
-        function: Self = function.into(),
+        function: impl Into<Ident> = function.into(),
         arguments: impl Into<Vec<Self>> = arguments.into(),
     }
     ComponentCall: comp_call {
@@ -177,8 +177,7 @@ impl Term {
                 quote!(#expr)
             }
             Self::Identifier { identifier } => {
-                let id = identifier;
-                quote!(#id)
+                quote!(#identifier)
             }
             Self::MemoryAccess { identifier } => {
                 if function_like {

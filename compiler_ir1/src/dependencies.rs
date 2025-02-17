@@ -1,8 +1,8 @@
 //! Dependency graph.
 
-prelude! {
-    graph::*,
-}
+use std::ops::Deref;
+
+prelude! { graph::* }
 
 pub type Graph = DiGraphMap<usize, Label>;
 pub type ReducedGraph = HashMap<usize, Graph>;
@@ -261,7 +261,7 @@ impl ComponentDefinition {
         let mut graph = self.create_initialized_graph(ctx.ctx0);
 
         // complete contract dependency graphs
-        self.add_contract_dependencies(&mut graph);
+        self.add_contract_dependencies(&mut graph, ctx);
 
         // complete contract dependency graphs
         {
@@ -425,10 +425,10 @@ impl ComponentDefinition {
     ///     out o: int = i;
     /// }
     /// ```
-    fn add_contract_dependencies(&self, graph: &mut DiGraphMap<usize, Label>) {
+    fn add_contract_dependencies(&self, graph: &mut DiGraphMap<usize, Label>, ctx: &mut DepCtx) {
         // add edges to the graph
         // corresponding to dependencies in contract's terms
-        self.contract.add_dependencies(graph);
+        self.contract.add_dependencies(graph, ctx.deref());
     }
 }
 
