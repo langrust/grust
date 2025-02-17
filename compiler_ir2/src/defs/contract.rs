@@ -235,38 +235,7 @@ impl Term {
                 parse_quote! { Some(#ts_term) }
             }
             Self::None => parse_quote! { None },
-            Self::FunctionCall {
-                function,
-                arguments,
-            } => {
-                let function = function.to_token_stream(prophecy, function_like);
-                let arguments = arguments
-                    .into_iter()
-                    .map(|term| term.to_token_stream(prophecy, function_like));
-                parse_quote! { (#function)(#(#arguments),*) }
-            }
-            Self::ComponentCall {
-                memory_ident,
-                input_name,
-                input_fields,
-                ..
-            } => {
-                let ident = memory_ident;
-                let receiver: syn::ExprField = parse_quote! { self.#ident};
-                let input_fields: Vec<syn::FieldValue> = input_fields
-                    .into_iter()
-                    .map(|(name, term)| {
-                        let id = name;
-                        let expr = term.to_token_stream(prophecy, function_like);
-                        parse_quote! { #id : #expr }
-                    })
-                    .collect();
-
-                let input_name = input_name;
-                let argument: syn::ExprStruct = parse_quote! { #input_name { #(#input_fields),* }};
-
-                parse_quote! { #receiver.step (#argument) }
-            }
+            Self::FunctionCall { .. } | Self::ComponentCall { .. } => todo!("not supported yet"),
         }
     }
 }

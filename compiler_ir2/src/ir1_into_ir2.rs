@@ -309,15 +309,14 @@ mod term {
                 } => {
                     let memory_ident = ctx
                         .get_name(
-                            memory_id.expect("should be defined in `ir1::contract::Term::memorize`"),
+                            memory_id
+                                .expect("should be defined in `ir1::contract::Term::memorize`"),
                         )
                         .clone();
                     let comp_name = ctx.get_name(comp_id).clone();
                     let input_fields = inputs
                         .into_iter()
-                        .map(|(id, term)| {
-                            (ctx.get_name(id).clone(), term.into_ir2(ctx))
-                        })
+                        .map(|(id, term)| (ctx.get_name(id).clone(), term.into_ir2(ctx)))
                         .collect_vec();
                     let input_name = {
                         Ident::new(
