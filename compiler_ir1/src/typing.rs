@@ -197,6 +197,14 @@ impl Typing for contract::Term {
         self.typing = Some(ty);
         Ok(())
     }
+
+    fn get_typ(&self) -> Option<&Typ> {
+        self.typing.as_ref()
+    }
+
+    fn get_typ_mut(&mut self) -> Option<&mut Typ> {
+        self.typing.as_mut()
+    }
 }
 
 impl Typing for interface::FlowStatement {

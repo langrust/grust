@@ -139,39 +139,49 @@ mk_new! { impl Term =>
 
 impl Term {
     /// Compute dependencies of a term.
-    pub fn compute_dependencies(&self) -> Vec<usize> {
+    pub fn compute_dependencies(&self, ctx: &Ctx) -> Vec<usize> {
         match &self.kind {
-            Kind::Unary { term, .. } => term.compute_dependencies(),
+            Kind::Unary { term, .. } => term.compute_dependencies(ctx),
             Kind::Binary { left, right, .. } | Kind::Implication { left, right, .. } => {
-                let mut dependencies = right.compute_dependencies();
-                dependencies.extend(left.compute_dependencies());
+                let mut dependencies = right.compute_dependencies(ctx);
+                dependencies.extend(left.compute_dependencies(ctx));
                 dependencies
             }
             Kind::Constant { .. } | Kind::Enumeration { .. } => {
                 vec![]
             }
-            Kind::Identifier { id } | Kind::PresentEvent { pattern: id, .. } => vec![*id],
+            Kind::Identifier { id } | Kind::PresentEvent { pattern: id, .. } => {
+                if ctx.is_function(*id) {
+                    vec![]
+                } else {
+                    vec![*id]
+                }
+            }
             Kind::ForAll { id, term, .. } => term
-                .compute_dependencies()
+                .compute_dependencies(ctx)
                 .into_iter()
                 .filter(|signal| id != signal)
                 .collect(),
             Kind::Last { .. } => vec![],
             Kind::Application { fun, inputs, .. } => {
-                let mut dependencies = fun.compute_dependencies();
-                dependencies.extend(inputs.iter().flat_map(Term::compute_dependencies));
+                let mut dependencies = fun.compute_dependencies(ctx);
+                dependencies.extend(
+                    inputs
+                        .iter()
+                        .flat_map(|term| term.compute_dependencies(ctx)),
+                );
                 dependencies
             }
             Kind::ComponentCall { inputs, .. } => inputs
                 .iter()
-                .flat_map(|(_, term)| term.compute_dependencies())
+                .flat_map(|(_, term)| term.compute_dependencies(ctx))
                 .collect(),
         }
     }
 
     /// Add dependencies of a term to the graph.
-    pub fn add_term_dependencies(&self, node_graph: &mut DiGraphMap<usize, Label>) {
-        let dependencies = self.compute_dependencies();
+    pub fn add_term_dependencies(&self, node_graph: &mut DiGraphMap<usize, Label>, ctx: &Ctx) {
+        let dependencies = self.compute_dependencies(ctx);
         // signals used in the term depend on each other
         dependencies.iter().for_each(|id1| {
             dependencies.iter().for_each(|id2| {
@@ -319,16 +329,16 @@ impl Contract {
     }
 
     /// Add dependencies of a contract to the graph.
-    pub fn add_dependencies(&self, node_graph: &mut DiGraphMap<usize, Label>) {
+    pub fn add_dependencies(&self, node_graph: &mut DiGraphMap<usize, Label>, ctx: &Ctx) {
         self.requires
             .iter()
-            .for_each(|term| term.add_term_dependencies(node_graph));
+            .for_each(|term| term.add_term_dependencies(node_graph, ctx));
         self.ensures
             .iter()
-            .for_each(|term| term.add_term_dependencies(node_graph));
+            .for_each(|term| term.add_term_dependencies(node_graph, ctx));
         self.invariant
             .iter()
-            .for_each(|term| term.add_term_dependencies(node_graph));
+            .for_each(|term| term.add_term_dependencies(node_graph, ctx));
     }
 
     /// Increment memory with ghost component applications.
