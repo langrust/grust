@@ -656,53 +656,51 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
                     loc,
                 ))
             }
-            Term::Application(app) => match app.fun.as_ref() {
-                Term::Identifier(node) if ctx.is_node(&node, false) => {
-                    let called_node_id = ctx.ctx0.get_node_id(&node, false, ctx.errors)?;
-                    let node_symbol = ctx
-                        .get_symbol(called_node_id)
-                        .expect("there should be a symbol")
-                        .clone();
-                    match node_symbol.kind() {
-                        SymbolKind::Node { inputs, .. } => {
-                            // check inputs and node_inputs have the same length
-                            if inputs.len() != app.inputs.len() {
-                                bad!(ctx.errors, @node.loc() => ErrorKind::arity_mismatch(
-                                    inputs.len(), app.inputs.len()
-                                ))
-                            }
-
-                            let inputs = res_vec!(
-                                app.inputs.len(),
-                                app.inputs
-                                    .into_iter()
-                                    .zip(inputs)
-                                    .map(|(input, id)| Ok((*id, input.into_ir1(ctx)?))),
-                            );
-
-                            Ok(ir1::contract::Term::new(
-                                ir1::contract::Kind::call(called_node_id, inputs),
-                                None,
-                                loc,
+            Term::Application(app) if ctx.is_node(&app.fun, false) => {
+                let called_node_id = ctx.ctx0.get_node_id(&app.fun, false, ctx.errors)?;
+                let node_symbol = ctx
+                    .get_symbol(called_node_id)
+                    .expect("there should be a symbol")
+                    .clone();
+                match node_symbol.kind() {
+                    SymbolKind::Node { inputs, .. } => {
+                        // check inputs and node_inputs have the same length
+                        if inputs.len() != app.inputs.len() {
+                            bad!(ctx.errors, @app.fun.loc() => ErrorKind::arity_mismatch(
+                                inputs.len(), app.inputs.len()
                             ))
                         }
-                        _ => unreachable!(),
-                    }
-                }
-                _ => {
-                    let fun = app.fun.into_ir1(ctx)?;
-                    let inputs = res_vec!(
-                        app.inputs.len(),
-                        app.inputs.into_iter().map(|term| term.into_ir1(ctx))
-                    );
 
-                    Ok(ir1::contract::Term::new(
-                        ir1::contract::Kind::app(fun, inputs),
-                        None,
-                        loc,
-                    ))
+                        let inputs = res_vec!(
+                            app.inputs.len(),
+                            app.inputs
+                                .into_iter()
+                                .zip(inputs)
+                                .map(|(input, id)| Ok((*id, input.into_ir1(ctx)?))),
+                        );
+
+                        Ok(ir1::contract::Term::new(
+                            ir1::contract::Kind::call(called_node_id, inputs),
+                            None,
+                            loc,
+                        ))
+                    }
+                    _ => unreachable!(),
                 }
-            },
+            }
+            Term::Application(app) => {
+                let fun_id = ctx.ctx0.get_function_id(&app.fun, false, ctx.errors)?;
+                let inputs = res_vec!(
+                    app.inputs.len(),
+                    app.inputs.into_iter().map(|term| term.into_ir1(ctx))
+                );
+
+                Ok(ir1::contract::Term::new(
+                    ir1::contract::Kind::app(fun_id, inputs),
+                    None,
+                    loc,
+                ))
+            }
             Term::Enumeration(Enumeration {
                 enum_name,
                 elem_name,
@@ -718,6 +716,11 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
                     loc,
                 ))
             }
+            Term::Brace(term) => Ok(ir1::contract::Term::new(
+                ir1::contract::Kind::brace(term.into_ir1(ctx)?),
+                None,
+                loc,
+            )),
             Term::Unary(Unary { op, term, .. }) => Ok(ir1::contract::Term::new(
                 ir1::contract::Kind::unary(op, term.into_ir1(ctx)?),
                 None,
@@ -736,7 +739,7 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
                 loc,
             )),
             Term::Identifier(ident) => {
-                let id = ctx.ctx0.get_ident(&ident, false, true, ctx.errors)?;
+                let id = ctx.ctx0.get_ident(&ident, false, false, ctx.errors)?;
                 Ok(ir1::contract::Term::new(
                     ir1::contract::Kind::ident(id),
                     None,

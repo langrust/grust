@@ -101,6 +101,10 @@ impl Typing for contract::Term {
                 name: symbols.get_name(*enum_id).clone(),
                 id: *enum_id,
             },
+            contract::Kind::Brace { term } => {
+                term.typ_check(symbols, errors)?;
+                term.typing.as_ref().unwrap().clone()
+            }
             contract::Kind::Unary { op, term } => {
                 term.typ_check(symbols, errors)?;
                 let ty = term.typing.as_ref().unwrap().clone();
@@ -140,7 +144,7 @@ impl Typing for contract::Term {
                 };
                 typing
             }
-            contract::Kind::Application { fun, inputs } => {
+            contract::Kind::Application { fun_id, inputs } => {
                 // type all inputs
                 for input in inputs.iter_mut() {
                     input.typ_check(symbols, errors)?;
@@ -151,14 +155,9 @@ impl Typing for contract::Term {
                     .map(|input| input.get_typ().unwrap().clone())
                     .collect::<Vec<_>>();
 
-                // type the function expression
-                fun.typ_check(symbols, errors)?;
-
                 // compute the application type
-                let application_type =
-                    fun.get_typ_mut()
-                        .unwrap()
-                        .apply(input_types, self.loc, errors)?;
+                let mut fun_ty = symbols.get_typ(*fun_id).clone();
+                let application_type = fun_ty.apply(input_types, self.loc, errors)?;
 
                 application_type
             }
