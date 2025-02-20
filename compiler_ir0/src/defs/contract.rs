@@ -151,7 +151,7 @@ pub struct Application {
     /// Location.
     pub loc: Loc,
     /// The expression applied.
-    pub fun: Box<Term>,
+    pub fun: Ident,
     /// The inputs to the expression.
     pub inputs: Vec<Term>,
 }
@@ -163,7 +163,7 @@ impl HasLoc for Application {
 mk_new! { impl Application =>
     new {
         loc: impl Into<Loc> = loc.into(),
-        fun: impl Into<Box<Term>> = fun.into(),
+        fun: Ident,
         inputs: Vec<Term>,
     }
 }
@@ -172,6 +172,7 @@ mk_new! { impl Application =>
 /// GRust clause's term.
 pub enum Term {
     Constant(Constant),
+    Brace(Box<Term>),
     Result(keyword::result),
     Identifier(Ident),
     Last(Ident),
@@ -187,6 +188,7 @@ impl HasLoc for Term {
     fn loc(&self) -> Loc {
         match self {
             Self::Constant(c) => c.loc(),
+            Self::Brace(t) => t.loc(),
             Self::Result(r) => r.span.into(),
             Self::Identifier(i) => i.loc(),
             Self::Last(i) => i.loc(),

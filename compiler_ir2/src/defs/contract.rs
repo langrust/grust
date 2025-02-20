@@ -10,6 +10,11 @@ pub enum Term {
         /// The literal.
         literal: Constant,
     },
+    /// Braced term: `(x+y)`.
+    Brace {
+        /// The braced term.
+        term: Box<Self>,
+    },
     /// An identifier call: `x`.
     Identifier {
         /// The identifier.
@@ -104,6 +109,7 @@ mk_new! { impl Term =>
     Literal: literal {
         literal: Constant,
     }
+    Brace: brace { term: Self = term.into() }
     Identifier: ident {
         identifier: impl Into<Ident> = identifier.into(),
     }
@@ -161,6 +167,10 @@ impl Term {
     pub fn to_token_stream(self, prophecy: bool, function_like: bool) -> TokenStream2 {
         use quote::quote;
         match self {
+            Self::Brace { term } => {
+                let ts_term = term.to_token_stream(prophecy, function_like);
+                quote! { (#ts_term) }
+            }
             Self::Unop { op, term } => {
                 let ts_term = term.to_token_stream(prophecy, function_like);
                 let ts_op = op.into_syn();

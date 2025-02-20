@@ -14,6 +14,11 @@ pub enum Kind {
         /// The constant
         constant: Constant,
     },
+    /// Braced term: (x+y)
+    Brace {
+        /// The braced term
+        term: Box<Term>,
+    },
     /// Identifier term: x
     Identifier {
         /// Signal's identifier in Symbol Table.
@@ -63,7 +68,7 @@ pub enum Kind {
     /// Application term.
     Application {
         /// The term applied.
-        fun: Box<Term>,
+        fun_id: usize,
         /// The inputs to the term.
         inputs: Vec<Term>,
     },
@@ -80,6 +85,7 @@ pub enum Kind {
 
 mk_new! { impl Kind =>
     Constant: constant { constant: Constant }
+    Brace: brace { term: Term = term.into() }
     Identifier: ident { id: usize }
     Last: last { init_id: usize, signal_id: usize }
     Enumeration: enumeration {
@@ -108,7 +114,7 @@ mk_new! { impl Kind =>
         pattern: usize,
     }
     Application: app {
-        fun: Term = fun.into(),
+        fun_id: usize,
         inputs: impl Into<Vec<Term>> = inputs.into(),
     }
     ComponentCall: call {
@@ -141,7 +147,7 @@ impl Term {
     /// Compute dependencies of a term.
     pub fn compute_dependencies(&self, ctx: &Ctx) -> Vec<usize> {
         match &self.kind {
-            Kind::Unary { term, .. } => term.compute_dependencies(ctx),
+            Kind::Unary { term, .. } | Kind::Brace { term } => term.compute_dependencies(ctx),
             Kind::Binary { left, right, .. } | Kind::Implication { left, right, .. } => {
                 let mut dependencies = right.compute_dependencies(ctx);
                 dependencies.extend(left.compute_dependencies(ctx));
@@ -163,15 +169,10 @@ impl Term {
                 .filter(|signal| id != signal)
                 .collect(),
             Kind::Last { .. } => vec![],
-            Kind::Application { fun, inputs, .. } => {
-                let mut dependencies = fun.compute_dependencies(ctx);
-                dependencies.extend(
-                    inputs
-                        .iter()
-                        .flat_map(|term| term.compute_dependencies(ctx)),
-                );
-                dependencies
-            }
+            Kind::Application { inputs, .. } => inputs
+                .iter()
+                .flat_map(|term| term.compute_dependencies(ctx))
+                .collect(),
             Kind::ComponentCall { inputs, .. } => inputs
                 .iter()
                 .flat_map(|(_, term)| term.compute_dependencies(ctx))
@@ -221,15 +222,14 @@ impl Term {
             | Kind::Last { .. }
             | Kind::Enumeration { .. }
             | Kind::PresentEvent { .. } => (),
-            Kind::Unary { term, .. } | Kind::ForAll { term, .. } => {
+            Kind::Unary { term, .. } | Kind::Brace { term } | Kind::ForAll { term, .. } => {
                 term.memorize(identifier_creator, memory, ctx)
             }
             Kind::Binary { left, right, .. } | Kind::Implication { left, right, .. } => {
                 left.memorize(identifier_creator, memory, ctx);
                 right.memorize(identifier_creator, memory, ctx);
             }
-            Kind::Application { fun, inputs } => {
-                fun.memorize(identifier_creator, memory, ctx);
+            Kind::Application { inputs, .. } => {
                 inputs
                     .iter_mut()
                     .for_each(|term| term.memorize(identifier_creator, memory, ctx));
@@ -261,7 +261,7 @@ impl Term {
                     *init_id = new_id
                 }
             }
-            Kind::Unary { ref mut term, .. } => {
+            Kind::Unary { ref mut term, .. } | Kind::Brace { ref mut term } => {
                 term.substitution(old_id, new_id);
             }
             Kind::Binary {
@@ -283,8 +283,10 @@ impl Term {
                 }
                 // if 'id to replace' is equal to 'id of the forall' then nothing to do
             }
-            Kind::Application { fun, inputs } => {
-                fun.substitution(old_id, new_id);
+            Kind::Application { fun_id, inputs } => {
+                if *fun_id == old_id {
+                    *fun_id = new_id
+                }
                 inputs
                     .iter_mut()
                     .for_each(|term| term.substitution(old_id, new_id));

@@ -725,6 +725,7 @@ impl Parse for Typedef {
 
 mod parse_stream {
     use super::*;
+    use expr::BinOp;
     use stream::*;
 
     impl Last {
@@ -847,7 +848,16 @@ mod parse_stream {
                 return Err(input.error("expected expression"));
             };
             loop {
-                if expr::Sort::<Self>::peek(input) {
+                if input.peek(Token![^]) {
+                    let op_loc = input.span().into();
+                    let _power_token: Token![^] = input.parse()?;
+                    let power: LitInt = input.parse()?;
+                    let right = expression.clone();
+                    for _ in 0..power.base10_parse::<u64>().unwrap() - 1 {
+                        let op = BOp::Mul;
+                        expression = Self::BinOp(BinOp::new(op, op_loc, expression, right.clone()));
+                    }
+                } else if expr::Sort::<Self>::peek(input) {
                     expression = Self::Sort(expr::Sort::<Self>::parse(expression, input)?);
                 } else if expr::Map::<Self>::peek(input) {
                     expression = Self::Map(expr::Map::<Self>::parse(expression, input)?)
@@ -1745,7 +1755,16 @@ mod parse_expr {
             };
 
             loop {
-                if Sort::<Self>::peek(input) {
+                if input.peek(Token![^]) {
+                    let op_loc = input.span().into();
+                    let _power_token: Token![^] = input.parse()?;
+                    let power: LitInt = input.parse()?;
+                    let right = expr.clone();
+                    for _ in 0..power.base10_parse::<u64>().unwrap() - 1 {
+                        let op = BOp::Mul;
+                        expr = Self::BinOp(BinOp::new(op, op_loc, expr, right.clone()));
+                    }
+                } else if Sort::<Self>::peek(input) {
                     expr = Self::sort(Sort::parse(expr, input)?);
                 } else if Map::<Self>::peek(input) {
                     expr = Self::map(Map::parse(expr, input)?)
@@ -2183,7 +2202,7 @@ mod parse_contract {
         fn peek(input: ParseStream) -> bool {
             input.peek(token::Paren)
         }
-        fn parse(function: Term, input: ParseStream) -> syn::Result<Self> {
+        fn parse(function: Ident, input: ParseStream) -> syn::Result<Self> {
             let content;
             let parens = parenthesized!(content in input);
             let inputs: Punctuated<Term, Token![,]> = Punctuated::parse_terminated(&content)?;
@@ -2197,12 +2216,11 @@ mod parse_contract {
 
     impl ParsePrec for Term {
         fn parse_term(input: ParseStream) -> syn::Res<Self> {
-            if input.peek(token::Paren) {
+            let mut term = if input.peek(token::Paren) {
                 let content;
                 let _ = parenthesized!(content in input);
-                return content.parse();
-            }
-            let mut term = if input.peek(keyword::result) {
+                Term::Brace(Box::new(content.parse()?))
+            } else if input.peek(keyword::result) {
                 Term::result(input.parse()?)
             } else if input.peek(keyword::last) {
                 let _: keyword::last = input.parse()?;
@@ -2216,18 +2234,29 @@ mod parse_contract {
                 Term::unary(input.parse()?)
             } else if input.fork().call(Ident::parse).is_ok() {
                 let ident: Ident = input.parse()?;
-                Term::ident(ident)
+                if Application::peek(input) {
+                    Term::app(Application::parse(ident, input)?)
+                } else {
+                    Term::ident(ident)
+                }
             } else {
                 return Err(input.error("expected expression"));
             };
+
             loop {
-                if Application::peek(input) {
-                    term = Self::app(Application::parse(term, input)?)
+                if input.peek(Token![^]) {
+                    let op_loc = input.span();
+                    let _power_token: Token![^] = input.parse()?;
+                    let power: LitInt = input.parse()?;
+                    let right = term.clone();
+                    for _ in 0..power.base10_parse::<u64>().unwrap() - 1 {
+                        let op = BOp::Mul;
+                        term = Term::binary(Binary::new(op_loc, term, op, right.clone()));
+                    }
                 } else {
                     break;
                 }
             }
-
             Ok(term)
         }
 

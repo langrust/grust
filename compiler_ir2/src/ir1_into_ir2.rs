@@ -251,6 +251,7 @@ mod term {
         fn into_ir2(self, ctx: &ir0::Ctx) -> Self::Ir2 {
             match self.kind {
                 Kind::Constant { constant } => contract::Term::literal(constant),
+                Kind::Brace { term } => contract::Term::brace(term.into_ir2(ctx)),
                 Kind::Identifier { id } => {
                     let name = ctx.get_name(id);
                     match ctx.get_scope(id) {
@@ -294,8 +295,8 @@ mod term {
                     }
                     _ => unreachable!(),
                 },
-                Kind::Application { fun, inputs, .. } => {
-                    let function = fun.into_ir2(ctx);
+                Kind::Application { fun_id, inputs, .. } => {
+                    let function = ctx.get_name(fun_id).clone();
                     let arguments = inputs
                         .into_iter()
                         .map(|input| input.into_ir2(ctx))

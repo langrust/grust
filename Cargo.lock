@@ -10,6 +10,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "acc_fmics_greusot"
+version = "0.1.0"
+dependencies = [
+ "creusot-contracts",
+ "grust",
+]
+
+[[package]]
 name = "addr2line"
 version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
