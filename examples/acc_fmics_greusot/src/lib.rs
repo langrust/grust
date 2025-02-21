@@ -25,7 +25,7 @@ grust! {
         requires { c => d >= s*(1 - v/6) }
         ensures  { 0 <= b && b <= 6 && (c => b > 0) }
         ensures  { c => forall _t: int, 0 < _t && _t <= -v/b
-                    => d + v*_t + b*_t^2/2 >= (s-b*_t)*1 +
+                     => d + v*_t + b*_t^2/2 >= (s-b*_t)*1 +
                             ((s-b*_t)^2 - (s+v)^2)/(2*6) }
     {
         match c {
