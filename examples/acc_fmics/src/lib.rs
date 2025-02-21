@@ -22,22 +22,25 @@ grust! {
 
     // Safety distance computation
     function safety_distance(sv_v: float, fv_v: float) -> float {
-        let rho: float = 1.; // SV's reaction time `rho`
+        let rho: float = 1.; // SV's reaction time
         let b_max: float = 0.6*9.81;
-        let sv_d_stop: float = sv_v*rho + sv_v*sv_v/(2.*b_max);
-        let fv_d_stop: float = fv_v*fv_v/(2.*b_max);
-        let d_safe: float = sv_d_stop - fv_d_stop;
-        return if d_safe < 0. then 0. else d_safe;
+        let sv_d_stop: float = sv_v*rho + sv_v^2/(2.*b_max);
+        let fv_d_stop: float = fv_v^2/(2.*b_max);
+        return sv_d_stop - fv_d_stop;
     }
 
     // Filters the ACC on driver activation and when approaching FV
     component acc(c:bool, d:float, v:float, s:float) -> (b:float) {
         match c {
             true => {
-                b = v * v / (d - safety_distance(s, fv_v));
+                b = v^2 / (2.*(d - d_safe));
+                let d_safe: float = safety_distance(s, fv_v);
                 let fv_v: float = s + v;
             },
-            false => { b = 0.; let fv_v: float = 0.; },
+            false => {
+                b = 0.;
+                let (fv_v: float, d_safe: float) = (0., 0.);
+            },
         }
     }
 
