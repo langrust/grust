@@ -1,3 +1,88 @@
+//! # Parallel compilation of statements
+//!
+//! This module is heavily documented and should be relatively easy to understand.
+//!
+//! The exception is *fast-rayon* code generation. This parallelization approach is a bit strange
+//! but works well a big number of very small computations.
+//!
+//! ## Fast-rayon
+//!
+//! Say you want to run `n` computations `c_1, ..., c_n` producing results of potentially different
+//! types, and say we want to use rayon to parallelize `let (id_1, ..., id_n) = (c_1, ..., c_n);`.
+//!
+//! Rayon works by building a parallel iterator, and then reducing (or folding) over it to actually
+//! run computations concurrently and *aggregate* a result. Our problem is that we just want to
+//! retrieve the result of each computation separately. We can't do that by side-effect because of
+//! how rayon's design and rust's borrow checker blend together.
+//!
+//! What we can do is *reduce* to the `n`-tuple where the element at `i` is the result of `c_i`. We
+//! can't do this directly because each element of the tuple is built separately, **and inserted
+//! into the final tuple** separately. Basically, elements of the tuple are going to be options (all
+//! `None` at the start of the *reduce*) and the *reduce* will set relevant elements to `Some
+//! <res_i>` as it goes.
+//!
+//! For example:
+//!
+//! ```rust
+//! // here are three computations or whatever
+//! fn c_1(n: usize) -> usize {
+//!     5 + n
+//! }
+//! fn c_2(s: &str) -> String {
+//!     let mut s = s.to_string();
+//!     s.push_str(" adding something");
+//!     s
+//! }
+//! fn c_3(f: f64) -> f64 {
+//!     f * 3.14
+//! }
+//!
+//! // sequential version
+//! let (res_1, res_2, res_3) = (c_1(2), c_2("some text"), c_3(4.2));
+//! # println!("res_1: {res_1}, res_2: {res_2}, res_3: {res_3}");
+//! assert_eq!(res_1, 7);
+//! assert_eq!(&res_2, "some text adding something");
+//! assert_eq!(res_3, 13.188);
+//!
+//! use rayon::prelude::*;
+//!
+//! // rayon-fast version
+//! let (rres_1, rres_2, rres_3) = {
+//!     let (r1, r2, r3) = (1..=3)
+//!         .into_par_iter()
+//!         .map(|idx| match idx {
+//!             1 => (Some(c_1(2)), None, None),
+//!             2 => (None, Some(c_2("some text")), None),
+//!             3 => (None, None, Some(c_3(4.2))),
+//!             _ => unreachable!(),
+//!         })
+//!         .reduce(
+//!             || (None, None, None),
+//!             |lft, rgt| {
+//!                 let r1 = match (lft.0, rgt.0) {
+//!                     (None, res) | (res, None) => res,
+//!                     (Some(_), Some(_)) => unreachable!(),
+//!                 };
+//!                 let r2 = match (lft.1, rgt.1) {
+//!                     (None, res) | (res, None) => res,
+//!                     (Some(_), Some(_)) => unreachable!(),
+//!                 };
+//!                 let r3 = match (lft.2, rgt.2) {
+//!                     (None, res) | (res, None) => res,
+//!                     (Some(_), Some(_)) => unreachable!(),
+//!                 };
+//!                 (r1, r2, r3)
+//!             },
+//!         );
+//!     (r1.unwrap(), r2.unwrap(), r3.unwrap())
+//! };
+//! # println!("rres_1: {rres_1}, rres_2: {rres_2}, rres_3: {rres_3}");
+//!
+//! assert_eq!(res_1, rres_1);
+//! assert_eq!(res_2, rres_2);
+//! assert_eq!(res_3, rres_3);
+//! ```
+
 prelude! {
     BTreeMap as Map,
     // BTreeSet as Set,
@@ -14,28 +99,35 @@ macro_rules! token_show {
     };
 }
 
+/// A statement parallelization context.
+///
+/// This type implements [synced::CtxSpec], which lets us use [compiler_common::synced] features.
 pub struct Ctx<'a> {
+    /// Statement UID environment.
     env: &'a Env<'a>,
+    /// Allows using threads.
     with_threads: bool,
 }
 impl<'a> Ctx<'a> {
+    /// Constructor.
     pub fn new(env: &'a Env<'a>, with_threads: bool) -> Self {
         Self { env, with_threads }
     }
 
+    /// Exclusive upper-bound weight for not parallelizing some statements.
     const DONT_PARA_WEIGHT_UBX: usize = 10;
+    /// Exclusive upper-bound weight for parallelizing some statements using threads.
     const RAYON_PARA_WEIGHT_UBX: usize = 20;
+    /// Maximum weight.
     const INFINITY: usize = 1000;
-}
-impl<'a> synced::CtxSpec for Ctx<'a> {
-    type Instr = usize;
-    type Cost = usize;
-    type Label = graph::Label;
-    const INVERTED_EDGES: bool = true;
-    fn ignore_edge(label: &Self::Label) -> bool {
+
+    /// True on edge labels that should be ignored, used in the [synced::CtxSpec] implementation.
+    pub fn ignore_edge(label: &graph::Label) -> bool {
         !label.has_weight(0)
     }
-    fn instr_cost(&self, uid: usize) -> usize {
+
+    /// Computes the cost of an instruction, used in the [synced::CtxSpec] implementation.
+    pub fn instr_cost(&self, uid: usize) -> usize {
         let stmt = self
             .env
             .repr_to_stmt
@@ -63,23 +155,50 @@ impl<'a> synced::CtxSpec for Ctx<'a> {
             Kind::SomeEvent { .. } => 0,
         }
     }
-    fn sync_seq_cost(&self, seq: &[Synced<Self>]) -> usize {
+
+    /// Cost of a sequence of statements, used in the implementation of [synced::CtxSpec].
+    pub fn sync_seq_cost(&self, seq: &[Synced<Self>]) -> usize {
         seq.len() + seq.iter().map(|s| s.cost()).sum::<usize>()
     }
-    fn sync_para_cost(&self, map: &BTreeMap<usize, Vec<Synced<Self>>>) -> usize {
+    /// Cost of some parallel statements, used in the implementation of [synced::CtxSpec].
+    pub fn sync_para_cost(&self, map: &BTreeMap<usize, Vec<Synced<Self>>>) -> usize {
         let (max, count) = map.iter().fold((0, 0), |(max, count), (key, branches)| {
             (std::cmp::max(max, *key), count + branches.len())
         });
         max + count
     }
 }
+impl<'a> synced::CtxSpec for Ctx<'a> {
+    type Instr = usize;
+    type Cost = usize;
+    type Label = graph::Label;
+    const INVERTED_EDGES: bool = true;
+    fn ignore_edge(label: &Self::Label) -> bool {
+        Ctx::ignore_edge(label)
+    }
+    fn instr_cost(&self, uid: usize) -> usize {
+        self.instr_cost(uid)
+    }
+    fn sync_seq_cost(&self, seq: &[Synced<Self>]) -> usize {
+        self.sync_seq_cost(seq)
+    }
+    fn sync_para_cost(&self, map: &BTreeMap<usize, Vec<Synced<Self>>>) -> usize {
+        self.sync_para_cost(map)
+    }
+}
 
+/// Enumeration of the different kinds of parallelization.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ParaKind {
+    /// Naive rayon with options, fast on many small computations.
     RayonFast,
+    /// Normal rayon, fast on relatively small computations.
     Rayon,
+    /// System threads, heavyweight.
     Threads,
+    /// Tokio threads, heavyweight.
     TokioThreads,
+    /// No parallelization, *i.e.* sequential statements.
     None,
 }
 impl Display for ParaKind {
@@ -101,14 +220,30 @@ impl Display for ParaKind {
 //     parse_quote! { grust::grust_std::rayon::join }
 // }
 
+/// Type alias for a directed graph with statement UIDs (`usize`) nodes and graph label vertices.
 pub type Graph = graph::DiGraphMap<usize, graph::Label>;
 
+/// Parallelization environment, stores the graph and data about statements.
 pub struct Env<'a> {
+    /// Map a identifier UID to its representative identifier UID.
+    ///
+    /// Statements can bind more than one identifier at a time, in tuple-deconstruction for
+    /// instance. Still, all these identifiers are defined at the same time so from the point of
+    /// view of scheduling parallel statements we can just pick one of these identifiers as the
+    /// *representative* `id_k` of the *class* of identifiers `{id_1, ..., id_n}` bound by a
+    /// statement `stmt`; `id_to_repr` maps `id_i` to `id_k` for all statements.
+    ///
+    /// That way, we can construct `graph` (another field in this structure) that simply use
+    /// representatives as nodes.
     id_to_repr: Map<usize, usize>,
+    /// Maps representative UIDs to the statement binding it (and all of the identifiers in its
+    /// class).
     repr_to_stmt: Map<usize, &'a ir1::stream::Stmt>,
+    /// Dependency graph between representative UIDs (labels/graph weights are irrelevant).
     graph: Graph,
 }
 impl<'a> Env<'a> {
+    /// Applies `f` to all identifiers appearing in pattern `kind`.
     fn ids_do(kind: &ir1::stmt::Kind, f: &mut impl FnMut(usize)) -> Result<(), String> {
         use ir1::stmt::Kind::*;
         let mut curr = kind;
@@ -132,7 +267,11 @@ impl<'a> Env<'a> {
         }
     }
 
-    fn saturate_graph(graph: &Graph) -> Graph {
+    /// Edge-transitive-closure (`edge_tc`) `graph`.
+    ///
+    /// The graph `g` returned is the transitive closure of `graph`: for all nodes `a b c ∈ graph`,
+    /// if `a → b → c ∈ graph` then `a → c ∈ g`.
+    fn graph_edge_tc(graph: &Graph) -> Graph {
         let mut res = Graph::new();
         let mut known = BTreeSet::new();
         let mut todo = Vec::with_capacity(graph.node_count());
@@ -157,8 +296,18 @@ impl<'a> Env<'a> {
         res
     }
 
+    /// Retrieves the representative of an identifier UID.
+    pub fn repr_of(&self, id: usize) -> Option<usize> {
+        self.id_to_repr.get(&id).cloned()
+    }
+
+    /// Constructor.
+    ///
+    /// Builds the map between identifier UIDs and their representative (discussed in [Env]), the
+    /// map between representatives and the corresponding statement, and the graph of dependency
+    /// between representatives.
     pub fn new(stmts: &'a Vec<ir1::stream::Stmt>, graph: &Graph) -> Result<Self, String> {
-        let graph = Self::saturate_graph(graph);
+        let graph = Self::graph_edge_tc(graph);
         let mut slf = Self {
             id_to_repr: Map::new(),
             repr_to_stmt: Map::new(),
@@ -201,10 +350,7 @@ impl<'a> Env<'a> {
         Ok(slf)
     }
 
-    pub fn repr_of(&self, id: usize) -> Option<usize> {
-        self.id_to_repr.get(&id).cloned()
-    }
-
+    /// Generates the parallel code for the statements.
     pub fn to_stmts(&self, ctx: &ir0::Ctx) -> Result<Stmts, String> {
         let subset = self.repr_to_stmt.keys().cloned().collect();
         let synced = Synced::new_with(
@@ -215,6 +361,7 @@ impl<'a> Env<'a> {
         Stmts::of_synced(self, ctx, synced)
     }
 
+    /// String representation, used for debugging.
     pub fn print(&self, ctx: &ir0::Ctx) {
         println!("env:");
         println!("  idents:");
@@ -235,22 +382,34 @@ impl<'a> Env<'a> {
     }
 }
 
+/// Type alias [ir1] patterns.
 pub type Bindings = ir1::stmt::Pattern;
 
+/// A variable plain/(nested) tuple pattern.
+///
+/// Stores the [Pattern] and the [Expr] version of a (tuple of) variable(s). This is useful during
+/// code generation, as we need to juggle between tuples of variables as patterns and as
+/// expressions. Especially when we do parallel code generation and we need to handle variable
+/// plumbing.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Vars {
+    /// [Pattern] version of the variables.
     bind: Pattern,
+    /// [Expr] version of the variables.
     expr: Expr,
 }
 impl Vars {
-    pub fn as_binding(&self) -> &Pattern {
+    /// Binding (pattern) accessor.
+    pub fn as_pattern(&self) -> &Pattern {
         &self.bind
     }
+    /// Expression accessor.
     pub fn as_expr(&self) -> &Expr {
         &self.expr
     }
 
-    pub fn merge(vars: impl IntoIterator<Item = Self> + ExactSizeIterator) -> Self {
+    /// Merges some [Vars] structure as a (nested) tuple.
+    pub fn tuple_merge(vars: impl IntoIterator<Item = Self> + ExactSizeIterator) -> Self {
         let (mut bind_vec, mut expr_vec) = (
             Vec::with_capacity(vars.len()),
             Vec::with_capacity(vars.len()),
@@ -268,14 +427,16 @@ impl Vars {
         Self { bind, expr }
     }
 
-    pub fn easy_var(id: Ident) -> Self {
+    /// Creates the binding `let <id> = <id>:`.
+    pub fn new(id: Ident) -> Self {
         Self {
             bind: Pattern::ident(id.clone()),
             expr: Expr::ident(id),
         }
     }
 
-    pub fn from_ir1(pat: ir1::stmt::Pattern, ctx: &ir0::Ctx) -> Self {
+    /// Creates the binding `let <pat> = <pat>;` where `pat` is an [ir1] pattern.
+    pub fn of_ir1(pat: ir1::stmt::Pattern, ctx: &ir0::Ctx) -> Self {
         let mut curr = pat.kind;
         let mut stack = vec![];
 
@@ -326,10 +487,44 @@ impl Vars {
     }
 }
 
+/// A four-step parallel-code-execution scheduler.
+///
+/// Each of the four steps is a field of this type storing a sequence of statements.
+///
+/// This comes from the different kinds of parallelization we're doing. Some of it is not blocking,
+/// such as (system or tokio) threads. We can (and do) *spawn* them, do stuff, and then *join* the
+/// threads to get back the results.
+///
+/// Some of it is blocking, such as rayon-parallelized code. To use rayon we build a parallel
+/// iterator and then `fold`/`reduce`/... over it, which runs the branches concurrently but blocks
+/// us until all have returned and the result has been produced. We cannot do anything new while
+/// this runs.
+///
+/// So, to have everything run in parallel, we need to make sure we
+/// - [Self::spawn] the threads first;
+/// - then [Self::run] blocking code as the threads are working until all blocking code is done and
+///   we have its results;
+/// - then [Self::join] the threads to retrieve their results;
+/// - finally package all [Self::res]ults in a tuple/nested tuples for whatever is above us to use.
 pub struct Schedule {
+    /// Spawn step.
+    ///
+    /// Spawns threads if any, work in the threads start concurrently during the next step (`run`).
     pub spawn: Option<Vec<syn::Stmt>>,
+    /// Run step.
+    ///
+    /// Run parallel-but-blocking code, typically rayon, threads (if any) still running from the
+    /// previous step (`spawn`). Note that at the end of this step, we have all results for this
+    /// blocking code: since it is blocking, it produces the results once all sub-tasks are done.
     pub run: Option<Vec<syn::Stmt>>,
+    /// Join step.
+    ///
+    /// Wait on all the threads, retrieve results. Note that blocking code has already run in the
+    /// previous step (`run`) and finished, thus we already have the results for that.
     pub join: Option<Vec<syn::Stmt>>,
+    /// Result step.
+    ///
+    /// Aggregate all results in an appropriate tuple for whatever is above us.
     pub res: Vec<syn::Expr>,
 }
 mk_new! { impl Schedule => new {
@@ -339,24 +534,36 @@ mk_new! { impl Schedule => new {
     res: Vec<syn::Expr>,
 } }
 impl Schedule {
+    /// Empty scheduler, schedules nothing.
     pub fn empty() -> Schedule {
         Self::new(None, None, None, vec![])
     }
+    /// Creates a pure-thread scheduler with no (empty) `run` step.
     pub fn threads(spawn: Vec<syn::Stmt>, join: Vec<syn::Stmt>, res: syn::Expr) -> Schedule {
         Self::new(Some(spawn), None, Some(join), vec![res])
     }
+    /// Creates a sequential scheduler.
+    ///
+    /// This is useful to deploy code parallelized using (different versions of) rayon.
     pub fn sequence(seq: Vec<syn::Stmt>, res: syn::Expr) -> Schedule {
         Self::new(None, Some(seq), None, vec![res])
     }
 
+    /// Produces a unique index for a new *spawn* statement.
     pub fn next_spawn_index(&self) -> usize {
         self.spawn.as_ref().map(|vec| vec.len()).unwrap_or(0)
     }
 
+    /// Identifier used
     fn scope_ident() -> syn::Ident {
         syn::Ident::new("reserved_grust_thread_scope", Span::call_site())
     }
 
+    /// Merges two optional vectors.
+    ///
+    /// The result is in `lft` and contains
+    /// - `None` if `lft` and `rgt` are both `None`;
+    /// - the concatenation of `lft.unwrap_or(vec![])` and `rgt.unwrap_or(vec![])` otherwise.
     fn merge_opt_vec<T>(lft: &mut Option<Vec<T>>, rgt: Option<Vec<T>>) {
         match (lft.as_mut(), rgt) {
             (_, None) => (),
@@ -364,6 +571,7 @@ impl Schedule {
             (Some(lft), Some(rgt)) => lft.extend(rgt),
         }
     }
+    /// Merges two schedulers by merging/extending all `self`-steps with the `that`-steps.
     pub fn merge(&mut self, that: Self) {
         Self::merge_opt_vec(&mut self.spawn, that.spawn);
         Self::merge_opt_vec(&mut self.run, that.run);
@@ -371,6 +579,7 @@ impl Schedule {
         self.res.extend(that.res);
     }
 
+    /// Turns itself into rust code.
     pub fn into_syn(self, dont_bind: bool) -> syn::Stmt {
         debug_assert!(
             self.spawn.is_none() && self.join.is_none()
@@ -431,10 +640,18 @@ impl Schedule {
     }
 }
 
+/// Part of the `ir2` AST representing (parallel) statements.
+///
+/// This inductive type does not actually mention statements *per se*, it really deals [Vars]/[Expr]
+/// because all statements bind some identifiers. All constructors have a [Vars] value, which
+/// are the ((nested) tuple of) variables that the statement(s) bind.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Stmts {
+    /// A sequence of binding statements binding some [Vars].
     Seq(Vars, Vec<Self>),
+    /// Some parallel statements binding some [Vars].
     Para(Vars, Vec<(ParaKind, Vars, Vec<Self>)>),
+    /// A plain statement binding some [Vars] using an expression.
     Stmt(Vars, Expr),
 }
 
@@ -454,26 +671,46 @@ mk_new! { impl Stmts =>
 }
 
 impl Stmts {
-    pub fn easy_seq(bindings: impl IntoIterator<Item = (Ident, Expr)>) -> Self {
+    /// Statement sequence constructor.
+    pub fn new_seq(stmts: Vec<Self>) -> Self {
+        let vars = Vars::tuple_merge(stmts.iter().map(|stmt| stmt.vars().clone()));
+        Self::Seq(vars, stmts)
+    }
+    /// Parallel statements constructor.
+    pub fn new_para(subs: Vec<(ParaKind, Vars, Vec<Self>)>) -> Self {
+        let vars = Vars::tuple_merge(subs.iter().map(|(_, vars, _)| vars.clone()));
+        Self::Para(vars, subs)
+    }
+    /// Plain statement constructor.
+    pub fn new_stmt(stmt: &ir1::stream::Stmt, ctx: &ir0::Ctx) -> Self {
+        let vars = Vars::of_ir1(stmt.pattern.clone(), ctx);
+        let expr = stmt.expr.clone().into_ir2(ctx);
+        Self::Stmt(vars, expr)
+    }
+
+    /// Builds a sequence of statements from some [Ident]/[Expr] pairs.
+    pub fn seq_of_pairs(bindings: impl IntoIterator<Item = (Ident, Expr)>) -> Self {
         Self::new_seq(
             bindings
                 .into_iter()
-                .map(|(id, expr)| Stmts::stmt(Vars::easy_var(id), expr))
+                .map(|(id, expr)| Stmts::stmt(Vars::new(id), expr))
                 .collect(),
         )
     }
 
-    pub fn sequential(stmts: &Vec<ir1::stream::Stmt>, ctx: &ir0::Ctx) -> Self {
+    /// Builds a sequence of statements from some [ir1] statements.
+    pub fn seq_of_ir1(stmts: &Vec<ir1::stream::Stmt>, ctx: &ir0::Ctx) -> Self {
         Self::new_seq(stmts.iter().map(|stmt| Self::new_stmt(stmt, ctx)).collect())
     }
 
+    /// Constructor from [ir1] statements.
     pub fn of_ir1(
         stmts: &Vec<ir1::stream::Stmt>,
         ctx: &ir0::Ctx,
         graph: &Graph,
     ) -> Result<Self, String> {
         if ctx.conf.component_para.is_none() {
-            Ok(Self::sequential(stmts, ctx))
+            Ok(Self::seq_of_ir1(stmts, ctx))
         } else {
             let env = Env::new(stmts, graph)?;
             // env.print(ctx);
@@ -481,20 +718,7 @@ impl Stmts {
         }
     }
 
-    pub fn new_seq(stmts: Vec<Self>) -> Self {
-        let vars = Vars::merge(stmts.iter().map(|stmt| stmt.vars().clone()));
-        Self::Seq(vars, stmts)
-    }
-    pub fn new_para(subs: Vec<(ParaKind, Vars, Vec<Self>)>) -> Self {
-        let vars = Vars::merge(subs.iter().map(|(_, vars, _)| vars.clone()));
-        Self::Para(vars, subs)
-    }
-    pub fn new_stmt(stmt: &ir1::stream::Stmt, ctx: &ir0::Ctx) -> Self {
-        let vars = Vars::from_ir1(stmt.pattern.clone(), ctx);
-        let expr = stmt.expr.clone().into_ir2(ctx);
-        Self::Stmt(vars, expr)
-    }
-
+    /// The variables bound by these statements.
     pub fn vars(&self) -> &Vars {
         match self {
             Self::Seq(vars, _) => vars,
@@ -503,6 +727,7 @@ impl Stmts {
         }
     }
 
+    /// Constructor from an [Env] and some [Synced] data.
     pub fn of_synced(env: &Env, ctx: &ir0::Ctx, synced: Synced<Ctx>) -> Result<Self, String> {
         match synced {
             Synced::Instr(id, _) => {
@@ -595,7 +820,7 @@ impl Stmts {
                     // println!("pushing {} no-para(s)", no_para.len());
                     paras.push((
                         ParaKind::None,
-                        Vars::merge(no_para_vars.into_iter()),
+                        Vars::tuple_merge(no_para_vars.into_iter()),
                         no_para,
                     ));
                 }
@@ -603,12 +828,16 @@ impl Stmts {
                 let rayon_is_empty = rayon.is_empty();
                 if !rayon_is_empty {
                     if rayon.len() == 1 && threads.is_empty() {
-                        paras.push((ParaKind::None, Vars::merge(rayon_vars.into_iter()), rayon));
+                        paras.push((
+                            ParaKind::None,
+                            Vars::tuple_merge(rayon_vars.into_iter()),
+                            rayon,
+                        ));
                     } else {
                         // println!("pushing {} rayon(s)", rayon.len());
                         paras.push((
                             ParaKind::RayonFast,
-                            Vars::merge(rayon_vars.into_iter()),
+                            Vars::tuple_merge(rayon_vars.into_iter()),
                             rayon,
                         ));
                     }
@@ -617,14 +846,14 @@ impl Stmts {
                 if threads.len() == 1 && rayon_is_empty {
                     paras.push((
                         ParaKind::None,
-                        Vars::merge(threads_vars.into_iter()),
+                        Vars::tuple_merge(threads_vars.into_iter()),
                         threads,
                     ));
                 } else {
                     // println!("pushing {} thread(s)", threads.len());
                     paras.push((
                         ParaKind::Threads,
-                        Vars::merge(threads_vars.into_iter()),
+                        Vars::tuple_merge(threads_vars.into_iter()),
                         threads,
                     ));
                 }
@@ -633,6 +862,7 @@ impl Stmts {
         }
     }
 
+    /// Compiles a sequence of statements to rust code.
     pub fn seq_to_syn(
         stmts: &mut Vec<syn::Stmt>,
         dont_bind: bool,
@@ -654,6 +884,7 @@ impl Stmts {
         }
     }
 
+    /// Compiles a plain statement to rust code.
     pub fn stmt_to_syn(
         stmts: &mut Vec<syn::Stmt>,
         dont_bind: bool,
@@ -679,6 +910,13 @@ impl Stmts {
         stmts.push(stmt);
     }
 
+    /// Builds a rayon `Some` result for a fast-rayon branch.
+    ///
+    /// - `stmts`: the statements of the branch;
+    /// - `idx`: the index of the branch;
+    /// - `len`: the number of branches.
+    ///
+    /// See [module-level documentation](self) for details on fast-rayon
     fn rayon_res(stmts: Vec<syn::Stmt>, idx: usize, len: usize) -> syn::Expr {
         let expr: syn::Expr = parse_quote! { Some({#(#stmts)*}) };
         if len == 1 {
@@ -692,6 +930,12 @@ impl Stmts {
         }
     }
 
+    /// An identifier for the [Option] result of a fast-rayon branch.
+    ///
+    /// - `idx`: the index of the branch;
+    /// - `suff`: a suffix for the identifier, mostly for debugging.
+    ///
+    /// See [module-level documentation](self) for details on fast-rayon
     fn rayon_opt_ident_with(idx: usize, suff: impl Display) -> syn::Ident {
         syn::Ident::new(
             &format!("reserved_grust_rayon_opt_var_{}{}", idx, suff),
@@ -699,14 +943,27 @@ impl Stmts {
         )
     }
 
+    /// An identifier for the [Option] result of a fast-rayon branch.
+    ///
+    /// - `idx`: the index of the branch.
+    ///
+    /// See [module-level documentation](self) for details on fast-rayon
     fn rayon_opt_ident(idx: usize) -> syn::Ident {
         Self::rayon_opt_ident_with(idx, "")
     }
 
+    /// A [usize] as a rust code literal.
     fn usize_lit(n: usize) -> syn::Lit {
         syn::Lit::Int(syn::LitInt::new(&format!("{}usize", n), Span::call_site()))
     }
 
+    /// The arm of a branch of a fast-rayon pattern-matching.
+    ///
+    /// - `stmts`: the statements in the branch;
+    /// - `idx`: the index of the branch;
+    /// - `len`: the number of branches.
+    ///
+    /// See [module-level documentation](self) for details on fast-rayon
     fn rayon_branch(stmts: Vec<syn::Stmt>, idx: usize, len: usize) -> syn::Arm {
         let pat = syn::Pat::Lit(syn::PatLit {
             attrs: vec![],
@@ -718,6 +975,9 @@ impl Stmts {
         }
     }
 
+    /// Fast-rayon *run* step rust code for a list of sequences of statements.
+    ///
+    /// See [module-level documentation](self) for details on fast-rayon
     fn rayon(exprs: impl IntoIterator<Item = Vec<syn::Stmt>> + ExactSizeIterator) -> syn::Stmt {
         let len = exprs.len();
         let len_lit = Self::usize_lit(len);
@@ -793,6 +1053,10 @@ impl Stmts {
         }}
     }
 
+    /// Compiles a list of parallel statements to a [Schedule] using parallelization kind `Kind`.
+    ///
+    /// The usual [Vars] value is replaced here with explicit rust versions [syn::Expr] and
+    /// [syn::Pat].
     pub fn para_branch_to_syn(
         kind: ParaKind,
         vars_expr: syn::Expr,
@@ -843,8 +1107,7 @@ impl Stmts {
                 //         )*);
                 //     }
                 // };
-                let res = Schedule::sequence(vec![syn], vars_expr);
-                res
+                Schedule::sequence(vec![syn], vars_expr)
             }
             ParaKind::RayonFast => {
                 // println!("generating branch for `rayon-fast` ({})", stmts.len());
@@ -898,6 +1161,7 @@ impl Stmts {
         }
     }
 
+    /// Compiles some parallel statements to rust code.
     pub fn para_to_syn(
         stmts: &mut Vec<syn::Stmt>,
         dont_bind: bool,
@@ -948,6 +1212,7 @@ impl Stmts {
         }
     }
 
+    /// Helper for [Self::extend_syn].
     fn extend_syn_aux(
         self,
         stmts: &mut Vec<syn::Stmt>,
@@ -961,16 +1226,19 @@ impl Stmts {
         }
     }
 
+    /// Extends some rust statements with the result of parallel code generation.
     pub fn extend_syn(self, stmts: &mut Vec<syn::Stmt>, crates: &mut BTreeSet<String>) {
         self.extend_syn_aux(stmts, crates, false)
     }
 
+    /// Helper for [Self::into_syn].
     fn into_syn_aux(self, crates: &mut BTreeSet<String>, dont_bind: bool) -> Vec<syn::Stmt> {
         let mut vec = Vec::with_capacity(20);
         self.extend_syn_aux(&mut vec, crates, dont_bind);
         vec
     }
 
+    /// Turns itself into some rust statements.
     pub fn into_syn(self, crates: &mut BTreeSet<String>) -> Vec<syn::Stmt> {
         self.into_syn_aux(crates, false)
     }

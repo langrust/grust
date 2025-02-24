@@ -9,3 +9,6 @@ edition = "2021"
 compiler_common = { path = "../compiler_common" }
 compiler_ir0 = { path = "../compiler_ir0" }
 compiler_ir1 = { path = "../compiler_ir1" }
+
+[dev-dependencies]
+rayon = "^1.10"
