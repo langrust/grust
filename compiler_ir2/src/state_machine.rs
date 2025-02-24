@@ -436,7 +436,7 @@ mod test {
             contract: Default::default(),
             node_name: Loc::test_id("Node"),
             output_type: Typ::int(),
-            body: para::Stmts::easy_seq(vec![
+            body: para::Stmts::seq_of_pairs(vec![
                 (
                     Loc::test_id("o"),
                     Expr::field_access(
