@@ -2,7 +2,6 @@ compiler_top::prelude! {}
 
 #[test]
 fn should_compile_para() {
-    println!("para");
     let top: ir0::Top = parse_quote! {
         #![dump = "tests/macro_outputs/para.rs", propag = "onchange", para, test]
         import event e0: int;
@@ -79,8 +78,10 @@ fn should_compile_para() {
     if let Some(path) = ctx.conf.dump_code {
         compiler_top::dump_code(&path, &tokens).unwrap();
     }
+}
 
-    println!("threads");
+#[test]
+fn should_compile_para_threads() {
     let top: ir0::Top = parse_quote! {
         #![dump = "tests/macro_outputs/para_threads.rs", component_para_threads]
 
@@ -133,8 +134,10 @@ fn should_compile_para() {
     if let Some(path) = ctx.conf.dump_code {
         compiler_top::dump_code(&path, &tokens).unwrap();
     }
+}
 
-    println!("rayon1");
+#[test]
+fn should_compile_para_rayon1() {
     let top: ir0::Top = parse_quote! {
         #![dump = "tests/macro_outputs/para_rayon1.rs", component_para_rayon1]
 
@@ -187,8 +190,10 @@ fn should_compile_para() {
     if let Some(path) = ctx.conf.dump_code {
         compiler_top::dump_code(&path, &tokens).unwrap();
     }
+}
 
-    println!("rayon2");
+#[test]
+fn should_compile_para_rayon2() {
     let top: ir0::Top = parse_quote! {
         #![dump = "tests/macro_outputs/para_rayon2.rs", component_para_rayon2]
 
@@ -241,8 +246,10 @@ fn should_compile_para() {
     if let Some(path) = ctx.conf.dump_code {
         compiler_top::dump_code(&path, &tokens).unwrap();
     }
+}
 
-    println!("rayon3");
+#[test]
+fn should_compile_rayon3() {
     let top: ir0::Top = parse_quote! {
         #![dump = "tests/macro_outputs/para_rayon3.rs", component_para_rayon3]
 
@@ -295,8 +302,10 @@ fn should_compile_para() {
     if let Some(path) = ctx.conf.dump_code {
         compiler_top::dump_code(&path, &tokens).unwrap();
     }
+}
 
-    println!("mixed");
+#[test]
+fn should_compile_para_mixed() {
     let top: ir0::Top = parse_quote! {
         #![dump = "tests/macro_outputs/para_mixed.rs", component_para_mixed]
 
