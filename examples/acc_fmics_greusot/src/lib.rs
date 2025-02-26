@@ -45,13 +45,13 @@ grust! {
     }
 
     // Intermediate braking function to pass the proof
-    component compute_braking(d_grace: int, v: int) -> (b: int)
+    function compute_braking(d_grace: int, v: int) -> int
         requires { (0 < d_grace &&  d_grace < 150) && (v < 0 && -v <= 10) } // scope
         // there is enough distance to brake at maximum rate
         requires { d_grace > (v^2)/(2*6) }
         // braking rate is in correct interval
-        ensures  { 0 <= b && b <= 6 }
+        ensures  { 0 <= result && result <= 6 }
     {
-        b = (v^2) / (2 * d_grace);
+        return (v^2) / (2 * d_grace);
     }
 }
