@@ -9,7 +9,7 @@ grust! {
     function safety_distance(sv_v: int, fv_v: int) -> int
         requires { 0 < sv_v && sv_v <= 50 }
         requires { 0 < fv_v && fv_v < sv_v && sv_v - fv_v <= 10 }
-        ensures  { 0 <= result && result <= 140 }
+        ensures  { 0 < result && result < 150 }
         ensures  { result == sv_v*1 + (sv_v^2)/(2*6) - (fv_v^2)/(2*6) }
     {
         let rho: int = 1; // SV's reaction time
