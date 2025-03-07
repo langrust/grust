@@ -8,4 +8,10 @@ target/
 
 # MSVC Windows builds of rustc generate these, which store debugging information
 *.pdb
-# creusot
+
+# creusot stuff
+
+# why3 stuff
+*.mlw
+why3*.xml*
+why3*.gz*
