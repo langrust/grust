@@ -87,7 +87,7 @@ impl<'a> PatLoc<'a> {
             errors,
         }
     }
-    pub fn remove_pat<'b>(&'b mut self) -> WithLoc {
+    pub fn remove_pat(&mut self) -> WithLoc {
         WithLoc::new(self.loc, self.ctx0, self.errors)
     }
     pub fn remove_pat_loc<'b>(&'b mut self) -> Simple<'b> {
