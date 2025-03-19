@@ -49,6 +49,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for Ast {
                     debug_assert!(_prev.is_none());
                 }
                 ir0::Item::ComponentImport(component) => components.push(component.into_ir1(ctx)?),
+                ir0::Item::ExtFun(ext) => functions.push(ext.into_ir1(ctx)?),
             }
         }
 
@@ -352,17 +353,41 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Function {
 
         ctx.global();
 
-        Ok(ir1::Function {
+        Ok(ir1::Function::new(
             id,
             contract,
             statements,
-            returned: returned
+            returned
                 .ok_or_else(lerror!(@self.ident.loc() =>
                     "[internal] this function has not return expression"
                 ))
                 .dewrap(ctx.errors)?,
             loc,
-        })
+        ))
+    }
+}
+
+impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ExtFunDecl {
+    type Ir1 = Function;
+
+    // pre-condition: function and its inputs are already stored in symbol table
+    // post-condition: construct [ir1] function and check identifiers good use
+    fn into_ir1(self, ctx: &mut ctx::Simple) -> TRes<Self::Ir1> {
+        let loc = self.loc();
+        let id = ctx.ctx0.get_function_id(&self.ident, false, ctx.errors)?;
+
+        // create local context with all signals
+        ctx.local();
+        ctx.restore_context(id);
+
+        // insert function output type in symbol table
+        let output_typing = self.output_typ().clone().into_ir1(&mut ctx.add_loc(loc))?;
+        // let output_typing = self.output_typ.into_ir1(&mut ctx.add_loc(loc))?;
+        ctx.set_function_output_type(id, output_typing);
+
+        ctx.global();
+
+        Ok(ir1::Function::new_ext(id, self.path, loc))
     }
 }
 
@@ -685,7 +710,13 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
                             loc,
                         ))
                     }
-                    _ => unreachable!(),
+                    _ => {
+                        ctx.errors.push(error!( @ node_symbol.name().span() =>
+                            "fatal: symbol kind associated to node `{}` is not node-like",
+                            node_symbol.name(),
+                        ));
+                        return Err(());
+                    }
                 }
             }
             Term::Application(app) => {
@@ -2156,7 +2187,13 @@ mod stream_impl {
                                     ),
                                 )
                             }
-                            _ => unreachable!(),
+                            _ => {
+                                ctx.errors.push(error!(@node_symbol.name().span() =>
+                                    "fatal: symbol kind associated with node `{}` is not node-like",
+                                    node_symbol.name(),
+                                ));
+                                return Err(());
+                            }
                         }
                     }
                     fun => Kind::expr(ir1::expr::Kind::app(
@@ -2297,9 +2334,9 @@ impl Ir0IntoIr1<ir1::ctx::WithLoc<'_>> for Typ {
                 Typ::Integer(_) | Typ::Float(_) | Typ::Boolean(_) | Typ::Unit(_) => Ok(self),
                 Typ::Enumeration { .. }    // no enumeration at this time: they are `NotDefinedYet`
                 | Typ::Structure { .. }    // no structure at this time: they are `NotDefinedYet`
-                | Typ::Any                 // users can not write `Any` type
-                | Typ::Polymorphism(_)     // users can not write `Polymorphism` type
-                 => unreachable!(),
+                | Typ::Any                 // users cannot write `Any` type
+                | Typ::Polymorphism(_)     // users cannot write `Polymorphism` type
+                 => noErrorDesc!(),
             }
     }
 }

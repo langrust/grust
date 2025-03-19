@@ -187,6 +187,7 @@ pub enum Item {
     Service(Service),
     Import(FlowImport),
     Export(FlowExport),
+    ExtFun(ExtFunDecl),
 }
 impl HasLoc for Item {
     fn loc(&self) -> Loc {
@@ -198,6 +199,7 @@ impl HasLoc for Item {
             Self::Service(s) => s.loc(),
             Self::Import(i) => i.loc(),
             Self::Export(e) => e.loc(),
+            Self::ExtFun(f) => f.loc(),
         }
     }
 }

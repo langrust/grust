@@ -134,6 +134,7 @@ pub use crate::{
     lnote,
     macro2,
     mk_new,
+    noErrorDesc,
     note,
     noteln,
     once_cell,

@@ -15,6 +15,11 @@ pub enum Expr {
         /// The identifier.
         identifier: Ident,
     },
+    /// An external path.
+    Path {
+        /// The path.
+        path: syn::Path,
+    },
     /// Some expression: `Some(x`.
     Some {
         /// The expression.
@@ -200,6 +205,10 @@ impl Expr {
             function: Self = function.into(),
             arguments: Vec<Self>,
         }
+        // FunctionCall: ext_function_call {
+        //     function: syn::Path = Either::Right(function),
+        //     arguments: Vec<Self>,
+        // }
         NodeCall: node_call {
             memory_ident: impl Into<Ident> = memory_ident.into(),
             node_identifier: impl Into<Ident> = node_identifier.into(),
@@ -245,6 +254,7 @@ impl Expr {
         match self {
             Literal { .. }
             | Identifier { .. }
+            | Path { .. }
             | Some { .. }
             | None { .. }
             | MemoryAccess { .. }
@@ -277,6 +287,7 @@ impl Expr {
             BinOp { .. } | IfThenElse { .. } | Lambda { .. } => true,
             Literal { .. }
             | Identifier { .. }
+            | Path { .. }
             | UnOp { .. }
             | Some { .. }
             | None { .. }
@@ -303,6 +314,9 @@ impl Expr {
             Self::Literal { literal } => literal.into_syn(),
             Self::Identifier { identifier } => {
                 parse_quote! { #identifier }
+            }
+            Self::Path { path } => {
+                parse_quote! { #path }
             }
             Self::Some { expr } => {
                 let syn_expr = expr.into_syn(crates);
@@ -345,6 +359,7 @@ impl Expr {
             }),
             Self::FunctionCall {
                 function,
+                // function: Either::Left(function),
                 arguments,
             } => {
                 let function_parens = function.as_function_requires_parens();
@@ -356,6 +371,13 @@ impl Expr {
                     parse_quote! { #function(#(#arguments),*) }
                 }
             }
+            // Self::FunctionCall {
+            //     function: Either::Right(function),
+            //     arguments,
+            // } => {
+            //     let arguments = arguments.into_iter().map(|expr| expr.into_syn(crates));
+            //     parse_quote! { #function(#(#arguments),*) }
+            // }
             Self::UnOp { op, expr } => {
                 let op = op.into_syn();
                 let expr = expr.into_syn(crates);

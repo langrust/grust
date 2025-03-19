@@ -46,6 +46,8 @@ pub enum SymbolKind {
         output_type: Option<Typ>,
         /// Function type.
         typing: Option<Typ>,
+        /// Path to rewrite calls to this function with.
+        path_opt: Option<syn::Path>,
     },
     /// Node kind.
     Node {
@@ -189,7 +191,7 @@ impl Symbol {
 }
 
 /// Key of symbol in the context table.
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash, Debug)]
 pub enum SymbolKey {
     Period,
     Deadline,
@@ -203,6 +205,7 @@ pub enum SymbolKey {
     Enumeration { name: Ident },
     EnumerationElement { name: Ident, enum_name: Ident },
     Array { name: Ident },
+    ExtFun { name: Ident },
 }
 /// Context table.
 pub struct Context {
@@ -525,6 +528,7 @@ impl Table {
         inputs: Vec<usize>,
         output_type: Option<Typ>,
         local: bool,
+        path_opt: Option<syn::Path>,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol = Symbol::new(
@@ -532,6 +536,7 @@ impl Table {
                 inputs,
                 output_type,
                 typing: None,
+                path_opt,
             },
             name,
         );
@@ -787,7 +792,7 @@ impl Table {
                 self.restore_context_from(locals.values());
                 self.restore_context_from(inits.values());
             }
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -824,7 +829,7 @@ impl Table {
             SymbolKind::Function { typing, .. } => typing
                 .as_ref()
                 .expect(&format!("{} should be typed", symbol.name)),
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -835,7 +840,7 @@ impl Table {
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Function { output_type, .. } => output_type.as_ref().expect("expect type"),
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -846,7 +851,7 @@ impl Table {
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Function { inputs, .. } => inputs,
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -860,7 +865,7 @@ impl Table {
                 .iter()
                 .map(|id| self.get_typ(*id).clone())
                 .collect_vec(),
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         };
 
         let symbol = self
@@ -878,7 +883,7 @@ impl Table {
                 *output_type = Some(new_type.clone());
                 *typing = Some(Typ::function(inputs_type, new_type))
             }
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -893,6 +898,17 @@ impl Table {
         }
     }
 
+    /// Function path, used to rewrite function calls for external functions.
+    pub fn try_get_function_path(&self, id: usize) -> Option<&syn::Path> {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::Function { path_opt, .. } => path_opt.as_ref(),
+            _ => None,
+        }
+    }
+
     // /// Get unitary node output type from identifier.
     // pub fn get_unitary_node_output_type(&self, id: usize) -> &Typ {
     //     let symbol = self
@@ -900,7 +916,7 @@ impl Table {
     //         .expect(&format!("expect symbol for {id}"));
     //     match symbol.kind() {
     //         SymbolKind::UnitaryNode { output, .. } => self.get_typ(*output),
-    //         _ => unreachable!(),
+    //         _ => noErrorDesc!(),
     //     }
     // }
 
@@ -911,7 +927,7 @@ impl Table {
     //         .expect(&format!("expect symbol for {id}"));
     //     match symbol.kind() {
     //         SymbolKind::UnitaryNode { output, .. } => self.get_name(*output),
-    //         _ => unreachable!(),
+    //         _ => noErrorDesc!(),
     //     }
     // }
 
@@ -922,7 +938,7 @@ impl Table {
     //         .expect(&format!("expect symbol for {id}"));
     //     match symbol.kind() {
     //         SymbolKind::UnitaryNode { output, .. } => *output,
-    //         _ => unreachable!(),
+    //         _ => noErrorDesc!(),
     //     }
     // }
 
@@ -943,7 +959,7 @@ impl Table {
     //                 .map(|id| (*id, inputs.contains(id)))
     //                 .collect()
     //         }
-    //         _ => unreachable!(),
+    //         _ => noErrorDesc!(),
     //     }
     // }
 
@@ -954,7 +970,7 @@ impl Table {
     //         .expect(&format!("expect symbol for {id}"));
     //     match symbol.kind() {
     //         SymbolKind::UnitaryNode { inputs, .. } => inputs,
-    //         _ => unreachable!(),
+    //         _ => noErrorDesc!(),
     //     }
     // }
 
@@ -970,7 +986,7 @@ impl Table {
                 }
                 *typing = Some(new_type)
             }
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -986,7 +1002,7 @@ impl Table {
                 }
                 *path = Some(new_path)
             }
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -997,7 +1013,7 @@ impl Table {
             .expect(&format!("expect symbol for {id}"));
         match &symbol.kind {
             SymbolKind::Flow { path, .. } => path.as_ref().unwrap(),
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -1016,7 +1032,7 @@ impl Table {
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Identifier { scope, .. } => scope,
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -1027,7 +1043,7 @@ impl Table {
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind {
             SymbolKind::Identifier { ref mut scope, .. } => *scope = new_scope,
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -1038,7 +1054,7 @@ impl Table {
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Node { inputs, .. } => inputs,
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -1049,7 +1065,7 @@ impl Table {
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Node { outputs, .. } => outputs,
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -1060,7 +1076,7 @@ impl Table {
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Node { eventful, .. } => *eventful,
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -1071,7 +1087,7 @@ impl Table {
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Node { period, .. } => *period,
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -1082,7 +1098,7 @@ impl Table {
             .expect(&format!("expect symbol for {node_id}"));
         match symbol.kind_mut() {
             SymbolKind::Node { period_id, .. } => *period_id = Some(timer_id),
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -1093,7 +1109,7 @@ impl Table {
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Node { period_id, .. } => *period_id,
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -1104,7 +1120,7 @@ impl Table {
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Flow { kind, .. } => kind.clone(),
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -1115,7 +1131,7 @@ impl Table {
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Flow { timer, .. } => timer.is_some(),
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -1129,7 +1145,7 @@ impl Table {
                 TimerKind::Deadline(_) => true,
                 _ => false,
             }),
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -1143,7 +1159,7 @@ impl Table {
                 TimerKind::Period(_) => true,
                 _ => false,
             }),
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -1159,7 +1175,7 @@ impl Table {
                 }
                 _ => false,
             }),
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -1173,7 +1189,7 @@ impl Table {
                 TimerKind::ServiceTimeout(_, _) => true,
                 _ => false,
             }),
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -1187,7 +1203,7 @@ impl Table {
                 TimerKind::ServiceDelay(_, _) => true,
                 _ => false,
             }),
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -1205,7 +1221,7 @@ impl Table {
                 }
                 _ => false,
             }),
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -1222,7 +1238,7 @@ impl Table {
                     _ => None,
                 })
                 .flatten(),
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -1233,7 +1249,7 @@ impl Table {
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Structure { fields, .. } => fields,
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -1244,7 +1260,7 @@ impl Table {
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Enumeration { elements, .. } => elements,
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -1271,7 +1287,7 @@ impl Table {
                 }
                 *array_type = Some(new_type)
             }
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -1284,7 +1300,7 @@ impl Table {
             SymbolKind::Array { array_type, size } => {
                 Typ::array(array_type.as_ref().expect("expect type").clone(), *size)
             }
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -1295,7 +1311,7 @@ impl Table {
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Array { array_type, .. } => array_type.as_ref().expect("expect type"),
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -1306,7 +1322,7 @@ impl Table {
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Array { size, .. } => *size,
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -1350,8 +1366,29 @@ impl Table {
         let symbol_hash = SymbolKey::Function { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
-            None => self.unknown_ident_error(name).dewrap(errors),
-            // bad!(errors, @name.loc() => ErrorKind::unknown_ident(name.to_string())),
+            None => {
+                let symbol_hash = SymbolKey::ExtFun { name: name.clone() };
+                match self.known_symbols.get_id(&symbol_hash, local) {
+                    Some(id) => Ok(id),
+                    None => {
+                        let mut current = &self.known_symbols;
+                        loop {
+                            for pair in current.current.iter() {
+                                println!("- {:?} => {}", pair.0, pair.1);
+                            }
+                            if let Some(next) = current.global_context.as_ref() {
+                                println!("next");
+                                current = &*next
+                            } else {
+                                break;
+                            }
+                        }
+                        self.unknown_ident_error(name)
+                            .err_note(|| note!(@name.span() => "bad"))
+                            .dewrap(errors)
+                    }
+                }
+            }
         }
     }
 

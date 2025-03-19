@@ -550,6 +550,7 @@ impl Ir0Store for Ast {
                 ir0::Item::ComponentImport(component) => component.store(symbol_table, errors),
                 ir0::Item::Function(function) => function.store(symbol_table, errors),
                 ir0::Item::Typedef(typedef) => typedef.store(symbol_table, errors),
+                ir0::Item::ExtFun(extfun) => extfun.store(symbol_table, errors),
                 ir0::Item::Service(_) | ir0::Item::Import(_) | ir0::Item::Export(_) => Ok(()),
             })
             .collect::<TRes<Vec<_>>>()?;
@@ -583,9 +584,48 @@ impl Ir0Store for ir0::Function {
 
         ctx.global();
 
-        let _ = ctx
-            .ctx0
-            .insert_function(self.ident.clone(), inputs, None, false, ctx.errors)?;
+        let _ =
+            ctx.ctx0
+                .insert_function(self.ident.clone(), inputs, None, false, None, ctx.errors)?;
+
+        Ok(())
+    }
+}
+
+impl Ir0Store for ir0::ExtFunDecl {
+    fn store(&self, symbol_table: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
+        let loc = self.loc();
+        let ctx = &mut ir1::ctx::WithLoc::new(loc, symbol_table, errors);
+        ctx.local();
+
+        let inputs = self
+            .args
+            .iter()
+            .map(
+                |ir0::Colon {
+                     left: ident,
+                     right: typ,
+                     ..
+                 }| {
+                    let typ = typ.clone().into_ir1(ctx)?;
+                    let id =
+                        ctx.ctx0
+                            .insert_identifier(ident.clone(), Some(typ), true, ctx.errors)?;
+                    Ok(id)
+                },
+            )
+            .collect::<TRes<Vec<_>>>()?;
+
+        ctx.global();
+
+        let _ = ctx.ctx0.insert_function(
+            self.ident.clone(),
+            inputs,
+            None,
+            false,
+            Some(self.path.clone()),
+            ctx.errors,
+        )?;
 
         Ok(())
     }

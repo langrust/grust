@@ -514,6 +514,7 @@ impl Error {
 
     pub fn to_diagnostic(self) -> macro1::Diagnostic {
         use macro1::*;
+        println!("error:\n{}", self.error().to_string());
         let (error_kind, notes) = self.val;
         let loc = self.loc.expect("error has no location >_<").unwrap();
         let mut d = Diagnostic::spanned(&[loc] as &[Span], Level::Error, error_kind.to_string());
@@ -687,6 +688,18 @@ macro_rules! error {
     // } => {
     //     $error.add_note_mut(note!(@ $loc => $($expr),*))
     // };
+}
+
+#[macro_export]
+macro_rules! noErrorDesc {
+    {} => {
+        panic!("[{}:{}] no error description available for this error", file!(), line!())
+    };
+    {
+        $($stuff:tt)*
+    } => {
+        panic!("[{}:{}] {}", file!(), line!(), format!($($stuff)*))
+    };
 }
 
 #[macro_export]

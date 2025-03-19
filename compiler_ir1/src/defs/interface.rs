@@ -426,7 +426,7 @@ impl FlowStatement {
                         // normalization)
                         let id = match &expr.kind {
                             flow::Kind::Ident { id } => *id,
-                            _ => unreachable!(),
+                            _ => noErrorDesc!(),
                         };
                         // get pattern's id
                         let mut ids = pattern.identifiers();
@@ -445,7 +445,7 @@ impl FlowStatement {
                         // normalization)
                         let id = match &expr.kind {
                             flow::Kind::Ident { id } => *id,
-                            _ => unreachable!(),
+                            _ => noErrorDesc!(),
                         };
 
                         // push in signals context
@@ -476,7 +476,7 @@ impl FlowStatement {
                                         flows_context.add_element(flow_name, ty);
                                     }
                                 }
-                                _ => unreachable!(),
+                                _ => noErrorDesc!(),
                             }
                         });
                     }

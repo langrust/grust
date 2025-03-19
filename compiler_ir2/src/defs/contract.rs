@@ -191,7 +191,7 @@ impl Term {
             }
             Self::MemoryAccess { identifier } => {
                 if function_like {
-                    unreachable!()
+                    noErrorDesc!()
                 } else {
                     let id = identifier.to_last_var();
                     if prophecy {
@@ -267,6 +267,14 @@ mk_new! { impl Contract => new {
 } }
 
 impl Contract {
+    pub fn empty() -> Self {
+        Self {
+            requires: Vec::with_capacity(0),
+            ensures: Vec::with_capacity(0),
+            invariant: Vec::with_capacity(0),
+        }
+    }
+
     pub fn into_syn(self, function_like: bool) -> Vec<syn::Attribute> {
         let mut attributes =
             Vec::with_capacity(self.requires.len() + self.ensures.len() + 2 * self.invariant.len());

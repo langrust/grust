@@ -60,7 +60,7 @@ macro_rules! tupleify {
     }
 }
 
-pub use compiler_common::import::*;
+pub use compiler_common::import::{noErrorDesc, *};
 pub use compiler_ir0::import::*;
 pub use compiler_ir1::import::*;
 
