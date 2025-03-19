@@ -35,17 +35,21 @@ impl Typing for File {
 
 impl Typing for Function {
     fn typ_check(&mut self, symbols: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
-        for stmt in self.statements.iter_mut() {
-            stmt.typ_check(symbols, errors)?;
+        if let Either::Left(body) = self.body_or_path.as_mut() {
+            for stmt in body.statements.iter_mut() {
+                stmt.typ_check(symbols, errors)?;
+            }
+            body.returned.typ_check(symbols, errors)?;
+            let expected_type = symbols.get_function_output_type(self.id);
+            // #TODO don't `unwrap` below
+            body.returned
+                .get_typ()
+                .unwrap()
+                .expect(self.loc, expected_type)
+                .dewrap(errors)
+        } else {
+            Ok(())
         }
-        self.returned.typ_check(symbols, errors)?;
-        let expected_type = symbols.get_function_output_type(self.id);
-        // #TODO don't `unwrap` below
-        self.returned
-            .get_typ()
-            .unwrap()
-            .expect(self.loc, expected_type)
-            .dewrap(errors)
     }
 }
 
@@ -140,7 +144,7 @@ impl Typing for contract::Term {
                     Typ::SMEvent { ty, .. } => {
                         symbols.set_type(*pattern, *ty.clone());
                     }
-                    _ => unreachable!(),
+                    _ => noErrorDesc!(),
                 };
                 typing
             }
@@ -654,7 +658,7 @@ impl Pattern {
 
                 match &typing {
                     Typ::SMEvent { ty, .. } => pattern.typ_check(&ty, symbols, errors)?,
-                    _ => unreachable!(),
+                    _ => noErrorDesc!(),
                 };
 
                 self.typing = Some(typing);
@@ -879,7 +883,7 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
                             )
                         }
                     }
-                    _ => unreachable!(),
+                    _ => noErrorDesc!(),
                 }
             }
             given_type => {

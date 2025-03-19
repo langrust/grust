@@ -1,13 +1,21 @@
 compiler_top::prelude! {}
 
+pub mod module {
+    pub fn add_isize(n: i64, m: i64) -> i64 {
+        n + m
+    }
+}
+
 #[test]
 fn should_compile_fibo() {
     let top: ir0::Top = parse_quote! {
         #![dump = "tests/macro_outputs/fibo.rs"]
 
+        fn module::add_isize(n: int, m: int) -> int;
+
         component next(i: int) -> (next_o: int) {
             init i = 1;
-            next_o = i + last i;
+            next_o = add_isize(i, last i);
         }
 
         component semi_fib(i: int) -> (o: int) {

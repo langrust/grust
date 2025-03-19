@@ -394,7 +394,7 @@ impl Typ {
                 parse_quote!(Option<#ty>)
             }
             Typ::NotDefinedYet(_) | Typ::Polymorphism(_) | Typ::Any => {
-                unreachable!()
+                noErrorDesc!()
             }
         }
     }
@@ -545,7 +545,7 @@ impl Typ {
     pub fn get_inputs<'a>(&'a self) -> impl Iterator<Item = &'a Typ> + 'a {
         match self {
             Typ::Abstract { inputs, .. } => inputs.iter(),
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
 
@@ -596,7 +596,7 @@ impl Typ {
                 ty: ty.clone(),
                 question_token: Token![?](event_token.span),
             },
-            _ => unreachable!(),
+            _ => noErrorDesc!(),
         }
     }
     /// Conversion from StateMachine types to FRP types.
@@ -618,7 +618,7 @@ impl Typ {
     /// ```
     pub fn rev_convert(&self) -> Self {
         match self {
-            Typ::Signal { .. } | Typ::Event { .. } => unreachable!(),
+            Typ::Signal { .. } | Typ::Event { .. } => noErrorDesc!(),
             Typ::SMEvent { ty, .. } => Typ::event((**ty).clone()),
             ty => Typ::signal(ty.clone()),
         }

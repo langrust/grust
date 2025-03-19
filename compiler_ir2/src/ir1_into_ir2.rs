@@ -178,7 +178,7 @@ pub fn memory_state_elements(
             match scope {
                 Scope::Input => Expr::input_access(ident),
                 Scope::Output | Scope::Local => Expr::ident(ident),
-                Scope::VeryLocal => unreachable!(),
+                Scope::VeryLocal => noErrorDesc!(),
             },
         ))
     }
@@ -261,7 +261,7 @@ mod term {
                             contract::Term::ident(Ident::new("result", name.loc().into()))
                         }
                         Scope::Local => contract::Term::ident(name.clone()),
-                        Scope::VeryLocal => unreachable!("you should not do that with this ident"),
+                        Scope::VeryLocal => noErrorDesc!("you should not do that with this ident"),
                     }
                 }
                 Kind::Last { signal_id, .. } => {
@@ -293,7 +293,7 @@ mod term {
                     Typ::SMEvent { .. } => {
                         contract::Term::some(contract::Term::ident(ctx.get_name(pattern).clone()))
                     }
-                    _ => unreachable!(),
+                    _ => noErrorDesc!(),
                 },
                 Kind::Application { fun_id, inputs, .. } => {
                     let function = ctx.get_name(fun_id).clone();
@@ -344,7 +344,11 @@ where
             Self::Identifier { id, .. } => {
                 let name = ctx.get_name(id).clone();
                 if ctx.is_function(id) {
-                    Expr::Identifier { identifier: name }
+                    if let Some(path) = ctx.try_get_function_path(id) {
+                        Expr::Path { path: path.clone() }
+                    } else {
+                        Expr::Identifier { identifier: name }
+                    }
                 } else {
                     let scope = ctx.get_scope(id);
                     match scope {
@@ -524,7 +528,7 @@ impl Ir1IntoIr2<&'_ mut ir0::Ctx> for ir1::File {
         let functions = self
             .functions
             .into_iter()
-            .map(|function| function.into_ir2(&ctx))
+            .filter_map(|function| function.into_ir2(&ctx))
             .map(Item::Function);
         items.extend(functions);
 
@@ -542,7 +546,7 @@ impl Ir1IntoIr2<&'_ mut ir0::Ctx> for ir1::File {
 }
 
 impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Function {
-    type Ir2 = Function;
+    type Ir2 = Option<Function>;
 
     fn into_ir2(self, ctx: &ir0::Ctx) -> Self::Ir2 {
         // get function name
@@ -558,25 +562,30 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Function {
         // get function output type
         let output = ctx.get_function_output_type(self.id).clone();
 
-        // Transforms into [ir2] statements
-        let mut statements = self
-            .statements
-            .into_iter()
-            .map(|statement| statement.into_ir2(ctx))
-            .collect_vec();
-        statements.push(Stmt::ExprLast {
-            expr: self.returned.into_ir2(ctx),
-        });
+        match self.body_or_path {
+            Either::Left(body) => {
+                // Transforms into [ir2] statements
+                let mut statements = body
+                    .statements
+                    .into_iter()
+                    .map(|statement| statement.into_ir2(ctx))
+                    .collect_vec();
+                statements.push(Stmt::ExprLast {
+                    expr: body.returned.into_ir2(ctx),
+                });
 
-        // transform contract
-        let contract = self.contract.into_ir2(ctx);
+                // transform contract
+                let contract = body.contract.into_ir2(ctx);
 
-        Function {
-            name,
-            inputs,
-            output,
-            body: Block { statements },
-            contract,
+                Some(Function {
+                    name,
+                    inputs,
+                    output,
+                    body: Block { statements },
+                    contract,
+                })
+            }
+            Either::Right(_) => None,
         }
     }
 }
@@ -626,11 +635,11 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Pattern {
             Kind::Default(loc) => Pattern::Default(loc),
             Kind::PresentEvent { event_id, pattern } => match ctx.get_typ(event_id) {
                 Typ::SMEvent { .. } => Pattern::some(pattern.into_ir2(ctx)),
-                _ => unreachable!(),
+                _ => noErrorDesc!(),
             },
             Kind::NoEvent { event_id } => match ctx.get_typ(event_id) {
                 Typ::SMEvent { .. } => Pattern::none(),
-                _ => unreachable!(),
+                _ => noErrorDesc!(),
             },
         }
     }
@@ -716,7 +725,7 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::stream::Expr {
                 let name = ctx.get_name(signal_id).clone();
                 ir2::Expr::MemoryAccess { identifier: name }
             }
-            RisingEdge { .. } => unreachable!(),
+            RisingEdge { .. } => noErrorDesc!(),
         }
     }
 

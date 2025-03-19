@@ -987,7 +987,7 @@ mod flow_instr {
                 (true, false) => source_instr(None),
                 (false, true) => timer_instr(),
                 (false, false) => {
-                    unreachable!("'timeout' should be activated by either its source or its timer")
+                    noErrorDesc!("'timeout' should be activated by either its source or its timer")
                 }
             }
         }
@@ -1119,7 +1119,7 @@ mod flow_instr {
                     // check if second activated
                     if_event_2
                 }
-                (false, false) => unreachable!("'merge' should be activated by one of its sources"),
+                (false, false) => noErrorDesc!("'merge' should be activated by one of its sources"),
             }
         }
 
@@ -1181,7 +1181,7 @@ mod flow_instr {
                             comp_inputs.push((input_name, input_expr));
                         }
                     }
-                    _ => unreachable!(), // normalized
+                    _ => noErrorDesc!(), // normalized
                 }
             });
 
@@ -1556,7 +1556,7 @@ mod from_synced {
             if let Some(import) = ctx.get_import(instr) {
                 ctx.handle_import(import.id)
             } else {
-                unreachable!()
+                crate::prelude::noErrorDesc!()
             }
         }
 

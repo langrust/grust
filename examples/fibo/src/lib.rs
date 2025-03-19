@@ -2,10 +2,18 @@
 
 use grust::grust;
 
+pub mod module {
+    pub fn add_i64(n: i64, m: i64) -> i64 {
+        n + m
+    }
+}
+
 grust! {
+    fn module::add_i64(n: int, m: int) -> int;
+
     component next(i: int) -> (next_o: int) {
         init i = 1;
-        next_o = i + last i;
+        next_o = add_i64(i, last i);
     }
 
     component semi_fib(i: int) -> (o: int) {

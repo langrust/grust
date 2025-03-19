@@ -30,6 +30,8 @@ impl Parse for Item {
             Ok(Item::Import(input.parse()?))
         } else if FlowExport::peek(input) {
             Ok(Item::Export(input.parse()?))
+        } else if ExtFunDecl::peek(input) {
+            Ok(Item::ExtFun(input.parse()?))
         } else {
             Err(input.error(
                 "expected either a flow import/export, a type, a component definition/import, \
@@ -479,6 +481,48 @@ mod interface {
                 kind,
                 typed_path,
                 semi_token,
+            })
+        }
+    }
+
+    impl ExtFunDecl {
+        pub fn peek(input: ParseStream) -> bool {
+            let forked = input.fork();
+            forked.parse::<syn::Token![fn]>().is_ok()
+        }
+    }
+    impl Parse for ExtFunDecl {
+        fn parse(input: ParseStream) -> syn::Res<Self> {
+            let fn_token: syn::Token![fn] = input.parse()?;
+            let path: syn::Path = input.parse()?;
+            let ident = if let Some(last) = path.segments.last() {
+                last.ident.clone()
+            } else {
+                return Err(syn::Error::new_spanned(path, "illegal function path"));
+            };
+            let content;
+            let args_paren = parenthesized!(content in input);
+            let args: Punctuated<Colon<Ident, Typ>, syn::Token![,]> =
+                Punctuated::parse_terminated(&content)?;
+            let arrow_token = input.parse()?;
+            let output_typ: Typ = input.parse()?;
+            let semi_token = input.parse()?;
+            let full_typ = Typ::Abstract {
+                paren_token: Some(args_paren),
+                inputs: args.iter().map(|pair| pair.right.clone()).collect(),
+                arrow_token: arrow_token,
+                output: Box::new(output_typ.clone()),
+            };
+            Ok(ExtFunDecl {
+                fn_token,
+                path,
+                ident,
+                args_paren,
+                args,
+                arrow_token,
+                output_typ,
+                semi_token,
+                full_typ,
             })
         }
     }

@@ -86,7 +86,7 @@ impl Memory {
                             new_buffer.ident = new_name.clone();
                             (new_name.clone(), new_buffer)
                         }
-                        Either::Right(_) => unreachable!(),
+                        Either::Right(_) => noErrorDesc!(),
                     }
                 } else {
                     (name.clone(), new_buffer)
@@ -108,7 +108,7 @@ impl Memory {
                                 },
                             ..
                         }) => (new_id.clone(), called_node.clone()),
-                        Either::Right(_) => unreachable!(),
+                        Either::Right(_) => noErrorDesc!(),
                     }
                 } else {
                     (memory_id.clone(), called_node.clone())
@@ -130,7 +130,7 @@ impl Memory {
                                 },
                             ..
                         }) => (new_id.clone(), ghost_node.clone()),
-                        Either::Right(_) => unreachable!(),
+                        Either::Right(_) => noErrorDesc!(),
                     }
                 } else {
                     (memory_id.clone(), ghost_node.clone())

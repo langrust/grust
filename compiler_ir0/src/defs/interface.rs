@@ -298,6 +298,41 @@ impl HasLoc for FlowExport {
     }
 }
 
+/// External function declaration.
+pub struct ExtFunDecl {
+    pub fn_token: syn::Token![fn],
+    /// Function's path.
+    pub path: syn::Path,
+    /// Function's identifier.
+    pub ident: Ident,
+    /// Argument delimiter.
+    pub args_paren: syn::token::Paren,
+    /// Arguments.
+    pub args: syn::Punctuated<Colon<Ident, Typ>, Token![,]>,
+    pub arrow_token: Token![->],
+    /// Co-domain.
+    pub output_typ: Typ,
+    /// Closing semicolon.
+    pub semi_token: Token![;],
+    pub full_typ: Typ,
+}
+impl ExtFunDecl {
+    pub fn args(&self) -> Vec<(Ident, Typ)> {
+        self.args
+            .iter()
+            .map(|p| (p.left.clone(), p.right.clone()))
+            .collect()
+    }
+    pub fn output_typ(&self) -> &Typ {
+        &self.output_typ
+    }
+}
+impl HasLoc for ExtFunDecl {
+    fn loc(&self) -> Loc {
+        Loc::from(self.fn_token.span).join(self.semi_token.span)
+    }
+}
+
 pub enum FlowStatement {
     Declaration(FlowDeclaration),
     Instantiation(FlowInstantiation),

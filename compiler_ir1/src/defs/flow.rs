@@ -195,7 +195,7 @@ impl Expr {
                     Typ::Signal { .. } => ir0::interface::FlowKind::Signal(Default::default()),
                     Typ::Event { .. } => ir0::interface::FlowKind::Event(Default::default()),
                     Typ::Tuple { .. } => panic!("tuple of flows can not be converted into flow"),
-                    _ => unreachable!(),
+                    _ => noErrorDesc!(),
                 };
                 let fresh_id = ctx.insert_fresh_flow(fresh_name, kind, typ.clone());
 

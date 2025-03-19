@@ -221,7 +221,7 @@ impl Stmt {
                     }) => {
                         *signal_id = new_id.clone();
                     }
-                    Either::Right(_) => unreachable!(),
+                    Either::Right(_) => noErrorDesc!(),
                 }
             }
         }
@@ -1146,7 +1146,7 @@ impl Expr {
                 expr.memorize(identifier_creator, memory, ctx)?;
             }
             stream::Kind::NoneEvent => (),
-            stream::Kind::RisingEdge { .. } => unreachable!(),
+            stream::Kind::RisingEdge { .. } => noErrorDesc!(),
         }
         Ok(())
     }
@@ -1266,7 +1266,7 @@ impl Expr {
 
                     (new_stmts, new_inits)
                 } else {
-                    unreachable!("internal error: rising edge should be detected on ident only")
+                    noErrorDesc!("internal error: rising edge should be detected on ident only")
                 }
             }
             stream::Kind::NodeApplication {
@@ -1450,7 +1450,7 @@ impl Expr {
                         }) => {
                             *memory_id = Some(*new_id);
                         }
-                        Either::Right(_) => unreachable!(),
+                        Either::Right(_) => noErrorDesc!(),
                     }
                 }
 
@@ -1491,7 +1491,7 @@ impl Expr {
                             self.dependencies =
                                 Dependencies::from(vec![(*new_id, Label::Weight(1))]);
                         }
-                        Either::Right(_) => unreachable!(),
+                        Either::Right(_) => noErrorDesc!(),
                     }
                 }
                 if let Some(element) = context_map.get(init_id) {
@@ -1506,11 +1506,11 @@ impl Expr {
                         }) => {
                             *init_id = *new_id;
                         }
-                        Either::Right(_) => unreachable!(),
+                        Either::Right(_) => noErrorDesc!(),
                     }
                 }
             }
-            stream::Kind::RisingEdge { .. } => unreachable!(),
+            stream::Kind::RisingEdge { .. } => noErrorDesc!(),
         }
     }
 }
