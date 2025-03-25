@@ -306,7 +306,7 @@ dependencies = [
 
 [[package]]
 name = "creusot-contracts"
-version = "0.4.0"
+version = "0.3.0"
 dependencies = [
  "creusot-contracts-dummy",
  "creusot-contracts-proc",
@@ -315,7 +315,7 @@ dependencies = [
 
 [[package]]
 name = "creusot-contracts-dummy"
-version = "0.4.0"
+version = "0.3.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -324,7 +324,7 @@ dependencies = [
 
 [[package]]
 name = "creusot-contracts-proc"
-version = "0.4.0"
+version = "0.3.0"
 dependencies = [
  "pearlite-syn",
  "proc-macro2",
@@ -909,7 +909,7 @@ dependencies = [
 
 [[package]]
 name = "pearlite-syn"
-version = "0.4.0"
+version = "0.3.0"
 dependencies = [
  "proc-macro2",
  "quote",
