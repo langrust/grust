@@ -9,7 +9,7 @@ impl NextState {
         NextState { last_i: 1i64 }
     }
     pub fn step(&mut self, input: NextInput) -> i64 {
-        let next_o = add_isize(input.i, self.last_i);
+        let next_o = module::add_isize(input.i, self.last_i);
         self.last_i = input.i;
         next_o
     }
