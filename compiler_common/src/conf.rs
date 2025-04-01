@@ -12,11 +12,12 @@ pub enum Propagation {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ComponentPara {
     None,
-    Rayon1,
-    Rayon2,
-    Rayon3,
-    Threads,
-    Mixed,
+    Para(para::WeightBounds),
+}
+impl Into<ComponentPara> for para::WeightBounds {
+    fn into(self) -> ComponentPara {
+        ComponentPara::Para(self)
+    }
 }
 impl Default for ComponentPara {
     fn default() -> Self {
@@ -24,24 +25,27 @@ impl Default for ComponentPara {
     }
 }
 impl ComponentPara {
-    pub fn is_none(self) -> bool {
-        match self {
-            Self::None => true,
-            Self::Rayon1 | Self::Rayon2 | Self::Rayon3 | Self::Threads | Self::Mixed => false,
-        }
+    pub fn none() -> Self {
+        Self::None
     }
-    pub fn is_rayon(self, cnd: bool) -> bool {
-        match self {
-            Self::None | Self::Threads => false,
-            Self::Rayon1 | Self::Rayon2 | Self::Rayon3 => true,
-            Self::Mixed => cnd,
-        }
+    pub fn rayon_mult(n: usize) -> Self {
+        para::WeightBounds::only_rayon_mult(n).into()
     }
-    pub fn has_threads(self) -> bool {
-        match self {
-            Self::Threads | Self::Mixed => true,
-            Self::None | Self::Rayon1 | Self::Rayon2 | Self::Rayon3 => false,
-        }
+    pub fn rayon() -> Self {
+        para::WeightBounds::only_rayon().into()
+    }
+    pub fn threads_div(n: usize) -> Self {
+        para::WeightBounds::only_threads_div(n).into()
+    }
+    pub fn threads() -> Self {
+        para::WeightBounds::only_threads().into()
+    }
+    pub fn mixed() -> Self {
+        para::WeightBounds::mixed().into()
+    }
+
+    pub fn decide(&self, weight: para::Weight, stmt_count: usize) -> para::Kind {
+        para::Kind::decide(self, weight, stmt_count)
     }
 }
 
@@ -194,12 +198,25 @@ mod parsing {
                     Self::StatsDepth(span, val)
                 }
                 "para" => Self::Para(span, true),
-                "component_para_none" => Self::ComponentPara(span, ComponentPara::None),
-                "component_para_threads" => Self::ComponentPara(span, ComponentPara::Threads),
-                "component_para_rayon1" => Self::ComponentPara(span, ComponentPara::Rayon1),
-                "component_para_rayon2" => Self::ComponentPara(span, ComponentPara::Rayon2),
-                "component_para_rayon3" => Self::ComponentPara(span, ComponentPara::Rayon3),
-                "component_para_mixed" => Self::ComponentPara(span, ComponentPara::Mixed),
+                "component_para_none" => Self::ComponentPara(span, ComponentPara::none()),
+                "component_para_threads" => Self::ComponentPara(span, ComponentPara::threads()),
+                "component_para_threads1" => {
+                    Self::ComponentPara(span, ComponentPara::threads_div(1))
+                }
+                "component_para_threads2" => {
+                    Self::ComponentPara(span, ComponentPara::threads_div(2))
+                }
+                "component_para_threads3" => {
+                    Self::ComponentPara(span, ComponentPara::threads_div(3))
+                }
+                "component_para_rayon" => Self::ComponentPara(span, ComponentPara::rayon()),
+                "component_para_rayon1" => Self::ComponentPara(span, ComponentPara::rayon_mult(1)),
+                "component_para_rayon2" => Self::ComponentPara(span, ComponentPara::rayon_mult(2)),
+                "component_para_rayon3" => Self::ComponentPara(span, ComponentPara::rayon_mult(3)),
+                "component_para_mixed" => Self::ComponentPara(span, ComponentPara::mixed()),
+                "component_para" => {
+                    Self::ComponentPara(span, para::WeightBounds::parse(input)?.into())
+                }
                 "pub" => Self::PubComponent(span, true),
                 "greusot" => Self::Greusot(span, true),
                 "test" => Self::Test(span, true),
