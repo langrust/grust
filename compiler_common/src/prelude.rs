@@ -139,6 +139,7 @@ pub use crate::{
     noteln,
     once_cell,
     op::{BOp, OtherOp, UOp},
+    para,
     petgraph,
     quote,
     res_vec,
