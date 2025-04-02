@@ -121,6 +121,12 @@ impl<E: PartialEq> PartialEq for Stmt<E> {
     }
 }
 
+impl<E: synced::HasWeight> synced::HasWeight for Stmt<E> {
+    fn weight(&self, wb: &synced::WeightBounds) -> synced::Weight {
+        self.expr.weight(wb)
+    }
+}
+
 impl ir1::stream::Stmt {
     /// Tell if it is in normal form.
     pub fn is_normal_form(&self) -> bool {

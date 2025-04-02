@@ -204,6 +204,59 @@ mk_new! { impl{E} Kind<E> =>
     Zip: zip { arrays: Vec<E> }
 }
 
+impl<E: synced::HasWeight> synced::HasWeight for Kind<E>
+where
+    Stmt<E>: synced::HasWeight,
+{
+    fn weight(&self, wb: &synced::WeightBounds) -> synced::Weight {
+        use synced::weight;
+        use Kind::*;
+
+        match self {
+            Constant { .. } | Identifier { .. } => weight::zero,
+            UnOp { expr, .. } => expr.weight(wb) + weight::lo,
+            BinOp { lft, rgt, .. } => lft.weight(wb) + rgt.weight(wb) + weight::lo,
+            IfThenElse { cnd, thn, els } => {
+                cnd.weight(wb) + (thn.weight(wb).max(els.weight(wb))) + weight::lo
+            }
+            Application { fun, inputs } => fun.weight(wb) + w8!(wb => sum inputs) + weight::hi,
+            Abstraction { expr, .. } => expr.weight(wb),
+            Structure { fields, .. } => w8!(sum fields, |(_, e)| e.weight(wb)) + weight::lo,
+            Enumeration { .. } => weight::zero,
+            Array { elements } | Tuple { elements } => w8!(wb => sum elements) + weight::mid,
+            Match { expr, arms } => {
+                expr.weight(wb)
+                    + arms
+                        .iter()
+                        .map(|(_, expr_opt, stmts, expr)| {
+                            w8!(wb => weight? expr_opt.as_ref())
+                                + w8!(wb => sum stmts)
+                                + expr.weight(wb)
+                        })
+                        .max()
+                        .unwrap_or(weight::zero)
+            }
+            FieldAccess { expr, .. } | TupleElementAccess { expr, .. } => expr.weight(wb),
+            Map { expr, fun } => {
+                // well, we can't do much without knowing the length of the array...
+                expr.weight(wb) + fun.weight(wb) + weight::hi
+            }
+            Fold { array, init, fun } => {
+                // still want to know the length of the array...
+                array.weight(wb) + fun.weight(wb) + init.weight(wb) + weight::hi
+            }
+            Sort { expr, fun } => {
+                // length of the array™, but sorting is expensive anyway
+                expr.weight(wb) * fun.weight(wb) + weight::hi
+            }
+            Zip { arrays } => {
+                // #lengthofthearrays
+                w8!(wb => sum arrays)
+            }
+        }
+    }
+}
+
 /// expression.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Expr {

@@ -131,7 +131,7 @@ mod service_handler {
             },
             Pattern,
         },
-        synced::{Builder, Synced},
+        synced::generic::{Builder, Synced},
     }
     use super::{clean_synced, flow_instr, from_synced};
 
@@ -1349,7 +1349,7 @@ mod from_synced {
         BTreeMap as Map,
         ir1::interface::{ FlowStatement, FlowDeclaration, FlowInstantiation },
         execution_machine::{ParaMethod, FlowInstruction},
-        synced::{ CtxSpec, Synced },
+        synced::generic::{ CtxSpec, Synced },
     }
 
     use super::flow_instr;
@@ -1585,7 +1585,7 @@ mod clean_synced {
 
     prelude! { just
         BTreeMap as Map,
-        synced::{ CtxSpec, Synced },
+        synced::generic::{ CtxSpec, Synced },
     }
 
     pub trait IsExport: CtxSpec {

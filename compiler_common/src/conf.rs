@@ -1,4 +1,8 @@
-prelude! {}
+//! Compiler configuration elements.
+
+prelude! {
+    synced::WeightBounds,
+}
 
 /// Services configuration for the propagation of
 /// events and signals changes.
@@ -12,9 +16,9 @@ pub enum Propagation {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ComponentPara {
     None,
-    Para(para::WeightBounds),
+    Para(WeightBounds),
 }
-impl Into<ComponentPara> for para::WeightBounds {
+impl Into<ComponentPara> for WeightBounds {
     fn into(self) -> ComponentPara {
         ComponentPara::Para(self)
     }
@@ -29,23 +33,31 @@ impl ComponentPara {
         Self::None
     }
     pub fn rayon_mult(n: usize) -> Self {
-        para::WeightBounds::only_rayon_mult(n).into()
+        WeightBounds::only_rayon_mult(n).into()
     }
     pub fn rayon() -> Self {
-        para::WeightBounds::only_rayon().into()
+        WeightBounds::only_rayon().into()
     }
     pub fn threads_div(n: usize) -> Self {
-        para::WeightBounds::only_threads_div(n).into()
+        WeightBounds::only_threads_div(n).into()
     }
     pub fn threads() -> Self {
-        para::WeightBounds::only_threads().into()
+        WeightBounds::only_threads().into()
     }
     pub fn mixed() -> Self {
-        para::WeightBounds::mixed().into()
+        WeightBounds::mixed().into()
     }
 
-    pub fn decide(&self, weight: para::Weight, stmt_count: usize) -> para::Kind {
-        para::Kind::decide(self, weight, stmt_count)
+    pub fn is_none(&self) -> bool {
+        if let Self::None = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn decide(&self, weight: synced::Weight) -> synced::Kind {
+        synced::Kind::decide(self, weight)
     }
 }
 
@@ -214,9 +226,7 @@ mod parsing {
                 "component_para_rayon2" => Self::ComponentPara(span, ComponentPara::rayon_mult(2)),
                 "component_para_rayon3" => Self::ComponentPara(span, ComponentPara::rayon_mult(3)),
                 "component_para_mixed" => Self::ComponentPara(span, ComponentPara::mixed()),
-                "component_para" => {
-                    Self::ComponentPara(span, para::WeightBounds::parse(input)?.into())
-                }
+                "component_para" => Self::ComponentPara(span, WeightBounds::parse(input)?.into()),
                 "pub" => Self::PubComponent(span, true),
                 "greusot" => Self::Greusot(span, true),
                 "test" => Self::Test(span, true),

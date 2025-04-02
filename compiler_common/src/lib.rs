@@ -35,7 +35,6 @@ pub mod conf;
 pub mod graph;
 pub mod keyword;
 pub mod op;
-pub mod para;
 pub mod serialize;
 pub mod synced;
 
