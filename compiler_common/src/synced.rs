@@ -38,9 +38,9 @@ pub mod weight {
         /// "Low" (sub-)expression weight.
         lo = 1,
         /// "Medium" (sub-)expression weight.
-        mid = 2,
+        mid = 4,
         /// "High" (sub-)expression weight.
-        hi = 3,
+        hi = 7,
     }
 
     /// Turns a usize into a [Weight].
