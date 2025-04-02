@@ -1,4 +1,10 @@
 //! Parallelization stuff.
+//!
+//! The [generic] sub-module contains a generic library to generate parallelization graphs from
+//! statement-dependencies graphs.
+//!
+//! This module deals with the notion of [Weight] and provides values basic [weight] quantities,
+//! such as the parallelization *bounds*.
 
 prelude! {
     conf::ComponentPara,
@@ -69,14 +75,31 @@ macro_rules! w8 {
     { $wb:expr => $id:ident $e:expr } => { $crate::w8!($id $e, |e| e.weight($wb)) };
 }
 
+/// *Weight bounds* define weight intervals that correspond to parallelization strategies.
+///
+/// # Intervals
+///
+/// | lower bound, inclusive | upper bound, exclusive |      [Kind]       |
+/// | :--------------------: | :--------------------: | :---------------: |
+/// |          `0`           |  [Self::no_para_ubx]   |    [Kind::Seq]    |
+/// |  [Self::no_para_ubx]   |   [Self::rayon_ubx]    | [Kind::FastRayon] |
+/// |   [Self::rayon_ubx]    |  [Self::threads_ubx]   |  [Kind::Threads]  |
+/// |  [Self::threads_ubx]   |          `∞`           |    [Kind::Seq]    |
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct WeightBounds {
+    /// Exclusive upper-bound for sequential codegen.
     no_para_ubx: Weight,
+    /// Exclusive upper-bound for rayon codegen.
     rayon_ubx: Weight,
+    /// Exclusive upper-bound for threads codegen.
     threads_ubx: Weight,
 }
 impl WeightBounds {
     /// Proc-macro parser.
+    ///
+    /// Parses either
+    /// - nothing, yields the default bounds;
+    /// - `(<usize>, <usize>, <usize>)` used as values for the [WeightBounds].
     pub fn parse(input: ParseStream) -> syn::Res<Self> {
         if input.peek(syn::token::Paren) {
             let content;
@@ -124,12 +147,14 @@ impl WeightBounds {
         }
     }
 
+    /// Default weight bounds.
     pub const DEFAULT: Self = Self {
-        no_para_ubx: 100,
-        rayon_ubx: 200,
-        threads_ubx: 10_000,
+        no_para_ubx: weight::no_para_ubx,
+        rayon_ubx: weight::rayon_ubx,
+        threads_ubx: weight::threads_ubx,
     };
 
+    /// Constructor.
     fn new(no_para_ubx: Weight, rayon_ubx: Weight, threads_ubx: Weight) -> Self {
         Self {
             no_para_ubx,
@@ -138,6 +163,9 @@ impl WeightBounds {
         }
     }
 
+    /// Only allows rayon with a *coefficient* `≠ 0`.
+    ///
+    /// The higher the *coefficient*, the **more expensive** statements must be to be rayon-ized.
     pub fn only_rayon_mult(n: usize) -> Self {
         debug_assert_ne!(n, 0);
         Self::new(
@@ -146,9 +174,14 @@ impl WeightBounds {
             Self::DEFAULT.rayon_ubx * n,
         )
     }
+    /// Only allows rayon.
     pub fn only_rayon() -> Self {
         Self::only_rayon_mult(1)
     }
+
+    /// Only allows rayon with a *coefficient* `≠ 0`.
+    ///
+    /// The higher the *coefficient*, the **cheaper** statements can be to be threads-ized.
     pub fn only_threads_div(n: usize) -> Self {
         debug_assert_ne!(n, 0);
         Self::new(
@@ -157,9 +190,11 @@ impl WeightBounds {
             Self::DEFAULT.threads_ubx,
         )
     }
+    /// Only allows threads.
     pub fn only_threads() -> Self {
         Self::only_threads_div(1)
     }
+    /// Allows threads and rayon.
     pub fn mixed() -> Self {
         Self::default()
     }
@@ -174,13 +209,16 @@ impl WeightBounds {
         self.threads_ubx
     }
 
+    /// True if the bounds allow rayon.
     pub fn has_rayon(&self) -> bool {
         self.no_para_ubx < self.rayon_ubx
     }
+    /// True if the bounds allow threads.
     pub fn has_threads(&self) -> bool {
         self.rayon_ubx < self.threads_ubx
     }
 
+    /// Returns the [Kind] corresponding to a [Weight], see [WeightBounds] for the intervals.
     pub fn decide(&self, weight: Weight) -> Kind {
         if weight < self.no_para_ubx {
             Kind::Seq
