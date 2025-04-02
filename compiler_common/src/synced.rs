@@ -31,7 +31,7 @@ pub mod weight {
         /// Weight under which we use rayon.
         rayon_ubx = 100,
         /// Weight under which we use threads, no parallelization for higher weights.
-        threads_ubx = 100_00,
+        threads_ubx = 10_000,
 
         /// "Zero" (sub-)expression weight.
         zero = 0,
