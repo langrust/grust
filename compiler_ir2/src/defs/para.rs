@@ -86,7 +86,7 @@
 prelude! {
     BTreeMap as Map,
     // BTreeSet as Set,
-    synced::Synced
+    synced::{generic::Synced, Weight, weight},
 }
 
 #[allow(unused_macros)]
@@ -97,94 +97,6 @@ macro_rules! token_show {
             println!("- {}", elm.to_token_stream());
         }
     };
-}
-
-/// A statement parallelization context.
-///
-/// This type implements [synced::CtxSpec], which lets us use [compiler_common::synced] features.
-pub struct Ctx<'a> {
-    /// Statement UID environment.
-    env: &'a Env<'a>,
-    /// Allows using threads.
-    with_threads: bool,
-}
-impl<'a> Ctx<'a> {
-    /// Constructor.
-    pub fn new(env: &'a Env<'a>, with_threads: bool) -> Self {
-        Self { env, with_threads }
-    }
-
-    /// Exclusive upper-bound weight for not parallelizing some statements.
-    const DONT_PARA_WEIGHT_UBX: usize = 10;
-    /// Exclusive upper-bound weight for parallelizing some statements using threads.
-    const RAYON_PARA_WEIGHT_UBX: usize = 20;
-    /// Maximum weight.
-    const INFINITY: usize = 1000;
-
-    /// True on edge labels that should be ignored, used in the [synced::CtxSpec] implementation.
-    pub fn ignore_edge(label: &graph::Label) -> bool {
-        !label.has_weight(0)
-    }
-
-    /// Computes the cost of an instruction, used in the [synced::CtxSpec] implementation.
-    pub fn instr_cost(&self, uid: usize) -> usize {
-        let stmt = self
-            .env
-            .repr_to_stmt
-            .get(&uid)
-            .expect("unknown instruction uid");
-        use ir1::stream::Kind;
-        match &stmt.expr.kind {
-            Kind::Expression { expr } => {
-                use ir1::expr::Kind;
-                match expr {
-                    Kind::Identifier { .. } => 0,
-                    _ => 10,
-                }
-            }
-            Kind::NodeApplication { .. } => {
-                if self.with_threads {
-                    20
-                } else {
-                    Self::INFINITY + 1
-                }
-            }
-            Kind::RisingEdge { .. } => 10,
-            Kind::Last { .. } => 0,
-            Kind::NoneEvent => 0,
-            Kind::SomeEvent { .. } => 0,
-        }
-    }
-
-    /// Cost of a sequence of statements, used in the implementation of [synced::CtxSpec].
-    pub fn sync_seq_cost(&self, seq: &[Synced<Self>]) -> usize {
-        seq.len() + seq.iter().map(|s| s.cost()).sum::<usize>()
-    }
-    /// Cost of some parallel statements, used in the implementation of [synced::CtxSpec].
-    pub fn sync_para_cost(&self, map: &BTreeMap<usize, Vec<Synced<Self>>>) -> usize {
-        let (max, count) = map.iter().fold((0, 0), |(max, count), (key, branches)| {
-            (std::cmp::max(max, *key), count + branches.len())
-        });
-        max + count
-    }
-}
-impl<'a> synced::CtxSpec for Ctx<'a> {
-    type Instr = usize;
-    type Cost = usize;
-    type Label = graph::Label;
-    const INVERTED_EDGES: bool = true;
-    fn ignore_edge(label: &Self::Label) -> bool {
-        Ctx::ignore_edge(label)
-    }
-    fn instr_cost(&self, uid: usize) -> usize {
-        self.instr_cost(uid)
-    }
-    fn sync_seq_cost(&self, seq: &[Synced<Self>]) -> usize {
-        self.sync_seq_cost(seq)
-    }
-    fn sync_para_cost(&self, map: &BTreeMap<usize, Vec<Synced<Self>>>) -> usize {
-        self.sync_para_cost(map)
-    }
 }
 
 /// Enumeration of the different kinds of parallelization.
@@ -241,6 +153,7 @@ pub struct Env<'a> {
     repr_to_stmt: Map<usize, &'a ir1::stream::Stmt>,
     /// Dependency graph between representative UIDs (labels/graph weights are irrelevant).
     graph: Graph,
+    weight_bounds: synced::WeightBounds,
 }
 impl<'a> Env<'a> {
     /// Applies `f` to all identifiers appearing in pattern `kind`.
@@ -306,12 +219,17 @@ impl<'a> Env<'a> {
     /// Builds the map between identifier UIDs and their representative (discussed in [Env]), the
     /// map between representatives and the corresponding statement, and the graph of dependency
     /// between representatives.
-    pub fn new(stmts: &'a Vec<ir1::stream::Stmt>, graph: &Graph) -> Result<Self, String> {
+    pub fn new(
+        stmts: &'a Vec<ir1::stream::Stmt>,
+        graph: &Graph,
+        weight_bounds: synced::WeightBounds,
+    ) -> Result<Self, String> {
         let graph = Self::graph_edge_tc(graph);
         let mut slf = Self {
             id_to_repr: Map::new(),
             repr_to_stmt: Map::new(),
             graph: Graph::new(),
+            weight_bounds,
         };
         for stmt in stmts {
             let mut repr = None;
@@ -353,11 +271,7 @@ impl<'a> Env<'a> {
     /// Generates the parallel code for the statements.
     pub fn to_stmts(&self, ctx: &ir0::Ctx) -> Result<Stmts, String> {
         let subset = self.repr_to_stmt.keys().cloned().collect();
-        let synced = Synced::new_with(
-            &Ctx::new(self, ctx.conf.component_para.has_threads()),
-            &self.graph,
-            subset,
-        )?;
+        let synced = Synced::new_with(self, &self.graph, subset)?;
         Stmts::of_synced(self, ctx, synced)
     }
 
@@ -379,6 +293,53 @@ impl<'a> Env<'a> {
         for (src, tgt) in &self.id_to_repr {
             println!("    {} ↦ {}", src, tgt);
         }
+    }
+
+    /// True on edge labels that should be ignored, used in the [synced::CtxSpec] implementation.
+    pub fn ignore_edge(label: &graph::Label) -> bool {
+        !label.has_weight(0)
+    }
+
+    /// Computes the cost of an instruction, used in the [synced::CtxSpec] implementation.
+    pub fn instr_cost(&self, uid: Weight) -> Weight {
+        let stmt = self
+            .repr_to_stmt
+            .get(&uid)
+            .expect("unknown instruction uid");
+        stmt.weight(&self.weight_bounds)
+    }
+
+    /// Cost of a sequence of statements, used in the implementation of [synced::CtxSpec].
+    pub fn sync_seq_cost(&self, seq: &[Synced<Self>]) -> Weight {
+        weight::from_usize(seq.len()) + w8!(sum seq, |seq| seq.cost())
+    }
+
+    /// Cost of some parallel statements, used in the implementation of [synced::CtxSpec].
+    pub fn sync_para_cost(&self, map: &BTreeMap<Weight, Vec<Synced<Self>>>) -> Weight {
+        let (max, count) = map.iter().fold(
+            (weight::zero, weight::zero),
+            |(max, count), (key, branches)| (max.max(*key), count + branches.len()),
+        );
+        weight::from_usize(max + count)
+    }
+}
+
+impl<'a> synced::generic::CtxSpec for Env<'a> {
+    type Instr = usize;
+    type Cost = Weight;
+    type Label = graph::Label;
+    const INVERTED_EDGES: bool = true;
+    fn ignore_edge(label: &Self::Label) -> bool {
+        Env::ignore_edge(label)
+    }
+    fn instr_cost(&self, uid: usize) -> usize {
+        self.instr_cost(uid)
+    }
+    fn sync_seq_cost(&self, seq: &[Synced<Self>]) -> usize {
+        self.sync_seq_cost(seq)
+    }
+    fn sync_para_cost(&self, map: &BTreeMap<usize, Vec<Synced<Self>>>) -> usize {
+        self.sync_para_cost(map)
     }
 }
 
@@ -592,6 +553,7 @@ impl Schedule {
             join,
             mut res,
         } = self;
+        let spawn = spawn.and_then(|vec| if vec.is_empty() { None } else { Some(vec) });
         // token_show!(
         //     spawn.as_ref().into_iter().map(|v| v.into_iter()).flatten(),
         //     "spawn:"
@@ -709,12 +671,12 @@ impl Stmts {
         ctx: &ir0::Ctx,
         graph: &Graph,
     ) -> Result<Self, String> {
-        if ctx.conf.component_para.is_none() {
-            Ok(Self::seq_of_ir1(stmts, ctx))
-        } else {
-            let env = Env::new(stmts, graph)?;
+        if let conf::ComponentPara::Para(weight_bounds) = ctx.conf.component_para {
+            let env = Env::new(stmts, graph, weight_bounds)?;
             // env.print(ctx);
             env.to_stmts(ctx)
+        } else {
+            Ok(Self::seq_of_ir1(stmts, ctx))
         }
     }
 
@@ -728,7 +690,7 @@ impl Stmts {
     }
 
     /// Constructor from an [Env] and some [Synced] data.
-    pub fn of_synced(env: &Env, ctx: &ir0::Ctx, synced: Synced<Ctx>) -> Result<Self, String> {
+    pub fn of_synced(env: &Env, ctx: &ir0::Ctx, synced: Synced<Env>) -> Result<Self, String> {
         match synced {
             Synced::Instr(id, _) => {
                 let stmt = env
@@ -761,50 +723,21 @@ impl Stmts {
                     //     weight,
                     //     para_mode.is_rayon(weight < Ctx::RAYON_PARA_WEIGHT_UBX)
                     // );
-                    use conf::ComponentPara;
-                    let (target, target_vars) = if Ctx::INFINITY <= weight {
-                        (&mut no_para, &mut no_para_vars)
-                    } else {
-                        match para_mode {
-                            ComponentPara::None => (&mut no_para, &mut no_para_vars),
-                            ComponentPara::Rayon1 => {
-                                if weight < Ctx::DONT_PARA_WEIGHT_UBX
-                                    || weight >= Ctx::RAYON_PARA_WEIGHT_UBX
-                                {
-                                    (&mut no_para, &mut no_para_vars)
-                                } else {
-                                    (&mut rayon, &mut rayon_vars)
-                                }
+                    use synced::Kind::*;
+                    let (target, target_vars) = {
+                        // println!("deciding for weight `{}`", weight);
+                        match para_mode.decide(weight) {
+                            Seq => {
+                                // println!("- Seq");
+                                (&mut no_para, &mut no_para_vars)
                             }
-                            ComponentPara::Rayon2 => {
-                                if weight < 2 * Ctx::DONT_PARA_WEIGHT_UBX {
-                                    (&mut no_para, &mut no_para_vars)
-                                } else {
-                                    (&mut rayon, &mut rayon_vars)
-                                }
+                            FastRayon | Rayon => {
+                                // println!("- FastRayon");
+                                (&mut rayon, &mut rayon_vars)
                             }
-                            ComponentPara::Rayon3 => {
-                                if weight < 3 * Ctx::DONT_PARA_WEIGHT_UBX {
-                                    (&mut no_para, &mut no_para_vars)
-                                } else {
-                                    (&mut rayon, &mut rayon_vars)
-                                }
-                            }
-                            ComponentPara::Threads => {
-                                if weight < Ctx::RAYON_PARA_WEIGHT_UBX {
-                                    (&mut no_para, &mut no_para_vars)
-                                } else {
-                                    (&mut threads, &mut threads_vars)
-                                }
-                            }
-                            ComponentPara::Mixed => {
-                                if weight < Ctx::DONT_PARA_WEIGHT_UBX {
-                                    (&mut no_para, &mut no_para_vars)
-                                } else if weight < Ctx::RAYON_PARA_WEIGHT_UBX {
-                                    (&mut rayon, &mut rayon_vars)
-                                } else {
-                                    (&mut threads, &mut threads_vars)
-                                }
+                            Threads => {
+                                // println!("- Threads");
+                                (&mut threads, &mut threads_vars)
                             }
                         }
                     };

@@ -139,7 +139,6 @@ pub use crate::{
     noteln,
     once_cell,
     op::{BOp, OtherOp, UOp},
-    para,
     petgraph,
     quote,
     res_vec,
@@ -149,8 +148,10 @@ pub use crate::{
     serde,
     stats::*,
     strum,
-    synced,
+    synced::{self, HasWeight},
+    todoo,
     typ::Typ,
+    w8,
 };
 
 /// Custom location type, wraps a [`Span`].
