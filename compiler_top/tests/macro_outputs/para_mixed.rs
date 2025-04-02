@@ -82,7 +82,9 @@ impl TestMixedState {
         }
     }
     pub fn step(&mut self, input: TestMixedInput) -> i64 {
-        let ((i1_1, i1_2), i1_3) = {
+        let ((i1_1, i1_2), i1_3) = std::thread::scope(|reserved_grust_thread_scope| {
+            let reserved_grust_thread_kid_0 = reserved_grust_thread_scope
+                .spawn(|| self.test_mixed_aux.step(TestMixedAuxInput { i: input.i }));
             let (i1_1, i1_2) = (
                 {
                     {
@@ -96,12 +98,12 @@ impl TestMixedState {
                 },
             );
             let i1_3 = {
-                {
-                    self.test_mixed_aux.step(TestMixedAuxInput { i: input.i })
-                }
+                reserved_grust_thread_kid_0
+                    .join()
+                    .expect("unexpected panic in sub-thread")
             };
             ((i1_1, i1_2), i1_3)
-        };
+        });
         let ((x, i2_1), (x_1, i2_2)) = std::thread::scope(|reserved_grust_thread_scope| {
             let reserved_grust_thread_kid_0 = reserved_grust_thread_scope.spawn(|| {
                 let x = (i1_1 + i1_2) - i1_3;

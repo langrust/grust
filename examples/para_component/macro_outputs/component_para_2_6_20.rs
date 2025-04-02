@@ -60,12 +60,12 @@ impl TestCustomAuxState {
                         )
                 };
                 (
-                    reserved_grust_rayon_opt_var_0.expect(
-                        "unreachable: fatal error in final rayon unwrap, unexpected `None` value",
-                    ),
-                    reserved_grust_rayon_opt_var_1.expect(
-                        "unreachable: fatal error in final rayon unwrap, unexpected `None` value",
-                    ),
+                    {
+                        reserved_grust_rayon_opt_var_0.expect("unreachable: fatal error in final rayon unwrap, unexpected `None` value")
+                    },
+                    {
+                        reserved_grust_rayon_opt_var_1.expect("unreachable: fatal error in final rayon unwrap, unexpected `None` value")
+                    },
                 )
             };
             (i3, (i1, i2), ())
@@ -171,12 +171,12 @@ impl TestCustomState {
                         )
                 };
                 (
-                    reserved_grust_rayon_opt_var_0.expect(
-                        "unreachable: fatal error in final rayon unwrap, unexpected `None` value",
-                    ),
-                    reserved_grust_rayon_opt_var_1.expect(
-                        "unreachable: fatal error in final rayon unwrap, unexpected `None` value",
-                    ),
+                    {
+                        reserved_grust_rayon_opt_var_0.expect("unreachable: fatal error in final rayon unwrap, unexpected `None` value")
+                    },
+                    {
+                        reserved_grust_rayon_opt_var_1.expect("unreachable: fatal error in final rayon unwrap, unexpected `None` value")
+                    },
                 )
             };
             let i1_3 = {

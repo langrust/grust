@@ -672,6 +672,7 @@ impl Stmts {
         graph: &Graph,
     ) -> Result<Self, String> {
         if let conf::ComponentPara::Para(weight_bounds) = ctx.conf.component_para {
+            // println!("wb: {:?}", weight_bounds);
             let env = Env::new(stmts, graph, weight_bounds)?;
             // env.print(ctx);
             env.to_stmts(ctx)
@@ -760,7 +761,7 @@ impl Stmts {
 
                 let rayon_is_empty = rayon.is_empty();
                 if !rayon_is_empty {
-                    if rayon.len() == 1 && threads.is_empty() {
+                    if rayon.len() == 1 {
                         paras.push((
                             ParaKind::None,
                             Vars::tuple_merge(rayon_vars.into_iter()),
@@ -776,7 +777,7 @@ impl Stmts {
                     }
                 }
 
-                if threads.len() == 1 && rayon_is_empty {
+                if threads.len() == 1 && paras.is_empty() {
                     paras.push((
                         ParaKind::None,
                         Vars::tuple_merge(threads_vars.into_iter()),
@@ -960,6 +961,7 @@ impl Stmts {
             let id = ids_rgt.pop().unwrap();
             parse_quote!(#id)
         };
+        let res: syn::Expr = tupleify!(tuple_unwrap);
         parse_quote! {{
             let #ids = {
                 #[allow(unused_imports)]
@@ -980,9 +982,7 @@ impl Stmts {
                         )
                     )
             };
-            (
-                #(#tuple_unwrap),*
-            )
+            #res
         }}
     }
 
