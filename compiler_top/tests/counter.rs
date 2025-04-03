@@ -17,11 +17,10 @@ fn should_compile_counter() {
         }
 
         component test() -> (y: int) {
-            init stop: bool = false;
+            init (stop, not_half) = (false, false);
             let stop: bool = y > 35;
             y = counter(last stop, half);
             let not_half: bool = !half;
-            init not_half: bool = false;
             let half: bool = last not_half;
         }
     };

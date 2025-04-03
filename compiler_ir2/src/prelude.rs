@@ -70,7 +70,7 @@ pub mod ir2 {
             block::Block,
             contract::{self, Contract},
             expression::*,
-            item::{self, Enumeration, Function, Import, Item, Structure},
+            item::{self, Enumeration, Function, Item, Structure},
             para,
             pattern::Pattern,
             project::Project,

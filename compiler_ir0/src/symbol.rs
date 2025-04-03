@@ -53,14 +53,14 @@ pub enum SymbolKind {
     Node {
         /// Node's input identifiers.
         inputs: Vec<usize>,
-        /// Eventful node.
-        eventful: bool,
         /// Node's output identifiers.
         outputs: Vec<(Ident, usize)>,
         /// Node's local identifiers.
-        locals: HashMap<Ident, usize>,
+        locals: Option<HashMap<Ident, usize>>,
         /// Node's initialized identifiers.
-        inits: HashMap<Ident, usize>,
+        inits: Option<HashMap<Ident, usize>>,
+        /// Path to call component from.
+        path_opt: Option<syn::Path>,
     },
     /// Service kind.
     Service,
@@ -546,19 +546,19 @@ impl Table {
         name: Ident,
         local: bool,
         inputs: Vec<usize>,
-        eventful: bool,
         outputs: Vec<(Ident, usize)>,
-        locals: HashMap<Ident, usize>,
-        inits: HashMap<Ident, usize>,
+        locals: Option<HashMap<Ident, usize>>,
+        inits: Option<HashMap<Ident, usize>>,
+        path_opt: Option<syn::Path>,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol = Symbol::new(
             SymbolKind::Node {
                 inputs,
-                eventful,
                 outputs,
                 locals,
                 inits,
+                path_opt,
             },
             name,
         );
@@ -782,8 +782,12 @@ impl Table {
             } => {
                 self.restore_context_from(inputs.iter());
                 self.restore_context_from(outputs.iter().map(|(_, id)| id));
-                self.restore_context_from(locals.values());
-                self.restore_context_from(inits.values());
+                if let Some(locals) = locals {
+                    self.restore_context_from(locals.values());
+                }
+                if let Some(inits) = inits {
+                    self.restore_context_from(inits.values());
+                }
             }
             _ => noErrorDesc!(),
         }
@@ -902,71 +906,6 @@ impl Table {
         }
     }
 
-    // /// Get unitary node output type from identifier.
-    // pub fn get_unitary_node_output_type(&self, id: usize) -> &Typ {
-    //     let symbol = self
-    //         .get_symbol(id)
-    //         .expect(&format!("expect symbol for {id}"));
-    //     match symbol.kind() {
-    //         SymbolKind::UnitaryNode { output, .. } => self.get_typ(*output),
-    //         _ => noErrorDesc!(),
-    //     }
-    // }
-
-    // /// Get unitary node output name from identifier.
-    // pub fn get_unitary_node_output_name(&self, id: usize) -> &String {
-    //     let symbol = self
-    //         .get_symbol(id)
-    //         .expect(&format!("expect symbol for {id}"));
-    //     match symbol.kind() {
-    //         SymbolKind::UnitaryNode { output, .. } => self.get_name(*output),
-    //         _ => noErrorDesc!(),
-    //     }
-    // }
-
-    // /// Get unitary node output identifier from identifier.
-    // pub fn get_unitary_node_output_id(&self, id: usize) -> usize {
-    //     let symbol = self
-    //         .get_symbol(id)
-    //         .expect(&format!("expect symbol for {id}"));
-    //     match symbol.kind() {
-    //         SymbolKind::UnitaryNode { output, .. } => *output,
-    //         _ => noErrorDesc!(),
-    //     }
-    // }
-
-    // /// Get unitary node hashmap of used inputs from identifier.
-    // pub fn get_unitary_node_used_inputs(&self, id: usize) -> HashMap<usize, bool> {
-    //     let symbol = self
-    //         .get_symbol(id)
-    //         .expect(&format!("expect symbol for {id}"));
-    //     match symbol.kind() {
-    //         SymbolKind::UnitaryNode {
-    //             mother_node,
-    //             inputs,
-    //             ..
-    //         } => {
-    //             let mother_node_inputs = self.get_node_inputs(*mother_node);
-    //             mother_node_inputs
-    //                 .iter()
-    //                 .map(|id| (*id, inputs.contains(id)))
-    //                 .collect()
-    //         }
-    //         _ => noErrorDesc!(),
-    //     }
-    // }
-
-    // /// Get unitary node input identifiers from identifier.
-    // pub fn get_unitary_node_inputs(&self, id: usize) -> &Vec<usize> {
-    //     let symbol = self
-    //         .get_symbol(id)
-    //         .expect(&format!("expect symbol for {id}"));
-    //     match symbol.kind() {
-    //         SymbolKind::UnitaryNode { inputs, .. } => inputs,
-    //         _ => noErrorDesc!(),
-    //     }
-    // }
-
     /// Set identifier's type.
     pub fn set_type(&mut self, id: usize, new_type: Typ) {
         let symbol = self
@@ -1062,17 +1001,6 @@ impl Table {
         }
     }
 
-    /// Tell if the node has events.
-    pub fn has_events(&self, id: usize) -> bool {
-        let symbol = self
-            .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
-        match symbol.kind() {
-            SymbolKind::Node { eventful, .. } => *eventful,
-            _ => noErrorDesc!(),
-        }
-    }
-
     /// Get flow's kind from identifier.
     pub fn get_flow_kind(&self, id: usize) -> FlowKind {
         let symbol = self
@@ -1081,6 +1009,17 @@ impl Table {
         match symbol.kind() {
             SymbolKind::Flow { kind, .. } => kind.clone(),
             _ => noErrorDesc!(),
+        }
+    }
+
+    /// Component path, used to rewrite component calls for external components.
+    pub fn try_get_comp_path(&self, id: usize) -> Option<&syn::Path> {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::Node { path_opt, .. } => path_opt.as_ref(),
+            _ => None,
         }
     }
 

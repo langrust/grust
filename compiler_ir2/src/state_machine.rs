@@ -22,6 +22,8 @@ pub enum StateElm<T> {
         memory_ident: Ident,
         /// Name of the node called.
         node_name: Ident,
+        /// Component's path.
+        path_opt: Option<syn::Path>,
     },
 }
 
@@ -33,6 +35,7 @@ mk_new! { impl{T} StateElm<T> =>
     CalledNode : called_node {
         memory_ident : impl Into<Ident> = memory_ident.into(),
         node_name : impl Into<Ident> = node_name.into(),
+        path_opt: Option<syn::Path>,
     }
 }
 
@@ -142,13 +145,21 @@ impl Init {
                     StateElmInit::CalledNode {
                         memory_ident,
                         node_name,
+                        path_opt,
                     } => {
                         let id = memory_ident;
                         let called_state_ty = Ident::new(
                             &to_camel_case(&format!("{}State", node_name)),
                             Span::call_site(),
                         );
-                        parse_quote! { #id : #called_state_ty::init () }
+
+                        if let Some(mut path) = path_opt {
+                            path.segments.pop();
+                            path.segments.push(called_state_ty.into());
+                            parse_quote! { #id : #path::init() }
+                        } else {
+                            parse_quote! { #id : #called_state_ty::init() }
+                        }
                     }
                 }
             })
@@ -338,11 +349,17 @@ impl State {
                 StateElm::CalledNode {
                     memory_ident,
                     node_name,
+                    path_opt,
                 } => {
                     let name = node_name.to_state_ty();
-                    let memory_ident = format_ident!("{memory_ident}");
 
-                    parse_quote! { #memory_ident : #name }
+                    if let Some(mut path) = path_opt {
+                        path.segments.pop();
+                        path.segments.push(name.into());
+                        parse_quote! { #memory_ident : #path}
+                    } else {
+                        parse_quote! { #memory_ident : #name }
+                    }
                 }
             })
             .collect();
@@ -414,6 +431,7 @@ mod test {
                 StateElmInit::called_node(
                     Loc::test_id("called_node_state"),
                     Loc::test_id("CalledNode"),
+                    None,
                 ),
             ],
             vec![],
@@ -424,6 +442,35 @@ mod test {
                 NodeState {
                     mem_i: 0i64,
                     called_node_state: CalledNodeState::init()
+                }
+            }
+        };
+        assert_eq!(init.into_syn(&mut Default::default()), control)
+    }
+
+    #[test]
+    fn should_create_rust_ast_associated_method_from_ir2_ext_node_init() {
+        let init = Init::new(
+            Loc::test_id("Node"),
+            vec![
+                StateElmInit::buffer(
+                    Loc::test_id("mem_i"),
+                    Expr::lit(Constant::int(parse_quote!(0i64))),
+                ),
+                StateElmInit::called_node(
+                    Loc::test_id("called_node_state"),
+                    Loc::test_id("CalledNode"),
+                    Some(parse_quote!(path::to::called_node)),
+                ),
+            ],
+            vec![],
+        );
+
+        let control = parse_quote! {
+            pub fn init() -> NodeState {
+                NodeState {
+                    mem_i: 0i64,
+                    called_node_state: path::to::CalledNodeState::init()
                 }
             }
         };
@@ -451,6 +498,7 @@ mod test {
                         Loc::test_id("called_node"),
                         Loc::test_id("CalledNodeInput"),
                         vec![],
+                        None,
                     ),
                 ),
             ]),
@@ -475,6 +523,60 @@ mod test {
             pub fn step(&mut self, input: NodeInput) -> i64 {
                 let o = self.mem_i;
                 let y = self.called_node_state.step(CalledNodeInput {});
+                self.mem_i = o + 1i64;
+                self.called_node_state = new_called_node_state;
+                o + y
+            }
+        };
+        assert_eq!(init.into_syn(&mut Default::default()), control)
+    }
+
+    #[test]
+    fn should_create_rust_ast_associated_method_from_ir2_ext_node_step() {
+        let init = Step {
+            contract: Default::default(),
+            node_name: Loc::test_id("Node"),
+            output_type: Typ::int(),
+            body: para::Stmts::seq_of_pairs(vec![
+                (
+                    Loc::test_id("o"),
+                    Expr::field_access(
+                        Expr::test_ident("self"),
+                        FieldIdentifier::named(Loc::test_id("mem_i")),
+                    ),
+                ),
+                (
+                    Loc::test_id("y"),
+                    Expr::node_call(
+                        Loc::test_id("called_node_state"),
+                        Loc::test_id("called_node"),
+                        Loc::test_id("CalledNodeInput"),
+                        vec![],
+                        Some(parse_quote!( path::to::called_node )),
+                    ),
+                ),
+            ]),
+            state_elements_step: vec![
+                StateElmStep::new(
+                    Loc::test_id("mem_i"),
+                    Expr::binop(
+                        BOp::Add,
+                        Expr::test_ident("o"),
+                        Expr::lit(Constant::Integer(parse_quote!(1i64))),
+                    ),
+                ),
+                StateElmStep::new(
+                    Loc::test_id("called_node_state"),
+                    Expr::test_ident("new_called_node_state"),
+                ),
+            ],
+            output: Expr::binop(BOp::Add, Expr::test_ident("o"), Expr::test_ident("y")),
+        };
+
+        let control = parse_quote! {
+            pub fn step(&mut self, input: NodeInput) -> i64 {
+                let o = self.mem_i;
+                let y = self.called_node_state.step(path::to::CalledNodeInput {});
                 self.mem_i = o + 1i64;
                 self.called_node_state = new_called_node_state;
                 o + y

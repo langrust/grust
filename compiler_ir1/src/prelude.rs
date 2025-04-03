@@ -17,7 +17,7 @@ pub use compiler_ir0::import::*;
 pub mod ir1 {
     pub use crate::{
         defs::{
-            component::{Component, ComponentDefinition, ComponentImport},
+            component::{Component, ComponentBody, ComponentSignature},
             contract::{self, Contract},
             ctx,
             dependencies::Dependencies,

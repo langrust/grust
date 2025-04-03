@@ -1,189 +1,97 @@
-prelude! {}
+prelude! { ir0::{Component, Colon} }
 
 pub trait Ir0Store {
     fn store(&self, table: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()>;
 }
 
-mod component {
-    prelude! {
-        ir0::{Component, ComponentImport, Colon},
-    }
+impl Ir0Store for Component {
+    /// Store node's signals in symbol table.
+    fn store(&self, symbol_table: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
+        let loc = self.loc();
+        let ctx = &mut ir1::ctx::WithLoc::new(loc, symbol_table, errors);
 
-    impl Ir0Store for Component {
-        /// Store node's signals in symbol table.
-        fn store(&self, symbol_table: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
-            let loc = self.loc();
-            let ctx = &mut ir1::ctx::WithLoc::new(loc, symbol_table, errors);
+        ctx.local();
 
-            ctx.local();
+        // store input signals and get their ids
+        let inputs = self
+            .args
+            .iter()
+            .map(
+                |Colon {
+                     left: ident,
+                     right: typ,
+                     ..
+                 }| {
+                    let typ = typ.clone().into_ir1(ctx)?;
+                    let id = ctx.ctx0.insert_signal(
+                        ident.clone(),
+                        Scope::Input,
+                        Some(typ),
+                        true,
+                        ctx.errors,
+                    )?;
+                    Ok(id)
+                },
+            )
+            .collect::<TRes<Vec<_>>>()?;
 
-            let eventful = self
-                    .args
-                    .iter()
-                    .any(|Colon { right: typ, .. }| typ.is_event());
+        // store outputs and get their ids
+        let outputs = self
+            .outs
+            .iter()
+            .map(
+                |Colon {
+                     left: ident,
+                     right: typ,
+                     ..
+                 }| {
+                    let typ = typ.clone().into_ir1(ctx)?;
+                    let id = ctx.ctx0.insert_signal(
+                        ident.clone(),
+                        Scope::Output,
+                        Some(typ),
+                        true,
+                        ctx.errors,
+                    )?;
+                    Ok((self.ident.clone(), id))
+                },
+            )
+            .collect::<TRes<Vec<_>>>()?;
 
-            // store input signals and get their ids
-            let inputs = self
-                .args
-                .iter()
-                .map(
-                    |Colon {
-                         left: ident,
-                         right: typ,
-                         ..
-                     }| {
-                        let typ = typ.clone().into_ir1(ctx)?;
-                        let id = ctx.ctx0.insert_signal(
-                            ident.clone(),
-                            Scope::Input,
-                            Some(typ),
-                            true,
-                            ctx.errors,
-                        )?;
-                        Ok(id)
-                    },
-                )
-                .collect::<TRes<Vec<_>>>()?;
+        // store locals and get their ids
+        let locals = {
+            let mut locals = HashMap::with_capacity(25);
+            for equation in self.equations.iter() {
+                equation.store_signals(false, &mut locals, ctx.ctx0, ctx.errors)?;
+            }
+            locals.shrink_to_fit();
+            locals
+        };
 
-            // store outputs and get their ids
-            let outputs = self
-                .outs
-                .iter()
-                .map(
-                    |Colon {
-                         left: ident,
-                         right: typ,
-                         ..
-                     }| {
-                        let typ = typ.clone().into_ir1(ctx)?;
-                        let id = ctx.ctx0.insert_signal(
-                            ident.clone(),
-                            Scope::Output,
-                            Some(typ),
-                            true,
-                            ctx.errors,
-                        )?;
-                        Ok((self.ident.clone(), id))
-                    },
-                )
-                .collect::<TRes<Vec<_>>>()?;
+        // store inits and get their ids
+        let inits = {
+            let mut inits = HashMap::with_capacity(5);
+            for equation in self.equations.iter() {
+                equation.store_inits(&mut inits, ctx.ctx0, ctx.errors)?;
+            }
+            inits.shrink_to_fit();
+            inits
+        };
 
-            // store locals and get their ids
-            let locals = {
-                let mut locals = HashMap::with_capacity(25);
-                for equation in self.equations.iter() {
-                    equation.store_signals(false, &mut locals, ctx.ctx0, ctx.errors)?;
-                }
-                locals.shrink_to_fit();
-                locals
-            };
+        ctx.global();
 
-            // store inits and get their ids
-            let inits = {
-                let mut inits = HashMap::with_capacity(5);
-                for equation in self.equations.iter() {
-                    equation.store_inits(&mut inits, ctx.ctx0, ctx.errors)?;
-                }
-                inits.shrink_to_fit();
-                inits
-            };
+        let _ = ctx.ctx0.insert_node(
+            self.ident.clone(),
+            false,
+            inputs,
+            outputs,
+            Some(locals),
+            Some(inits),
+            None,
+            ctx.errors,
+        )?;
 
-            ctx.global();
-
-            let _ = ctx.ctx0.insert_node(
-                self.ident.clone(),
-                false,
-                inputs,
-                eventful,
-                outputs,
-                locals,
-                inits,
-                ctx.errors,
-            )?;
-
-            Ok(())
-        }
-    }
-
-    impl Ir0Store for ComponentImport {
-        /// Store node's signals in symbol table.
-        fn store(&self, symbol_table: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
-            let loc = self.loc();
-            let ctx = &mut ir1::ctx::WithLoc::new(loc, symbol_table, errors);
-            ctx.local();
-
-            let last = self.path.clone().segments.pop().unwrap().into_value();
-            assert!(last.arguments.is_none());
-
-            let eventful = self
-                    .args
-                    .iter()
-                    .any(|Colon { right: typ, .. }| typ.is_event());
-
-            // store input signals and get their ids
-            let inputs = self
-                .args
-                .iter()
-                .map(
-                    |Colon {
-                         left: ident,
-                         right: typ,
-                         ..
-                     }| {
-                        let typ = typ.clone().into_ir1(ctx)?;
-                        let id = ctx.ctx0.insert_signal(
-                            ident.clone(),
-                            Scope::Input,
-                            Some(typ),
-                            true,
-                            ctx.errors,
-                        )?;
-                        Ok(id)
-                    },
-                )
-                .collect::<TRes<Vec<_>>>()?;
-
-            // store outputs and get their ids
-            let outputs = self
-                .outs
-                .iter()
-                .map(
-                    |Colon {
-                         left: ident,
-                         right: typ,
-                         ..
-                     }| {
-                        let typ = typ.clone().into_ir1(ctx)?;
-                        let id = ctx.ctx0.insert_signal(
-                            ident.clone(),
-                            Scope::Output,
-                            Some(typ),
-                            true,
-                            ctx.errors,
-                        )?;
-                        Ok((last.ident.clone(), id))
-                    },
-                )
-                .collect::<TRes<Vec<_>>>()?;
-
-            let locals = Default::default();
-            let inits = Default::default();
-
-            symbol_table.global();
-
-            let _ = symbol_table.insert_node(
-                last.ident.clone(),
-                false,
-                inputs,
-                eventful,
-                outputs,
-                locals,
-                inits,
-                errors,
-            )?;
-
-            Ok(())
-        }
+        Ok(())
     }
 }
 
@@ -534,10 +442,10 @@ impl Ir0Store for Ast {
             .iter()
             .map(|item| match item {
                 ir0::Item::Component(component) => component.store(symbol_table, errors),
-                ir0::Item::ComponentImport(component) => component.store(symbol_table, errors),
                 ir0::Item::Function(function) => function.store(symbol_table, errors),
                 ir0::Item::Typedef(typedef) => typedef.store(symbol_table, errors),
                 ir0::Item::ExtFun(extfun) => extfun.store(symbol_table, errors),
+                ir0::Item::ExtComp(extcomp) => extcomp.store(symbol_table, errors),
                 ir0::Item::Service(_) | ir0::Item::Import(_) | ir0::Item::Export(_) => Ok(()),
             })
             .collect::<TRes<Vec<_>>>()?;
@@ -610,6 +518,65 @@ impl Ir0Store for ir0::ExtFunDecl {
             inputs,
             None,
             false,
+            Some(self.path.clone()),
+            ctx.errors,
+        )?;
+
+        Ok(())
+    }
+}
+
+impl Ir0Store for ir0::ExtCompDecl {
+    fn store(&self, symbol_table: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
+        let loc = self.loc();
+        let ctx = &mut ir1::ctx::WithLoc::new(loc, symbol_table, errors);
+        ctx.local();
+
+        let inputs = self
+            .args
+            .iter()
+            .map(
+                |ir0::Colon {
+                     left: ident,
+                     right: typ,
+                     ..
+                 }| {
+                    let typ = typ.clone().into_ir1(ctx)?;
+                    let id =
+                        ctx.ctx0
+                            .insert_identifier(ident.clone(), Some(typ), true, ctx.errors)?;
+                    Ok(id)
+                },
+            )
+            .collect::<TRes<Vec<_>>>()?;
+
+        let outputs = self
+            .outs
+            .iter()
+            .map(
+                |ir0::Colon {
+                     left: ident,
+                     right: typ,
+                     ..
+                 }| {
+                    let typ = typ.clone().into_ir1(ctx)?;
+                    let id =
+                        ctx.ctx0
+                            .insert_identifier(ident.clone(), Some(typ), true, ctx.errors)?;
+                    Ok((self.ident.clone(), id))
+                },
+            )
+            .collect::<TRes<Vec<_>>>()?;
+
+        ctx.global();
+
+        let _ = ctx.ctx0.insert_node(
+            self.ident.clone(),
+            false,
+            inputs,
+            outputs,
+            None,
+            None,
             Some(self.path.clone()),
             ctx.errors,
         )?;

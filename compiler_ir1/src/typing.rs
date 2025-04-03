@@ -55,15 +55,15 @@ impl Typing for Function {
 
 impl Typing for Component {
     fn typ_check(&mut self, symbols: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
-        if let Component::Definition(comp_def) = self {
-            comp_def.typ_check(symbols, errors)
+        if let Either::Left(comp_body) = &mut self.body_or_path {
+            comp_body.typ_check(symbols, errors)
         } else {
             Ok(())
         }
     }
 }
 
-impl Typing for ComponentDefinition {
+impl Typing for ComponentBody {
     fn typ_check(&mut self, symbols: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         for init in self.inits.iter_mut() {
             init.typ_check(symbols, errors)?;

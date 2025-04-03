@@ -1,5 +1,6 @@
 //! Dependency graph.
 
+use itertools::Itertools;
 use std::ops::Deref;
 
 prelude! { graph::* }
@@ -88,9 +89,11 @@ impl<'a, 'g, 'p> GraphProcCtx<'a, 'g, 'p> {
 impl Component {
     /// Store nodes applications as dependencies.
     pub fn add_node_dependencies(&self, graph: &mut DiGraphMap<usize, ()>) {
-        match self {
-            Component::Definition(comp_def) => comp_def.add_node_dependencies(graph),
-            Component::Import(comp_import) => comp_import.add_node_dependencies(graph),
+        // add [self] as node in graph
+        graph.add_node(self.sign.id);
+        match &self.body_or_path {
+            Either::Left(body) => body.add_node_dependencies(self.sign.id, graph),
+            Either::Right(_) => (),
         }
     }
 
@@ -108,137 +111,128 @@ impl Component {
     /// }
     /// ```
     pub fn compute_dependencies(&mut self, ctx: &mut DepCtx) -> TRes<()> {
-        match self {
-            Component::Definition(comp_def) => comp_def.compute_dependencies(ctx),
-            Component::Import(comp_import) => Ok(comp_import.compute_dependencies(ctx)),
+        match &mut self.body_or_path {
+            Either::Left(body) => {
+                // create a graph with inputs
+                let mut graph = DiGraphMap::new();
+                self.sign.inputs_in_graph(&mut graph, ctx);
+                // create process manager with inputs
+                let mut process_manager = HashMap::new();
+                self.sign.inputs_in_proc(&mut process_manager, ctx);
+                // add dependencies
+                body.compute_dependencies(graph, process_manager, ctx)?;
+                // construct reduced graph
+                self.sign.construct_reduced_graph(&body.graph, ctx);
+                Ok(())
+            }
+            Either::Right(_) => {
+                // direct reduced graph (inputs -[0]-> outputs)
+                self.sign.construct_reduced_graph_ext(ctx);
+                Ok(())
+            }
         }
     }
 }
 
-impl ComponentImport {
-    /// Store nodes applications as dependencies.
-    pub fn add_node_dependencies(&self, graph: &mut DiGraphMap<usize, ()>) {
-        // add [self] as node in graph
-        graph.add_node(self.id);
-    }
-
-    /// Compute the dependency graph of the node.
-    ///
-    /// # Example
-    ///
-    /// ```GR
-    /// node test(i: int, j: int)
-    /// requires { j < i }  // i and j depend on each other
-    /// ensures  { j < o }  // o and j depend on each other
-    /// { // i depends on nothing
-    ///     out o: int = x; // depends on x
-    ///     x: int = i;     // depends on i
-    /// }
-    /// ```
-    pub fn compute_dependencies(&mut self, ctx: &mut DepCtx) {
-        // initiate graph
-        let mut graph = self.create_initialized_graph(ctx.ctx0);
-
-        // add output dependencies over inputs in graph
-        ctx.ctx0
-            .get_node_outputs(self.id)
-            .iter()
-            .for_each(|(_, output)| {
-                ctx.ctx0
-                    .get_node_inputs(self.id)
-                    .into_iter()
-                    .for_each(|input| {
-                        add_edge(&mut graph, *output, *input, Label::Weight(0));
-                    });
-            });
-
-        // set node's graph and reduced graph
-        self.graph = graph.clone();
-        ctx.reduced_graphs.insert(self.id, graph);
-    }
-
-    /// Create an initialized graph from a node.
-    ///
-    /// The created graph has every node's signals as vertices. But no edges are added.
-    fn create_initialized_graph(&self, ctx: &ir0::Ctx) -> Graph {
-        // create an empty graph
-        let mut graph = DiGraphMap::new();
-
+impl ComponentSignature {
+    /// Add inputs as vertices.
+    fn inputs_in_graph(&self, graph: &mut Graph, ctx: &ir0::Ctx) {
         // add input signals as vertices
         ctx.get_node_inputs(self.id).into_iter().for_each(|input| {
             graph.add_node(*input);
         });
+    }
 
-        // return graph
-        graph
+    /// Add inputs in process manager.
+    fn inputs_in_proc(&self, proc: &mut HashMap<usize, Color>, ctx: &ir0::Ctx) {
+        // add input signals with white color (unprocessed)
+        ctx.get_node_inputs(self.id).into_iter().for_each(|input| {
+            proc.insert(*input, Color::White);
+        });
+    }
+
+    /// Construct reduced graph, linking inputs to their dependent outputs.
+    fn construct_reduced_graph(&mut self, graph: &Graph, ctx: &mut DepCtx) {
+        let mut reduced_graph = DiGraphMap::new();
+
+        // add output dependencies over inputs in reduced graph
+        ctx.get_node_outputs(self.id)
+            .iter()
+            .for_each(|(_, output_id)| {
+                ctx.get_node_inputs(self.id).iter().for_each(|input_id| {
+                    let paths = petgraph::algo::all_simple_paths::<Vec<_>, _>(
+                        graph, *output_id, *input_id, 0, None,
+                    );
+                    for path in paths {
+                        if let Some(label) = path
+                            .into_iter()
+                            .tuple_windows()
+                            .map(|(a, b)| {
+                                graph.edge_weight(a, b).expect("their is a path...").clone()
+                            })
+                            .reduce(|l1, l2| l1.add(&l2))
+                        {
+                            add_edge(&mut reduced_graph, *output_id, *input_id, label);
+                        }
+                    }
+                })
+            });
+
+        self.reduced_graph = reduced_graph;
+        ctx.reduced_graphs
+            .insert(self.id, self.reduced_graph.clone());
+    }
+
+    /// Construct reduced graph, linking inputs to their dependent outputs.
+    fn construct_reduced_graph_ext(&mut self, ctx: &mut DepCtx) {
+        let mut reduced_graph = DiGraphMap::new();
+
+        // add output dependencies over inputs in reduced graph
+        ctx.get_node_outputs(self.id)
+            .iter()
+            .zip(ctx.get_node_inputs(self.id))
+            .for_each(|((_, output_id), input_id)| {
+                add_edge(&mut reduced_graph, *output_id, *input_id, Label::Weight(0));
+            });
+
+        self.reduced_graph = reduced_graph;
+        ctx.reduced_graphs
+            .insert(self.id, self.reduced_graph.clone());
     }
 }
 
-impl ComponentDefinition {
-    /// Create an initialized graph from a node.
-    ///
-    /// The created graph has every node's signals as vertices.
-    /// But no edges are added.
-    fn create_initialized_graph(&self, ctx: &ir0::Ctx) -> Graph {
-        // create an empty graph
-        let mut graph = DiGraphMap::new();
-
-        // add input signals as vertices
-        ctx.get_node_inputs(self.id)
-            .into_iter()
-            .filter(|id| !ctx.get_typ(**id).is_event()) // todo: is this important
-            .for_each(|input| {
-                graph.add_node(*input);
-            });
-
+impl ComponentBody {
+    /// Add locals and outputs as vertices.
+    fn defs_in_graph(&self, graph: &mut Graph) {
         // add other signals as vertices
         for statement in &self.statements {
-            let signals = statement.pattern.identifiers();
-            signals.iter().for_each(|signal| {
-                graph.add_node(*signal);
+            let signals = statement.get_identifiers();
+            signals.into_iter().for_each(|signal| {
+                graph.add_node(signal);
             });
         }
-
-        // return graph
-        graph
     }
 
-    /// Create an initialized process manager from a node.
-    fn create_initialized_process_manager(&self, ctx: &ir0::Ctx) -> HashMap<usize, Color> {
-        // create an empty hash
-        let mut hash = HashMap::new();
-
-        // add input signals with white color (unprocessed)
-        ctx.get_node_inputs(self.id)
-            .into_iter()
-            .filter(|id| !ctx.get_typ(**id).is_event())
-            .for_each(|input| {
-                hash.insert(*input, Color::White);
-            });
-
-        // add other signals with white color (unprocessed)
+    /// Add locals and outputs in process manager.
+    fn defs_in_proc(&self, proc: &mut HashMap<usize, Color>) {
+        // add other signals as vertices
         for statement in &self.statements {
             let signals = statement.get_identifiers();
-            signals.iter().for_each(|signal| {
-                hash.insert(*signal, Color::White);
+            signals.into_iter().for_each(|signal| {
+                proc.insert(signal, Color::White);
             });
         }
-
-        // return hash
-        hash
     }
 
     /// Store nodes applications as dependencies.
-    pub fn add_node_dependencies(&self, graph: &mut DiGraphMap<usize, ()>) {
-        // add [self] as node in graph
-        graph.add_node(self.id);
+    pub fn add_node_dependencies(&self, comp_id: usize, graph: &mut DiGraphMap<usize, ()>) {
         // add [self]->[called_nodes] as edges in graph
         let mut nodes = Vec::with_capacity(29);
         for stmt in self.statements.iter() {
             debug_assert!(nodes.is_empty());
             stmt.expr.get_called_nodes(&mut nodes);
             for id in nodes.drain(0..) {
-                graph.add_edge(self.id, id, ());
+                graph.add_edge(comp_id, id, ());
             }
         }
     }
@@ -256,24 +250,27 @@ impl ComponentDefinition {
     ///     x: int = i;     // depends on i
     /// }
     /// ```
-    pub fn compute_dependencies(&mut self, ctx: &mut DepCtx) -> TRes<()> {
-        // initiate graph
-        let mut graph = self.create_initialized_graph(ctx.ctx0);
+    pub fn compute_dependencies(
+        &mut self,
+        mut graph: Graph,
+        mut proc: HashMap<usize, Color>,
+        ctx: &mut DepCtx,
+    ) -> TRes<()> {
+        // initiate graph and proc with locals and outputs
+        self.defs_in_graph(&mut graph);
+        self.defs_in_proc(&mut proc);
 
         // complete contract dependency graphs
         self.add_contract_dependencies(&mut graph, ctx);
 
-        // complete contract dependency graphs
+        // complete dependency graph with equations
         {
             let mut ctx = ctx.as_graph_ctx(&mut graph);
-            self.add_equations_dependencies(&mut ctx)?;
+            self.add_equations_dependencies(&mut proc, &mut ctx)?;
         }
 
         // set node's graph
         self.graph = graph;
-
-        // construct reduced graph
-        self.construct_reduced_graph(ctx);
 
         Ok(())
     }
@@ -288,129 +285,21 @@ impl ComponentDefinition {
     ///     x: int = i;     // depends on i
     /// }
     /// ```
-    fn add_equations_dependencies(&self, ctx: &mut GraphCtx) -> TRes<()> {
-        let mut process_manager = self.create_initialized_process_manager(ctx.ctx0);
-
+    fn add_equations_dependencies(
+        &self,
+        proc: &mut HashMap<usize, Color>,
+        ctx: &mut GraphCtx,
+    ) -> TRes<()> {
         // scope for inner `ctx`
         {
-            let mut ctx = ctx.as_proc_ctx(&mut process_manager);
+            let mut ctx = ctx.as_proc_ctx(proc);
             // add local and output signals dependencies
             for s in self.statements.iter() {
                 s.add_dependencies(&mut ctx)?
             }
         }
 
-        // add input signals dependencies
-        ctx.ctx0
-            .get_node_inputs(self.id)
-            .iter()
-            .filter(|id| !ctx.ctx0.get_typ(**id).is_event()) // why?
-            .for_each(|signal| {
-                // get signal's color
-                let color = process_manager
-                    .get_mut(&signal)
-                    .expect("signal should be in processing manager");
-                // update status: processed
-                *color = Color::Black;
-            });
-
         Ok(())
-    }
-
-    fn construct_reduced_graph(&mut self, ctx: &mut DepCtx) {
-        ctx.reduced_graphs
-            .insert(self.id, self.create_initialized_graph(ctx.ctx0));
-
-        let mut process_manager = self.create_initialized_process_manager(ctx.ctx0);
-
-        // add output dependencies over inputs in reduced graph
-        ctx.ctx0
-            .get_node_outputs(self.id)
-            .iter()
-            .for_each(|(_, output_signal)| {
-                self.add_signal_dependencies_over_inputs(*output_signal, ctx, &mut process_manager)
-            });
-
-        // set node's reduced graph
-        self.reduced_graph = ctx.reduced_graphs.get(&self.id).unwrap().clone();
-    }
-
-    /// Add dependencies to node's inputs of a signal.
-    ///
-    /// # Example
-    ///
-    /// ```GR
-    /// node test(i: int) {
-    ///     out o: int = x; // depends on x which depends on input i
-    ///     x: int = i;     // depends on input i
-    /// }
-    /// ```
-    fn add_signal_dependencies_over_inputs(
-        &self,
-        signal: usize,
-        ctx: &mut DepCtx,
-        process_manager: &mut HashMap<usize, Color>,
-    ) {
-        // get signal's color
-        let color = process_manager.get_mut(&signal).expect(&format!(
-            "signal '{}' should be in process manager",
-            ctx.get_name(signal)
-        ));
-
-        match color {
-            Color::White => {
-                // update status: processing
-                *color = Color::Grey;
-
-                // for every neighbors, get inputs dependencies and add it as signal dependencies
-                for (_, neighbor_id, label1) in self.graph.edges(signal) {
-                    // tells if the neighbor is an input
-                    let is_input = ctx
-                        .get_node_inputs(self.id)
-                        .iter()
-                        .any(|input| neighbor_id.eq(input));
-
-                    if is_input {
-                        // get node's reduced graph (borrow checker)
-                        let reduced_graph = ctx.reduced_graphs.get_mut(&self.id).unwrap();
-                        // if input then add neighbor to reduced graph
-                        add_edge(reduced_graph, signal, neighbor_id, label1.clone());
-                        // and add its input dependencies (contract dependencies)
-                        self.graph
-                            .edges(neighbor_id)
-                            .for_each(|(_, input_id, label2)| {
-                                add_edge(reduced_graph, signal, input_id, label1.add(label2))
-                            });
-                    } else {
-                        // else compute neighbor's inputs dependencies
-                        self.add_signal_dependencies_over_inputs(neighbor_id, ctx, process_manager);
-
-                        // get node's reduced graph (borrow checker)
-                        let reduced_graph = ctx.reduced_graphs.get_mut(&self.id).unwrap();
-                        // `collect` into a graph because we're about to add edges to
-                        // `reduced_graph`
-                        let neighbor_edges = reduced_graph
-                            .edges(neighbor_id)
-                            .map(|(_, input_id, label)| (input_id, label.clone()))
-                            .collect_vec();
-
-                        // add dependencies as graph's edges:
-                        // s = e depends on i <=> s -> i
-                        neighbor_edges.into_iter().for_each(|(input_id, label2)| {
-                            add_edge(reduced_graph, signal, input_id, label1.add(&label2));
-                        })
-                    }
-                }
-
-                // get signal's color
-                let color = process_manager
-                    .get_mut(&signal)
-                    .expect("signal should be in processing manager");
-                // update status: processed
-                *color = Color::Black;
-            }
-            Color::Black | Color::Grey => (),
-        }
     }
 
     /// Add signal dependencies in contract.
