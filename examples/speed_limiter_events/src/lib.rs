@@ -125,7 +125,7 @@ grust! {
         on_state: SpeedLimiterOn,
         in_regulation: bool,
         state_update: bool,
-    ) @ 10 ms {
+    ) {
         let prev_state: SpeedLimiter = last state;
         let prev_on_state: SpeedLimiterOn = last on_state;
         init on_state = SpeedLimiterOn::StandBy;
