@@ -127,7 +127,7 @@ fn should_compile_speed_limiter_onchange() {
             on_state: SpeedLimiterOn,
             in_regulation: bool,
             state_update: bool,
-        ) @ 10 ms {
+        ) {
             init on_state = SpeedLimiterOn::StandBy;
             let prev_state: SpeedLimiter = last state;
             let prev_on_state: SpeedLimiterOn = last on_state;
