@@ -8,34 +8,47 @@ use super::memory::Memory;
 
 #[derive(Debug, Clone, PartialEq)]
 /// LanGRust component.
-pub enum Component {
-    Definition(ComponentDefinition),
-    Import(ComponentImport),
+pub struct Component {
+    /// Component's signature
+    pub sign: ComponentSignature,
+    /// Component's
+    pub body_or_path: Either<ComponentBody, syn::Path>,
 }
 impl Component {
-    pub fn get_graph(&self) -> &DiGraphMap<usize, Label> {
-        match self {
-            Component::Definition(comp_def) => &comp_def.graph,
-            Component::Import(comp_import) => &comp_import.graph,
+    pub fn new(
+        id: usize,
+        inits: Vec<ir1::stream::InitStmt>,
+        statements: Vec<ir1::stream::Stmt>,
+        contract: ir1::Contract,
+        loc: Loc,
+    ) -> Self {
+        Self {
+            sign: ComponentSignature::new(id, loc),
+            body_or_path: Either::Left(ComponentBody::new(inits, statements, contract)),
+        }
+    }
+
+    pub fn new_ext(id: usize, path: syn::Path, loc: Loc) -> Self {
+        Self {
+            sign: ComponentSignature::new(id, loc),
+            body_or_path: Either::Right(path),
+        }
+    }
+
+    pub fn get_graph(&self) -> Option<&DiGraphMap<usize, Label>> {
+        match &self.body_or_path {
+            Either::Left(body) => Some(&body.graph),
+            Either::Right(_) => None,
         }
     }
     pub fn get_reduced_graph(&self) -> &DiGraphMap<usize, Label> {
-        match self {
-            Component::Definition(comp_def) => &comp_def.reduced_graph,
-            Component::Import(comp_import) => &comp_import.graph,
-        }
+        &self.sign.reduced_graph
     }
     pub fn get_id(&self) -> usize {
-        match self {
-            Component::Definition(comp_def) => comp_def.id,
-            Component::Import(comp_import) => comp_import.id,
-        }
+        self.sign.id
     }
     pub fn get_location(&self) -> Loc {
-        match self {
-            Component::Definition(comp_def) => comp_def.loc,
-            Component::Import(comp_import) => comp_import.loc,
-        }
+        self.sign.loc
     }
 
     /// Check the causality of the component.
@@ -71,25 +84,31 @@ impl Component {
     /// }
     /// ```
     pub fn causal(&self, symbol_table: &Ctx, errors: &mut Vec<Error>) -> TRes<()> {
-        // construct component's subgraph containing only 0-label weight
-        let graph = self.get_graph();
-        let mut subgraph = graph.clone();
-        graph.all_edges().for_each(|(from, to, label)| match label {
-            Label::Weight(0) => (),
-            _ => {
-                let _label = subgraph.remove_edge(from, to);
-                debug_assert_ne!(_label, Some(Label::Weight(0)))
+        match &self.body_or_path {
+            Either::Left(body) => {
+                // construct component's subgraph containing only 0-label weight
+                let mut subgraph = body.graph.clone();
+                body.graph
+                    .all_edges()
+                    .for_each(|(from, to, label)| match label {
+                        Label::Weight(0) => (),
+                        _ => {
+                            let _label = subgraph.remove_edge(from, to);
+                            debug_assert_ne!(_label, Some(Label::Weight(0)))
+                        }
+                    });
+
+                // if a schedule exists, then the component is causal
+                let res = graph::toposort(&subgraph, None);
+                if let Err(signal) = res {
+                    let name = symbol_table.get_name(signal.node_id());
+                    bad!( errors, @self.get_location() => ErrorKind::signal_non_causal(name.to_string()) )
+                }
+
+                Ok(())
             }
-        });
-
-        // if a schedule exists, then the component is causal
-        let res = graph::toposort(&subgraph, None);
-        if let Err(signal) = res {
-            let name = symbol_table.get_name(signal.node_id());
-            bad!( errors, @self.get_location() => ErrorKind::signal_non_causal(name.to_string()) )
+            Either::Right(_) => Ok(()),
         }
-
-        Ok(())
     }
 
     /// Create memory for [ir1] component.
@@ -125,9 +144,9 @@ impl Component {
     /// }
     /// ```
     pub fn memorize(&mut self, symbol_table: &mut Ctx) -> Res<()> {
-        match self {
-            Component::Definition(comp_def) => comp_def.memorize(symbol_table),
-            Component::Import(_) => Ok(()),
+        match &mut self.body_or_path {
+            Either::Left(body) => body.memorize(symbol_table),
+            Either::Right(_) => Ok(()),
         }
     }
 
@@ -175,11 +194,9 @@ impl Component {
         nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
         symbol_table: &mut Ctx,
     ) {
-        match self {
-            Component::Definition(comp_def) => {
-                comp_def.normal_form(nodes_reduced_graphs, symbol_table)
-            }
-            Component::Import(_) => (),
+        match &mut self.body_or_path {
+            Either::Left(body) => body.normal_form(nodes_reduced_graphs, symbol_table),
+            Either::Right(_) => (),
         }
     }
 
@@ -206,11 +223,9 @@ impl Component {
         components: &HashMap<usize, Component>,
         symbol_table: &mut Ctx,
     ) {
-        match self {
-            Component::Definition(comp_def) => {
-                comp_def.inline_when_needed(components, symbol_table)
-            }
-            Component::Import(_) => (),
+        match &mut self.body_or_path {
+            Either::Left(body) => body.inline_when_needed(components, symbol_table),
+            Either::Right(_) => (),
         }
     }
 
@@ -246,14 +261,33 @@ impl Component {
         new_output_pattern: Option<stmt::Pattern>,
         symbol_table: &mut Ctx,
     ) -> (Vec<stream::Stmt>, Memory) {
-        match self {
-            Component::Definition(comp_def) => comp_def.instantiate_statements_and_memory(
-                identifier_creator,
-                inputs,
-                new_output_pattern,
-                symbol_table,
-            ),
-            Component::Import(_) => (vec![], Memory::new()),
+        match &self.body_or_path {
+            Either::Left(body) => {
+                // create the context with the given inputs
+                let mut context_map = inputs
+                    .iter()
+                    .map(|(input, expression)| (*input, Either::Right(expression.clone())))
+                    .collect::<HashMap<_, _>>();
+
+                // add output signals to context
+                new_output_pattern.map(|pattern| {
+                    let signals = pattern.identifiers();
+                    symbol_table
+                        .get_node_outputs(self.sign.id)
+                        .iter()
+                        .zip(signals)
+                        .for_each(|((_, output_id), new_output_id)| {
+                            context_map.insert(*output_id, Either::Left(new_output_id));
+                        })
+                });
+
+                body.instantiate_statements_and_memory(
+                    identifier_creator,
+                    context_map,
+                    symbol_table,
+                )
+            }
+            Either::Right(_) => (vec![], Memory::new()),
         }
     }
 
@@ -281,46 +315,68 @@ impl Component {
     /// }
     /// ```
     pub fn schedule(&mut self) {
-        match self {
-            Component::Definition(comp_defs) => comp_defs.schedule(),
-            Component::Import(_) => (),
+        match &mut self.body_or_path {
+            Either::Left(body) => body.schedule(),
+            Either::Right(_) => (),
+        }
+    }
+
+    /// Tell if it is in normal form.
+    pub fn is_normal_form(&self) -> bool {
+        match &self.body_or_path {
+            Either::Left(body) => body.is_normal_form(),
+            Either::Right(_) => true,
+        }
+    }
+
+    /// Tell if there is no component application.
+    pub fn no_component_application(&self) -> bool {
+        match &self.body_or_path {
+            Either::Left(body) => body.no_component_application(),
+            Either::Right(_) => true,
         }
     }
 }
 
 #[derive(Debug, Clone)]
 /// LanGRust component definition.
-pub struct ComponentDefinition {
-    /// Component identifier.
-    pub id: usize,
+pub struct ComponentBody {
     /// Component's initialization statements.
     pub inits: Vec<ir1::stream::InitStmt>,
     /// Component's statements.
     pub statements: Vec<ir1::stream::Stmt>,
     /// Component's contract.
     pub contract: ir1::Contract,
-    /// Component location.
-    pub loc: Loc,
-    /// Component dependency graph.
-    pub graph: DiGraphMap<usize, Label>,
-    /// Component reduced dependency graph.
-    pub reduced_graph: DiGraphMap<usize, Label>,
     /// Unitary component's memory.
     pub memory: Memory,
+    /// Component dependency graph.
+    pub graph: DiGraphMap<usize, Label>,
 }
 
-impl PartialEq for ComponentDefinition {
+impl PartialEq for ComponentBody {
     fn eq(&self, other: &Self) -> bool {
-        self.id == other.id
-            && self.inits == other.inits
+        self.inits == other.inits
             && self.statements == other.statements
             && self.contract == other.contract
-            && self.loc == other.loc
             && self.eq_graph(other)
     }
 }
 
-impl ComponentDefinition {
+impl ComponentBody {
+    pub fn new(
+        inits: Vec<ir1::stream::InitStmt>,
+        statements: Vec<ir1::stream::Stmt>,
+        contract: ir1::Contract,
+    ) -> Self {
+        Self {
+            inits,
+            statements,
+            contract,
+            graph: graph::DiGraphMap::new(),
+            memory: ir1::Memory::new(),
+        }
+    }
+
     /// Return vector of component's signals id.
     pub fn get_signals_id(&self) -> Vec<usize> {
         self.statements
@@ -339,7 +395,7 @@ impl ComponentDefinition {
             .collect()
     }
 
-    fn eq_graph(&self, other: &ComponentDefinition) -> bool {
+    fn eq_graph(&self, other: &ComponentBody) -> bool {
         let graph_nodes = self.graph.nodes();
         let other_nodes = other.graph.nodes();
         let graph_edges = self.graph.all_edges();
@@ -573,28 +629,9 @@ impl ComponentDefinition {
     pub fn instantiate_statements_and_memory(
         &self,
         identifier_creator: &mut IdentifierCreator,
-        inputs: &[(usize, stream::Expr)],
-        new_output_pattern: Option<stmt::Pattern>,
+        mut context_map: HashMap<usize, Either<usize, stream::Expr>>,
         symbol_table: &mut Ctx,
     ) -> (Vec<stream::Stmt>, Memory) {
-        // create the context with the given inputs
-        let mut context_map = inputs
-            .iter()
-            .map(|(input, expression)| (*input, Either::Right(expression.clone())))
-            .collect::<HashMap<_, _>>();
-
-        // add output signals to context
-        new_output_pattern.map(|pattern| {
-            let signals = pattern.identifiers();
-            symbol_table
-                .get_node_outputs(self.id)
-                .iter()
-                .zip(signals)
-                .for_each(|((_, output_id), new_output_id)| {
-                    context_map.insert(*output_id, Either::Left(new_output_id));
-                })
-        });
-
         // add identifiers of the inlined statements to the context
         self.statements.iter().for_each(|statement| {
             statement.add_necessary_renaming(identifier_creator, &mut context_map, symbol_table)
@@ -705,29 +742,35 @@ impl ComponentDefinition {
 
 #[derive(Debug, Clone)]
 /// LanGRust component import.
-pub struct ComponentImport {
+pub struct ComponentSignature {
     /// Component identifier.
     pub id: usize,
-    /// Component path.
-    pub path: syn::Path,
     /// Component location.
     pub loc: Loc,
-    /// Component dependency graph.
-    pub graph: DiGraphMap<usize, Label>,
+    /// Component reduced dependency graph.
+    pub reduced_graph: DiGraphMap<usize, Label>,
 }
 
-impl PartialEq for ComponentImport {
+impl PartialEq for ComponentSignature {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id && self.loc == other.loc && self.eq_graph(other)
     }
 }
 
-impl ComponentImport {
-    fn eq_graph(&self, other: &ComponentImport) -> bool {
-        let graph_nodes = self.graph.nodes();
-        let other_nodes = other.graph.nodes();
-        let graph_edges = self.graph.all_edges();
-        let other_edges = other.graph.all_edges();
+impl ComponentSignature {
+    pub fn new(id: usize, loc: Loc) -> Self {
+        Self {
+            id,
+            loc,
+            reduced_graph: graph::DiGraphMap::new(),
+        }
+    }
+
+    fn eq_graph(&self, other: &ComponentSignature) -> bool {
+        let graph_nodes = self.reduced_graph.nodes();
+        let other_nodes = other.reduced_graph.nodes();
+        let graph_edges = self.reduced_graph.all_edges();
+        let other_edges = other.reduced_graph.all_edges();
         graph_nodes.eq(other_nodes) && graph_edges.eq(other_edges)
     }
 }

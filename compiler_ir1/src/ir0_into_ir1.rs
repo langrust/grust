@@ -48,8 +48,8 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for Ast {
                     let _prev = exports.insert(id, ir1);
                     debug_assert!(_prev.is_none());
                 }
-                ir0::Item::ComponentImport(component) => components.push(component.into_ir1(ctx)?),
                 ir0::Item::ExtFun(ext) => functions.push(ext.into_ir1(ctx)?),
+                ir0::Item::ExtComp(extcomp) => components.push(extcomp.into_ir1(ctx)?),
             }
         }
 
@@ -391,6 +391,19 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ExtFunDecl {
     }
 }
 
+impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ExtCompDecl {
+    type Ir1 = ir1::Component;
+
+    // pre-condition: component and its inputs are already stored in symbol table
+    // post-condition: construct [ir1] component and check identifiers good use
+    fn into_ir1(self, ctx: &mut ctx::Simple) -> TRes<Self::Ir1> {
+        let loc = self.loc();
+        let id = ctx.ctx0.get_node_id(&self.ident, false, ctx.errors)?;
+
+        Ok(ir1::Component::new_ext(id, self.path, loc))
+    }
+}
+
 impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Component {
     type Ir1 = ir1::Component;
 
@@ -421,37 +434,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Component {
 
         ctx.global();
 
-        Ok(ir1::Component::Definition(ir1::ComponentDefinition {
-            id,
-            inits,
-            statements,
-            contract,
-            loc,
-            graph: graph::DiGraphMap::new(),
-            reduced_graph: graph::DiGraphMap::new(),
-            memory: ir1::Memory::new(),
-        }))
-    }
-}
-
-impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ComponentImport {
-    type Ir1 = ir1::Component;
-
-    // pre-condition: node and its signals are already stored in symbol table
-    // post-condition: construct [ir1] node
-    fn into_ir1(self, ctx: &mut ctx::Simple) -> TRes<Self::Ir1> {
-        let last = self.path.clone().segments.pop().unwrap().into_value();
-        assert!(last.arguments.is_none());
-
-        let loc = self.loc();
-        let id = ctx.ctx0.get_node_id(&last.ident, false, ctx.errors)?;
-
-        Ok(ir1::Component::Import(ir1::ComponentImport {
-            id,
-            path: self.path,
-            loc,
-            graph: graph::DiGraphMap::new(),
-        }))
+        Ok(ir1::Component::new(id, inits, statements, contract, loc))
     }
 }
 

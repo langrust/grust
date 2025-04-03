@@ -108,6 +108,8 @@ pub enum Expr {
         input_name: Ident,
         /// The filled input's fields.
         input_fields: Vec<(Ident, Self)>,
+        /// Path to call component from.
+        path_opt: Option<syn::Path>,
     },
     /// A named or unnamed field access: `my_point.x`.
     FieldAccess {
@@ -214,6 +216,7 @@ impl Expr {
             node_identifier: impl Into<Ident> = node_identifier.into(),
             input_name: impl Into<Ident> = input_name.into(),
             input_fields: Vec<(Ident, Self)>,
+            path_opt: Option<syn::Path>,
         }
         FieldAccess: field_access {
             expr: Self = expr.into(),
@@ -403,6 +406,7 @@ impl Expr {
                 memory_ident,
                 input_name,
                 input_fields,
+                path_opt,
                 ..
             } => {
                 let ident = memory_ident;
@@ -417,7 +421,14 @@ impl Expr {
                     .collect();
 
                 let input_name = input_name;
-                let argument: syn::ExprStruct = parse_quote! { #input_name { #(#input_fields),* }};
+
+                let argument: syn::ExprStruct = if let Some(mut path) = path_opt {
+                    path.segments.pop();
+                    path.segments.push(input_name.into());
+                    parse_quote! { #path { #(#input_fields),* }}
+                } else {
+                    parse_quote! { #input_name { #(#input_fields),* }}
+                };
 
                 syn::Expr::MethodCall(parse_quote! { #receiver.step (#argument) })
             }
@@ -723,9 +734,29 @@ mod test {
                     literal: Constant::Integer(parse_quote!(1i64)),
                 },
             )],
+            None,
         );
 
         let control = parse_quote! { self.node_state.step ( NodeInput { i : 1i64 }) };
+        assert_eq!(expression.into_syn(&mut Default::default()), control)
+    }
+
+    #[test]
+    fn should_create_rust_ast_method_call_from_ir2_node_call_with_path() {
+        let expression = Expr::node_call(
+            Loc::test_id("node_state"),
+            Loc::test_id("node"),
+            Loc::test_id("NodeInput"),
+            vec![(
+                Loc::test_id("i"),
+                Expr::Literal {
+                    literal: Constant::Integer(parse_quote!(1i64)),
+                },
+            )],
+            Some(parse_quote!( path::to::node )),
+        );
+
+        let control = parse_quote! { self.node_state.step ( path::to::NodeInput { i : 1i64 }) };
         assert_eq!(expression.into_syn(&mut Default::default()), control)
     }
 

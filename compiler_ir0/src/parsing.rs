@@ -16,9 +16,7 @@ impl<U: Parse, V: Parse> Parse for Colon<U, V> {
 
 impl Parse for Item {
     fn parse(input: ParseStream) -> Res<Self> {
-        if ComponentImport::peek(input) {
-            Ok(Item::ComponentImport(input.parse()?))
-        } else if Component::peek(input) {
+        if Component::peek(input) {
             Ok(Item::Component(input.parse()?))
         } else if Function::peek(input) {
             Ok(Item::Function(input.parse()?))
@@ -32,6 +30,8 @@ impl Parse for Item {
             Ok(Item::Export(input.parse()?))
         } else if ExtFunDecl::peek(input) {
             Ok(Item::ExtFun(input.parse()?))
+        } else if ExtCompDecl::peek(input) {
+            Ok(Item::ExtComp(input.parse()?))
         } else {
             Err(input.error(
                 "expected either a flow import/export, a type, a component definition/import, \
@@ -527,6 +527,48 @@ mod interface {
         }
     }
 
+    impl ExtCompDecl {
+        pub fn peek(input: ParseStream) -> bool {
+            let forked = input.fork();
+            let res = forked.parse::<Token![use]>().is_ok();
+            res && forked.parse::<keyword::component>().is_ok()
+        }
+    }
+    impl Parse for ExtCompDecl {
+        fn parse(input: ParseStream) -> syn::Res<Self> {
+            let use_token: Token![use] = input.parse()?;
+            let component_token: keyword::component = input.parse()?;
+            let path: syn::Path = input.parse()?;
+            let ident = if let Some(last) = path.segments.last() {
+                last.ident.clone()
+            } else {
+                return Err(syn::Error::new_spanned(path, "illegal function path"));
+            };
+            let content;
+            let args_paren = parenthesized!(content in input);
+            let args: Punctuated<Colon<Ident, Typ>, syn::Token![,]> =
+                Punctuated::parse_terminated(&content)?;
+            let arrow_token = input.parse()?;
+            let content;
+            let outs_paren = parenthesized!(content in input);
+            let outs: Punctuated<Colon<Ident, Typ>, syn::Token![,]> =
+                Punctuated::parse_terminated(&content)?;
+            let semi_token = input.parse()?;
+            Ok(ExtCompDecl {
+                use_token,
+                component_token,
+                path,
+                ident,
+                args_paren,
+                args,
+                arrow_token,
+                outs_paren,
+                outs,
+                semi_token,
+            })
+        }
+    }
+
     impl FlowStatement {
         pub fn peek(input: ParseStream) -> bool {
             FlowDeclaration::peek(input) || FlowInstantiation::peek(input)
@@ -605,94 +647,49 @@ mod interface {
     }
 }
 
-mod parse_component {
-    use super::*;
-
-    impl Component {
-        pub fn peek(input: ParseStream) -> bool {
-            input.peek(keyword::component)
-        }
-    }
-
-    impl Parse for Component {
-        fn parse(input: ParseStream) -> Res<Self> {
-            let component_token: keyword::component = input.parse()?;
-            let ident: Ident = input.parse()?;
-            let content;
-            let args_paren: token::Paren = parenthesized!(content in input);
-            let args: Punctuated<Colon<Ident, Typ>, Token![,]> =
-                Punctuated::parse_terminated(&content)?;
-            let arrow_token: Token![->] = input.parse()?;
-            let content;
-            let outs_paren: token::Paren = parenthesized!(content in input);
-            let outs: Punctuated<Colon<Ident, Typ>, Token![,]> =
-                Punctuated::parse_terminated(&content)?;
-            let contract: Contract = input.parse()?;
-            let content;
-            let brace: token::Brace = braced!(content in input);
-            let equations: Vec<ReactEq> = {
-                let mut equations = vec![];
-                while !content.is_empty() {
-                    equations.push(content.parse()?)
-                }
-                equations
-            };
-            Ok(Component {
-                component_token,
-                ident,
-                args_paren,
-                args,
-                arrow_token,
-                outs_paren,
-                outs,
-                contract,
-                brace,
-                equations,
-            })
-        }
-    }
-
-    impl ComponentImport {
-        pub fn peek(input: ParseStream) -> bool {
-            let forked = input.fork();
-            forked
-                .parse::<keyword::import>()
-                .and_then(|_| forked.parse::<keyword::component>())
-                .is_ok()
-        }
-    }
-
-    impl Parse for ComponentImport {
-        fn parse(input: ParseStream) -> Res<Self> {
-            let import_token: keyword::import = input.parse()?;
-            let component_token: keyword::component = input.parse()?;
-            let path: syn::Path = input.parse()?;
-            let colon_token: Token![:] = input.parse()?;
-            let content;
-            let args_paren: token::Paren = parenthesized!(content in input);
-            let args: Punctuated<Colon<Ident, Typ>, Token![,]> =
-                Punctuated::parse_terminated(&content)?;
-            let arrow_token: Token![->] = input.parse()?;
-            let content;
-            let outs_paren: token::Paren = parenthesized!(content in input);
-            let outs: Punctuated<Colon<Ident, Typ>, Token![,]> =
-                Punctuated::parse_terminated(&content)?;
-            let semi_token: Token![;] = input.parse()?;
-            Ok(ComponentImport {
-                import_token,
-                component_token,
-                path,
-                colon_token,
-                args_paren,
-                args,
-                arrow_token,
-                outs_paren,
-                outs,
-                semi_token,
-            })
-        }
+impl Component {
+    pub fn peek(input: ParseStream) -> bool {
+        input.peek(keyword::component)
     }
 }
+impl Parse for Component {
+    fn parse(input: ParseStream) -> Res<Self> {
+        let component_token: keyword::component = input.parse()?;
+        let ident: Ident = input.parse()?;
+        let content;
+        let args_paren: token::Paren = parenthesized!(content in input);
+        let args: Punctuated<Colon<Ident, Typ>, Token![,]> =
+            Punctuated::parse_terminated(&content)?;
+        let arrow_token: Token![->] = input.parse()?;
+        let content;
+        let outs_paren: token::Paren = parenthesized!(content in input);
+        let outs: Punctuated<Colon<Ident, Typ>, Token![,]> =
+            Punctuated::parse_terminated(&content)?;
+        let contract: Contract = input.parse()?;
+        let content;
+        let brace: token::Brace = braced!(content in input);
+        let equations: Vec<ReactEq> = {
+            let mut equations = vec![];
+            while !content.is_empty() {
+                equations.push(content.parse()?)
+            }
+            equations
+        };
+        Ok(Component {
+            component_token,
+            ident,
+            args_paren,
+            args,
+            arrow_token,
+            outs_paren,
+            outs,
+            contract,
+            brace,
+            equations,
+        })
+    }
+}
+
 impl Typedef {
     pub fn peek(input: ParseStream) -> bool {
         input.peek(Token![struct]) || input.peek(Token![enum]) || input.peek(keyword::array)
@@ -2437,13 +2434,6 @@ mod parsing_tests {
                 o = if res then 0 else (last o) + inc;
                 let inc: int = if tick then 1 else 0;
             }
-        };
-    }
-
-    #[test]
-    fn component_import() {
-        let _: ComponentImport = parse_quote! {
-            import component grust::grust_std::rising_edge: (test: bool) -> (res: bool);
         };
     }
 

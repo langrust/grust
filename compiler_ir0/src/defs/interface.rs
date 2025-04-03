@@ -298,6 +298,46 @@ impl HasLoc for FlowExport {
     }
 }
 
+/// External component declaration.
+pub struct ExtCompDecl {
+    pub use_token: Token![use],
+    pub component_token: keyword::component,
+    /// Component's path.
+    pub path: syn::Path,
+    /// Component's identifier.
+    pub ident: Ident,
+    /// Inputs delimiter.
+    pub args_paren: syn::token::Paren,
+    /// Component's inputs identifiers and their types.
+    pub args: syn::Punctuated<Colon<Ident, Typ>, Token![,]>,
+    pub arrow_token: Token![->],
+    /// Outputs delimiter.
+    pub outs_paren: syn::token::Paren,
+    /// Component's outputs identifiers and their types.
+    pub outs: syn::Punctuated<Colon<Ident, Typ>, Token![,]>,
+    /// Closing semicolon.
+    pub semi_token: Token![;],
+}
+impl ExtCompDecl {
+    pub fn inputs(&self) -> Vec<(Ident, Typ)> {
+        self.args
+            .iter()
+            .map(|p| (p.left.clone(), p.right.clone()))
+            .collect()
+    }
+    pub fn outputs(&self) -> Vec<(Ident, Typ)> {
+        self.outs
+            .iter()
+            .map(|p| (p.left.clone(), p.right.clone()))
+            .collect()
+    }
+}
+impl HasLoc for ExtCompDecl {
+    fn loc(&self) -> Loc {
+        Loc::from(self.component_token.span).join(self.semi_token.span)
+    }
+}
+
 /// External function declaration.
 pub struct ExtFunDecl {
     pub fn_token: syn::Token![fn],

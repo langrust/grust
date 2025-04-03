@@ -2,19 +2,26 @@
 
 use grust::grust;
 
-grust! {
-    import component counter: (res: bool, tick: bool) -> (o: int);
+mod utils {
+    use crate::grust;
 
-    function add(x: int, y: int) -> int {
-        let res: int = x + y;
-        return res;
+    grust! {
+        component counter(res: bool, tick: unit?) -> (o: int) {
+            let aux: int = when {
+                init => 0,
+                tick? => if res then 0 else 1 + last aux,
+            };
+            o = if res then 0 else aux;
+        }
     }
+}
 
-    component test() -> (y: int) {
+grust! {
+    use component utils::counter(res: bool, tick: unit?) -> (o: int);
+
+    component test(tick: unit?) -> (y: int) {
+        init stop = false;
         let stop: bool = y > 35;
-        init (stop, not_half) = (false, false);
-        y = counter(last stop, half);
-        let not_half: bool = !half;
-        let half: bool = last not_half;
+        y = counter(last stop, tick);
     }
 }

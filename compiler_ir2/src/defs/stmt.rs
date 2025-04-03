@@ -73,6 +73,7 @@ mod test {
                     Loc::test_id("i"),
                     Expr::lit(Constant::int(parse_quote!(1i64))),
                 )],
+                None,
             ),
         );
 

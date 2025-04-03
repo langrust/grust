@@ -24,122 +24,99 @@ pub trait Ir1IntoIr2<Ctx> {
 }
 
 impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Component {
-    type Ir2 = Item;
+    type Ir2 = Option<StateMachine>;
 
     fn into_ir2(self, ctx: &ir0::Ctx) -> Self::Ir2 {
-        match self {
-            ir1::Component::Definition(comp_def) => Item::StateMachine(comp_def.into_ir2(&ctx)),
-            ir1::Component::Import(comp_import) => Item::Import(comp_import.into_ir2(&ctx)),
-        }
-    }
-}
+        match self.body_or_path {
+            Either::Left(body) => {
+                // get node name
+                let name = ctx.get_name(self.sign.id);
 
-impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::ComponentDefinition {
-    type Ir2 = StateMachine;
+                // get node inputs
+                let inputs = ctx
+                    .get_node_inputs(self.sign.id)
+                    .into_iter()
+                    .map(|id| (ctx.get_name(*id).clone(), ctx.get_typ(*id).clone()));
 
-    fn into_ir2(self, ctx: &ir0::Ctx) -> Self::Ir2 {
-        // get node name
-        let name = ctx.get_name(self.id);
+                // get node output type
+                let outputs = ctx.get_node_outputs(self.sign.id);
+                let output_type = {
+                    iter_1! {
+                        outputs.iter(),
+                        |iter| Typ::tuple(
+                            iter.map(|(_, id)| ctx.get_typ(*id).clone()).collect()
+                        ),
+                        |just_one| ctx.get_typ(just_one.1).clone()
+                    }
+                };
 
-        // get node inputs
-        let inputs = ctx
-            .get_node_inputs(self.id)
-            .into_iter()
-            .map(|id| (ctx.get_name(*id).clone(), ctx.get_typ(*id).clone()));
+                // get node output expression
+                let output_expression = {
+                    iter_1! {
+                        outputs.iter(),
+                        |iter| Expr::Tuple {
+                            elements: iter.map(|(_, output_id)| Expr::Identifier {
+                                identifier: ctx.get_name(*output_id).clone(),
+                            }).collect()
+                        },
+                        |just_one| Expr::Identifier {
+                            identifier: ctx.get_name(just_one.1).clone(),
+                        },
+                    }
+                };
 
-        // get node output type
-        let outputs = ctx.get_node_outputs(self.id);
-        let output_type = {
-            iter_1! {
-                outputs.iter(),
-                |iter| Typ::tuple(
-                    iter.map(|(_, id)| ctx.get_typ(*id).clone()).collect()
-                ),
-                |just_one| ctx.get_typ(just_one.1).clone()
+                // get memory/state elements
+                let (elements, state_elements_init, state_elements_step) =
+                    memory_state_elements(body.memory, ctx);
+
+                // transform contract
+                let contract = body.contract.into_ir2(ctx);
+                let invariant_initialization = vec![]; // TODO
+
+                use state_machine::*;
+
+                // 'init' method
+                let init = Init::new(name.clone(), state_elements_init, invariant_initialization);
+
+                // 'step' method
+                let step = {
+                    let body = match para::Stmts::of_ir1(&body.statements, ctx, &body.graph) {
+                        Ok(stmts) => stmts,
+                        Err(e) => panic!(
+                            "failed to generate (step) synced body of component `{}`:\n{}",
+                            name, e
+                        ),
+                    };
+                    Step::new(
+                        name.clone(),
+                        output_type,
+                        body,
+                        state_elements_step,
+                        output_expression,
+                        contract,
+                    )
+                };
+
+                // 'input' structure
+                let input = Input {
+                    node_name: name.clone(),
+                    elements: inputs
+                        .into_iter()
+                        .map(|(identifier, typ)| InputElm::new(identifier, typ))
+                        .collect(),
+                };
+
+                // 'state' structure
+                let state = State {
+                    node_name: name.clone(),
+                    elements,
+                    step,
+                    init,
+                };
+
+                Some(StateMachine::new(name.clone(), input, state))
             }
-        };
-
-        // get node output expression
-        let outputs = ctx.get_node_outputs(self.id);
-        let output_expression = {
-            iter_1! {
-                outputs.iter(),
-                |iter| Expr::Tuple {
-                    elements: iter.map(|(_, output_id)| Expr::Identifier {
-                        identifier: ctx.get_name(*output_id).clone(),
-                    }).collect()
-                },
-                |just_one| Expr::Identifier {
-                    identifier: ctx.get_name(just_one.1).clone(),
-                },
-            }
-        };
-
-        // get memory/state elements
-        let (elements, state_elements_init, state_elements_step) =
-            memory_state_elements(self.memory, ctx);
-
-        // transform contract
-        let contract = self.contract.into_ir2(ctx);
-        let invariant_initialization = vec![]; // TODO
-
-        use state_machine::*;
-
-        // 'init' method
-        let init = Init::new(name.clone(), state_elements_init, invariant_initialization);
-
-        // 'step' method
-        let step = {
-            let body = match para::Stmts::of_ir1(&self.statements, ctx, &self.graph) {
-                Ok(stmts) => stmts,
-                Err(e) => panic!(
-                    "failed to generate (step) synced body of component `{}`:\n{}",
-                    ctx.get_name(self.id),
-                    e
-                ),
-            };
-            Step::new(
-                name.clone(),
-                output_type,
-                body,
-                state_elements_step,
-                output_expression,
-                contract,
-            )
-        };
-
-        // 'input' structure
-        let input = Input {
-            node_name: name.clone(),
-            elements: inputs
-                .into_iter()
-                .map(|(identifier, typ)| InputElm::new(identifier, typ))
-                .collect(),
-        };
-
-        // 'state' structure
-        let state = State {
-            node_name: name.clone(),
-            elements,
-            step,
-            init,
-        };
-
-        StateMachine::new(name.clone(), input, state)
-    }
-}
-
-impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::ComponentImport {
-    type Ir2 = Import;
-
-    fn into_ir2(self, ctx: &ir0::Ctx) -> Self::Ir2 {
-        // get node name
-        let name = ctx.get_name(self.id).clone();
-        let path = self.path;
-
-        Import {
-            name: name.clone(),
-            path,
+            Either::Right(_) => None,
         }
     }
 }
@@ -188,13 +165,16 @@ pub fn memory_state_elements(
         .for_each(|(memory_id, CalledNode { node_id, .. })| {
             let memory_name = ctx.get_name(memory_id);
             let node_name = ctx.get_name(node_id);
+            let path_opt = ctx.try_get_comp_path(node_id);
             elements.push(StateElmInfo::called_node(
                 memory_name.clone(),
                 node_name.clone(),
+                path_opt.cloned(),
             ));
             inits.push(StateElmInit::called_node(
                 memory_name.clone(),
                 node_name.clone(),
+                path_opt.cloned(),
             ));
         });
     mem.ghost_nodes
@@ -203,13 +183,16 @@ pub fn memory_state_elements(
         .for_each(|(memory_id, GhostNode { node_id, .. })| {
             let memory_name = ctx.get_name(memory_id);
             let node_name = ctx.get_name(node_id);
+            let path_opt = ctx.try_get_comp_path(node_id);
             elements.push(StateElmInfo::called_node(
                 memory_name.clone(),
                 node_name.clone(),
+                path_opt.cloned(),
             ));
             inits.push(StateElmInit::called_node(
                 memory_name.clone(),
                 node_name.clone(),
+                path_opt.cloned(),
             ));
         });
 
@@ -535,7 +518,8 @@ impl Ir1IntoIr2<&'_ mut ir0::Ctx> for ir1::File {
         let state_machines = self
             .components
             .into_iter()
-            .map(|component| component.into_ir2(&ctx));
+            .filter_map(|component| component.into_ir2(&ctx))
+            .map(Item::StateMachine);
         items.extend(state_machines);
 
         let execution_machines = self.interface.into_ir2(&mut ctx);
@@ -711,12 +695,14 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::stream::Expr {
                         name.span(),
                     )
                 };
-                ir2::Expr::NodeCall {
+                let path_opt = ctx.try_get_comp_path(called_node_id);
+                ir2::Expr::node_call(
                     memory_ident,
-                    node_identifier: name,
+                    name,
                     input_name,
                     input_fields,
-                }
+                    path_opt.cloned(),
+                )
             }
             Expression { expr } => expr.into_ir2(ctx),
             SomeEvent { expr } => ir2::Expr::some(expr.into_ir2(ctx)),

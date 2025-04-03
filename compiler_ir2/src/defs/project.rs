@@ -67,12 +67,6 @@ impl Project {
                         rust_items.push(syn::Item::Type(rust_ast_array_alias))
                     },
                 ),
-                Item::Import(import) => {
-                    stats.timed(format!("item #{}, import `{}`", idx, import.name), || {
-                        let rust_ast_import = import.into_syn();
-                        rust_items.push(syn::Item::Use(rust_ast_import))
-                    })
-                }
             });
 
         stats.timed("item dedup", || {

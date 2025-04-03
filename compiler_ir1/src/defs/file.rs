@@ -25,10 +25,6 @@ impl File {
     pub fn is_normal_form(&self) -> bool {
         self.components
             .iter()
-            .filter_map(|component| match component {
-                ir1::Component::Definition(comp_def) => Some(comp_def),
-                ir1::Component::Import(_) => None,
-            })
             .all(|component| component.is_normal_form())
     }
 
@@ -36,10 +32,6 @@ impl File {
     pub fn no_component_application(&self) -> bool {
         self.components
             .iter()
-            .filter_map(|component| match component {
-                ir1::Component::Definition(comp_def) => Some(comp_def),
-                ir1::Component::Import(_) => None,
-            })
             .all(|component| component.no_component_application())
     }
 

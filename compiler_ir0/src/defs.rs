@@ -127,27 +127,6 @@ impl HasLoc for Component {
     }
 }
 
-/// GRust component import AST.
-pub struct ComponentImport {
-    pub import_token: keyword::import,
-    pub component_token: keyword::component,
-    pub path: syn::Path,
-    pub colon_token: Token![:],
-    pub args_paren: syn::token::Paren,
-    /// Component's inputs identifiers and their types.
-    pub args: syn::Punctuated<Colon<Ident, Typ>, Token![,]>,
-    pub arrow_token: Token![->],
-    pub outs_paren: syn::token::Paren,
-    /// Component's outputs identifiers and their types.
-    pub outs: syn::Punctuated<Colon<Ident, Typ>, Token![,]>,
-    pub semi_token: Token![;],
-}
-impl HasLoc for ComponentImport {
-    fn loc(&self) -> Loc {
-        Loc::from(self.import_token.span).join(self.semi_token.span)
-    }
-}
-
 /// GRust function AST.
 pub struct Function {
     pub function_token: keyword::function,
@@ -172,7 +151,6 @@ impl HasLoc for Function {
 
 /// Things that can appear in a GRust program.
 pub enum Item {
-    ComponentImport(ComponentImport),
     /// GRust synchronous component.
     Component(Component),
     /// GRust function.
@@ -184,17 +162,18 @@ pub enum Item {
     Import(FlowImport),
     Export(FlowExport),
     ExtFun(ExtFunDecl),
+    ExtComp(ExtCompDecl),
 }
 impl HasLoc for Item {
     fn loc(&self) -> Loc {
         match self {
-            Self::ComponentImport(ci) => ci.loc(),
             Self::Component(c) => c.loc(),
             Self::Function(f) => f.loc(),
             Self::Typedef(t) => t.loc(),
             Self::Service(s) => s.loc(),
             Self::Import(i) => i.loc(),
             Self::Export(e) => e.loc(),
+            Self::ExtComp(c) => c.loc(),
             Self::ExtFun(f) => f.loc(),
         }
     }
