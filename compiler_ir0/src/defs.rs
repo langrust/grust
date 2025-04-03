@@ -115,8 +115,6 @@ pub struct Component {
     pub outs_paren: syn::token::Paren,
     /// Component's outputs identifiers and their types.
     pub outs: syn::Punctuated<Colon<Ident, Typ>, Token![,]>,
-    /// Component's computation period.
-    pub period: Option<(Token![@], syn::LitInt, keyword::ms)>,
     /// Component's contract.
     pub contract: Contract,
     pub brace: syn::token::Brace,
@@ -142,8 +140,6 @@ pub struct ComponentImport {
     pub outs_paren: syn::token::Paren,
     /// Component's outputs identifiers and their types.
     pub outs: syn::Punctuated<Colon<Ident, Typ>, Token![,]>,
-    /// Component's computation period.
-    pub period: Option<(Token![@], syn::LitInt, keyword::ms)>,
     pub semi_token: Token![;],
 }
 impl HasLoc for ComponentImport {

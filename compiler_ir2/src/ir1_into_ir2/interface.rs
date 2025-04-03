@@ -636,45 +636,7 @@ mod flow_instr {
                                 })
                             }
                             flow::Kind::ComponentCall { component_id, .. } => {
-                                let comp_name = symbols.get_name(*component_id).clone();
-                                // add optional period constraint
-                                if let Some(period) = symbols.get_node_period(*component_id) {
-                                    // add new timing event into the identifier creator
-                                    let fresh_name = identifier_creator.fresh_identifier(
-                                        comp_name.loc(),
-                                        "period",
-                                        &comp_name.to_string(),
-                                    );
-                                    let typing = Typ::event(Typ::unit());
-                                    let fresh_id =
-                                        symbols.insert_fresh_period(fresh_name.clone(), period);
-                                    symbols.set_node_period_id(*component_id, fresh_id);
-
-                                    // add timing_event in imports
-                                    let fresh_statement_id = symbols.get_fresh_id();
-                                    imports.insert(
-                                        fresh_statement_id,
-                                        FlowImport {
-                                            import_token: Default::default(),
-                                            id: fresh_id,
-                                            path: format_ident!("{fresh_name}").into(),
-                                            colon_token: Default::default(),
-                                            flow_type: typing,
-                                            semi_token: Default::default(),
-                                        },
-                                    );
-                                    // add timing_event in graph
-                                    service.graph.add_node(fresh_statement_id);
-                                    service.graph.add_edge(fresh_statement_id, stmt_id, ());
-
-                                    // push timing_event
-                                    stmts_timers.insert(stmt_id, fresh_id);
-                                    timing_events.push(TimingEvent {
-                                        identifier: fresh_name,
-                                        kind: TimingEventKind::Period(period.clone()),
-                                    })
-                                }
-                                components.push(comp_name)
+                                components.push(symbols.get_name(*component_id).clone())
                             }
                         }
                     }
@@ -1264,12 +1226,6 @@ mod flow_instr {
             match self.conf.propagation {
                 conf::Propagation::EventIsles => comp_call, // call component when activated by isle
                 conf::Propagation::OnChange => {
-                    // call component when activated by its period
-                    if let Some(period_id) = self.get_node_period_id(component_id) {
-                        if self.events.contains(&period_id) {
-                            return comp_call;
-                        }
-                    }
                     // call component when activated by inputs
                     FlowInstruction::if_activated(events, signals, comp_call, None)
                 }
