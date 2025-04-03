@@ -627,13 +627,6 @@ mod parse_component {
             let outs_paren: token::Paren = parenthesized!(content in input);
             let outs: Punctuated<Colon<Ident, Typ>, Token![,]> =
                 Punctuated::parse_terminated(&content)?;
-            let period: Option<(Token![@], LitInt, keyword::ms)> = {
-                if input.peek(Token![@]) {
-                    Some((input.parse()?, input.parse()?, input.parse()?))
-                } else {
-                    None
-                }
-            };
             let contract: Contract = input.parse()?;
             let content;
             let brace: token::Brace = braced!(content in input);
@@ -652,7 +645,6 @@ mod parse_component {
                 arrow_token,
                 outs_paren,
                 outs,
-                period,
                 contract,
                 brace,
                 equations,
@@ -685,13 +677,6 @@ mod parse_component {
             let outs_paren: token::Paren = parenthesized!(content in input);
             let outs: Punctuated<Colon<Ident, Typ>, Token![,]> =
                 Punctuated::parse_terminated(&content)?;
-            let period: Option<(Token![@], LitInt, keyword::ms)> = {
-                if input.peek(Token![@]) {
-                    Some((input.parse()?, input.parse()?, input.parse()?))
-                } else {
-                    None
-                }
-            };
             let semi_token: Token![;] = input.parse()?;
             Ok(ComponentImport {
                 import_token,
@@ -703,7 +688,6 @@ mod parse_component {
                 arrow_token,
                 outs_paren,
                 outs,
-                period,
                 semi_token,
             })
         }

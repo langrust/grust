@@ -17,12 +17,7 @@ mod component {
 
             ctx.local();
 
-            let period = self
-                .period
-                .as_ref()
-                .map(|(_, literal, _)| literal.base10_parse().unwrap());
-            let eventful = period.is_some()
-                || self
+            let eventful = self
                     .args
                     .iter()
                     .any(|Colon { right: typ, .. }| typ.is_event());
@@ -103,7 +98,6 @@ mod component {
                 outputs,
                 locals,
                 inits,
-                period,
                 ctx.errors,
             )?;
 
@@ -121,13 +115,7 @@ mod component {
             let last = self.path.clone().segments.pop().unwrap().into_value();
             assert!(last.arguments.is_none());
 
-            let period = self
-                .period
-                .as_ref()
-                .map(|(_, literal, _)| literal.base10_parse().unwrap());
-
-            let eventful = period.is_some()
-                || self
+            let eventful = self
                     .args
                     .iter()
                     .any(|Colon { right: typ, .. }| typ.is_event());
@@ -191,7 +179,6 @@ mod component {
                 outputs,
                 locals,
                 inits,
-                period,
                 errors,
             )?;
 
