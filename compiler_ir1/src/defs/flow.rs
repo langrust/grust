@@ -63,6 +63,13 @@ pub enum Kind {
         /// Input expressions.
         inputs: Vec<(usize, Expr)>,
     },
+    /// Function call.
+    FunctionCall {
+        /// Identifier to the function to call.
+        function_id: usize,
+        /// Input expressions.
+        inputs: Vec<(usize, Expr)>,
+    },
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -99,7 +106,7 @@ impl Expr {
                 dependencies.extend(expr_2.get_dependencies());
                 dependencies
             }
-            Kind::ComponentCall { inputs, .. } => inputs
+            Kind::ComponentCall { inputs, .. } | Kind::FunctionCall { inputs, .. } => inputs
                 .iter()
                 .flat_map(|(_, expr)| expr.get_dependencies())
                 .collect(),
@@ -117,7 +124,7 @@ impl Expr {
             | flow::Kind::OnChange { expr }
             | flow::Kind::Persist { expr } => expr.is_ident(),
             flow::Kind::Merge { expr_1, expr_2 } => expr_1.is_ident() && expr_2.is_ident(),
-            flow::Kind::ComponentCall { inputs, .. } => {
+            flow::Kind::ComponentCall { inputs, .. } | Kind::FunctionCall { inputs, .. } => {
                 inputs.iter().all(|(_, expr)| expr.is_ident())
             }
         }
@@ -171,7 +178,7 @@ impl Expr {
                 stmts.extend(expr_2.into_flow_call(identifier_creator, ctx));
                 stmts
             }
-            flow::Kind::ComponentCall { inputs, .. } => inputs
+            flow::Kind::ComponentCall { inputs, .. } | Kind::FunctionCall { inputs, .. } => inputs
                 .iter_mut()
                 .flat_map(|(_, expr)| expr.into_flow_call(identifier_creator, ctx))
                 .collect(),

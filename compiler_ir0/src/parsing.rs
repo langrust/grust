@@ -307,15 +307,15 @@ mod interface {
         }
     }
 
-    impl Parse for ComponentCall {
+    impl Parse for Call {
         fn parse(input: ParseStream) -> syn::Res<Self> {
-            let ident_component: Ident = input.parse()?;
+            let ident: Ident = input.parse()?;
             let content;
             let paren_token: token::Paren = parenthesized!(content in input);
             let inputs: Punctuated<FlowExpression, Token![,]> =
                 Punctuated::parse_terminated(&content)?;
-            Ok(ComponentCall {
-                ident_component,
+            Ok(Call {
+                ident,
                 paren_token,
                 inputs,
             })
@@ -340,7 +340,7 @@ mod interface {
                 Ok(Self::merge(input.parse()?))
             } else if Time::peek(input) {
                 Ok(Self::time(input.parse()?))
-            } else if input.fork().call(ComponentCall::parse).is_ok() {
+            } else if input.fork().call(Call::parse).is_ok() {
                 Ok(Self::comp_call(input.parse()?))
             } else {
                 let ident: Ident = input.parse()?;

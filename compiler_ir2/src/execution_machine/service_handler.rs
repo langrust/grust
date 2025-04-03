@@ -386,6 +386,7 @@ pub enum FlowInstruction {
     IfActivated(Vec<Ident>, Vec<Ident>, Box<Self>, Option<Box<Self>>),
     ResetTimer(Ident, Ident),
     ComponentCall(Pattern, Ident, Vec<(Ident, Expression)>),
+    FunctionCall(Pattern, Ident, Vec<Expression>),
     HandleDelay(Vec<Ident>, Vec<MatchArm>),
     Seq(Vec<Self>),
     Para(BTreeMap<ParaMethod, Vec<Self>>),
@@ -397,188 +398,6 @@ impl FlowInstruction {
         } else {
             Self::Seq(vec)
         }
-    }
-
-    /// Transform [ir2] instruction on flows into statement.
-    pub fn into_syn_old(self, mut stats: StatsMut) -> Vec<syn::Stmt> {
-        let stmt = match self {
-            FlowInstruction::Let(ident, flow_expression) => {
-                let expression = flow_expression.into_syn();
-                parse_quote! { let #ident = #expression; }
-            }
-            FlowInstruction::InitEvent(ident) => {
-                let ident = ident.to_ref_var();
-                parse_quote! { let #ident = &mut None; }
-            }
-            FlowInstruction::UpdateEvent(ident, expr) => {
-                let ident = ident.to_ref_var();
-                let expression = expr.into_syn();
-                parse_quote! { *#ident = #expression; }
-            }
-            FlowInstruction::UpdateContext(ident, flow_expression) => {
-                let expression = flow_expression.into_syn();
-                parse_quote! { self.context.#ident.set(#expression); }
-            }
-            FlowInstruction::SendSignal(name, send_expr, instant) => {
-                let enum_ident = name.to_ty();
-                let send_expr = send_expr.into_syn();
-                let instant = if let Some(instant) = instant {
-                    instant.to_instant_var()
-                } else {
-                    Ident::instant_var()
-                };
-                parse_quote! { self.send_output(O::#enum_ident(#send_expr, #instant)).await?; }
-            }
-            FlowInstruction::SendEvent(name, event_expr, send_expr, instant) => {
-                let enum_ident = name.to_ty();
-                let event_expr = event_expr.into_syn();
-                let send_expr = send_expr.into_syn();
-                let instant = if let Some(instant) = instant {
-                    instant.to_instant_var()
-                } else {
-                    Ident::instant_var()
-                };
-                parse_quote! {
-                    if let Some(#name) = #event_expr {
-                        self.send_output(O::#enum_ident(#send_expr, #instant)).await?;
-                    }
-                }
-            }
-            FlowInstruction::IfThrottle(receiver_name, source_name, delta, instruction) => {
-                let receiver_ident = receiver_name;
-                let source_ident = source_name;
-                let delta = delta.into_syn();
-                let instructions =
-                    stats.timed_with("sub if throttle", |stats| instruction.into_syn_old(stats));
-
-                parse_quote! {
-                    if (self.context.#receiver_ident.get() - #source_ident).abs() >= #delta {
-                        #(#instructions)*
-                    }
-                }
-            }
-            FlowInstruction::IfChange(old_event_name, signal, then) => {
-                let old_event_ident = old_event_name;
-                let expr = signal.into_syn();
-                let then =
-                    stats.timed_with("then branch in if change", |stats| then.into_syn_old(stats));
-                parse_quote! {
-                    if self.context.#old_event_ident.get() != #expr {
-                        #(#then)*
-                    }
-                }
-            }
-            FlowInstruction::ResetTimer(timer_name, import_name) => {
-                let enum_ident = timer_name.to_ty();
-                let instant = import_name.to_instant_var();
-                parse_quote! { self.send_timer(T::#enum_ident, #instant).await?; }
-            }
-            FlowInstruction::ComponentCall(pattern, component_name, inputs_fields) => {
-                let outputs = pattern.into_syn();
-                let component_ident = component_name.to_field();
-                let component_input_name = component_ident.to_input_ty();
-
-                let input_fields =
-                    inputs_fields
-                        .into_iter()
-                        .map(|(field_name, input)| -> syn::FieldValue {
-                            let field_id = field_name;
-                            let expr: syn::Expr = input.into_syn();
-                            parse_quote! { #field_id : #expr }
-                        });
-
-                parse_quote! {
-                    let #outputs = self.#component_ident.step(
-                        #component_input_name {
-                            #(#input_fields),*
-                        }
-                    );
-                }
-            }
-            FlowInstruction::HandleDelay(input_flows, match_arms) => {
-                let input_flows = input_flows.iter().map(|name| -> syn::Expr {
-                    let ident = name;
-                    parse_quote! { self.input_store.#ident.take() }
-                });
-                let arms = match_arms
-                    .into_iter()
-                    .map(|arm| arm.into_syn(stats.as_mut()));
-                let instant = Ident::instant_var();
-                parse_quote! {
-                    if self.input_store.not_empty() {
-                        self.reset_time_constraints(#instant).await?;
-                        match (#(#input_flows),*) {
-                            #(#arms)*
-                        }
-                    } else {
-                        self.delayed = true;
-                    }
-                }
-            }
-            FlowInstruction::IfActivated(events, signals, then, els) => {
-                let activation_cond = events
-                    .iter()
-                    .map(|e| -> syn::Expr {
-                        let ident = e.to_ref_var();
-                        parse_quote! { #ident.is_some() }
-                    })
-                    .chain(signals.iter().map(|s| -> syn::Expr {
-                        let ident = s;
-                        parse_quote! { self.context.#ident.is_new() }
-                    }));
-                let then_instrs =
-                    stats.timed_with("then in if activated", |stats| then.into_syn_old(stats));
-
-                if events.is_empty() && signals.is_empty() {
-                    return els.map_or(vec![], |instr| {
-                        stats.timed_with("else in if activated", |stats| instr.into_syn_old(stats))
-                    });
-                } else {
-                    if let Some(instr) = els {
-                        let els_instrs = stats
-                            .timed_with("else in if activated", |stats| instr.into_syn_old(stats));
-                        parse_quote! {
-                            if #(#activation_cond)||* {
-                                #(#then_instrs)*
-                            } else {
-                                #(#els_instrs)*
-                            }
-                        }
-                    } else {
-                        parse_quote! {
-                            if #(#activation_cond)||* {
-                                #(#then_instrs)*
-                            }
-                        }
-                    }
-                }
-            }
-            FlowInstruction::Seq(instrs) => {
-                return instrs
-                    .into_iter()
-                    .flat_map(|instr| {
-                        stats.timed_with("instruction in seq", |stats| instr.into_syn_old(stats))
-                    })
-                    .collect()
-            }
-            FlowInstruction::Para(method_map) => {
-                let stats = &mut stats;
-                let para_futures = method_map.into_iter().flat_map(|(_method, para_instrs)| {
-                    para_instrs
-                        .into_iter()
-                        .map(|instr| -> syn::Expr {
-                            let stmts = stats
-                                .timed_with("para statements", |stats| instr.into_syn_old(stats));
-                            parse_quote! {async { #(#stmts)* }}
-                        })
-                        .collect::<Vec<_>>()
-                });
-                parse_quote! {
-                    tokio::join!(#(#para_futures),*);
-                }
-            }
-        };
-        vec![stmt]
     }
 
     pub fn into_syn2(self, stats: StatsMut) -> Vec<syn::Stmt> {
@@ -691,6 +510,19 @@ impl FlowInstruction {
                             #(#input_fields),*
                         }
                     );
+                }
+            }
+            FlowInstruction::FunctionCall(pattern, function_name, inputs) => {
+                let outputs = pattern.into_syn();
+                let function_ident = function_name.to_field();
+
+                let inputs =
+                    inputs
+                        .into_iter()
+                        .map(|input| input.into_syn());
+
+                parse_quote! {
+                    let #outputs = self.#function_ident(#(#inputs),*);
                 }
             }
             FlowInstruction::HandleDelay(input_flows, match_arms) => {
@@ -866,6 +698,11 @@ mk_new! { impl FlowInstruction =>
         pat: Pattern = pat,
         name: impl Into<Ident> = name.into(),
         inputs: impl Into<Vec<(Ident, Expression)>> = inputs.into(),
+    )
+    FunctionCall: fun_call (
+        pat: Pattern = pat,
+        name: impl Into<Ident> = name.into(),
+        inputs: impl Into<Vec<Expression>> = inputs.into(),
     )
     HandleDelay: handle_delay(
         input_names: impl Iterator<Item = Ident> = input_names.collect(),

@@ -530,7 +530,8 @@ mod flow_instr {
                             | flow::Kind::Throttle { .. }
                             | flow::Kind::Merge { .. }
                             | flow::Kind::Time { .. }
-                            | flow::Kind::Persist { .. } => (),
+                            | flow::Kind::Persist { .. }
+                            | flow::Kind::FunctionCall { .. } => (),
                             flow::Kind::OnChange { .. } => {
                                 // get the identifier of the created event
                                 let mut ids = pattern.identifiers();
@@ -801,6 +802,10 @@ mod flow_instr {
                     component_id,
                     inputs,
                 } => self.handle_component_call(pattern, *component_id, inputs),
+                flow::Kind::FunctionCall {
+                    function_id,
+                    inputs,
+                } => self.handle_function_call(pattern, *function_id, inputs),
             }
         }
 
@@ -1151,6 +1156,31 @@ mod flow_instr {
             self.call_component(component_id, pattern.clone(), comp_inputs, signals, events)
         }
 
+        /// Compute the instruction from a function call.
+        fn handle_function_call(
+            &mut self,
+            pattern: &ir1::stmt::Pattern,
+            function_id: usize,
+            inputs: &Vec<(usize, flow::Expr)>,
+        ) -> FlowInstruction {
+            // get events that might call the component
+            let (mut fun_inputs, mut signals) = (vec![], vec![]);
+            inputs.iter().for_each(|(_, flow_expr)| {
+                match flow_expr.kind {
+                    flow::Kind::Ident { id } => {
+                        let signal_name = self.get_name(id).clone();
+                        signals.push(signal_name);
+                        let input_expr = self.get_signal(id);
+                        fun_inputs.push(input_expr);
+                    }
+                    _ => noErrorDesc!(), // normalized
+                }
+            });
+
+            // call component with the events and update output signals
+            self.call_function(function_id, pattern.clone(), fun_inputs, signals)
+        }
+
         /// Add signal definition in current propagation branch.
         fn define_signal(&mut self, signal_id: usize, expr: Expression) -> FlowInstruction {
             let signal_name = self.get_name(signal_id).clone();
@@ -1228,6 +1258,42 @@ mod flow_instr {
                 conf::Propagation::OnChange => {
                     // call component when activated by inputs
                     FlowInstruction::if_activated(events, signals, comp_call, None)
+                }
+            }
+        }
+
+        /// Add function call in current propagation branch with outputs update.
+        fn call_function(
+            &mut self,
+            function_id: usize,
+            output_pattern: ir1::stmt::Pattern,
+            inputs: Vec<Expression>,
+            signals: Vec<Ident>,
+        ) -> FlowInstruction {
+            let function_name = self.get_name(function_id);
+            let outputs_ids = output_pattern.identifiers();
+
+            // call component
+            let mut instrs = vec![FlowInstruction::fun_call(
+                output_pattern.into_ir2(self),
+                function_name.clone(),
+                inputs,
+            )];
+            // update outputs: context signals and all events
+            let updates = outputs_ids.into_iter().filter_map(|output_id| {
+                self.signals.insert(output_id);
+                let expr = self.update_ctx(output_id);
+                self.signals.remove(&output_id);
+                expr
+            });
+            instrs.extend(updates);
+            let fun_call = FlowInstruction::seq(instrs);
+
+            match self.conf.propagation {
+                conf::Propagation::EventIsles => fun_call, // call function when activated by isle
+                conf::Propagation::OnChange => {
+                    // call component when activated by inputs
+                    FlowInstruction::if_activated(vec![], signals, fun_call, None)
                 }
             }
         }

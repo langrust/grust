@@ -415,6 +415,28 @@ impl Typing for flow::Expr {
                 self.typ = Some(node_application_type);
                 Ok(())
             }
+            flow::Kind::FunctionCall {
+                ref function_id,
+                ref mut inputs,
+                ..
+            } => {
+                // type all inputs and check their types
+                inputs
+                    .iter_mut()
+                    .map(|(id, input)| {
+                        input.typ_check(symbols, errors)?;
+                        let input_type = input.get_typ().unwrap().convert();
+                        let expected_type = symbols.get_typ(*id);
+                        input_type.expect(self.loc, expected_type).dewrap(errors)
+                    })
+                    .collect::<TRes<()>>()?;
+
+                // get the output type of the called function
+                let outputs_type = symbols.get_function_output_type(*function_id);
+
+                self.typ = Some(outputs_type.rev_convert());
+                Ok(())
+            }
         }
     }
 
