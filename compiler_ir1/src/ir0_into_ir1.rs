@@ -441,7 +441,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Component {
 mod flow_expr_impl {
     prelude! {
         ir0::interface::{
-            FlowExpression, ComponentCall, OnChange, Merge,
+            FlowExpression, Call, OnChange, Merge,
             Scan, Throttle, Timeout, Time, Persist,
         },
         ir1::flow,
@@ -540,38 +540,64 @@ mod flow_expr_impl {
         }
     }
 
-    impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for ComponentCall {
+    impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for Call {
         type Ir1 = ir1::flow::Kind;
 
         /// Transforms AST into [ir1] and check identifiers good use.
         fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
-            // get called component id
-            let component_id = ctx
-                .ctx0
-                .get_node_id(&self.ident_component, false, ctx.errors)?;
+            if ctx.ctx0.is_node(&self.ident, false) {
+                // get called component id
+                let component_id = ctx.ctx0.get_node_id(&self.ident, false, ctx.errors)?;
 
-            let component_inputs = ctx.get_node_inputs(component_id).clone();
+                let component_inputs = ctx.get_node_inputs(component_id).clone();
 
-            // check inputs and node_inputs have the same length
-            if self.inputs.len() != component_inputs.len() {
-                bad!(ctx.errors, @ctx.loc =>
-                    ErrorKind::arity_mismatch(self.inputs.len(), component_inputs.len())
-                )
-            }
-
-            // transform inputs and map then to the identifiers of the component inputs
-            let inputs = {
-                let mut inputs = Vec::with_capacity(self.inputs.len());
-                for (input, id) in self.inputs.into_iter().zip(component_inputs) {
-                    inputs.push((id, input.into_ir1(ctx)?));
+                // check inputs and node_inputs have the same length
+                if self.inputs.len() != component_inputs.len() {
+                    bad!(ctx.errors, @ctx.loc =>
+                        ErrorKind::arity_mismatch(self.inputs.len(), component_inputs.len())
+                    )
                 }
-                inputs
-            };
 
-            Ok(ir1::flow::Kind::ComponentCall {
-                component_id,
-                inputs,
-            })
+                // transform inputs and map then to the identifiers of the component inputs
+                let inputs = {
+                    let mut inputs = Vec::with_capacity(self.inputs.len());
+                    for (input, id) in self.inputs.into_iter().zip(component_inputs) {
+                        inputs.push((id, input.into_ir1(ctx)?));
+                    }
+                    inputs
+                };
+
+                Ok(ir1::flow::Kind::ComponentCall {
+                    component_id,
+                    inputs,
+                })
+            } else {
+                // get called function id
+                let function_id = ctx.ctx0.get_function_id(&self.ident, false, ctx.errors)?;
+
+                let function_inputs = ctx.get_function_input(function_id).clone();
+
+                // check inputs and node_inputs have the same length
+                if self.inputs.len() != function_inputs.len() {
+                    bad!(ctx.errors, @ctx.loc =>
+                        ErrorKind::arity_mismatch(self.inputs.len(), function_inputs.len())
+                    )
+                }
+
+                // transform inputs and map then to the identifiers of the function inputs
+                let inputs = {
+                    let mut inputs = Vec::with_capacity(self.inputs.len());
+                    for (input, id) in self.inputs.into_iter().zip(function_inputs) {
+                        inputs.push((id, input.into_ir1(ctx)?));
+                    }
+                    inputs
+                };
+
+                Ok(ir1::flow::Kind::FunctionCall {
+                    function_id,
+                    inputs,
+                })
+            }
         }
     }
 
@@ -586,7 +612,7 @@ mod flow_expr_impl {
                     let id = ctx.ctx0.get_flow_id(&ident, false, ctx.errors)?;
                     flow::Kind::Ident { id }
                 }
-                FlowExpression::ComponentCall(expr) => expr.into_ir1(ctx)?,
+                FlowExpression::Call(expr) => expr.into_ir1(ctx)?,
                 FlowExpression::Sample(expr) => expr.into_ir1(ctx)?,
                 FlowExpression::Scan(expr) => expr.into_ir1(ctx)?,
                 FlowExpression::Timeout(expr) => expr.into_ir1(ctx)?,

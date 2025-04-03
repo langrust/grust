@@ -453,7 +453,8 @@ impl FlowStatement {
                         let ty = ctx.get_typ(id);
                         flows_context.add_element(source_name, ty);
                     }
-                    flow::Kind::ComponentCall { inputs, .. } => {
+                    flow::Kind::ComponentCall { inputs, .. }
+                    | flow::Kind::FunctionCall { inputs, .. } => {
                         // get outputs' ids
                         let outputs_ids = pattern.identifiers();
 

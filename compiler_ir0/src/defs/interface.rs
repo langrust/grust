@@ -148,10 +148,10 @@ mk_new! { impl Time =>
 
 }
 
-/// Component call.
-pub struct ComponentCall {
-    /// Identifier to the component to call.
-    pub ident_component: Ident,
+/// Call.
+pub struct Call {
+    /// Identifier to the called component/function.
+    pub ident: Ident,
     pub paren_token: token::Paren,
     /// Input expressions.
     pub inputs: Punctuated<FlowExpression, Token![,]>,
@@ -173,8 +173,8 @@ pub enum FlowExpression {
     Persist(Persist),
     /// GReact `merge` operator.
     Merge(Merge),
-    /// Component call.
-    ComponentCall(ComponentCall),
+    /// Call.
+    Call(Call),
     /// Identifier to flow.
     Ident(Ident),
     /// Time flow.
@@ -191,7 +191,7 @@ mk_new! { impl FlowExpression =>
     Persist: persist (val: Persist = val)
     Merge: merge (val: Merge = val)
     Time: time (val: Time = val)
-    ComponentCall: comp_call (val: ComponentCall = val)
+    Call: comp_call (val: Call = val)
 }
 
 #[derive(Clone)]
