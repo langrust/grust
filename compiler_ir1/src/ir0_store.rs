@@ -277,7 +277,7 @@ mod equation {
                     .store(false, symbol_table, errors)
                     .map(|idents| signals.extend(idents)),
                 // when output definitions are already stored (as component's outputs)
-                ReactEq::OutputDef(_) | ReactEq::Init(_) => Ok(()),
+                ReactEq::OutputDef(_) | ReactEq::Init(_) | ReactEq::Log(_) => Ok(()),
                 ReactEq::LocalDef(declaration) => declaration
                     .typed_pattern
                     .store(true, symbol_table, errors)
@@ -361,7 +361,7 @@ mod equation {
                     }
                     Ok(())
                 }
-                ReactEq::Match(Match { .. }) => Ok(()),
+                ReactEq::Match(_) | ReactEq::Log(_) => Ok(()),
                 ReactEq::MatchWhen(MatchWhen { init, .. }) => {
                     // store initializations
                     if let Some(init) = init {
@@ -408,7 +408,7 @@ mod equation {
                     }
                     Ok(())
                 }
-                ReactEq::Init(_) => Ok(()),
+                ReactEq::Init(_) | ReactEq::Log(_) => Ok(()),
             }
         }
 
@@ -419,7 +419,10 @@ mod equation {
             errors: &mut Vec<Error>,
         ) -> TRes<()> {
             match self {
-                ReactEq::OutputDef(_) | ReactEq::LocalDef(_) | ReactEq::Match(_) => Ok(()),
+                ReactEq::OutputDef(_)
+                | ReactEq::LocalDef(_)
+                | ReactEq::Match(_)
+                | ReactEq::Log(_) => Ok(()),
                 ReactEq::MatchWhen(MatchWhen { init, .. }) => {
                     if let Some(init) = init {
                         init.get_inits(inits, symbol_table, errors)

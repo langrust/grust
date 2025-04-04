@@ -9,6 +9,8 @@ pub struct FunctionBody {
     pub contract: ir1::Contract,
     /// Function's statements.
     pub statements: Vec<ir1::Stmt<ir1::Expr>>,
+    /// Logs
+    pub logs: Vec<usize>,
     /// Function's returned expression and its type.
     pub returned: ir1::Expr,
 }
@@ -29,6 +31,7 @@ impl Function {
         id: usize,
         contract: ir1::Contract,
         statements: Vec<ir1::Stmt<ir1::Expr>>,
+        logs: Vec<usize>,
         returned: ir1::Expr,
         loc: Loc,
     ) -> Self {
@@ -37,6 +40,7 @@ impl Function {
             body_or_path: Either::Left(FunctionBody {
                 contract,
                 statements,
+                logs,
                 returned,
             }),
             loc,
