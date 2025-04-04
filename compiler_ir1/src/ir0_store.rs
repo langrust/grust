@@ -446,6 +446,7 @@ impl Ir0Store for Ast {
                 ir0::Item::Typedef(typedef) => typedef.store(symbol_table, errors),
                 ir0::Item::ExtFun(extfun) => extfun.store(symbol_table, errors),
                 ir0::Item::ExtComp(extcomp) => extcomp.store(symbol_table, errors),
+                ir0::Item::Const(const_decl) => const_decl.store(symbol_table, errors),
                 ir0::Item::Service(_) | ir0::Item::Import(_) | ir0::Item::Export(_) => Ok(()),
             })
             .collect::<TRes<Vec<_>>>()?;
@@ -578,6 +579,22 @@ impl Ir0Store for ir0::ExtCompDecl {
             None,
             None,
             Some(self.path.clone()),
+            ctx.errors,
+        )?;
+
+        Ok(())
+    }
+}
+
+impl Ir0Store for ir0::ConstDecl {
+    fn store(&self, symbol_table: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
+        let loc = self.loc();
+        let ctx = &mut ir1::ctx::WithLoc::new(loc, symbol_table, errors);
+
+        let _id = ctx.ctx0.insert_constant(
+            self.ident.clone(),
+            self.ty.clone(),
+            self.value.clone(),
             ctx.errors,
         )?;
 
