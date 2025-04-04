@@ -942,7 +942,7 @@ pub enum Kind {
     /// Expression.
     Expression {
         /// The expression kind.
-        expr: expr::Kind<Expr>,
+        expr: ExprKind,
     },
     /// Initialized buffer stream expression.
     Last {
@@ -986,7 +986,7 @@ impl Kind {
 
 mk_new! { impl Kind =>
     Expression: expr {
-        expr: impl Into<expr::Kind<Expr>> = expr.into(),
+        expr: impl Into<ExprKind> = expr.into(),
     }
     Last: last { init_id: usize, signal_id: usize }
     NodeApplication: call {
