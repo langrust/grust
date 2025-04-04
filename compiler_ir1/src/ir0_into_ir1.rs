@@ -338,7 +338,8 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Function {
         }
         ctx.set_function_output_type(id, output_typing);
 
-        let (mut statements, mut returned) = (Vec::with_capacity(self.statements.len()), None);
+        let (mut statements, mut returned, mut logs) =
+            (Vec::with_capacity(self.statements.len()), None, vec![]);
         for stmt in self.statements {
             match stmt {
                 ir0::Stmt::Declaration(declaration) => {
@@ -347,6 +348,10 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Function {
                 ir0::Stmt::Return(ir0::stmt::Return { expression, .. }) => {
                     assert!(returned.is_none());
                     returned = Some(expression.into_ir1(&mut ctx.add_pat_loc(None, loc))?);
+                }
+                ir0::Stmt::Log(log_stmt) => {
+                    let pat = log_stmt.pattern.into_ir1(&mut ctx.add_loc(loc))?;
+                    logs.extend(pat.identifiers());
                 }
             }
         }
@@ -358,6 +363,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Function {
             id,
             contract,
             statements,
+            logs,
             returned
                 .ok_or_else(lerror!(@self.ident.loc() =>
                     "[internal] this function has not return expression"
@@ -418,15 +424,20 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Component {
         ctx.local();
         ctx.restore_context(id);
 
-        let mut inits = Vec::with_capacity(self.equations.len());
+        let mut inits = Vec::with_capacity(self.equations.len() / 2);
         let mut statements = Vec::with_capacity(self.equations.len());
+        let mut logs = vec![];
         for react_eq in self.equations {
-            let (opt_inits, opt_stmt) = react_eq.into_ir1(ctx)?;
-            if let Some(stmt) = opt_stmt {
-                statements.push(stmt);
-            }
-            if let Some(init_stmts) = opt_inits {
-                inits.extend(init_stmts);
+            match react_eq.into_ir1(ctx)? {
+                Either::Left((opt_inits, opt_stmt)) => {
+                    if let Some(stmt) = opt_stmt {
+                        statements.push(stmt);
+                    }
+                    if let Some(init_stmts) = opt_inits {
+                        inits.extend(init_stmts);
+                    }
+                }
+                Either::Right(ids) => logs.extend(ids),
             }
         }
         statements.shrink_to_fit();
@@ -435,7 +446,9 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Component {
 
         ctx.global();
 
-        Ok(ir1::Component::new(id, inits, statements, contract, loc))
+        Ok(ir1::Component::new(
+            id, inits, statements, contract, logs, loc,
+        ))
     }
 }
 
@@ -1007,7 +1020,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Eq {
 impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
     /// Reactive equations like `init` or `when` contains initializations (one or many) that are
     /// also part of their [ir1] representation, along the (optional) [ir1::stmt::Stmt].
-    type Ir1 = (Option<Vec<stream::InitStmt>>, Option<stream::Stmt>);
+    type Ir1 = Either<(Option<Vec<stream::InitStmt>>, Option<stream::Stmt>), Vec<usize>>;
 
     /// Pre-condition: equation's signal is already stored in symbol table.
     ///
@@ -1033,10 +1046,10 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
             | ReactEq::OutputDef(Instantiation { expr, pattern, .. }) => {
                 let (opt_init, expr) = expr.into_ir1(&mut ctx.add_pat_loc(Some(&pattern), loc))?;
                 let pattern = pattern.into_ir1(&mut ctx.add_loc(loc))?;
-                Ok((
+                Ok(Either::Left((
                     opt_init.map(|init| vec![init]),
                     Some(stream::Stmt { pattern, expr, loc }),
-                ))
+                )))
             }
             ReactEq::Match(ir0::equation::Match { expr, arms, .. }) => {
                 // create the receiving pattern for the equation
@@ -1149,7 +1162,10 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                     )),
                 );
 
-                Ok((None, Some(stream::Stmt { pattern, expr, loc })))
+                Ok(Either::Left((
+                    None,
+                    Some(stream::Stmt { pattern, expr, loc }),
+                )))
             }
             ReactEq::MatchWhen(MatchWhen { init, arms, .. }) => {
                 // create the pattern defined by the equation
@@ -1329,14 +1345,14 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
 
                 let pattern = def_eq_pat.into_ir1(&mut ctx.add_loc(&loc))?;
 
-                Ok((
+                Ok(Either::Left((
                     init_stmts,
                     Some(stream::Stmt {
                         pattern,
                         expr: match_expr,
                         loc,
                     }),
-                ))
+                )))
             }
             ReactEq::Init(init_signal) => {
                 init_signal.expr.check_is_constant(ctx.ctx0, ctx.errors)?;
@@ -1347,7 +1363,11 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                     expr: ir1_expr,
                     loc,
                 };
-                Ok((Some(vec![init_stmt]), None))
+                Ok(Either::Left((Some(vec![init_stmt]), None)))
+            }
+            ReactEq::Log(log_stmt) => {
+                let pat = log_stmt.pattern.into_ir1(&mut ctx.add_loc(loc))?;
+                Ok(Either::Right(pat.identifiers()))
             }
         }
     }

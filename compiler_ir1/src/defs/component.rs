@@ -20,11 +20,12 @@ impl Component {
         inits: Vec<ir1::stream::InitStmt>,
         statements: Vec<ir1::stream::Stmt>,
         contract: ir1::Contract,
+        logs: Vec<usize>,
         loc: Loc,
     ) -> Self {
         Self {
             sign: ComponentSignature::new(id, loc),
-            body_or_path: Either::Left(ComponentBody::new(inits, statements, contract)),
+            body_or_path: Either::Left(ComponentBody::new(inits, statements, contract, logs)),
         }
     }
 
@@ -347,6 +348,8 @@ pub struct ComponentBody {
     pub statements: Vec<ir1::stream::Stmt>,
     /// Component's contract.
     pub contract: ir1::Contract,
+    /// Logs.
+    pub logs: Vec<usize>,
     /// Unitary component's memory.
     pub memory: Memory,
     /// Component dependency graph.
@@ -367,11 +370,13 @@ impl ComponentBody {
         inits: Vec<ir1::stream::InitStmt>,
         statements: Vec<ir1::stream::Stmt>,
         contract: ir1::Contract,
+        logs: Vec<usize>,
     ) -> Self {
         Self {
             inits,
             statements,
             contract,
+            logs,
             graph: graph::DiGraphMap::new(),
             memory: ir1::Memory::new(),
         }
