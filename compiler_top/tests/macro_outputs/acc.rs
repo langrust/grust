@@ -1,4 +1,4 @@
-#[derive(Clone, Copy, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default, Debug)]
 pub enum Activation {
     #[default]
     On,
@@ -392,7 +392,7 @@ pub mod runtime {
     pub mod adaptive_cruise_control_service {
         use super::*;
         use futures::{sink::SinkExt, stream::StreamExt};
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct Condition(bool, bool);
         impl Condition {
             fn set(&mut self, condition: bool) {
@@ -409,7 +409,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct SpeedKmH(f64, bool);
         impl SpeedKmH {
             fn set(&mut self, speed_km_h: f64) {
@@ -426,7 +426,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct T(f64, bool);
         impl T {
             fn set(&mut self, t: f64) {
@@ -443,7 +443,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct BrakesMS(f64, bool);
         impl BrakesMS {
             fn set(&mut self, brakes_m_s: f64) {
@@ -460,7 +460,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct DistanceM(f64, bool);
         impl DistanceM {
             fn set(&mut self, distance_m: f64) {
@@ -477,7 +477,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct Context {
             pub condition: Condition,
             pub speed_km_h: SpeedKmH,

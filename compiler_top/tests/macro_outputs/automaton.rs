@@ -1,4 +1,4 @@
-#[derive(Clone, Copy, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default, Debug)]
 pub enum State {
     #[default]
     Off,

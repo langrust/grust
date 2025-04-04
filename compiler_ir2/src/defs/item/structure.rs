@@ -38,7 +38,7 @@ impl Structure {
                 #[derive(prelude::Clone, Copy, prelude::PartialEq, DeepModel)]
             )
         } else {
-            parse_quote!(#[derive(Clone, Copy, PartialEq, Default)])
+            parse_quote!(#[derive(Clone, Copy, PartialEq, Default, Debug)])
         };
         parse_quote! {
             #attribute
@@ -64,7 +64,7 @@ mod test {
         );
 
         let control = parse_quote! {
-            #[derive(Clone, Copy, PartialEq, Default)]
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
             pub struct Point {
                 pub x: i64,
                 pub y: i64

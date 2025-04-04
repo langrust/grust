@@ -26,7 +26,7 @@ impl Enumeration {
                 #[derive(prelude::Clone, Copy, prelude::PartialEq, DeepModel)]
             )
         } else {
-            parse_quote!(#[derive(Clone, Copy, PartialEq, Default)])
+            parse_quote!(#[derive(Clone, Copy, PartialEq, Default, Debug)])
         };
         syn::ItemEnum {
             attrs: vec![attribute],
@@ -73,7 +73,7 @@ mod test {
         );
 
         let control = parse_quote! {
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub enum Color {
             #[default]
             Blue,
