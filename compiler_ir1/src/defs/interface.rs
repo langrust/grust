@@ -264,17 +264,13 @@ pub enum FlowStatement {
 }
 impl FlowStatement {
     /// Retrieves the component index and its inputs if the statement contains an invocation.
-    pub fn try_get_call(&self) -> Option<(usize, &Vec<(usize, ir1::flow::Expr)>)> {
+    pub fn try_get_call(&self) -> Option<&Vec<(usize, ir1::flow::Expr)>> {
         use FlowStatement::*;
         match self {
             Declaration(FlowDeclaration {
                 expr:
                     ir1::flow::Expr {
-                        kind:
-                            ir1::flow::Kind::ComponentCall {
-                                component_id,
-                                inputs,
-                            },
+                        kind: ir1::flow::Kind::ComponentCall { inputs, .. },
                         ..
                     },
                 ..
@@ -282,15 +278,11 @@ impl FlowStatement {
             | Instantiation(FlowInstantiation {
                 expr:
                     ir1::flow::Expr {
-                        kind:
-                            ir1::flow::Kind::ComponentCall {
-                                component_id,
-                                inputs,
-                            },
+                        kind: ir1::flow::Kind::ComponentCall { inputs, .. },
                         ..
                     },
                 ..
-            }) => Some((*component_id, inputs)),
+            }) => Some(inputs),
             Declaration(_) | Instantiation(_) => None,
         }
     }
