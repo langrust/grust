@@ -83,13 +83,33 @@ impl<E> HasLoc for LetDecl<E> {
         Loc::from(self.let_token.span).join(self.semi_token.span)
     }
 }
-
 mk_new! { impl{E} LetDecl<E> =>
     new {
         let_token: Token![let],
         typed_pattern: Pattern,
         eq_token: Token![=],
         expr: E,
+        semi_token: Token![;],
+    }
+}
+
+/// GRust log statement AST.
+#[derive(Debug, PartialEq)]
+pub struct LogStmt {
+    pub log_token: keyword::log,
+    /// Pattern of logged signals and their type.
+    pub pattern: Pattern,
+    pub semi_token: Token![;],
+}
+impl HasLoc for LogStmt {
+    fn loc(&self) -> Loc {
+        Loc::from(self.log_token.span).join(self.semi_token.span)
+    }
+}
+mk_new! { impl LogStmt =>
+    new {
+        log_token: keyword::log,
+        pattern: Pattern,
         semi_token: Token![;],
     }
 }
@@ -101,6 +121,16 @@ pub struct Return {
     pub expression: Expr,
     pub semi_token: Token![;],
 }
+impl HasLoc for Return {
+    fn loc(&self) -> Loc {
+        Loc::from(self.return_token.span).join(self.semi_token.span)
+    }
+}
+mk_new! { impl Return => new {
+    return_token: Token![return],
+    expression: Expr,
+    semi_token: Token![;],
+} }
 
 /// GRust statement AST.
 pub enum Stmt {
@@ -108,4 +138,6 @@ pub enum Stmt {
     Declaration(LetDecl<Expr>),
     /// GRust return statement AST.
     Return(Return),
+    /// GRust log statement AST.
+    Log(LogStmt),
 }

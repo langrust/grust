@@ -1085,6 +1085,7 @@ mod parse_stmt {
             })
         }
     }
+
     impl Parse for Return {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let return_token: Token![return] = input.parse()?;
@@ -1099,10 +1100,26 @@ mod parse_stmt {
         }
     }
 
+    impl Parse for LogStmt {
+        fn parse(input: ParseStream) -> syn::Res<Self> {
+            let log_token: keyword::log = input.parse()?;
+            let pattern: Pattern = input.parse()?;
+            let semi_token: Token![;] = input.parse()?;
+
+            Ok(LogStmt {
+                log_token,
+                pattern,
+                semi_token,
+            })
+        }
+    }
+
     impl Parse for Stmt {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             if input.peek(Token![let]) {
                 Ok(Stmt::Declaration(input.parse()?))
+            } else if input.peek(keyword::log) {
+                Ok(Stmt::Log(input.parse()?))
             } else {
                 Ok(Stmt::Return(input.parse()?))
             }
@@ -2110,6 +2127,8 @@ mod parse_equation {
                 Ok(ReactEq::local_def(input.parse()?))
             } else if input.peek(keyword::init) {
                 Ok(ReactEq::init(input.parse()?))
+            } else if input.peek(keyword::log) {
+                Ok(ReactEq::log(input.parse()?))
             } else {
                 Ok(ReactEq::out_def(input.parse()?))
             }
@@ -3239,6 +3258,17 @@ mod parsing_tests {
                         stream::Expr::test_ident("inc"),
                     )),
                 ))),
+                semi_token: parse_quote! {;},
+            });
+            assert_eq!(equation, control)
+        }
+
+        #[test]
+        fn should_parse_log() {
+            let equation: ReactEq = parse_quote! {log (a, b);};
+            let control = ReactEq::log(LogStmt {
+                log_token: parse_quote! {log},
+                pattern: parse_quote! {(a, b)},
                 semi_token: parse_quote! {;},
             });
             assert_eq!(equation, control)

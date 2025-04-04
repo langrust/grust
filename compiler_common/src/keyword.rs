@@ -53,3 +53,4 @@ custom_keyword!(sort);
 custom_keyword!(fold);
 custom_keyword!(map);
 custom_keyword!(zip);
+custom_keyword!(log);
