@@ -20,7 +20,7 @@ pub mod ir0 {
             equation::{self, Eq, ReactEq},
             expr::{self, Expr},
             interface::{self, ExtFunDecl, ExtCompDecl, FlowExport, FlowImport, Service, TimeRange},
-            stmt::{self, Stmt},
+            stmt::{self, Stmt, LetDecl, LogStmt},
             stream, Ast, Colon, Component, Ctx, Function, Item, Top, Typedef, ConstDecl,
         },
         symbol,

@@ -1,13 +1,11 @@
-prelude! {
-    stmt::Pattern, stmt::LetDecl,
-}
+prelude! {}
 
 use super::keyword;
 
 #[derive(Debug, PartialEq)]
 pub struct Instantiation<E> {
     /// Pattern of instantiated signals.
-    pub pattern: Pattern,
+    pub pattern: stmt::Pattern,
     pub eq_token: syn::token::Eq,
     /// The stream expression defining the signals.
     pub expr: E,
@@ -20,7 +18,7 @@ impl<E> HasLoc for Instantiation<E> {
 }
 mk_new! { impl{E} Instantiation<E> =>
     new {
-        pattern: Pattern,
+        pattern: stmt::Pattern,
         eq_token: Token![=],
         expr: E,
         semi_token: Token![;],
@@ -232,7 +230,7 @@ mk_new! { impl MatchWhen =>
 pub struct InitSignal {
     pub init_token: keyword::init,
     /// Pattern of instantiated signals.
-    pub pattern: Pattern,
+    pub pattern: stmt::Pattern,
     pub eq_token: Token![=],
     /// The stream expression defining the signal.
     pub expr: stream::Expr,
@@ -246,7 +244,7 @@ impl HasLoc for InitSignal {
 mk_new! { impl InitSignal =>
     new {
         init_token: keyword::init,
-        pattern: Pattern,
+        pattern: stmt::Pattern,
         eq_token: Token![=],
         expr: stream::Expr,
         semi_token: Token![;],
@@ -261,6 +259,7 @@ pub enum ReactEq {
     MatchWhen(MatchWhen),
     Match(Match),
     Init(InitSignal),
+    Log(LogStmt),
 }
 impl HasLoc for ReactEq {
     fn loc(&self) -> Loc {
@@ -270,6 +269,7 @@ impl HasLoc for ReactEq {
             Self::MatchWhen(mw) => mw.loc(),
             Self::Match(m) => m.loc(),
             Self::Init(i) => i.loc(),
+            Self::Log(log) => log.loc(),
         }
     }
 }
@@ -279,4 +279,5 @@ mk_new! { impl ReactEq =>
     MatchWhen: match_when(m : MatchWhen = m)
     Match: pat_match(m : Match = m)
     Init: init(i: InitSignal = i)
+    Log: log(l : LogStmt = l)
 }
