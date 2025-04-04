@@ -72,6 +72,47 @@ pub enum Kind {
     },
 }
 
+mk_new! { impl Kind =>
+    Ident: ident {
+            id: usize,
+    }
+    Sample: sample {
+            expr: Expr = expr.into(),
+            period_ms: u64,
+    }
+    Scan: scan {
+            expr: Expr = expr.into(),
+            period_ms: u64,
+    }
+    Timeout: timeout {
+            expr: Expr = expr.into(),
+            deadline: u64,
+    }
+    Throttle: throttle {
+            expr: Expr = expr.into(),
+            delta: Constant,
+    }
+    OnChange: on_change {
+            expr: Expr = expr.into(),
+    }
+    Persist: persist {
+            expr: Expr = expr.into(),
+    }
+    Merge: merge {
+        expr_1: Expr = expr_1.into(),
+        expr_2: Expr = expr_2.into(),
+    }
+    Time: time { loc: Loc }
+    ComponentCall: comp_call {
+        component_id: usize,
+            inputs: Vec<(usize, Expr)>,
+    }
+    FunctionCall: fun_call {
+            function_id: usize,
+            inputs: Vec<(usize, Expr)>,
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 /// Flow expression [ir1].
 pub struct Expr {

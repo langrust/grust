@@ -466,10 +466,10 @@ mod flow_expr_impl {
 
         /// Transforms AST into [ir1] and check identifiers good use.
         fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
-            Ok(ir1::flow::Kind::Sample {
-                expr: Box::new(self.expr.into_ir1(ctx)?),
-                period_ms: self.period_ms.base10_parse().unwrap(),
-            })
+            Ok(ir1::flow::Kind::sample(
+                self.expr.into_ir1(ctx)?,
+                self.period_ms.base10_parse().unwrap(),
+            ))
         }
     }
 
@@ -478,10 +478,10 @@ mod flow_expr_impl {
 
         /// Transforms AST into [ir1] and check identifiers good use.
         fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
-            Ok(ir1::flow::Kind::Scan {
-                expr: Box::new(self.expr.into_ir1(ctx)?),
-                period_ms: self.period_ms.base10_parse().unwrap(),
-            })
+            Ok(ir1::flow::Kind::scan(
+                self.expr.into_ir1(ctx)?,
+                self.period_ms.base10_parse().unwrap(),
+            ))
         }
     }
 
@@ -490,10 +490,10 @@ mod flow_expr_impl {
 
         /// Transforms AST into [ir1] and check identifiers good use.
         fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
-            Ok(ir1::flow::Kind::Timeout {
-                expr: Box::new(self.expr.into_ir1(ctx)?),
-                deadline: self.deadline.base10_parse().unwrap(),
-            })
+            Ok(ir1::flow::Kind::timeout(
+                self.expr.into_ir1(ctx)?,
+                self.deadline.base10_parse().unwrap(),
+            ))
         }
     }
 
@@ -502,10 +502,10 @@ mod flow_expr_impl {
 
         /// Transforms AST into [ir1] and check identifiers good use.
         fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
-            Ok(ir1::flow::Kind::Throttle {
-                expr: Box::new(self.expr.into_ir1(ctx)?),
-                delta: self.delta,
-            })
+            Ok(ir1::flow::Kind::throttle(
+                self.expr.into_ir1(ctx)?,
+                self.delta,
+            ))
         }
     }
 
@@ -514,9 +514,7 @@ mod flow_expr_impl {
 
         /// Transforms AST into [ir1] and check identifiers good use.
         fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
-            Ok(ir1::flow::Kind::OnChange {
-                expr: Box::new(self.expr.into_ir1(ctx)?),
-            })
+            Ok(ir1::flow::Kind::on_change(self.expr.into_ir1(ctx)?))
         }
     }
 
@@ -525,9 +523,7 @@ mod flow_expr_impl {
 
         /// Transforms AST into [ir1] and check identifiers good use.
         fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
-            Ok(ir1::flow::Kind::Persist {
-                expr: Box::new(self.expr.into_ir1(ctx)?),
-            })
+            Ok(ir1::flow::Kind::persist(self.expr.into_ir1(ctx)?))
         }
     }
 
@@ -536,10 +532,10 @@ mod flow_expr_impl {
 
         /// Transforms AST into [ir1] and check identifiers good use.
         fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
-            Ok(ir1::flow::Kind::Merge {
-                expr_1: Box::new(self.expr_1.into_ir1(ctx)?),
-                expr_2: Box::new(self.expr_2.into_ir1(ctx)?),
-            })
+            Ok(ir1::flow::Kind::merge(
+                self.expr_1.into_ir1(ctx)?,
+                self.expr_2.into_ir1(ctx)?,
+            ))
         }
     }
 
@@ -548,9 +544,7 @@ mod flow_expr_impl {
 
         /// Transforms AST into [ir1] and check identifiers good use.
         fn into_ir1(self, _ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
-            Ok(ir1::flow::Kind::Time {
-                loc: self.time_token.span.into(),
-            })
+            Ok(ir1::flow::Kind::time(self.time_token.span.into()))
         }
     }
 
@@ -581,10 +575,7 @@ mod flow_expr_impl {
                     inputs
                 };
 
-                Ok(ir1::flow::Kind::ComponentCall {
-                    component_id,
-                    inputs,
-                })
+                Ok(ir1::flow::Kind::comp_call(component_id, inputs))
             } else {
                 // get called function id
                 let function_id = ctx.ctx0.get_function_id(&self.ident, false, ctx.errors)?;
@@ -607,10 +598,7 @@ mod flow_expr_impl {
                     inputs
                 };
 
-                Ok(ir1::flow::Kind::FunctionCall {
-                    function_id,
-                    inputs,
-                })
+                Ok(ir1::flow::Kind::fun_call(function_id, inputs))
             }
         }
     }
