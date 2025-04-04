@@ -261,7 +261,7 @@ pub mod runtime {
     pub mod para_mess_service {
         use super::*;
         use futures::{sink::SinkExt, stream::StreamExt};
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct S2(i64, bool);
         impl S2 {
             fn set(&mut self, s2: i64) {
@@ -278,7 +278,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct S4(i64, bool);
         impl S4 {
             fn set(&mut self, s4: i64) {
@@ -295,7 +295,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct S3(i64, bool);
         impl S3 {
             fn set(&mut self, s3: i64) {
@@ -312,7 +312,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct E2(i64, bool);
         impl E2 {
             fn set(&mut self, e2: i64) {
@@ -329,7 +329,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct E1(i64, bool);
         impl E1 {
             fn set(&mut self, e1: i64) {
@@ -346,7 +346,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct E3(i64, bool);
         impl E3 {
             fn set(&mut self, e3: i64) {
@@ -363,7 +363,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct O1(i64, bool);
         impl O1 {
             fn set(&mut self, o1: i64) {
@@ -380,7 +380,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct Context {
             pub s2: S2,
             pub s4: S4,

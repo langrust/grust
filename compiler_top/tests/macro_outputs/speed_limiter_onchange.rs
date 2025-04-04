@@ -1,46 +1,46 @@
-#[derive(Clone, Copy, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default, Debug)]
 pub struct Hysterisis {
     pub value: f64,
     pub flag: bool,
 }
-#[derive(Clone, Copy, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default, Debug)]
 pub enum ActivationRequest {
     #[default]
     Off,
     On,
 }
-#[derive(Clone, Copy, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default, Debug)]
 pub enum VdcState {
     #[default]
     On,
     Off,
 }
-#[derive(Clone, Copy, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default, Debug)]
 pub enum VacuumBrakeState {
     #[default]
     BelowMinLevel,
     AboveMinLevel,
 }
-#[derive(Clone, Copy, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default, Debug)]
 pub enum Kickdown {
     #[default]
     Activated,
     Deactivated,
 }
-#[derive(Clone, Copy, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default, Debug)]
 pub enum Failure {
     #[default]
     Entering,
     Recovered,
 }
-#[derive(Clone, Copy, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default, Debug)]
 pub enum SpeedLimiter {
     #[default]
     Off,
     On,
     Fail,
 }
-#[derive(Clone, Copy, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default, Debug)]
 pub enum SpeedLimiterOn {
     #[default]
     StandBy,
@@ -423,7 +423,7 @@ pub mod runtime {
     pub mod speed_limiter_service {
         use super::*;
         use futures::{sink::SinkExt, stream::StreamExt};
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct StateUpdate(bool, bool);
         impl StateUpdate {
             fn set(&mut self, state_update: bool) {
@@ -440,7 +440,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct VUpdate(bool, bool);
         impl VUpdate {
             fn set(&mut self, v_update: bool) {
@@ -457,7 +457,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct VacuumBrake(VacuumBrakeState, bool);
         impl VacuumBrake {
             fn set(&mut self, vacuum_brake: VacuumBrakeState) {
@@ -474,7 +474,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct Vdc(VdcState, bool);
         impl Vdc {
             fn set(&mut self, vdc: VdcState) {
@@ -491,7 +491,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct Speed(f64, bool);
         impl Speed {
             fn set(&mut self, speed: f64) {
@@ -508,7 +508,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct ChangedSetSpeedOld(f64, bool);
         impl ChangedSetSpeedOld {
             fn set(&mut self, changed_set_speed_old: f64) {
@@ -525,7 +525,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct VSetAux(f64, bool);
         impl VSetAux {
             fn set(&mut self, v_set_aux: f64) {
@@ -542,7 +542,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct InRegulationOld(bool, bool);
         impl InRegulationOld {
             fn set(&mut self, in_regulation_old: bool) {
@@ -559,7 +559,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct VSet(f64, bool);
         impl VSet {
             fn set(&mut self, v_set: f64) {
@@ -576,7 +576,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct InRegulationAux(bool, bool);
         impl InRegulationAux {
             fn set(&mut self, in_regulation_aux: bool) {
@@ -593,7 +593,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct X(f64, bool);
         impl X {
             fn set(&mut self, x: f64) {
@@ -610,7 +610,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct OnState(SpeedLimiterOn, bool);
         impl OnState {
             fn set(&mut self, on_state: SpeedLimiterOn) {
@@ -627,7 +627,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct State(SpeedLimiter, bool);
         impl State {
             fn set(&mut self, state: SpeedLimiter) {
@@ -644,7 +644,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct Context {
             pub state_update: StateUpdate,
             pub v_update: VUpdate,

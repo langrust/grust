@@ -130,7 +130,7 @@ impl Flows {
             });
             let name = Ident::new("Context", Span::call_site());
             let attribute: syn::Attribute =
-                parse_quote!(#[derive(Clone, Copy, PartialEq, Default)]);
+                parse_quote!(#[derive(Clone, Copy, PartialEq, Default, Debug)]);
             parse_quote! {
                 #attribute
                 pub struct #name {
@@ -176,7 +176,7 @@ impl Flows {
                 let name = element_name;
                 let ty = element_ty.into_syn();
                 let attribute: syn::Attribute =
-                    parse_quote!(#[derive(Clone, Copy, PartialEq, Default)]);
+                    parse_quote!(#[derive(Clone, Copy, PartialEq, Default, Debug)]);
                 let item_struct: syn::ItemStruct = parse_quote! {
                     #attribute
                     pub struct #struct_name(#ty, bool);

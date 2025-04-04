@@ -1,4 +1,4 @@
-#[derive(Clone, Copy, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default, Debug)]
 pub enum Braking {
     #[default]
     NoBrake,
@@ -232,7 +232,7 @@ pub mod runtime {
     pub mod aeb_service {
         use super::*;
         use futures::{sink::SinkExt, stream::StreamExt};
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct Brakes(Braking, bool);
         impl Brakes {
             fn set(&mut self, brakes: Braking) {
@@ -249,7 +249,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct SpeedKmH(f64, bool);
         impl SpeedKmH {
             fn set(&mut self, speed_km_h: f64) {
@@ -266,7 +266,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct X(f64, bool);
         impl X {
             fn set(&mut self, x: f64) {
@@ -283,7 +283,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct AccKmH(f64, bool);
         impl AccKmH {
             fn set(&mut self, acc_km_h: f64) {
@@ -300,7 +300,7 @@ pub mod runtime {
                 self.1 = false;
             }
         }
-        #[derive(Clone, Copy, PartialEq, Default)]
+        #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct Context {
             pub brakes: Brakes,
             pub speed_km_h: SpeedKmH,
