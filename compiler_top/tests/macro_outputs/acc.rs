@@ -5,11 +5,8 @@ pub enum Activation {
     Off,
 }
 pub fn safety_distance(sv_v_m_s: f64, fv_v_m_s: f64) -> f64 {
-    let rho_s = 2.0f64;
-    let g = 9.81f64;
-    let brake_max = 0.6f64 * g;
-    let sv_d_stop_m = (sv_v_m_s * rho_s) + ((sv_v_m_s * sv_v_m_s) / (2.0f64 * brake_max));
-    let fv_d_stop_m = (fv_v_m_s * fv_v_m_s) / (2.0f64 * brake_max);
+    let sv_d_stop_m = (sv_v_m_s * 2.0f64) + ((sv_v_m_s * sv_v_m_s) / (2.0f64 * 5.886f64));
+    let fv_d_stop_m = (fv_v_m_s * fv_v_m_s) / (2.0f64 * 5.886f64);
     sv_d_stop_m - fv_d_stop_m
 }
 pub struct DeriveInput {
@@ -271,9 +268,9 @@ pub mod runtime {
         }
     }
     pub enum RuntimeInput {
+        AccActive(Activation, std::time::Instant),
         SpeedKmH(f64, std::time::Instant),
         DistanceM(f64, std::time::Instant),
-        AccActive(Activation, std::time::Instant),
         Timer(T, std::time::Instant),
     }
     impl priority_stream::Reset for RuntimeInput {
@@ -287,9 +284,9 @@ pub mod runtime {
     impl PartialEq for RuntimeInput {
         fn eq(&self, other: &Self) -> bool {
             match (self, other) {
+                (I::AccActive(this, _), I::AccActive(other, _)) => this.eq(other),
                 (I::SpeedKmH(this, _), I::SpeedKmH(other, _)) => this.eq(other),
                 (I::DistanceM(this, _), I::DistanceM(other, _)) => this.eq(other),
-                (I::AccActive(this, _), I::AccActive(other, _)) => this.eq(other),
                 (I::Timer(this, _), I::Timer(other, _)) => this.eq(other),
                 _ => false,
             }
@@ -298,9 +295,9 @@ pub mod runtime {
     impl RuntimeInput {
         pub fn get_instant(&self) -> std::time::Instant {
             match self {
+                I::AccActive(_, _grust_reserved_instant) => *_grust_reserved_instant,
                 I::SpeedKmH(_, _grust_reserved_instant) => *_grust_reserved_instant,
                 I::DistanceM(_, _grust_reserved_instant) => *_grust_reserved_instant,
-                I::AccActive(_, _grust_reserved_instant) => *_grust_reserved_instant,
                 I::Timer(_, _grust_reserved_instant) => *_grust_reserved_instant,
             }
         }
@@ -499,13 +496,13 @@ pub mod runtime {
         }
         #[derive(Default)]
         pub struct AdaptiveCruiseControlServiceStore {
+            acc_active: Option<(Activation, std::time::Instant)>,
             speed_km_h: Option<(f64, std::time::Instant)>,
             distance_m: Option<(f64, std::time::Instant)>,
-            acc_active: Option<(Activation, std::time::Instant)>,
         }
         impl AdaptiveCruiseControlServiceStore {
             pub fn not_empty(&self) -> bool {
-                self.speed_km_h.is_some() || self.distance_m.is_some() || self.acc_active.is_some()
+                self.acc_active.is_some() || self.speed_km_h.is_some() || self.distance_m.is_some()
             }
         }
         pub struct AdaptiveCruiseControlService {
@@ -513,8 +510,8 @@ pub mod runtime {
             context: Context,
             delayed: bool,
             input_store: AdaptiveCruiseControlServiceStore,
-            filtered_acc: FilteredAccState,
             activate: ActivateState,
+            filtered_acc: FilteredAccState,
             output: futures::channel::mpsc::Sender<O>,
             timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
         }
@@ -526,18 +523,365 @@ pub mod runtime {
                 let context = Context::init();
                 let delayed = true;
                 let input_store = Default::default();
-                let filtered_acc = FilteredAccState::init();
                 let activate = ActivateState::init();
+                let filtered_acc = FilteredAccState::init();
                 AdaptiveCruiseControlService {
                     begin: std::time::Instant::now(),
                     context,
                     delayed,
                     input_store,
-                    filtered_acc,
                     activate,
+                    filtered_acc,
                     output,
                     timer,
                 }
+            }
+            pub async fn handle_acc_active(
+                &mut self,
+                _acc_active_instant: std::time::Instant,
+                acc_active: Activation,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                if self.delayed {
+                    self.reset_time_constraints(_acc_active_instant).await?;
+                    self.context.reset();
+                    let acc_active_ref = &mut None;
+                    *acc_active_ref = Some(acc_active);
+                    if acc_active_ref.is_some() || self.context.distance_m.is_new() {
+                        let condition = self.activate.step(ActivateInput {
+                            acc_active: *acc_active_ref,
+                            distance_m: self.context.distance_m.get(),
+                        });
+                        self.context.condition.set(condition);
+                    }
+                    let t = (_acc_active_instant.duration_since(self.begin).as_millis()) as f64;
+                    self.context.t.set(t);
+                    if self.context.condition.is_new()
+                        || self.context.distance_m.is_new()
+                        || self.context.speed_km_h.is_new()
+                        || self.context.t.is_new()
+                    {
+                        let brakes_m_s = self.filtered_acc.step(FilteredAccInput {
+                            condition: self.context.condition.get(),
+                            distance_m: self.context.distance_m.get(),
+                            sv_v_km_h: self.context.speed_km_h.get(),
+                            t_ms: t,
+                        });
+                        self.context.brakes_m_s.set(brakes_m_s);
+                    }
+                    if self.context.brakes_m_s.is_new() {
+                        self.send_output(
+                            O::BrakesMS(self.context.brakes_m_s.get(), _acc_active_instant),
+                            _acc_active_instant,
+                        )
+                        .await?;
+                    }
+                } else {
+                    let unique = self
+                        .input_store
+                        .acc_active
+                        .replace((acc_active, _acc_active_instant));
+                    assert!(unique.is_none(), "flow `acc_active` changes too frequently");
+                }
+                Ok(())
+            }
+            pub async fn handle_delay_adaptive_cruise_control(
+                &mut self,
+                _grust_reserved_instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.context.reset();
+                if self.input_store.not_empty() {
+                    self.reset_time_constraints(_grust_reserved_instant).await?;
+                    match (
+                        self.input_store.acc_active.take(),
+                        self.input_store.speed_km_h.take(),
+                        self.input_store.distance_m.take(),
+                    ) {
+                        (None, None, None) => {}
+                        (Some((acc_active, _acc_active_instant)), None, None) => {
+                            let acc_active_ref = &mut None;
+                            *acc_active_ref = Some(acc_active);
+                            if acc_active_ref.is_some() || self.context.distance_m.is_new() {
+                                let condition = self.activate.step(ActivateInput {
+                                    acc_active: *acc_active_ref,
+                                    distance_m: self.context.distance_m.get(),
+                                });
+                                self.context.condition.set(condition);
+                            }
+                            let t =
+                                (_acc_active_instant.duration_since(self.begin).as_millis()) as f64;
+                            self.context.t.set(t);
+                            if self.context.condition.is_new()
+                                || self.context.distance_m.is_new()
+                                || self.context.speed_km_h.is_new()
+                                || self.context.t.is_new()
+                            {
+                                let brakes_m_s = self.filtered_acc.step(FilteredAccInput {
+                                    condition: self.context.condition.get(),
+                                    distance_m: self.context.distance_m.get(),
+                                    sv_v_km_h: self.context.speed_km_h.get(),
+                                    t_ms: t,
+                                });
+                                self.context.brakes_m_s.set(brakes_m_s);
+                            }
+                            if self.context.brakes_m_s.is_new() {
+                                self.send_output(
+                                    O::BrakesMS(
+                                        self.context.brakes_m_s.get(),
+                                        _grust_reserved_instant,
+                                    ),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (None, Some((speed_km_h, _speed_km_h_instant)), None) => {
+                            self.context.speed_km_h.set(speed_km_h);
+                            let t =
+                                (_speed_km_h_instant.duration_since(self.begin).as_millis()) as f64;
+                            self.context.t.set(t);
+                            if self.context.condition.is_new()
+                                || self.context.distance_m.is_new()
+                                || self.context.speed_km_h.is_new()
+                                || self.context.t.is_new()
+                            {
+                                let brakes_m_s = self.filtered_acc.step(FilteredAccInput {
+                                    condition: self.context.condition.get(),
+                                    distance_m: self.context.distance_m.get(),
+                                    sv_v_km_h: speed_km_h,
+                                    t_ms: t,
+                                });
+                                self.context.brakes_m_s.set(brakes_m_s);
+                            }
+                            if self.context.brakes_m_s.is_new() {
+                                self.send_output(
+                                    O::BrakesMS(
+                                        self.context.brakes_m_s.get(),
+                                        _grust_reserved_instant,
+                                    ),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (
+                            Some((acc_active, _acc_active_instant)),
+                            Some((speed_km_h, _speed_km_h_instant)),
+                            None,
+                        ) => {
+                            let acc_active_ref = &mut None;
+                            self.context.speed_km_h.set(speed_km_h);
+                            *acc_active_ref = Some(acc_active);
+                            if acc_active_ref.is_some() || self.context.distance_m.is_new() {
+                                let condition = self.activate.step(ActivateInput {
+                                    acc_active: *acc_active_ref,
+                                    distance_m: self.context.distance_m.get(),
+                                });
+                                self.context.condition.set(condition);
+                            }
+                            let t =
+                                (_acc_active_instant.duration_since(self.begin).as_millis()) as f64;
+                            self.context.t.set(t);
+                            if self.context.condition.is_new()
+                                || self.context.distance_m.is_new()
+                                || self.context.speed_km_h.is_new()
+                                || self.context.t.is_new()
+                            {
+                                let brakes_m_s = self.filtered_acc.step(FilteredAccInput {
+                                    condition: self.context.condition.get(),
+                                    distance_m: self.context.distance_m.get(),
+                                    sv_v_km_h: speed_km_h,
+                                    t_ms: t,
+                                });
+                                self.context.brakes_m_s.set(brakes_m_s);
+                            }
+                            if self.context.brakes_m_s.is_new() {
+                                self.send_output(
+                                    O::BrakesMS(
+                                        self.context.brakes_m_s.get(),
+                                        _grust_reserved_instant,
+                                    ),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (None, None, Some((distance_m, _distance_m_instant))) => {
+                            self.context.distance_m.set(distance_m);
+                            if self.context.distance_m.is_new() {
+                                let condition = self.activate.step(ActivateInput {
+                                    acc_active: None,
+                                    distance_m: distance_m,
+                                });
+                                self.context.condition.set(condition);
+                            }
+                            let t =
+                                (_distance_m_instant.duration_since(self.begin).as_millis()) as f64;
+                            self.context.t.set(t);
+                            if self.context.condition.is_new()
+                                || self.context.distance_m.is_new()
+                                || self.context.speed_km_h.is_new()
+                                || self.context.t.is_new()
+                            {
+                                let brakes_m_s = self.filtered_acc.step(FilteredAccInput {
+                                    condition: self.context.condition.get(),
+                                    distance_m: distance_m,
+                                    sv_v_km_h: self.context.speed_km_h.get(),
+                                    t_ms: t,
+                                });
+                                self.context.brakes_m_s.set(brakes_m_s);
+                            }
+                            if self.context.brakes_m_s.is_new() {
+                                self.send_output(
+                                    O::BrakesMS(
+                                        self.context.brakes_m_s.get(),
+                                        _grust_reserved_instant,
+                                    ),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (
+                            Some((acc_active, _acc_active_instant)),
+                            None,
+                            Some((distance_m, _distance_m_instant)),
+                        ) => {
+                            let acc_active_ref = &mut None;
+                            self.context.distance_m.set(distance_m);
+                            *acc_active_ref = Some(acc_active);
+                            if acc_active_ref.is_some() || self.context.distance_m.is_new() {
+                                let condition = self.activate.step(ActivateInput {
+                                    acc_active: *acc_active_ref,
+                                    distance_m: distance_m,
+                                });
+                                self.context.condition.set(condition);
+                            }
+                            let t =
+                                (_acc_active_instant.duration_since(self.begin).as_millis()) as f64;
+                            self.context.t.set(t);
+                            if self.context.condition.is_new()
+                                || self.context.distance_m.is_new()
+                                || self.context.speed_km_h.is_new()
+                                || self.context.t.is_new()
+                            {
+                                let brakes_m_s = self.filtered_acc.step(FilteredAccInput {
+                                    condition: self.context.condition.get(),
+                                    distance_m: distance_m,
+                                    sv_v_km_h: self.context.speed_km_h.get(),
+                                    t_ms: t,
+                                });
+                                self.context.brakes_m_s.set(brakes_m_s);
+                            }
+                            if self.context.brakes_m_s.is_new() {
+                                self.send_output(
+                                    O::BrakesMS(
+                                        self.context.brakes_m_s.get(),
+                                        _grust_reserved_instant,
+                                    ),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (
+                            None,
+                            Some((speed_km_h, _speed_km_h_instant)),
+                            Some((distance_m, _distance_m_instant)),
+                        ) => {
+                            self.context.distance_m.set(distance_m);
+                            if self.context.distance_m.is_new() {
+                                let condition = self.activate.step(ActivateInput {
+                                    acc_active: None,
+                                    distance_m: distance_m,
+                                });
+                                self.context.condition.set(condition);
+                            }
+                            self.context.speed_km_h.set(speed_km_h);
+                            let t =
+                                (_speed_km_h_instant.duration_since(self.begin).as_millis()) as f64;
+                            self.context.t.set(t);
+                            if self.context.condition.is_new()
+                                || self.context.distance_m.is_new()
+                                || self.context.speed_km_h.is_new()
+                                || self.context.t.is_new()
+                            {
+                                let brakes_m_s = self.filtered_acc.step(FilteredAccInput {
+                                    condition: self.context.condition.get(),
+                                    distance_m: distance_m,
+                                    sv_v_km_h: speed_km_h,
+                                    t_ms: t,
+                                });
+                                self.context.brakes_m_s.set(brakes_m_s);
+                            }
+                            if self.context.brakes_m_s.is_new() {
+                                self.send_output(
+                                    O::BrakesMS(
+                                        self.context.brakes_m_s.get(),
+                                        _grust_reserved_instant,
+                                    ),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (
+                            Some((acc_active, _acc_active_instant)),
+                            Some((speed_km_h, _speed_km_h_instant)),
+                            Some((distance_m, _distance_m_instant)),
+                        ) => {
+                            let acc_active_ref = &mut None;
+                            self.context.distance_m.set(distance_m);
+                            self.context.speed_km_h.set(speed_km_h);
+                            *acc_active_ref = Some(acc_active);
+                            if acc_active_ref.is_some() || self.context.distance_m.is_new() {
+                                let condition = self.activate.step(ActivateInput {
+                                    acc_active: *acc_active_ref,
+                                    distance_m: distance_m,
+                                });
+                                self.context.condition.set(condition);
+                            }
+                            let t =
+                                (_acc_active_instant.duration_since(self.begin).as_millis()) as f64;
+                            self.context.t.set(t);
+                            if self.context.condition.is_new()
+                                || self.context.distance_m.is_new()
+                                || self.context.speed_km_h.is_new()
+                                || self.context.t.is_new()
+                            {
+                                let brakes_m_s = self.filtered_acc.step(FilteredAccInput {
+                                    condition: self.context.condition.get(),
+                                    distance_m: distance_m,
+                                    sv_v_km_h: speed_km_h,
+                                    t_ms: t,
+                                });
+                                self.context.brakes_m_s.set(brakes_m_s);
+                            }
+                            if self.context.brakes_m_s.is_new() {
+                                self.send_output(
+                                    O::BrakesMS(
+                                        self.context.brakes_m_s.get(),
+                                        _grust_reserved_instant,
+                                    ),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                    }
+                } else {
+                    self.delayed = true;
+                }
+                Ok(())
+            }
+            #[inline]
+            pub async fn reset_service_delay(
+                &mut self,
+                _grust_reserved_instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.timer
+                    .send((T::DelayAdaptiveCruiseControl, _grust_reserved_instant))
+                    .await?;
+                Ok(())
             }
             pub async fn handle_timeout_adaptive_cruise_control(
                 &mut self,
@@ -677,353 +1021,6 @@ pub mod runtime {
                         .distance_m
                         .replace((distance_m, _distance_m_instant));
                     assert!(unique.is_none(), "flow `distance_m` changes too frequently");
-                }
-                Ok(())
-            }
-            pub async fn handle_delay_adaptive_cruise_control(
-                &mut self,
-                _grust_reserved_instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.context.reset();
-                if self.input_store.not_empty() {
-                    self.reset_time_constraints(_grust_reserved_instant).await?;
-                    match (
-                        self.input_store.speed_km_h.take(),
-                        self.input_store.distance_m.take(),
-                        self.input_store.acc_active.take(),
-                    ) {
-                        (None, None, None) => {}
-                        (Some((speed_km_h, _speed_km_h_instant)), None, None) => {
-                            self.context.speed_km_h.set(speed_km_h);
-                            let t =
-                                (_speed_km_h_instant.duration_since(self.begin).as_millis()) as f64;
-                            self.context.t.set(t);
-                            if self.context.condition.is_new()
-                                || self.context.distance_m.is_new()
-                                || self.context.speed_km_h.is_new()
-                                || self.context.t.is_new()
-                            {
-                                let brakes_m_s = self.filtered_acc.step(FilteredAccInput {
-                                    condition: self.context.condition.get(),
-                                    distance_m: self.context.distance_m.get(),
-                                    sv_v_km_h: speed_km_h,
-                                    t_ms: t,
-                                });
-                                self.context.brakes_m_s.set(brakes_m_s);
-                            }
-                            if self.context.brakes_m_s.is_new() {
-                                self.send_output(
-                                    O::BrakesMS(
-                                        self.context.brakes_m_s.get(),
-                                        _grust_reserved_instant,
-                                    ),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (None, Some((distance_m, _distance_m_instant)), None) => {
-                            self.context.distance_m.set(distance_m);
-                            if self.context.distance_m.is_new() {
-                                let condition = self.activate.step(ActivateInput {
-                                    acc_active: None,
-                                    distance_m: distance_m,
-                                });
-                                self.context.condition.set(condition);
-                            }
-                            let t =
-                                (_distance_m_instant.duration_since(self.begin).as_millis()) as f64;
-                            self.context.t.set(t);
-                            if self.context.condition.is_new()
-                                || self.context.distance_m.is_new()
-                                || self.context.speed_km_h.is_new()
-                                || self.context.t.is_new()
-                            {
-                                let brakes_m_s = self.filtered_acc.step(FilteredAccInput {
-                                    condition: self.context.condition.get(),
-                                    distance_m: distance_m,
-                                    sv_v_km_h: self.context.speed_km_h.get(),
-                                    t_ms: t,
-                                });
-                                self.context.brakes_m_s.set(brakes_m_s);
-                            }
-                            if self.context.brakes_m_s.is_new() {
-                                self.send_output(
-                                    O::BrakesMS(
-                                        self.context.brakes_m_s.get(),
-                                        _grust_reserved_instant,
-                                    ),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            Some((speed_km_h, _speed_km_h_instant)),
-                            Some((distance_m, _distance_m_instant)),
-                            None,
-                        ) => {
-                            self.context.distance_m.set(distance_m);
-                            if self.context.distance_m.is_new() {
-                                let condition = self.activate.step(ActivateInput {
-                                    acc_active: None,
-                                    distance_m: distance_m,
-                                });
-                                self.context.condition.set(condition);
-                            }
-                            self.context.speed_km_h.set(speed_km_h);
-                            let t =
-                                (_speed_km_h_instant.duration_since(self.begin).as_millis()) as f64;
-                            self.context.t.set(t);
-                            if self.context.condition.is_new()
-                                || self.context.distance_m.is_new()
-                                || self.context.speed_km_h.is_new()
-                                || self.context.t.is_new()
-                            {
-                                let brakes_m_s = self.filtered_acc.step(FilteredAccInput {
-                                    condition: self.context.condition.get(),
-                                    distance_m: distance_m,
-                                    sv_v_km_h: speed_km_h,
-                                    t_ms: t,
-                                });
-                                self.context.brakes_m_s.set(brakes_m_s);
-                            }
-                            if self.context.brakes_m_s.is_new() {
-                                self.send_output(
-                                    O::BrakesMS(
-                                        self.context.brakes_m_s.get(),
-                                        _grust_reserved_instant,
-                                    ),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (None, None, Some((acc_active, _acc_active_instant))) => {
-                            let acc_active_ref = &mut None;
-                            *acc_active_ref = Some(acc_active);
-                            if acc_active_ref.is_some() || self.context.distance_m.is_new() {
-                                let condition = self.activate.step(ActivateInput {
-                                    acc_active: *acc_active_ref,
-                                    distance_m: self.context.distance_m.get(),
-                                });
-                                self.context.condition.set(condition);
-                            }
-                            let t =
-                                (_acc_active_instant.duration_since(self.begin).as_millis()) as f64;
-                            self.context.t.set(t);
-                            if self.context.condition.is_new()
-                                || self.context.distance_m.is_new()
-                                || self.context.speed_km_h.is_new()
-                                || self.context.t.is_new()
-                            {
-                                let brakes_m_s = self.filtered_acc.step(FilteredAccInput {
-                                    condition: self.context.condition.get(),
-                                    distance_m: self.context.distance_m.get(),
-                                    sv_v_km_h: self.context.speed_km_h.get(),
-                                    t_ms: t,
-                                });
-                                self.context.brakes_m_s.set(brakes_m_s);
-                            }
-                            if self.context.brakes_m_s.is_new() {
-                                self.send_output(
-                                    O::BrakesMS(
-                                        self.context.brakes_m_s.get(),
-                                        _grust_reserved_instant,
-                                    ),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            Some((speed_km_h, _speed_km_h_instant)),
-                            None,
-                            Some((acc_active, _acc_active_instant)),
-                        ) => {
-                            let acc_active_ref = &mut None;
-                            *acc_active_ref = Some(acc_active);
-                            if acc_active_ref.is_some() || self.context.distance_m.is_new() {
-                                let condition = self.activate.step(ActivateInput {
-                                    acc_active: *acc_active_ref,
-                                    distance_m: self.context.distance_m.get(),
-                                });
-                                self.context.condition.set(condition);
-                            }
-                            self.context.speed_km_h.set(speed_km_h);
-                            let t =
-                                (_speed_km_h_instant.duration_since(self.begin).as_millis()) as f64;
-                            self.context.t.set(t);
-                            if self.context.condition.is_new()
-                                || self.context.distance_m.is_new()
-                                || self.context.speed_km_h.is_new()
-                                || self.context.t.is_new()
-                            {
-                                let brakes_m_s = self.filtered_acc.step(FilteredAccInput {
-                                    condition: self.context.condition.get(),
-                                    distance_m: self.context.distance_m.get(),
-                                    sv_v_km_h: speed_km_h,
-                                    t_ms: t,
-                                });
-                                self.context.brakes_m_s.set(brakes_m_s);
-                            }
-                            if self.context.brakes_m_s.is_new() {
-                                self.send_output(
-                                    O::BrakesMS(
-                                        self.context.brakes_m_s.get(),
-                                        _grust_reserved_instant,
-                                    ),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            None,
-                            Some((distance_m, _distance_m_instant)),
-                            Some((acc_active, _acc_active_instant)),
-                        ) => {
-                            let acc_active_ref = &mut None;
-                            *acc_active_ref = Some(acc_active);
-                            self.context.distance_m.set(distance_m);
-                            if acc_active_ref.is_some() || self.context.distance_m.is_new() {
-                                let condition = self.activate.step(ActivateInput {
-                                    acc_active: *acc_active_ref,
-                                    distance_m: distance_m,
-                                });
-                                self.context.condition.set(condition);
-                            }
-                            let t =
-                                (_distance_m_instant.duration_since(self.begin).as_millis()) as f64;
-                            self.context.t.set(t);
-                            if self.context.condition.is_new()
-                                || self.context.distance_m.is_new()
-                                || self.context.speed_km_h.is_new()
-                                || self.context.t.is_new()
-                            {
-                                let brakes_m_s = self.filtered_acc.step(FilteredAccInput {
-                                    condition: self.context.condition.get(),
-                                    distance_m: distance_m,
-                                    sv_v_km_h: self.context.speed_km_h.get(),
-                                    t_ms: t,
-                                });
-                                self.context.brakes_m_s.set(brakes_m_s);
-                            }
-                            if self.context.brakes_m_s.is_new() {
-                                self.send_output(
-                                    O::BrakesMS(
-                                        self.context.brakes_m_s.get(),
-                                        _grust_reserved_instant,
-                                    ),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            Some((speed_km_h, _speed_km_h_instant)),
-                            Some((distance_m, _distance_m_instant)),
-                            Some((acc_active, _acc_active_instant)),
-                        ) => {
-                            let acc_active_ref = &mut None;
-                            *acc_active_ref = Some(acc_active);
-                            self.context.distance_m.set(distance_m);
-                            if acc_active_ref.is_some() || self.context.distance_m.is_new() {
-                                let condition = self.activate.step(ActivateInput {
-                                    acc_active: *acc_active_ref,
-                                    distance_m: distance_m,
-                                });
-                                self.context.condition.set(condition);
-                            }
-                            self.context.speed_km_h.set(speed_km_h);
-                            let t =
-                                (_speed_km_h_instant.duration_since(self.begin).as_millis()) as f64;
-                            self.context.t.set(t);
-                            if self.context.condition.is_new()
-                                || self.context.distance_m.is_new()
-                                || self.context.speed_km_h.is_new()
-                                || self.context.t.is_new()
-                            {
-                                let brakes_m_s = self.filtered_acc.step(FilteredAccInput {
-                                    condition: self.context.condition.get(),
-                                    distance_m: distance_m,
-                                    sv_v_km_h: speed_km_h,
-                                    t_ms: t,
-                                });
-                                self.context.brakes_m_s.set(brakes_m_s);
-                            }
-                            if self.context.brakes_m_s.is_new() {
-                                self.send_output(
-                                    O::BrakesMS(
-                                        self.context.brakes_m_s.get(),
-                                        _grust_reserved_instant,
-                                    ),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                    }
-                } else {
-                    self.delayed = true;
-                }
-                Ok(())
-            }
-            #[inline]
-            pub async fn reset_service_delay(
-                &mut self,
-                _grust_reserved_instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.timer
-                    .send((T::DelayAdaptiveCruiseControl, _grust_reserved_instant))
-                    .await?;
-                Ok(())
-            }
-            pub async fn handle_acc_active(
-                &mut self,
-                _acc_active_instant: std::time::Instant,
-                acc_active: Activation,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                if self.delayed {
-                    self.reset_time_constraints(_acc_active_instant).await?;
-                    self.context.reset();
-                    let acc_active_ref = &mut None;
-                    *acc_active_ref = Some(acc_active);
-                    if acc_active_ref.is_some() || self.context.distance_m.is_new() {
-                        let condition = self.activate.step(ActivateInput {
-                            acc_active: *acc_active_ref,
-                            distance_m: self.context.distance_m.get(),
-                        });
-                        self.context.condition.set(condition);
-                    }
-                    let t = (_acc_active_instant.duration_since(self.begin).as_millis()) as f64;
-                    self.context.t.set(t);
-                    if self.context.condition.is_new()
-                        || self.context.distance_m.is_new()
-                        || self.context.speed_km_h.is_new()
-                        || self.context.t.is_new()
-                    {
-                        let brakes_m_s = self.filtered_acc.step(FilteredAccInput {
-                            condition: self.context.condition.get(),
-                            distance_m: self.context.distance_m.get(),
-                            sv_v_km_h: self.context.speed_km_h.get(),
-                            t_ms: t,
-                        });
-                        self.context.brakes_m_s.set(brakes_m_s);
-                    }
-                    if self.context.brakes_m_s.is_new() {
-                        self.send_output(
-                            O::BrakesMS(self.context.brakes_m_s.get(), _acc_active_instant),
-                            _acc_active_instant,
-                        )
-                        .await?;
-                    }
-                } else {
-                    let unique = self
-                        .input_store
-                        .acc_active
-                        .replace((acc_active, _acc_active_instant));
-                    assert!(unique.is_none(), "flow `acc_active` changes too frequently");
                 }
                 Ok(())
             }
