@@ -121,9 +121,9 @@ impl<E: PartialEq> PartialEq for Stmt<E> {
     }
 }
 
-impl<E: synced::HasWeight> synced::HasWeight for Stmt<E> {
-    fn weight(&self, wb: &synced::WeightBounds) -> synced::Weight {
-        self.expr.weight(wb)
+impl<E: HasWeight> HasWeight for Stmt<E> {
+    fn weight(&self, wb: &synced::WeightBounds, ctx: &Ctx) -> synced::Weight {
+        self.expr.weight(wb, ctx)
     }
 }
 

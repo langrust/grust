@@ -9,5 +9,6 @@ pub mod symbol;
 
 pub mod import {
     pub use crate::prelude::ir0;
+    pub use crate::prelude::HasWeight;
     pub use ir0::{Ast, Ctx};
 }

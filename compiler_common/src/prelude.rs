@@ -148,7 +148,7 @@ pub use crate::{
     serde,
     stats::*,
     strum,
-    synced::{self, HasWeight},
+    synced,
     todoo,
     typ::Typ,
     w8,
