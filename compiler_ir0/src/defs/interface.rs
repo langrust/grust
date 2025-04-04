@@ -340,6 +340,7 @@ impl HasLoc for ExtCompDecl {
 
 /// External function declaration.
 pub struct ExtFunDecl {
+    /// `fn` token.
     pub fn_token: syn::Token![fn],
     /// Function's path.
     pub path: syn::Path,
@@ -354,7 +355,10 @@ pub struct ExtFunDecl {
     pub output_typ: Typ,
     /// Closing semicolon.
     pub semi_token: Token![;],
+    /// Full function type.
     pub full_typ: Typ,
+    /// Weight in percent, as specified in the ext-function's attributes.
+    pub weight: Option<usize>,
 }
 impl ExtFunDecl {
     pub fn args(&self) -> Vec<(Ident, Typ)> {
@@ -365,6 +369,55 @@ impl ExtFunDecl {
     }
     pub fn output_typ(&self) -> &Typ {
         &self.output_typ
+    }
+
+    pub fn parse_attributes(&mut self, attributes: Vec<syn::Attribute>) -> syn::Res<()> {
+        'handle_attributes: for attribute in attributes {
+            if let syn::AttrStyle::Inner(bang) = attribute.style {
+                // should never happen, whoever is calling us should have checked this already
+                return Err(syn::Error::new_spanned(bang, "unexpected inner attribute"));
+            }
+            use syn::Meta::*;
+            let exp = "expected a `weight = <percent>` attribute";
+            match attribute.meta {
+                Path(p) => {
+                    return Err(syn::Error::new_spanned(
+                        p,
+                        format!("unexpected `path` attribute, {}", exp),
+                    ))
+                }
+                List(m) => {
+                    return Err(syn::Error::new_spanned(
+                        m,
+                        format!("unexpected `list` attribute {}", exp,),
+                    ))
+                }
+                NameValue(mnv) => {
+                    let ident = mnv.path.get_ident().ok_or_else(|| {
+                        syn::Error::new_spanned(
+                            &mnv.path,
+                            "unexpected `path` name, expected `weight`",
+                        )
+                    })?;
+                    if ident.to_string() != "weight" {
+                        return Err(syn::Error::new_spanned(ident, "expected `weight`"));
+                    }
+                    let value_tokens = mnv.value.to_token_stream();
+                    if let syn::Expr::Lit(lit) = mnv.value {
+                        if let syn::Lit::Int(n) = lit.lit {
+                            let n: usize = n.base10_parse()?;
+                            self.weight = Some(n);
+                            continue 'handle_attributes;
+                        }
+                    }
+                    return Err(syn::Error::new_spanned(
+                        value_tokens,
+                        "expected a positive integer (`usize`)",
+                    ));
+                }
+            }
+        }
+        Ok(())
     }
 }
 impl HasLoc for ExtFunDecl {

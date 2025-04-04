@@ -16,24 +16,40 @@ impl<U: Parse, V: Parse> Parse for Colon<U, V> {
 
 impl Parse for Item {
     fn parse(input: ParseStream) -> Res<Self> {
-        if ConstDecl::peek(input) {
-            Ok(Item::Const(input.parse()?))
+        // parse attributes if any
+        let attributes = input.call(syn::Attribute::parse_outer)?;
+        macro_rules! no_attributes {
+            {} => {
+                if let Some(next) = attributes.into_iter().next() {
+                    return Err(syn::Error::new_spanned(next, "unexpected attribute"))
+                }
+            };
+        }
+        if ComponentImport::peek(input) {
+            no_attributes!();
+            Ok(Item::ComponentImport(input.parse()?))
         } else if Component::peek(input) {
+            no_attributes!();
             Ok(Item::Component(input.parse()?))
         } else if Function::peek(input) {
+            no_attributes!();
             Ok(Item::Function(input.parse()?))
         } else if Typedef::peek(input) {
+            no_attributes!();
             Ok(Item::Typedef(input.parse()?))
         } else if Service::peek(input) {
+            no_attributes!();
             Ok(Item::Service(input.parse()?))
         } else if FlowImport::peek(input) {
+            no_attributes!();
             Ok(Item::Import(input.parse()?))
         } else if FlowExport::peek(input) {
+            no_attributes!();
             Ok(Item::Export(input.parse()?))
         } else if ExtFunDecl::peek(input) {
-            Ok(Item::ExtFun(input.parse()?))
-        } else if ExtCompDecl::peek(input) {
-            Ok(Item::ExtComp(input.parse()?))
+            let mut ext_fun = ExtFunDecl::parse(input)?;
+            ext_fun.parse_attributes(attributes)?;
+            Ok(Item::ExtFun(ext_fun))
         } else {
             Err(input.error(
                 "expected either a flow import/export, a type, a component definition/import, \
@@ -525,6 +541,7 @@ mod interface {
                 output_typ,
                 semi_token,
                 full_typ,
+                weight: None,
             })
         }
     }

@@ -514,7 +514,7 @@ impl Error {
 
     pub fn to_diagnostic(self) -> macro1::Diagnostic {
         use macro1::*;
-        println!("error:\n{}", self.error().to_string());
+        // println!("error:\n{}", self.error().to_string());
         let (error_kind, notes) = self.val;
         let loc = self.loc.expect("error has no location >_<").unwrap();
         let mut d = Diagnostic::spanned(&[loc] as &[Span], Level::Error, error_kind.to_string());
