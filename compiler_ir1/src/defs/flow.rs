@@ -58,8 +58,10 @@ pub enum Kind {
     Time { loc: Loc },
     /// Component call.
     ComponentCall {
-        /// Identifier to the component to call.
-        component_id: usize,
+        /// Component's id in memory.
+        memory_id: Option<usize>,
+        /// Called component's id in Symbol Table.
+        called_comp_id: usize,
         /// Input expressions.
         inputs: Vec<(usize, Expr)>,
     },
@@ -104,12 +106,61 @@ mk_new! { impl Kind =>
     }
     Time: time { loc: Loc }
     ComponentCall: comp_call {
-        component_id: usize,
+            memory_id = None,
+            called_comp_id: usize,
             inputs: Vec<(usize, Expr)>,
     }
     FunctionCall: fun_call {
             function_id: usize,
             inputs: Vec<(usize, Expr)>,
+    }
+}
+
+impl Kind {
+    /// Create memory identifiers for [ir1] components called by service.
+    pub fn memorize(
+        &mut self,
+        identifier_creator: &mut IdentifierCreator,
+        ctx: &mut Ctx,
+    ) -> Res<()> {
+        match self {
+            Kind::Ident { .. } | Kind::Time { .. } => (),
+            Kind::Sample { expr, .. }
+            | Kind::Scan { expr, .. }
+            | Kind::Timeout { expr, .. }
+            | Kind::Throttle { expr, .. }
+            | Kind::OnChange { expr }
+            | Kind::Persist { expr } => expr.kind.memorize(identifier_creator, ctx)?,
+            Kind::Merge { expr_1, expr_2 } => {
+                expr_1.kind.memorize(identifier_creator, ctx)?;
+                expr_2.kind.memorize(identifier_creator, ctx)?
+            }
+            Kind::FunctionCall { inputs, .. } => {
+                for (_, expr) in inputs.iter_mut() {
+                    expr.kind.memorize(identifier_creator, ctx)?
+                }
+            }
+            Kind::ComponentCall {
+                memory_id: comp_memory_id,
+                called_comp_id,
+                inputs,
+            } => {
+                debug_assert!(comp_memory_id.is_none());
+                // create fresh identifier for the new memory buffer
+                let node_name = ctx.get_name(*called_comp_id);
+                let memory_name =
+                    identifier_creator.new_identifier(node_name.loc(), &node_name.to_string());
+                let memory_id = ctx.insert_fresh_signal(memory_name, Scope::Local, None);
+                // put the 'memory_id' of the called node
+                *comp_memory_id = Some(memory_id);
+
+                // iter on inputs expressions
+                for (_, expr) in inputs.iter_mut() {
+                    expr.kind.memorize(identifier_creator, ctx)?
+                }
+            }
+        }
+        Ok(())
     }
 }
 

@@ -339,7 +339,7 @@ mod flow_instr {
         /// Map from id to export.
         exports: &'a HashMap<usize, FlowExport>,
         /// Called components.
-        components: Vec<Ident>,
+        components: Vec<(Ident, Ident)>,
         /// Triggers graph,
         graph: trigger::Graph<'a>,
     }
@@ -468,7 +468,7 @@ mod flow_instr {
         pub fn set_multiple_inputs(&mut self, multiple_inputs: bool) {
             self.multiple_inputs = multiple_inputs
         }
-        pub fn destroy(self) -> (ir1::ctx::Flows, Vec<Ident>) {
+        pub fn destroy(self) -> (ir1::ctx::Flows, Vec<(Ident, Ident)>) {
             (self.flows_context, self.components)
         }
 
@@ -515,7 +515,7 @@ mod flow_instr {
             flows_context: &mut ir1::ctx::Flows,
             imports: &mut HashMap<usize, FlowImport>,
             timing_events: &mut Vec<TimingEvent>,
-            components: &mut Vec<Ident>,
+            components: &mut Vec<(Ident, Ident)>,
         ) -> (HashMap<usize, usize>, HashMap<usize, usize>) {
             // collects components, timing events, on_change_events that are present in the service
             let mut stmts_timers = HashMap::new();
@@ -636,9 +636,16 @@ mod flow_instr {
                                     kind: TimingEventKind::Timeout(deadline.clone()),
                                 })
                             }
-                            flow::Kind::ComponentCall { component_id, .. } => {
-                                components.push(symbols.get_name(*component_id).clone())
-                            }
+                            flow::Kind::ComponentCall {
+                                memory_id,
+                                called_comp_id,
+                                ..
+                            } => components.push((
+                                symbols
+                                    .get_name(*memory_id.as_ref().expect("memorized"))
+                                    .clone(),
+                                symbols.get_name(*called_comp_id).clone(),
+                            )),
                         }
                     }
                 };
@@ -799,9 +806,15 @@ mod flow_instr {
                 flow::Kind::Merge { .. } => self.handle_merge(pattern, dependencies),
                 flow::Kind::Time { loc } => self.handle_time(stmt_id, pattern, *loc),
                 flow::Kind::ComponentCall {
-                    component_id,
+                    memory_id,
+                    called_comp_id,
                     inputs,
-                } => self.handle_component_call(pattern, *component_id, inputs),
+                } => self.handle_component_call(
+                    pattern,
+                    *memory_id.as_ref().expect("memorized"),
+                    *called_comp_id,
+                    inputs,
+                ),
                 flow::Kind::FunctionCall {
                     function_id,
                     inputs,
@@ -1122,7 +1135,8 @@ mod flow_instr {
         fn handle_component_call(
             &mut self,
             pattern: &ir1::stmt::Pattern,
-            component_id: usize,
+            memory_id: usize,
+            called_comp_id: usize,
             inputs: &Vec<(usize, flow::Expr)>,
         ) -> FlowInstruction {
             // get events that might call the component
@@ -1153,7 +1167,14 @@ mod flow_instr {
             });
 
             // call component with the events and update output signals
-            self.call_component(component_id, pattern.clone(), comp_inputs, signals, events)
+            self.call_component(
+                memory_id,
+                called_comp_id,
+                pattern.clone(),
+                comp_inputs,
+                signals,
+                events,
+            )
         }
 
         /// Compute the instruction from a function call.
@@ -1222,19 +1243,22 @@ mod flow_instr {
         /// Add component call in current propagation branch with outputs update.
         fn call_component(
             &mut self,
-            component_id: usize,
+            memory_id: usize,
+            called_comp_id: usize,
             output_pattern: ir1::stmt::Pattern,
             inputs: Vec<(Ident, Expression)>,
             signals: Vec<Ident>,
             events: Vec<Ident>,
         ) -> FlowInstruction {
-            let component_name = self.get_name(component_id);
+            let mem_name = self.get_name(memory_id);
+            let comp_name = self.get_name(called_comp_id);
             let outputs_ids = output_pattern.identifiers();
 
             // call component
             let mut instrs = vec![FlowInstruction::comp_call(
                 output_pattern.into_ir2(self),
-                component_name.clone(),
+                mem_name.clone(),
+                comp_name.clone(),
                 inputs,
             )];
             // update outputs: context signals and all events

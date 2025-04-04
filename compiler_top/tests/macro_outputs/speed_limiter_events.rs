@@ -398,10 +398,10 @@ pub mod runtime {
                             .handle_activation(_grust_reserved_instant, activation)
                             .await?;
                     }
-                    I::Timer(T::DelaySpeedLimiter, _grust_reserved_instant) => {
+                    I::Failure(failure, _grust_reserved_instant) => {
                         runtime
                             .speed_limiter
-                            .handle_delay_speed_limiter(_grust_reserved_instant)
+                            .handle_failure(_grust_reserved_instant, failure)
                             .await?;
                     }
                     I::VacuumBrake(vacuum_brake, _grust_reserved_instant) => {
@@ -410,16 +410,16 @@ pub mod runtime {
                             .handle_vacuum_brake(_grust_reserved_instant, vacuum_brake)
                             .await?;
                     }
-                    I::Failure(failure, _grust_reserved_instant) => {
-                        runtime
-                            .speed_limiter
-                            .handle_failure(_grust_reserved_instant, failure)
-                            .await?;
-                    }
                     I::Timer(T::TimeoutSpeedLimiter, _grust_reserved_instant) => {
                         runtime
                             .speed_limiter
                             .handle_timeout_speed_limiter(_grust_reserved_instant)
+                            .await?;
+                    }
+                    I::Timer(T::DelaySpeedLimiter, _grust_reserved_instant) => {
+                        runtime
+                            .speed_limiter
+                            .handle_delay_speed_limiter(_grust_reserved_instant)
                             .await?;
                     }
                     I::Vdc(vdc, _grust_reserved_instant) => {
@@ -763,6 +763,65 @@ pub mod runtime {
                 }
                 Ok(())
             }
+            pub async fn handle_timeout_speed_limiter(
+                &mut self,
+                _timeout_speed_limiter_instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.reset_time_constraints(_timeout_speed_limiter_instant)
+                    .await?;
+                self.context.reset();
+                let in_regulation_ref = &mut None;
+                let (v_set_aux, v_update) = self
+                    .process_set_speed
+                    .step(ProcessSetSpeedInput { set_speed: None });
+                self.context.v_set_aux.set(v_set_aux);
+                self.context.v_update.set(v_update);
+                let v_set = self.context.v_set_aux.get();
+                self.context.v_set.set(v_set);
+                self.send_output(
+                    O::VSet(v_set, _timeout_speed_limiter_instant),
+                    _timeout_speed_limiter_instant,
+                )
+                .await?;
+                let (state, on_state, in_regulation_aux, state_update) =
+                    self.speed_limiter.step(SpeedLimiterInput {
+                        activation_req: None,
+                        vacuum_brake_state: self.context.vacuum_brake.get(),
+                        kickdown: None,
+                        failure: None,
+                        vdc_disabled: self.context.vdc.get(),
+                        speed: self.context.speed.get(),
+                        v_set: v_set,
+                    });
+                self.context.state.set(state);
+                self.context.on_state.set(on_state);
+                self.context.in_regulation_aux.set(in_regulation_aux);
+                self.context.state_update.set(state_update);
+                if self.context.in_regulation_old.get() != self.context.in_regulation_aux.get() {
+                    self.context
+                        .in_regulation_old
+                        .set(self.context.in_regulation_aux.get());
+                    *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                }
+                if let Some(in_regulation) = *in_regulation_ref {
+                    self.send_output(
+                        O::InRegulation(in_regulation, _timeout_speed_limiter_instant),
+                        _timeout_speed_limiter_instant,
+                    )
+                    .await?;
+                }
+                Ok(())
+            }
+            #[inline]
+            pub async fn reset_service_timeout(
+                &mut self,
+                _timeout_speed_limiter_instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.timer
+                    .send((T::TimeoutSpeedLimiter, _timeout_speed_limiter_instant))
+                    .await?;
+                Ok(())
+            }
             pub async fn handle_vacuum_brake(
                 &mut self,
                 _vacuum_brake_instant: std::time::Instant,
@@ -877,6 +936,90 @@ pub mod runtime {
                         .kickdown
                         .replace((kickdown, _kickdown_instant));
                     assert!(unique.is_none(), "flow `kickdown` changes too frequently");
+                }
+                Ok(())
+            }
+            pub async fn handle_set_speed(
+                &mut self,
+                _set_speed_instant: std::time::Instant,
+                set_speed: f64,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                if self.delayed {
+                    self.reset_time_constraints(_set_speed_instant).await?;
+                    self.context.reset();
+                    let changed_set_speed_ref = &mut None;
+                    if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
+                        self.context.x.set(set_speed);
+                    }
+                    if self.context.changed_set_speed_old.get() != self.context.x.get() {
+                        self.context.changed_set_speed_old.set(self.context.x.get());
+                        *changed_set_speed_ref = Some(self.context.x.get());
+                    }
+                    let (v_set_aux, v_update) = self.process_set_speed.step(ProcessSetSpeedInput {
+                        set_speed: *changed_set_speed_ref,
+                    });
+                    self.context.v_set_aux.set(v_set_aux);
+                    self.context.v_update.set(v_update);
+                    let v_set = self.context.v_set_aux.get();
+                    self.context.v_set.set(v_set);
+                    if self.context.v_set.is_new() {
+                        self.send_output(O::VSet(v_set, _set_speed_instant), _set_speed_instant)
+                            .await?;
+                    }
+                } else {
+                    let unique = self
+                        .input_store
+                        .set_speed
+                        .replace((set_speed, _set_speed_instant));
+                    assert!(unique.is_none(), "flow `set_speed` changes too frequently");
+                }
+                Ok(())
+            }
+            pub async fn handle_failure(
+                &mut self,
+                _failure_instant: std::time::Instant,
+                failure: Failure,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                if self.delayed {
+                    self.reset_time_constraints(_failure_instant).await?;
+                    self.context.reset();
+                    let failure_ref = &mut None;
+                    let in_regulation_ref = &mut None;
+                    *failure_ref = Some(failure);
+                    let (state, on_state, in_regulation_aux, state_update) =
+                        self.speed_limiter.step(SpeedLimiterInput {
+                            activation_req: None,
+                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                            kickdown: None,
+                            failure: *failure_ref,
+                            vdc_disabled: self.context.vdc.get(),
+                            speed: self.context.speed.get(),
+                            v_set: self.context.v_set.get(),
+                        });
+                    self.context.state.set(state);
+                    self.context.on_state.set(on_state);
+                    self.context.in_regulation_aux.set(in_regulation_aux);
+                    self.context.state_update.set(state_update);
+                    if self.context.in_regulation_old.get() != self.context.in_regulation_aux.get()
+                    {
+                        self.context
+                            .in_regulation_old
+                            .set(self.context.in_regulation_aux.get());
+                        *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                    }
+                    if let Some(in_regulation) = *in_regulation_ref {
+                        self.send_output(
+                            O::InRegulation(in_regulation, _failure_instant),
+                            _failure_instant,
+                        )
+                        .await?;
+                    }
+                } else {
+                    let unique = self
+                        .input_store
+                        .failure
+                        .replace((failure, _failure_instant));
+                    assert!(unique.is_none(), "flow `failure` changes too frequently");
                 }
                 Ok(())
             }
@@ -7564,149 +7707,6 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.timer
                     .send((T::DelaySpeedLimiter, _grust_reserved_instant))
-                    .await?;
-                Ok(())
-            }
-            pub async fn handle_set_speed(
-                &mut self,
-                _set_speed_instant: std::time::Instant,
-                set_speed: f64,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                if self.delayed {
-                    self.reset_time_constraints(_set_speed_instant).await?;
-                    self.context.reset();
-                    let changed_set_speed_ref = &mut None;
-                    if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
-                        self.context.x.set(set_speed);
-                    }
-                    if self.context.changed_set_speed_old.get() != self.context.x.get() {
-                        self.context.changed_set_speed_old.set(self.context.x.get());
-                        *changed_set_speed_ref = Some(self.context.x.get());
-                    }
-                    let (v_set_aux, v_update) = self.process_set_speed.step(ProcessSetSpeedInput {
-                        set_speed: *changed_set_speed_ref,
-                    });
-                    self.context.v_set_aux.set(v_set_aux);
-                    self.context.v_update.set(v_update);
-                    let v_set = self.context.v_set_aux.get();
-                    self.context.v_set.set(v_set);
-                    if self.context.v_set.is_new() {
-                        self.send_output(O::VSet(v_set, _set_speed_instant), _set_speed_instant)
-                            .await?;
-                    }
-                } else {
-                    let unique = self
-                        .input_store
-                        .set_speed
-                        .replace((set_speed, _set_speed_instant));
-                    assert!(unique.is_none(), "flow `set_speed` changes too frequently");
-                }
-                Ok(())
-            }
-            pub async fn handle_failure(
-                &mut self,
-                _failure_instant: std::time::Instant,
-                failure: Failure,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                if self.delayed {
-                    self.reset_time_constraints(_failure_instant).await?;
-                    self.context.reset();
-                    let failure_ref = &mut None;
-                    let in_regulation_ref = &mut None;
-                    *failure_ref = Some(failure);
-                    let (state, on_state, in_regulation_aux, state_update) =
-                        self.speed_limiter.step(SpeedLimiterInput {
-                            activation_req: None,
-                            vacuum_brake_state: self.context.vacuum_brake.get(),
-                            kickdown: None,
-                            failure: *failure_ref,
-                            vdc_disabled: self.context.vdc.get(),
-                            speed: self.context.speed.get(),
-                            v_set: self.context.v_set.get(),
-                        });
-                    self.context.state.set(state);
-                    self.context.on_state.set(on_state);
-                    self.context.in_regulation_aux.set(in_regulation_aux);
-                    self.context.state_update.set(state_update);
-                    if self.context.in_regulation_old.get() != self.context.in_regulation_aux.get()
-                    {
-                        self.context
-                            .in_regulation_old
-                            .set(self.context.in_regulation_aux.get());
-                        *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                    }
-                    if let Some(in_regulation) = *in_regulation_ref {
-                        self.send_output(
-                            O::InRegulation(in_regulation, _failure_instant),
-                            _failure_instant,
-                        )
-                        .await?;
-                    }
-                } else {
-                    let unique = self
-                        .input_store
-                        .failure
-                        .replace((failure, _failure_instant));
-                    assert!(unique.is_none(), "flow `failure` changes too frequently");
-                }
-                Ok(())
-            }
-            pub async fn handle_timeout_speed_limiter(
-                &mut self,
-                _timeout_speed_limiter_instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.reset_time_constraints(_timeout_speed_limiter_instant)
-                    .await?;
-                self.context.reset();
-                let in_regulation_ref = &mut None;
-                let (v_set_aux, v_update) = self
-                    .process_set_speed
-                    .step(ProcessSetSpeedInput { set_speed: None });
-                self.context.v_set_aux.set(v_set_aux);
-                self.context.v_update.set(v_update);
-                let v_set = self.context.v_set_aux.get();
-                self.context.v_set.set(v_set);
-                self.send_output(
-                    O::VSet(v_set, _timeout_speed_limiter_instant),
-                    _timeout_speed_limiter_instant,
-                )
-                .await?;
-                let (state, on_state, in_regulation_aux, state_update) =
-                    self.speed_limiter.step(SpeedLimiterInput {
-                        activation_req: None,
-                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                        kickdown: None,
-                        failure: None,
-                        vdc_disabled: self.context.vdc.get(),
-                        speed: self.context.speed.get(),
-                        v_set: v_set,
-                    });
-                self.context.state.set(state);
-                self.context.on_state.set(on_state);
-                self.context.in_regulation_aux.set(in_regulation_aux);
-                self.context.state_update.set(state_update);
-                if self.context.in_regulation_old.get() != self.context.in_regulation_aux.get() {
-                    self.context
-                        .in_regulation_old
-                        .set(self.context.in_regulation_aux.get());
-                    *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                }
-                if let Some(in_regulation) = *in_regulation_ref {
-                    self.send_output(
-                        O::InRegulation(in_regulation, _timeout_speed_limiter_instant),
-                        _timeout_speed_limiter_instant,
-                    )
-                    .await?;
-                }
-                Ok(())
-            }
-            #[inline]
-            pub async fn reset_service_timeout(
-                &mut self,
-                _timeout_speed_limiter_instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.timer
-                    .send((T::TimeoutSpeedLimiter, _timeout_speed_limiter_instant))
                     .await?;
                 Ok(())
             }

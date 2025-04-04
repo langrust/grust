@@ -902,6 +902,46 @@ pub mod runtime {
                     .await?;
                 Ok(())
             }
+            pub async fn handle_speed_km_h(
+                &mut self,
+                _speed_km_h_instant: std::time::Instant,
+                speed_km_h: f64,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                if self.delayed {
+                    self.reset_time_constraints(_speed_km_h_instant).await?;
+                    self.context.reset();
+                    self.context.speed_km_h.set(speed_km_h);
+                    let t = (_speed_km_h_instant.duration_since(self.begin).as_millis()) as f64;
+                    self.context.t.set(t);
+                    if self.context.condition.is_new()
+                        || self.context.distance_m.is_new()
+                        || self.context.speed_km_h.is_new()
+                        || self.context.t.is_new()
+                    {
+                        let brakes_m_s = self.filtered_acc.step(FilteredAccInput {
+                            condition: self.context.condition.get(),
+                            distance_m: self.context.distance_m.get(),
+                            sv_v_km_h: speed_km_h,
+                            t_ms: t,
+                        });
+                        self.context.brakes_m_s.set(brakes_m_s);
+                    }
+                    if self.context.brakes_m_s.is_new() {
+                        self.send_output(
+                            O::BrakesMS(self.context.brakes_m_s.get(), _speed_km_h_instant),
+                            _speed_km_h_instant,
+                        )
+                        .await?;
+                    }
+                } else {
+                    let unique = self
+                        .input_store
+                        .speed_km_h
+                        .replace((speed_km_h, _speed_km_h_instant));
+                    assert!(unique.is_none(), "flow `speed_km_h` changes too frequently");
+                }
+                Ok(())
+            }
             pub async fn handle_timeout_adaptive_cruise_control(
                 &mut self,
                 _timeout_adaptive_cruise_control_instant: std::time::Instant,
@@ -954,46 +994,6 @@ pub mod runtime {
                         _timeout_adaptive_cruise_control_instant,
                     ))
                     .await?;
-                Ok(())
-            }
-            pub async fn handle_speed_km_h(
-                &mut self,
-                _speed_km_h_instant: std::time::Instant,
-                speed_km_h: f64,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                if self.delayed {
-                    self.reset_time_constraints(_speed_km_h_instant).await?;
-                    self.context.reset();
-                    self.context.speed_km_h.set(speed_km_h);
-                    let t = (_speed_km_h_instant.duration_since(self.begin).as_millis()) as f64;
-                    self.context.t.set(t);
-                    if self.context.condition.is_new()
-                        || self.context.distance_m.is_new()
-                        || self.context.speed_km_h.is_new()
-                        || self.context.t.is_new()
-                    {
-                        let brakes_m_s = self.filtered_acc.step(FilteredAccInput {
-                            condition: self.context.condition.get(),
-                            distance_m: self.context.distance_m.get(),
-                            sv_v_km_h: speed_km_h,
-                            t_ms: t,
-                        });
-                        self.context.brakes_m_s.set(brakes_m_s);
-                    }
-                    if self.context.brakes_m_s.is_new() {
-                        self.send_output(
-                            O::BrakesMS(self.context.brakes_m_s.get(), _speed_km_h_instant),
-                            _speed_km_h_instant,
-                        )
-                        .await?;
-                    }
-                } else {
-                    let unique = self
-                        .input_store
-                        .speed_km_h
-                        .replace((speed_km_h, _speed_km_h_instant));
-                    assert!(unique.is_none(), "flow `speed_km_h` changes too frequently");
-                }
                 Ok(())
             }
             pub async fn handle_distance_m(

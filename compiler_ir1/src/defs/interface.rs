@@ -168,6 +168,23 @@ impl Service {
         });
         ctx.global()
     }
+
+    /// Create memory identifiers for [ir1] components called by service.
+    pub fn memorize(&mut self, symbol_table: &mut Ctx) -> Res<()> {
+        // create an IdentifierCreator, a local Ctx and Memory
+        let mut identifier_creator = IdentifierCreator::from(self.get_flows_names(symbol_table));
+        symbol_table.local();
+
+        for statement in self.statements.values_mut() {
+            let kind = &mut statement.get_expr_mut().kind;
+            kind.memorize(&mut identifier_creator, symbol_table)?;
+        }
+
+        // drop IdentifierCreator (auto) and local Ctx
+        symbol_table.global();
+
+        Ok(())
+    }
 }
 
 pub struct Interface {
@@ -263,6 +280,13 @@ pub enum FlowStatement {
     Instantiation(FlowInstantiation),
 }
 impl FlowStatement {
+    pub fn get_expr_mut(&mut self) -> &mut ir1::flow::Expr {
+        match self {
+            FlowStatement::Declaration(flow_declaration) => &mut flow_declaration.expr,
+            FlowStatement::Instantiation(flow_instantiation) => &mut flow_instantiation.expr,
+        }
+    }
+
     /// Retrieves the component index and its inputs if the statement contains an invocation.
     pub fn try_get_call(&self) -> Option<&Vec<(usize, ir1::flow::Expr)>> {
         use FlowStatement::*;
