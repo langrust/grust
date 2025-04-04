@@ -753,7 +753,7 @@ mod test {
                     literal: Constant::Integer(parse_quote!(1i64)),
                 },
             )],
-            Some(parse_quote!( path::to::node )),
+            Some(parse_quote!(path::to::node)),
         );
 
         let control = parse_quote! { self.node_state.step ( path::to::NodeInput { i : 1i64 }) };

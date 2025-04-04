@@ -19,9 +19,11 @@ pub mod ir0 {
             contract::{self, Contract},
             equation::{self, Eq, ReactEq},
             expr::{self, Expr},
-            interface::{self, ExtFunDecl, ExtCompDecl, FlowExport, FlowImport, Service, TimeRange},
-            stmt::{self, Stmt, LetDecl, LogStmt},
-            stream, Ast, Colon, Component, Ctx, Function, Item, Top, Typedef, ConstDecl,
+            interface::{
+                self, ExtCompDecl, ExtFunDecl, FlowExport, FlowImport, Service, TimeRange,
+            },
+            stmt::{self, LetDecl, LogStmt, Stmt},
+            stream, Ast, Colon, Component, ConstDecl, Ctx, Function, Item, Top, Typedef,
         },
         symbol,
     };
