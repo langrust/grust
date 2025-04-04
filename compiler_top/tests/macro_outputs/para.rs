@@ -261,134 +261,137 @@ pub mod runtime {
     pub mod para_mess_service {
         use super::*;
         use futures::{sink::SinkExt, stream::StreamExt};
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct S2(i64, bool);
-        impl S2 {
-            fn set(&mut self, s2: i64) {
-                self.1 = self.0 != s2;
-                self.0 = s2;
+        mod ctx_ty {
+            use super::*;
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct S2(i64, bool);
+            impl S2 {
+                pub fn set(&mut self, s2: i64) {
+                    self.1 = self.0 != s2;
+                    self.0 = s2;
+                }
+                pub fn get(&self) -> i64 {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn get(&self) -> i64 {
-                self.0
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct S4(i64, bool);
+            impl S4 {
+                pub fn set(&mut self, s4: i64) {
+                    self.1 = self.0 != s4;
+                    self.0 = s4;
+                }
+                pub fn get(&self) -> i64 {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn is_new(&self) -> bool {
-                self.1
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct S3(i64, bool);
+            impl S3 {
+                pub fn set(&mut self, s3: i64) {
+                    self.1 = self.0 != s3;
+                    self.0 = s3;
+                }
+                pub fn get(&self) -> i64 {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn reset(&mut self) {
-                self.1 = false;
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct E2(i64, bool);
+            impl E2 {
+                pub fn set(&mut self, e2: i64) {
+                    self.1 = self.0 != e2;
+                    self.0 = e2;
+                }
+                pub fn get(&self) -> i64 {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct S4(i64, bool);
-        impl S4 {
-            fn set(&mut self, s4: i64) {
-                self.1 = self.0 != s4;
-                self.0 = s4;
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct E1(i64, bool);
+            impl E1 {
+                pub fn set(&mut self, e1: i64) {
+                    self.1 = self.0 != e1;
+                    self.0 = e1;
+                }
+                pub fn get(&self) -> i64 {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn get(&self) -> i64 {
-                self.0
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct E3(i64, bool);
+            impl E3 {
+                pub fn set(&mut self, e3: i64) {
+                    self.1 = self.0 != e3;
+                    self.0 = e3;
+                }
+                pub fn get(&self) -> i64 {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct S3(i64, bool);
-        impl S3 {
-            fn set(&mut self, s3: i64) {
-                self.1 = self.0 != s3;
-                self.0 = s3;
-            }
-            fn get(&self) -> i64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct E2(i64, bool);
-        impl E2 {
-            fn set(&mut self, e2: i64) {
-                self.1 = self.0 != e2;
-                self.0 = e2;
-            }
-            fn get(&self) -> i64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct E1(i64, bool);
-        impl E1 {
-            fn set(&mut self, e1: i64) {
-                self.1 = self.0 != e1;
-                self.0 = e1;
-            }
-            fn get(&self) -> i64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct E3(i64, bool);
-        impl E3 {
-            fn set(&mut self, e3: i64) {
-                self.1 = self.0 != e3;
-                self.0 = e3;
-            }
-            fn get(&self) -> i64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct O1(i64, bool);
-        impl O1 {
-            fn set(&mut self, o1: i64) {
-                self.1 = self.0 != o1;
-                self.0 = o1;
-            }
-            fn get(&self) -> i64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct O1(i64, bool);
+            impl O1 {
+                pub fn set(&mut self, o1: i64) {
+                    self.1 = self.0 != o1;
+                    self.0 = o1;
+                }
+                pub fn get(&self) -> i64 {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
         }
         #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct Context {
-            pub s2: S2,
-            pub s4: S4,
-            pub s3: S3,
-            pub e2: E2,
-            pub e1: E1,
-            pub e3: E3,
-            pub o1: O1,
+            pub s2: ctx_ty::S2,
+            pub s4: ctx_ty::S4,
+            pub s3: ctx_ty::S3,
+            pub e2: ctx_ty::E2,
+            pub e1: ctx_ty::E1,
+            pub e3: ctx_ty::E3,
+            pub o1: ctx_ty::O1,
         }
         impl Context {
             fn init() -> Context {
