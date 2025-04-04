@@ -80,6 +80,12 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Component {
 
                 // 'step' method
                 let step = {
+                    // logs
+                    let logs = body
+                        .logs
+                        .into_iter()
+                        .map(|id| Stmt::log(ctx.get_name(id).clone()));
+                    // body stmts
                     let body = match para::Stmts::of_ir1(&body.statements, ctx, &body.graph) {
                         Ok(stmts) => stmts,
                         Err(e) => panic!(
@@ -92,6 +98,7 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Component {
                         output_type,
                         body,
                         state_elements_step,
+                        logs,
                         output_expression,
                         contract,
                     )
@@ -554,6 +561,12 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Function {
                     .into_iter()
                     .map(|statement| statement.into_ir2(ctx))
                     .collect_vec();
+
+                // Logs
+                let logs = body.logs.into_iter().map(|id| Stmt::log(ctx.get_name(id).clone()));
+                statements.extend(logs);
+
+                // return stmt
                 statements.push(Stmt::ExprLast {
                     expr: body.returned.into_ir2(ctx),
                 });
@@ -561,13 +574,10 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Function {
                 // transform contract
                 let contract = body.contract.into_ir2(ctx);
 
-                Some(Function {
-                    name,
-                    inputs,
-                    output,
-                    body: Block { statements },
-                    contract,
-                })
+                // Body
+                let body = Block { statements };
+
+                Some(Function::new(name, inputs, output, body, contract))
             }
             Either::Right(_) => None,
         }
