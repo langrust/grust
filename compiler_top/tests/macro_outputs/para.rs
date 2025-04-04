@@ -204,6 +204,7 @@ pub mod runtime {
     }
     pub struct Runtime {
         para_mess: para_mess_service::ParaMessService,
+        output: futures::channel::mpsc::Sender<O>,
         timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
     }
     impl Runtime {
@@ -211,8 +212,20 @@ pub mod runtime {
             output: futures::channel::mpsc::Sender<O>,
             timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
         ) -> Runtime {
-            let para_mess = para_mess_service::ParaMessService::init(output, timer.clone());
-            Runtime { para_mess, timer }
+            let para_mess = para_mess_service::ParaMessService::init(output.clone(), timer.clone());
+            Runtime {
+                para_mess,
+                output,
+                timer,
+            }
+        }
+        #[inline]
+        pub async fn send_output(
+            &mut self,
+            output: O,
+        ) -> Result<(), futures::channel::mpsc::SendError> {
+            self.output.send(output).await?;
+            Ok(())
         }
         #[inline]
         pub async fn send_timer(
@@ -232,6 +245,9 @@ pub mod runtime {
             let mut runtime = self;
             runtime
                 .send_timer(T::TimeoutParaMess, _grust_reserved_init_instant)
+                .await?;
+            runtime
+                .send_output(O::O1(Default::default(), _grust_reserved_init_instant))
                 .await?;
             while let Some(input) = input.next().await {
                 match input {

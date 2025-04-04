@@ -1,4 +1,4 @@
-prelude! { execution_machine::ArrivingFlow }
+prelude! { execution_machine::{ArrivingFlow, InterfaceFlow} }
 
 /// The runtime loop structure.
 #[derive(Debug, PartialEq, Default)]
@@ -9,7 +9,7 @@ pub struct RuntimeLoop {
 
 impl RuntimeLoop {
     /// Transform [ir2] run-loop into an async function performing a loop over events.
-    pub fn into_syn(self) -> syn::ImplItem {
+    pub fn into_syn(self, output_flows: Vec<InterfaceFlow>) -> syn::ImplItem {
         // init timers
         let init_timers = self.input_handlers
         .iter()
@@ -28,6 +28,21 @@ impl RuntimeLoop {
                 }
             }
         });
+        // init outputs
+        let init_outputs = output_flows.into_iter().filter_map(
+            |InterfaceFlow {
+                 identifier, typ, ..
+             }| -> Option<syn::Stmt> {
+                let enum_ident =
+                    Ident::new(&to_camel_case(&identifier.to_string()), identifier.span());
+                if typ.is_event() {
+                    None
+                } else {
+                    let init_instant = Ident::init_instant_var();
+                    Some(parse_quote! { runtime.send_output(O::#enum_ident(Default::default(), #init_instant)).await?; })
+                }
+            }
+        );
         // loop on the input stream
         let async_loop: syn::Stmt = {
             let mut input_arms: Vec<syn::Arm> = vec![];
@@ -97,6 +112,7 @@ impl RuntimeLoop {
                 futures::pin_mut!(input);
                 let mut runtime = self;
                 #(#init_timers)*
+                #(#init_outputs)*
                 #async_loop
                 Ok(())
             }

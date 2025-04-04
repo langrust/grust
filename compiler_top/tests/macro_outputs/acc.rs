@@ -310,6 +310,7 @@ pub mod runtime {
     }
     pub struct Runtime {
         adaptive_cruise_control: adaptive_cruise_control_service::AdaptiveCruiseControlService,
+        output: futures::channel::mpsc::Sender<O>,
         timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
     }
     impl Runtime {
@@ -319,13 +320,22 @@ pub mod runtime {
         ) -> Runtime {
             let adaptive_cruise_control =
                 adaptive_cruise_control_service::AdaptiveCruiseControlService::init(
-                    output,
+                    output.clone(),
                     timer.clone(),
                 );
             Runtime {
                 adaptive_cruise_control,
+                output,
                 timer,
             }
+        }
+        #[inline]
+        pub async fn send_output(
+            &mut self,
+            output: O,
+        ) -> Result<(), futures::channel::mpsc::SendError> {
+            self.output.send(output).await?;
+            Ok(())
         }
         #[inline]
         pub async fn send_timer(
@@ -348,6 +358,12 @@ pub mod runtime {
                     T::TimeoutAdaptiveCruiseControl,
                     _grust_reserved_init_instant,
                 )
+                .await?;
+            runtime
+                .send_output(O::BrakesMS(
+                    Default::default(),
+                    _grust_reserved_init_instant,
+                ))
                 .await?;
             while let Some(input) = input.next().await {
                 match input {

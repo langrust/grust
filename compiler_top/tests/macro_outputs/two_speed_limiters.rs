@@ -427,6 +427,7 @@ pub mod runtime {
     pub struct Runtime {
         speed_limiter: speed_limiter_service::SpeedLimiterService,
         another_speed_limiter: another_speed_limiter_service::AnotherSpeedLimiterService,
+        output: futures::channel::mpsc::Sender<O>,
         timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
     }
     impl Runtime {
@@ -438,14 +439,23 @@ pub mod runtime {
                 speed_limiter_service::SpeedLimiterService::init(output.clone(), timer.clone());
             let another_speed_limiter =
                 another_speed_limiter_service::AnotherSpeedLimiterService::init(
-                    output,
+                    output.clone(),
                     timer.clone(),
                 );
             Runtime {
                 speed_limiter,
                 another_speed_limiter,
+                output,
                 timer,
             }
+        }
+        #[inline]
+        pub async fn send_output(
+            &mut self,
+            output: O,
+        ) -> Result<(), futures::channel::mpsc::SendError> {
+            self.output.send(output).await?;
+            Ok(())
         }
         #[inline]
         pub async fn send_timer(
@@ -468,6 +478,15 @@ pub mod runtime {
                 .await?;
             runtime
                 .send_timer(T::TimeoutSpeedLimiter, _grust_reserved_init_instant)
+                .await?;
+            runtime
+                .send_output(O::InRegulation(
+                    Default::default(),
+                    _grust_reserved_init_instant,
+                ))
+                .await?;
+            runtime
+                .send_output(O::VSet(Default::default(), _grust_reserved_init_instant))
                 .await?;
             while let Some(input) = input.next().await {
                 match input {
