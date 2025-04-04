@@ -9,8 +9,8 @@ pub struct ComponentInfo {
     pub field_ident: Ident,
 }
 impl ComponentInfo {
-    pub fn new(ty_ident: Ident) -> Self {
-        let field_ident = ty_ident.to_field();
+    pub fn new(mem_name: Ident, ty_ident: Ident) -> Self {
+        let field_ident = mem_name.to_field();
         let state_ty_ident = ty_ident.to_state_ty();
         Self {
             ty_ident,
@@ -38,14 +38,14 @@ pub struct ServiceHandler {
 impl ServiceHandler {
     pub fn new(
         service: impl Into<Ident>,
-        components: Vec<Ident>,
+        components: Vec<(Ident, Ident)>,
         flow_handlers: Vec<FlowHandler>,
         flow_context: ir1::ctx::Flows,
     ) -> Self {
         let service = service.into();
         let components_info = components
             .iter()
-            .map(|ty_ident| ComponentInfo::new(ty_ident.clone()))
+            .map(|(mem_name, ty_ident)| ComponentInfo::new(mem_name.clone(), ty_ident.clone()))
             .collect();
         let service_store_ident = service.to_service_store_ty();
         let service_struct_ident = service.to_service_state_ty();
@@ -385,7 +385,7 @@ pub enum FlowInstruction {
     IfChange(Ident, Expression, Box<Self>),
     IfActivated(Vec<Ident>, Vec<Ident>, Box<Self>, Option<Box<Self>>),
     ResetTimer(Ident, Ident),
-    ComponentCall(Pattern, Ident, Vec<(Ident, Expression)>),
+    ComponentCall(Pattern, Ident, Ident, Vec<(Ident, Expression)>),
     FunctionCall(Pattern, Ident, Vec<Expression>),
     HandleDelay(Vec<Ident>, Vec<MatchArm>),
     Seq(Vec<Self>),
@@ -490,10 +490,10 @@ impl FlowInstruction {
                 let instant = import_name.to_instant_var();
                 parse_quote! { self.send_timer(T::#enum_ident, #instant).await?; }
             }
-            FlowInstruction::ComponentCall(pattern, component_name, inputs_fields) => {
+            FlowInstruction::ComponentCall(pattern, memory_name, comp_name, inputs_fields) => {
                 let outputs = pattern.into_syn();
-                let component_ident = component_name.to_field();
-                let component_input_name = component_ident.to_input_ty();
+                let mem_ident = memory_name.to_field();
+                let component_input_name = comp_name.to_input_ty();
 
                 let input_fields =
                     inputs_fields
@@ -505,7 +505,7 @@ impl FlowInstruction {
                         });
 
                 parse_quote! {
-                    let #outputs = self.#component_ident.step(
+                    let #outputs = self.#mem_ident.step(
                         #component_input_name {
                             #(#input_fields),*
                         }
@@ -696,7 +696,8 @@ mk_new! { impl FlowInstruction =>
     )
     ComponentCall: comp_call (
         pat: Pattern = pat,
-        name: impl Into<Ident> = name.into(),
+        mem_name: impl Into<Ident> = mem_name.into(),
+        comp_name: impl Into<Ident> = comp_name.into(),
         inputs: impl Into<Vec<(Ident, Expression)>> = inputs.into(),
     )
     FunctionCall: fun_call (

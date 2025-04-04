@@ -380,7 +380,7 @@ impl Typing for flow::Expr {
                 Ok(())
             }
             flow::Kind::ComponentCall {
-                ref component_id,
+                ref called_comp_id,
                 ref mut inputs,
                 ..
             } => {
@@ -397,7 +397,7 @@ impl Typing for flow::Expr {
 
                 // get the outputs types of the called component
                 let mut outputs_types = symbols
-                    .get_node_outputs(*component_id)
+                    .get_node_outputs(*called_comp_id)
                     .iter()
                     .map(|(_, output_id)| {
                         let output_type = symbols.get_typ(*output_id);

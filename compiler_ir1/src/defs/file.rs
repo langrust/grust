@@ -113,8 +113,11 @@ impl File {
     ///
     /// This example is tested in source.
     pub fn memorize(&mut self, symbol_table: &mut Ctx) -> Res<()> {
-        for node in self.components.iter_mut() {
-            node.memorize(symbol_table)?;
+        for comp in self.components.iter_mut() {
+            comp.memorize(symbol_table)?;
+        }
+        for service in self.interface.services.iter_mut() {
+            service.memorize(symbol_table)?;
         }
         Ok(())
     }
