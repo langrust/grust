@@ -19,6 +19,8 @@ pub enum SymbolKind {
         scope: Scope,
         /// Identifier type.
         typing: Option<Typ>,
+        /// Constant value.
+        constant: Option<Constant>,
     },
     /// Initialization kind.
     Init {
@@ -432,7 +434,14 @@ impl Table {
         local: bool,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
-        let symbol = Symbol::new(SymbolKind::Identifier { scope, typing }, name);
+        let symbol = Symbol::new(
+            SymbolKind::Identifier {
+                scope,
+                typing,
+                constant: None,
+            },
+            name,
+        );
 
         self.insert_symbol(symbol, local, errors)
     }
@@ -449,11 +458,32 @@ impl Table {
             SymbolKind::Identifier {
                 scope: Scope::Local,
                 typing,
+                constant: None,
             },
             name,
         );
 
         self.insert_symbol(symbol, local, errors)
+    }
+
+    /// Insert constant identifier in symbol table.
+    pub fn insert_constant(
+        &mut self,
+        name: Ident,
+        typing: Typ,
+        constant: Constant,
+        errors: &mut Vec<Error>,
+    ) -> TRes<usize> {
+        let symbol = Symbol::new(
+            SymbolKind::Identifier {
+                scope: Scope::Local,
+                typing: Some(typing),
+                constant: Some(constant),
+            },
+            name,
+        );
+
+        self.insert_symbol(symbol, false, errors)
     }
 
     /// Insert identifier in symbol table.
@@ -487,6 +517,7 @@ impl Table {
             SymbolKind::Identifier {
                 scope: Scope::Output,
                 typing: Some(typing),
+                constant: None,
             },
             Ident::new("result", loc.span),
         );
@@ -635,7 +666,14 @@ impl Table {
         scope: Scope,
         typing: Option<Typ>,
     ) -> usize {
-        let symbol = Symbol::new(SymbolKind::Identifier { scope, typing }, fresh_name);
+        let symbol = Symbol::new(
+            SymbolKind::Identifier {
+                scope,
+                typing,
+                constant: None,
+            },
+            fresh_name,
+        );
 
         self.insert_symbol(symbol, false, &mut vec![])
             .expect("you should not fail") // todo make it local
@@ -1222,6 +1260,17 @@ impl Table {
         match symbol.kind() {
             SymbolKind::Array { size, .. } => *size,
             _ => noErrorDesc!(),
+        }
+    }
+
+    /// Tries to get constant value.
+    pub fn try_get_const(&self, id: usize) -> Option<&Constant> {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::Identifier { constant, .. } => constant.as_ref(),
+            _ => None,
         }
     }
 
