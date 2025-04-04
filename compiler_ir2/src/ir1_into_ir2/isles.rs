@@ -156,7 +156,7 @@ impl<'a> IsleBuilder<'a> {
             };
 
             // store events that trigger stmt
-            if let Some((_, inputs)) = stmt.try_get_call() {
+            if let Some(inputs) = stmt.try_get_call() {
                 // scan incoming stmt for timers
                 for import_id in service.get_dependencies(*stmt_id) {
                     if let Some(FlowImport { id: timer, .. }) = &imports.get(&import_id) {
