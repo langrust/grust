@@ -20,12 +20,13 @@ grust! {
         brakes_m_s = acc(cond, radar_m, vel_delta, speed_m_s);
     }
 
+    const RHO: float = 1.; // reaction time
+    const B_MAX: float = 5.886; // 0.6*9.81
+
     // Safety distance computation
     function safety_distance(sv_v: float, fv_v: float) -> float {
-        let rho: float = 1.; // SV's reaction time
-        let b_max: float = 0.6*9.81;
-        let sv_d_stop: float = sv_v*rho + sv_v^2/(2.*b_max);
-        let fv_d_stop: float = fv_v^2/(2.*b_max);
+        let sv_d_stop: float = sv_v*RHO + sv_v^2/(2.*B_MAX);
+        let fv_d_stop: float = fv_v^2/(2.*B_MAX);
         return sv_d_stop - fv_d_stop;
     }
 

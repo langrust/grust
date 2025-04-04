@@ -17,6 +17,9 @@ fn should_compile_acc() {
         // Activation type.
         enum Activation{ On, Off }
 
+        const RHO: float = 2.0; // reaction time
+        const B_MAX: float = 5.886; // 0.6*9.81
+
         // Derivation component.
         component derive(x: float, t_ms: float) -> (v_s: float) {
             init (t_ms, x) = (0., 0.); // init `last` memories
@@ -40,13 +43,10 @@ fn should_compile_acc() {
 
         // Safety distance computation.
         function safety_distance(sv_v_m_s: float, fv_v_m_s: float) -> float {
-            let rho_s: float = 2.;
-            let g: float = 9.81;
-            let brake_max: float = 0.6*g;
-            // distance for SV to stop if it brakes max after a reaction time `rho_s`
-            let sv_d_stop_m: float = sv_v_m_s*rho_s + sv_v_m_s*sv_v_m_s/(2.*brake_max);
+            // distance for SV to stop if it brakes max after a reaction time `RHO`
+            let sv_d_stop_m: float = sv_v_m_s*RHO + sv_v_m_s*sv_v_m_s/(2.*B_MAX);
             // distance for FV to stop if it brakes max
-            let fv_d_stop_m: float = fv_v_m_s*fv_v_m_s/(2.*brake_max);
+            let fv_d_stop_m: float = fv_v_m_s*fv_v_m_s/(2.*B_MAX);
             return sv_d_stop_m - fv_d_stop_m;
         }
 
