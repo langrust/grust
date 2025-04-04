@@ -50,6 +50,11 @@ pub enum SymbolKind {
         typing: Option<Typ>,
         /// Path to rewrite calls to this function with.
         path_opt: Option<syn::Path>,
+        /// A weight hint, typically provided for external functions by users.
+        ///
+        /// **This value is understood as a weight percentage, whatever it means for users.** This
+        /// value **can** go over `100%`.
+        weight_percent_hint: Option<usize>,
     },
     /// Node kind.
     Node {
@@ -556,6 +561,7 @@ impl Table {
         output_type: Option<Typ>,
         local: bool,
         path_opt: Option<syn::Path>,
+        weight_percent_hint: Option<usize>,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol = Symbol::new(
@@ -564,6 +570,7 @@ impl Table {
                 output_type,
                 typing: None,
                 path_opt,
+                weight_percent_hint,
             },
             name,
         );
@@ -890,6 +897,20 @@ impl Table {
         }
     }
 
+    /// Get function input identifiers from identifier.
+    pub fn get_function_weight_percent_hint(&self, id: usize) -> Option<usize> {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::Function {
+                weight_percent_hint,
+                ..
+            } => weight_percent_hint.clone(),
+            _ => noErrorDesc!(),
+        }
+    }
+
     /// Set function output type.
     pub fn set_function_output_type(&mut self, id: usize, new_type: Typ) {
         let symbol = self
@@ -917,6 +938,27 @@ impl Table {
                 }
                 *output_type = Some(new_type.clone());
                 *typing = Some(Typ::function(inputs_type, new_type))
+            }
+            _ => noErrorDesc!(),
+        }
+    }
+
+    /// Set function output type.
+    pub fn set_function_weight_percent_hint(
+        &mut self,
+        id: usize,
+        weight_percent_hint: Option<usize>,
+    ) {
+        let symbol = self
+            .get_symbol_mut(id)
+            .expect(&format!("expect symbol for {id}"));
+
+        match &mut symbol.kind {
+            SymbolKind::Function {
+                weight_percent_hint: target,
+                ..
+            } => {
+                *target = weight_percent_hint;
             }
             _ => noErrorDesc!(),
         }

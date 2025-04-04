@@ -13,6 +13,17 @@ macro_rules! prelude {
 
 pub use compiler_common::import::*;
 
+/// Can compute its [Weight].
+pub trait HasWeight {
+    /// Self's weight.
+    fn weight(&self, bounds: &synced::WeightBounds, ctx: &Ctx) -> synced::Weight;
+}
+impl HasWeight for synced::Weight {
+    fn weight(&self, _: &synced::WeightBounds, _: &Ctx) -> synced::Weight {
+        *self
+    }
+}
+
 pub mod ir0 {
     pub use crate::{
         defs::{

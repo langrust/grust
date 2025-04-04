@@ -204,54 +204,64 @@ mk_new! { impl{E} Kind<E> =>
     Zip: zip { arrays: Vec<E> }
 }
 
-impl<E: synced::HasWeight> synced::HasWeight for Kind<E>
+impl<E: HasWeight> HasWeight for Kind<E>
 where
-    Stmt<E>: synced::HasWeight,
+    Stmt<E>: HasWeight,
 {
-    fn weight(&self, wb: &synced::WeightBounds) -> synced::Weight {
+    fn weight(&self, wb: &synced::WeightBounds, ctx: &Ctx) -> synced::Weight {
         use synced::weight;
         use Kind::*;
 
         match self {
-            Constant { .. } | Identifier { .. } => weight::zero,
-            UnOp { expr, .. } => expr.weight(wb) + weight::lo,
-            BinOp { lft, rgt, .. } => lft.weight(wb) + rgt.weight(wb) + weight::lo,
-            IfThenElse { cnd, thn, els } => {
-                cnd.weight(wb) + (thn.weight(wb).max(els.weight(wb))) + weight::lo
+            Constant { .. } => weight::zero,
+            Identifier { id } => {
+                if ctx.is_function(*id) {
+                    let weight_hint = ctx.get_function_weight_percent_hint(*id);
+                    wb.function_weight(weight_hint)
+                } else {
+                    weight::zero
+                }
             }
-            Application { fun, inputs } => fun.weight(wb) + w8!(wb => sum inputs) + weight::hi,
-            Abstraction { expr, .. } => expr.weight(wb),
-            Structure { fields, .. } => w8!(sum fields, |(_, e)| e.weight(wb)) + weight::lo,
+            UnOp { expr, .. } => expr.weight(wb, ctx) + weight::lo,
+            BinOp { lft, rgt, .. } => lft.weight(wb, ctx) + rgt.weight(wb, ctx) + weight::lo,
+            IfThenElse { cnd, thn, els } => {
+                cnd.weight(wb, ctx) + (thn.weight(wb, ctx).max(els.weight(wb, ctx))) + weight::lo
+            }
+            Application { fun, inputs } => {
+                fun.weight(wb, ctx) + w8!(wb, ctx => sum inputs) + weight::hi
+            }
+            Abstraction { expr, .. } => expr.weight(wb, ctx),
+            Structure { fields, .. } => w8!(sum fields, |(_, e)| e.weight(wb, ctx)) + weight::lo,
             Enumeration { .. } => weight::zero,
-            Array { elements } | Tuple { elements } => w8!(wb => sum elements) + weight::mid,
+            Array { elements } | Tuple { elements } => w8!(wb, ctx => sum elements) + weight::mid,
             Match { expr, arms } => {
-                expr.weight(wb)
+                expr.weight(wb, ctx)
                     + arms
                         .iter()
                         .map(|(_, expr_opt, stmts, expr)| {
-                            w8!(wb => weight? expr_opt.as_ref())
-                                + w8!(wb => sum stmts)
-                                + expr.weight(wb)
+                            w8!(wb, ctx => weight? expr_opt.as_ref())
+                                + w8!(wb, ctx => sum stmts)
+                                + expr.weight(wb, ctx)
                         })
                         .max()
                         .unwrap_or(weight::zero)
             }
-            FieldAccess { expr, .. } | TupleElementAccess { expr, .. } => expr.weight(wb),
+            FieldAccess { expr, .. } | TupleElementAccess { expr, .. } => expr.weight(wb, ctx),
             Map { expr, fun } => {
                 // well, we can't do much without knowing the length of the array...
-                expr.weight(wb) + fun.weight(wb) + weight::hi
+                expr.weight(wb, ctx) + fun.weight(wb, ctx) + weight::hi
             }
             Fold { array, init, fun } => {
                 // still want to know the length of the array...
-                array.weight(wb) + fun.weight(wb) + init.weight(wb) + weight::hi
+                array.weight(wb, ctx) + fun.weight(wb, ctx) + init.weight(wb, ctx) + weight::hi
             }
             Sort { expr, fun } => {
                 // length of the array™, but sorting is expensive anyway
-                expr.weight(wb) * fun.weight(wb) + weight::hi
+                expr.weight(wb, ctx) * fun.weight(wb, ctx) + weight::hi
             }
             Zip { arrays } => {
                 // #lengthofthearrays
-                w8!(wb => sum arrays)
+                w8!(wb, ctx => sum arrays)
             }
         }
     }

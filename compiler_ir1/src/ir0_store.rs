@@ -483,9 +483,15 @@ impl Ir0Store for ir0::Function {
 
         ctx.global();
 
-        let _ =
-            ctx.ctx0
-                .insert_function(self.ident.clone(), inputs, None, false, None, ctx.errors)?;
+        let _ = ctx.ctx0.insert_function(
+            self.ident.clone(),
+            inputs,
+            None,
+            false,
+            None,
+            None,
+            ctx.errors,
+        )?;
 
         Ok(())
     }
@@ -523,6 +529,7 @@ impl Ir0Store for ir0::ExtFunDecl {
             None,
             false,
             Some(self.path.clone()),
+            self.weight,
             ctx.errors,
         )?;
 

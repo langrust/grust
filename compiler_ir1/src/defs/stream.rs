@@ -1004,20 +1004,20 @@ mk_new! { impl Kind =>
 }
 
 impl HasWeight for Kind {
-    fn weight(&self, wb: &synced::WeightBounds) -> synced::Weight {
+    fn weight(&self, wb: &synced::WeightBounds, ctx: &Ctx) -> synced::Weight {
         use synced::weight;
         use Kind::*;
         match self {
-            Expression { expr } => expr.weight(wb),
+            Expression { expr } => expr.weight(wb, ctx),
             Last { .. } => weight::lo,
             NodeApplication { inputs, .. } => {
                 // we **don't** want to rayon-ize node applications as it would (seem to) borrow
                 // the node's state multiple time in the rayon-closure: we need the weight to be
                 // at least `wb.rayon_ubx`
-                wb.rayon_ubx() + w8!(sum inputs, |(_, e)| e.weight(wb))
+                wb.rayon_ubx() + w8!(sum inputs, |(_, e)| e.weight(wb, ctx))
             }
-            RisingEdge { expr } => expr.weight(wb) + weight::mid,
-            SomeEvent { expr } => expr.weight(wb) + weight::mid,
+            RisingEdge { expr } => expr.weight(wb, ctx) + weight::mid,
+            SomeEvent { expr } => expr.weight(wb, ctx) + weight::mid,
             NoneEvent => weight::zero,
         }
     }
@@ -1535,8 +1535,8 @@ impl Expr {
     }
 }
 
-impl synced::HasWeight for Expr {
-    fn weight(&self, wb: &synced::WeightBounds) -> synced::Weight {
-        self.kind.weight(wb)
+impl HasWeight for Expr {
+    fn weight(&self, wb: &synced::WeightBounds, ctx: &Ctx) -> synced::Weight {
+        self.kind.weight(wb, ctx)
     }
 }

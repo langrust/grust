@@ -49,30 +49,25 @@ pub mod weight {
     }
 }
 
-/// Can compute its [Weight].
-pub trait HasWeight {
-    /// Self's weight.
-    fn weight(&self, bounds: &WeightBounds) -> Weight;
-}
-impl HasWeight for Weight {
-    fn weight(&self, _: &WeightBounds) -> Weight {
-        *self
-    }
-}
-
 /// Computes the weight of a collection or an option.
 #[macro_export]
 macro_rules! w8 {
     { weight $e:expr, $($map_fn:tt)* } => { $e.iter().map($($map_fn)*) };
-    { $wb:expr => weight $e:expr  } => { $crate::w8!(weight $e, |e| e.weight($wb)) };
+    { $wb:expr, $ctx:expr $(,)? => weight $e:expr } => {
+        $crate::w8!(weight $e, |e| e.weight($wb, $ctx))
+    };
     { weight? $e:expr, $($map_fn:tt)* } => {
         $e.map($($map_fn)*).unwrap_or($crate::synced::weight::zero)
     };
-    { $wb:expr => weight? $e:expr  } => { $crate::w8!(weight? $e, |e| e.weight($wb)) };
+    { $wb:expr, $ctx:expr $(,)? => weight? $e:expr } => {
+        $crate::w8!(weight? $e, |e| e.weight($wb, $ctx))
+    };
     { $id:ident $e:expr, $($map_fn:tt)* } => {
         $crate::w8!(weight $e, $($map_fn)*).$id::<$crate::synced::Weight>()
     };
-    { $wb:expr => $id:ident $e:expr } => { $crate::w8!($id $e, |e| e.weight($wb)) };
+    { $wb:expr, $ctx:expr $(,)? => $id:ident $e:expr } => {
+        $crate::w8!($id $e, |e| e.weight($wb, $ctx))
+    };
 }
 
 /// *Weight bounds* define weight intervals that correspond to parallelization strategies.
@@ -216,6 +211,47 @@ impl WeightBounds {
     /// True if the bounds allow threads.
     pub fn has_threads(&self) -> bool {
         self.rayon_ubx < self.threads_ubx
+    }
+
+    /// The weight of an external function call given an optional weight hint in percent.
+    ///
+    /// How this function works is arbitrary, pretty much.
+    ///
+    /// First, we can't really do anything if we don't have weight hint so in this case the
+    /// convention is "do nothing when given nothing", and we don't parallelize.
+    ///
+    /// If we have a weight hint then we apply the following cutoffs:
+    ///
+    /// - `000% ≤ hint < 010%`: don't parallelize (so no hint is basically the same as `hint = 0`);
+    /// - `010% ≤ hint < 030%`: use rayon;
+    /// - `030% ≤ hint < 100%`: use threads;
+    /// - `100% ≤ hint`: don't parallelize (too expensive).
+    ///
+    /// Currently the weight returned is **not** proportional to the `hint` precise value in its
+    /// interval.
+    ///
+    /// Note that extreme cases this function may not behave as discussed above, for instance if
+    /// some bounds in `self` are equal or `no_para_ubx` is `0`.
+    pub fn function_weight(&self, weight_percent_hint: Option<usize>) -> usize {
+        if let Some(hint) = weight_percent_hint {
+            if hint < 10 {
+                if 0 < self.no_para_ubx {
+                    self.no_para_ubx - 1
+                } else {
+                    0
+                }
+            } else if hint < 30 {
+                let diff = self.rayon_ubx - self.no_para_ubx;
+                self.no_para_ubx + (diff / 2)
+            } else if hint < 100 {
+                let diff = self.threads_ubx - self.rayon_ubx;
+                self.rayon_ubx + (diff / 2)
+            } else {
+                self.threads_ubx
+            }
+        } else {
+            0
+        }
     }
 
     /// Returns the [Kind] corresponding to a [Weight], see [WeightBounds] for the intervals.

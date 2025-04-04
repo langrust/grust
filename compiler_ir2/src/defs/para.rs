@@ -137,6 +137,7 @@ pub type Graph = graph::DiGraphMap<usize, graph::Label>;
 
 /// Parallelization environment, stores the graph and data about statements.
 pub struct Env<'a> {
+    ctx: &'a Ctx,
     /// Map a identifier UID to its representative identifier UID.
     ///
     /// Statements can bind more than one identifier at a time, in tuple-deconstruction for
@@ -220,6 +221,7 @@ impl<'a> Env<'a> {
     /// map between representatives and the corresponding statement, and the graph of dependency
     /// between representatives.
     pub fn new(
+        ctx: &'a Ctx,
         stmts: &'a Vec<ir1::stream::Stmt>,
         graph: &Graph,
         weight_bounds: synced::WeightBounds,
@@ -230,6 +232,7 @@ impl<'a> Env<'a> {
             repr_to_stmt: Map::new(),
             graph: Graph::new(),
             weight_bounds,
+            ctx,
         };
         for stmt in stmts {
             let mut repr = None;
@@ -306,7 +309,7 @@ impl<'a> Env<'a> {
             .repr_to_stmt
             .get(&uid)
             .expect("unknown instruction uid");
-        stmt.weight(&self.weight_bounds)
+        stmt.weight(&self.weight_bounds, self.ctx)
     }
 
     /// Cost of a sequence of statements, used in the implementation of [synced::CtxSpec].
@@ -673,7 +676,7 @@ impl Stmts {
     ) -> Result<Self, String> {
         if let conf::ComponentPara::Para(weight_bounds) = ctx.conf.component_para {
             // println!("wb: {:?}", weight_bounds);
-            let env = Env::new(stmts, graph, weight_bounds)?;
+            let env = Env::new(ctx, stmts, graph, weight_bounds)?;
             // env.print(ctx);
             env.to_stmts(ctx)
         } else {
