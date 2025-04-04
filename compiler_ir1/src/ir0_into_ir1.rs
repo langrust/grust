@@ -50,6 +50,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for Ast {
                 }
                 ir0::Item::ExtFun(ext) => functions.push(ext.into_ir1(ctx)?),
                 ir0::Item::ExtComp(extcomp) => components.push(extcomp.into_ir1(ctx)?),
+                ir0::Item::Const(_) => (),
             }
         }
 
@@ -780,11 +781,12 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
             )),
             Term::Identifier(ident) => {
                 let id = ctx.ctx0.get_ident(&ident, false, false, ctx.errors)?;
-                Ok(ir1::contract::Term::new(
-                    ir1::contract::Kind::ident(id),
-                    None,
-                    loc,
-                ))
+                let kind = if let Some(value) = ctx.ctx0.try_get_const(id) {
+                    ir1::contract::Kind::constant(value.clone())
+                } else {
+                    ir1::contract::Kind::ident(id)
+                };
+                Ok(ir1::contract::Term::new(kind, None, loc))
             }
             Term::Last(ident) => {
                 let init_id = ctx.ctx0.get_init_id(&ident, false, ctx.errors)?;
@@ -1710,7 +1712,11 @@ mod simple_expr_impl {
                 Constant(constant) => ir1::expr::Kind::Constant { constant },
                 Identifier(id) => {
                     let id = ctx.ctx0.get_ident(&id, false, true, ctx.errors)?;
-                    ir1::expr::Kind::Identifier { id }
+                    if let Some(value) = ctx.ctx0.try_get_const(id) {
+                        ir1::expr::Kind::constant(value.clone())
+                    } else {
+                        ir1::expr::Kind::ident(id)
+                    }
                 }
                 UnOp(e) => e.into_ir1(ctx)?,
                 BinOp(e) => e.into_ir1(ctx)?,
@@ -2226,7 +2232,11 @@ mod stream_impl {
                 },
                 stream::Expr::Identifier(id) => {
                     let id = ctx.ctx0.get_ident(&id, false, true, ctx.errors)?;
-                    Kind::expr(ir1::expr::Kind::Identifier { id })
+                    if let Some(value) = ctx.ctx0.try_get_const(id) {
+                        Kind::expr(ir1::expr::Kind::constant(value.clone()))
+                    } else {
+                        Kind::expr(ir1::expr::Kind::ident(id))
+                    }
                 }
                 stream::Expr::UnOp(expr) => Kind::expr(expr.into_ir1(ctx)?),
                 stream::Expr::BinOp(expr) => Kind::expr(expr.into_ir1(ctx)?),
