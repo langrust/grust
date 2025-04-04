@@ -104,7 +104,12 @@ mod test {
 
     #[test]
     fn should_create_rust_println_from_ir2_log() {
-        let statement = Stmt::log(parse_quote!(x), Expr::InputAccess { identifier: parse_quote!(x) });
+        let statement = Stmt::log(
+            parse_quote!(x),
+            Expr::InputAccess {
+                identifier: parse_quote!(x),
+            },
+        );
 
         let control = parse_quote! { println!("x: {:?}", input.x); };
         assert_eq!(statement.into_syn(&mut Default::default()), control)
