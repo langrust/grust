@@ -38,6 +38,7 @@ mod aeb {
             // requires { 0. <= speed && speed < 55. } // urban limit
             // ensures { pedest? => state != NoBrake } // safety
         {
+            log (pedest, state);
             state = when {
                 init                        => Braking::NoBrake,
                 let d = pedest?             => brakes(d, speed),
