@@ -190,44 +190,47 @@ pub mod runtime {
     pub mod aeb_service {
         use super::*;
         use futures::{sink::SinkExt, stream::StreamExt};
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct Brakes(Braking, bool);
-        impl Brakes {
-            fn set(&mut self, brakes: Braking) {
-                self.1 = self.0 != brakes;
-                self.0 = brakes;
+        mod ctx_ty {
+            use super::*;
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct Brakes(Braking, bool);
+            impl Brakes {
+                pub fn set(&mut self, brakes: Braking) {
+                    self.1 = self.0 != brakes;
+                    self.0 = brakes;
+                }
+                pub fn get(&self) -> Braking {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn get(&self) -> Braking {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct SpeedKmH(f64, bool);
-        impl SpeedKmH {
-            fn set(&mut self, speed_km_h: f64) {
-                self.1 = self.0 != speed_km_h;
-                self.0 = speed_km_h;
-            }
-            fn get(&self) -> f64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct SpeedKmH(f64, bool);
+            impl SpeedKmH {
+                pub fn set(&mut self, speed_km_h: f64) {
+                    self.1 = self.0 != speed_km_h;
+                    self.0 = speed_km_h;
+                }
+                pub fn get(&self) -> f64 {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
         }
         #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct Context {
-            pub brakes: Brakes,
-            pub speed_km_h: SpeedKmH,
+            pub brakes: ctx_ty::Brakes,
+            pub speed_km_h: ctx_ty::SpeedKmH,
         }
         impl Context {
             fn init() -> Context {

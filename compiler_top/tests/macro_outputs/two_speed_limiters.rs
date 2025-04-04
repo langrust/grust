@@ -563,260 +563,263 @@ pub mod runtime {
     pub mod speed_limiter_service {
         use super::*;
         use futures::{sink::SinkExt, stream::StreamExt};
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct InRegulation(bool, bool);
-        impl InRegulation {
-            fn set(&mut self, in_regulation: bool) {
-                self.1 = self.0 != in_regulation;
-                self.0 = in_regulation;
+        mod ctx_ty {
+            use super::*;
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct InRegulation(bool, bool);
+            impl InRegulation {
+                pub fn set(&mut self, in_regulation: bool) {
+                    self.1 = self.0 != in_regulation;
+                    self.0 = in_regulation;
+                }
+                pub fn get(&self) -> bool {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn get(&self) -> bool {
-                self.0
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct VSetAux(f64, bool);
+            impl VSetAux {
+                pub fn set(&mut self, v_set_aux: f64) {
+                    self.1 = self.0 != v_set_aux;
+                    self.0 = v_set_aux;
+                }
+                pub fn get(&self) -> f64 {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn is_new(&self) -> bool {
-                self.1
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct VSet(f64, bool);
+            impl VSet {
+                pub fn set(&mut self, v_set: f64) {
+                    self.1 = self.0 != v_set;
+                    self.0 = v_set;
+                }
+                pub fn get(&self) -> f64 {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn reset(&mut self) {
-                self.1 = false;
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct VacuumBrake(VacuumBrakeState, bool);
+            impl VacuumBrake {
+                pub fn set(&mut self, vacuum_brake: VacuumBrakeState) {
+                    self.1 = self.0 != vacuum_brake;
+                    self.0 = vacuum_brake;
+                }
+                pub fn get(&self) -> VacuumBrakeState {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct VSetAux(f64, bool);
-        impl VSetAux {
-            fn set(&mut self, v_set_aux: f64) {
-                self.1 = self.0 != v_set_aux;
-                self.0 = v_set_aux;
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct StateUpdate(bool, bool);
+            impl StateUpdate {
+                pub fn set(&mut self, state_update: bool) {
+                    self.1 = self.0 != state_update;
+                    self.0 = state_update;
+                }
+                pub fn get(&self) -> bool {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn get(&self) -> f64 {
-                self.0
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct VUpdate(bool, bool);
+            impl VUpdate {
+                pub fn set(&mut self, v_update: bool) {
+                    self.1 = self.0 != v_update;
+                    self.0 = v_update;
+                }
+                pub fn get(&self) -> bool {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn is_new(&self) -> bool {
-                self.1
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct Activation(ActivationRequest, bool);
+            impl Activation {
+                pub fn set(&mut self, activation: ActivationRequest) {
+                    self.1 = self.0 != activation;
+                    self.0 = activation;
+                }
+                pub fn get(&self) -> ActivationRequest {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn reset(&mut self) {
-                self.1 = false;
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct Vdc(VdcState, bool);
+            impl Vdc {
+                pub fn set(&mut self, vdc: VdcState) {
+                    self.1 = self.0 != vdc;
+                    self.0 = vdc;
+                }
+                pub fn get(&self) -> VdcState {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct VSet(f64, bool);
-        impl VSet {
-            fn set(&mut self, v_set: f64) {
-                self.1 = self.0 != v_set;
-                self.0 = v_set;
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct Kickdown(KickdownState, bool);
+            impl Kickdown {
+                pub fn set(&mut self, kickdown: KickdownState) {
+                    self.1 = self.0 != kickdown;
+                    self.0 = kickdown;
+                }
+                pub fn get(&self) -> KickdownState {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn get(&self) -> f64 {
-                self.0
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct OnState(SpeedLimiterOn, bool);
+            impl OnState {
+                pub fn set(&mut self, on_state: SpeedLimiterOn) {
+                    self.1 = self.0 != on_state;
+                    self.0 = on_state;
+                }
+                pub fn get(&self) -> SpeedLimiterOn {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn is_new(&self) -> bool {
-                self.1
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct State(SpeedLimiter, bool);
+            impl State {
+                pub fn set(&mut self, state: SpeedLimiter) {
+                    self.1 = self.0 != state;
+                    self.0 = state;
+                }
+                pub fn get(&self) -> SpeedLimiter {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn reset(&mut self) {
-                self.1 = false;
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct SetSpeed(f64, bool);
+            impl SetSpeed {
+                pub fn set(&mut self, set_speed: f64) {
+                    self.1 = self.0 != set_speed;
+                    self.0 = set_speed;
+                }
+                pub fn get(&self) -> f64 {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct VacuumBrake(VacuumBrakeState, bool);
-        impl VacuumBrake {
-            fn set(&mut self, vacuum_brake: VacuumBrakeState) {
-                self.1 = self.0 != vacuum_brake;
-                self.0 = vacuum_brake;
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct InRegulationAux(bool, bool);
+            impl InRegulationAux {
+                pub fn set(&mut self, in_regulation_aux: bool) {
+                    self.1 = self.0 != in_regulation_aux;
+                    self.0 = in_regulation_aux;
+                }
+                pub fn get(&self) -> bool {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn get(&self) -> VacuumBrakeState {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct StateUpdate(bool, bool);
-        impl StateUpdate {
-            fn set(&mut self, state_update: bool) {
-                self.1 = self.0 != state_update;
-                self.0 = state_update;
-            }
-            fn get(&self) -> bool {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct VUpdate(bool, bool);
-        impl VUpdate {
-            fn set(&mut self, v_update: bool) {
-                self.1 = self.0 != v_update;
-                self.0 = v_update;
-            }
-            fn get(&self) -> bool {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct Activation(ActivationRequest, bool);
-        impl Activation {
-            fn set(&mut self, activation: ActivationRequest) {
-                self.1 = self.0 != activation;
-                self.0 = activation;
-            }
-            fn get(&self) -> ActivationRequest {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct Vdc(VdcState, bool);
-        impl Vdc {
-            fn set(&mut self, vdc: VdcState) {
-                self.1 = self.0 != vdc;
-                self.0 = vdc;
-            }
-            fn get(&self) -> VdcState {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct Kickdown(KickdownState, bool);
-        impl Kickdown {
-            fn set(&mut self, kickdown: KickdownState) {
-                self.1 = self.0 != kickdown;
-                self.0 = kickdown;
-            }
-            fn get(&self) -> KickdownState {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct OnState(SpeedLimiterOn, bool);
-        impl OnState {
-            fn set(&mut self, on_state: SpeedLimiterOn) {
-                self.1 = self.0 != on_state;
-                self.0 = on_state;
-            }
-            fn get(&self) -> SpeedLimiterOn {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct State(SpeedLimiter, bool);
-        impl State {
-            fn set(&mut self, state: SpeedLimiter) {
-                self.1 = self.0 != state;
-                self.0 = state;
-            }
-            fn get(&self) -> SpeedLimiter {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct SetSpeed(f64, bool);
-        impl SetSpeed {
-            fn set(&mut self, set_speed: f64) {
-                self.1 = self.0 != set_speed;
-                self.0 = set_speed;
-            }
-            fn get(&self) -> f64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct InRegulationAux(bool, bool);
-        impl InRegulationAux {
-            fn set(&mut self, in_regulation_aux: bool) {
-                self.1 = self.0 != in_regulation_aux;
-                self.0 = in_regulation_aux;
-            }
-            fn get(&self) -> bool {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct Speed(f64, bool);
-        impl Speed {
-            fn set(&mut self, speed: f64) {
-                self.1 = self.0 != speed;
-                self.0 = speed;
-            }
-            fn get(&self) -> f64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct Speed(f64, bool);
+            impl Speed {
+                pub fn set(&mut self, speed: f64) {
+                    self.1 = self.0 != speed;
+                    self.0 = speed;
+                }
+                pub fn get(&self) -> f64 {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
         }
         #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct Context {
-            pub in_regulation: InRegulation,
-            pub v_set_aux: VSetAux,
-            pub v_set: VSet,
-            pub vacuum_brake: VacuumBrake,
-            pub state_update: StateUpdate,
-            pub v_update: VUpdate,
-            pub activation: Activation,
-            pub vdc: Vdc,
-            pub kickdown: Kickdown,
-            pub on_state: OnState,
-            pub state: State,
-            pub set_speed: SetSpeed,
-            pub in_regulation_aux: InRegulationAux,
-            pub speed: Speed,
+            pub in_regulation: ctx_ty::InRegulation,
+            pub v_set_aux: ctx_ty::VSetAux,
+            pub v_set: ctx_ty::VSet,
+            pub vacuum_brake: ctx_ty::VacuumBrake,
+            pub state_update: ctx_ty::StateUpdate,
+            pub v_update: ctx_ty::VUpdate,
+            pub activation: ctx_ty::Activation,
+            pub vdc: ctx_ty::Vdc,
+            pub kickdown: ctx_ty::Kickdown,
+            pub on_state: ctx_ty::OnState,
+            pub state: ctx_ty::State,
+            pub set_speed: ctx_ty::SetSpeed,
+            pub in_regulation_aux: ctx_ty::InRegulationAux,
+            pub speed: ctx_ty::Speed,
         }
         impl Context {
             fn init() -> Context {
@@ -1834,260 +1837,263 @@ pub mod runtime {
     pub mod another_speed_limiter_service {
         use super::*;
         use futures::{sink::SinkExt, stream::StreamExt};
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct InRegulation(bool, bool);
-        impl InRegulation {
-            fn set(&mut self, in_regulation: bool) {
-                self.1 = self.0 != in_regulation;
-                self.0 = in_regulation;
+        mod ctx_ty {
+            use super::*;
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct InRegulation(bool, bool);
+            impl InRegulation {
+                pub fn set(&mut self, in_regulation: bool) {
+                    self.1 = self.0 != in_regulation;
+                    self.0 = in_regulation;
+                }
+                pub fn get(&self) -> bool {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn get(&self) -> bool {
-                self.0
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct VSetAux(f64, bool);
+            impl VSetAux {
+                pub fn set(&mut self, v_set_aux: f64) {
+                    self.1 = self.0 != v_set_aux;
+                    self.0 = v_set_aux;
+                }
+                pub fn get(&self) -> f64 {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn is_new(&self) -> bool {
-                self.1
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct VSet(f64, bool);
+            impl VSet {
+                pub fn set(&mut self, v_set: f64) {
+                    self.1 = self.0 != v_set;
+                    self.0 = v_set;
+                }
+                pub fn get(&self) -> f64 {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn reset(&mut self) {
-                self.1 = false;
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct VacuumBrake(VacuumBrakeState, bool);
+            impl VacuumBrake {
+                pub fn set(&mut self, vacuum_brake: VacuumBrakeState) {
+                    self.1 = self.0 != vacuum_brake;
+                    self.0 = vacuum_brake;
+                }
+                pub fn get(&self) -> VacuumBrakeState {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct VSetAux(f64, bool);
-        impl VSetAux {
-            fn set(&mut self, v_set_aux: f64) {
-                self.1 = self.0 != v_set_aux;
-                self.0 = v_set_aux;
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct OnState(SpeedLimiterOn, bool);
+            impl OnState {
+                pub fn set(&mut self, on_state: SpeedLimiterOn) {
+                    self.1 = self.0 != on_state;
+                    self.0 = on_state;
+                }
+                pub fn get(&self) -> SpeedLimiterOn {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn get(&self) -> f64 {
-                self.0
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct State(SpeedLimiter, bool);
+            impl State {
+                pub fn set(&mut self, state: SpeedLimiter) {
+                    self.1 = self.0 != state;
+                    self.0 = state;
+                }
+                pub fn get(&self) -> SpeedLimiter {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn is_new(&self) -> bool {
-                self.1
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct Vdc(VdcState, bool);
+            impl Vdc {
+                pub fn set(&mut self, vdc: VdcState) {
+                    self.1 = self.0 != vdc;
+                    self.0 = vdc;
+                }
+                pub fn get(&self) -> VdcState {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn reset(&mut self) {
-                self.1 = false;
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct VUpdate(bool, bool);
+            impl VUpdate {
+                pub fn set(&mut self, v_update: bool) {
+                    self.1 = self.0 != v_update;
+                    self.0 = v_update;
+                }
+                pub fn get(&self) -> bool {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct VSet(f64, bool);
-        impl VSet {
-            fn set(&mut self, v_set: f64) {
-                self.1 = self.0 != v_set;
-                self.0 = v_set;
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct Kickdown(KickdownState, bool);
+            impl Kickdown {
+                pub fn set(&mut self, kickdown: KickdownState) {
+                    self.1 = self.0 != kickdown;
+                    self.0 = kickdown;
+                }
+                pub fn get(&self) -> KickdownState {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn get(&self) -> f64 {
-                self.0
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct StateUpdate(bool, bool);
+            impl StateUpdate {
+                pub fn set(&mut self, state_update: bool) {
+                    self.1 = self.0 != state_update;
+                    self.0 = state_update;
+                }
+                pub fn get(&self) -> bool {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn is_new(&self) -> bool {
-                self.1
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct Activation(ActivationRequest, bool);
+            impl Activation {
+                pub fn set(&mut self, activation: ActivationRequest) {
+                    self.1 = self.0 != activation;
+                    self.0 = activation;
+                }
+                pub fn get(&self) -> ActivationRequest {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn reset(&mut self) {
-                self.1 = false;
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct SetSpeed(f64, bool);
+            impl SetSpeed {
+                pub fn set(&mut self, set_speed: f64) {
+                    self.1 = self.0 != set_speed;
+                    self.0 = set_speed;
+                }
+                pub fn get(&self) -> f64 {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct VacuumBrake(VacuumBrakeState, bool);
-        impl VacuumBrake {
-            fn set(&mut self, vacuum_brake: VacuumBrakeState) {
-                self.1 = self.0 != vacuum_brake;
-                self.0 = vacuum_brake;
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct InRegulationAux(bool, bool);
+            impl InRegulationAux {
+                pub fn set(&mut self, in_regulation_aux: bool) {
+                    self.1 = self.0 != in_regulation_aux;
+                    self.0 = in_regulation_aux;
+                }
+                pub fn get(&self) -> bool {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn get(&self) -> VacuumBrakeState {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct OnState(SpeedLimiterOn, bool);
-        impl OnState {
-            fn set(&mut self, on_state: SpeedLimiterOn) {
-                self.1 = self.0 != on_state;
-                self.0 = on_state;
-            }
-            fn get(&self) -> SpeedLimiterOn {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct State(SpeedLimiter, bool);
-        impl State {
-            fn set(&mut self, state: SpeedLimiter) {
-                self.1 = self.0 != state;
-                self.0 = state;
-            }
-            fn get(&self) -> SpeedLimiter {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct Vdc(VdcState, bool);
-        impl Vdc {
-            fn set(&mut self, vdc: VdcState) {
-                self.1 = self.0 != vdc;
-                self.0 = vdc;
-            }
-            fn get(&self) -> VdcState {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct VUpdate(bool, bool);
-        impl VUpdate {
-            fn set(&mut self, v_update: bool) {
-                self.1 = self.0 != v_update;
-                self.0 = v_update;
-            }
-            fn get(&self) -> bool {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct Kickdown(KickdownState, bool);
-        impl Kickdown {
-            fn set(&mut self, kickdown: KickdownState) {
-                self.1 = self.0 != kickdown;
-                self.0 = kickdown;
-            }
-            fn get(&self) -> KickdownState {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct StateUpdate(bool, bool);
-        impl StateUpdate {
-            fn set(&mut self, state_update: bool) {
-                self.1 = self.0 != state_update;
-                self.0 = state_update;
-            }
-            fn get(&self) -> bool {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct Activation(ActivationRequest, bool);
-        impl Activation {
-            fn set(&mut self, activation: ActivationRequest) {
-                self.1 = self.0 != activation;
-                self.0 = activation;
-            }
-            fn get(&self) -> ActivationRequest {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct SetSpeed(f64, bool);
-        impl SetSpeed {
-            fn set(&mut self, set_speed: f64) {
-                self.1 = self.0 != set_speed;
-                self.0 = set_speed;
-            }
-            fn get(&self) -> f64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct InRegulationAux(bool, bool);
-        impl InRegulationAux {
-            fn set(&mut self, in_regulation_aux: bool) {
-                self.1 = self.0 != in_regulation_aux;
-                self.0 = in_regulation_aux;
-            }
-            fn get(&self) -> bool {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct Speed(f64, bool);
-        impl Speed {
-            fn set(&mut self, speed: f64) {
-                self.1 = self.0 != speed;
-                self.0 = speed;
-            }
-            fn get(&self) -> f64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct Speed(f64, bool);
+            impl Speed {
+                pub fn set(&mut self, speed: f64) {
+                    self.1 = self.0 != speed;
+                    self.0 = speed;
+                }
+                pub fn get(&self) -> f64 {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
         }
         #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct Context {
-            pub in_regulation: InRegulation,
-            pub v_set_aux: VSetAux,
-            pub v_set: VSet,
-            pub vacuum_brake: VacuumBrake,
-            pub on_state: OnState,
-            pub state: State,
-            pub vdc: Vdc,
-            pub v_update: VUpdate,
-            pub kickdown: Kickdown,
-            pub state_update: StateUpdate,
-            pub activation: Activation,
-            pub set_speed: SetSpeed,
-            pub in_regulation_aux: InRegulationAux,
-            pub speed: Speed,
+            pub in_regulation: ctx_ty::InRegulation,
+            pub v_set_aux: ctx_ty::VSetAux,
+            pub v_set: ctx_ty::VSet,
+            pub vacuum_brake: ctx_ty::VacuumBrake,
+            pub on_state: ctx_ty::OnState,
+            pub state: ctx_ty::State,
+            pub vdc: ctx_ty::Vdc,
+            pub v_update: ctx_ty::VUpdate,
+            pub kickdown: ctx_ty::Kickdown,
+            pub state_update: ctx_ty::StateUpdate,
+            pub activation: ctx_ty::Activation,
+            pub set_speed: ctx_ty::SetSpeed,
+            pub in_regulation_aux: ctx_ty::InRegulationAux,
+            pub speed: ctx_ty::Speed,
         }
         impl Context {
             fn init() -> Context {

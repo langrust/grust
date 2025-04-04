@@ -64,7 +64,7 @@ impl ServiceHandler {
     /// Transform [ir2] run-loop into an async function performing a loop over events.
     pub fn into_syn(self, stats: &mut StatsMut) -> syn::Item {
         // result
-        let mut items = self.flow_context.into_syn().collect::<Vec<_>>();
+        let mut items = self.flow_context.into_syn();
 
         // store all inputs in a service_store
         let stitem = stats.start(format!(

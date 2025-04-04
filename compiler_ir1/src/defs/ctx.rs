@@ -118,7 +118,7 @@ impl Flows {
         self.elements.contains_key(element_name)
     }
 
-    pub fn into_syn(self) -> impl Iterator<Item = syn::Item> {
+    pub fn into_syn(self) -> Vec<syn::Item> {
         // construct Context structure type
         let context_struct = {
             let fields = self.elements.iter().map(|(element_name, _)| -> syn::Field {
@@ -126,7 +126,7 @@ impl Flows {
                     &to_camel_case(&element_name.to_string()),
                     element_name.span(),
                 );
-                parse_quote! { pub #element_name: #struct_name }
+                parse_quote! { pub #element_name: ctx_ty::#struct_name }
             });
             let name = Ident::new("Context", Span::call_site());
             let attribute: syn::Attribute =
@@ -184,23 +184,23 @@ impl Flows {
 
                 let item_impl: syn::ItemImpl = {
                     let set_impl: syn::ImplItem = parse_quote! {
-                        fn set(&mut self, #name: #ty) {
+                        pub fn set(&mut self, #name: #ty) {
                             self.1 = self.0 != #name;
                             self.0 = #name;
                         }
                     };
                     let get_impl: syn::ImplItem = parse_quote! {
-                        fn get(&self) -> #ty {
+                        pub fn get(&self) -> #ty {
                             self.0
                         }
                     };
                     let is_new_impl: syn::ImplItem = parse_quote! {
-                        fn is_new(&self) -> bool {
+                        pub fn is_new(&self) -> bool {
                             self.1
                         }
                     };
                     let reset_impl: syn::ImplItem = parse_quote! {
-                        fn reset(&mut self) {
+                        pub fn reset(&mut self) {
                             self.1 = false;
                         }
                     };
@@ -217,7 +217,15 @@ impl Flows {
                 [syn::Item::Struct(item_struct), syn::Item::Impl(item_impl)]
             });
 
-        items.chain([context_struct, context_impl])
+        let types_mod = syn::Item::Mod(parse_quote! {
+            mod ctx_ty {
+                use super::*;
+
+                #(#items)*
+            }
+        });
+
+        vec![types_mod, context_struct, context_impl]
     }
 }
 

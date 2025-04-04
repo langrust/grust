@@ -389,98 +389,101 @@ pub mod runtime {
     pub mod adaptive_cruise_control_service {
         use super::*;
         use futures::{sink::SinkExt, stream::StreamExt};
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct Condition(bool, bool);
-        impl Condition {
-            fn set(&mut self, condition: bool) {
-                self.1 = self.0 != condition;
-                self.0 = condition;
+        mod ctx_ty {
+            use super::*;
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct Condition(bool, bool);
+            impl Condition {
+                pub fn set(&mut self, condition: bool) {
+                    self.1 = self.0 != condition;
+                    self.0 = condition;
+                }
+                pub fn get(&self) -> bool {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn get(&self) -> bool {
-                self.0
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct SpeedKmH(f64, bool);
+            impl SpeedKmH {
+                pub fn set(&mut self, speed_km_h: f64) {
+                    self.1 = self.0 != speed_km_h;
+                    self.0 = speed_km_h;
+                }
+                pub fn get(&self) -> f64 {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn is_new(&self) -> bool {
-                self.1
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct T(f64, bool);
+            impl T {
+                pub fn set(&mut self, t: f64) {
+                    self.1 = self.0 != t;
+                    self.0 = t;
+                }
+                pub fn get(&self) -> f64 {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-            fn reset(&mut self) {
-                self.1 = false;
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct BrakesMS(f64, bool);
+            impl BrakesMS {
+                pub fn set(&mut self, brakes_m_s: f64) {
+                    self.1 = self.0 != brakes_m_s;
+                    self.0 = brakes_m_s;
+                }
+                pub fn get(&self) -> f64 {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct SpeedKmH(f64, bool);
-        impl SpeedKmH {
-            fn set(&mut self, speed_km_h: f64) {
-                self.1 = self.0 != speed_km_h;
-                self.0 = speed_km_h;
-            }
-            fn get(&self) -> f64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct T(f64, bool);
-        impl T {
-            fn set(&mut self, t: f64) {
-                self.1 = self.0 != t;
-                self.0 = t;
-            }
-            fn get(&self) -> f64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct BrakesMS(f64, bool);
-        impl BrakesMS {
-            fn set(&mut self, brakes_m_s: f64) {
-                self.1 = self.0 != brakes_m_s;
-                self.0 = brakes_m_s;
-            }
-            fn get(&self) -> f64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
-            }
-        }
-        #[derive(Clone, Copy, PartialEq, Default, Debug)]
-        pub struct DistanceM(f64, bool);
-        impl DistanceM {
-            fn set(&mut self, distance_m: f64) {
-                self.1 = self.0 != distance_m;
-                self.0 = distance_m;
-            }
-            fn get(&self) -> f64 {
-                self.0
-            }
-            fn is_new(&self) -> bool {
-                self.1
-            }
-            fn reset(&mut self) {
-                self.1 = false;
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct DistanceM(f64, bool);
+            impl DistanceM {
+                pub fn set(&mut self, distance_m: f64) {
+                    self.1 = self.0 != distance_m;
+                    self.0 = distance_m;
+                }
+                pub fn get(&self) -> f64 {
+                    self.0
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
             }
         }
         #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct Context {
-            pub condition: Condition,
-            pub speed_km_h: SpeedKmH,
-            pub t: T,
-            pub brakes_m_s: BrakesMS,
-            pub distance_m: DistanceM,
+            pub condition: ctx_ty::Condition,
+            pub speed_km_h: ctx_ty::SpeedKmH,
+            pub t: ctx_ty::T,
+            pub brakes_m_s: ctx_ty::BrakesMS,
+            pub distance_m: ctx_ty::DistanceM,
         }
         impl Context {
             fn init() -> Context {
