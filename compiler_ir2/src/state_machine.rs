@@ -201,6 +201,8 @@ pub struct Step {
     pub body: para::Stmts,
     /// The update of the node's state.
     pub state_elements_step: Vec<StateElmStep>,
+    /// Logs.
+    pub logs: Vec<Stmt>,
     /// The output expression.
     pub output: Expr,
     /// The contract to prove.
@@ -213,6 +215,7 @@ mk_new! { impl Step =>
         output_type: Typ,
         body: para::Stmts,
         state_elements_step: Vec<StateElmStep>,
+        logs: impl Iterator<Item= Stmt> = logs.collect(),
         output: Expr,
         contract: Contract,
     }
@@ -277,7 +280,9 @@ impl Step {
                 let expr = expression.into_syn(crates);
                 vec.push(parse_quote! { self.#id = #expr; })
             }
-
+            // add logs
+            vec.extend(self.logs.into_iter().map(|l| l.into_syn(crates)));
+            // add output expression
             vec.push(syn::Stmt::Expr(self.output.into_syn(crates), None));
 
             vec
@@ -516,6 +521,7 @@ mod test {
                     Expr::test_ident("new_called_node_state"),
                 ),
             ],
+            logs: vec![],
             output: Expr::binop(BOp::Add, Expr::test_ident("o"), Expr::test_ident("y")),
         };
 
@@ -552,7 +558,7 @@ mod test {
                         Loc::test_id("called_node"),
                         Loc::test_id("CalledNodeInput"),
                         vec![],
-                        Some(parse_quote!( path::to::called_node )),
+                        Some(parse_quote!(path::to::called_node)),
                     ),
                 ),
             ]),
@@ -570,6 +576,7 @@ mod test {
                     Expr::test_ident("new_called_node_state"),
                 ),
             ],
+            logs: vec![],
             output: Expr::binop(BOp::Add, Expr::test_ident("o"), Expr::test_ident("y")),
         };
 

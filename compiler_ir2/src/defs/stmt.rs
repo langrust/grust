@@ -10,6 +10,11 @@ pub enum Stmt {
         /// The expression associated to the variable.
         expr: Expr,
     },
+    /// Log statement.
+    Log {
+        /// Identifier to log.
+        ident: syn::Ident,
+    },
     /// A returned expression.
     ExprLast {
         /// The returned expression.
@@ -23,6 +28,7 @@ mk_new! { impl Stmt =>
         expr: Expr,
     }
     ExprLast: expression_last { expr: Expr }
+    Log: log { ident: syn::Ident }
 }
 
 impl Stmt {
@@ -39,7 +45,11 @@ impl Stmt {
                 }),
                 semi_token: Default::default(),
             }),
-            Stmt::ExprLast { expr } => syn::Stmt::Expr(expr.into_syn(crates), None),
+            Self::ExprLast { expr } => syn::Stmt::Expr(expr.into_syn(crates), None),
+            Self::Log { ident } => {
+                let lit = syn::LitStr::new(&format!("{ident}: {{:?}}"), ident.span());
+                parse_quote! { println!(#lit, #ident); }
+            }
         }
     }
 }
@@ -86,6 +96,14 @@ mod test {
         let statement = Stmt::expression_last(Expr::lit(Constant::int(parse_quote!(1i64))));
 
         let control = syn::Stmt::Expr(parse_quote! { 1i64 }, None);
+        assert_eq!(statement.into_syn(&mut Default::default()), control)
+    }
+
+    #[test]
+    fn should_create_rust_println_from_ir2_log() {
+        let statement = Stmt::log(parse_quote!(x));
+
+        let control = parse_quote! { println!("x: {:?}", x); };
         assert_eq!(statement.into_syn(&mut Default::default()), control)
     }
 }
