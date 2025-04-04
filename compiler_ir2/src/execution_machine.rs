@@ -84,7 +84,7 @@ impl ExecutionMachine {
             stats.timed("interface, output flows", || {
                 for InterfaceFlow {
                     identifier, typ, ..
-                } in self.output_flows.into_iter()
+                } in self.output_flows.iter()
                 {
                     let enum_ident =
                         Ident::new(&to_camel_case(&identifier.to_string()), identifier.span());
@@ -178,6 +178,8 @@ impl ExecutionMachine {
                     field_values.push(parse_quote! { #service_ident });
                 },
             );
+            runtime_fields.push(parse_quote! { output: futures::channel::mpsc::Sender<O> });
+            field_values.push(parse_quote! { output });
             runtime_fields.push(
                 parse_quote! { timer: futures::channel::mpsc::Sender<(T, std::time::Instant)> },
             );
@@ -194,27 +196,17 @@ impl ExecutionMachine {
 
         // create a new runtime
         let new_runtime = stats.timed("runtime creation", || {
-            let nb_services = self.services_handlers.len();
-            let is_last = |idx| idx < nb_services - 1;
             // initialize services
-            let services_init = self.services_handlers.iter().enumerate().map(
-                |(
-                    idx,
-                    ServiceHandler {
-                        service_ident,
-                        service_struct_ident,
-                        service_mod_ident,
-                        ..
-                    },
-                )| {
-                    let output_channel: syn::Expr = if is_last(idx) {
-                        parse_quote! { output.clone() }
-                    } else {
-                        parse_quote! { output }
-                    };
+            let services_init = self.services_handlers.iter().map(
+                |ServiceHandler {
+                     service_ident,
+                     service_struct_ident,
+                     service_mod_ident,
+                     ..
+                 }| {
                     let state: syn::Stmt = parse_quote! {
                         let #service_ident = #service_mod_ident::#service_struct_ident::init(
-                            #output_channel, timer.clone()
+                            output.clone(), timer.clone()
                         );
                     };
                     state
@@ -235,7 +227,7 @@ impl ExecutionMachine {
         });
 
         // create the runtime loop
-        let run_loop = self.runtime_loop.into_syn();
+        let run_loop = self.runtime_loop.into_syn(self.output_flows);
 
         // create the services handlers
         let handlers = stats.timed_with(
@@ -266,6 +258,13 @@ impl ExecutionMachine {
                     impl Runtime {
                         #new_runtime
 
+                        #[inline]
+                        pub async fn send_output(
+                            &mut self, output: O
+                        ) -> Result<(), futures::channel::mpsc::SendError> {
+                            self.output.send(output).await?;
+                            Ok(())
+                        }
                         #[inline]
                         pub async fn send_timer(
                             &mut self, timer: T, instant: std::time::Instant

@@ -154,6 +154,7 @@ pub mod runtime {
     }
     pub struct Runtime {
         aeb: aeb_service::AebService,
+        output: futures::channel::mpsc::Sender<O>,
         timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
     }
     impl Runtime {
@@ -161,8 +162,16 @@ pub mod runtime {
             output: futures::channel::mpsc::Sender<O>,
             timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
         ) -> Runtime {
-            let aeb = aeb_service::AebService::init(output, timer.clone());
-            Runtime { aeb, timer }
+            let aeb = aeb_service::AebService::init(output.clone(), timer.clone());
+            Runtime { aeb, output, timer }
+        }
+        #[inline]
+        pub async fn send_output(
+            &mut self,
+            output: O,
+        ) -> Result<(), futures::channel::mpsc::SendError> {
+            self.output.send(output).await?;
+            Ok(())
         }
         #[inline]
         pub async fn send_timer(
@@ -185,6 +194,9 @@ pub mod runtime {
                 .await?;
             runtime
                 .send_timer(T::TimeoutTimeoutPedest, _grust_reserved_init_instant)
+                .await?;
+            runtime
+                .send_output(O::Brakes(Default::default(), _grust_reserved_init_instant))
                 .await?;
             while let Some(input) = input.next().await {
                 match input {
