@@ -21,7 +21,7 @@ pub mod ir0 {
             expr::{self, Expr},
             interface::{self, ExtFunDecl, ExtCompDecl, FlowExport, FlowImport, Service, TimeRange},
             stmt::{self, Stmt},
-            stream, Ast, Colon, Component, Ctx, Function, Item, Top, Typedef,
+            stream, Ast, Colon, Component, Ctx, Function, Item, Top, Typedef, ConstDecl,
         },
         symbol,
     };

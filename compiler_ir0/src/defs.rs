@@ -103,6 +103,28 @@ impl HasLoc for Typedef {
     }
 }
 
+/// Constant declaration.
+pub struct ConstDecl {
+    pub const_token: Token![const],
+    /// Constant's identifier.
+    pub ident: Ident,
+    /// Colon token.
+    pub colon_token: Token![:],
+    /// Constant's type.
+    pub ty: Typ,
+    /// Equality token.
+    pub eq_token: Token![=],
+    /// Constant value.
+    pub value: Constant,
+    /// Closing semicolon.
+    pub semi_token: Token![;],
+}
+impl HasLoc for ConstDecl {
+    fn loc(&self) -> Loc {
+        Loc::from(self.const_token.span).join(self.semi_token.span)
+    }
+}
+
 /// GRust component AST.
 pub struct Component {
     pub component_token: keyword::component,
@@ -163,6 +185,7 @@ pub enum Item {
     Export(FlowExport),
     ExtFun(ExtFunDecl),
     ExtComp(ExtCompDecl),
+    Const(ConstDecl),
 }
 impl HasLoc for Item {
     fn loc(&self) -> Loc {
@@ -175,6 +198,7 @@ impl HasLoc for Item {
             Self::Export(e) => e.loc(),
             Self::ExtComp(c) => c.loc(),
             Self::ExtFun(f) => f.loc(),
+            Self::Const(c) => c.loc(),
         }
     }
 }

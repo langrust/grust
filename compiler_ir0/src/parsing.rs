@@ -16,7 +16,9 @@ impl<U: Parse, V: Parse> Parse for Colon<U, V> {
 
 impl Parse for Item {
     fn parse(input: ParseStream) -> Res<Self> {
-        if Component::peek(input) {
+        if ConstDecl::peek(input) {
+            Ok(Item::Const(input.parse()?))
+        } else if Component::peek(input) {
             Ok(Item::Component(input.parse()?))
         } else if Function::peek(input) {
             Ok(Item::Function(input.parse()?))
@@ -686,6 +688,32 @@ impl Parse for Component {
             contract,
             brace,
             equations,
+        })
+    }
+}
+
+impl ConstDecl {
+    pub fn peek(input: ParseStream) -> bool {
+        input.peek(Token![const])
+    }
+}
+impl Parse for ConstDecl {
+    fn parse(input: ParseStream) -> Res<Self> {
+        let const_token: Token![const] = input.parse()?;
+        let ident: Ident = input.parse()?;
+        let colon_token: Token![:] = input.parse()?;
+        let ty: Typ = input.parse()?;
+        let eq_token: Token![=] = input.parse()?;
+        let value: Constant = input.parse()?;
+        let semi_token: Token![;] = input.parse()?;
+        Ok(ConstDecl {
+            const_token,
+            ident,
+            colon_token,
+            ty,
+            eq_token,
+            value,
+            semi_token,
         })
     }
 }
@@ -2434,6 +2462,13 @@ mod parsing_tests {
                 o = if res then 0 else (last o) + inc;
                 let inc: int = if tick then 1 else 0;
             }
+        };
+    }
+
+    #[test]
+    fn const_decl() {
+        let _: ConstDecl = parse_quote! {
+            const TEST: int = 3;
         };
     }
 
