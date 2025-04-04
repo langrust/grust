@@ -81,10 +81,16 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Component {
                 // 'step' method
                 let step = {
                     // logs
-                    let logs = body
-                        .logs
-                        .into_iter()
-                        .map(|id| Stmt::log(ctx.get_name(id).clone()));
+                    let logs = body.logs.into_iter().map(|id| {
+                        let scope = ctx.get_scope(id);
+                        let ident = ctx.get_name(id).clone();
+                        let expr = match scope {
+                            Scope::Input => Expr::input_access(ident.clone()),
+                            Scope::Output | Scope::Local => Expr::ident(ident.clone()),
+                            Scope::VeryLocal => noErrorDesc!(),
+                        };
+                        Stmt::log(ident, expr)
+                    });
                     // body stmts
                     let body = match para::Stmts::of_ir1(&body.statements, ctx, &body.graph) {
                         Ok(stmts) => stmts,
@@ -563,7 +569,16 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Function {
                     .collect_vec();
 
                 // Logs
-                let logs = body.logs.into_iter().map(|id| Stmt::log(ctx.get_name(id).clone()));
+                let logs = body.logs.into_iter().map(|id| {
+                    let scope = ctx.get_scope(id);
+                    let ident = ctx.get_name(id).clone();
+                    let expr = match scope {
+                        Scope::Input => Expr::input_access(ident.clone()),
+                        Scope::Output | Scope::Local => Expr::ident(ident.clone()),
+                        Scope::VeryLocal => noErrorDesc!(),
+                    };
+                    Stmt::log(ident, expr)
+                });
                 statements.extend(logs);
 
                 // return stmt
