@@ -244,7 +244,16 @@ impl Term {
                 parse_quote! { Some(#ts_term) }
             }
             Self::None => parse_quote! { None },
-            Self::FunctionCall { .. } | Self::ComponentCall { .. } => todo!("not supported yet"),
+            Self::FunctionCall {
+                function,
+                arguments,
+            } => {
+                let ts_args = arguments
+                    .into_iter()
+                    .map(|term| term.to_token_stream(prophecy, function_like));
+                parse_quote! { logical::#function(#(#ts_args)*) }
+            }
+            Self::ComponentCall { .. } => todo!("not supported yet"),
         }
     }
 }

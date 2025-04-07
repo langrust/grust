@@ -311,6 +311,7 @@ impl Expr {
             | Zip { .. } => false,
         }
     }
+
     /// Transform [ir2] expression into RustAST expression.
     pub fn into_syn(self, crates: &mut BTreeSet<String>) -> syn::Expr {
         match self {
@@ -587,6 +588,301 @@ impl Expr {
                 let arguments = arrays
                     .into_iter()
                     .map(|expression| expression.into_syn(crates));
+                let macro_call = syn::ExprMacro {
+                    attrs: Vec::new(),
+                    mac: syn::Macro {
+                        path: parse_quote!(itertools::izip),
+                        bang_token: Default::default(),
+                        delimiter: syn::MacroDelimiter::Paren(Default::default()),
+                        tokens: quote::quote! { #(#arguments),* },
+                    },
+                };
+                let izip = syn::Expr::Macro(macro_call);
+
+                parse_quote!({
+                    let mut iter = #izip;
+                    std::array::from_fn(|_| iter.next().unwrap())
+                })
+            }
+        }
+    }
+
+    /// Transform [ir2] expression into RustAST expression.
+    pub fn into_logic(self, crates: &mut BTreeSet<String>) -> syn::Expr {
+        match self {
+            Self::Literal { literal } => literal.into_logic(),
+            Self::Identifier { identifier } => {
+                parse_quote! { #identifier }
+            }
+            Self::Path { path } => {
+                parse_quote! { #path }
+            }
+            Self::Some { expr } => {
+                let syn_expr = expr.into_logic(crates);
+                parse_quote! { Some(#syn_expr) }
+            }
+            Self::None => parse_quote! { None },
+            Self::MemoryAccess { identifier } => {
+                let id = identifier.to_last_var();
+                parse_quote!( self.#id )
+            }
+            Self::InputAccess { identifier } => {
+                parse_quote!( input.#identifier )
+            }
+            Self::Structure { name, fields } => {
+                let fields: Vec<syn::FieldValue> = fields
+                    .into_iter()
+                    .map(|(name, expr)| {
+                        let expr = expr.into_logic(crates);
+                        parse_quote!(#name : #expr)
+                    })
+                    .collect();
+                let name = format_ident!("{name}");
+                parse_quote!(#name { #(#fields),* })
+            }
+            Self::Enumeration { name, element } => {
+                parse_quote!(#name :: #element)
+            }
+            Self::Array { elements } => {
+                let elements = elements.into_iter().map(|expr| expr.into_logic(crates));
+                parse_quote! { [#(#elements),*]}
+            }
+            Self::Tuple { elements } => {
+                let elements = elements.into_iter().map(|expr| expr.into_logic(crates));
+                parse_quote! { (#(#elements),*) }
+            }
+            Self::Block { block } => syn::Expr::Block(syn::ExprBlock {
+                attrs: vec![],
+                label: None,
+                block: block.into_logic(crates),
+            }),
+            Self::FunctionCall {
+                function,
+                // function: Either::Left(function),
+                arguments,
+            } => {
+                let function_parens = function.as_function_requires_parens();
+                let function = function.into_logic(crates);
+                let arguments = arguments.into_iter().map(|expr| expr.into_logic(crates));
+                if function_parens {
+                    parse_quote! { (#function)(#(#arguments),*) }
+                } else {
+                    parse_quote! { #function(#(#arguments),*) }
+                }
+            }
+            // Self::FunctionCall {
+            //     function: Either::Right(function),
+            //     arguments,
+            // } => {
+            //     let arguments = arguments.into_iter().map(|expr| expr.into_logic(crates));
+            //     parse_quote! { #function(#(#arguments),*) }
+            // }
+            Self::UnOp { op, expr } => {
+                let op = op.into_syn();
+                let expr = expr.into_logic(crates);
+                syn::Expr::Unary(parse_quote! { #op (#expr) })
+            }
+            Self::BinOp { op, lft, rgt } => {
+                let left = if lft.as_op_arg_requires_parens() {
+                    let expr = lft.into_logic(crates);
+                    parse_quote! { (#expr) }
+                } else {
+                    lft.into_logic(crates)
+                };
+                let right = if rgt.as_op_arg_requires_parens() {
+                    let expr = rgt.into_logic(crates);
+                    parse_quote! { (#expr) }
+                } else {
+                    rgt.into_logic(crates)
+                };
+                let binary = op.into_syn();
+                syn::Expr::Binary(parse_quote! { #left #binary #right })
+            }
+            Self::NodeCall {
+                memory_ident,
+                input_name,
+                input_fields,
+                path_opt,
+                ..
+            } => {
+                let ident = memory_ident;
+                let receiver: syn::ExprField = parse_quote! { self.#ident};
+                let input_fields: Vec<syn::FieldValue> = input_fields
+                    .into_iter()
+                    .map(|(name, expr)| {
+                        let id = name;
+                        let expr = expr.into_logic(crates);
+                        parse_quote! { #id : #expr }
+                    })
+                    .collect();
+
+                let input_name = input_name;
+
+                let argument: syn::ExprStruct = if let Some(mut path) = path_opt {
+                    path.segments.pop();
+                    path.segments.push(input_name.into());
+                    parse_quote! { #path { #(#input_fields),* }}
+                } else {
+                    parse_quote! { #input_name { #(#input_fields),* }}
+                };
+
+                syn::Expr::MethodCall(parse_quote! { #receiver.step (#argument) })
+            }
+            Self::FieldAccess { expr, field } => {
+                let expr = expr.into_logic(crates);
+                match field {
+                    FieldIdentifier::Named(name) => {
+                        parse_quote!(#expr.#name)
+                    }
+                    FieldIdentifier::Unnamed(number) => {
+                        let number: TokenStream2 = format!("{number}").parse().unwrap();
+                        parse_quote!(#expr.#number)
+                    }
+                }
+            }
+            Self::Lambda {
+                is_move,
+                inputs,
+                output,
+                body,
+            } => {
+                let inputs = inputs
+                    .into_iter()
+                    .map(|(identifier, typ)| {
+                        let pattern = syn::Pat::Ident(syn::PatIdent {
+                            attrs: Vec::new(),
+                            by_ref: None,
+                            mutability: None,
+                            ident: identifier,
+                            subpat: None,
+                        });
+                        let pattern = syn::Pat::Type(syn::PatType {
+                            attrs: Vec::new(),
+                            pat: Box::new(pattern),
+                            colon_token: Default::default(),
+                            ty: Box::new(typ.into_logic()),
+                        });
+                        pattern
+                    })
+                    .collect();
+                let capture = if is_move {
+                    Some(syn::token::Move {
+                        span: Span::call_site(),
+                    })
+                } else {
+                    None
+                };
+                let closure = syn::ExprClosure {
+                    attrs: Vec::new(),
+                    asyncness: None,
+                    movability: None,
+                    capture,
+                    or1_token: Default::default(),
+                    inputs,
+                    or2_token: Default::default(),
+                    output: syn::ReturnType::Type(Default::default(), Box::new(output.into_logic())),
+                    body: Box::new(body.into_logic(crates)),
+                    lifetimes: None,
+                    constness: None,
+                };
+                syn::Expr::Closure(closure)
+            }
+            Self::IfThenElse { cnd, thn, els } => {
+                let cnd = Box::new(cnd.into_logic(crates));
+                let thn = thn.into_logic(crates);
+                let els = els.into_logic(crates);
+                let els = parse_quote! { #els };
+                let els = Some((Default::default(), Box::new(els)));
+                syn::Expr::If(syn::ExprIf {
+                    attrs: Vec::new(),
+                    if_token: Default::default(),
+                    cond: cnd,
+                    then_branch: thn,
+                    else_branch: els,
+                })
+            }
+            Self::Match { matched, arms } => {
+                let arms = arms
+                    .into_iter()
+                    .map(|(pattern, guard, body)| syn::Arm {
+                        attrs: Vec::new(),
+                        pat: pattern.into_syn(),
+                        guard: guard
+                            .map(|expression| expression.into_logic(crates))
+                            .map(|g| (Default::default(), Box::new(g))),
+                        body: Box::new(body.into_logic(crates)),
+                        fat_arrow_token: Default::default(),
+                        comma: Some(Default::default()),
+                    })
+                    .collect();
+                syn::Expr::Match(syn::ExprMatch {
+                    attrs: Vec::new(),
+                    match_token: Default::default(),
+                    expr: Box::new(matched.into_logic(crates)),
+                    brace_token: Default::default(),
+                    arms,
+                })
+            }
+            Self::Map { mapped, function } => {
+                let receiver = Box::new(mapped.into_logic(crates));
+                let method = Ident::new("map", Span::call_site());
+                let arguments = vec![function.into_logic(crates)];
+                let method_call = syn::ExprMethodCall {
+                    attrs: Vec::new(),
+                    receiver,
+                    method,
+                    turbofish: None,
+                    paren_token: Default::default(),
+                    args: syn::Punctuated::from_iter(arguments),
+                    dot_token: Default::default(),
+                };
+                syn::Expr::MethodCall(method_call)
+            }
+            Self::Fold {
+                folded,
+                initialization,
+                function,
+            } => syn::Expr::MethodCall(syn::ExprMethodCall {
+                attrs: Vec::new(),
+                receiver: Box::new(syn::Expr::MethodCall(syn::ExprMethodCall {
+                    attrs: Vec::new(),
+                    receiver: Box::new(folded.into_logic(crates)),
+                    method: Ident::new("into_iter", Span::call_site()),
+                    turbofish: None,
+                    paren_token: Default::default(),
+                    args: syn::Punctuated::new(),
+                    dot_token: Default::default(),
+                })),
+                method: Ident::new("fold", Span::call_site()),
+                turbofish: None,
+                paren_token: Default::default(),
+                args: syn::Punctuated::from_iter(vec![
+                    initialization.into_logic(crates),
+                    function.into_logic(crates),
+                ]),
+                dot_token: Default::default(),
+            }),
+            Self::Sort { sorted, function } => {
+                let token_sorted = sorted.into_logic(crates);
+                let token_function = function.into_logic(crates);
+
+                parse_quote!({
+                    let mut x = #token_sorted.clone();
+                    let slice = x.as_mut();
+                    slice.sort_by(|a, b| {
+                        let compare = #token_function(*a, *b);
+                        if compare < 0 { std::cmp::Ordering::Less }
+                        else if compare > 0 { std::cmp::Ordering::Greater }
+                        else { std::cmp::Ordering::Equal }
+                    });
+                    x
+                })
+            }
+            Self::Zip { arrays } => {
+                crates.insert("itertools = \"0.12.1\"".into());
+                let arguments = arrays
+                    .into_iter()
+                    .map(|expression| expression.into_logic(crates));
                 let macro_call = syn::ExprMacro {
                     attrs: Vec::new(),
                     mac: syn::Macro {

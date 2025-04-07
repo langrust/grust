@@ -26,44 +26,73 @@ mk_new! { impl Function => new {
 } }
 
 impl Function {
-    pub fn into_syn(self, crates: &mut BTreeSet<String>) -> syn::Item {
-        let attributes = self.contract.into_syn(true);
+    pub fn into_syn(
+        self,
+        ctx: &ir0::Ctx,
+        crates: &mut BTreeSet<String>,
+    ) -> (syn::Item, Option<syn::Item>) {
+        let inputs = self.inputs.iter().map(|(name, typ)| {
+            syn::FnArg::Typed(syn::PatType {
+                attrs: vec![],
+                pat: parse_quote!(#name),
+                colon_token: Default::default(),
+                ty: Box::new(typ.into_syn()),
+            })
+        });
+        let name = self.name;
+        let output = self.output.into_syn();
 
-        let inputs = self
-            .inputs
-            .into_iter()
-            .map(|(name, typ)| {
+        if ctx.conf.greusot {
+            let logic_args = self.inputs.iter().map(|(name, ty)| {
+                let mut ts = name.to_token_stream();
+                if ty.needs_view() {
+                    ts.extend(syn::token::At::default().to_token_stream());
+                }
+                ts
+            });
+            let logic_result = {
+                let mut ts = Ident::new("result", name.span()).to_token_stream();
+                if self.output.needs_view() {
+                    ts.extend(syn::token::At::default().to_token_stream());
+                }
+                ts
+            };
+            let logic_inputs = self.inputs.iter().map(|(name, typ)| {
                 syn::FnArg::Typed(syn::PatType {
                     attrs: vec![],
                     pat: parse_quote!(#name),
                     colon_token: Default::default(),
-                    ty: Box::new(typ.into_syn()),
+                    ty: Box::new(typ.into_logic()),
                 })
-            })
-            .collect();
-
-        let sig = syn::Signature {
-            constness: None,
-            asyncness: None,
-            unsafety: None,
-            abi: None,
-            fn_token: Default::default(),
-            ident: self.name.clone(),
-            generics: Default::default(),
-            paren_token: Default::default(),
-            inputs,
-            variadic: None,
-            output: syn::ReturnType::Type(Default::default(), Box::new(self.output.into_syn())),
-        };
-
-        let item_function = syn::Item::Fn(syn::ItemFn {
-            attrs: attributes,
-            vis: syn::Visibility::Public(Default::default()),
-            sig,
-            block: Box::new(self.body.into_syn(crates)),
-        });
-
-        item_function
+            });
+            let logic_output = self.output.into_logic();
+            let logic_body = self.body.clone().into_logic(crates);
+            let body = self.body.into_syn(crates);
+            let attributes = self.contract.into_syn(true);
+            (
+                syn::Item::Fn(parse_quote! {
+                    #(#attributes)*
+                    #[ensures(#logic_result == logical::#name(#(#logic_args),*))]
+                    pub fn #name(#(#inputs),*) -> #output
+                    #body
+                }),
+                Some(parse_quote! {
+                    #[open]
+                    #[logic]
+                    pub fn #name(#(#logic_inputs),*) -> #logic_output
+                    #logic_body
+                }),
+            )
+        } else {
+            let body = self.body.into_syn(crates);
+            (
+                syn::Item::Fn(parse_quote! {
+                    pub fn #name(#(#inputs),*) -> #output
+                    #body
+                }),
+                None,
+            )
+        }
     }
 }
 
@@ -74,8 +103,8 @@ mod test {
     #[test]
     fn should_create_rust_ast_function_from_ir2_function() {
         // use item::{Block, Function, Stmt};
-        let function = Function {
-            name: Loc::test_id("foo"),
+        let (function, _) = Function {
+            name: Loc::test_id("add"),
             inputs: vec![
                 (Loc::test_id("a"), Typ::int()),
                 (Loc::test_id("b"), Typ::int()),
@@ -87,13 +116,14 @@ mod test {
                 }],
             },
             contract: Default::default(),
-        };
+        }
+        .into_syn(&ir0::Ctx::empty(), &mut Default::default());
 
         let control = parse_quote! {
-            pub fn foo(a: i64, b: i64) -> i64 {
+            pub fn add(a: i64, b: i64) -> i64 {
                 a + b
             }
         };
-        assert_eq!(function.into_syn(&mut Default::default()), control)
+        assert_eq!(function, control)
     }
 }

@@ -223,8 +223,12 @@ mk_new! { impl Step =>
 
 impl Step {
     /// Transform [ir2] step into RustAST implementation method.
-    pub fn into_syn(self, crates: &mut BTreeSet<String>) -> syn::ImplItemFn {
-        let attributes = self.contract.into_syn(false);
+    pub fn into_syn(self, ctx: &ir0::Ctx, crates: &mut BTreeSet<String>) -> syn::ImplItemFn {
+        let attributes = if ctx.conf.greusot {
+            self.contract.into_syn(false)
+        } else {
+            vec![]
+        };
 
         let input_ty_name = Ident::new(
             &to_camel_case(&format!("{}Input", self.node_name)),
@@ -341,7 +345,7 @@ mk_new! { impl State => new {
 
 impl State {
     /// Transform [ir2] state into RustAST structure and implementation.
-    pub fn into_syn(self, crates: &mut BTreeSet<String>) -> (syn::ItemStruct, syn::ItemImpl) {
+    pub fn into_syn(self, ctx: &ir0::Ctx, crates: &mut BTreeSet<String>) -> (syn::ItemStruct, syn::ItemImpl) {
         let fields: Vec<syn::Field> = self
             .elements
             .into_iter()
@@ -375,7 +379,7 @@ impl State {
         );
 
         let init = self.init.into_syn(crates);
-        let step = self.step.into_syn(crates);
+        let step = self.step.into_syn(ctx, crates);
         let implementation = parse_quote!(
             impl #name {
                 #init
@@ -406,13 +410,13 @@ mk_new! { impl StateMachine => new {
 
 impl StateMachine {
     /// Transform [ir2] state_machine into items.
-    pub fn into_syn(self, crates: &mut BTreeSet<String>) -> Vec<syn::Item> {
+    pub fn into_syn(self, ctx: &ir0::Ctx, crates: &mut BTreeSet<String>) -> Vec<syn::Item> {
         let mut items = vec![];
 
         let input_structure = self.input.into_syn();
         items.push(syn::Item::Struct(input_structure));
 
-        let (state_structure, state_implementation) = self.state.into_syn(crates);
+        let (state_structure, state_implementation) = self.state.into_syn(ctx, crates);
         items.push(syn::Item::Struct(state_structure));
         items.push(syn::Item::Impl(state_implementation));
 
@@ -534,7 +538,10 @@ mod test {
                 o + y
             }
         };
-        assert_eq!(init.into_syn(&mut Default::default()), control)
+        assert_eq!(
+            init.into_syn(&ir0::Ctx::empty(), &mut Default::default()),
+            control
+        )
     }
 
     #[test]
@@ -589,7 +596,10 @@ mod test {
                 o + y
             }
         };
-        assert_eq!(init.into_syn(&mut Default::default()), control)
+        assert_eq!(
+            init.into_syn(&ir0::Ctx::empty(), &mut Default::default()),
+            control
+        )
     }
 
     #[test]

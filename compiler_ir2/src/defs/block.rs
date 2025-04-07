@@ -23,6 +23,17 @@ impl Block {
             brace_token: Default::default(),
         }
     }
+    pub fn into_logic(self, crates: &mut BTreeSet<String>) -> syn::Block {
+        let stmts = self
+            .statements
+            .into_iter()
+            .map(|statement| statement.into_logic(crates))
+            .collect();
+        syn::Block {
+            stmts,
+            brace_token: Default::default(),
+        }
+    }
 }
 
 #[cfg(test)]

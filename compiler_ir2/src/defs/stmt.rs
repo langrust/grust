@@ -55,6 +55,27 @@ impl Stmt {
             }
         }
     }
+    pub fn into_logic(self, crates: &mut BTreeSet<String>) -> syn::Stmt {
+        match self {
+            Self::Let { pattern, expr } => syn::Stmt::Local(syn::Local {
+                attrs: vec![],
+                let_token: Default::default(),
+                pat: pattern.into_syn(),
+                init: Some(syn::LocalInit {
+                    eq_token: Default::default(),
+                    expr: Box::new(expr.into_logic(crates)),
+                    diverge: None,
+                }),
+                semi_token: Default::default(),
+            }),
+            Self::ExprLast { expr } => syn::Stmt::Expr(expr.into_logic(crates), None),
+            Self::Log { ident, expr } => {
+                let lit = syn::LitStr::new(&format!("{ident}: {{:?}}"), ident.span());
+                let expr = expr.into_syn(crates);
+                parse_quote! { println!(#lit, #expr); }
+            }
+        }
+    }
 }
 
 #[cfg(test)]
