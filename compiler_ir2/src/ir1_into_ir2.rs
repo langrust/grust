@@ -250,19 +250,22 @@ mod term {
                 Kind::Brace { term } => contract::Term::brace(term.into_ir2(ctx)),
                 Kind::Identifier { id } => {
                     let name = ctx.get_name(id);
+                    let views = ctx.get_typ(id).needs_view();
                     match ctx.get_scope(id) {
-                        Scope::Input => contract::Term::input(name.clone()),
+                        Scope::Input => contract::Term::input(name.clone(), views),
                         // todo: this will broke for components with multiple outputs
                         Scope::Output => {
-                            contract::Term::ident(Ident::new("result", name.loc().into()))
+                            let ident = Ident::new("result", name.loc().into());
+                            contract::Term::ident(ident, views)
                         }
-                        Scope::Local => contract::Term::ident(name.clone()),
+                        Scope::Local => contract::Term::ident(name.clone(), views),
                         Scope::VeryLocal => noErrorDesc!("you should not do that with this ident"),
                     }
                 }
                 Kind::Last { signal_id, .. } => {
                     let name = ctx.get_name(signal_id).clone();
-                    contract::Term::MemoryAccess { identifier: name }
+                    let views = ctx.get_typ(signal_id).needs_view();
+                    contract::Term::mem(name, views)
                 }
                 Kind::Enumeration {
                     enum_id,
@@ -287,7 +290,8 @@ mod term {
                 }
                 Kind::PresentEvent { event_id, pattern } => match ctx.get_typ(event_id) {
                     Typ::SMEvent { .. } => {
-                        contract::Term::some(contract::Term::ident(ctx.get_name(pattern).clone()))
+                        let name = ctx.get_name(pattern).clone();
+                        contract::Term::some(contract::Term::ident(name, false))
                     }
                     _ => noErrorDesc!(),
                 },
