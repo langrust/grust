@@ -437,14 +437,12 @@ impl Typ {
     /// Tells if a conversion into logical model of Creusot is needed.
     pub fn needs_view(&self) -> bool {
         match self {
-            Typ::Integer(_)
-            | Typ::Float(_)
-            | Typ::Array { .. }
-            | Typ::Tuple { .. }
-            | Typ::SMEvent { .. } => true,
-            Typ::Boolean(_) | Typ::Unit(_) | Typ::Enumeration { .. } | Typ::Structure { .. } => {
-                false
-            }
+            Typ::Integer(_) | Typ::Float(_) | Typ::Array { .. } | Typ::Tuple { .. } => true,
+            Typ::Boolean(_)
+            | Typ::Unit(_)
+            | Typ::Enumeration { .. }
+            | Typ::Structure { .. }
+            | Typ::SMEvent { .. } => false,
             Typ::Abstract { .. }
             | Typ::Event { .. }
             | Typ::Signal { .. }

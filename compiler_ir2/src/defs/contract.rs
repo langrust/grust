@@ -19,16 +19,22 @@ pub enum Term {
     Identifier {
         /// The identifier.
         identifier: Ident,
+        /// True if its type needs logical model.
+        views: bool,
     },
     /// A memory access: `self.i_mem`.
     MemoryAccess {
         /// The identifier to the memory.
         identifier: Ident,
+        /// True if its type needs logical model.
+        views: bool,
     },
     /// An input access: `self.i_mem`.
     InputAccess {
         /// The identifier to the input.
         identifier: Ident,
+        /// True if its type needs logical model.
+        views: bool,
     },
     /// An unitary operation: `!x`.
     Unop {
@@ -112,12 +118,15 @@ mk_new! { impl Term =>
     Brace: brace { term: Self = term.into() }
     Identifier: ident {
         identifier: impl Into<Ident> = identifier.into(),
+        views: bool,
     }
     MemoryAccess: mem {
         identifier: impl Into<Ident> = identifier.into(),
+        views: bool,
     }
     InputAccess: input {
         identifier: impl Into<Ident> = identifier.into(),
+        views: bool,
     }
     Unop: unop {
         op: UOp,
@@ -183,14 +192,18 @@ impl Term {
                 quote!(#ts_left #ts_op #ts_right)
             }
             Self::Literal { literal } => {
-                let expr = literal.into_syn();
+                let expr = literal.into_logic();
                 quote!(#expr)
             }
-            Self::Identifier { identifier } => {
-                quote!(#identifier)
+            Self::Identifier { identifier, views } => {
+                let mut ts = identifier.to_token_stream();
+                if views {
+                    ts.extend(syn::token::At::default().to_token_stream());
+                }
+                ts
             }
-            Self::MemoryAccess { identifier } => {
-                if function_like {
+            Self::MemoryAccess { identifier, views } => {
+                let mut ts = if function_like {
                     noErrorDesc!()
                 } else {
                     let id = identifier.to_last_var();
@@ -199,15 +212,22 @@ impl Term {
                     } else {
                         quote!(self.#id)
                     }
+                };
+                if views {
+                    ts.extend(syn::token::At::default().to_token_stream());
                 }
+                ts
             }
-            Self::InputAccess { identifier } => {
-                let id = identifier;
-                if function_like {
-                    quote!(#id)
+            Self::InputAccess { identifier, views } => {
+                let mut ts = if function_like {
+                    quote!(#identifier)
                 } else {
-                    quote!(input.#id)
+                    quote!(input.#identifier)
+                };
+                if views {
+                    ts.extend(syn::token::At::default().to_token_stream());
                 }
+                ts
             }
             Self::Implication { left, right } => {
                 let ts_left = left.to_token_stream(prophecy, function_like);
@@ -251,7 +271,7 @@ impl Term {
                 let ts_args = arguments
                     .into_iter()
                     .map(|term| term.to_token_stream(prophecy, function_like));
-                parse_quote! { logical::#function(#(#ts_args)*) }
+                parse_quote! { logical::#function(#(#ts_args),*) }
             }
             Self::ComponentCall { .. } => todo!("not supported yet"),
         }
