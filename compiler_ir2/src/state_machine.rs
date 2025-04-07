@@ -345,7 +345,11 @@ mk_new! { impl State => new {
 
 impl State {
     /// Transform [ir2] state into RustAST structure and implementation.
-    pub fn into_syn(self, ctx: &ir0::Ctx, crates: &mut BTreeSet<String>) -> (syn::ItemStruct, syn::ItemImpl) {
+    pub fn into_syn(
+        self,
+        ctx: &ir0::Ctx,
+        crates: &mut BTreeSet<String>,
+    ) -> (syn::ItemStruct, syn::ItemImpl) {
         let fields: Vec<syn::Field> = self
             .elements
             .into_iter()

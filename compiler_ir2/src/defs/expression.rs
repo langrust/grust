@@ -780,7 +780,10 @@ impl Expr {
                     or1_token: Default::default(),
                     inputs,
                     or2_token: Default::default(),
-                    output: syn::ReturnType::Type(Default::default(), Box::new(output.into_logic())),
+                    output: syn::ReturnType::Type(
+                        Default::default(),
+                        Box::new(output.into_logic()),
+                    ),
                     body: Box::new(body.into_logic(crates)),
                     lifetimes: None,
                     constness: None,

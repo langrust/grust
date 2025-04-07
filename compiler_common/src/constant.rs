@@ -102,10 +102,7 @@ impl Constant {
         match self {
             Constant::Integer(i) => Expr::Lit(ExprLit {
                 attrs: vec![],
-                lit: syn::Lit::Int(LitInt::new(
-                    &(i.base10_digits().to_owned()),
-                    i.span(),
-                )),
+                lit: syn::Lit::Int(LitInt::new(&(i.base10_digits().to_owned()), i.span())),
             }),
             Constant::Float(f) => Expr::Lit(ExprLit {
                 attrs: vec![],
@@ -136,7 +133,6 @@ impl Constant {
             Constant::Default(loc) => parse_quote_spanned! {loc.span => Default::default() },
         }
     }
-
 
     /// Get the [Typ] of the constant.
     pub fn get_typ(&self) -> Typ {
