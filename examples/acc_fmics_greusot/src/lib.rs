@@ -28,8 +28,7 @@ grust! {
         // braking rate is in correct interval
         ensures  { 0 <= b && b <= B_MAX }
         // ensures  { c => forall _t: int, 0 < _t && _t <= -v/b
-        //              => d + v*_t + b*_t^2/2 >= (s-b*_t)*RHO +
-        //                     ((s-b*_t)^2 - (s+v)^2)/(2*B_MAX) }
+        //              => d + v*_t + b*_t^2/2 >= safety_distance(s-b*_t, s-b*_t+v) }
     {
         match c {
             true => {
