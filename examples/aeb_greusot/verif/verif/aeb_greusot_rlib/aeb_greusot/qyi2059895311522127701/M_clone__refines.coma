@@ -1,0 +1,21 @@
+(* #"/home/thome/Documents/git/langrust/grustine/examples/aeb_greusot/src/lib.rs" 5 0 54 1 *)
+
+(* <Braking as creusot_contracts::Clone> *)
+
+let%span slib0 = "/home/thome/Documents/git/langrust/grustine/examples/aeb_greusot/src/lib.rs" 5 0 54 1
+
+type t_Braking'0  =
+  | C_UrgentBrake'0
+  | C_SoftBrake'0
+  | C_NoBrake'0
+
+predicate inv'0 (_1 : t_Braking'0)
+
+axiom inv_axiom'0 [@rewrite] : forall x : t_Braking'0 [inv'0 x] . inv'0 x = true
+
+predicate inv'1 (_1 : t_Braking'0)
+
+axiom inv_axiom'1 [@rewrite] : forall x : t_Braking'0 [inv'1 x] . inv'1 x = true
+
+goal refines : [%#slib0] forall self : t_Braking'0 . inv'0 self
+ -> (forall result : t_Braking'0 . result = self  -> result = self /\ inv'1 result)

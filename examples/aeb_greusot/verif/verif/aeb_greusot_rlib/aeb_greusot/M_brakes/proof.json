@@ -1,0 +1,12 @@
+{
+  "profile": [ { "prover": "cvc5@1.0.5", "size": 46, "time": 0.583 } ],
+  "proofs": {
+    "Coma": {
+      "vc_brakes'0": { "prover": "cvc5@1.0.5", "time": 0.027 },
+      "vc_compute_soft_braking_distance'0": {
+        "prover": "cvc5@1.0.5",
+        "time": 0.014
+      }
+    }
+  }
+}
