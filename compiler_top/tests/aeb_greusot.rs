@@ -19,7 +19,6 @@ fn should_compile_aeb_greusot() {
         // f = coefficient of friction, approx. 0.8 on dry asphalt.
         function compute_soft_braking_distance(speed: int) -> int
             requires { 0 <= speed && speed < 50 }   // urban limit
-            ensures  { result == speed * speed / 100 }  // safety
         {
             return speed * speed / 100;
         }

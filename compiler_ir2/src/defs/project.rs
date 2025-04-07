@@ -13,10 +13,11 @@ impl Project {
     pub fn into_syn(self, ctx: &ir0::Ctx, mut stats: StatsMut) -> Vec<syn::Item> {
         let mut crates = BTreeSet::new();
         let mut rust_items = vec![];
+        let mut logic_fun = vec![];
 
         if ctx.conf.greusot {
             rust_items.push(syn::Item::Use(parse_quote!(
-                use creusot_contracts::{ensures, logic, open, prelude, requires, DeepModel};
+                use creusot_contracts::{DeepModel, ensures, logic, open, prelude, requires};
             )))
         }
 
@@ -35,15 +36,18 @@ impl Project {
                 Item::StateMachine(state_machine) => stats.timed(
                     format!("item #{}, state-machine `{}`", idx, state_machine.name),
                     || {
-                        let items = state_machine.into_syn(&mut crates);
+                        let items = state_machine.into_syn(ctx, &mut crates);
                         rust_items.extend(items);
                     },
                 ),
                 Item::Function(function) => stats.timed(
                     format!("item #{}, function `{}`", idx, function.name),
                     || {
-                        let item_function = function.into_syn(&mut crates);
+                        let (item_function, opt_logic) = function.into_syn(ctx, &mut crates);
                         rust_items.push(item_function);
+                        if let Some(logic) = opt_logic {
+                            logic_fun.push(logic);
+                        }
                     },
                 ),
                 Item::Enumeration(enumeration) => stats.timed(
@@ -68,6 +72,18 @@ impl Project {
                     },
                 ),
             });
+
+        if ctx.conf.greusot {
+            let logic_mod: syn::ItemMod = parse_quote! {
+                mod logical {
+                    use creusot_contracts::{open, logic, Int};
+                    use super::*;
+
+                    #(#logic_fun)*
+                }
+            };
+            rust_items.push(syn::Item::Mod(logic_mod));
+        }
 
         stats.timed("item dedup", || {
             // remove duplicated imports

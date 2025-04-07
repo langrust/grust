@@ -399,6 +399,63 @@ impl Typ {
         }
     }
 
+    /// Conversion to logic types from Creusot.
+    pub fn into_logic(&self) -> syn::Type {
+        match self {
+            Typ::Integer(_) => parse_quote!(Int),
+            Typ::Float(_) => parse_quote!(Float),
+            Typ::Array { ty, size, .. } => {
+                let ty = ty.into_logic();
+                let size = syn::Lit::Int(syn::LitInt::new(
+                    &(size.base10_digits().to_owned() + "usize"),
+                    size.span(),
+                ));
+                parse_quote!([#ty; #size])
+            }
+            Typ::Tuple { elements, .. } => {
+                let tys = elements.into_iter().map(Self::into_logic);
+                parse_quote!((#(#tys),*))
+            }
+            Typ::SMEvent { ty, .. } => {
+                let ty = ty.into_logic();
+                parse_quote!(Option<#ty>)
+            }
+            Typ::Boolean(_) | Typ::Unit(_) | Typ::Enumeration { .. } | Typ::Structure { .. } => {
+                self.into_syn()
+            }
+            Typ::Abstract { .. }
+            | Typ::Event { .. }
+            | Typ::Signal { .. }
+            | Typ::NotDefinedYet(_)
+            | Typ::Polymorphism(_)
+            | Typ::Any => {
+                noErrorDesc!()
+            }
+        }
+    }
+
+    /// Tells if a conversion into logical model of Creusot is needed.
+    pub fn needs_view(&self) -> bool {
+        match self {
+            Typ::Integer(_)
+            | Typ::Float(_)
+            | Typ::Array { .. }
+            | Typ::Tuple { .. }
+            | Typ::SMEvent { .. } => true,
+            Typ::Boolean(_) | Typ::Unit(_) | Typ::Enumeration { .. } | Typ::Structure { .. } => {
+                false
+            }
+            Typ::Abstract { .. }
+            | Typ::Event { .. }
+            | Typ::Signal { .. }
+            | Typ::NotDefinedYet(_)
+            | Typ::Polymorphism(_)
+            | Typ::Any => {
+                noErrorDesc!()
+            }
+        }
+    }
+
     /// The location of this type, if any.
     pub fn loc(&self) -> Option<Loc> {
         match self {

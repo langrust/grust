@@ -36,8 +36,8 @@ fn should_compile_aeb() {
         }
 
         component braking_state(pedest: float?, timeout_pedestrian: unit?, speed: float) -> (state: Braking)
-            // requires { 0. <= speed && speed < 55. } // urban limit
-            // ensures { pedest? => state != NoBrake } // safety
+            requires { 0. <= speed && speed < 55. } // urban limit
+            ensures { when _x = pedest? => state != Braking::NoBrake } // safety
         {
             state = when {
                 init                        => Braking::NoBrake,

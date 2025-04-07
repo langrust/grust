@@ -96,6 +96,48 @@ impl Constant {
         }
     }
 
+    /// The `logic` version of a constant.
+    pub fn into_logic(self) -> syn::Expr {
+        prelude!(syn::{Expr, ExprLit, ExprTuple});
+        match self {
+            Constant::Integer(i) => Expr::Lit(ExprLit {
+                attrs: vec![],
+                lit: syn::Lit::Int(LitInt::new(
+                    &(i.base10_digits().to_owned()),
+                    i.span(),
+                )),
+            }),
+            Constant::Float(f) => Expr::Lit(ExprLit {
+                attrs: vec![],
+                lit: {
+                    // force `f64` suffix
+                    let f = if f.suffix() == "" {
+                        let mut s = f.to_string();
+                        // careful on trailing `.`
+                        if s.ends_with(".") {
+                            s.push('0');
+                        }
+                        syn::LitFloat::new(&s, f.span())
+                    } else {
+                        f.clone()
+                    };
+                    syn::Lit::Float(f)
+                },
+            }),
+            Constant::Boolean(b) => Expr::Lit(ExprLit {
+                attrs: vec![],
+                lit: syn::Lit::Bool(b.clone()),
+            }),
+            Constant::Unit(paren_token) => Expr::Tuple(ExprTuple {
+                attrs: vec![],
+                paren_token,
+                elems: Default::default(),
+            }),
+            Constant::Default(loc) => parse_quote_spanned! {loc.span => Default::default() },
+        }
+    }
+
+
     /// Get the [Typ] of the constant.
     pub fn get_typ(&self) -> Typ {
         match self {

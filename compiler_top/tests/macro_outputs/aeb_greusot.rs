@@ -6,12 +6,13 @@ pub enum Braking {
     NoBrake,
 }
 # [requires (0i64 <= speed && speed < 50i64)]
-# [ensures (result == speed * speed / 100i64)]
+# [ensures (result @ == logical :: compute_soft_braking_distance (speed @))]
 pub fn compute_soft_braking_distance(speed: i64) -> i64 {
     (speed * speed) / 100i64
 }
 # [requires (0i64 <= speed && speed < 50i64)]
 # [ensures (result != Braking :: NoBrake)]
+# [ensures (result == logical :: brakes (distance @ , speed @))]
 pub fn brakes(distance: i64, speed: i64) -> Braking {
     let braking_distance = compute_soft_braking_distance(speed);
     let response = if braking_distance < distance {
@@ -51,5 +52,25 @@ impl BrakingStateState {
         };
         self.last_state = state;
         state
+    }
+}
+mod logical {
+    use super::*;
+    use creusot_contracts::{logic, open, Int};
+    #[open]
+    #[logic]
+    pub fn compute_soft_braking_distance(speed: Int) -> Int {
+        (speed * speed) / 100
+    }
+    #[open]
+    #[logic]
+    pub fn brakes(distance: Int, speed: Int) -> Braking {
+        let braking_distance = compute_soft_braking_distance(speed);
+        let response = if braking_distance < distance {
+            Braking::SoftBrake
+        } else {
+            Braking::UrgentBrake
+        };
+        response
     }
 }
