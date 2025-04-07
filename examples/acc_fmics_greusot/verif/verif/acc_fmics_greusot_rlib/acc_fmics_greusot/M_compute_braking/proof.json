@@ -1,0 +1,11 @@
+{
+  "profile": [
+    { "prover": "cvc5@1.0.5", "size": 46, "time": 0.632 },
+    { "prover": "cvc4@1.8", "size": 42, "time": 0.528 }
+  ],
+  "proofs": {
+    "Coma": {
+      "vc_compute_braking'0": { "prover": "cvc4@1.8", "time": 0.054 }
+    }
+  }
+}
