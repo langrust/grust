@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 proc = { path = "../proc" }
 grust_std = { path = "../grust_std" }
+grust_core = { path = "../grust_core" }

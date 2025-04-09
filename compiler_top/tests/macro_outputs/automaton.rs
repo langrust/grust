@@ -15,11 +15,13 @@ pub struct SumInput {
 pub struct SumState {
     last_o: i64,
 }
-impl SumState {
-    pub fn init() -> SumState {
+impl grust::core::Component for SumState {
+    type Input = SumInput;
+    type Output = i64;
+    fn init() -> SumState {
         SumState { last_o: 0i64 }
     }
-    pub fn step(&mut self, input: SumInput) -> i64 {
+    fn step(&mut self, input: SumInput) -> i64 {
         let x = add(self.last_o, input.i);
         let o = if input.reset { 0i64 } else { x };
         self.last_o = o;
@@ -35,15 +37,17 @@ pub struct AutomatonState {
     last_x: i64,
     sum: SumState,
 }
-impl AutomatonState {
-    pub fn init() -> AutomatonState {
+impl grust::core::Component for AutomatonState {
+    type Input = AutomatonInput;
+    type Output = i64;
+    fn init() -> AutomatonState {
         AutomatonState {
             last_next_state: State::Off,
             last_x: 0i64,
-            sum: SumState::init(),
+            sum: <SumState as grust::core::Component>::init(),
         }
     }
-    pub fn step(&mut self, input: AutomatonInput) -> i64 {
+    fn step(&mut self, input: AutomatonInput) -> i64 {
         let state = self.last_next_state;
         let (next_state, x, o) = match state {
             State::Off => {
@@ -54,10 +58,13 @@ impl AutomatonState {
             }
             State::On => {
                 let next_state = if input.switch { State::Off } else { state };
-                let x = self.sum.step(SumInput {
-                    reset: input.switch,
-                    i: input.i,
-                });
+                let x = <SumState as grust::core::Component>::step(
+                    &mut self.sum,
+                    SumInput {
+                        reset: input.switch,
+                        i: input.i,
+                    },
+                );
                 let o = 10i64 * x;
                 (next_state, x, o)
             }

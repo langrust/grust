@@ -162,7 +162,7 @@ impl ServiceHandler {
                  ..
              }| {
                 let state: syn::Stmt = parse_quote! {
-                    let #field_ident = #state_ty_ident::init();
+                    let #field_ident = <#state_ty_ident as grust::core::Component>::init();
                 };
                 state
             },
@@ -493,7 +493,8 @@ impl FlowInstruction {
             FlowInstruction::ComponentCall(pattern, memory_name, comp_name, inputs_fields) => {
                 let outputs = pattern.into_syn();
                 let mem_ident = memory_name.to_field();
-                let component_input_name = comp_name.to_input_ty();
+                let input_ty = comp_name.to_input_ty();
+                let state_ty = comp_name.to_state_ty();
 
                 let input_fields =
                     inputs_fields
@@ -505,8 +506,9 @@ impl FlowInstruction {
                         });
 
                 parse_quote! {
-                    let #outputs = self.#mem_ident.step(
-                        #component_input_name {
+                    let #outputs = <#state_ty as grust::core::Component>::step(
+                        &mut self.#mem_ident,
+                        #input_ty {
                             #(#input_fields),*
                         }
                     );

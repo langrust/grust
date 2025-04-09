@@ -111,7 +111,7 @@ mod test {
             ),
         );
 
-        let control = parse_quote! { let o = self.node_state.step(NodeInput { i: 1i64 }); };
+        let control = parse_quote! { let o = <NodeState as grust::core::Component>::step(&mut self.node_state, NodeInput { i : 1i64 }); };
         assert_eq!(statement.into_syn(&mut Default::default()), control)
     }
 

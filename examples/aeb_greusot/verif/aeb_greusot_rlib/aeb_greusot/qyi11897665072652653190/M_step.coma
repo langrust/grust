@@ -1,6 +1,6 @@
 (* #"/home/thome/Documents/git/langrust/grustine/examples/aeb_greusot/src/lib.rs" 5 0 54 1 *)
 
-(* BrakingStateState *)
+(* <BrakingStateState as grust::grust_core::Component> *)
 
 let%span slib0 = "/home/thome/Documents/git/langrust/grustine/examples/aeb_greusot/src/lib.rs" 5 0 54 1
 let%span slib1 = "/home/thome/Documents/git/langrust/grustine/examples/aeb_greusot/src/lib.rs" 12 8 27 19

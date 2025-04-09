@@ -4,11 +4,13 @@ pub struct TestMixedAuxInput {
 pub struct TestMixedAuxState {
     last_i: i64,
 }
-impl TestMixedAuxState {
-    pub fn init() -> TestMixedAuxState {
+impl grust::core::Component for TestMixedAuxState {
+    type Input = TestMixedAuxInput;
+    type Output = i64;
+    fn init() -> TestMixedAuxState {
         TestMixedAuxState { last_i: 0i64 }
     }
-    pub fn step(&mut self, input: TestMixedAuxInput) -> i64 {
+    fn step(&mut self, input: TestMixedAuxInput) -> i64 {
         let ((i3, i1, i2), ()) = {
             let (i3, i1, i2) = (
                 {
@@ -72,19 +74,25 @@ pub struct TestMixedState {
     test_mixed_aux_1: TestMixedAuxState,
     test_mixed_aux_2: TestMixedAuxState,
 }
-impl TestMixedState {
-    pub fn init() -> TestMixedState {
+impl grust::core::Component for TestMixedState {
+    type Input = TestMixedInput;
+    type Output = i64;
+    fn init() -> TestMixedState {
         TestMixedState {
             last_i: 0i64,
-            test_mixed_aux: TestMixedAuxState::init(),
-            test_mixed_aux_1: TestMixedAuxState::init(),
-            test_mixed_aux_2: TestMixedAuxState::init(),
+            test_mixed_aux: <TestMixedAuxState as grust::core::Component>::init(),
+            test_mixed_aux_1: <TestMixedAuxState as grust::core::Component>::init(),
+            test_mixed_aux_2: <TestMixedAuxState as grust::core::Component>::init(),
         }
     }
-    pub fn step(&mut self, input: TestMixedInput) -> i64 {
+    fn step(&mut self, input: TestMixedInput) -> i64 {
         let ((i1_1, i1_2), i1_3) = std::thread::scope(|reserved_grust_thread_scope| {
-            let reserved_grust_thread_kid_0 = reserved_grust_thread_scope
-                .spawn(|| self.test_mixed_aux.step(TestMixedAuxInput { i: input.i }));
+            let reserved_grust_thread_kid_0 = reserved_grust_thread_scope.spawn(|| {
+                <TestMixedAuxState as grust::core::Component>::step(
+                    &mut self.test_mixed_aux,
+                    TestMixedAuxInput { i: input.i },
+                )
+            });
             let (i1_1, i1_2) = (
                 {
                     {
@@ -107,12 +115,18 @@ impl TestMixedState {
         let ((x, i2_1), (x_1, i2_2)) = std::thread::scope(|reserved_grust_thread_scope| {
             let reserved_grust_thread_kid_0 = reserved_grust_thread_scope.spawn(|| {
                 let x = (i1_1 + i1_2) - i1_3;
-                let i2_1 = self.test_mixed_aux_1.step(TestMixedAuxInput { i: x });
+                let i2_1 = <TestMixedAuxState as grust::core::Component>::step(
+                    &mut self.test_mixed_aux_1,
+                    TestMixedAuxInput { i: x },
+                );
                 (x, i2_1)
             });
             let reserved_grust_thread_kid_1 = reserved_grust_thread_scope.spawn(|| {
                 let x_1 = (i1_2 - i1_2) + i1_3;
-                let i2_2 = self.test_mixed_aux_2.step(TestMixedAuxInput { i: x_1 });
+                let i2_2 = <TestMixedAuxState as grust::core::Component>::step(
+                    &mut self.test_mixed_aux_2,
+                    TestMixedAuxInput { i: x_1 },
+                );
                 (x_1, i2_2)
             });
             let ((x, i2_1), (x_1, i2_2)) = (

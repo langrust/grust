@@ -4,11 +4,13 @@ pub struct TestCustomAuxInput {
 pub struct TestCustomAuxState {
     last_i: i64,
 }
-impl TestCustomAuxState {
-    pub fn init() -> TestCustomAuxState {
+impl grust::core::Component for TestCustomAuxState {
+    type Input = TestCustomAuxInput;
+    type Output = i64;
+    fn init() -> TestCustomAuxState {
         TestCustomAuxState { last_i: 0i64 }
     }
-    pub fn step(&mut self, input: TestCustomAuxInput) -> i64 {
+    fn step(&mut self, input: TestCustomAuxInput) -> i64 {
         let (i3, (i1, i2), ()) = {
             let i3 = {
                 {
@@ -113,19 +115,25 @@ pub struct TestCustomState {
     test_custom_aux_1: TestCustomAuxState,
     test_custom_aux_2: TestCustomAuxState,
 }
-impl TestCustomState {
-    pub fn init() -> TestCustomState {
+impl grust::core::Component for TestCustomState {
+    type Input = TestCustomInput;
+    type Output = i64;
+    fn init() -> TestCustomState {
         TestCustomState {
             last_i: 0i64,
-            test_custom_aux: TestCustomAuxState::init(),
-            test_custom_aux_1: TestCustomAuxState::init(),
-            test_custom_aux_2: TestCustomAuxState::init(),
+            test_custom_aux: <TestCustomAuxState as grust::core::Component>::init(),
+            test_custom_aux_1: <TestCustomAuxState as grust::core::Component>::init(),
+            test_custom_aux_2: <TestCustomAuxState as grust::core::Component>::init(),
         }
     }
-    pub fn step(&mut self, input: TestCustomInput) -> i64 {
+    fn step(&mut self, input: TestCustomInput) -> i64 {
         let ((i1_1, i1_2), i1_3) = std::thread::scope(|reserved_grust_thread_scope| {
-            let reserved_grust_thread_kid_0 = reserved_grust_thread_scope
-                .spawn(|| self.test_custom_aux.step(TestCustomAuxInput { i: input.i }));
+            let reserved_grust_thread_kid_0 = reserved_grust_thread_scope.spawn(|| {
+                <TestCustomAuxState as grust::core::Component>::step(
+                    &mut self.test_custom_aux,
+                    TestCustomAuxInput { i: input.i },
+                )
+            });
             let (i1_1, i1_2) = {
                 let (reserved_grust_rayon_opt_var_0, reserved_grust_rayon_opt_var_1) = {
                     #[allow(unused_imports)]
@@ -189,12 +197,18 @@ impl TestCustomState {
         let ((x, i2_1), (x_1, i2_2)) = std::thread::scope(|reserved_grust_thread_scope| {
             let reserved_grust_thread_kid_0 = reserved_grust_thread_scope.spawn(|| {
                 let x = (i1_1 + i1_2) - i1_3;
-                let i2_1 = self.test_custom_aux_1.step(TestCustomAuxInput { i: x });
+                let i2_1 = <TestCustomAuxState as grust::core::Component>::step(
+                    &mut self.test_custom_aux_1,
+                    TestCustomAuxInput { i: x },
+                );
                 (x, i2_1)
             });
             let reserved_grust_thread_kid_1 = reserved_grust_thread_scope.spawn(|| {
                 let x_1 = (i1_2 - i1_2) + i1_3;
-                let i2_2 = self.test_custom_aux_2.step(TestCustomAuxInput { i: x_1 });
+                let i2_2 = <TestCustomAuxState as grust::core::Component>::step(
+                    &mut self.test_custom_aux_2,
+                    TestCustomAuxInput { i: x_1 },
+                );
                 (x_1, i2_2)
             });
             let ((x, i2_1), (x_1, i2_2)) = (
