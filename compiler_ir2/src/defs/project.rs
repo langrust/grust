@@ -86,9 +86,8 @@ impl Project {
         }
 
         stats.timed("item dedup", || {
-            // remove duplicated imports
-            use itertools::Itertools; // for `unique`
-            rust_items.into_iter().unique().collect()
+            rust_items.dedup();
+            rust_items
         })
     }
 }

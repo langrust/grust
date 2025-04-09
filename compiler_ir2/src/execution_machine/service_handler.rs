@@ -64,7 +64,11 @@ impl ServiceHandler {
     /// Transform [ir2] run-loop into an async function performing a loop over events.
     pub fn into_syn(self, stats: &mut StatsMut) -> syn::Item {
         // result
-        let mut items = self.flow_context.into_syn();
+        let mut items = vec![
+            parse_quote! { use futures::{stream::StreamExt, sink::SinkExt}; },
+            parse_quote! { use super::*; },
+        ];
+        items.extend(self.flow_context.into_syn());
 
         // store all inputs in a service_store
         let stitem = stats.start(format!(
@@ -323,47 +327,61 @@ impl ServiceHandler {
         );
 
         // service handlers in an implementation block
-        let stitem = stats.start("service handlers block");
-        items.push(syn::Item::Impl(parse_quote! {
-            impl #service_name {
-                #(#impl_items)*
-                #[inline]
-                pub async fn reset_time_constraints(
-                    &mut self, instant: std::time::Instant
-                ) -> Result<(), futures::channel::mpsc::SendError> {
-                    self.reset_service_delay(instant).await?;
-                    self.delayed = false;
-                    Ok(())
-                }
-                #[inline]
-                pub async fn send_output(
-                    &mut self, output: O, instant: std::time::Instant
-                ) -> Result<(), futures::channel::mpsc::SendError> {
-                    self.reset_service_timeout(instant).await?;
-                    self.output.send(output).await?;
-                    Ok(())
-                }
-                #[inline]
-                pub async fn send_timer(
-                    &mut self, timer: T, instant: std::time::Instant
-                ) -> Result<(), futures::channel::mpsc::SendError> {
-                    self.timer.send((timer, instant)).await?;
-                    Ok(())
-                }
+        let stitem = stats.start("service handlers block item 1");
+        impl_items.push(parse_quote! {
+            #[inline]
+            pub async fn reset_time_constraints(
+                &mut self, instant: std::time::Instant
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.reset_service_delay(instant).await?;
+                self.delayed = false;
+                Ok(())
             }
-        }));
+        });
+        stats.augment_end(stitem);
+        let stitem = stats.start("service handlers block item 2");
+        impl_items.push(parse_quote! {
+            #[inline]
+            pub async fn send_output(
+                &mut self, output: O, instant: std::time::Instant
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.reset_service_timeout(instant).await?;
+                self.output.send(output).await?;
+                Ok(())
+            }
+        });
+        stats.augment_end(stitem);
+        let stitem = stats.start("service handlers block item 3");
+        impl_items.push(parse_quote! {
+            #[inline]
+            pub async fn send_timer(
+                &mut self, timer: T, instant: std::time::Instant
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.timer.send((timer, instant)).await?;
+                Ok(())
+            }
+        });
+        stats.augment_end(stitem);
+        let stitem = stats.start("service handlers block top");
+        items.push(syn::Item::Impl(syn::ItemImpl::new_simple(
+            parse_quote!(#service_name),
+            impl_items,
+        )));
         stats.augment_end(stitem);
 
         // service module
-        let module_name = &self.service_mod_ident;
-        syn::Item::Mod(parse_quote! {
-           pub mod #module_name {
-                use futures::{stream::StreamExt, sink::SinkExt};
-                use super::*;
+        syn::Item::Mod(syn::ItemMod::new_simple(
+            self.service_mod_ident.clone(),
+            items,
+        ))
+        // parse_quote! {
+        //     pub mod #module_name {
+        //         use futures::{stream::StreamExt, sink::SinkExt};
+        //         use super::*;
 
-                #(#items)*
-           }
-        })
+        //         #(#items)*
+        //     }
+        // }
     }
 }
 

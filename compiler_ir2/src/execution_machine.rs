@@ -23,8 +23,14 @@ pub struct ExecutionMachine {
 impl ExecutionMachine {
     /// Transform [ir2] execution-machine into a runtime module.
     pub fn into_syn(self, mut stats: StatsMut) -> syn::Item {
-        let (runtime_items, field_values) = {
-            let mut runtime_items = vec![];
+        let (mut runtime_items, field_values) = {
+            let mut runtime_items: Vec<syn::Item> = vec![
+                parse_quote! { use futures::{stream::StreamExt, sink::SinkExt}; },
+                parse_quote! { use super::*; },
+                parse_quote! { use RuntimeTimer as T; },
+                parse_quote! { use RuntimeInput as I; },
+                parse_quote! { use RuntimeOutput as O; },
+            ];
 
             // create runtime structures and their implementations
             let mut timer_variants: Vec<syn::Variant> = vec![];
@@ -224,56 +230,53 @@ impl ExecutionMachine {
         // create the runtime loop
         let run_loop = self.runtime_loop.into_syn(self.output_flows);
 
+        let impl_runtime = syn::ItemImpl::new_simple(
+            parse_quote!(Runtime),
+            vec![
+                new_runtime,
+                parse_quote! {
+                    #[inline]
+                    pub async fn send_output(
+                        &mut self, output: O
+                    ) -> Result<(), futures::channel::mpsc::SendError> {
+                        self.output.send(output).await?;
+                        Ok(())
+                    }
+                },
+                parse_quote! {
+                    #[inline]
+                    pub async fn send_timer(
+                        &mut self, timer: T, instant: std::time::Instant
+                    ) -> Result<(), futures::channel::mpsc::SendError> {
+                        self.timer.send((timer, instant)).await?;
+                        Ok(())
+                    }
+                },
+                run_loop,
+            ],
+        );
+
+        runtime_items.push(syn::Item::Impl(impl_runtime));
+
         // create the services handlers
-        let handlers = stats.timed_with(
+        stats.timed_with(
             format!(
                 "service handlers creation ({})",
                 self.services_handlers.len()
             ),
             |mut stats| {
-                self.services_handlers
-                    .into_iter()
-                    .map(|handler| handler.into_syn(&mut stats))
-                    .collect_vec()
+                for handler in self.services_handlers.into_iter() {
+                    runtime_items.push(handler.into_syn(&mut stats));
+                }
             },
         );
 
         // parse the runtime module
         stats.timed("parse-quote runtime module", || {
-            syn::Item::Mod(parse_quote! {
-                pub mod runtime {
-                    use futures::{stream::StreamExt, sink::SinkExt};
-                    use super::*;
-                    use RuntimeTimer as T;
-                    use RuntimeInput as I;
-                    use RuntimeOutput as O;
-
-                    #(#runtime_items)*
-
-                    impl Runtime {
-                        #new_runtime
-
-                        #[inline]
-                        pub async fn send_output(
-                            &mut self, output: O
-                        ) -> Result<(), futures::channel::mpsc::SendError> {
-                            self.output.send(output).await?;
-                            Ok(())
-                        }
-                        #[inline]
-                        pub async fn send_timer(
-                            &mut self, timer: T, instant: std::time::Instant
-                        ) -> Result<(), futures::channel::mpsc::SendError> {
-                            self.timer.send((timer, instant)).await?;
-                            Ok(())
-                        }
-
-                        #run_loop
-                    }
-
-                    #(#handlers)*
-                }
-            })
+            syn::Item::Mod(syn::ItemMod::new_simple(
+                parse_quote!(runtime),
+                runtime_items,
+            ))
         })
     }
 }
