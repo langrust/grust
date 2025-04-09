@@ -524,7 +524,7 @@ impl Table {
                 typing: Some(typing),
                 constant: None,
             },
-            Ident::new("result", loc.span),
+            Ident::result(loc.span),
         );
 
         self.insert_symbol(symbol, local, errors)
@@ -1399,8 +1399,7 @@ impl Table {
         loc: Loc,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
-        let name = "result";
-        let ident = Ident::new(name, loc.span);
+        let ident = Ident::result(loc.span);
         let symbol_hash = SymbolKey::Identifier {
             name: ident.clone(),
         };

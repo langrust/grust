@@ -160,7 +160,7 @@ pub fn memory_state_elements(
     ) in mem.buffers.into_iter().sorted_by_key(|(id, _)| id.clone())
     {
         let scope = ctx.get_scope(id);
-        let mem_ident = Ident::new(&format!("last_{}", ident), ident.loc().into());
+        let mem_ident = ident.to_last_var();
         elements.push(StateElmInfo::buffer(mem_ident.clone(), typing));
         inits.push(StateElmInit::buffer(mem_ident.clone(), init.into_ir2(ctx)));
         steps.push(StateElmStep::new(
@@ -255,7 +255,7 @@ mod term {
                         Scope::Input => contract::Term::input(name.clone(), views),
                         // todo: this will broke for components with multiple outputs
                         Scope::Output => {
-                            let ident = Ident::new("result", name.loc().into());
+                            let ident = Ident::result(name.span());
                             contract::Term::ident(ident, views)
                         }
                         Scope::Local => contract::Term::ident(name.clone(), views),
@@ -319,13 +319,8 @@ mod term {
                         .into_iter()
                         .map(|(id, term)| (ctx.get_name(id).clone(), term.into_ir2(ctx)))
                         .collect_vec();
-                    let input_name = {
-                        Ident::new(
-                            &to_camel_case(&format!("{}Input", comp_name.to_string())),
-                            comp_name.span(),
-                        )
-                    };
-                    contract::Term::comp_call(memory_ident, comp_name, input_name, input_fields)
+                    let input_ty = comp_name.to_input_ty();
+                    contract::Term::comp_call(memory_ident, comp_name, input_ty, input_fields)
                 }
             }
         }
@@ -718,17 +713,12 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::stream::Expr {
                     .into_iter()
                     .map(|(id, expression)| (ctx.get_name(id).clone(), expression.into_ir2(ctx)))
                     .collect_vec();
-                let input_name = {
-                    Ident::new(
-                        &to_camel_case(&format!("{}Input", name.to_string())),
-                        name.span(),
-                    )
-                };
+                let input_ty = name.to_input_ty();
                 let path_opt = ctx.try_get_comp_path(called_node_id);
                 ir2::Expr::node_call(
                     memory_ident,
                     name,
-                    input_name,
+                    input_ty,
                     input_fields,
                     path_opt.cloned(),
                 )

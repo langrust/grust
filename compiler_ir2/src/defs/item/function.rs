@@ -51,7 +51,7 @@ impl Function {
                 ts
             });
             let logic_result = {
-                let mut ts = Ident::new("result", name.span()).to_token_stream();
+                let mut ts = Ident::result(name.span()).to_token_stream();
                 if self.output.needs_view() {
                     ts.extend(syn::token::At::default().to_token_stream());
                 }

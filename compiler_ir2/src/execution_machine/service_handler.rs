@@ -430,7 +430,7 @@ impl FlowInstruction {
             }
             FlowInstruction::SendSignal(name, send_expr, instant) => {
                 stats.timed("send signal", || {
-                    let enum_ident = Ident::new(&to_camel_case(name.to_string()), name.span());
+                    let enum_ident = name.to_camel();
                     let send_expr = send_expr.into_syn();
                     let instant = if let Some(instant) = instant {
                         instant.to_instant_var()
@@ -442,7 +442,7 @@ impl FlowInstruction {
             }
             FlowInstruction::SendEvent(name, event_expr, send_expr, instant) => {
                 stats.timed("send event", || {
-                    let enum_ident = Ident::new(&to_camel_case(name.to_string()), name.span());
+                    let enum_ident = name.to_camel();
                     let event_expr = event_expr.into_syn();
                     let send_expr = send_expr.into_syn();
                     let instant = if let Some(instant) = instant {

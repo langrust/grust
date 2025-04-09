@@ -114,17 +114,14 @@ mk_new! { impl Init =>
 
 impl Init {
     pub fn into_syn(self, crates: &mut BTreeSet<String>) -> syn::ImplItemFn {
-        let state_ty = Ident::new(
-            &to_camel_case(&format!("{}State", self.node_name)),
-            Span::call_site(),
-        );
+        let state_ty = self.node_name.to_state_ty();
         let signature = syn::Signature {
             constness: None,
             asyncness: None,
             unsafety: None,
             abi: None,
             fn_token: Default::default(),
-            ident: Ident::new("init", Span::call_site()),
+            ident: Ident::new("init", self.node_name.span()),
             generics: Default::default(),
             paren_token: Default::default(),
             inputs: Default::default(),
@@ -238,7 +235,7 @@ impl Step {
                     attrs: vec![],
                     by_ref: None,
                     mutability: None,
-                    ident: Ident::new("input", Span::call_site()),
+                    ident: Ident::new("input", self.node_name.span()),
                     subpat: None,
                 })),
                 colon_token: Default::default(),
@@ -254,7 +251,7 @@ impl Step {
             unsafety: None,
             abi: None,
             fn_token: Default::default(),
-            ident: Ident::new("step", Span::call_site()),
+            ident: Ident::new("step", self.node_name.span()),
             generics: Default::default(),
             paren_token: Default::default(),
             inputs,

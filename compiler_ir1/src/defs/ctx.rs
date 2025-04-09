@@ -122,10 +122,7 @@ impl Flows {
         // construct Context structure type
         let context_struct = {
             let fields = self.elements.iter().map(|(element_name, _)| -> syn::Field {
-                let struct_name = Ident::new(
-                    &to_camel_case(&element_name.to_string()),
-                    element_name.span(),
-                );
+                let struct_name = element_name.to_camel();
                 parse_quote! { pub #element_name: ctx_ty::#struct_name }
             });
             let name = Ident::new("Context", Span::call_site());
@@ -169,10 +166,7 @@ impl Flows {
             .elements
             .into_iter()
             .flat_map(|(element_name, element_ty)| {
-                let struct_name = Ident::new(
-                    &to_camel_case(&element_name.to_string()),
-                    element_name.span(),
-                );
+                let struct_name = element_name.to_camel();
                 let name = element_name;
                 let ty = element_ty.into_syn();
                 let attribute: syn::Attribute =

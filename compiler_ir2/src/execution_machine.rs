@@ -39,10 +39,7 @@ impl ExecutionMachine {
 
             stats.timed("timing events", || {
                 for TimingEvent { identifier, kind } in self.timing_events.iter() {
-                    let enum_ident = Ident::new(
-                        to_camel_case(&identifier.to_string()).as_str(),
-                        identifier.span(),
-                    );
+                    let enum_ident = identifier.to_camel();
                     timer_variants.push(parse_quote! { #enum_ident });
                     match kind {
                         TimingEventKind::Period(duration) => {
@@ -68,8 +65,7 @@ impl ExecutionMachine {
                     identifier, typ, ..
                 } in self.input_flows.iter()
                 {
-                    let enum_ident =
-                        Ident::new(&to_camel_case(&identifier.to_string()), identifier.span());
+                    let enum_ident = identifier.to_camel();
                     let ty = typ.into_syn();
                     input_variants.push(parse_quote! { #enum_ident(#ty, std::time::Instant) });
                     input_eq_arms.push(parse_quote! {
@@ -86,8 +82,7 @@ impl ExecutionMachine {
                     identifier, typ, ..
                 } in self.output_flows.iter()
                 {
-                    let enum_ident =
-                        Ident::new(&to_camel_case(&identifier.to_string()), identifier.span());
+                    let enum_ident = identifier.to_camel();
                     let ty = typ.into_syn();
                     output_variants.push(parse_quote! { #enum_ident(#ty, std::time::Instant) });
                 }
