@@ -2,6 +2,44 @@
 
 prelude! {}
 
+pub trait ItemImplExt {
+    type Name;
+    type Itm;
+    fn new_simple(name: Self::Name, items: Vec<Self::Itm>) -> Self;
+}
+impl ItemImplExt for syn::ItemImpl {
+    type Name = syn::Type;
+    type Itm = syn::ImplItem;
+    fn new_simple(ty: syn::Type, items: Vec<syn::ImplItem>) -> Self {
+        syn::ItemImpl {
+            attrs: Vec::with_capacity(0),
+            defaultness: None,
+            unsafety: None,
+            impl_token: parse_quote!(impl),
+            generics: parse_quote!(),
+            trait_: None,
+            self_ty: ty.into(),
+            brace_token: Default::default(),
+            items,
+        }
+    }
+}
+impl ItemImplExt for syn::ItemMod {
+    type Name = syn::Ident;
+    type Itm = syn::Item;
+    fn new_simple(ident: syn::Ident, items: Vec<syn::Item>) -> Self {
+        syn::ItemMod {
+            attrs: Vec::with_capacity(0),
+            vis: parse_quote!(pub),
+            unsafety: None,
+            mod_token: parse_quote!(mod),
+            ident,
+            content: Some((Default::default(), items)),
+            semi: None,
+        }
+    }
+}
+
 /// Extension over `Iterator`s.
 pub trait IteratorExt: IntoIterator + Sized {
     /// Pairwise fold.
