@@ -80,6 +80,7 @@ pub trait IdentExt: Sized {
 
     fn instant_var() -> Self;
     fn init_instant_var() -> Self;
+    fn result(span: Span) -> Self;
 
     fn to_snake_pref(&self, pref: impl AsRef<str>) -> Self {
         self.to_snake_with(pref, "")
@@ -156,6 +157,9 @@ impl IdentExt for Ident {
     }
     fn init_instant_var() -> Self {
         Ident::new("_grust_reserved_init_instant", Span::mixed_site())
+    }
+    fn result(span: Span) -> Self {
+        Ident::new("result", span)
     }
 
     fn to_camel_with(&self, pref: impl AsRef<str>, suff: impl AsRef<str>) -> Self {

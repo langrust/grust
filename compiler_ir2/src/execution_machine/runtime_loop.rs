@@ -19,10 +19,7 @@ impl RuntimeLoop {
                 ArrivingFlow::Period(time_flow_name)
                 | ArrivingFlow::Deadline(time_flow_name)
                 | ArrivingFlow::ServiceTimeout(time_flow_name) => {
-                    let enum_ident = Ident::new(
-                        &to_camel_case(time_flow_name.to_string()),
-                        Span::call_site(),
-                    );
+                    let enum_ident = time_flow_name.to_camel();
                     let init_instant = Ident::init_instant_var();
                     Some(parse_quote! { runtime.send_timer(T::#enum_ident, #init_instant).await?; })
                 }
@@ -33,8 +30,7 @@ impl RuntimeLoop {
             |InterfaceFlow {
                  identifier, typ, ..
              }| -> Option<syn::Stmt> {
-                let enum_ident =
-                    Ident::new(&to_camel_case(&identifier.to_string()), identifier.span());
+                let enum_ident = identifier.to_camel();
                 if typ.is_event() {
                     None
                 } else {
@@ -73,10 +69,7 @@ impl RuntimeLoop {
                     | ArrivingFlow::Deadline(time_flow_name)
                     | ArrivingFlow::ServiceDelay(time_flow_name)
                     | ArrivingFlow::ServiceTimeout(time_flow_name) => {
-                        let enum_ident = Ident::new(
-                            to_camel_case(time_flow_name.to_string()).as_str(),
-                            Span::call_site(),
-                        );
+                        let enum_ident = time_flow_name.to_camel();
                         let instant = Ident::instant_var();
                         let function_name = time_flow_name.to_handle_fn();
                         let call_services_handlers =
