@@ -148,17 +148,14 @@ impl Init {
                         path_opt,
                     } => {
                         let id = memory_ident;
-                        let called_state_ty = Ident::new(
-                            &to_camel_case(&format!("{}State", node_name)),
-                            Span::call_site(),
-                        );
+                        let called_state_ty = node_name.to_state_ty();
 
                         if let Some(mut path) = path_opt {
                             path.segments.pop();
                             path.segments.push(called_state_ty.into());
-                            parse_quote! { #id : #path::init() }
+                            parse_quote! { #id : <#path as grust::core::Component>::init() }
                         } else {
-                            parse_quote! { #id : #called_state_ty::init() }
+                            parse_quote! { #id : <#called_state_ty as grust::core::Component>::init() }
                         }
                     }
                 }
@@ -182,7 +179,7 @@ impl Init {
         };
         syn::ImplItemFn {
             attrs: vec![],
-            vis: syn::Visibility::Public(Default::default()),
+            vis: syn::Visibility::Inherited,
             defaultness: None,
             sig: signature,
             block: body,
@@ -230,11 +227,8 @@ impl Step {
             vec![]
         };
 
-        let input_ty_name = Ident::new(
-            &to_camel_case(&format!("{}Input", self.node_name)),
-            Span::call_site(),
-        );
-        let ty = parse_quote! { #input_ty_name };
+        let input_ty = self.node_name.to_input_ty();
+        let ty = parse_quote! { #input_ty };
 
         let inputs = vec![
             parse_quote!(&mut self),
@@ -299,7 +293,7 @@ impl Step {
 
         syn::ImplItemFn {
             attrs: attributes,
-            vis: syn::Visibility::Public(Default::default()),
+            vis: syn::Visibility::Inherited,
             defaultness: None,
             sig: signature,
             block: body,
@@ -377,15 +371,19 @@ impl State {
             })
             .collect();
 
-        let name = self.node_name.to_state_ty();
+        let input_ty = self.node_name.to_input_ty();
+        let output_ty = self.step.output_type.into_syn();
+        let state_ty = self.node_name.to_state_ty();
         let structure = parse_quote!(
-            pub struct #name { #(#fields),* }
+            pub struct #state_ty { #(#fields),* }
         );
 
         let init = self.init.into_syn(crates);
         let step = self.step.into_syn(ctx, crates);
         let implementation = parse_quote!(
-            impl #name {
+            impl grust::core::Component for #state_ty {
+                type Input = #input_ty;
+                type Output = #output_ty;
                 #init
                 #step
             }
@@ -451,10 +449,10 @@ mod test {
         );
 
         let control = parse_quote! {
-            pub fn init() -> NodeState {
+            fn init() -> NodeState {
                 NodeState {
                     mem_i: 0i64,
-                    called_node_state: CalledNodeState::init()
+                    called_node_state: <CalledNodeState as grust::core::Component>::init()
                 }
             }
         };
@@ -480,10 +478,10 @@ mod test {
         );
 
         let control = parse_quote! {
-            pub fn init() -> NodeState {
+            fn init() -> NodeState {
                 NodeState {
                     mem_i: 0i64,
-                    called_node_state: path::to::CalledNodeState::init()
+                    called_node_state: <path::to::CalledNodeState as grust::core::Component>::init()
                 }
             }
         };
@@ -534,9 +532,9 @@ mod test {
         };
 
         let control = parse_quote! {
-            pub fn step(&mut self, input: NodeInput) -> i64 {
+            fn step(&mut self, input: NodeInput) -> i64 {
                 let o = self.mem_i;
-                let y = self.called_node_state.step(CalledNodeInput {});
+                let y =  <CalledNodeState as grust::core::Component>::step(&mut self.called_node_state, CalledNodeInput {});
                 self.mem_i = o + 1i64;
                 self.called_node_state = new_called_node_state;
                 o + y
@@ -573,30 +571,23 @@ mod test {
                     ),
                 ),
             ]),
-            state_elements_step: vec![
-                StateElmStep::new(
-                    Loc::test_id("mem_i"),
-                    Expr::binop(
-                        BOp::Add,
-                        Expr::test_ident("o"),
-                        Expr::lit(Constant::Integer(parse_quote!(1i64))),
-                    ),
+            state_elements_step: vec![StateElmStep::new(
+                Loc::test_id("mem_i"),
+                Expr::binop(
+                    BOp::Add,
+                    Expr::test_ident("o"),
+                    Expr::lit(Constant::Integer(parse_quote!(1i64))),
                 ),
-                StateElmStep::new(
-                    Loc::test_id("called_node_state"),
-                    Expr::test_ident("new_called_node_state"),
-                ),
-            ],
+            )],
             logs: vec![],
             output: Expr::binop(BOp::Add, Expr::test_ident("o"), Expr::test_ident("y")),
         };
 
         let control = parse_quote! {
-            pub fn step(&mut self, input: NodeInput) -> i64 {
+            fn step(&mut self, input: NodeInput) -> i64 {
                 let o = self.mem_i;
-                let y = self.called_node_state.step(path::to::CalledNodeInput {});
+                let y =  <path::to::CalledNodeState as grust::core::Component>::step(&mut self.called_node_state, path::to::CalledNodeInput {});
                 self.mem_i = o + 1i64;
-                self.called_node_state = new_called_node_state;
                 o + y
             }
         };

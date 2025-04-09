@@ -6,11 +6,13 @@ pub struct DefineEventsInput {
 pub struct DefineEventsState {
     last_z: i64,
 }
-impl DefineEventsState {
-    pub fn init() -> DefineEventsState {
+impl grust::core::Component for DefineEventsState {
+    type Input = DefineEventsInput;
+    type Output = (i64, Option<f64>, Option<i64>);
+    fn init() -> DefineEventsState {
         DefineEventsState { last_z: 0i64 }
     }
-    pub fn step(&mut self, input: DefineEventsInput) -> (i64, Option<f64>, Option<i64>) {
+    fn step(&mut self, input: DefineEventsInput) -> (i64, Option<f64>, Option<i64>) {
         let (z, y, x) = match (input.a, input.b) {
             (Some(a), Some(e)) => {
                 let y = Some(());

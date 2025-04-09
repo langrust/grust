@@ -30,15 +30,17 @@ pub struct BrakingStateInput {
 pub struct BrakingStateState {
     last_state: Braking,
 }
-impl BrakingStateState {
-    pub fn init() -> BrakingStateState {
+impl grust::core::Component for BrakingStateState {
+    type Input = BrakingStateInput;
+    type Output = Braking;
+    fn init() -> BrakingStateState {
         BrakingStateState {
             last_state: Braking::NoBrake,
         }
     }
     # [requires (0 <= input . speed @ && input . speed @ < 50)]
     # [ensures (forall < p : i64 > Some (p) == input . pedest == > result != Braking :: NoBrake)]
-    pub fn step(&mut self, input: BrakingStateInput) -> Braking {
+    fn step(&mut self, input: BrakingStateInput) -> Braking {
         let state = match (input.pedest, input.timeout_pedest) {
             (Some(d), _) => {
                 let state = brakes(d, input.speed);

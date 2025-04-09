@@ -140,11 +140,13 @@ pub struct ProcessSetSpeedInput {
 pub struct ProcessSetSpeedState {
     last_v_set: f64,
 }
-impl ProcessSetSpeedState {
-    pub fn init() -> ProcessSetSpeedState {
+impl grust::core::Component for ProcessSetSpeedState {
+    type Input = ProcessSetSpeedInput;
+    type Output = (f64, bool);
+    fn init() -> ProcessSetSpeedState {
         ProcessSetSpeedState { last_v_set: 0.0f64 }
     }
-    pub fn step(&mut self, input: ProcessSetSpeedInput) -> (f64, bool) {
+    fn step(&mut self, input: ProcessSetSpeedInput) -> (f64, bool) {
         let v_set = threshold_set_speed(input.set_speed);
         let prev_v_set = self.last_v_set;
         let v_update = prev_v_set != v_set;
@@ -163,13 +165,15 @@ pub struct SpeedLimiterOnInput {
 pub struct SpeedLimiterOnState {
     last_hysterisis: Hysterisis,
 }
-impl SpeedLimiterOnState {
-    pub fn init() -> SpeedLimiterOnState {
+impl grust::core::Component for SpeedLimiterOnState {
+    type Input = SpeedLimiterOnInput;
+    type Output = (SpeedLimiterOn, bool);
+    fn init() -> SpeedLimiterOnState {
         SpeedLimiterOnState {
             last_hysterisis: new_hysterisis(0.0f64),
         }
     }
-    pub fn step(&mut self, input: SpeedLimiterOnInput) -> (SpeedLimiterOn, bool) {
+    fn step(&mut self, input: SpeedLimiterOnInput) -> (SpeedLimiterOn, bool) {
         let prev_hysterisis = self.last_hysterisis;
         let (hysterisis, on_state) = match input.prev_on_state {
             SpeedLimiterOn::StandBy
@@ -267,16 +271,18 @@ pub struct SpeedLimiterState {
     last_state: SpeedLimiter,
     speed_limiter_on: SpeedLimiterOnState,
 }
-impl SpeedLimiterState {
-    pub fn init() -> SpeedLimiterState {
+impl grust::core::Component for SpeedLimiterState {
+    type Input = SpeedLimiterInput;
+    type Output = (SpeedLimiter, SpeedLimiterOn, bool, bool);
+    fn init() -> SpeedLimiterState {
         SpeedLimiterState {
             last_in_regulation: true,
             last_on_state: SpeedLimiterOn::StandBy,
             last_state: SpeedLimiter::Off,
-            speed_limiter_on: SpeedLimiterOnState::init(),
+            speed_limiter_on: <SpeedLimiterOnState as grust::core::Component>::init(),
         }
     }
-    pub fn step(&mut self, input: SpeedLimiterInput) -> (SpeedLimiter, SpeedLimiterOn, bool, bool) {
+    fn step(&mut self, input: SpeedLimiterInput) -> (SpeedLimiter, SpeedLimiterOn, bool, bool) {
         let failure = false;
         let prev_state = self.last_state;
         let prev_on_state = self.last_on_state;
@@ -318,14 +324,18 @@ impl SpeedLimiterState {
             }
             SpeedLimiter::On => {
                 let state = prev_state;
-                let (on_state, in_regulation) = self.speed_limiter_on.step(SpeedLimiterOnInput {
-                    prev_on_state: prev_on_state,
-                    activation_req: input.activation_req,
-                    vacuum_brake_state: input.vacuum_brake_state,
-                    kickdown: input.kickdown,
-                    speed: input.speed,
-                    v_set: input.v_set,
-                });
+                let (on_state, in_regulation) =
+                    <SpeedLimiterOnState as grust::core::Component>::step(
+                        &mut self.speed_limiter_on,
+                        SpeedLimiterOnInput {
+                            prev_on_state: prev_on_state,
+                            activation_req: input.activation_req,
+                            vacuum_brake_state: input.vacuum_brake_state,
+                            kickdown: input.kickdown,
+                            speed: input.speed,
+                            v_set: input.v_set,
+                        },
+                    );
                 (in_regulation, on_state, state)
             }
             _ => {
@@ -898,8 +908,8 @@ pub mod runtime {
                 let context = Context::init();
                 let delayed = true;
                 let input_store = Default::default();
-                let process_set_speed = ProcessSetSpeedState::init();
-                let speed_limiter = SpeedLimiterState::init();
+                let process_set_speed = <ProcessSetSpeedState as grust::core::Component>::init();
+                let speed_limiter = <SpeedLimiterState as grust::core::Component>::init();
                 SpeedLimiterService {
                     begin: std::time::Instant::now(),
                     context,
@@ -1725,9 +1735,12 @@ pub mod runtime {
                 self.reset_time_constraints(_timeout_speed_limiter_instant)
                     .await?;
                 self.context.reset();
-                let (v_set_aux, v_update) = self.process_set_speed.step(ProcessSetSpeedInput {
-                    set_speed: self.context.set_speed.get(),
-                });
+                let (v_set_aux, v_update) = <ProcessSetSpeedState as grust::core::Component>::step(
+                    &mut self.process_set_speed,
+                    ProcessSetSpeedInput {
+                        set_speed: self.context.set_speed.get(),
+                    },
+                );
                 self.context.v_set_aux.set(v_set_aux);
                 self.context.v_update.set(v_update);
                 let v_set = self.context.v_set_aux.get();
@@ -1738,14 +1751,17 @@ pub mod runtime {
                 )
                 .await?;
                 let (state, on_state, in_regulation_aux, state_update) =
-                    self.speed_limiter.step(SpeedLimiterInput {
-                        activation_req: self.context.activation.get(),
-                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                        kickdown: self.context.kickdown.get(),
-                        vdc_disabled: self.context.vdc.get(),
-                        speed: self.context.speed.get(),
-                        v_set: v_set,
-                    });
+                    <SpeedLimiterState as grust::core::Component>::step(
+                        &mut self.speed_limiter,
+                        SpeedLimiterInput {
+                            activation_req: self.context.activation.get(),
+                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                            kickdown: self.context.kickdown.get(),
+                            vdc_disabled: self.context.vdc.get(),
+                            speed: self.context.speed.get(),
+                            v_set: v_set,
+                        },
+                    );
                 self.context.state.set(state);
                 self.context.on_state.set(on_state);
                 self.context.in_regulation_aux.set(in_regulation_aux);
@@ -2172,8 +2188,8 @@ pub mod runtime {
                 let context = Context::init();
                 let delayed = true;
                 let input_store = Default::default();
-                let speed_limiter = SpeedLimiterState::init();
-                let process_set_speed = ProcessSetSpeedState::init();
+                let speed_limiter = <SpeedLimiterState as grust::core::Component>::init();
+                let process_set_speed = <ProcessSetSpeedState as grust::core::Component>::init();
                 AnotherSpeedLimiterService {
                     begin: std::time::Instant::now(),
                     context,
@@ -2207,22 +2223,28 @@ pub mod runtime {
                 self.reset_time_constraints(_timeout_another_speed_limiter_instant)
                     .await?;
                 self.context.reset();
-                let (v_set_aux, v_update) = self.process_set_speed.step(ProcessSetSpeedInput {
-                    set_speed: self.context.set_speed.get(),
-                });
+                let (v_set_aux, v_update) = <ProcessSetSpeedState as grust::core::Component>::step(
+                    &mut self.process_set_speed,
+                    ProcessSetSpeedInput {
+                        set_speed: self.context.set_speed.get(),
+                    },
+                );
                 self.context.v_set_aux.set(v_set_aux);
                 self.context.v_update.set(v_update);
                 let v_set = self.context.v_set_aux.get();
                 self.context.v_set.set(v_set);
                 let (state, on_state, in_regulation_aux, state_update) =
-                    self.speed_limiter.step(SpeedLimiterInput {
-                        activation_req: self.context.activation.get(),
-                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                        kickdown: self.context.kickdown.get(),
-                        vdc_disabled: self.context.vdc.get(),
-                        speed: self.context.speed.get(),
-                        v_set: v_set,
-                    });
+                    <SpeedLimiterState as grust::core::Component>::step(
+                        &mut self.speed_limiter,
+                        SpeedLimiterInput {
+                            activation_req: self.context.activation.get(),
+                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                            kickdown: self.context.kickdown.get(),
+                            vdc_disabled: self.context.vdc.get(),
+                            speed: self.context.speed.get(),
+                            v_set: v_set,
+                        },
+                    );
                 self.context.state.set(state);
                 self.context.on_state.set(on_state);
                 self.context.in_regulation_aux.set(in_regulation_aux);

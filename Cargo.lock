@@ -556,9 +556,14 @@ dependencies = [
 name = "grust"
 version = "0.1.0"
 dependencies = [
+ "grust_core",
  "grust_std",
  "proc",
 ]
+
+[[package]]
+name = "grust_core"
+version = "0.1.0"
 
 [[package]]
 name = "grust_std"

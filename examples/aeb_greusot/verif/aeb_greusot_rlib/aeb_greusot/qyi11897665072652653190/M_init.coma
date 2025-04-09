@@ -1,6 +1,6 @@
 (* #"/home/thome/Documents/git/langrust/grustine/examples/aeb_greusot/src/lib.rs" 5 0 54 1 *)
 
-(* BrakingStateState *)
+(* <BrakingStateState as grust::grust_core::Component> *)
 
 type t_Braking'0  =
   | C_UrgentBrake'0

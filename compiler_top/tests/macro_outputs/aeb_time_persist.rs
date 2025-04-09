@@ -27,8 +27,10 @@ pub struct DeriveState {
     last_v: f64,
     last_x: bool,
 }
-impl DeriveState {
-    pub fn init() -> DeriveState {
+impl grust::core::Component for DeriveState {
+    type Input = DeriveInput;
+    type Output = f64;
+    fn init() -> DeriveState {
         DeriveState {
             last_a: 0.0f64,
             last_t: 0.0f64,
@@ -36,7 +38,7 @@ impl DeriveState {
             last_x: false,
         }
     }
-    pub fn step(&mut self, input: DeriveInput) -> f64 {
+    fn step(&mut self, input: DeriveInput) -> f64 {
         let v = input.v_km_h / 3.6f64;
         let dt = input.t - self.last_t;
         let x = dt > 10.0f64;
@@ -61,13 +63,15 @@ pub struct BrakingStateInput {
 pub struct BrakingStateState {
     last_state: Braking,
 }
-impl BrakingStateState {
-    pub fn init() -> BrakingStateState {
+impl grust::core::Component for BrakingStateState {
+    type Input = BrakingStateInput;
+    type Output = Braking;
+    fn init() -> BrakingStateState {
         BrakingStateState {
             last_state: Braking::NoBrake,
         }
     }
-    pub fn step(&mut self, input: BrakingStateInput) -> Braking {
+    fn step(&mut self, input: BrakingStateInput) -> Braking {
         let state = match (input.pedest, input.timeout_pedest) {
             (Some(d), _) => {
                 let state = brakes(d, input.speed, input.acc);
@@ -366,8 +370,8 @@ pub mod runtime {
                 let context = Context::init();
                 let delayed = true;
                 let input_store = Default::default();
-                let derive = DeriveState::init();
-                let braking_state = BrakingStateState::init();
+                let derive = <DeriveState as grust::core::Component>::init();
+                let braking_state = <BrakingStateState as grust::core::Component>::init();
                 AebService {
                     begin: std::time::Instant::now(),
                     context,
@@ -423,17 +427,23 @@ pub mod runtime {
                     }
                     let x = (_pedestrian_l_instant.duration_since(self.begin).as_millis()) as f64;
                     self.context.x.set(x);
-                    let acc_km_h = self.derive.step(DeriveInput {
-                        v_km_h: self.context.speed_km_h_bis.get(),
-                        t: x,
-                    });
+                    let acc_km_h = <DeriveState as grust::core::Component>::step(
+                        &mut self.derive,
+                        DeriveInput {
+                            v_km_h: self.context.speed_km_h_bis.get(),
+                            t: x,
+                        },
+                    );
                     self.context.acc_km_h.set(acc_km_h);
-                    let brakes = self.braking_state.step(BrakingStateInput {
-                        pedest: *pedestrian_ref,
-                        timeout_pedest: None,
-                        speed: self.context.speed_km_h_bis.get(),
-                        acc: self.context.acc_km_h.get(),
-                    });
+                    let brakes = <BrakingStateState as grust::core::Component>::step(
+                        &mut self.braking_state,
+                        BrakingStateInput {
+                            pedest: *pedestrian_ref,
+                            timeout_pedest: None,
+                            speed: self.context.speed_km_h_bis.get(),
+                            acc: self.context.acc_km_h.get(),
+                        },
+                    );
                     self.context.brakes.set(brakes);
                     if self.context.brakes.is_new() {
                         self.send_output(
@@ -470,17 +480,23 @@ pub mod runtime {
                         .duration_since(self.begin)
                         .as_millis()) as f64;
                     self.context.x.set(x);
-                    let acc_km_h = self.derive.step(DeriveInput {
-                        v_km_h: self.context.speed_km_h_bis.get(),
-                        t: x,
-                    });
+                    let acc_km_h = <DeriveState as grust::core::Component>::step(
+                        &mut self.derive,
+                        DeriveInput {
+                            v_km_h: self.context.speed_km_h_bis.get(),
+                            t: x,
+                        },
+                    );
                     self.context.acc_km_h.set(acc_km_h);
-                    let brakes = self.braking_state.step(BrakingStateInput {
-                        pedest: None,
-                        timeout_pedest: *timeout_pedest_ref,
-                        speed: self.context.speed_km_h_bis.get(),
-                        acc: self.context.acc_km_h.get(),
-                    });
+                    let brakes = <BrakingStateState as grust::core::Component>::step(
+                        &mut self.braking_state,
+                        BrakingStateInput {
+                            pedest: None,
+                            timeout_pedest: *timeout_pedest_ref,
+                            speed: self.context.speed_km_h_bis.get(),
+                            acc: self.context.acc_km_h.get(),
+                        },
+                    );
                     self.context.brakes.set(brakes);
                     if self.context.brakes.is_new() {
                         self.send_output(
@@ -521,17 +537,23 @@ pub mod runtime {
                     }
                     let x = (_pedestrian_r_instant.duration_since(self.begin).as_millis()) as f64;
                     self.context.x.set(x);
-                    let acc_km_h = self.derive.step(DeriveInput {
-                        v_km_h: self.context.speed_km_h_bis.get(),
-                        t: x,
-                    });
+                    let acc_km_h = <DeriveState as grust::core::Component>::step(
+                        &mut self.derive,
+                        DeriveInput {
+                            v_km_h: self.context.speed_km_h_bis.get(),
+                            t: x,
+                        },
+                    );
                     self.context.acc_km_h.set(acc_km_h);
-                    let brakes = self.braking_state.step(BrakingStateInput {
-                        pedest: *pedestrian_ref,
-                        timeout_pedest: None,
-                        speed: self.context.speed_km_h_bis.get(),
-                        acc: self.context.acc_km_h.get(),
-                    });
+                    let brakes = <BrakingStateState as grust::core::Component>::step(
+                        &mut self.braking_state,
+                        BrakingStateInput {
+                            pedest: *pedestrian_ref,
+                            timeout_pedest: None,
+                            speed: self.context.speed_km_h_bis.get(),
+                            acc: self.context.acc_km_h.get(),
+                        },
+                    );
                     self.context.brakes.set(brakes);
                     if self.context.brakes.is_new() {
                         self.send_output(
@@ -590,17 +612,23 @@ pub mod runtime {
                             let x = (_pedestrian_l_instant.duration_since(self.begin).as_millis())
                                 as f64;
                             self.context.x.set(x);
-                            let acc_km_h = self.derive.step(DeriveInput {
-                                v_km_h: self.context.speed_km_h_bis.get(),
-                                t: x,
-                            });
+                            let acc_km_h = <DeriveState as grust::core::Component>::step(
+                                &mut self.derive,
+                                DeriveInput {
+                                    v_km_h: self.context.speed_km_h_bis.get(),
+                                    t: x,
+                                },
+                            );
                             self.context.acc_km_h.set(acc_km_h);
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                pedest: *pedestrian_ref,
-                                timeout_pedest: None,
-                                speed: self.context.speed_km_h_bis.get(),
-                                acc: self.context.acc_km_h.get(),
-                            });
+                            let brakes = <BrakingStateState as grust::core::Component>::step(
+                                &mut self.braking_state,
+                                BrakingStateInput {
+                                    pedest: *pedestrian_ref,
+                                    timeout_pedest: None,
+                                    speed: self.context.speed_km_h_bis.get(),
+                                    acc: self.context.acc_km_h.get(),
+                                },
+                            );
                             self.context.brakes.set(brakes);
                             if self.context.brakes.is_new() {
                                 self.send_output(
@@ -634,17 +662,23 @@ pub mod runtime {
                             if self.context.speed_km_h_bis.get() != *speed_km_h_ref {
                                 self.context.speed_km_h_bis.set(*speed_km_h_ref);
                             }
-                            let acc_km_h = self.derive.step(DeriveInput {
-                                v_km_h: self.context.speed_km_h_bis.get(),
-                                t: x,
-                            });
+                            let acc_km_h = <DeriveState as grust::core::Component>::step(
+                                &mut self.derive,
+                                DeriveInput {
+                                    v_km_h: self.context.speed_km_h_bis.get(),
+                                    t: x,
+                                },
+                            );
                             self.context.acc_km_h.set(acc_km_h);
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                pedest: *pedestrian_ref,
-                                timeout_pedest: None,
-                                speed: self.context.speed_km_h_bis.get(),
-                                acc: self.context.acc_km_h.get(),
-                            });
+                            let brakes = <BrakingStateState as grust::core::Component>::step(
+                                &mut self.braking_state,
+                                BrakingStateInput {
+                                    pedest: *pedestrian_ref,
+                                    timeout_pedest: None,
+                                    speed: self.context.speed_km_h_bis.get(),
+                                    acc: self.context.acc_km_h.get(),
+                                },
+                            );
                             self.context.brakes.set(brakes);
                             if self.context.brakes.is_new() {
                                 self.send_output(
@@ -666,17 +700,23 @@ pub mod runtime {
                                 .duration_since(self.begin)
                                 .as_millis()) as f64;
                             self.context.x.set(x);
-                            let acc_km_h = self.derive.step(DeriveInput {
-                                v_km_h: self.context.speed_km_h_bis.get(),
-                                t: x,
-                            });
+                            let acc_km_h = <DeriveState as grust::core::Component>::step(
+                                &mut self.derive,
+                                DeriveInput {
+                                    v_km_h: self.context.speed_km_h_bis.get(),
+                                    t: x,
+                                },
+                            );
                             self.context.acc_km_h.set(acc_km_h);
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                pedest: None,
-                                timeout_pedest: *timeout_pedest_ref,
-                                speed: self.context.speed_km_h_bis.get(),
-                                acc: self.context.acc_km_h.get(),
-                            });
+                            let brakes = <BrakingStateState as grust::core::Component>::step(
+                                &mut self.braking_state,
+                                BrakingStateInput {
+                                    pedest: None,
+                                    timeout_pedest: *timeout_pedest_ref,
+                                    speed: self.context.speed_km_h_bis.get(),
+                                    acc: self.context.acc_km_h.get(),
+                                },
+                            );
                             self.context.brakes.set(brakes);
                             if self.context.brakes.is_new() {
                                 self.send_output(
@@ -707,17 +747,23 @@ pub mod runtime {
                             if self.context.speed_km_h_bis.get() != *speed_km_h_ref {
                                 self.context.speed_km_h_bis.set(*speed_km_h_ref);
                             }
-                            let acc_km_h = self.derive.step(DeriveInput {
-                                v_km_h: self.context.speed_km_h_bis.get(),
-                                t: x,
-                            });
+                            let acc_km_h = <DeriveState as grust::core::Component>::step(
+                                &mut self.derive,
+                                DeriveInput {
+                                    v_km_h: self.context.speed_km_h_bis.get(),
+                                    t: x,
+                                },
+                            );
                             self.context.acc_km_h.set(acc_km_h);
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                pedest: None,
-                                timeout_pedest: *timeout_pedest_ref,
-                                speed: self.context.speed_km_h_bis.get(),
-                                acc: self.context.acc_km_h.get(),
-                            });
+                            let brakes = <BrakingStateState as grust::core::Component>::step(
+                                &mut self.braking_state,
+                                BrakingStateInput {
+                                    pedest: None,
+                                    timeout_pedest: *timeout_pedest_ref,
+                                    speed: self.context.speed_km_h_bis.get(),
+                                    acc: self.context.acc_km_h.get(),
+                                },
+                            );
                             self.context.brakes.set(brakes);
                             if self.context.brakes.is_new() {
                                 self.send_output(
@@ -751,17 +797,23 @@ pub mod runtime {
                                 self.send_timer(T::TimeoutTimeoutPedest, _pedestrian_l_instant)
                                     .await?;
                             }
-                            let acc_km_h = self.derive.step(DeriveInput {
-                                v_km_h: self.context.speed_km_h_bis.get(),
-                                t: x,
-                            });
+                            let acc_km_h = <DeriveState as grust::core::Component>::step(
+                                &mut self.derive,
+                                DeriveInput {
+                                    v_km_h: self.context.speed_km_h_bis.get(),
+                                    t: x,
+                                },
+                            );
                             self.context.acc_km_h.set(acc_km_h);
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                pedest: *pedestrian_ref,
-                                timeout_pedest: *timeout_pedest_ref,
-                                speed: self.context.speed_km_h_bis.get(),
-                                acc: self.context.acc_km_h.get(),
-                            });
+                            let brakes = <BrakingStateState as grust::core::Component>::step(
+                                &mut self.braking_state,
+                                BrakingStateInput {
+                                    pedest: *pedestrian_ref,
+                                    timeout_pedest: *timeout_pedest_ref,
+                                    speed: self.context.speed_km_h_bis.get(),
+                                    acc: self.context.acc_km_h.get(),
+                                },
+                            );
                             self.context.brakes.set(brakes);
                             if self.context.brakes.is_new() {
                                 self.send_output(
@@ -800,17 +852,23 @@ pub mod runtime {
                             if self.context.speed_km_h_bis.get() != *speed_km_h_ref {
                                 self.context.speed_km_h_bis.set(*speed_km_h_ref);
                             }
-                            let acc_km_h = self.derive.step(DeriveInput {
-                                v_km_h: self.context.speed_km_h_bis.get(),
-                                t: x,
-                            });
+                            let acc_km_h = <DeriveState as grust::core::Component>::step(
+                                &mut self.derive,
+                                DeriveInput {
+                                    v_km_h: self.context.speed_km_h_bis.get(),
+                                    t: x,
+                                },
+                            );
                             self.context.acc_km_h.set(acc_km_h);
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                pedest: *pedestrian_ref,
-                                timeout_pedest: *timeout_pedest_ref,
-                                speed: self.context.speed_km_h_bis.get(),
-                                acc: self.context.acc_km_h.get(),
-                            });
+                            let brakes = <BrakingStateState as grust::core::Component>::step(
+                                &mut self.braking_state,
+                                BrakingStateInput {
+                                    pedest: *pedestrian_ref,
+                                    timeout_pedest: *timeout_pedest_ref,
+                                    speed: self.context.speed_km_h_bis.get(),
+                                    acc: self.context.acc_km_h.get(),
+                                },
+                            );
                             self.context.brakes.set(brakes);
                             if self.context.brakes.is_new() {
                                 self.send_output(
@@ -834,17 +892,23 @@ pub mod runtime {
                             let x = (_pedestrian_r_instant.duration_since(self.begin).as_millis())
                                 as f64;
                             self.context.x.set(x);
-                            let acc_km_h = self.derive.step(DeriveInput {
-                                v_km_h: self.context.speed_km_h_bis.get(),
-                                t: x,
-                            });
+                            let acc_km_h = <DeriveState as grust::core::Component>::step(
+                                &mut self.derive,
+                                DeriveInput {
+                                    v_km_h: self.context.speed_km_h_bis.get(),
+                                    t: x,
+                                },
+                            );
                             self.context.acc_km_h.set(acc_km_h);
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                pedest: *pedestrian_ref,
-                                timeout_pedest: None,
-                                speed: self.context.speed_km_h_bis.get(),
-                                acc: self.context.acc_km_h.get(),
-                            });
+                            let brakes = <BrakingStateState as grust::core::Component>::step(
+                                &mut self.braking_state,
+                                BrakingStateInput {
+                                    pedest: *pedestrian_ref,
+                                    timeout_pedest: None,
+                                    speed: self.context.speed_km_h_bis.get(),
+                                    acc: self.context.acc_km_h.get(),
+                                },
+                            );
                             self.context.brakes.set(brakes);
                             if self.context.brakes.is_new() {
                                 self.send_output(
@@ -878,17 +942,23 @@ pub mod runtime {
                             if self.context.speed_km_h_bis.get() != *speed_km_h_ref {
                                 self.context.speed_km_h_bis.set(*speed_km_h_ref);
                             }
-                            let acc_km_h = self.derive.step(DeriveInput {
-                                v_km_h: self.context.speed_km_h_bis.get(),
-                                t: x,
-                            });
+                            let acc_km_h = <DeriveState as grust::core::Component>::step(
+                                &mut self.derive,
+                                DeriveInput {
+                                    v_km_h: self.context.speed_km_h_bis.get(),
+                                    t: x,
+                                },
+                            );
                             self.context.acc_km_h.set(acc_km_h);
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                pedest: *pedestrian_ref,
-                                timeout_pedest: None,
-                                speed: self.context.speed_km_h_bis.get(),
-                                acc: self.context.acc_km_h.get(),
-                            });
+                            let brakes = <BrakingStateState as grust::core::Component>::step(
+                                &mut self.braking_state,
+                                BrakingStateInput {
+                                    pedest: *pedestrian_ref,
+                                    timeout_pedest: None,
+                                    speed: self.context.speed_km_h_bis.get(),
+                                    acc: self.context.acc_km_h.get(),
+                                },
+                            );
                             self.context.brakes.set(brakes);
                             if self.context.brakes.is_new() {
                                 self.send_output(
@@ -923,17 +993,23 @@ pub mod runtime {
                                 self.send_timer(T::TimeoutTimeoutPedest, _pedestrian_l_instant)
                                     .await?;
                             }
-                            let acc_km_h = self.derive.step(DeriveInput {
-                                v_km_h: self.context.speed_km_h_bis.get(),
-                                t: x,
-                            });
+                            let acc_km_h = <DeriveState as grust::core::Component>::step(
+                                &mut self.derive,
+                                DeriveInput {
+                                    v_km_h: self.context.speed_km_h_bis.get(),
+                                    t: x,
+                                },
+                            );
                             self.context.acc_km_h.set(acc_km_h);
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                pedest: *pedestrian_ref,
-                                timeout_pedest: None,
-                                speed: self.context.speed_km_h_bis.get(),
-                                acc: self.context.acc_km_h.get(),
-                            });
+                            let brakes = <BrakingStateState as grust::core::Component>::step(
+                                &mut self.braking_state,
+                                BrakingStateInput {
+                                    pedest: *pedestrian_ref,
+                                    timeout_pedest: None,
+                                    speed: self.context.speed_km_h_bis.get(),
+                                    acc: self.context.acc_km_h.get(),
+                                },
+                            );
                             self.context.brakes.set(brakes);
                             if self.context.brakes.is_new() {
                                 self.send_output(
@@ -973,17 +1049,23 @@ pub mod runtime {
                             if self.context.speed_km_h_bis.get() != *speed_km_h_ref {
                                 self.context.speed_km_h_bis.set(*speed_km_h_ref);
                             }
-                            let acc_km_h = self.derive.step(DeriveInput {
-                                v_km_h: self.context.speed_km_h_bis.get(),
-                                t: x,
-                            });
+                            let acc_km_h = <DeriveState as grust::core::Component>::step(
+                                &mut self.derive,
+                                DeriveInput {
+                                    v_km_h: self.context.speed_km_h_bis.get(),
+                                    t: x,
+                                },
+                            );
                             self.context.acc_km_h.set(acc_km_h);
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                pedest: *pedestrian_ref,
-                                timeout_pedest: None,
-                                speed: self.context.speed_km_h_bis.get(),
-                                acc: self.context.acc_km_h.get(),
-                            });
+                            let brakes = <BrakingStateState as grust::core::Component>::step(
+                                &mut self.braking_state,
+                                BrakingStateInput {
+                                    pedest: *pedestrian_ref,
+                                    timeout_pedest: None,
+                                    speed: self.context.speed_km_h_bis.get(),
+                                    acc: self.context.acc_km_h.get(),
+                                },
+                            );
                             self.context.brakes.set(brakes);
                             if self.context.brakes.is_new() {
                                 self.send_output(
@@ -1024,17 +1106,23 @@ pub mod runtime {
                                 )
                                 .await?;
                             }
-                            let acc_km_h = self.derive.step(DeriveInput {
-                                v_km_h: self.context.speed_km_h_bis.get(),
-                                t: x,
-                            });
+                            let acc_km_h = <DeriveState as grust::core::Component>::step(
+                                &mut self.derive,
+                                DeriveInput {
+                                    v_km_h: self.context.speed_km_h_bis.get(),
+                                    t: x,
+                                },
+                            );
                             self.context.acc_km_h.set(acc_km_h);
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                pedest: *pedestrian_ref,
-                                timeout_pedest: *timeout_pedest_ref,
-                                speed: self.context.speed_km_h_bis.get(),
-                                acc: self.context.acc_km_h.get(),
-                            });
+                            let brakes = <BrakingStateState as grust::core::Component>::step(
+                                &mut self.braking_state,
+                                BrakingStateInput {
+                                    pedest: *pedestrian_ref,
+                                    timeout_pedest: *timeout_pedest_ref,
+                                    speed: self.context.speed_km_h_bis.get(),
+                                    acc: self.context.acc_km_h.get(),
+                                },
+                            );
                             self.context.brakes.set(brakes);
                             if self.context.brakes.is_new() {
                                 self.send_output(
@@ -1079,17 +1167,23 @@ pub mod runtime {
                             if self.context.speed_km_h_bis.get() != *speed_km_h_ref {
                                 self.context.speed_km_h_bis.set(*speed_km_h_ref);
                             }
-                            let acc_km_h = self.derive.step(DeriveInput {
-                                v_km_h: self.context.speed_km_h_bis.get(),
-                                t: x,
-                            });
+                            let acc_km_h = <DeriveState as grust::core::Component>::step(
+                                &mut self.derive,
+                                DeriveInput {
+                                    v_km_h: self.context.speed_km_h_bis.get(),
+                                    t: x,
+                                },
+                            );
                             self.context.acc_km_h.set(acc_km_h);
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                pedest: *pedestrian_ref,
-                                timeout_pedest: *timeout_pedest_ref,
-                                speed: self.context.speed_km_h_bis.get(),
-                                acc: self.context.acc_km_h.get(),
-                            });
+                            let brakes = <BrakingStateState as grust::core::Component>::step(
+                                &mut self.braking_state,
+                                BrakingStateInput {
+                                    pedest: *pedestrian_ref,
+                                    timeout_pedest: *timeout_pedest_ref,
+                                    speed: self.context.speed_km_h_bis.get(),
+                                    acc: self.context.acc_km_h.get(),
+                                },
+                            );
                             self.context.brakes.set(brakes);
                             if self.context.brakes.is_new() {
                                 self.send_output(
@@ -1129,17 +1223,23 @@ pub mod runtime {
                                 self.send_timer(T::TimeoutTimeoutPedest, _pedestrian_l_instant)
                                     .await?;
                             }
-                            let acc_km_h = self.derive.step(DeriveInput {
-                                v_km_h: self.context.speed_km_h_bis.get(),
-                                t: x,
-                            });
+                            let acc_km_h = <DeriveState as grust::core::Component>::step(
+                                &mut self.derive,
+                                DeriveInput {
+                                    v_km_h: self.context.speed_km_h_bis.get(),
+                                    t: x,
+                                },
+                            );
                             self.context.acc_km_h.set(acc_km_h);
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                pedest: *pedestrian_ref,
-                                timeout_pedest: *timeout_pedest_ref,
-                                speed: self.context.speed_km_h_bis.get(),
-                                acc: self.context.acc_km_h.get(),
-                            });
+                            let brakes = <BrakingStateState as grust::core::Component>::step(
+                                &mut self.braking_state,
+                                BrakingStateInput {
+                                    pedest: *pedestrian_ref,
+                                    timeout_pedest: *timeout_pedest_ref,
+                                    speed: self.context.speed_km_h_bis.get(),
+                                    acc: self.context.acc_km_h.get(),
+                                },
+                            );
                             self.context.brakes.set(brakes);
                             if self.context.brakes.is_new() {
                                 self.send_output(
@@ -1184,17 +1284,23 @@ pub mod runtime {
                             if self.context.speed_km_h_bis.get() != *speed_km_h_ref {
                                 self.context.speed_km_h_bis.set(*speed_km_h_ref);
                             }
-                            let acc_km_h = self.derive.step(DeriveInput {
-                                v_km_h: self.context.speed_km_h_bis.get(),
-                                t: x,
-                            });
+                            let acc_km_h = <DeriveState as grust::core::Component>::step(
+                                &mut self.derive,
+                                DeriveInput {
+                                    v_km_h: self.context.speed_km_h_bis.get(),
+                                    t: x,
+                                },
+                            );
                             self.context.acc_km_h.set(acc_km_h);
-                            let brakes = self.braking_state.step(BrakingStateInput {
-                                pedest: *pedestrian_ref,
-                                timeout_pedest: *timeout_pedest_ref,
-                                speed: self.context.speed_km_h_bis.get(),
-                                acc: self.context.acc_km_h.get(),
-                            });
+                            let brakes = <BrakingStateState as grust::core::Component>::step(
+                                &mut self.braking_state,
+                                BrakingStateInput {
+                                    pedest: *pedestrian_ref,
+                                    timeout_pedest: *timeout_pedest_ref,
+                                    speed: self.context.speed_km_h_bis.get(),
+                                    acc: self.context.acc_km_h.get(),
+                                },
+                            );
                             self.context.brakes.set(brakes);
                             if self.context.brakes.is_new() {
                                 self.send_output(
@@ -1226,17 +1332,23 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.reset_time_constraints(_timeout_aeb_instant).await?;
                 self.context.reset();
-                let acc_km_h = self.derive.step(DeriveInput {
-                    v_km_h: self.context.speed_km_h_bis.get(),
-                    t: self.context.x.get(),
-                });
+                let acc_km_h = <DeriveState as grust::core::Component>::step(
+                    &mut self.derive,
+                    DeriveInput {
+                        v_km_h: self.context.speed_km_h_bis.get(),
+                        t: self.context.x.get(),
+                    },
+                );
                 self.context.acc_km_h.set(acc_km_h);
-                let brakes = self.braking_state.step(BrakingStateInput {
-                    pedest: None,
-                    timeout_pedest: None,
-                    speed: self.context.speed_km_h_bis.get(),
-                    acc: self.context.acc_km_h.get(),
-                });
+                let brakes = <BrakingStateState as grust::core::Component>::step(
+                    &mut self.braking_state,
+                    BrakingStateInput {
+                        pedest: None,
+                        timeout_pedest: None,
+                        speed: self.context.speed_km_h_bis.get(),
+                        acc: self.context.acc_km_h.get(),
+                    },
+                );
                 self.context.brakes.set(brakes);
                 self.send_output(
                     O::Brakes(self.context.brakes.get(), _timeout_aeb_instant),

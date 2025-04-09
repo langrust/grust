@@ -4,11 +4,13 @@ pub struct TestThreadsAuxInput {
 pub struct TestThreadsAuxState {
     last_i: i64,
 }
-impl TestThreadsAuxState {
-    pub fn init() -> TestThreadsAuxState {
+impl grust::core::Component for TestThreadsAuxState {
+    type Input = TestThreadsAuxInput;
+    type Output = i64;
+    fn init() -> TestThreadsAuxState {
         TestThreadsAuxState { last_i: 0i64 }
     }
-    pub fn step(&mut self, input: TestThreadsAuxInput) -> i64 {
+    fn step(&mut self, input: TestThreadsAuxInput) -> i64 {
         let ((i3, i2, (i1, i12)), ()) = {
             let (i3, i2, (i1, i12)) = (
                 {
@@ -60,20 +62,24 @@ pub struct TestThreadsState {
     test_threads_aux_1: TestThreadsAuxState,
     test_threads_aux_2: TestThreadsAuxState,
 }
-impl TestThreadsState {
-    pub fn init() -> TestThreadsState {
+impl grust::core::Component for TestThreadsState {
+    type Input = TestThreadsInput;
+    type Output = i64;
+    fn init() -> TestThreadsState {
         TestThreadsState {
             last_i: 0i64,
-            test_threads_aux: TestThreadsAuxState::init(),
-            test_threads_aux_1: TestThreadsAuxState::init(),
-            test_threads_aux_2: TestThreadsAuxState::init(),
+            test_threads_aux: <TestThreadsAuxState as grust::core::Component>::init(),
+            test_threads_aux_1: <TestThreadsAuxState as grust::core::Component>::init(),
+            test_threads_aux_2: <TestThreadsAuxState as grust::core::Component>::init(),
         }
     }
-    pub fn step(&mut self, input: TestThreadsInput) -> i64 {
+    fn step(&mut self, input: TestThreadsInput) -> i64 {
         let ((i1_1, i1_2), i1_3) = std::thread::scope(|reserved_grust_thread_scope| {
             let reserved_grust_thread_kid_0 = reserved_grust_thread_scope.spawn(|| {
-                self.test_threads_aux
-                    .step(TestThreadsAuxInput { i: input.i })
+                <TestThreadsAuxState as grust::core::Component>::step(
+                    &mut self.test_threads_aux,
+                    TestThreadsAuxInput { i: input.i },
+                )
             });
             let (i1_1, i1_2) = (
                 {
@@ -97,12 +103,18 @@ impl TestThreadsState {
         let ((x, i2_1), (x_1, i2_2)) = std::thread::scope(|reserved_grust_thread_scope| {
             let reserved_grust_thread_kid_0 = reserved_grust_thread_scope.spawn(|| {
                 let x = (i1_1 + i1_2) - i1_3;
-                let i2_1 = self.test_threads_aux_1.step(TestThreadsAuxInput { i: x });
+                let i2_1 = <TestThreadsAuxState as grust::core::Component>::step(
+                    &mut self.test_threads_aux_1,
+                    TestThreadsAuxInput { i: x },
+                );
                 (x, i2_1)
             });
             let reserved_grust_thread_kid_1 = reserved_grust_thread_scope.spawn(|| {
                 let x_1 = (i1_2 - i1_2) + i1_3;
-                let i2_2 = self.test_threads_aux_2.step(TestThreadsAuxInput { i: x_1 });
+                let i2_2 = <TestThreadsAuxState as grust::core::Component>::step(
+                    &mut self.test_threads_aux_2,
+                    TestThreadsAuxInput { i: x_1 },
+                );
                 (x_1, i2_2)
             });
             let ((x, i2_1), (x_1, i2_2)) = (

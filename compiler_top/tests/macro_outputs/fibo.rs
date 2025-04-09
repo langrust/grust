@@ -4,11 +4,13 @@ pub struct NextInput {
 pub struct NextState {
     last_i: i64,
 }
-impl NextState {
-    pub fn init() -> NextState {
+impl grust::core::Component for NextState {
+    type Input = NextInput;
+    type Output = i64;
+    fn init() -> NextState {
         NextState { last_i: 1i64 }
     }
-    pub fn step(&mut self, input: NextInput) -> i64 {
+    fn step(&mut self, input: NextInput) -> i64 {
         let next_o = module::add_isize(input.i, self.last_i);
         self.last_i = input.i;
         next_o
@@ -21,15 +23,18 @@ pub struct SemiFibState {
     last_next_o: i64,
     next: NextState,
 }
-impl SemiFibState {
-    pub fn init() -> SemiFibState {
+impl grust::core::Component for SemiFibState {
+    type Input = SemiFibInput;
+    type Output = i64;
+    fn init() -> SemiFibState {
         SemiFibState {
             last_next_o: 0i64,
-            next: NextState::init(),
+            next: <NextState as grust::core::Component>::init(),
         }
     }
-    pub fn step(&mut self, input: SemiFibInput) -> i64 {
-        let next_o = self.next.step(NextInput { i: input.i });
+    fn step(&mut self, input: SemiFibInput) -> i64 {
+        let next_o =
+            <NextState as grust::core::Component>::step(&mut self.next, NextInput { i: input.i });
         let o = self.last_next_o;
         self.last_next_o = next_o;
         o
@@ -40,16 +45,19 @@ pub struct FibCallState {
     last_next_o: i64,
     next: NextState,
 }
-impl FibCallState {
-    pub fn init() -> FibCallState {
+impl grust::core::Component for FibCallState {
+    type Input = FibCallInput;
+    type Output = i64;
+    fn init() -> FibCallState {
         FibCallState {
             last_next_o: 0i64,
-            next: NextState::init(),
+            next: <NextState as grust::core::Component>::init(),
         }
     }
-    pub fn step(&mut self, input: FibCallInput) -> i64 {
+    fn step(&mut self, input: FibCallInput) -> i64 {
         let fib = self.last_next_o;
-        let next_o = self.next.step(NextInput { i: fib });
+        let next_o =
+            <NextState as grust::core::Component>::step(&mut self.next, NextInput { i: fib });
         self.last_next_o = next_o;
         fib
     }
@@ -59,14 +67,16 @@ pub struct FibState {
     last_fib: i64,
     last_next_o: i64,
 }
-impl FibState {
-    pub fn init() -> FibState {
+impl grust::core::Component for FibState {
+    type Input = FibInput;
+    type Output = i64;
+    fn init() -> FibState {
         FibState {
             last_fib: 1i64,
             last_next_o: 0i64,
         }
     }
-    pub fn step(&mut self, input: FibInput) -> i64 {
+    fn step(&mut self, input: FibInput) -> i64 {
         let fib = self.last_next_o;
         let next_o = fib + self.last_fib;
         self.last_fib = fib;

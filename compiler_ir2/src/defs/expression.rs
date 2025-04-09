@@ -405,13 +405,13 @@ impl Expr {
             }
             Self::NodeCall {
                 memory_ident,
-                input_name,
                 input_fields,
                 path_opt,
+                node_identifier: name,
                 ..
             } => {
-                let ident = memory_ident;
-                let receiver: syn::ExprField = parse_quote! { self.#ident};
+                let state_ty = name.to_state_ty();
+                let input_ty = name.to_input_ty();
                 let input_fields: Vec<syn::FieldValue> = input_fields
                     .into_iter()
                     .map(|(name, expr)| {
@@ -420,18 +420,22 @@ impl Expr {
                         parse_quote! { #id : #expr }
                     })
                     .collect();
-
-                let input_name = input_name;
-
-                let argument: syn::ExprStruct = if let Some(mut path) = path_opt {
+                if let Some(mut path) = path_opt {
                     path.segments.pop();
-                    path.segments.push(input_name.into());
-                    parse_quote! { #path { #(#input_fields),* }}
+                    let mut state_path = path.clone();
+                    let mut input_path = path;
+                    state_path.segments.push(state_ty.into());
+                    input_path.segments.push(input_ty.into());
+                    parse_quote! { <#state_path as grust::core::Component>::step(
+                        &mut self.#memory_ident,
+                        #input_path { #(#input_fields),* }
+                    ) }
                 } else {
-                    parse_quote! { #input_name { #(#input_fields),* }}
-                };
-
-                syn::Expr::MethodCall(parse_quote! { #receiver.step (#argument) })
+                    parse_quote! { <#state_ty as grust::core::Component>::step(
+                        &mut self.#memory_ident,
+                        #input_ty { #(#input_fields),* }
+                    ) }
+                }
             }
             Self::FieldAccess { expr, field } => {
                 let expr = expr.into_syn(crates);
@@ -700,13 +704,13 @@ impl Expr {
             }
             Self::NodeCall {
                 memory_ident,
-                input_name,
+                node_identifier: name,
                 input_fields,
                 path_opt,
                 ..
             } => {
-                let ident = memory_ident;
-                let receiver: syn::ExprField = parse_quote! { self.#ident};
+                let state_ty = name.to_state_ty();
+                let input_ty = name.to_input_ty();
                 let input_fields: Vec<syn::FieldValue> = input_fields
                     .into_iter()
                     .map(|(name, expr)| {
@@ -715,18 +719,18 @@ impl Expr {
                         parse_quote! { #id : #expr }
                     })
                     .collect();
-
-                let input_name = input_name;
-
-                let argument: syn::ExprStruct = if let Some(mut path) = path_opt {
+                if let Some(mut path) = path_opt {
                     path.segments.pop();
-                    path.segments.push(input_name.into());
-                    parse_quote! { #path { #(#input_fields),* }}
+                    parse_quote! { <#path::#state_ty as grust::core::Component>::step(
+                        &mut self.#memory_ident,
+                        #path::#input_ty { #(#input_fields),* }
+                    ) }
                 } else {
-                    parse_quote! { #input_name { #(#input_fields),* }}
-                };
-
-                syn::Expr::MethodCall(parse_quote! { #receiver.step (#argument) })
+                    parse_quote! { <#state_ty as grust::core::Component>::step(
+                        &mut self.#memory_ident,
+                        #input_ty { #(#input_fields),* }
+                    ) }
+                }
             }
             Self::FieldAccess { expr, field } => {
                 let expr = expr.into_logic(crates);
@@ -1036,7 +1040,7 @@ mod test {
             None,
         );
 
-        let control = parse_quote! { self.node_state.step ( NodeInput { i : 1i64 }) };
+        let control = parse_quote! { <NodeState as grust::core::Component>::step(&mut self.node_state, NodeInput { i : 1i64 }) };
         assert_eq!(expression.into_syn(&mut Default::default()), control)
     }
 
@@ -1055,7 +1059,7 @@ mod test {
             Some(parse_quote!(path::to::node)),
         );
 
-        let control = parse_quote! { self.node_state.step ( path::to::NodeInput { i : 1i64 }) };
+        let control = parse_quote! { <path::to::NodeState as grust::core::Component>::step(&mut self.node_state, path::to::NodeInput { i : 1i64 }) };
         assert_eq!(expression.into_syn(&mut Default::default()), control)
     }
 

@@ -4,11 +4,13 @@ pub struct TestRayon1AuxInput {
 pub struct TestRayon1AuxState {
     last_i: i64,
 }
-impl TestRayon1AuxState {
-    pub fn init() -> TestRayon1AuxState {
+impl grust::core::Component for TestRayon1AuxState {
+    type Input = TestRayon1AuxInput;
+    type Output = i64;
+    fn init() -> TestRayon1AuxState {
         TestRayon1AuxState { last_i: 0i64 }
     }
-    pub fn step(&mut self, input: TestRayon1AuxInput) -> i64 {
+    fn step(&mut self, input: TestRayon1AuxInput) -> i64 {
         let ((i3, i1, i2), ()) = {
             let (i3, i1, i2) = (
                 {
@@ -72,16 +74,18 @@ pub struct TestRayon1State {
     test_rayon1_aux_1: TestRayon1AuxState,
     test_rayon1_aux_2: TestRayon1AuxState,
 }
-impl TestRayon1State {
-    pub fn init() -> TestRayon1State {
+impl grust::core::Component for TestRayon1State {
+    type Input = TestRayon1Input;
+    type Output = i64;
+    fn init() -> TestRayon1State {
         TestRayon1State {
             last_i: 0i64,
-            test_rayon1_aux: TestRayon1AuxState::init(),
-            test_rayon1_aux_1: TestRayon1AuxState::init(),
-            test_rayon1_aux_2: TestRayon1AuxState::init(),
+            test_rayon1_aux: <TestRayon1AuxState as grust::core::Component>::init(),
+            test_rayon1_aux_1: <TestRayon1AuxState as grust::core::Component>::init(),
+            test_rayon1_aux_2: <TestRayon1AuxState as grust::core::Component>::init(),
         }
     }
-    pub fn step(&mut self, input: TestRayon1Input) -> i64 {
+    fn step(&mut self, input: TestRayon1Input) -> i64 {
         let ((i1_1, i1_2, i1_3), ()) = {
             let (i1_1, i1_2, i1_3) = (
                 {
@@ -96,7 +100,10 @@ impl TestRayon1State {
                 },
                 {
                     {
-                        self.test_rayon1_aux.step(TestRayon1AuxInput { i: input.i })
+                        <TestRayon1AuxState as grust::core::Component>::step(
+                            &mut self.test_rayon1_aux,
+                            TestRayon1AuxInput { i: input.i },
+                        )
                     }
                 },
             );
@@ -107,14 +114,20 @@ impl TestRayon1State {
                 {
                     {
                         let x = (i1_1 + i1_2) - i1_3;
-                        let i2_1 = self.test_rayon1_aux_1.step(TestRayon1AuxInput { i: x });
+                        let i2_1 = <TestRayon1AuxState as grust::core::Component>::step(
+                            &mut self.test_rayon1_aux_1,
+                            TestRayon1AuxInput { i: x },
+                        );
                         (x, i2_1)
                     }
                 },
                 {
                     {
                         let x_1 = (i1_2 - i1_2) + i1_3;
-                        let i2_2 = self.test_rayon1_aux_2.step(TestRayon1AuxInput { i: x_1 });
+                        let i2_2 = <TestRayon1AuxState as grust::core::Component>::step(
+                            &mut self.test_rayon1_aux_2,
+                            TestRayon1AuxInput { i: x_1 },
+                        );
                         (x_1, i2_2)
                     }
                 },

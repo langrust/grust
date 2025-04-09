@@ -1,6 +1,6 @@
 (* #"/home/thome/Documents/git/langrust/grustine/examples/acc_fmics_greusot/src/lib.rs" 5 0 56 1 *)
 
-(* AccState *)
+(* <AccState as grust::grust_core::Component> *)
 
 let%span slib0 = "/home/thome/Documents/git/langrust/grustine/examples/acc_fmics_greusot/src/lib.rs" 40 20 40 21
 let%span slib1 = "/home/thome/Documents/git/langrust/grustine/examples/acc_fmics_greusot/src/lib.rs" 41 48 41 49

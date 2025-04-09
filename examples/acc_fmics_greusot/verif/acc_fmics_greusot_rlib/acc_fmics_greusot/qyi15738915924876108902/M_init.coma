@@ -1,6 +1,6 @@
 (* #"/home/thome/Documents/git/langrust/grustine/examples/acc_fmics_greusot/src/lib.rs" 5 0 56 1 *)
 
-(* AccState *)
+(* <AccState as grust::grust_core::Component> *)
 
 use creusot.prelude.Intrinsic
 

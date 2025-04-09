@@ -8,15 +8,17 @@ pub struct MultipleEventsState {
     last_d: i64,
     last_z: i64,
 }
-impl MultipleEventsState {
-    pub fn init() -> MultipleEventsState {
+impl grust::core::Component for MultipleEventsState {
+    type Input = MultipleEventsInput;
+    type Output = (i64, i64);
+    fn init() -> MultipleEventsState {
         MultipleEventsState {
             last_a_bis: 0i64,
             last_d: 0i64,
             last_z: 0i64,
         }
     }
-    pub fn step(&mut self, input: MultipleEventsInput) -> (i64, i64) {
+    fn step(&mut self, input: MultipleEventsInput) -> (i64, i64) {
         let (a_bis, z) = match (input.a, input.b) {
             (Some(a), Some(b)) if input.v > 50i64 => {
                 let z = self.last_a_bis;
