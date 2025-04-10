@@ -69,6 +69,9 @@ impl<'a> WithLoc<'a> {
     pub fn new(loc: Loc, ctx0: &'a mut Ctx, errors: &'a mut Vec<Error>) -> Self {
         Self { loc, ctx0, errors }
     }
+    pub fn rm_loc<'b>(&'b mut self) -> Simple<'b> {
+        Simple::new(self.ctx0, self.errors)
+    }
     pub fn add_pat<'b>(&'b mut self, pat: Option<&'b ir0::stmt::Pattern>) -> PatLoc<'b> {
         PatLoc::new(pat, self.loc, self.ctx0, self.errors)
     }

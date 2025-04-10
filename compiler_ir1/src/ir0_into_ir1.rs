@@ -83,14 +83,36 @@ mod interface_impl {
             },
     }
 
+    fn into_u64<'a>(time: Either<syn::LitInt, Ident>, ctx: &mut ctx::Simple<'a>) -> TRes<u64> {
+        match time {
+            Either::Left(lit) => Ok(lit.base10_parse().unwrap()),
+            Either::Right(ident) => match ctx.ctx0.get_const(&ident, ctx.errors)? {
+                Constant::Integer(lit) => Ok(lit.base10_parse().unwrap()),
+                cst => Err(
+                    error!(@ident.loc() => ErrorKind::incompatible_types(cst.get_typ(), Typ::int())),
+                ),
+            }.dewrap(ctx.errors),
+        }
+    }
+
+    impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for TimeRange {
+        type Ir1 = (u64, u64);
+
+        fn into_ir1(self, ctx: &mut ctx::Simple<'a>) -> TRes<Self::Ir1> {
+            let min = into_u64(self.min, ctx)?;
+            let max = into_u64(self.max, ctx)?;
+            Ok((min, max))
+        }
+    }
+
     impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for Service {
         type Ir1 = ir1::Service;
 
         fn into_ir1(self, ctx: &mut ir1::ctx::Simple<'a>) -> TRes<Self::Ir1> {
             let id = ctx.ctx0.insert_service(self.ident, true, ctx.errors)?;
 
-            let time_range = if let Some(TimeRange { min, max, .. }) = self.time_range {
-                (min.base10_parse().unwrap(), max.base10_parse().unwrap())
+            let time_range = if let Some(timerange) = self.time_range {
+                timerange.into_ir1(ctx)?
             } else {
                 (10, 500)
             };
@@ -311,6 +333,186 @@ mod interface_impl {
             }
         }
     }
+    mod flow_expr_impl {
+        prelude! {
+            ir0::interface::{
+                FlowExpression, Call, OnChange, Merge,
+                Scan, Throttle, Timeout, Time, Persist,
+            },
+            ir1::flow,
+        }
+
+        impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for ir0::interface::Sample {
+            type Ir1 = ir1::flow::Kind;
+
+            /// Transforms AST into [ir1] and check identifiers good use.
+            fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
+                Ok(ir1::flow::Kind::sample(
+                    self.expr.into_ir1(ctx)?,
+                    super::into_u64(self.period_ms, &mut ctx.rm_loc())?,
+                ))
+            }
+        }
+
+        impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for Scan {
+            type Ir1 = ir1::flow::Kind;
+
+            /// Transforms AST into [ir1] and check identifiers good use.
+            fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
+                Ok(ir1::flow::Kind::scan(
+                    self.expr.into_ir1(ctx)?,
+                    super::into_u64(self.period_ms, &mut ctx.rm_loc())?,
+                ))
+            }
+        }
+
+        impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for Timeout {
+            type Ir1 = ir1::flow::Kind;
+
+            /// Transforms AST into [ir1] and check identifiers good use.
+            fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
+                Ok(ir1::flow::Kind::timeout(
+                    self.expr.into_ir1(ctx)?,
+                    super::into_u64(self.deadline, &mut ctx.rm_loc())?,
+                ))
+            }
+        }
+
+        impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for Throttle {
+            type Ir1 = ir1::flow::Kind;
+
+            /// Transforms AST into [ir1] and check identifiers good use.
+            fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
+                Ok(ir1::flow::Kind::throttle(
+                    self.expr.into_ir1(ctx)?,
+                    self.delta,
+                ))
+            }
+        }
+
+        impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for OnChange {
+            type Ir1 = ir1::flow::Kind;
+
+            /// Transforms AST into [ir1] and check identifiers good use.
+            fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
+                Ok(ir1::flow::Kind::on_change(self.expr.into_ir1(ctx)?))
+            }
+        }
+
+        impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for Persist {
+            type Ir1 = ir1::flow::Kind;
+
+            /// Transforms AST into [ir1] and check identifiers good use.
+            fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
+                Ok(ir1::flow::Kind::persist(self.expr.into_ir1(ctx)?))
+            }
+        }
+
+        impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for Merge {
+            type Ir1 = ir1::flow::Kind;
+
+            /// Transforms AST into [ir1] and check identifiers good use.
+            fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
+                Ok(ir1::flow::Kind::merge(
+                    self.expr_1.into_ir1(ctx)?,
+                    self.expr_2.into_ir1(ctx)?,
+                ))
+            }
+        }
+
+        impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for Time {
+            type Ir1 = ir1::flow::Kind;
+
+            /// Transforms AST into [ir1] and check identifiers good use.
+            fn into_ir1(self, _ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
+                Ok(ir1::flow::Kind::time(self.time_token.span.into()))
+            }
+        }
+
+        impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for Call {
+            type Ir1 = ir1::flow::Kind;
+
+            /// Transforms AST into [ir1] and check identifiers good use.
+            fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
+                if ctx.ctx0.is_node(&self.ident, false) {
+                    // get called component id
+                    let component_id = ctx.ctx0.get_node_id(&self.ident, false, ctx.errors)?;
+
+                    let component_inputs = ctx.get_node_inputs(component_id).clone();
+
+                    // check inputs and node_inputs have the same length
+                    if self.inputs.len() != component_inputs.len() {
+                        bad!(ctx.errors, @ctx.loc =>
+                            ErrorKind::arity_mismatch(self.inputs.len(), component_inputs.len())
+                        )
+                    }
+
+                    // transform inputs and map then to the identifiers of the component inputs
+                    let inputs = {
+                        let mut inputs = Vec::with_capacity(self.inputs.len());
+                        for (input, id) in self.inputs.into_iter().zip(component_inputs) {
+                            inputs.push((id, input.into_ir1(ctx)?));
+                        }
+                        inputs
+                    };
+
+                    Ok(ir1::flow::Kind::comp_call(component_id, inputs))
+                } else {
+                    // get called function id
+                    let function_id = ctx.ctx0.get_function_id(&self.ident, false, ctx.errors)?;
+
+                    let function_inputs = ctx.get_function_input(function_id).clone();
+
+                    // check inputs and node_inputs have the same length
+                    if self.inputs.len() != function_inputs.len() {
+                        bad!(ctx.errors, @ctx.loc =>
+                            ErrorKind::arity_mismatch(self.inputs.len(), function_inputs.len())
+                        )
+                    }
+
+                    // transform inputs and map then to the identifiers of the function inputs
+                    let inputs = {
+                        let mut inputs = Vec::with_capacity(self.inputs.len());
+                        for (input, id) in self.inputs.into_iter().zip(function_inputs) {
+                            inputs.push((id, input.into_ir1(ctx)?));
+                        }
+                        inputs
+                    };
+
+                    Ok(ir1::flow::Kind::fun_call(function_id, inputs))
+                }
+            }
+        }
+
+        impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for FlowExpression {
+            type Ir1 = flow::Expr;
+
+            // pre-condition: identifiers are stored in symbol table
+            // post-condition: construct [ir1] expression and check identifiers good use
+            fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<Self::Ir1> {
+                let kind = match self {
+                    FlowExpression::Ident(ident) => {
+                        let id = ctx.ctx0.get_flow_id(&ident, false, ctx.errors)?;
+                        flow::Kind::Ident { id }
+                    }
+                    FlowExpression::Call(expr) => expr.into_ir1(ctx)?,
+                    FlowExpression::Sample(expr) => expr.into_ir1(ctx)?,
+                    FlowExpression::Scan(expr) => expr.into_ir1(ctx)?,
+                    FlowExpression::Timeout(expr) => expr.into_ir1(ctx)?,
+                    FlowExpression::Throttle(expr) => expr.into_ir1(ctx)?,
+                    FlowExpression::OnChange(expr) => expr.into_ir1(ctx)?,
+                    FlowExpression::Persist(expr) => expr.into_ir1(ctx)?,
+                    FlowExpression::Merge(expr) => expr.into_ir1(ctx)?,
+                    FlowExpression::Time(expr) => expr.into_ir1(ctx)?,
+                };
+                Ok(flow::Expr {
+                    kind,
+                    typ: None,
+                    loc: ctx.loc,
+                })
+            }
+        }
+    }
 }
 
 impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Function {
@@ -449,187 +651,6 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Component {
         Ok(ir1::Component::new(
             id, inits, statements, contract, logs, loc,
         ))
-    }
-}
-
-mod flow_expr_impl {
-    prelude! {
-        ir0::interface::{
-            FlowExpression, Call, OnChange, Merge,
-            Scan, Throttle, Timeout, Time, Persist,
-        },
-        ir1::flow,
-    }
-
-    impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for ir0::interface::Sample {
-        type Ir1 = ir1::flow::Kind;
-
-        /// Transforms AST into [ir1] and check identifiers good use.
-        fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
-            Ok(ir1::flow::Kind::sample(
-                self.expr.into_ir1(ctx)?,
-                self.period_ms.base10_parse().unwrap(),
-            ))
-        }
-    }
-
-    impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for Scan {
-        type Ir1 = ir1::flow::Kind;
-
-        /// Transforms AST into [ir1] and check identifiers good use.
-        fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
-            Ok(ir1::flow::Kind::scan(
-                self.expr.into_ir1(ctx)?,
-                self.period_ms.base10_parse().unwrap(),
-            ))
-        }
-    }
-
-    impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for Timeout {
-        type Ir1 = ir1::flow::Kind;
-
-        /// Transforms AST into [ir1] and check identifiers good use.
-        fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
-            Ok(ir1::flow::Kind::timeout(
-                self.expr.into_ir1(ctx)?,
-                self.deadline.base10_parse().unwrap(),
-            ))
-        }
-    }
-
-    impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for Throttle {
-        type Ir1 = ir1::flow::Kind;
-
-        /// Transforms AST into [ir1] and check identifiers good use.
-        fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
-            Ok(ir1::flow::Kind::throttle(
-                self.expr.into_ir1(ctx)?,
-                self.delta,
-            ))
-        }
-    }
-
-    impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for OnChange {
-        type Ir1 = ir1::flow::Kind;
-
-        /// Transforms AST into [ir1] and check identifiers good use.
-        fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
-            Ok(ir1::flow::Kind::on_change(self.expr.into_ir1(ctx)?))
-        }
-    }
-
-    impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for Persist {
-        type Ir1 = ir1::flow::Kind;
-
-        /// Transforms AST into [ir1] and check identifiers good use.
-        fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
-            Ok(ir1::flow::Kind::persist(self.expr.into_ir1(ctx)?))
-        }
-    }
-
-    impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for Merge {
-        type Ir1 = ir1::flow::Kind;
-
-        /// Transforms AST into [ir1] and check identifiers good use.
-        fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
-            Ok(ir1::flow::Kind::merge(
-                self.expr_1.into_ir1(ctx)?,
-                self.expr_2.into_ir1(ctx)?,
-            ))
-        }
-    }
-
-    impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for Time {
-        type Ir1 = ir1::flow::Kind;
-
-        /// Transforms AST into [ir1] and check identifiers good use.
-        fn into_ir1(self, _ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
-            Ok(ir1::flow::Kind::time(self.time_token.span.into()))
-        }
-    }
-
-    impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for Call {
-        type Ir1 = ir1::flow::Kind;
-
-        /// Transforms AST into [ir1] and check identifiers good use.
-        fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
-            if ctx.ctx0.is_node(&self.ident, false) {
-                // get called component id
-                let component_id = ctx.ctx0.get_node_id(&self.ident, false, ctx.errors)?;
-
-                let component_inputs = ctx.get_node_inputs(component_id).clone();
-
-                // check inputs and node_inputs have the same length
-                if self.inputs.len() != component_inputs.len() {
-                    bad!(ctx.errors, @ctx.loc =>
-                        ErrorKind::arity_mismatch(self.inputs.len(), component_inputs.len())
-                    )
-                }
-
-                // transform inputs and map then to the identifiers of the component inputs
-                let inputs = {
-                    let mut inputs = Vec::with_capacity(self.inputs.len());
-                    for (input, id) in self.inputs.into_iter().zip(component_inputs) {
-                        inputs.push((id, input.into_ir1(ctx)?));
-                    }
-                    inputs
-                };
-
-                Ok(ir1::flow::Kind::comp_call(component_id, inputs))
-            } else {
-                // get called function id
-                let function_id = ctx.ctx0.get_function_id(&self.ident, false, ctx.errors)?;
-
-                let function_inputs = ctx.get_function_input(function_id).clone();
-
-                // check inputs and node_inputs have the same length
-                if self.inputs.len() != function_inputs.len() {
-                    bad!(ctx.errors, @ctx.loc =>
-                        ErrorKind::arity_mismatch(self.inputs.len(), function_inputs.len())
-                    )
-                }
-
-                // transform inputs and map then to the identifiers of the function inputs
-                let inputs = {
-                    let mut inputs = Vec::with_capacity(self.inputs.len());
-                    for (input, id) in self.inputs.into_iter().zip(function_inputs) {
-                        inputs.push((id, input.into_ir1(ctx)?));
-                    }
-                    inputs
-                };
-
-                Ok(ir1::flow::Kind::fun_call(function_id, inputs))
-            }
-        }
-    }
-
-    impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for FlowExpression {
-        type Ir1 = flow::Expr;
-
-        // pre-condition: identifiers are stored in symbol table
-        // post-condition: construct [ir1] expression and check identifiers good use
-        fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<Self::Ir1> {
-            let kind = match self {
-                FlowExpression::Ident(ident) => {
-                    let id = ctx.ctx0.get_flow_id(&ident, false, ctx.errors)?;
-                    flow::Kind::Ident { id }
-                }
-                FlowExpression::Call(expr) => expr.into_ir1(ctx)?,
-                FlowExpression::Sample(expr) => expr.into_ir1(ctx)?,
-                FlowExpression::Scan(expr) => expr.into_ir1(ctx)?,
-                FlowExpression::Timeout(expr) => expr.into_ir1(ctx)?,
-                FlowExpression::Throttle(expr) => expr.into_ir1(ctx)?,
-                FlowExpression::OnChange(expr) => expr.into_ir1(ctx)?,
-                FlowExpression::Persist(expr) => expr.into_ir1(ctx)?,
-                FlowExpression::Merge(expr) => expr.into_ir1(ctx)?,
-                FlowExpression::Time(expr) => expr.into_ir1(ctx)?,
-            };
-            Ok(flow::Expr {
-                kind,
-                typ: None,
-                loc: ctx.loc,
-            })
-        }
     }
 }
 
