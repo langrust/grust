@@ -11,8 +11,11 @@ grust! {
     // Activation type
     enum Activation{ On, Off }
 
+    const MIN: int = 10;
+    const MAX: int = 3000;
+
     // Adaptive Cruise Control service
-    service adaptive_cruise_control @ [10, 3000] {
+    service adaptive_cruise_control @ [MIN, MAX] {
         let event  radar_e: float = on_change(radar_m);
         let signal cond: bool = activate(acc_active, radar_e);
         let signal speed_m_s: float = convert(speed_km_h);
