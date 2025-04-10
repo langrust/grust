@@ -207,10 +207,6 @@ impl Expr {
             function: Self = function.into(),
             arguments: Vec<Self>,
         }
-        // FunctionCall: ext_function_call {
-        //     function: syn::Path = Either::Right(function),
-        //     arguments: Vec<Self>,
-        // }
         NodeCall: node_call {
             memory_ident: impl Into<Ident> = memory_ident.into(),
             node_identifier: impl Into<Ident> = node_identifier.into(),
@@ -311,97 +307,53 @@ impl Expr {
             | Zip { .. } => false,
         }
     }
+}
 
-    /// Transform [ir2] expression into RustAST expression.
-    pub fn into_syn(self, crates: &mut BTreeSet<String>) -> syn::Expr {
+impl ToTokens for Expr {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
         match self {
-            Self::Literal { literal } => literal.into_syn(),
-            Self::Identifier { identifier } => {
-                parse_quote! { #identifier }
-            }
-            Self::Path { path } => {
-                parse_quote! { #path }
-            }
-            Self::Some { expr } => {
-                let syn_expr = expr.into_syn(crates);
-                parse_quote! { Some(#syn_expr) }
-            }
-            Self::None => parse_quote! { None },
+            Self::Literal { literal } => literal.to_tokens(tokens),
+            Self::Identifier { identifier } => identifier.to_tokens(tokens),
+            Self::Path { path } => path.to_tokens(tokens),
+            Self::Some { expr } => quote!(Some(#expr)).to_tokens(tokens),
+            Self::None => quote!(None).to_tokens(tokens),
             Self::MemoryAccess { identifier } => {
                 let id = identifier.to_last_var();
-                parse_quote!( self.#id )
+                quote!(self.#id).to_tokens(tokens)
             }
-            Self::InputAccess { identifier } => {
-                parse_quote!( input.#identifier )
-            }
+            Self::InputAccess { identifier } => quote!(input.#identifier).to_tokens(tokens),
             Self::Structure { name, fields } => {
-                let fields: Vec<syn::FieldValue> = fields
-                    .into_iter()
-                    .map(|(name, expr)| {
-                        let expr = expr.into_syn(crates);
-                        parse_quote!(#name : #expr)
-                    })
-                    .collect();
-                let name = format_ident!("{name}");
-                parse_quote!(#name { #(#fields),* })
+                let fields = fields.iter().map(|(name, expr)| quote!(#name: #expr));
+                quote!( #name { #(#fields),* } ).to_tokens(tokens)
             }
-            Self::Enumeration { name, element } => {
-                parse_quote!(#name :: #element)
-            }
-            Self::Array { elements } => {
-                let elements = elements.into_iter().map(|expr| expr.into_syn(crates));
-                parse_quote! { [#(#elements),*]}
-            }
-            Self::Tuple { elements } => {
-                let elements = elements.into_iter().map(|expr| expr.into_syn(crates));
-                parse_quote! { (#(#elements),*) }
-            }
-            Self::Block { block } => syn::Expr::Block(syn::ExprBlock {
-                attrs: vec![],
-                label: None,
-                block: block.into_syn(crates),
-            }),
+            Self::Enumeration { name, element } => tokens.extend(quote!(#name :: #element)),
+            Self::Array { elements } => quote!( [#(#elements),*] ).to_tokens(tokens),
+            Self::Tuple { elements } => quote!( (#(#elements),*) ).to_tokens(tokens),
+            Self::Block { block } => block.to_tokens(tokens),
             Self::FunctionCall {
                 function,
-                // function: Either::Left(function),
                 arguments,
             } => {
                 let function_parens = function.as_function_requires_parens();
-                let function = function.into_syn(crates);
-                let arguments = arguments.into_iter().map(|expr| expr.into_syn(crates));
                 if function_parens {
-                    parse_quote! { (#function)(#(#arguments),*) }
+                    quote!( (#function)(#(#arguments),*) ).to_tokens(tokens)
                 } else {
-                    parse_quote! { #function(#(#arguments),*) }
+                    quote!( #function(#(#arguments),*) ).to_tokens(tokens)
                 }
             }
-            // Self::FunctionCall {
-            //     function: Either::Right(function),
-            //     arguments,
-            // } => {
-            //     let arguments = arguments.into_iter().map(|expr| expr.into_syn(crates));
-            //     parse_quote! { #function(#(#arguments),*) }
-            // }
-            Self::UnOp { op, expr } => {
-                let op = op.into_syn();
-                let expr = expr.into_syn(crates);
-                syn::Expr::Unary(parse_quote! { #op (#expr) })
-            }
+            Self::UnOp { op, expr } => tokens.extend(quote!(#op (#expr))),
             Self::BinOp { op, lft, rgt } => {
-                let left = if lft.as_op_arg_requires_parens() {
-                    let expr = lft.into_syn(crates);
-                    parse_quote! { (#expr) }
+                if lft.as_op_arg_requires_parens() {
+                    quote!((#lft)).to_tokens(tokens)
                 } else {
-                    lft.into_syn(crates)
-                };
-                let right = if rgt.as_op_arg_requires_parens() {
-                    let expr = rgt.into_syn(crates);
-                    parse_quote! { (#expr) }
+                    lft.to_tokens(tokens)
+                }
+                op.to_tokens(tokens);
+                if rgt.as_op_arg_requires_parens() {
+                    quote!((#rgt)).to_tokens(tokens)
                 } else {
-                    rgt.into_syn(crates)
-                };
-                let binary = op.into_syn();
-                syn::Expr::Binary(parse_quote! { #left #binary #right })
+                    rgt.to_tokens(tokens)
+                }
             }
             Self::NodeCall {
                 memory_ident,
@@ -412,295 +364,155 @@ impl Expr {
             } => {
                 let state_ty = name.to_state_ty();
                 let input_ty = name.to_input_ty();
-                let input_fields: Vec<syn::FieldValue> = input_fields
-                    .into_iter()
-                    .map(|(name, expr)| {
-                        let id = name;
-                        let expr = expr.into_syn(crates);
-                        parse_quote! { #id : #expr }
-                    })
-                    .collect();
-                if let Some(mut path) = path_opt {
+                let input_fields = input_fields.into_iter().map(|(name, expr)| {
+                    quote! { #name : #expr }
+                });
+                if let Some(mut path) = path_opt.clone() {
                     path.segments.pop();
                     let mut state_path = path.clone();
                     let mut input_path = path;
                     state_path.segments.push(state_ty.into());
                     input_path.segments.push(input_ty.into());
-                    parse_quote! { <#state_path as grust::core::Component>::step(
-                        &mut self.#memory_ident,
-                        #input_path { #(#input_fields),* }
-                    ) }
+                    quote! {
+                        <#state_path as grust::core::Component>::step(
+                            &mut self.#memory_ident, #input_path { #(#input_fields),* }
+                        )
+                    }
+                    .to_tokens(tokens)
                 } else {
-                    parse_quote! { <#state_ty as grust::core::Component>::step(
-                        &mut self.#memory_ident,
-                        #input_ty { #(#input_fields),* }
-                    ) }
+                    quote! {
+                        <#state_ty as grust::core::Component>::step(
+                            &mut self.#memory_ident, #input_ty { #(#input_fields),* }
+                        )
+                    }
+                    .to_tokens(tokens)
                 }
             }
-            Self::FieldAccess { expr, field } => {
-                let expr = expr.into_syn(crates);
-                match field {
-                    FieldIdentifier::Named(name) => {
-                        parse_quote!(#expr.#name)
-                    }
-                    FieldIdentifier::Unnamed(number) => {
-                        let number: TokenStream2 = format!("{number}").parse().unwrap();
-                        parse_quote!(#expr.#number)
-                    }
-                }
-            }
+            Self::FieldAccess { expr, field } => tokens.extend(quote!(#expr . #field)),
             Self::Lambda {
                 is_move,
                 inputs,
                 output,
                 body,
             } => {
-                let inputs = inputs
-                    .into_iter()
-                    .map(|(identifier, typ)| {
-                        let pattern = syn::Pat::Ident(syn::PatIdent {
-                            attrs: Vec::new(),
-                            by_ref: None,
-                            mutability: None,
-                            ident: identifier,
-                            subpat: None,
-                        });
-                        let pattern = syn::Pat::Type(syn::PatType {
-                            attrs: Vec::new(),
-                            pat: Box::new(pattern),
-                            colon_token: Default::default(),
-                            ty: Box::new(typ.into_syn()),
-                        });
-                        pattern
-                    })
-                    .collect();
-                let capture = if is_move {
-                    Some(syn::token::Move {
-                        span: Span::call_site(),
-                    })
+                let inputs = inputs.iter().map(|(ident, typ)| quote!(#ident : #typ));
+                let capture = if *is_move { Some(quote!(move)) } else { None };
+                if let Expr::Block { .. } = &**body {
+                    quote!(#capture | #(#inputs),* | -> #output #body)
                 } else {
-                    None
-                };
-                let closure = syn::ExprClosure {
-                    attrs: Vec::new(),
-                    asyncness: None,
-                    movability: None,
-                    capture,
-                    or1_token: Default::default(),
-                    inputs,
-                    or2_token: Default::default(),
-                    output: syn::ReturnType::Type(Default::default(), Box::new(output.into_syn())),
-                    body: Box::new(body.into_syn(crates)),
-                    lifetimes: None,
-                    constness: None,
-                };
-                syn::Expr::Closure(closure)
+                    quote!(#capture | #(#inputs),* | -> #output { #body })
+                }
+                .to_tokens(tokens)
             }
-            Self::IfThenElse { cnd, thn, els } => {
-                let cnd = Box::new(cnd.into_syn(crates));
-                let thn = thn.into_syn(crates);
-                let els = els.into_syn(crates);
-                let els = parse_quote! { #els };
-                let els = Some((Default::default(), Box::new(els)));
-                syn::Expr::If(syn::ExprIf {
-                    attrs: Vec::new(),
-                    if_token: Default::default(),
-                    cond: cnd,
-                    then_branch: thn,
-                    else_branch: els,
-                })
-            }
+            Self::IfThenElse { cnd, thn, els } => quote!(if #cnd #thn else #els).to_tokens(tokens),
             Self::Match { matched, arms } => {
-                let arms = arms
-                    .into_iter()
-                    .map(|(pattern, guard, body)| syn::Arm {
-                        attrs: Vec::new(),
-                        pat: pattern.into_syn(),
-                        guard: guard
-                            .map(|expression| expression.into_syn(crates))
-                            .map(|g| (Default::default(), Box::new(g))),
-                        body: Box::new(body.into_syn(crates)),
-                        fat_arrow_token: Default::default(),
-                        comma: Some(Default::default()),
-                    })
-                    .collect();
-                syn::Expr::Match(syn::ExprMatch {
-                    attrs: Vec::new(),
-                    match_token: Default::default(),
-                    expr: Box::new(matched.into_syn(crates)),
-                    brace_token: Default::default(),
-                    arms,
-                })
+                let arms = arms.iter().map(|(pat, guard_opt, code)| {
+                    if let Some(guard) = guard_opt.as_ref() {
+                        quote!(#pat if #guard => #code)
+                    } else {
+                        quote!(#pat => #code)
+                    }
+                });
+                quote! {
+                    match #matched {
+                        #(#arms,)*
+                    }
+                }
+                .to_tokens(tokens)
             }
-            Self::Map { mapped, function } => {
-                let receiver = Box::new(mapped.into_syn(crates));
-                let method = Ident::new("map", Span::call_site());
-                let arguments = vec![function.into_syn(crates)];
-                let method_call = syn::ExprMethodCall {
-                    attrs: Vec::new(),
-                    receiver,
-                    method,
-                    turbofish: None,
-                    paren_token: Default::default(),
-                    args: syn::Punctuated::from_iter(arguments),
-                    dot_token: Default::default(),
-                };
-                syn::Expr::MethodCall(method_call)
+            Self::Map { mapped, function } => quote! {
+                #mapped . map ( #function )
             }
+            .to_tokens(tokens),
             Self::Fold {
                 folded,
                 initialization,
                 function,
-            } => syn::Expr::MethodCall(syn::ExprMethodCall {
-                attrs: Vec::new(),
-                receiver: Box::new(syn::Expr::MethodCall(syn::ExprMethodCall {
-                    attrs: Vec::new(),
-                    receiver: Box::new(folded.into_syn(crates)),
-                    method: Ident::new("into_iter", Span::call_site()),
-                    turbofish: None,
-                    paren_token: Default::default(),
-                    args: syn::Punctuated::new(),
-                    dot_token: Default::default(),
-                })),
-                method: Ident::new("fold", Span::call_site()),
-                turbofish: None,
-                paren_token: Default::default(),
-                args: syn::Punctuated::from_iter(vec![
-                    initialization.into_syn(crates),
-                    function.into_syn(crates),
-                ]),
-                dot_token: Default::default(),
-            }),
-            Self::Sort { sorted, function } => {
-                let token_sorted = sorted.into_syn(crates);
-                let token_function = function.into_syn(crates);
-
-                parse_quote!({
-                    let mut x = #token_sorted.clone();
-                    let slice = x.as_mut();
-                    slice.sort_by(|a, b| {
-                        let compare = #token_function(*a, *b);
-                        if compare < 0 { std::cmp::Ordering::Less }
-                        else if compare > 0 { std::cmp::Ordering::Greater }
-                        else { std::cmp::Ordering::Equal }
+            } => quote! {
+                #folded . into_iter() . fold( #initialization, #function )
+            }
+            .to_tokens(tokens),
+            Self::Sort { sorted, function } => quote! {
+                {
+                    let mut grust_reserved_sort = #sorted . clone();
+                    grust_reserved_sort.sort_by(|a, b| {
+                        let cmp = #function(*a, *b);
+                        if cmp < 0 {
+                            std::cmp::Ordering::Less
+                        } else if 0 < cmp {
+                            std::cmp::Ordering::Greater
+                        } else {
+                            std::cmp::Ordering::Equal
+                        }
                     });
-                    x
-                })
-            }
-            Self::Zip { arrays } => {
-                crates.insert("itertools = \"0.12.1\"".into());
-                let arguments = arrays
-                    .into_iter()
-                    .map(|expression| expression.into_syn(crates));
-                let macro_call = syn::ExprMacro {
-                    attrs: Vec::new(),
-                    mac: syn::Macro {
-                        path: parse_quote!(itertools::izip),
-                        bang_token: Default::default(),
-                        delimiter: syn::MacroDelimiter::Paren(Default::default()),
-                        tokens: quote::quote! { #(#arguments),* },
-                    },
-                };
-                let izip = syn::Expr::Macro(macro_call);
-
-                parse_quote!({
-                    let mut iter = #izip;
-                    std::array::from_fn(|_| iter.next().unwrap())
-                })
-            }
-        }
-    }
-
-    /// Transform [ir2] expression into RustAST expression.
-    pub fn into_logic(self, crates: &mut BTreeSet<String>) -> syn::Expr {
-        match self {
-            Self::Literal { literal } => literal.into_logic(),
-            Self::Identifier { identifier } => {
-                parse_quote! { #identifier }
-            }
-            Self::Path { path } => {
-                parse_quote! { #path }
-            }
-            Self::Some { expr } => {
-                let syn_expr = expr.into_logic(crates);
-                parse_quote! { Some(#syn_expr) }
-            }
-            Self::None => parse_quote! { None },
-            Self::MemoryAccess { identifier } => {
-                let id = identifier.to_last_var();
-                parse_quote!( self.#id )
-            }
-            Self::InputAccess { identifier } => {
-                parse_quote!( input.#identifier )
-            }
-            Self::Structure { name, fields } => {
-                let fields: Vec<syn::FieldValue> = fields
-                    .into_iter()
-                    .map(|(name, expr)| {
-                        let expr = expr.into_logic(crates);
-                        parse_quote!(#name : #expr)
-                    })
-                    .collect();
-                let name = format_ident!("{name}");
-                parse_quote!(#name { #(#fields),* })
-            }
-            Self::Enumeration { name, element } => {
-                parse_quote!(#name :: #element)
-            }
-            Self::Array { elements } => {
-                let elements = elements.into_iter().map(|expr| expr.into_logic(crates));
-                parse_quote! { [#(#elements),*]}
-            }
-            Self::Tuple { elements } => {
-                let elements = elements.into_iter().map(|expr| expr.into_logic(crates));
-                parse_quote! { (#(#elements),*) }
-            }
-            Self::Block { block } => syn::Expr::Block(syn::ExprBlock {
-                attrs: vec![],
-                label: None,
-                block: block.into_logic(crates),
-            }),
-            Self::FunctionCall {
-                function,
-                // function: Either::Left(function),
-                arguments,
-            } => {
-                let function_parens = function.as_function_requires_parens();
-                let function = function.into_logic(crates);
-                let arguments = arguments.into_iter().map(|expr| expr.into_logic(crates));
-                if function_parens {
-                    parse_quote! { (#function)(#(#arguments),*) }
-                } else {
-                    parse_quote! { #function(#(#arguments),*) }
+                    grust_reserved_sort
                 }
             }
-            // Self::FunctionCall {
-            //     function: Either::Right(function),
-            //     arguments,
-            // } => {
-            //     let arguments = arguments.into_iter().map(|expr| expr.into_logic(crates));
-            //     parse_quote! { #function(#(#arguments),*) }
-            // }
-            Self::UnOp { op, expr } => {
-                let op = op.into_syn();
-                let expr = expr.into_logic(crates);
-                syn::Expr::Unary(parse_quote! { #op (#expr) })
+            .to_tokens(tokens),
+            Self::Zip { arrays } => quote! {
+                std::array::from_fn(|n| ( #(#arrays[n]),* ))
             }
+            .to_tokens(tokens),
+        }
+    }
+}
+
+impl ToLogicTokens for Expr {
+    fn to_logic_tokens(&self, tokens: &mut TokenStream2) {
+        match self {
+            Self::Literal { literal } => literal.to_logic_tokens(tokens),
+            Self::Identifier { identifier } => identifier.to_tokens(tokens),
+            Self::Path { path } => path.to_tokens(tokens),
+            Self::Some { expr } => {
+                let expr = expr.to_logic();
+                quote!(Some(#expr)).to_tokens(tokens)
+            }
+            Self::None => quote!(None).to_tokens(tokens),
+            Self::MemoryAccess { identifier } => {
+                let id = identifier.to_last_var();
+                quote!(self.#id).to_tokens(tokens)
+            }
+            Self::InputAccess { identifier } => quote!(input.#identifier).to_tokens(tokens),
+            Self::Structure { name, fields } => {
+                let fields = fields.iter().map(|(name, expr)| quote!(#name : #expr));
+                quote!(#name { #(#fields),* }).to_tokens(tokens)
+            }
+            Self::Enumeration { name, element } => quote!(#name :: #element).to_tokens(tokens),
+            Self::Array { elements } => {
+                let elms = elements.iter().map(|e| e.to_logic());
+                quote!( [#(#elms),*] ).to_tokens(tokens)
+            }
+            Self::Tuple { elements } => {
+                let elms = elements.iter().map(|e| e.to_logic());
+                quote!( (#(#elms),*) ).to_tokens(tokens)
+            }
+            Self::Block { block } => block.to_logic_tokens(tokens),
+            Self::FunctionCall {
+                function,
+                arguments,
+            } => {
+                let arguments = arguments.iter().map(|arg| arg.to_logic());
+                if function.as_function_requires_parens() {
+                    quote!( (#function)(#(#arguments),*) ).to_tokens(tokens)
+                } else {
+                    quote!( #function(#(#arguments),*) ).to_tokens(tokens)
+                }
+            }
+            Self::UnOp { op, expr } => quote!(#op #expr).to_tokens(tokens),
             Self::BinOp { op, lft, rgt } => {
-                let left = if lft.as_op_arg_requires_parens() {
-                    let expr = lft.into_logic(crates);
-                    parse_quote! { (#expr) }
+                if lft.as_op_arg_requires_parens() {
+                    let expr = lft.to_logic();
+                    quote!( (#expr) ).to_tokens(tokens)
                 } else {
-                    lft.into_logic(crates)
-                };
-                let right = if rgt.as_op_arg_requires_parens() {
-                    let expr = rgt.into_logic(crates);
-                    parse_quote! { (#expr) }
+                    lft.to_logic_tokens(tokens)
+                }
+                op.to_tokens(tokens);
+                if rgt.as_op_arg_requires_parens() {
+                    let expr = rgt.to_logic();
+                    quote!( (#expr) ).to_tokens(tokens)
                 } else {
-                    rgt.into_logic(crates)
-                };
-                let binary = op.into_syn();
-                syn::Expr::Binary(parse_quote! { #left #binary #right })
+                    rgt.to_logic_tokens(tokens)
+                }
             }
             Self::NodeCall {
                 memory_ident,
@@ -711,200 +523,105 @@ impl Expr {
             } => {
                 let state_ty = name.to_state_ty();
                 let input_ty = name.to_input_ty();
-                let input_fields: Vec<syn::FieldValue> = input_fields
-                    .into_iter()
-                    .map(|(name, expr)| {
-                        let id = name;
-                        let expr = expr.into_logic(crates);
-                        parse_quote! { #id : #expr }
-                    })
-                    .collect();
-                if let Some(mut path) = path_opt {
+                let input_fields = input_fields.iter().map(|(field, expr)| {
+                    let expr = expr.to_logic();
+                    quote!(#field : #expr)
+                });
+                if let Some(mut path) = path_opt.clone() {
                     path.segments.pop();
-                    parse_quote! { <#path::#state_ty as grust::core::Component>::step(
-                        &mut self.#memory_ident,
-                        #path::#input_ty { #(#input_fields),* }
-                    ) }
+                    quote! {
+                        <#path::#state_ty as grust::core::Component>::step(
+                            &mut self.#memory_ident, #path::#input_ty { #(#input_fields),* }
+                        )
+                    }
+                    .to_tokens(tokens)
                 } else {
-                    parse_quote! { <#state_ty as grust::core::Component>::step(
-                        &mut self.#memory_ident,
-                        #input_ty { #(#input_fields),* }
-                    ) }
+                    quote! {
+                        <#state_ty as grust::core::Component>::step(
+                            &mut self.#memory_ident, #input_ty { #(#input_fields),* }
+                        )
+                    }
+                    .to_tokens(tokens)
                 }
             }
-            Self::FieldAccess { expr, field } => {
-                let expr = expr.into_logic(crates);
-                match field {
-                    FieldIdentifier::Named(name) => {
-                        parse_quote!(#expr.#name)
-                    }
-                    FieldIdentifier::Unnamed(number) => {
-                        let number: TokenStream2 = format!("{number}").parse().unwrap();
-                        parse_quote!(#expr.#number)
-                    }
-                }
-            }
+            Self::FieldAccess { expr, field } => quote!(#expr . #field).to_tokens(tokens),
             Self::Lambda {
                 is_move,
                 inputs,
                 output,
                 body,
             } => {
-                let inputs = inputs
-                    .into_iter()
-                    .map(|(identifier, typ)| {
-                        let pattern = syn::Pat::Ident(syn::PatIdent {
-                            attrs: Vec::new(),
-                            by_ref: None,
-                            mutability: None,
-                            ident: identifier,
-                            subpat: None,
-                        });
-                        let pattern = syn::Pat::Type(syn::PatType {
-                            attrs: Vec::new(),
-                            pat: Box::new(pattern),
-                            colon_token: Default::default(),
-                            ty: Box::new(typ.into_logic()),
-                        });
-                        pattern
-                    })
-                    .collect();
-                let capture = if is_move {
-                    Some(syn::token::Move {
-                        span: Span::call_site(),
-                    })
-                } else {
-                    None
-                };
-                let closure = syn::ExprClosure {
-                    attrs: Vec::new(),
-                    asyncness: None,
-                    movability: None,
-                    capture,
-                    or1_token: Default::default(),
-                    inputs,
-                    or2_token: Default::default(),
-                    output: syn::ReturnType::Type(
-                        Default::default(),
-                        Box::new(output.into_logic()),
-                    ),
-                    body: Box::new(body.into_logic(crates)),
-                    lifetimes: None,
-                    constness: None,
-                };
-                syn::Expr::Closure(closure)
+                let inputs = inputs.iter().map(|(ident, typ)| {
+                    let typ = typ.to_logic();
+                    quote!(#ident : #typ)
+                });
+                let output = output.to_logic();
+                let body = body.to_logic();
+                let capture = if *is_move { Some(quote!(move)) } else { None };
+                quote!(#capture | #(#inputs),* | -> #output { #body }).to_tokens(tokens)
             }
             Self::IfThenElse { cnd, thn, els } => {
-                let cnd = Box::new(cnd.into_logic(crates));
-                let thn = thn.into_logic(crates);
-                let els = els.into_logic(crates);
-                let els = parse_quote! { #els };
-                let els = Some((Default::default(), Box::new(els)));
-                syn::Expr::If(syn::ExprIf {
-                    attrs: Vec::new(),
-                    if_token: Default::default(),
-                    cond: cnd,
-                    then_branch: thn,
-                    else_branch: els,
-                })
+                let (cnd, thn, els) = (cnd.to_logic(), thn.to_logic(), els.to_logic());
+                quote!(if #cnd #thn else #els).to_tokens(tokens)
             }
             Self::Match { matched, arms } => {
-                let arms = arms
-                    .into_iter()
-                    .map(|(pattern, guard, body)| syn::Arm {
-                        attrs: Vec::new(),
-                        pat: pattern.into_syn(),
-                        guard: guard
-                            .map(|expression| expression.into_logic(crates))
-                            .map(|g| (Default::default(), Box::new(g))),
-                        body: Box::new(body.into_logic(crates)),
-                        fat_arrow_token: Default::default(),
-                        comma: Some(Default::default()),
-                    })
-                    .collect();
-                syn::Expr::Match(syn::ExprMatch {
-                    attrs: Vec::new(),
-                    match_token: Default::default(),
-                    expr: Box::new(matched.into_logic(crates)),
-                    brace_token: Default::default(),
-                    arms,
-                })
+                let matched = matched.to_logic();
+                let arms = arms.iter().map(|(pat, guard_opt, code)| {
+                    let code = code.to_logic();
+                    let guard_opt = guard_opt.as_ref().map(|g| {
+                        let g = g.to_logic();
+                        quote!(if #g)
+                    });
+                    quote!(#pat #guard_opt => #code)
+                });
+                quote! {
+                    match #matched { #(#arms),* }
+                }
+                .to_tokens(tokens)
             }
             Self::Map { mapped, function } => {
-                let receiver = Box::new(mapped.into_logic(crates));
-                let method = Ident::new("map", Span::call_site());
-                let arguments = vec![function.into_logic(crates)];
-                let method_call = syn::ExprMethodCall {
-                    attrs: Vec::new(),
-                    receiver,
-                    method,
-                    turbofish: None,
-                    paren_token: Default::default(),
-                    args: syn::Punctuated::from_iter(arguments),
-                    dot_token: Default::default(),
-                };
-                syn::Expr::MethodCall(method_call)
+                let mapped = mapped.to_logic();
+                let function = function.to_logic();
+                quote! {
+                    #mapped . map ( #function )
+                }
+                .to_tokens(tokens)
             }
             Self::Fold {
                 folded,
                 initialization,
                 function,
-            } => syn::Expr::MethodCall(syn::ExprMethodCall {
-                attrs: Vec::new(),
-                receiver: Box::new(syn::Expr::MethodCall(syn::ExprMethodCall {
-                    attrs: Vec::new(),
-                    receiver: Box::new(folded.into_logic(crates)),
-                    method: Ident::new("into_iter", Span::call_site()),
-                    turbofish: None,
-                    paren_token: Default::default(),
-                    args: syn::Punctuated::new(),
-                    dot_token: Default::default(),
-                })),
-                method: Ident::new("fold", Span::call_site()),
-                turbofish: None,
-                paren_token: Default::default(),
-                args: syn::Punctuated::from_iter(vec![
-                    initialization.into_logic(crates),
-                    function.into_logic(crates),
-                ]),
-                dot_token: Default::default(),
-            }),
-            Self::Sort { sorted, function } => {
-                let token_sorted = sorted.into_logic(crates);
-                let token_function = function.into_logic(crates);
-
-                parse_quote!({
-                    let mut x = #token_sorted.clone();
-                    let slice = x.as_mut();
-                    slice.sort_by(|a, b| {
-                        let compare = #token_function(*a, *b);
-                        if compare < 0 { std::cmp::Ordering::Less }
-                        else if compare > 0 { std::cmp::Ordering::Greater }
-                        else { std::cmp::Ordering::Equal }
-                    });
-                    x
-                })
+            } => {
+                let folded = folded.to_logic();
+                let init = initialization.to_logic();
+                let function = function.to_logic();
+                quote!(#folded . fold ( #init, #function )).to_tokens(tokens)
             }
+            Self::Sort { sorted, function } => quote! {
+                let sorted = sorted.to_logic();
+                let function = function.to_logic();
+                {
+                    let mut grust_reserved_sort = #sorted . clone();
+                    grust_reserved_sort.sort_by(|a, b| {
+                        let cmp = #function(*a, *b);
+                        if cmp < 0 {
+                            std::cmp::Ordering::Less
+                        } else if 0 < cmp {
+                            std::cmp::Ordering::Greater
+                        } else {
+                            std::cmp::Ordering::Equal
+                        }
+                    });
+                    grust_reserved_sort
+                }
+            }
+            .to_tokens(tokens),
             Self::Zip { arrays } => {
-                crates.insert("itertools = \"0.12.1\"".into());
-                let arguments = arrays
-                    .into_iter()
-                    .map(|expression| expression.into_logic(crates));
-                let macro_call = syn::ExprMacro {
-                    attrs: Vec::new(),
-                    mac: syn::Macro {
-                        path: parse_quote!(itertools::izip),
-                        bang_token: Default::default(),
-                        delimiter: syn::MacroDelimiter::Paren(Default::default()),
-                        tokens: quote::quote! { #(#arguments),* },
-                    },
-                };
-                let izip = syn::Expr::Macro(macro_call);
-
-                parse_quote!({
-                    let mut iter = #izip;
-                    std::array::from_fn(|_| iter.next().unwrap())
-                })
+                let arrays = arrays.iter().map(|a| a.to_logic());
+                quote! {
+                    std::array::from_fn(|n| ( #(#arrays[n]),* ))
+                }
+                .to_tokens(tokens)
             }
         }
     }
@@ -917,6 +634,15 @@ pub enum FieldIdentifier {
     Named(Ident),
     /// Unnamed field access.
     Unnamed(usize),
+}
+
+impl ToTokens for FieldIdentifier {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
+        match self {
+            Self::Named(ident) => ident.to_tokens(tokens),
+            Self::Unnamed(n) => n.to_tokens(tokens),
+        }
+    }
 }
 
 impl FieldIdentifier {
@@ -936,28 +662,32 @@ mod test {
     fn should_create_rust_ast_literal_from_ir2_literal() {
         let expression = Expr::lit(Constant::Integer(parse_quote!(1i64)));
         let control = parse_quote! { 1i64 };
-        assert_eq!(expression.into_syn(&mut Default::default()), control)
+        let expr: syn::Expr = parse_quote!(#expression);
+        assert_eq!(expr, control)
     }
 
     #[test]
     fn should_create_rust_ast_identifier_from_ir2_identifier() {
         let expression = Expr::test_ident("x");
         let control = parse_quote! { x };
-        assert_eq!(expression.into_syn(&mut Default::default()), control)
+        let expr: syn::Expr = parse_quote!(#expression);
+        assert_eq!(expr, control)
     }
 
     #[test]
     fn should_create_rust_ast_field_access_to_self_from_ir2_memory_access() {
         let expression = Expr::memory_access(Loc::test_id("x"));
         let control = parse_quote! { self.last_x};
-        assert_eq!(expression.into_syn(&mut Default::default()), control)
+        let expr: syn::Expr = parse_quote!(#expression);
+        assert_eq!(expr, control)
     }
 
     #[test]
     fn should_create_rust_ast_field_access_to_input_from_ir2_input_access() {
         let expression = Expr::input_access(Loc::test_id("i"));
         let control = parse_quote! { input.i};
-        assert_eq!(expression.into_syn(&mut Default::default()), control)
+        let expr: syn::Expr = parse_quote!(#expression);
+        assert_eq!(expr, control)
     }
 
     #[test]
@@ -976,7 +706,8 @@ mod test {
             ],
         );
         let control = parse_quote! { Point { x : 1i64, y : 2i64 } };
-        assert_eq!(expression.into_syn(&mut Default::default()), control)
+        let expr: syn::Expr = parse_quote!(#expression);
+        assert_eq!(expr, control)
     }
 
     #[test]
@@ -986,7 +717,8 @@ mod test {
             Expr::lit(Constant::Integer(parse_quote!(2i64))),
         ]);
         let control = parse_quote! { [1i64, 2i64] };
-        assert_eq!(expression.into_syn(&mut Default::default()), control)
+        let expr: syn::Expr = parse_quote!(#expression);
+        assert_eq!(expr, control)
     }
 
     #[test]
@@ -1003,7 +735,8 @@ mod test {
             ],
         });
         let control = parse_quote! { { let x = 1i64; x } };
-        assert_eq!(expression.into_syn(&mut Default::default()), control)
+        let expr: syn::Expr = parse_quote!(#expression);
+        assert_eq!(expr, control)
     }
 
     #[test]
@@ -1014,7 +747,8 @@ mod test {
         );
 
         let control = parse_quote! { foo (a, b) };
-        assert_eq!(expression.into_syn(&mut Default::default()), control)
+        let expr: syn::Expr = parse_quote!(#expression);
+        assert_eq!(expr, control)
     }
 
     #[test]
@@ -1022,7 +756,8 @@ mod test {
         let expression = Expr::binop(BOp::Add, Expr::test_ident("a"), Expr::test_ident("b"));
 
         let control = parse_quote! { a + b };
-        assert_eq!(expression.into_syn(&mut Default::default()), control)
+        let expr: syn::Expr = parse_quote!(#expression);
+        assert_eq!(expr, control)
     }
 
     #[test]
@@ -1041,7 +776,8 @@ mod test {
         );
 
         let control = parse_quote! { <NodeState as grust::core::Component>::step(&mut self.node_state, NodeInput { i : 1i64 }) };
-        assert_eq!(expression.into_syn(&mut Default::default()), control)
+        let expr: syn::Expr = parse_quote!(#expression);
+        assert_eq!(expr, control)
     }
 
     #[test]
@@ -1060,7 +796,8 @@ mod test {
         );
 
         let control = parse_quote! { <path::to::NodeState as grust::core::Component>::step(&mut self.node_state, path::to::NodeInput { i : 1i64 }) };
-        assert_eq!(expression.into_syn(&mut Default::default()), control)
+        let expr: syn::Expr = parse_quote!(#expression);
+        assert_eq!(expr, control)
     }
 
     #[test]
@@ -1071,7 +808,8 @@ mod test {
         );
 
         let control = parse_quote! { my_point.x };
-        assert_eq!(expression.into_syn(&mut Default::default()), control)
+        let expr: syn::Expr = parse_quote!(#expression);
+        assert_eq!(expr, control)
     }
 
     #[test]
@@ -1088,8 +826,9 @@ mod test {
             }),
         );
 
-        let control = parse_quote! { move |x: i64| -> i64 { let y = x; y } };
-        assert_eq!(expression.into_syn(&mut Default::default()), control,)
+        let control: syn::Expr = parse_quote! { move |x: i64| -> i64 { let y = x; y } };
+        let expr: syn::Expr = parse_quote!(#expression);
+        assert_eq!(expr, control)
     }
 
     #[test]
@@ -1105,7 +844,8 @@ mod test {
         );
 
         let control = parse_quote! { if test { 1i64 } else { 0i64 } };
-        assert_eq!(expression.into_syn(&mut Default::default()), control)
+        let expr: syn::Expr = parse_quote!(#expression);
+        assert_eq!(expr, control)
     }
 
     #[test]
@@ -1128,9 +868,13 @@ mod test {
             ],
         );
 
-        let control =
+        let control: syn::Expr =
             parse_quote! { match my_color { Color::Blue => 1i64, Color::Green => 0i64, } };
-        assert_eq!(expression.into_syn(&mut Default::default()), control)
+        println!("{}", expression.to_token_stream());
+        println!("----");
+        println!("{}", control.to_token_stream());
+        let expr: syn::Expr = parse_quote!(#expression);
+        assert_eq!(expr, control)
     }
 
     #[test]
@@ -1138,7 +882,8 @@ mod test {
         let expression = Expr::map(Expr::test_ident("a"), Expr::test_ident("f"));
 
         let control = parse_quote! { a.map (f) };
-        assert_eq!(expression.into_syn(&mut Default::default()), control)
+        let expr: syn::Expr = parse_quote!(#expression);
+        assert_eq!(expr, control)
     }
 
     #[test]
@@ -1149,40 +894,59 @@ mod test {
             Expr::test_ident("sum"),
         );
 
-        let control = parse_quote! { a.into_iter().fold(0i64, sum) };
-        assert_eq!(expression.into_syn(&mut Default::default()), control)
+        let control: syn::Expr = parse_quote! { a.into_iter().fold(0i64, sum) };
+        let expr: syn::Expr = parse_quote!(#expression);
+        assert_eq!(expr, control)
     }
 
     #[test]
     fn should_create_rust_ast_sort_iterator_from_ir2_sort() {
         let expression = Expr::sort(Expr::test_ident("a"), Expr::test_ident("compare"));
 
-        let control = parse_quote!({
-            let mut x = a.clone();
-            let slice = x.as_mut();
-            slice.sort_by(|a, b| {
-                let compare = compare(*a, *b);
-                if compare < 0 {
+        let control: syn::Expr = parse_quote!({
+            let mut grust_reserved_sort = a.clone();
+            grust_reserved_sort.sort_by(|a, b| {
+                let cmp = compare(*a, *b);
+                if cmp < 0 {
                     std::cmp::Ordering::Less
-                } else if compare > 0 {
+                } else if 0 < cmp {
                     std::cmp::Ordering::Greater
                 } else {
                     std::cmp::Ordering::Equal
                 }
             });
-            x
+            grust_reserved_sort
         });
-        assert_eq!(expression.into_syn(&mut Default::default()), control)
+        println!("{}", expression.to_token_stream());
+        println!("----");
+        println!("{}", control.to_token_stream());
+        let expr: syn::Expr = parse_quote!(#expression);
+        assert_eq!(expr, control);
     }
 
     #[test]
     fn should_create_rust_ast_macro_from_ir2_zip() {
         let expression = Expr::zip(vec![Expr::test_ident("a"), Expr::test_ident("b")]);
 
-        let control = parse_quote!({
-            let mut iter = itertools::izip!(a, b);
-            std::array::from_fn(|_| iter.next().unwrap())
-        });
-        assert_eq!(expression.into_syn(&mut Default::default()), control)
+        let control: syn::Expr = parse_quote!(std::array::from_fn(|n| (a[n], b[n])));
+        let expr: syn::Expr = parse_quote!(#expression);
+        println!("{}", expr.to_token_stream());
+        println!("----");
+        println!("{}", control.to_token_stream());
+        assert_eq!(expr, control);
+
+        let expression = Expr::zip(vec![
+            Expr::test_ident("a"),
+            Expr::test_ident("b"),
+            Expr::test_ident("c"),
+            Expr::test_ident("d"),
+        ]);
+
+        let control: syn::Expr = parse_quote!(std::array::from_fn(|n| (a[n], b[n], c[n], d[n])));
+        let expr: syn::Expr = parse_quote!(#expression);
+        println!("\n\n{}", expr.to_token_stream());
+        println!("----");
+        println!("{}", control.to_token_stream());
+        assert_eq!(expr, control)
     }
 }

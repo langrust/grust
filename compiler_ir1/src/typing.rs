@@ -105,7 +105,7 @@ impl Typing for contract::Term {
                 name: symbols.get_name(*enum_id).clone(),
                 id: *enum_id,
             },
-            contract::Kind::Brace { term } => {
+            contract::Kind::Paren { term } => {
                 term.typ_check(symbols, errors)?;
                 term.typing.as_ref().unwrap().clone()
             }

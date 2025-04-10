@@ -172,7 +172,7 @@ mk_new! { impl Application =>
 /// GRust clause's term.
 pub enum Term {
     Constant(Constant),
-    Brace(Box<Term>),
+    Paren(Box<Term>),
     Result(keyword::result),
     Identifier(Ident),
     Last(Ident),
@@ -188,7 +188,7 @@ impl HasLoc for Term {
     fn loc(&self) -> Loc {
         match self {
             Self::Constant(c) => c.loc(),
-            Self::Brace(t) => t.loc(),
+            Self::Paren(t) => t.loc(),
             Self::Result(r) => r.span.into(),
             Self::Identifier(i) => i.loc(),
             Self::Last(i) => i.loc(),
@@ -232,13 +232,13 @@ pub enum ClauseKind {
 /// GRust clause.
 pub struct Clause {
     pub kind: ClauseKind,
-    pub brace: syn::token::Brace,
+    pub paren: syn::token::Brace,
     pub term: Term,
 }
 mk_new! { impl Clause =>
     new {
         kind: ClauseKind,
-        brace: syn::token::Brace,
+        paren: syn::token::Brace,
         term: Term,
     }
 }

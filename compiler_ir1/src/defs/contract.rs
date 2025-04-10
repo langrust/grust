@@ -9,43 +9,43 @@ prelude! {
 #[derive(Debug, PartialEq, Clone)]
 /// A contract term kind.
 pub enum Kind {
-    /// Constant term: 3
+    /// Constant.
     Constant {
         /// The constant
         constant: Constant,
     },
-    /// Braced term: (x+y)
-    Brace {
-        /// The braced term
+    /// Parenthesized term: `(x+y)`.
+    Paren {
+        /// The parenthesized term.
         term: Box<Term>,
     },
-    /// Identifier term: x
+    /// Identifier.
     Identifier {
         /// Signal's identifier in Symbol Table.
         id: usize,
     },
-    /// Last term: last x
+    /// Last term: `last <term>`.
     Last {
         /// Signal's memory in Symbol Table.
         init_id: usize,
         /// Signal's identifier in Symbol Table.
         signal_id: usize,
     },
-    /// Enumeration term
+    /// Enumeration term.
     Enumeration {
         /// The enumeration id.
         enum_id: usize,
         /// The element id.
         element_id: usize,
     },
-    /// Unary term: !x
+    /// Unary operator application.
     Unary {
         /// The operator
         op: UOp,
         /// The term
         term: Box<Term>,
     },
-    /// Binary term: x == y
+    /// Binary operator application.
     Binary {
         /// The operator
         op: BOp,
@@ -54,25 +54,25 @@ pub enum Kind {
         /// Right term
         right: Box<Term>,
     },
-    /// Forall term: forall x, P(x)
+    /// Forall term: `forall x, P(x)`.
     ForAll { id: usize, term: Box<Term> },
-    /// Implication term: P => Q
+    /// Implication term: `P => Q`.
     Implication { left: Box<Term>, right: Box<Term> },
-    /// Present event pattern
+    /// Present event pattern.
     PresentEvent {
         /// The event identifier
         event_id: usize,
         /// The event pattern
         pattern: usize,
     },
-    /// Application term.
+    /// Term application.
     Application {
         /// The term applied.
         fun_id: usize,
         /// The inputs to the term.
         inputs: Vec<Term>,
     },
-    /// Component call term.
+    /// Component call.
     ComponentCall {
         /// Identifier to the memory location of the component.
         memory_id: Option<usize>,
@@ -85,7 +85,7 @@ pub enum Kind {
 
 mk_new! { impl Kind =>
     Constant: constant { constant: Constant }
-    Brace: brace { term: Term = term.into() }
+    Paren: paren { term: Term = term.into() }
     Identifier: ident { id: usize }
     Last: last { init_id: usize, signal_id: usize }
     Enumeration: enumeration {
@@ -147,7 +147,7 @@ impl Term {
     /// Compute dependencies of a term.
     pub fn compute_dependencies(&self, ctx: &Ctx) -> Vec<usize> {
         match &self.kind {
-            Kind::Unary { term, .. } | Kind::Brace { term } => term.compute_dependencies(ctx),
+            Kind::Unary { term, .. } | Kind::Paren { term } => term.compute_dependencies(ctx),
             Kind::Binary { left, right, .. } | Kind::Implication { left, right, .. } => {
                 let mut dependencies = right.compute_dependencies(ctx);
                 dependencies.extend(left.compute_dependencies(ctx));
@@ -222,7 +222,7 @@ impl Term {
             | Kind::Last { .. }
             | Kind::Enumeration { .. }
             | Kind::PresentEvent { .. } => (),
-            Kind::Unary { term, .. } | Kind::Brace { term } | Kind::ForAll { term, .. } => {
+            Kind::Unary { term, .. } | Kind::Paren { term } | Kind::ForAll { term, .. } => {
                 term.memorize(identifier_creator, memory, ctx)
             }
             Kind::Binary { left, right, .. } | Kind::Implication { left, right, .. } => {
@@ -261,7 +261,7 @@ impl Term {
                     *init_id = new_id
                 }
             }
-            Kind::Unary { ref mut term, .. } | Kind::Brace { ref mut term } => {
+            Kind::Unary { ref mut term, .. } | Kind::Paren { ref mut term } => {
                 term.substitution(old_id, new_id);
             }
             Kind::Binary {

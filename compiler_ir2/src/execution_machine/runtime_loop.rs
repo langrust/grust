@@ -7,6 +7,120 @@ pub struct RuntimeLoop {
     pub input_handlers: Vec<InputHandler>,
 }
 
+pub struct RuntimeLoopTokens<'a> {
+    rl: &'a RuntimeLoop,
+    out_flows: &'a [InterfaceFlow],
+}
+impl RuntimeLoop {
+    pub fn prepare_tokens<'a>(&'a self, out_flows: &'a [InterfaceFlow]) -> RuntimeLoopTokens<'a> {
+        RuntimeLoopTokens {
+            rl: self,
+            out_flows,
+        }
+    }
+}
+
+impl ToTokens for RuntimeLoopTokens<'_> {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
+        // init timers
+        let init_timers =
+            self.rl.input_handlers.iter().filter_map(|input_flow| {
+                match &input_flow.arriving_flow {
+                    ArrivingFlow::Period(time_flow_name)
+                    | ArrivingFlow::Deadline(time_flow_name)
+                    | ArrivingFlow::ServiceTimeout(time_flow_name) => {
+                        let enum_ident = time_flow_name.to_camel();
+                        let init_instant = Ident::init_instant_var();
+                        Some(quote! { runtime.send_timer(T::#enum_ident, #init_instant).await?; })
+                    }
+                    ArrivingFlow::Channel(_, _, _) | ArrivingFlow::ServiceDelay(_) => None,
+                }
+            });
+        // init outputs
+        let init_outputs = self.out_flows.iter().filter_map(
+            |InterfaceFlow {
+                 identifier, typ, ..
+             }| {
+                let enum_ident = identifier.to_camel();
+                if typ.is_event() {
+                    None
+                } else {
+                    let init_instant = Ident::init_instant_var();
+                    Some(quote! {
+                        runtime.send_output(O::#enum_ident(
+                            Default::default(), #init_instant)
+                        ).await?;
+                    })
+                }
+            },
+        );
+        // loop on the input stream
+        let async_loop = {
+            let input_arms = self.rl.input_handlers.iter().map(
+                |InputHandler {
+                     arriving_flow,
+                     services,
+                 }| match arriving_flow {
+                    ArrivingFlow::Channel(flow_name, _, _) => {
+                        let enum_ident = flow_name.to_ty();
+                        let ident = flow_name;
+                        let function_name = flow_name.to_handle_fn();
+                        let instant = Ident::instant_var();
+                        let call_services_handlers = services.iter().map(|service_name| {
+                            quote! {
+                                runtime.#service_name.#function_name(#instant, #ident).await?;
+                            }
+                        });
+                        quote! {
+                            I::#enum_ident(#ident, #instant) => { #(#call_services_handlers)* }
+                        }
+                    }
+                    ArrivingFlow::Period(time_flow_name)
+                    | ArrivingFlow::Deadline(time_flow_name)
+                    | ArrivingFlow::ServiceDelay(time_flow_name)
+                    | ArrivingFlow::ServiceTimeout(time_flow_name) => {
+                        let enum_ident = time_flow_name.to_camel();
+                        let instant = Ident::instant_var();
+                        let function_name = time_flow_name.to_handle_fn();
+                        let call_services_handlers = services.iter().map(|service_name| {
+                            quote! {
+                                runtime.#service_name.#function_name(#instant).await?;
+                            }
+                        });
+                        quote! {
+                            I::Timer(T::#enum_ident, #instant) => { #(#call_services_handlers)* }
+                        }
+                    }
+                },
+            );
+            // parse the loop
+            quote! {
+                while let Some(input) = input.next().await {
+                    match input {
+                        #(#input_arms),*
+                    }
+                }
+            }
+        };
+        let init_instant = Ident::init_instant_var();
+
+        // `run_loop` function
+        quote! {
+            pub async fn run_loop(
+                self, #init_instant: std::time::Instant, input: impl futures::Stream<Item = I>
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                futures::pin_mut!(input);
+                let mut runtime = self;
+                #(#init_timers)*
+                #(#init_outputs)*
+                #async_loop
+                Ok(())
+            }
+        }
+        .to_tokens(tokens)
+    }
+}
+
 impl RuntimeLoop {
     /// Transform [ir2] run-loop into an async function performing a loop over events.
     pub fn into_syn(self, output_flows: Vec<InterfaceFlow>) -> syn::ImplItem {

@@ -44,6 +44,14 @@ macro_rules! res_vec {
     }};
 }
 
+/// Same as [syn::Token] but generates a value with a default span.
+#[macro_export]
+macro_rules! token {
+    { $($stuff:tt)* } => {
+        $crate::syn::Token![$($stuff)*](Span::call_site())
+    };
+}
+
 /// Iterates over a collection with a special action if there is only one element.
 ///
 /// # Examples
@@ -105,7 +113,7 @@ pub mod syn {
 pub use either::{Either, IntoEither};
 pub use macro1;
 pub use macro2::{Span, TokenStream as TokenStream2};
-pub use quote::{format_ident, quote_spanned, ToTokens};
+pub use quote::{format_ident, quote, quote_spanned, ToTokens};
 pub use serde::{Deserialize, Serialize};
 pub use syn::{
     braced, bracketed, custom_keyword, parenthesized, parse_macro_input, parse_quote,
@@ -150,6 +158,7 @@ pub use crate::{
     strum,
     synced,
     todoo,
+    token,
     typ::Typ,
     w8,
 };
@@ -238,6 +247,30 @@ pub trait Lt {
 
 pub trait MaybeHasLoc {
     fn loc_opt(&self) -> Option<Loc>;
+}
+
+/// "Logic" version of a part of the AST.
+///
+/// This is only used to implement `ToTokens<Logic<T>>` for the "logic" version of the tokens of
+/// `T`.
+pub struct Logic<'a, T> {
+    /// `T` value.
+    pub val: &'a T,
+}
+
+/// Tokens for the "logic" version of a part of the AST.
+pub trait ToLogicTokens: Sized {
+    /// Turns a `T` value into its "logic" version.
+    fn to_logic(&self) -> Logic<Self> {
+        Logic { val: self }
+    }
+    /// Turns a `T` value into its "logic" version as tokens.
+    fn to_logic_tokens(&self, tokens: &mut TokenStream2);
+}
+impl<T: ToLogicTokens> ToTokens for Logic<'_, T> {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
+        self.val.to_logic_tokens(tokens);
+    }
 }
 
 /// Byte-level levenshtein distance, not sure this makes sense for unicode.

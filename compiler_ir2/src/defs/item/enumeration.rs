@@ -19,41 +19,34 @@ mk_new! { impl Enumeration =>
 }
 
 impl Enumeration {
-    /// Transform [ir2] enumeration into RustAST enumeration.
-    pub fn into_syn(self, ctx: &ir0::Ctx) -> syn::ItemEnum {
-        let attribute: syn::Attribute = if ctx.conf.greusot {
-            parse_quote!(
-                #[derive(prelude::Clone, Copy, prelude::PartialEq, DeepModel)]
-            )
+    /// Transform an [ir2] enumeration into a token stream.
+    pub fn to_token_stream(&self, ctx: &Ctx) -> TokenStream2 {
+        let mut tokens = TokenStream2::new();
+        self.to_tokens(ctx, &mut tokens);
+        tokens
+    }
+    /// Writes an [ir2] enumeration to a token stream.
+    pub fn to_tokens(&self, ctx: &Ctx, tokens: &mut TokenStream2) {
+        if ctx.conf.greusot {
+            quote!(#[derive(prelude::Clone, Copy, prelude::PartialEq, DeepModel)]).to_tokens(tokens)
         } else {
-            parse_quote!(#[derive(Clone, Copy, PartialEq, Default, Debug)])
-        };
-        syn::ItemEnum {
-            attrs: vec![attribute],
-            vis: syn::Visibility::Public(Default::default()),
-            enum_token: Default::default(),
-            ident: self.name,
-            generics: Default::default(),
-            brace_token: Default::default(),
-            variants: self
-                .elements
-                .iter()
-                .enumerate()
-                .map(|(index, element)| {
-                    let attrs: Vec<syn::Attribute> = if !ctx.conf.greusot && (index == 0) {
-                        vec![parse_quote!(#[default])]
-                    } else {
-                        vec![]
-                    };
-                    syn::Variant {
-                        attrs,
-                        ident: element.clone(),
-                        fields: syn::Fields::Unit,
-                        discriminant: Default::default(),
-                    }
-                })
-                .collect(),
+            quote!(#[derive(Clone, Copy, PartialEq, Default, Debug)]).to_tokens(tokens)
         }
+        let name = &self.name;
+        let variants = self.elements.iter().enumerate().map(|(index, element)| {
+            let attr = if !ctx.conf.greusot && (index == 0) {
+                Some(quote!(# [default]))
+            } else {
+                None
+            };
+            quote! { #attr #element }
+        });
+        quote! {
+            pub enum #name {
+                #(#variants),*
+            }
+        }
+        .to_tokens(tokens)
     }
 }
 
@@ -70,7 +63,8 @@ mod test {
                 Loc::test_id("Red"),
                 Loc::test_id("Green"),
             ],
-        );
+        )
+        .to_token_stream(&Ctx::empty());
 
         let control = parse_quote! {
         #[derive(Clone, Copy, PartialEq, Default, Debug)]
@@ -80,6 +74,7 @@ mod test {
             Red,
             Green
         }};
-        assert_eq!(enumeration.into_syn(&ir0::Ctx::empty()), control)
+        let enumeration: syn::ItemEnum = parse_quote!(#enumeration);
+        assert_eq!(enumeration, control)
     }
 }

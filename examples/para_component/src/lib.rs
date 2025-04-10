@@ -237,7 +237,7 @@ grust::grust! {
 
 grust::grust! {
     #![
-        dump = "examples/para_component/macro_outputs/component_para_2_6_20.rs",
+        // dump = "examples/para_component/macro_outputs/component_para_2_6_20.rs",
         component_para (2, 6, 20)
     ]
 

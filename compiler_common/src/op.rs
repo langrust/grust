@@ -1,7 +1,7 @@
 use strum::EnumIter;
 
 prelude! {
-    syn::{Parse, BinOp},
+    syn::Parse,
 }
 
 /// GRust binary operators.
@@ -17,10 +17,10 @@ prelude! {
 /// - [BOp::Or], logical "or" `||`
 /// - [BOp::Eq], equality test `==`
 /// - [BOp::Dif], inequality test `!=`
-/// - [BOp::Geq], "greater or equal" `>=`
-/// - [BOp::Leq], "lower or equal" `<=`
-/// - [BOp::Grt], "greater" `>`
-/// - [BOp::Low], "lower" `<`
+/// - [BOp::Ge], "greater or equal" `>=`
+/// - [BOp::Le], "lower or equal" `<=`
+/// - [BOp::Gt], "greater" `>`
+/// - [BOp::Lt], "lower" `<`
 #[derive(EnumIter, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BOp {
     /// Multiplication, `x * y`.
@@ -41,35 +41,35 @@ pub enum BOp {
     Eq,
     /// Inequality test, `x != y`.
     Dif,
-    /// Test "greater or equal", `x >= y`.
-    Geq,
-    /// Test "lower or equal", `x <= y`.
-    Leq,
-    /// Test "greater", `x > y`.
-    Grt,
-    /// Test "lower", `x < y`.
-    Low,
+    /// Test "greater than or equal to", `x >= y`.
+    Ge,
+    /// Test "lower than or equal to", `x <= y`.
+    Le,
+    /// Test "greater than", `x > y`.
+    Gt,
+    /// Test "lower than", `x < y`.
+    Lt,
 }
-impl BOp {
-    /// The `syn` version of an operator.
-    pub fn into_syn(self) -> BinOp {
+impl ToTokens for BOp {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
         match self {
-            Self::Mul => BinOp::Mul(Default::default()),
-            Self::Div => BinOp::Div(Default::default()),
-            Self::Mod => BinOp::Rem(Default::default()),
-            Self::Add => BinOp::Add(Default::default()),
-            Self::Sub => BinOp::Sub(Default::default()),
-            Self::And => BinOp::And(Default::default()),
-            Self::Or => BinOp::Or(Default::default()),
-            Self::Eq => BinOp::Eq(Default::default()),
-            Self::Dif => BinOp::Ne(Default::default()),
-            Self::Geq => BinOp::Ge(Default::default()),
-            Self::Leq => BinOp::Le(Default::default()),
-            Self::Grt => BinOp::Gt(Default::default()),
-            Self::Low => BinOp::Lt(Default::default()),
+            Self::Mul => tokens.extend(quote!(*)),
+            Self::Div => tokens.extend(quote!(/)),
+            Self::Mod => tokens.extend(quote!(%)),
+            Self::Add => tokens.extend(quote!(+)),
+            Self::Sub => tokens.extend(quote!(-)),
+            Self::And => tokens.extend(quote!(&&)),
+            Self::Or => tokens.extend(quote!(||)),
+            Self::Eq => tokens.extend(quote!(==)),
+            Self::Dif => tokens.extend(quote!(!=)),
+            Self::Ge => tokens.extend(quote!(>=)),
+            Self::Le => tokens.extend(quote!(<=)),
+            Self::Gt => tokens.extend(quote!(>)),
+            Self::Lt => tokens.extend(quote!(<)),
         }
     }
-
+}
+impl BOp {
     pub fn peek(input: ParseStream) -> bool {
         input.peek(Token![*])
             || input.peek(Token![/])
@@ -130,16 +130,16 @@ impl Parse for BOp {
             Ok(BOp::Dif)
         } else if input.peek(Token![>=]) {
             let _: Token![>=] = input.parse()?;
-            Ok(BOp::Geq)
+            Ok(BOp::Ge)
         } else if input.peek(Token![<=]) {
             let _: Token![<=] = input.parse()?;
-            Ok(BOp::Leq)
+            Ok(BOp::Le)
         } else if input.peek(Token![>]) {
             let _: Token![>] = input.parse()?;
-            Ok(BOp::Grt)
+            Ok(BOp::Gt)
         } else if input.peek(Token![<]) {
             let _: Token![<] = input.parse()?;
-            Ok(BOp::Low)
+            Ok(BOp::Lt)
         } else {
             Err(input.error("expected binary operators"))
         }
@@ -157,10 +157,10 @@ impl std::fmt::Display for BOp {
             BOp::Or => " || ".fmt(f),
             BOp::Eq => " == ".fmt(f),
             BOp::Dif => " != ".fmt(f),
-            BOp::Geq => " >= ".fmt(f),
-            BOp::Leq => " <= ".fmt(f),
-            BOp::Grt => " > ".fmt(f),
-            BOp::Low => " < ".fmt(f),
+            BOp::Ge => " >= ".fmt(f),
+            BOp::Le => " <= ".fmt(f),
+            BOp::Gt => " > ".fmt(f),
+            BOp::Lt => " < ".fmt(f),
         }
     }
 }
@@ -213,9 +213,7 @@ impl BOp {
             }
             // If self is a comparison over numbers then its type can either be `int -> int -> bool`
             // or `float -> float -> bool` then it is a [Typ::Polymorphism]
-            BOp::Geq | BOp::Leq | BOp::Grt | BOp::Low => {
-                Typ::Polymorphism(BOp::numerical_comparison)
-            }
+            BOp::Ge | BOp::Le | BOp::Gt | BOp::Lt => Typ::Polymorphism(BOp::numerical_comparison),
             // If self is an equality or inequality test then its type can be `t -> t -> bool` for
             // any t then it is a [Typ::Polymorphism]
             BOp::Eq | BOp::Dif => Typ::Polymorphism(BOp::equality),
@@ -239,17 +237,18 @@ pub enum UOp {
     /// Logical negation, `!x`.
     Not,
 }
+impl ToTokens for UOp {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
+        match self {
+            Self::Neg => tokens.extend(quote!(-)),
+            Self::Not => tokens.extend(quote!(!)),
+        }
+    }
+}
+
 impl UOp {
     pub fn peek(input: ParseStream) -> bool {
         input.peek(Token![-]) || input.peek(Token![!])
-    }
-
-    /// The `syn` version of an operator.
-    pub fn into_syn(self) -> syn::UnOp {
-        match self {
-            Self::Neg => syn::UnOp::Neg(Default::default()),
-            Self::Not => syn::UnOp::Not(Default::default()),
-        }
     }
 }
 impl Parse for UOp {
@@ -392,19 +391,19 @@ mod to_string {
     }
     #[test]
     fn should_convert_greater_equal_operator_to_string() {
-        assert_eq!(" >= ", BOp::Geq.to_string());
+        assert_eq!(" >= ", BOp::Ge.to_string());
     }
     #[test]
     fn should_convert_lower_equal_operator_to_string() {
-        assert_eq!(" <= ", BOp::Leq.to_string());
+        assert_eq!(" <= ", BOp::Le.to_string());
     }
     #[test]
     fn should_convert_greater_operator_to_string() {
-        assert_eq!(" > ", BOp::Grt.to_string());
+        assert_eq!(" > ", BOp::Gt.to_string());
     }
     #[test]
     fn should_convert_lower_operator_to_string() {
-        assert_eq!(" < ", BOp::Low.to_string());
+        assert_eq!(" < ", BOp::Lt.to_string());
     }
 
     #[test]

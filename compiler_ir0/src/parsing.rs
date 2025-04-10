@@ -2308,7 +2308,7 @@ mod parse_contract {
             let mut term = if input.peek(token::Paren) {
                 let content;
                 let _ = parenthesized!(content in input);
-                Term::Brace(Box::new(content.parse()?))
+                Term::Paren(Box::new(content.parse()?))
             } else if input.peek(keyword::result) {
                 Term::result(input.parse()?)
             } else if input.peek(keyword::last) {
@@ -2826,8 +2826,8 @@ mod parsing_tests {
                         format_ident!("p"),
                         Default::default(),
                     )),
-                    Some(Box::new(Expr::binop(Binop::new(
-                        BOp::Grt,
+                    Some(Box::new(Expr::binop(BinOp::new(
+                        BOp::Gt,
                         Loc::test_dummy(),
                         Expr::test_ident("p"),
                         Expr::cst(Constant::Integer(syn::parse_quote! {0})),
@@ -2865,8 +2865,8 @@ mod parsing_tests {
                         format_ident!("p"),
                         Default::default(),
                     )),
-                    Some(Box::new(Expr::binop(Binop::new(
-                        BOp::Grt,
+                    Some(Box::new(Expr::binop(BinOp::new(
+                        BOp::Gt,
                         Loc::test_dummy(),
                         Expr::test_ident("p"),
                         Expr::cst(Constant::Integer(syn::parse_quote! {0})),
@@ -3547,7 +3547,7 @@ mod parsing_tests {
                 Term::binary(Binary::new(
                     Loc::test_dummy(),
                     Term::test_ident("d"),
-                    BOp::Grt,
+                    BOp::Gt,
                     Term::binary(Binary::new(
                         Loc::test_dummy(),
                         Term::test_ident("x"),
@@ -3571,7 +3571,7 @@ mod parsing_tests {
                 Term::binary(Binary::new(
                     Loc::test_dummy(),
                     Term::test_ident("d"),
-                    BOp::Grt,
+                    BOp::Gt,
                     Term::binary(Binary::new(
                         Loc::test_dummy(),
                         Term::test_ident("x"),

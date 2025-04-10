@@ -88,85 +88,48 @@ mk_new! { impl Pattern =>
     )
 }
 
-impl Pattern {
-    pub fn into_syn(self) -> syn::Pat {
-        use syn::*;
+impl ToTokens for Pattern {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
         match self {
             Pattern::Literal { literal } => match literal {
-                Constant::Integer(i) => Pat::Lit(parse_quote! { #i }),
-                Constant::Float(f) => Pat::Lit(parse_quote! { #f }),
-                Constant::Boolean(b) => Pat::Lit(parse_quote! { #b }),
-                Constant::Unit(paren_token) => Pat::Tuple(PatTuple {
-                    attrs: vec![],
-                    paren_token,
-                    elems: Default::default(),
-                }),
-                Constant::Default(loc) => parse_quote_spanned! { loc.span => Default::default() },
+                Constant::Integer(i) => i.to_tokens(tokens),
+                Constant::Float(f) => f.to_tokens(tokens),
+                Constant::Boolean(b) => b.to_tokens(tokens),
+                Constant::Unit(paren_token) => {
+                    tokens.extend(quote_spanned! {paren_token.span => ()})
+                }
+                Constant::Default(loc) => {
+                    tokens.extend(quote_spanned! { loc.span => Default::default() })
+                }
             },
-            Pattern::Identifier { name } => Pat::Ident(PatIdent {
-                attrs: vec![],
-                by_ref: None,
-                mutability: None,
-                ident: name.clone(),
-                subpat: None,
-            }),
-            Pattern::Default(loc) => Pat::Wild(PatWild {
-                attrs: vec![],
-                underscore_token: token::Underscore { spans: [loc.span] },
-            }),
-            Pattern::Ok { pattern } => Pat::TupleStruct(PatTupleStruct {
-                attrs: vec![],
-                path: parse_quote! { Ok },
-                elems: vec![pattern.into_syn()].into_iter().collect(),
-                paren_token: Default::default(),
-                qself: None,
-            }),
-            Pattern::Err => parse_quote! { Err(()) },
-            Pattern::Some { pattern } => Pat::TupleStruct(PatTupleStruct {
-                attrs: vec![],
-                path: parse_quote! { Some },
-                elems: vec![pattern.into_syn()].into_iter().collect(),
-                paren_token: Default::default(),
-                qself: None,
-            }),
-            Pattern::None => parse_quote! { None },
-            Pattern::Typed { pattern, .. } => pattern.into_syn(),
-            Pattern::Structure { name, fields } => Pat::Struct(PatStruct {
-                attrs: vec![],
-                path: format_ident!("{name}").into(),
-                brace_token: Default::default(),
-                fields: fields
+            Pattern::Identifier { name } => name.to_tokens(tokens),
+            Pattern::Default(loc) => tokens.extend(quote_spanned! { loc.span => _ }),
+            Pattern::Ok { pattern } => tokens.extend(quote! { Ok(#pattern) }),
+            Pattern::Err => tokens.extend(quote! { Err(()) }),
+            Pattern::Some { pattern } => tokens.extend(quote! { Some(#pattern) }),
+            Pattern::None => tokens.extend(quote! { None }),
+            Pattern::Typed { pattern, .. } => pattern.to_tokens(tokens),
+            Pattern::Structure { name, fields } => {
+                let fields = fields
                     .into_iter()
-                    .map(|(name, pattern)| FieldPat {
-                        attrs: vec![],
-                        member: Member::Named(name.clone()),
-                        colon_token: Some(Default::default()),
-                        pat: Box::new(pattern.into_syn()),
-                    })
-                    .collect(),
-                qself: None,
-                rest: None,
-            }),
+                    .map(|(name, pattern)| quote!(#name: #pattern));
+                tokens.extend(quote! {
+                    #name { #(#fields),* }
+                })
+            }
             Pattern::Enumeration {
                 enum_name,
                 elem_name,
                 element,
             } => {
-                let ty = enum_name.clone();
-                let cons = elem_name.clone();
-                if let Some(pattern) = element {
-                    let inner = pattern.into_syn();
-                    parse_quote! { #ty::#cons(#inner) }
-                } else {
-                    parse_quote! { #ty::#cons }
-                }
+                let element = element.as_ref().map(|e| quote!((#e)));
+                tokens.extend(quote! {
+                    #enum_name :: #elem_name #element
+                })
             }
-            Pattern::Tuple { elements } => {
-                let elements = elements
-                    .into_iter()
-                    .map(|element| -> Pat { element.into_syn() });
-                parse_quote! { (#(#elements),*) }
-            }
+            Pattern::Tuple { elements } => tokens.extend(quote! {
+                ( #(#elements),* )
+            }),
         }
     }
 }
@@ -179,14 +142,16 @@ mod test {
     fn should_create_a_rust_ast_default_pattern_from_a_ir2_default_pattern() {
         let pattern = Pattern::Default(Loc::test_dummy());
         let control = parse_quote! { _ };
-        assert_eq!(pattern.into_syn(), control)
+        let pat: syn::Pat = parse_quote! { #pattern };
+        assert_eq!(pat, control)
     }
 
     #[test]
     fn should_create_a_rust_ast_default_pattern_from_a_ir2_none_pattern() {
         let pattern = Pattern::None;
         let control = parse_quote! { None };
-        assert_eq!(pattern.into_syn(), control)
+        let pat: syn::Pat = parse_quote! { #pattern };
+        assert_eq!(pat, control)
     }
 
     #[test]
@@ -196,7 +161,8 @@ mod test {
         };
 
         let control = parse_quote! { Some(_) };
-        assert_eq!(pattern.into_syn(), control)
+        let pat: syn::Pat = parse_quote! { #pattern };
+        assert_eq!(pat, control)
     }
 
     #[test]
@@ -206,7 +172,8 @@ mod test {
         };
 
         let control = parse_quote! { 1i64 };
-        assert_eq!(pattern.into_syn(), control)
+        let pat: syn::Pat = parse_quote! { #pattern };
+        assert_eq!(pat, control)
     }
 
     #[test]
@@ -214,7 +181,8 @@ mod test {
         let pattern = Pattern::test_ident("x");
 
         let control = parse_quote! { x };
-        assert_eq!(pattern.into_syn(), control)
+        let pat: syn::Pat = parse_quote! { #pattern };
+        assert_eq!(pat, control)
     }
 
     #[test]
@@ -228,6 +196,7 @@ mod test {
         };
 
         let control = parse_quote! { Point { x: _, y : y } };
-        assert_eq!(pattern.into_syn(), control)
+        let pat: syn::Pat = parse_quote! { #pattern };
+        assert_eq!(pat, control)
     }
 }

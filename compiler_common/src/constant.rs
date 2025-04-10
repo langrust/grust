@@ -35,6 +35,46 @@ mk_new! { impl Constant =>
     Default: default(loc: impl Into<Loc> = loc.into())
 }
 
+impl ToTokens for Constant {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
+        match self {
+            Constant::Integer(i) => {
+                let i = LitInt::new(&(i.base10_digits().to_owned() + "i64"), i.span());
+                tokens.extend(quote!(#i))
+            }
+            Constant::Float(f) => {
+                let f = if f.suffix() == "" {
+                    let mut s = f.to_string();
+                    // careful on trailing `.`
+                    if s.ends_with(".") {
+                        s.push('0');
+                    }
+                    s.push_str("f64");
+                    syn::LitFloat::new(&s, f.span())
+                } else {
+                    f.clone()
+                };
+
+                tokens.extend(quote!(#f))
+            }
+            Constant::Boolean(b) => b.to_tokens(tokens),
+            Constant::Unit(paren_token) => tokens.extend(quote_spanned!(paren_token.span => ())),
+            Constant::Default(loc) => tokens.extend(quote_spanned!(loc.span => Default::default())),
+        }
+    }
+}
+impl ToLogicTokens for Constant {
+    fn to_logic_tokens(&self, tokens: &mut TokenStream2) {
+        match self {
+            Constant::Integer(i) => i.to_tokens(tokens),
+            Constant::Float(f) => f.to_tokens(tokens),
+            Constant::Boolean(b) => b.to_tokens(tokens),
+            Constant::Unit(paren_token) => tokens.extend(quote_spanned!(paren_token.span => ())),
+            Constant::Default(loc) => tokens.extend(quote_spanned!(loc.span => Default::default())),
+        }
+    }
+}
+
 impl Constant {
     pub fn loc(&self) -> Loc {
         match self {

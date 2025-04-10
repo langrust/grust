@@ -247,7 +247,7 @@ mod term {
         fn into_ir2(self, ctx: &ir0::Ctx) -> Self::Ir2 {
             match self.kind {
                 Kind::Constant { constant } => contract::Term::literal(constant),
-                Kind::Brace { term } => contract::Term::brace(term.into_ir2(ctx)),
+                Kind::Paren { term } => contract::Term::paren(term.into_ir2(ctx)),
                 Kind::Identifier { id } => {
                     let name = ctx.get_name(id);
                     let views = ctx.get_typ(id).needs_view();

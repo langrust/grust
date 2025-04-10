@@ -43,6 +43,34 @@ pub type StateElmInfo = StateElm<Typ>;
 
 pub type StateElmInit = StateElm<Expr>;
 
+impl ToTokens for StateElmInit {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
+        match self {
+            StateElmInit::Buffer { ident, data } => quote!(#ident : #data).to_tokens(tokens),
+            StateElmInit::CalledNode {
+                memory_ident,
+                node_name,
+                path_opt,
+            } => {
+                memory_ident.to_tokens(tokens);
+                token![:].to_tokens(tokens);
+                token![<].to_tokens(tokens);
+                if let Some(path) = path_opt.as_ref() {
+                    let seg_len = path.segments.len();
+                    if 0 < seg_len {
+                        for i in 0..seg_len - 1 {
+                            path.segments[i].to_tokens(tokens);
+                            token![::].to_tokens(tokens)
+                        }
+                    }
+                }
+                let called_state_ty = node_name.to_state_ty();
+                quote!(#called_state_ty as grust::core::Component>::init()).to_tokens(tokens)
+            }
+        }
+    }
+}
+
 /// An input element structure.
 #[derive(Debug, PartialEq)]
 pub struct InputElm {
@@ -75,21 +103,19 @@ mk_new! { impl Input =>
     }
 }
 
-impl Input {
-    pub fn into_syn(self) -> syn::ItemStruct {
-        let mut fields: Vec<syn::Field> = Vec::new();
-        for InputElm { identifier, typ } in self.elements {
-            let typ = typ.into_syn();
-            let identifier = format_ident!("{identifier}");
-            fields.push(parse_quote! { pub #identifier : #typ });
-        }
-
+impl ToTokens for Input {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
+        let fields = self
+            .elements
+            .iter()
+            .map(|InputElm { identifier, typ }| quote!(pub #identifier : #typ));
         let name = self.node_name.to_input_ty();
-        parse_quote! {
+        quote!(
             pub struct #name {
                 #(#fields,)*
             }
-        }
+        )
+        .to_tokens(tokens)
     }
 }
 
@@ -112,75 +138,19 @@ mk_new! { impl Init =>
     }
 }
 
-impl Init {
-    pub fn into_syn(self, crates: &mut BTreeSet<String>) -> syn::ImplItemFn {
+impl ToTokens for Init {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
         let state_ty = self.node_name.to_state_ty();
-        let signature = syn::Signature {
-            constness: None,
-            asyncness: None,
-            unsafety: None,
-            abi: None,
-            fn_token: Default::default(),
-            ident: Ident::new("init", self.node_name.span()),
-            generics: Default::default(),
-            paren_token: Default::default(),
-            inputs: Default::default(),
-            variadic: None,
-            output: syn::ReturnType::Type(Default::default(), parse_quote! { #state_ty }),
-        };
-
-        let fields = self
-            .state_init
-            .into_iter()
-            .map(|element| -> syn::FieldValue {
-                match element {
-                    StateElmInit::Buffer { ident, data } => {
-                        let id = format_ident!("{}", ident);
-                        let expr: syn::Expr = data.into_syn(crates);
-                        parse_quote! { #id : #expr }
-                    }
-                    StateElmInit::CalledNode {
-                        memory_ident,
-                        node_name,
-                        path_opt,
-                    } => {
-                        let id = memory_ident;
-                        let called_state_ty = node_name.to_state_ty();
-
-                        if let Some(mut path) = path_opt {
-                            path.segments.pop();
-                            path.segments.push(called_state_ty.into());
-                            parse_quote! { #id : <#path as grust::core::Component>::init() }
-                        } else {
-                            parse_quote! { #id : <#called_state_ty as grust::core::Component>::init() }
-                        }
-                    }
+        let fields = self.state_init.iter();
+        let id = quote_spanned!(self.node_name.span() => init);
+        quote!(
+            fn #id() -> #state_ty {
+                #state_ty {
+                    #(#fields),*
                 }
-            })
-            .collect();
-
-        let body = syn::Block {
-            brace_token: Default::default(),
-            stmts: vec![syn::Stmt::Expr(
-                syn::Expr::Struct(syn::ExprStruct {
-                    attrs: vec![],
-                    path: parse_quote! { #state_ty },
-                    brace_token: Default::default(),
-                    dot2_token: None,
-                    rest: None,
-                    fields,
-                    qself: None, // Add the qself field here
-                }),
-                None,
-            )],
-        };
-        syn::ImplItemFn {
-            attrs: vec![],
-            vis: syn::Visibility::Inherited,
-            defaultness: None,
-            sig: signature,
-            block: body,
-        }
+            }
+        )
+        .to_tokens(tokens)
     }
 }
 
@@ -215,86 +185,56 @@ mk_new! { impl Step =>
     }
 }
 
+pub struct StepTokens<'a> {
+    step: &'a Step,
+    with_contracts: bool,
+}
 impl Step {
-    /// Transform [ir2] step into RustAST implementation method.
-    pub fn into_syn(self, ctx: &ir0::Ctx, crates: &mut BTreeSet<String>) -> syn::ImplItemFn {
-        let attributes = if ctx.conf.greusot {
-            self.contract.into_syn(false)
-        } else {
-            vec![]
-        };
+    pub fn prepare_tokens(&self, with_contracts: bool) -> StepTokens {
+        StepTokens {
+            step: self,
+            with_contracts,
+        }
+    }
+}
 
-        let input_ty = self.node_name.to_input_ty();
-        let ty = parse_quote! { #input_ty };
+impl ToTokens for StepTokens<'_> {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
+        if self.with_contracts {
+            self.step.contract.prepare_tokens(false).to_tokens(tokens);
+        }
 
-        let inputs = vec![
-            parse_quote!(&mut self),
-            syn::FnArg::Typed(syn::PatType {
-                attrs: vec![],
-                pat: Box::new(syn::Pat::Ident(syn::PatIdent {
-                    attrs: vec![],
-                    by_ref: None,
-                    mutability: None,
-                    ident: Ident::new("input", self.node_name.span()),
-                    subpat: None,
-                })),
-                colon_token: Default::default(),
-                ty,
-            }),
-        ]
-        .into_iter()
-        .collect();
-
-        let signature = syn::Signature {
-            constness: None,
-            asyncness: None,
-            unsafety: None,
-            abi: None,
-            fn_token: Default::default(),
-            ident: Ident::new("step", self.node_name.span()),
-            generics: Default::default(),
-            paren_token: Default::default(),
-            inputs,
-            variadic: None,
-            output: syn::ReturnType::Type(
-                Default::default(),
-                Box::new(self.output_type.into_syn()),
-            ),
-        };
+        let input_ty = self.step.node_name.to_input_ty();
+        let output_ty = &self.step.output_type;
+        let id = quote_spanned!(self.step.node_name.span() => step);
 
         let statements = {
-            let mut vec = Vec::with_capacity(self.state_elements_step.len() + 1);
+            let mut tokens = TokenStream2::new();
 
-            self.body.extend_syn(&mut vec, crates);
+            self.step.body.to_tokens(&mut tokens);
             for StateElmStep {
                 identifier,
                 expression,
-            } in self.state_elements_step
+            } in self.step.state_elements_step.iter()
             {
-                let id = format_ident!("{}", identifier);
-                let expr = expression.into_syn(crates);
-                vec.push(parse_quote! { self.#id = #expr; })
+                quote! { self.#identifier = #expression; }.to_tokens(&mut tokens)
             }
             // add logs
-            vec.extend(self.logs.into_iter().map(|l| l.into_syn(crates)));
+            for l in self.step.logs.iter() {
+                l.to_tokens(&mut tokens)
+            }
             // add output expression
-            vec.push(syn::Stmt::Expr(self.output.into_syn(crates), None));
+            self.step.output.to_tokens(&mut tokens);
 
-            vec
+            tokens
         };
 
-        let body = syn::Block {
-            stmts: statements,
-            brace_token: Default::default(),
-        };
-
-        syn::ImplItemFn {
-            attrs: attributes,
-            vis: syn::Visibility::Inherited,
-            defaultness: None,
-            sig: signature,
-            block: body,
+        quote! {
+            fn #id(&mut self, input: #input_ty) -> #output_ty {
+                #statements
+            }
         }
+        .to_tokens(tokens)
     }
 }
 
@@ -334,50 +274,50 @@ mk_new! { impl State => new {
     step : Step,
 } }
 
+pub struct StateTokens<'a> {
+    state: &'a State,
+    with_contracts: bool,
+}
 impl State {
-    /// Transform [ir2] state into RustAST structure and implementation.
-    pub fn into_syn(
-        self,
-        ctx: &ir0::Ctx,
-        crates: &mut BTreeSet<String>,
-    ) -> (syn::ItemStruct, syn::ItemImpl) {
-        let fields: Vec<syn::Field> = self
-            .elements
-            .into_iter()
-            .map(|element| match element {
-                StateElm::Buffer { ident, data: typ } => {
-                    let ident = format_ident!("{ident}");
-                    let ty = typ.into_syn();
-                    parse_quote! { #ident : #ty }
-                }
-                StateElm::CalledNode {
-                    memory_ident,
-                    node_name,
-                    path_opt,
-                } => {
-                    let name = node_name.to_state_ty();
+    pub fn prepare_tokens(&self, with_contracts: bool) -> StateTokens {
+        StateTokens {
+            state: self,
+            with_contracts,
+        }
+    }
+}
 
-                    if let Some(mut path) = path_opt {
-                        path.segments.pop();
-                        path.segments.push(name.into());
-                        parse_quote! { #memory_ident : #path}
-                    } else {
-                        parse_quote! { #memory_ident : #name }
-                    }
-                }
-            })
-            .collect();
+impl StateTokens<'_> {
+    fn to_struct_and_impl_tokens(&self) -> (TokenStream2, TokenStream2) {
+        let fields = self.state.elements.iter().map(|element| match element {
+            StateElm::Buffer { ident, data: typ } => quote!(#ident : #typ),
+            StateElm::CalledNode {
+                memory_ident,
+                node_name,
+                path_opt,
+            } => {
+                let name = node_name.to_state_ty();
 
-        let input_ty = self.node_name.to_input_ty();
-        let output_ty = self.step.output_type.into_syn();
-        let state_ty = self.node_name.to_state_ty();
-        let structure = parse_quote!(
+                if let Some(mut path) = path_opt.clone() {
+                    path.segments.pop();
+                    path.segments.push(name.into());
+                    quote!(#memory_ident : #path)
+                } else {
+                    quote!(#memory_ident : #name)
+                }
+            }
+        });
+
+        let input_ty = self.state.node_name.to_input_ty();
+        let output_ty = &self.state.step.output_type;
+        let state_ty = self.state.node_name.to_state_ty();
+        let structure = quote!(
             pub struct #state_ty { #(#fields),* }
         );
 
-        let init = self.init.into_syn(crates);
-        let step = self.step.into_syn(ctx, crates);
-        let implementation = parse_quote!(
+        let init = &self.state.init;
+        let step = self.state.step.prepare_tokens(self.with_contracts);
+        let implementation = quote!(
             impl grust::core::Component for #state_ty {
                 type Input = #input_ty;
                 type Output = #output_ty;
@@ -407,19 +347,32 @@ mk_new! { impl StateMachine => new {
     state : State,
 } }
 
+pub struct StateMachineTokens<'a> {
+    sm: &'a StateMachine,
+    with_contracts: bool,
+}
 impl StateMachine {
+    pub fn prepare_tokens(&self, with_contracts: bool) -> StateMachineTokens {
+        StateMachineTokens {
+            sm: self,
+            with_contracts,
+        }
+    }
+}
+
+impl ToTokens for StateMachineTokens<'_> {
     /// Transform [ir2] state_machine into items.
-    pub fn into_syn(self, ctx: &ir0::Ctx, crates: &mut BTreeSet<String>) -> Vec<syn::Item> {
-        let mut items = vec![];
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
+        let input_structure = &self.sm.input;
+        input_structure.to_tokens(tokens);
 
-        let input_structure = self.input.into_syn();
-        items.push(syn::Item::Struct(input_structure));
-
-        let (state_structure, state_implementation) = self.state.into_syn(ctx, crates);
-        items.push(syn::Item::Struct(state_structure));
-        items.push(syn::Item::Impl(state_implementation));
-
-        items
+        let (state_structure, state_implementation) = self
+            .sm
+            .state
+            .prepare_tokens(self.with_contracts)
+            .to_struct_and_impl_tokens();
+        state_structure.to_tokens(tokens);
+        state_implementation.to_tokens(tokens);
     }
 }
 
@@ -453,7 +406,8 @@ mod test {
                 }
             }
         };
-        assert_eq!(init.into_syn(&mut Default::default()), control)
+        let f: syn::ItemFn = parse_quote!(#init);
+        assert_eq!(f, control)
     }
 
     #[test]
@@ -482,12 +436,13 @@ mod test {
                 }
             }
         };
-        assert_eq!(init.into_syn(&mut Default::default()), control)
+        let f: syn::ItemFn = parse_quote!(#init);
+        assert_eq!(f, control)
     }
 
     #[test]
     fn should_create_rust_ast_associated_method_from_ir2_node_step() {
-        let init = Step {
+        let step = Step {
             contract: Default::default(),
             node_name: Loc::test_id("Node"),
             output_type: Typ::int(),
@@ -537,15 +492,14 @@ mod test {
                 o + y
             }
         };
-        assert_eq!(
-            init.into_syn(&ir0::Ctx::empty(), &mut Default::default()),
-            control
-        )
+        let step = step.prepare_tokens(false);
+        let f: syn::ItemFn = parse_quote!(#step);
+        assert_eq!(f, control)
     }
 
     #[test]
     fn should_create_rust_ast_associated_method_from_ir2_ext_node_step() {
-        let init = Step {
+        let step = Step {
             contract: Default::default(),
             node_name: Loc::test_id("Node"),
             output_type: Typ::int(),
@@ -588,10 +542,9 @@ mod test {
                 o + y
             }
         };
-        assert_eq!(
-            init.into_syn(&ir0::Ctx::empty(), &mut Default::default()),
-            control
-        )
+        let step = step.prepare_tokens(false);
+        let f: syn::ItemFn = parse_quote!(#step);
+        assert_eq!(f, control)
     }
 
     #[test]
@@ -608,7 +561,7 @@ mod test {
                 pub i: i64,
             }
         );
-
-        assert_eq!(input.into_syn(), control)
+        let inp: syn::ItemStruct = parse_quote!(#input);
+        assert_eq!(inp, control)
     }
 }

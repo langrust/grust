@@ -12,38 +12,13 @@ impl grust::core::Component for TestMixedAuxState {
     }
     fn step(&mut self, input: TestMixedAuxInput) -> i64 {
         let ((i3, i1, i2), ()) = {
-            let (i3, i1, i2) = (
-                {
-                    {
-                        7i64 * input.i
-                    }
-                },
-                {
-                    {
-                        (input.i - 54i64) * 2i64
-                    }
-                },
-                {
-                    {
-                        (input.i + 54i64) * 2i64
-                    }
-                },
-            );
+            let (i3, i1, i2) = ({ 7i64 * input.i }, { (input.i - 54i64) * 2i64 }, {
+                (input.i + 54i64) * 2i64
+            });
             ((i3, i1, i2), ())
         };
         let ((i12, i23), ()) = {
-            let (i12, i23) = (
-                {
-                    {
-                        i1 + i2
-                    }
-                },
-                {
-                    {
-                        i2 + i3
-                    }
-                },
-            );
+            let (i12, i23) = ({ i1 + i2 }, { i2 + i3 });
             ((i12, i23), ())
         };
         let i123 = (i12 + (2i64 * i3)) + i23;
@@ -93,18 +68,7 @@ impl grust::core::Component for TestMixedState {
                     TestMixedAuxInput { i: input.i },
                 )
             });
-            let (i1_1, i1_2) = (
-                {
-                    {
-                        (input.i - 54i64) * 2i64
-                    }
-                },
-                {
-                    {
-                        (input.i + 54i64) * 2i64
-                    }
-                },
-            );
+            let (i1_1, i1_2) = ({ (input.i - 54i64) * 2i64 }, { (input.i + 54i64) * 2i64 });
             let i1_3 = {
                 reserved_grust_thread_kid_0
                     .join()
