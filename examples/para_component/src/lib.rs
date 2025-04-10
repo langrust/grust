@@ -236,10 +236,7 @@ grust::grust! {
 }
 
 grust::grust! {
-    #![
-        // dump = "examples/para_component/macro_outputs/component_para_2_6_20.rs",
-        component_para (2, 6, 20)
-    ]
+    #![component_para (2, 6, 20)]
 
     component test_custom_aux(i: int) -> (next_o: int) {
         let i1: int = (i - 54) * 2;
