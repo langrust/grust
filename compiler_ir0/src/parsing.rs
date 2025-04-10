@@ -108,15 +108,15 @@ mod interface {
             let paren_token: token::Paren = parenthesized!(content in input);
             let expr: FlowExpression = content.parse()?;
             let comma_token: Token![,] = content.parse()?;
-            let period_ms: LitInt = content.parse()?;
+            let sample = if content.peek(LitInt) {
+                let period_ms: LitInt = content.parse()?;
+                Sample::new_lit(sample_token, paren_token, expr, comma_token, period_ms)
+            } else {
+                let period_ms: Ident = content.parse()?;
+                Sample::new_id(sample_token, paren_token, expr, comma_token, period_ms)
+            };
             if content.is_empty() {
-                Ok(Sample::new(
-                    sample_token,
-                    paren_token,
-                    expr,
-                    comma_token,
-                    period_ms,
-                ))
+                Ok(sample)
             } else {
                 Err(content.error("expected two input expressions"))
             }
@@ -135,15 +135,15 @@ mod interface {
             let paren_token: token::Paren = parenthesized!(content in input);
             let expr: FlowExpression = content.parse()?;
             let comma_token: Token![,] = content.parse()?;
-            let period_ms: LitInt = content.parse()?;
+            let scan = if content.peek(LitInt) {
+                let period_ms: LitInt = content.parse()?;
+                Scan::new_lit(scan_token, paren_token, expr, comma_token, period_ms)
+            } else {
+                let period_ms: Ident = content.parse()?;
+                Scan::new_id(scan_token, paren_token, expr, comma_token, period_ms)
+            };
             if content.is_empty() {
-                Ok(Scan::new(
-                    scan_token,
-                    paren_token,
-                    expr,
-                    comma_token,
-                    period_ms,
-                ))
+                Ok(scan)
             } else {
                 Err(content.error("expected two input expressions"))
             }
@@ -200,15 +200,15 @@ mod interface {
             let paren_token: token::Paren = parenthesized!(content in input);
             let expr: FlowExpression = content.parse()?;
             let comma_token: Token![,] = content.parse()?;
-            let deadline: LitInt = content.parse()?;
+            let timeout = if content.peek(LitInt) {
+                let deadline: LitInt = content.parse()?;
+                Timeout::new_lit(timeout_token, paren_token, expr, comma_token, deadline)
+            } else {
+                let deadline: Ident = content.parse()?;
+                Timeout::new_id(timeout_token, paren_token, expr, comma_token, deadline)
+            };
             if content.is_empty() {
-                Ok(Timeout::new(
-                    timeout_token,
-                    paren_token,
-                    expr,
-                    comma_token,
-                    deadline,
-                ))
+                Ok(timeout)
             } else {
                 Err(content.error("expected two input expressions"))
             }
@@ -615,9 +615,17 @@ mod interface {
             let at_token: token::At = input.parse()?;
             let content;
             let bracket_token: token::Bracket = syn::bracketed!(content in input);
-            let min: LitInt = content.parse()?;
+            let min: Either<LitInt, Ident> = if content.peek(LitInt) {
+                Either::Left(content.parse()?)
+            } else {
+                Either::Right(content.parse()?)
+            };
             let comma_token: token::Comma = content.parse()?;
-            let max: LitInt = content.parse()?;
+            let max: Either<LitInt, Ident> = if content.peek(LitInt) {
+                Either::Left(content.parse()?)
+            } else {
+                Either::Right(content.parse()?)
+            };
             if content.is_empty() {
                 Ok(TimeRange {
                     at_token,

@@ -1305,6 +1305,21 @@ impl Table {
         }
     }
 
+    /// Gets a constant value.
+    pub fn get_const(&self, ident: &Ident, errors: &mut Vec<Error>) -> TRes<&Constant> {
+        let id = self.get_ident(ident, false, false, errors)?;
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::Identifier {
+                constant: Some(constant),
+                ..
+            } => Ok(constant),
+            _ => Err(error!(@ident.loc() => ErrorKind::expected_constant())),
+        }
+        .dewrap(errors)
+    }
     /// Tries to get constant value.
     pub fn try_get_const(&self, id: usize) -> Option<&Constant> {
         let symbol = self

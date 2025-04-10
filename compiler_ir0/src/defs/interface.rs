@@ -10,15 +10,22 @@ pub struct Sample {
     pub expr: Box<FlowExpression>,
     pub comma_token: Token![,],
     /// Sampling period in milliseconds.
-    pub period_ms: LitInt,
+    pub period_ms: Either<LitInt, Ident>,
 }
 mk_new! { impl Sample =>
-    new {
+    new_lit {
         sample_token: keyword::sample,
         paren_token: token::Paren,
         expr: FlowExpression = expr.into(),
         comma_token: Token![,],
-        period_ms: LitInt,
+        period_ms: LitInt = Either::Left(period_ms),
+    }
+    new_id {
+        sample_token: keyword::sample,
+        paren_token: token::Paren,
+        expr: FlowExpression = expr.into(),
+        comma_token: Token![,],
+        period_ms: Ident = Either::Right(period_ms),
     }
 }
 
@@ -30,15 +37,22 @@ pub struct Scan {
     pub expr: Box<FlowExpression>,
     pub comma_token: Token![,],
     /// Scanning period in milliseconds.
-    pub period_ms: LitInt,
+    pub period_ms: Either<LitInt, Ident>,
 }
 mk_new! { impl Scan =>
-    new {
+    new_lit {
         scan_token: keyword::scan,
         paren_token: token::Paren,
         expr: FlowExpression = expr.into(),
         comma_token: Token![,],
-        period_ms: LitInt,
+        period_ms: LitInt = Either::Left(period_ms),
+    }
+    new_id {
+        scan_token: keyword::scan,
+        paren_token: token::Paren,
+        expr: FlowExpression = expr.into(),
+        comma_token: Token![,],
+        period_ms: Ident = Either::Right(period_ms),
     }
 }
 
@@ -50,15 +64,22 @@ pub struct Timeout {
     pub expr: Box<FlowExpression>,
     pub comma_token: Token![,],
     /// Deadline in milliseconds.
-    pub deadline: LitInt,
+    pub deadline: Either<LitInt, Ident>,
 }
 mk_new! { impl Timeout =>
-    new {
+    new_lit {
         timeout_token: keyword::timeout,
         paren_token: token::Paren,
         expr: FlowExpression = expr.into(),
         comma_token: Token![,],
-        deadline: LitInt,
+        deadline: LitInt = Either::Left(deadline),
+    }
+    new_id {
+        timeout_token: keyword::timeout,
+        paren_token: token::Paren,
+        expr: FlowExpression = expr.into(),
+        comma_token: Token![,],
+        deadline: Ident = Either::Right(deadline),
     }
 }
 
@@ -443,9 +464,9 @@ impl HasLoc for FlowStatement {
 pub struct TimeRange {
     pub at_token: Token![@],
     pub bracket_token: token::Bracket,
-    pub min: LitInt,
+    pub min: Either<LitInt, Ident>,
     pub comma_token: Token![,],
-    pub max: LitInt,
+    pub max: Either<LitInt, Ident>,
 }
 
 /// GRust service AST.
