@@ -737,8 +737,7 @@ mod stmt_pattern {
             match self {
                 Pattern::Identifier(ident) => {
                     if is_declaration {
-                        panic!("error in `Pattern`'s `store` for identifier `{}`", ident);
-                        // Err(TerminationError)
+                        Err(error!(@ident.loc() => ErrorKind::expected_ty(ident.to_string())))
                     } else {
                         let id = symbol_table.get_identifier_id(ident, false, errors)?;
                         // outputs should be already typed
@@ -751,29 +750,21 @@ mod stmt_pattern {
                         )?;
                         Ok(vec![(ident.clone(), id)])
                     }
+                    .dewrap(errors)
                 }
-                Pattern::Typed(Typed { ident, typ, .. }) => {
-                    if is_declaration {
-                        let typ = typ.clone().into_ir1(&mut ir1::ctx::WithLoc::new(
-                            loc,
-                            symbol_table,
-                            errors,
-                        ))?;
-                        let id = symbol_table.insert_identifier(
-                            ident.clone(),
-                            Some(typ),
-                            true,
-                            errors,
-                        )?;
-                        Ok(vec![(ident.clone(), id)])
-                    } else {
-                        panic!(
-                            "error in `Pattern`'s store for identifier `{}` with type `{}`",
-                            ident, typ,
-                        );
-                        // Err(TerminationError)
-                    }
+                Pattern::Typed(Typed { ident, typ, .. }) => if is_declaration {
+                    let typ = typ.clone().into_ir1(&mut ir1::ctx::WithLoc::new(
+                        loc,
+                        symbol_table,
+                        errors,
+                    ))?;
+                    let id =
+                        symbol_table.insert_identifier(ident.clone(), Some(typ), true, errors)?;
+                    Ok(vec![(ident.clone(), id)])
+                } else {
+                    Err(error!(@ident.loc() => ErrorKind::re_ty(ident.to_string())))
                 }
+                .dewrap(errors),
                 Pattern::Tuple(Tuple { elements, .. }) => Ok(elements
                     .iter()
                     .map(|pattern| pattern.store(is_declaration, symbol_table, errors))
