@@ -12,25 +12,11 @@ impl grust::core::Component for TestThreadsAuxState {
     }
     fn step(&mut self, input: TestThreadsAuxInput) -> i64 {
         let ((i3, i2, (i1, i12)), ()) = {
-            let (i3, i2, (i1, i12)) = (
-                {
-                    {
-                        7i64 * input.i
-                    }
-                },
-                {
-                    {
-                        (input.i + 54i64) * 2i64
-                    }
-                },
-                {
-                    {
-                        let i1 = (input.i - 54i64) * 2i64;
-                        let i12 = i1 + input.i;
-                        (i1, i12)
-                    }
-                },
-            );
+            let (i3, i2, (i1, i12)) = ({ 7i64 * input.i }, { (input.i + 54i64) * 2i64 }, {
+                let i1 = (input.i - 54i64) * 2i64;
+                let i12 = i1 + input.i;
+                (i1, i12)
+            });
             ((i3, i2, (i1, i12)), ())
         };
         let i23 = i2 + i3;
@@ -81,18 +67,7 @@ impl grust::core::Component for TestThreadsState {
                     TestThreadsAuxInput { i: input.i },
                 )
             });
-            let (i1_1, i1_2) = (
-                {
-                    {
-                        (input.i - 54i64) * 2i64
-                    }
-                },
-                {
-                    {
-                        (input.i + 54i64) * 2i64
-                    }
-                },
-            );
+            let (i1_1, i1_2) = ({ (input.i - 54i64) * 2i64 }, { (input.i + 54i64) * 2i64 });
             let i1_3 = {
                 reserved_grust_thread_kid_0
                     .join()

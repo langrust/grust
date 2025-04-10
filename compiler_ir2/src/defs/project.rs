@@ -8,86 +8,65 @@ pub struct Project {
     pub items: Vec<Item>,
 }
 
+pub struct ProjectTokens<'a> {
+    project: &'a Project,
+    ctx: &'a Ctx,
+}
 impl Project {
-    /// Transform [ir2] item into RustAST item.
-    pub fn into_syn(self, ctx: &ir0::Ctx, mut stats: StatsMut) -> Vec<syn::Item> {
-        let mut crates = BTreeSet::new();
-        let mut rust_items = vec![];
-        let mut logic_fun = vec![];
+    pub fn prepare_tokens<'a>(&'a self, ctx: &'a Ctx) -> ProjectTokens<'a> {
+        ProjectTokens { project: self, ctx }
+    }
+}
 
-        if ctx.conf.greusot {
-            rust_items.push(syn::Item::Use(parse_quote!(
-                use creusot_contracts::{DeepModel, ensures, logic, open, prelude, requires};
-            )))
+impl ToTokens for ProjectTokens<'_> {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
+        let ctx = self.ctx;
+        let mut logic_fun: Option<Vec<_>> = if ctx.conf.greusot { Some(vec![]) } else { None };
+        macro_rules! add_logic {
+            { $($stuff:tt)* } => {
+                if let Some(vec) = logic_fun.as_mut() {
+                    vec.push($($stuff)*)
+                }
+            };
         }
 
-        self.items
-            .into_iter()
-            .enumerate()
-            .for_each(|(idx, item)| match item {
-                Item::ExecutionMachine(execution_machine) => {
+        if ctx.conf.greusot {
+            quote!(
+                use creusot_contracts::{DeepModel, ensures, logic, open, prelude, requires};
+            )
+            .to_tokens(tokens)
+        }
+
+        for item in self.project.items.iter() {
+            match item {
+                Item::ExecutionMachine(em) => {
                     if ctx.conf.test || ctx.conf.demo {
-                        stats.timed_with(format!("item #{}, execution-machine", idx), |stats| {
-                            let item = execution_machine.into_syn(stats);
-                            rust_items.push(item);
-                        })
+                        em.to_tokens(tokens)
                     }
                 }
-                Item::StateMachine(state_machine) => stats.timed(
-                    format!("item #{}, state-machine `{}`", idx, state_machine.name),
-                    || {
-                        let items = state_machine.into_syn(ctx, &mut crates);
-                        rust_items.extend(items);
-                    },
-                ),
-                Item::Function(function) => stats.timed(
-                    format!("item #{}, function `{}`", idx, function.name),
-                    || {
-                        let (item_function, opt_logic) = function.into_syn(ctx, &mut crates);
-                        rust_items.push(item_function);
-                        if let Some(logic) = opt_logic {
-                            logic_fun.push(logic);
-                        }
-                    },
-                ),
-                Item::Enumeration(enumeration) => stats.timed(
-                    format!("item #{}, enumeration `{}`", idx, enumeration.name),
-                    || {
-                        let rust_ast_enumeration = enumeration.into_syn(ctx);
-                        rust_items.push(syn::Item::Enum(rust_ast_enumeration))
-                    },
-                ),
-                Item::Structure(structure) => stats.timed(
-                    format!("item #{}, structure `{}`", idx, structure.name),
-                    || {
-                        let rust_ast_structure = structure.into_syn(ctx);
-                        rust_items.push(syn::Item::Struct(rust_ast_structure))
-                    },
-                ),
-                Item::ArrayAlias(array_alias) => stats.timed(
-                    format!("item #{}, array alias `{}`", idx, array_alias.name),
-                    || {
-                        let rust_ast_array_alias = array_alias.into_syn();
-                        rust_items.push(syn::Item::Type(rust_ast_array_alias))
-                    },
-                ),
-            });
+                Item::StateMachine(sm) => sm.prepare_tokens(ctx.conf.greusot).to_tokens(tokens),
+                Item::Function(fun) => {
+                    let (def, logic_opt) = fun.to_def_and_logic_tokens(ctx);
+                    def.to_tokens(tokens);
+                    if let Some(logic) = logic_opt {
+                        add_logic!(logic)
+                    }
+                }
+                Item::Enumeration(enumeration) => enumeration.to_tokens(ctx, tokens),
+                Item::Structure(structure) => structure.to_tokens(ctx, tokens),
+                Item::ArrayAlias(alias) => alias.to_tokens(tokens),
+            }
+        }
 
-        if ctx.conf.greusot {
-            let logic_mod: syn::ItemMod = parse_quote! {
+        if let Some(logic) = logic_fun {
+            quote! {
                 mod logical {
                     use creusot_contracts::{open, logic, Int};
                     use super::*;
-
-                    #(#logic_fun)*
+                    #(#logic)*
                 }
-            };
-            rust_items.push(syn::Item::Mod(logic_mod));
+            }
+            .to_tokens(tokens)
         }
-
-        stats.timed("item dedup", || {
-            rust_items.dedup();
-            rust_items
-        })
     }
 }

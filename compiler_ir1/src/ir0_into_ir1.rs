@@ -758,8 +758,8 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
                     loc,
                 ))
             }
-            Term::Brace(term) => Ok(ir1::contract::Term::new(
-                ir1::contract::Kind::brace(term.into_ir1(ctx)?),
+            Term::Paren(term) => Ok(ir1::contract::Term::new(
+                ir1::contract::Kind::paren(term.into_ir1(ctx)?),
                 None,
                 loc,
             )),

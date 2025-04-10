@@ -117,109 +117,75 @@ impl Flows {
     pub fn contains_element(&self, element_name: &Ident) -> bool {
         self.elements.contains_key(element_name)
     }
+}
 
-    pub fn into_syn(self) -> Vec<syn::Item> {
-        // construct Context structure type
-        let context_struct = {
-            let fields = self.elements.iter().map(|(element_name, _)| -> syn::Field {
-                let struct_name = element_name.to_camel();
-                parse_quote! { pub #element_name: ctx_ty::#struct_name }
-            });
-            let name = Ident::new("Context", Span::call_site());
-            let attribute: syn::Attribute =
-                parse_quote!(#[derive(Clone, Copy, PartialEq, Default, Debug)]);
-            parse_quote! {
-                #attribute
-                pub struct #name {
-                    #(#fields),*
-                }
-            }
-        };
-
-        // create an 'init' function
-        let init_fun: syn::ImplItem = parse_quote! {
-            fn init() -> Context {
-                Default::default()
-            }
-        };
-
-        // create a 'reset' function that resets all signals
-        let stmts = self.elements.iter().map(|(element_name, _)| -> syn::Stmt {
-            parse_quote! { self.#element_name.reset(); }
-        });
-        let reset_fun: syn::ImplItem = parse_quote! {
-            fn reset(&mut self) {
-                #(#stmts)*
-            }
-        };
-
-        // create the 'Context' implementation
-        let context_impl: syn::Item = parse_quote! {
-            impl Context {
-                #init_fun
-                #reset_fun
-            }
-        };
-
-        // for all element, create a structure representing the updated value
-        let items = self
-            .elements
-            .into_iter()
-            .flat_map(|(element_name, element_ty)| {
+impl ToTokens for Flows {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
+        // sub-modules
+        {
+            let items = self.elements.iter().map(|(element_name, element_ty)| {
                 let struct_name = element_name.to_camel();
                 let name = element_name;
-                let ty = element_ty.into_syn();
-                let attribute: syn::Attribute =
-                    parse_quote!(#[derive(Clone, Copy, PartialEq, Default, Debug)]);
-                let item_struct: syn::ItemStruct = parse_quote! {
-                    #attribute
+                let ty = element_ty;
+                quote! {
+                    #[derive(Clone, Copy, PartialEq, Default, Debug)]
                     pub struct #struct_name(#ty, bool);
-                };
-
-                let item_impl: syn::ItemImpl = {
-                    let set_impl: syn::ImplItem = parse_quote! {
+                    impl #struct_name {
                         pub fn set(&mut self, #name: #ty) {
                             self.1 = self.0 != #name;
                             self.0 = #name;
                         }
-                    };
-                    let get_impl: syn::ImplItem = parse_quote! {
-                        pub fn get(&self) -> #ty {
-                            self.0
-                        }
-                    };
-                    let is_new_impl: syn::ImplItem = parse_quote! {
-                        pub fn is_new(&self) -> bool {
-                            self.1
-                        }
-                    };
-                    let reset_impl: syn::ImplItem = parse_quote! {
-                        pub fn reset(&mut self) {
-                            self.1 = false;
-                        }
-                    };
-                    parse_quote! {
-                        impl #struct_name {
-                            #set_impl
-                            #get_impl
-                            #is_new_impl
-                            #reset_impl
-                        }
+                        pub fn get(&self) -> #ty { self.0 }
+                        pub fn is_new(&self) -> bool { self.1 }
+                        pub fn reset(&mut self) { self.1 = false; }
                     }
-                };
-
-                [syn::Item::Struct(item_struct), syn::Item::Impl(item_impl)]
+                }
             });
-
-        let types_mod = syn::Item::Mod(parse_quote! {
-            mod ctx_ty {
-                use super::*;
-
-                #(#items)*
+            quote! {
+                mod ctx_ty { use super::*; #(#items)* }
             }
-        });
+            .to_tokens(tokens)
+        }
 
-        vec![types_mod, context_struct, context_impl]
+        // `Context` structure type
+        {
+            let fields = self.elements.iter().map(|(element_name, _)| {
+                let struct_name = element_name.to_camel();
+                quote!( pub #element_name: ctx_ty::#struct_name )
+            });
+            quote! {
+                #[derive(Clone, Copy, PartialEq, Default, Debug)]
+                pub struct Context { #(#fields),* }
+            }
+            .to_tokens(tokens)
+        }
+
+        // `Context` implementation
+        {
+            // `init` function
+            let init_fun = quote! {
+                fn init() -> Context {
+                    Default::default()
+                }
+            };
+            let reset_fun = {
+                let stmts = self.elements.iter().map(|(element_name, _)| {
+                    quote! {
+                        self.#element_name.reset();
+                    }
+                });
+                quote! {
+                    fn reset(&mut self) { #(#stmts)* }
+                }
+            };
+            quote! {
+                impl Context {
+                    #init_fun
+                    #reset_fun
+                }
+            }
+            .to_tokens(tokens)
+        }
     }
 }
 

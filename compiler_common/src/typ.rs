@@ -355,73 +355,56 @@ mk_new! { impl Typ =>
     Any: any()
 }
 
-impl Typ {
-    /// Conversion to [syn].
-    pub fn into_syn(&self) -> syn::Type {
+impl ToTokens for Typ {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
         match self {
-            Typ::Integer(_) => parse_quote!(i64),
-            Typ::Float(_) => parse_quote!(f64),
-            Typ::Boolean(_) => parse_quote!(bool),
-            Typ::Unit(_) => parse_quote!(()),
-            Typ::Enumeration { name, .. } => {
-                parse_quote!(#name)
-            }
-            Typ::Structure { name, .. } => {
-                parse_quote!(#name)
-            }
+            Typ::Integer(_) => quote!(i64).to_tokens(tokens),
+            Typ::Float(_) => quote!(f64).to_tokens(tokens),
+            Typ::Boolean(_) => quote!(bool).to_tokens(tokens),
+            Typ::Unit(_) => quote!(()).to_tokens(tokens),
+            Typ::Enumeration { name, .. } | Typ::Structure { name, .. } => name.to_tokens(tokens),
             Typ::Array { ty, size, .. } => {
-                let ty = ty.into_syn();
                 let size = syn::Lit::Int(syn::LitInt::new(
                     &(size.base10_digits().to_owned() + "usize"),
                     size.span(),
                 ));
-
-                parse_quote!([#ty; #size])
+                quote!( [#ty; #size] ).to_tokens(tokens)
             }
             Typ::Abstract { inputs, output, .. } => {
-                let arguments = inputs.into_iter().map(Self::into_syn);
-                let output = output.into_syn();
-                parse_quote!(impl Fn(#(#arguments),*) -> #output)
+                let inputs = inputs.iter();
+                quote!(impl Fn(#(#inputs),*) -> #output).to_tokens(tokens)
             }
             Typ::Tuple { elements, .. } => {
-                let tys = elements.into_iter().map(Self::into_syn);
-
-                parse_quote!((#(#tys),*))
+                let elements = elements.iter();
+                quote!((#(#elements),*)).to_tokens(tokens)
             }
-            Typ::Event { ty, .. } | Typ::Signal { ty, .. } => ty.into_syn(),
-            Typ::SMEvent { ty, .. } => {
-                let ty = ty.into_syn();
-                parse_quote!(Option<#ty>)
-            }
+            Typ::Event { ty, .. } | Typ::Signal { ty, .. } => ty.to_tokens(tokens),
+            Typ::SMEvent { ty, .. } => quote!(Option<#ty>).to_tokens(tokens),
             Typ::NotDefinedYet(_) | Typ::Polymorphism(_) | Typ::Any => {
                 noErrorDesc!()
             }
         }
     }
-
-    /// Conversion to logic types from Creusot.
-    pub fn into_logic(&self) -> syn::Type {
+}
+impl ToLogicTokens for Typ {
+    fn to_logic_tokens(&self, tokens: &mut TokenStream2) {
         match self {
-            Typ::Integer(_) => parse_quote!(Int),
-            Typ::Float(_) => parse_quote!(Float),
+            Typ::Integer(_) => quote!(Int).to_tokens(tokens),
+            Typ::Float(_) => quote!(Float).to_tokens(tokens),
             Typ::Array { ty, size, .. } => {
-                let ty = ty.into_logic();
-                let size = syn::Lit::Int(syn::LitInt::new(
-                    &(size.base10_digits().to_owned() + "usize"),
-                    size.span(),
-                ));
-                parse_quote!([#ty; #size])
+                let ty = ty.to_logic();
+                quote!([#ty; #size]).to_tokens(tokens)
             }
             Typ::Tuple { elements, .. } => {
-                let tys = elements.into_iter().map(Self::into_logic);
-                parse_quote!((#(#tys),*))
+                let elements = elements.iter().map(|e| e.to_logic());
+                quote!((#(#elements),*)).to_tokens(tokens)
             }
             Typ::SMEvent { ty, .. } => {
-                let ty = ty.into_logic();
-                parse_quote!(Option<#ty>)
+                let ty = ty.to_logic();
+                quote!(Option<#ty>).to_tokens(tokens)
             }
             Typ::Boolean(_) | Typ::Unit(_) | Typ::Enumeration { .. } | Typ::Structure { .. } => {
-                self.into_syn()
+                self.to_tokens(tokens)
             }
             Typ::Abstract { .. }
             | Typ::Event { .. }
@@ -433,7 +416,9 @@ impl Typ {
             }
         }
     }
+}
 
+impl Typ {
     /// Tells if a conversion into logical model of Creusot is needed.
     pub fn needs_view(&self) -> bool {
         match self {
@@ -486,8 +471,18 @@ impl Typ {
     pub fn is_arith_like(&self) -> bool {
         match self {
             Self::Integer(_) | Self::Float(_) | Self::Any => true,
-            // #TODO wildcard at top-level, we should enumerate all variants here...
-            _ => false,
+            Typ::Boolean(_)
+            | Typ::Unit(_)
+            | Typ::Array { .. }
+            | Typ::SMEvent { .. }
+            | Typ::Enumeration { .. }
+            | Typ::Structure { .. }
+            | Typ::Abstract { .. }
+            | Typ::Tuple { .. }
+            | Typ::Event { .. }
+            | Typ::Signal { .. }
+            | Typ::NotDefinedYet(_)
+            | Typ::Polymorphism(_) => false,
         }
     }
 
@@ -843,21 +838,24 @@ mod test {
     fn should_create_i64_from_ir2_integer() {
         let typ = Typ::int();
         let control = parse_quote! { i64 };
-        assert_eq!(typ.into_syn(), control)
+        let tokens: syn::Type = parse_quote!(#typ);
+        assert_eq!(tokens, control)
     }
 
     #[test]
     fn should_create_f64_from_ir2_float() {
         let typ = Typ::float();
         let control = parse_quote! { f64 };
-        assert_eq!(typ.into_syn(), control)
+        let tokens: syn::Type = parse_quote!(#typ);
+        assert_eq!(tokens, control)
     }
 
     #[test]
     fn should_create_bool_from_ir2_boolean() {
         let typ = Typ::bool();
         let control = parse_quote! { bool };
-        assert_eq!(typ.into_syn(), control)
+        let tokens: syn::Type = parse_quote!(#typ);
+        assert_eq!(tokens, control)
     }
 
     #[test]
@@ -865,7 +863,8 @@ mod test {
         let typ = Typ::unit();
         let control = parse_quote! { () };
 
-        assert_eq!(typ.into_syn(), control)
+        let tokens: syn::Type = parse_quote!(#typ);
+        assert_eq!(tokens, control)
     }
 
     #[test]
@@ -873,7 +872,8 @@ mod test {
         let typ = Typ::structure_str(Loc::test_id("Point"), 0);
         let control = parse_quote! { Point };
 
-        assert_eq!(typ.into_syn(), control)
+        let tokens: syn::Type = parse_quote!(#typ);
+        assert_eq!(tokens, control)
     }
 
     #[test]
@@ -881,7 +881,8 @@ mod test {
         let typ = Typ::enumeration_str(Loc::test_id("Color"), 0);
         let control = parse_quote! { Color };
 
-        assert_eq!(typ.into_syn(), control)
+        let tokens: syn::Type = parse_quote!(#typ);
+        assert_eq!(tokens, control)
     }
 
     #[test]
@@ -889,14 +890,16 @@ mod test {
         let typ = Typ::array(Typ::float(), 5);
         let control = parse_quote! { [f64; 5usize] };
 
-        assert_eq!(typ.into_syn(), control)
+        let tokens: syn::Type = parse_quote!(#typ);
+        assert_eq!(tokens, control)
     }
 
     #[test]
     fn should_create_option_from_ir2_state_machine_event() {
         let typ = Typ::sm_event(Typ::float());
         let control = parse_quote!(Option<f64>);
-        assert_eq!(typ.into_syn(), control)
+        let tokens: syn::Type = parse_quote!(#typ);
+        assert_eq!(tokens, control)
     }
 
     #[test]
@@ -904,6 +907,7 @@ mod test {
         let typ = Typ::function(vec![Typ::int()], Typ::float());
         let control = parse_quote!(impl Fn(i64) -> f64);
 
-        assert_eq!(typ.into_syn(), control)
+        let tokens: syn::Type = parse_quote!(#typ);
+        assert_eq!(tokens, control)
     }
 }

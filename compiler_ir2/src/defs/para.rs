@@ -126,10 +126,10 @@ impl Display for ParaKind {
 }
 
 // fn use_rayon_prelude() -> syn::ItemUse {
-//     parse_quote! { use grust::grust_std::rayon::prelude::*; }
+//     quote! { use grust::grust_std::rayon::prelude::*; }
 // }
 // fn rayon_join() -> syn::Path {
-//     parse_quote! { grust::grust_std::rayon::join }
+//     quote! { grust::grust_std::rayon::join }
 // }
 
 /// Type alias for a directed graph with statement UIDs (`usize`) nodes and graph label vertices.
@@ -474,28 +474,28 @@ pub struct Schedule {
     /// Spawn step.
     ///
     /// Spawns threads if any, work in the threads start concurrently during the next step (`run`).
-    pub spawn: Option<Vec<syn::Stmt>>,
+    pub spawn: Option<Vec<TokenStream2>>,
     /// Run step.
     ///
     /// Run parallel-but-blocking code, typically rayon, threads (if any) still running from the
     /// previous step (`spawn`). Note that at the end of this step, we have all results for this
     /// blocking code: since it is blocking, it produces the results once all sub-tasks are done.
-    pub run: Option<Vec<syn::Stmt>>,
+    pub run: Option<Vec<TokenStream2>>,
     /// Join step.
     ///
     /// Wait on all the threads, retrieve results. Note that blocking code has already run in the
     /// previous step (`run`) and finished, thus we already have the results for that.
-    pub join: Option<Vec<syn::Stmt>>,
+    pub join: Option<Vec<TokenStream2>>,
     /// Result step.
     ///
     /// Aggregate all results in an appropriate tuple for whatever is above us.
-    pub res: Vec<syn::Expr>,
+    pub res: Vec<TokenStream2>,
 }
 mk_new! { impl Schedule => new {
-    spawn: Option<Vec<syn::Stmt>>,
-    run: Option<Vec<syn::Stmt>>,
-    join: Option<Vec<syn::Stmt>>,
-    res: Vec<syn::Expr>,
+    spawn: Option<Vec<TokenStream2>>,
+    run: Option<Vec<TokenStream2>>,
+    join: Option<Vec<TokenStream2>>,
+    res: Vec<TokenStream2>,
 } }
 impl Schedule {
     /// Empty scheduler, schedules nothing.
@@ -503,13 +503,17 @@ impl Schedule {
         Self::new(None, None, None, vec![])
     }
     /// Creates a pure-thread scheduler with no (empty) `run` step.
-    pub fn threads(spawn: Vec<syn::Stmt>, join: Vec<syn::Stmt>, res: syn::Expr) -> Schedule {
+    pub fn threads(
+        spawn: Vec<TokenStream2>,
+        join: Vec<TokenStream2>,
+        res: TokenStream2,
+    ) -> Schedule {
         Self::new(Some(spawn), None, Some(join), vec![res])
     }
     /// Creates a sequential scheduler.
     ///
     /// This is useful to deploy code parallelized using (different versions of) rayon.
-    pub fn sequence(seq: Vec<syn::Stmt>, res: syn::Expr) -> Schedule {
+    pub fn sequence(seq: Vec<TokenStream2>, res: TokenStream2) -> Schedule {
         Self::new(None, Some(seq), None, vec![res])
     }
 
@@ -544,7 +548,7 @@ impl Schedule {
     }
 
     /// Turns itself into rust code.
-    pub fn into_syn(self, dont_bind: bool) -> syn::Stmt {
+    pub fn into_syn(self, dont_bind: bool) -> TokenStream2 {
         debug_assert!(
             self.spawn.is_none() && self.join.is_none()
                 || self.spawn.is_some() && self.join.is_some()
@@ -557,28 +561,16 @@ impl Schedule {
             mut res,
         } = self;
         let spawn = spawn.and_then(|vec| if vec.is_empty() { None } else { Some(vec) });
-        // token_show!(
-        //     spawn.as_ref().into_iter().map(|v| v.into_iter()).flatten(),
-        //     "spawn:"
-        // );
-        // token_show!(
-        //     run.as_ref().into_iter().map(|v| v.into_iter()).flatten(),
-        //     "run:"
-        // );
-        // token_show!(
-        //     join.as_ref().into_iter().map(|v| v.into_iter()).flatten(),
-        //     "join:"
-        // );
         let run = run.unwrap_or_else(Vec::new);
         let join = join.unwrap_or_else(Vec::new);
         let res = if res.len() > 1 {
-            parse_quote! { ( #(#res),* ) }
+            quote! { ( #(#res),* ) }
         } else {
             res.pop().unwrap()
         };
-        let body: syn::Expr = if let Some(spawn) = spawn {
+        let body = if let Some(spawn) = spawn {
             let scope = Self::scope_ident();
-            parse_quote! {
+            quote! {
                 std::thread::scope(|#scope| {
                     #(#spawn)*
                     #(#run)*
@@ -587,18 +579,17 @@ impl Schedule {
                 })
             }
         } else {
-            parse_quote! {
+            quote! {
                 {
                     #(#run)*
                     #res
                 }
             }
         };
-        // println!("    body: {}", body.to_token_stream());
         if dont_bind {
-            syn::Stmt::Expr(body, None)
+            body
         } else {
-            parse_quote! {
+            quote! {
                 let #res = { #body };
             }
         }
@@ -675,9 +666,7 @@ impl Stmts {
         graph: &Graph,
     ) -> Result<Self, String> {
         if let conf::ComponentPara::Para(weight_bounds) = ctx.conf.component_para {
-            // println!("wb: {:?}", weight_bounds);
             let env = Env::new(ctx, stmts, graph, weight_bounds)?;
-            // env.print(ctx);
             env.to_stmts(ctx)
         } else {
             Ok(Self::seq_of_ir1(stmts, ctx))
@@ -712,7 +701,6 @@ impl Stmts {
                 Ok(Self::new_seq(seq))
             }
             Synced::Para(map, _) => {
-                // println!("of_synced: para");
                 let mut no_para = Vec::with_capacity(map.len());
                 let mut no_para_vars = Vec::with_capacity(map.len());
                 let mut rayon = Vec::with_capacity(map.len());
@@ -721,28 +709,12 @@ impl Stmts {
                 let mut threads_vars = Vec::with_capacity(map.len());
                 for (weight, subs) in map {
                     let para_mode = ctx.conf.component_para;
-                    // println!(
-                    //     "para mode: {:?}, weight is {} ({})",
-                    //     para_mode,
-                    //     weight,
-                    //     para_mode.is_rayon(weight < Ctx::RAYON_PARA_WEIGHT_UBX)
-                    // );
                     use synced::Kind::*;
                     let (target, target_vars) = {
-                        // println!("deciding for weight `{}`", weight);
                         match para_mode.decide(weight) {
-                            Seq => {
-                                // println!("- Seq");
-                                (&mut no_para, &mut no_para_vars)
-                            }
-                            FastRayon | Rayon => {
-                                // println!("- FastRayon");
-                                (&mut rayon, &mut rayon_vars)
-                            }
-                            Threads => {
-                                // println!("- Threads");
-                                (&mut threads, &mut threads_vars)
-                            }
+                            Seq => (&mut no_para, &mut no_para_vars),
+                            FastRayon | Rayon => (&mut rayon, &mut rayon_vars),
+                            Threads => (&mut threads, &mut threads_vars),
                         }
                     };
                     for sub in subs {
@@ -751,10 +723,8 @@ impl Stmts {
                         target.push(sub);
                     }
                 }
-                // println!("ping");
                 let mut paras = Vec::with_capacity(3);
                 if !no_para.is_empty() {
-                    // println!("pushing {} no-para(s)", no_para.len());
                     paras.push((
                         ParaKind::None,
                         Vars::tuple_merge(no_para_vars.into_iter()),
@@ -771,7 +741,6 @@ impl Stmts {
                             rayon,
                         ));
                     } else {
-                        // println!("pushing {} rayon(s)", rayon.len());
                         paras.push((
                             ParaKind::RayonFast,
                             Vars::tuple_merge(rayon_vars.into_iter()),
@@ -787,7 +756,6 @@ impl Stmts {
                         threads,
                     ));
                 } else {
-                    // println!("pushing {} thread(s)", threads.len());
                     paras.push((
                         ParaKind::Threads,
                         Vars::tuple_merge(threads_vars.into_iter()),
@@ -800,51 +768,28 @@ impl Stmts {
     }
 
     /// Compiles a sequence of statements to rust code.
-    pub fn seq_to_syn(
-        stmts: &mut Vec<syn::Stmt>,
+    pub fn seq_to_tokens(
         dont_bind: bool,
-        crates: &mut BTreeSet<String>,
-        vars: Vars,
-        subs: Vec<Stmts>,
+        vars: &Vars,
+        subs: &Vec<Stmts>,
+        tokens: &mut TokenStream2,
     ) {
         for sub in subs {
-            sub.extend_syn_aux(stmts, crates, false)
+            sub.extend_tokens_aux(false, tokens)
         }
         if dont_bind {
-            let vars_expr = vars.as_expr().clone().into_syn(crates);
-            // println!(
-            //     "- `seq_to_syn`, `vars_expr`, don't bind\n  {}",
-            //     vars_expr.to_token_stream()
-            // );
-            stmts.push(syn::Stmt::Expr(vars_expr, None));
-            // println!("ok")
+            vars.as_expr().to_tokens(tokens)
         }
     }
 
     /// Compiles a plain statement to rust code.
-    pub fn stmt_to_syn(
-        stmts: &mut Vec<syn::Stmt>,
-        dont_bind: bool,
-        crates: &mut BTreeSet<String>,
-        vars: Vars,
-        expr: Expr,
-    ) {
-        let expr = expr.into_syn(crates);
-        let stmt = if dont_bind {
-            syn::Stmt::Expr(expr, None)
+    pub fn stmt_to_tokens(dont_bind: bool, vars: &Vars, expr: &Expr, tokens: &mut TokenStream2) {
+        if dont_bind {
+            expr.to_tokens(tokens)
         } else {
-            let pat = vars.bind.into_syn();
-            // println!(
-            //     "- `stmt_to_syn`, do bind\n  pat: {}\n  expr:{}",
-            //     pat.to_token_stream(),
-            //     expr.to_token_stream(),
-            // );
-            parse_quote! {
-                let #pat = #expr;
-            }
-        };
-        // println!("stmt_to_syn({}, ..): {}", dont_bind, stmt.to_token_stream());
-        stmts.push(stmt);
+            let pat = &vars.bind;
+            quote!(let #pat = #expr;).to_tokens(tokens)
+        }
     }
 
     /// Builds a rayon `Some` result for a fast-rayon branch.
@@ -854,14 +799,14 @@ impl Stmts {
     /// - `len`: the number of branches.
     ///
     /// See [module-level documentation](self) for details on fast-rayon
-    fn rayon_res(stmts: Vec<syn::Stmt>, idx: usize, len: usize) -> syn::Expr {
-        let expr: syn::Expr = parse_quote! { Some({#(#stmts)*}) };
+    fn rayon_res(stmts: TokenStream2, idx: usize, len: usize) -> TokenStream2 {
+        let expr = quote!( Some({#stmts}) );
         if len == 1 {
             expr
         } else {
-            let pref = (0..idx).map::<syn::Expr, _>(|_| parse_quote!(None));
-            let suff = ((idx + 1)..len).map::<syn::Expr, _>(|_| parse_quote!(None));
-            parse_quote! {
+            let pref = (0..idx).map::<TokenStream2, _>(|_| quote!(None));
+            let suff = ((idx + 1)..len).map::<TokenStream2, _>(|_| quote!(None));
+            quote! {
                 (#(#pref ,)* #expr #(, #suff)*)
             }
         }
@@ -873,11 +818,12 @@ impl Stmts {
     /// - `suff`: a suffix for the identifier, mostly for debugging.
     ///
     /// See [module-level documentation](self) for details on fast-rayon
-    fn rayon_opt_ident_with(idx: usize, suff: impl Display) -> syn::Ident {
+    fn rayon_opt_ident_with(idx: usize, suff: impl Display) -> TokenStream2 {
         syn::Ident::new(
             &format!("reserved_grust_rayon_opt_var_{}{}", idx, suff),
             Span::call_site(),
         )
+        .to_token_stream()
     }
 
     /// An identifier for the [Option] result of a fast-rayon branch.
@@ -885,13 +831,13 @@ impl Stmts {
     /// - `idx`: the index of the branch.
     ///
     /// See [module-level documentation](self) for details on fast-rayon
-    fn rayon_opt_ident(idx: usize) -> syn::Ident {
+    fn rayon_opt_ident(idx: usize) -> TokenStream2 {
         Self::rayon_opt_ident_with(idx, "")
     }
 
     /// A [usize] as a rust code literal.
-    fn usize_lit(n: usize) -> syn::Lit {
-        syn::Lit::Int(syn::LitInt::new(&format!("{}usize", n), Span::call_site()))
+    fn usize_lit(n: usize) -> TokenStream2 {
+        n.to_token_stream()
     }
 
     /// The arm of a branch of a fast-rayon pattern-matching.
@@ -901,37 +847,36 @@ impl Stmts {
     /// - `len`: the number of branches.
     ///
     /// See [module-level documentation](self) for details on fast-rayon
-    fn rayon_branch(stmts: Vec<syn::Stmt>, idx: usize, len: usize) -> syn::Arm {
-        let pat = syn::Pat::Lit(syn::PatLit {
-            attrs: vec![],
-            lit: Self::usize_lit(idx),
-        });
+    fn rayon_branch(stmts: TokenStream2, idx: usize, len: usize) -> TokenStream2 {
+        let val = Self::usize_lit(idx);
         let res = Self::rayon_res(stmts, idx, len);
-        parse_quote! {
-            #pat => #res,
-        }
+        quote!( #val => #res )
     }
 
     /// Fast-rayon *run* step rust code for a list of sequences of statements.
     ///
     /// See [module-level documentation](self) for details on fast-rayon
-    fn rayon(exprs: impl IntoIterator<Item = Vec<syn::Stmt>> + ExactSizeIterator) -> syn::Stmt {
+    ///
+    /// # TODO
+    ///
+    /// - not exactly super efficient...
+    fn rayon(exprs: impl IntoIterator<Item = TokenStream2> + ExactSizeIterator) -> TokenStream2 {
         let len = exprs.len();
         let len_lit = Self::usize_lit(len);
         let mut ids = Vec::with_capacity(len);
         let mut ids_rgt = Vec::with_capacity(len);
         let mut branches = Vec::with_capacity(len);
-        let mut reduce_id: Vec<syn::Expr> = Vec::with_capacity(len);
-        let mut reduce_merge: Vec<syn::Expr> = Vec::with_capacity(len);
-        let mut tuple_unwrap: Vec<syn::Expr> = Vec::with_capacity(len);
+        let mut reduce_id: Vec<TokenStream2> = Vec::with_capacity(len);
+        let mut reduce_merge: Vec<TokenStream2> = Vec::with_capacity(len);
+        let mut tuple_unwrap: Vec<TokenStream2> = Vec::with_capacity(len);
         for (idx, expr) in exprs.into_iter().enumerate() {
             let id = Self::rayon_opt_ident(idx);
             ids.push(id.clone());
             let id_rgt = Self::rayon_opt_ident_with(idx, "_rgt");
             ids_rgt.push(id_rgt.clone());
             branches.push(Self::rayon_branch(expr, idx, len));
-            reduce_id.push(parse_quote!(None));
-            reduce_merge.push(parse_quote! {
+            reduce_id.push(quote!(None));
+            reduce_merge.push(quote! {
                 match (#id, #id_rgt) {
                     (None, None) => None,
                     (Some(val), None) | (None, Some(val)) => Some(val),
@@ -940,46 +885,40 @@ impl Stmts {
                     )
                 }
             });
-            tuple_unwrap.push(parse_quote! {
+            tuple_unwrap.push(quote! {
                 #id . expect(
                     "unreachable: fatal error in final rayon unwrap, unexpected `None` value"
                 )
             });
         }
-        // token_show!(ids, "ids:");
-        // token_show!(ids_rgt, "ids_rgt:");
-        // token_show!(branches, "branches:");
-        // token_show!(reduce_id, "reduce_id:");
-        // token_show!(reduce_merge, "reduce_merge:");
-        // token_show!(tuple_unwrap, "tuple_unwrap:");
-        let ids: syn::Pat = if ids.len() > 1 {
-            parse_quote! { (#(#ids),*) }
+        let ids = if ids.len() > 1 {
+            quote! { (#(#ids),*) }
         } else {
             let id = ids.pop().unwrap();
-            parse_quote!(#id)
+            quote!(#id)
         };
-        let ids_rgt: syn::Pat = if ids_rgt.len() > 1 {
-            parse_quote! { (#(#ids_rgt),*) }
+        let ids_rgt = if ids_rgt.len() > 1 {
+            quote! { (#(#ids_rgt),*) }
         } else {
             let id = ids_rgt.pop().unwrap();
-            parse_quote!(#id)
+            quote!(#id)
         };
         let res: syn::Expr = tupleify!(tuple_unwrap);
-        parse_quote! {{
+        quote! {{
             let #ids = {
                 #[allow(unused_imports)]
                 use grust::rayon::prelude::*;
                 (0 .. #len_lit)
                     .into_par_iter()
                     .map(|idx: usize| match idx {
-                        #(#branches)*
+                        #(#branches ,)*
                         idx => unreachable!(
                             "fatal error in rayon branches, illegal index `{}`",
                             idx,
                         ),
                     })
                     .reduce(
-                        || ( #(#reduce_id,)* ),
+                        || ( #(#reduce_id),* ),
                         |#ids, #ids_rgt| (
                             #(#reduce_merge),*
                         )
@@ -993,11 +932,11 @@ impl Stmts {
     ///
     /// The usual [Vars] value is replaced here with explicit rust versions [syn::Expr] and
     /// [syn::Pat].
-    pub fn para_branch_to_syn(
-        kind: ParaKind,
-        vars_expr: syn::Expr,
-        vars_pat: syn::Pat,
-        stmts: impl IntoIterator<Item = Vec<syn::Stmt>> + ExactSizeIterator,
+    pub fn para_branch_to_schedule(
+        kind: &ParaKind,
+        vars_expr: &Expr,
+        vars_pat: &Pattern,
+        stmts: impl IntoIterator<Item = TokenStream2> + ExactSizeIterator,
     ) -> Schedule {
         let ident = |n: usize| {
             syn::Ident::new(
@@ -1007,57 +946,24 @@ impl Stmts {
         };
         match kind {
             ParaKind::None => {
-                // println!("generating branch for `none`");
                 let len = stmts.len();
-                let stmts = stmts.into_iter().map(|stmts| {
-                    let e: syn::Expr = parse_quote! { {#(#stmts)*} };
-                    e
-                });
-                let rhs: syn::Expr = tupleify!(stmts, len);
-                let syn = parse_quote! {
+                let rhs: syn::Expr = tupleify!(stmts.into_iter(), len);
+                let syn = quote! {
                     let #vars_pat = #rhs;
                 };
-                // let syn = tupleify! {
-                //     stmts
-                //     => parse_quote! {
-                //         let #vars_pat = (#(
-                //             {#(#stmts)*}
-                //             ,
-                //         )*);
-                //     }
-                //     => parse_quote! {
-                //         let #vars_pat = #({#(#stmts)*})*;
-                //     }
-                // };
-                // let syn = if stmts.len() == 1 {
-                //     let stmts = stmts.into_iter();
-                //     parse_quote! {
-                //         let #vars_pat = #({#(#stmts)*})*;
-                //     }
-                // } else {
-                //     let stmts = stmts.into_iter();
-                //     parse_quote! {
-                //         let #vars_pat = (#(
-                //             {#(#stmts)*}
-                //             ,
-                //         )*);
-                //     }
-                // };
-                Schedule::sequence(vec![syn], vars_expr)
+                Schedule::sequence(vec![syn], vars_expr.to_token_stream())
             }
             ParaKind::RayonFast => {
-                // println!("generating branch for `rayon-fast` ({})", stmts.len());
                 let code = Self::rayon(stmts);
                 Schedule::sequence(
-                    vec![parse_quote! {
+                    vec![quote! {
                         let #vars_pat = #code;
                     }],
-                    vars_expr,
+                    vars_expr.to_token_stream(),
                 )
             }
             ParaKind::Threads => {
-                // println!("generating branch for `threads`");
-                let (mut stmt_vec, mut return_tuple): (_, Vec<syn::Expr>) = (
+                let (mut stmt_vec, mut return_tuple): (_, Vec<TokenStream2>) = (
                     Vec::with_capacity(stmts.len()),
                     Vec::with_capacity(stmts.len()),
                 );
@@ -1066,31 +972,20 @@ impl Stmts {
                 for stmt in stmts.into_iter() {
                     let id = ident(idx);
                     idx += 1;
-                    // println!("- `para_branch_to_syn`, sub-statements");
-                    // println!("  id: {}", id);
-                    // println!("  stmt: {}", stmt.to_token_stream());
-                    let spawn_let: syn::Stmt = parse_quote! {
-                        let #id = #scope . spawn(|| { #(#stmt)* });
-                    };
-                    // println!("- `para_branch_to_syn`, return tuple element");
-                    return_tuple.push(parse_quote! {
+                    stmt_vec.push(quote! {
+                        let #id = #scope . spawn(|| { #stmt });
+                    });
+                    return_tuple.push(quote! {
                         #id . join().expect("unexpected panic in sub-thread")
                     });
-                    stmt_vec.push(spawn_let);
                 }
-                // println!("- `para_branch_to_syn`, return tuple");
-                let return_tuple: syn::Expr = tupleify!(return_tuple);
-                // if return_tuple.len() == 1 {
-                //     return_tuple.pop().unwrap()
-                // } else {
-                //     parse_quote! { (#(#return_tuple),*) }
-                // };
+                let return_tuple: TokenStream2 = tupleify!(return_tuple);
                 Schedule::threads(
                     stmt_vec,
-                    vec![parse_quote! {
+                    vec![quote! {
                         let #vars_pat = #return_tuple;
                     }],
-                    vars_expr,
+                    vars_expr.to_token_stream(),
                 )
             }
             _ => todo!("unsupported parallelization kind `{}`", kind),
@@ -1098,84 +993,55 @@ impl Stmts {
     }
 
     /// Compiles some parallel statements to rust code.
-    pub fn para_to_syn(
-        stmts: &mut Vec<syn::Stmt>,
+    pub fn para_to_tokens(
         dont_bind: bool,
-        crates: &mut BTreeSet<String>,
-        vars: Vars,
-        data: Vec<(ParaKind, Vars, Vec<Stmts>)>,
+        vars: &Vars,
+        data: &Vec<(ParaKind, Vars, Vec<Stmts>)>,
+        tokens: &mut TokenStream2,
     ) {
-        let vars_pat = vars.bind.into_syn();
-        let vars_expr = vars.expr.into_syn(crates);
+        let vars_pat = &vars.bind;
+        let vars_expr = &vars.expr;
         let mut schedule = Schedule::empty();
-        for (kind, vars, subs) in data {
-            let vars_expr = vars.expr.into_syn(crates);
-            let vars_pat = vars.bind.into_syn();
-            let subs = subs.into_iter().map(|sub| sub.into_syn_aux(crates, true));
-            let branch_schedule = Self::para_branch_to_syn(kind, vars_expr, vars_pat.clone(), subs);
+        for (kind, vars, subs) in data.iter() {
+            let vars_expr = &vars.expr;
+            let vars_pat = &vars.bind;
+            let subs = subs.iter().map(|sub| sub.to_token_stream_aux(true));
+            let branch_schedule = Self::para_branch_to_schedule(kind, vars_expr, &vars_pat, subs);
             schedule.merge(branch_schedule);
         }
         if dont_bind {
-            // println!("- `para_to_syn`, don't bind");
-            // println!("  spawns:");
-            // if let Some(spawns) = schedule.spawn.as_ref() {
-            //     for spawn in spawns {
-            //         println!("    - {}", spawn.to_token_stream());
-            //     }
-            // } else {
-            //     println!("  - none")
-            // }
-            // println!("  joins:");
-            // if let Some(joins) = schedule.join.as_ref() {
-            //     for join in joins {
-            //         println!("    - {}", join.to_token_stream());
-            //     }
-            // } else {
-            //     println!("  - none")
-            // }
-            // println!("  vars_expr: {}", vars_expr.to_token_stream());
-            let run = schedule.into_syn(false);
-            // println!("  schedule: {}", run.to_token_stream());
-            stmts.push(run);
-            stmts.push(syn::Stmt::Expr(vars_expr, None));
+            schedule.into_syn(false).to_tokens(tokens);
+            quote!(#vars_expr).to_tokens(tokens);
         } else {
-            // println!("- `para_to_syn`, do bind");
             let run = schedule.into_syn(true);
-            // println!("  schedule: {}", run.to_token_stream());
-            stmts.push(parse_quote! {
-                let #vars_pat = #run;
-            })
+            quote!( let #vars_pat = #run; ).to_tokens(tokens)
         }
     }
 
-    /// Helper for [Self::extend_syn].
-    fn extend_syn_aux(
-        self,
-        stmts: &mut Vec<syn::Stmt>,
-        crates: &mut BTreeSet<String>,
-        dont_bind: bool,
-    ) {
+    /// Helper for [Self::extend_tokens].
+    fn extend_tokens_aux(&self, dont_bind: bool, tokens: &mut TokenStream2) {
         match self {
-            Self::Seq(vars, subs) => Self::seq_to_syn(stmts, dont_bind, crates, vars, subs),
-            Self::Para(vars, subs) => Self::para_to_syn(stmts, dont_bind, crates, vars, subs),
-            Self::Stmt(vars, expr) => Self::stmt_to_syn(stmts, dont_bind, crates, vars, expr),
+            Self::Seq(vars, subs) => Self::seq_to_tokens(dont_bind, vars, subs, tokens),
+            Self::Para(vars, subs) => Self::para_to_tokens(dont_bind, vars, subs, tokens),
+            Self::Stmt(vars, expr) => Self::stmt_to_tokens(dont_bind, vars, expr, tokens),
         }
     }
 
     /// Extends some rust statements with the result of parallel code generation.
-    pub fn extend_syn(self, stmts: &mut Vec<syn::Stmt>, crates: &mut BTreeSet<String>) {
-        self.extend_syn_aux(stmts, crates, false)
+    pub fn extend_tokens(&self, tokens: &mut TokenStream2) {
+        self.extend_tokens_aux(false, tokens)
     }
 
     /// Helper for [Self::into_syn].
-    fn into_syn_aux(self, crates: &mut BTreeSet<String>, dont_bind: bool) -> Vec<syn::Stmt> {
-        let mut vec = Vec::with_capacity(20);
-        self.extend_syn_aux(&mut vec, crates, dont_bind);
-        vec
+    fn to_token_stream_aux(&self, dont_bind: bool) -> TokenStream2 {
+        let mut tkns = TokenStream2::new();
+        self.extend_tokens_aux(dont_bind, &mut tkns);
+        tkns
     }
+}
 
-    /// Turns itself into some rust statements.
-    pub fn into_syn(self, crates: &mut BTreeSet<String>) -> Vec<syn::Stmt> {
-        self.into_syn_aux(crates, false)
+impl ToTokens for Stmts {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
+        self.extend_tokens(tokens)
     }
 }

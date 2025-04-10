@@ -10,9 +10,9 @@ pub enum Term {
         /// The literal.
         literal: Constant,
     },
-    /// Braced term: `(x+y)`.
-    Brace {
-        /// The braced term.
+    /// Parenthesized term: `(x+y)`.
+    Paren {
+        /// The parenthesized term.
         term: Box<Self>,
     },
     /// An identifier call: `x`.
@@ -115,7 +115,7 @@ mk_new! { impl Term =>
     Literal: literal {
         literal: Constant,
     }
-    Brace: brace { term: Self = term.into() }
+    Paren: paren { term: Self = term.into() }
     Identifier: ident {
         identifier: impl Into<Ident> = identifier.into(),
         views: bool,
@@ -170,110 +170,124 @@ mk_new! { impl Term =>
 impl Term {
     /// Tokens stream for a term.
     ///
-    /// - `prophecy`: changes the way `Self::MemoryAccess` identifiers are printed.
+    /// - `prophecy` changes the way `Self::MemoryAccess` identifiers are printed:
     ///   - `(^self).last_<id>` if true,
     ///   - `self.last_<id>` otherwise.
-    pub fn to_token_stream(self, prophecy: bool, function_like: bool) -> TokenStream2 {
-        use quote::quote;
-        match self {
-            Self::Brace { term } => {
-                let ts_term = term.to_token_stream(prophecy, function_like);
-                quote! { (#ts_term) }
+    pub fn prepare_tokens(&self, prophecy: bool, function_like: bool) -> TermTokens {
+        TermTokens {
+            term: self,
+            prophecy,
+            function_like,
+        }
+    }
+}
+#[derive(Debug, Clone, Copy)]
+pub struct TermTokens<'a> {
+    term: &'a Term,
+    prophecy: bool,
+    function_like: bool,
+}
+impl<'a> TermTokens<'a> {
+    /// Swaps the underlying term.
+    fn set_term(&self, term: &'a Term) -> Self {
+        Self {
+            term,
+            prophecy: self.prophecy,
+            function_like: self.function_like,
+        }
+    }
+}
+
+impl ToTokens for TermTokens<'_> {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
+        match self.term {
+            Term::Paren { term } => {
+                let term = self.set_term(term);
+                quote!( (#term) ).to_tokens(tokens)
             }
-            Self::Unop { op, term } => {
-                let ts_term = term.to_token_stream(prophecy, function_like);
-                let ts_op = op.into_syn();
-                quote!(#ts_op #ts_term)
+            Term::Unop { op, term } => {
+                let term = self.set_term(term);
+                quote!(#op #term).to_tokens(tokens)
             }
-            Self::Binop { op, left, right } => {
-                let ts_left = left.to_token_stream(prophecy, function_like);
-                let ts_right = right.to_token_stream(prophecy, function_like);
-                let ts_op = op.into_syn();
-                quote!(#ts_left #ts_op #ts_right)
+            Term::Binop { op, left, right } => {
+                let lft = self.set_term(left);
+                let rgt = self.set_term(right);
+                quote!(#lft #op #rgt).to_tokens(tokens)
             }
-            Self::Literal { literal } => {
-                let expr = literal.into_logic();
-                quote!(#expr)
-            }
-            Self::Identifier { identifier, views } => {
-                let mut ts = identifier.to_token_stream();
-                if views {
-                    ts.extend(syn::token::At::default().to_token_stream());
+            Term::Literal { literal } => literal.to_logic_tokens(tokens),
+            Term::Identifier { identifier, views } => {
+                identifier.to_tokens(tokens);
+                if *views {
+                    quote!(@).to_tokens(tokens)
                 }
-                ts
             }
-            Self::MemoryAccess { identifier, views } => {
-                let mut ts = if function_like {
-                    noErrorDesc!()
+            Term::MemoryAccess { identifier, views } => {
+                if self.function_like {
+                    noErrorDesc!("unexpected function-like memory access")
                 } else {
                     let id = identifier.to_last_var();
-                    if prophecy {
-                        quote!((^self).#id)
+                    if self.prophecy {
+                        quote!((^self).).to_tokens(tokens)
                     } else {
-                        quote!(self.#id)
+                        quote!(self.).to_tokens(tokens)
                     }
-                };
-                if views {
-                    ts.extend(syn::token::At::default().to_token_stream());
+                    id.to_tokens(tokens)
                 }
-                ts
+                if *views {
+                    quote!(@).to_tokens(tokens)
+                }
             }
-            Self::InputAccess { identifier, views } => {
-                let mut ts = if function_like {
-                    quote!(#identifier)
+            Term::InputAccess { identifier, views } => {
+                if self.function_like {
+                    identifier.to_tokens(tokens)
                 } else {
-                    quote!(input.#identifier)
+                    quote!(input.).to_tokens(tokens);
+                    identifier.to_tokens(tokens)
                 };
-                if views {
-                    ts.extend(syn::token::At::default().to_token_stream());
+                if *views {
+                    quote!(@).to_tokens(tokens)
                 }
-                ts
             }
-            Self::Implication { left, right } => {
-                let ts_left = left.to_token_stream(prophecy, function_like);
-                let ts_right = right.to_token_stream(prophecy, function_like);
-                quote!(#ts_left ==> #ts_right)
+            Term::Implication { left, right } => {
+                self.set_term(left).to_tokens(tokens);
+                quote!(==>).to_tokens(tokens);
+                self.set_term(right).to_tokens(tokens);
             }
-            Self::Forall { name, ty, term } => {
-                let id = name;
-                let ts_term = term.to_token_stream(prophecy, function_like);
-                let ts_ty = ty.into_syn();
-                quote!(forall<#id:#ts_ty> #ts_term)
+            Term::Forall { name, ty, term } => {
+                let term = self.set_term(term);
+                quote!(forall < #name : #ty > #term).to_tokens(tokens)
             }
-            Self::Enumeration {
+            Term::Enumeration {
                 enum_name,
                 elem_name,
                 element,
             } => {
-                let ty = enum_name;
-                let cons = elem_name;
+                enum_name.to_tokens(tokens);
+                syn::token::PathSep::default().to_tokens(tokens);
+                elem_name.to_tokens(tokens);
                 if let Some(term) = element {
-                    let inner = term.to_token_stream(prophecy, function_like);
-                    parse_quote! { #ty::#cons(#inner) }
-                } else {
-                    parse_quote! { #ty::#cons }
+                    let term = self.set_term(term);
+                    quote!((#term)).to_tokens(tokens)
                 }
             }
-            Self::Ok { term } => {
-                let ts_term = term.to_token_stream(prophecy, function_like);
-                parse_quote! { Ok(#ts_term) }
+            Term::Ok { term } => {
+                let term = self.set_term(term);
+                quote!(Ok(#term)).to_tokens(tokens)
             }
-            Self::Err => parse_quote! { Err(()) },
-            Self::Some { term } => {
-                let ts_term = term.to_token_stream(prophecy, function_like);
-                parse_quote! { Some(#ts_term) }
+            Term::Err => quote!(Err(())).to_tokens(tokens),
+            Term::Some { term } => {
+                let term = self.set_term(term);
+                quote!(Some(#term)).to_tokens(tokens)
             }
-            Self::None => parse_quote! { None },
-            Self::FunctionCall {
+            Term::None => quote!(None).to_tokens(tokens),
+            Term::FunctionCall {
                 function,
                 arguments,
             } => {
-                let ts_args = arguments
-                    .into_iter()
-                    .map(|term| term.to_token_stream(prophecy, function_like));
-                parse_quote! { logical::#function(#(#ts_args),*) }
+                let args = arguments.iter().map(|term| self.set_term(term));
+                quote!(logical::#function(#(#args),*)).to_tokens(tokens)
             }
-            Self::ComponentCall { .. } => todo!("not supported yet"),
+            Term::ComponentCall { .. } => todo!("not supported yet"),
         }
     }
 }
@@ -303,24 +317,36 @@ impl Contract {
             invariant: Vec::with_capacity(0),
         }
     }
+}
 
-    pub fn into_syn(self, function_like: bool) -> Vec<syn::Attribute> {
-        let mut attributes =
-            Vec::with_capacity(self.requires.len() + self.ensures.len() + 2 * self.invariant.len());
-        for term in self.requires {
-            let ts = term.to_token_stream(false, function_like);
-            attributes.push(parse_quote!(#[requires(#ts)]))
+pub struct ContractTokens<'a> {
+    contract: &'a Contract,
+    function_like: bool,
+}
+impl Contract {
+    pub fn prepare_tokens(&self, function_like: bool) -> ContractTokens {
+        ContractTokens {
+            contract: self,
+            function_like,
         }
-        for term in self.ensures {
-            let ts = term.to_token_stream(false, function_like);
-            attributes.push(parse_quote!(#[ensures(#ts)]))
+    }
+}
+
+impl ToTokens for ContractTokens<'_> {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
+        for term in self.contract.requires.iter() {
+            let term = term.prepare_tokens(false, self.function_like);
+            quote!(#[requires(#term)]).to_tokens(tokens);
         }
-        for term in self.invariant {
-            let ts_pre = term.clone().to_token_stream(false, function_like);
-            let ts_cur = term.clone().to_token_stream(true, function_like);
-            attributes.push(parse_quote!(#[requires(#ts_pre)]));
-            attributes.push(parse_quote!(#[ensures(#ts_cur)]));
+        for term in self.contract.ensures.iter() {
+            let term = term.prepare_tokens(false, self.function_like);
+            quote!(#[ensures(#term)]).to_tokens(tokens)
         }
-        attributes
+        for term in self.contract.invariant.iter() {
+            let term_pre = term.prepare_tokens(false, self.function_like);
+            let term_cur = term.prepare_tokens(true, self.function_like);
+            quote!(#[requires(#term_pre)]).to_tokens(tokens);
+            quote!(#[ensures(#term_cur)]).to_tokens(tokens);
+        }
     }
 }

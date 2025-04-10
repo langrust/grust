@@ -11,28 +11,16 @@ mk_new! { impl Block => new {
     statements: Vec<Stmt>,
 }}
 
-impl Block {
-    pub fn into_syn(self, crates: &mut BTreeSet<String>) -> syn::Block {
-        let stmts = self
-            .statements
-            .into_iter()
-            .map(|statement| statement.into_syn(crates))
-            .collect();
-        syn::Block {
-            stmts,
-            brace_token: Default::default(),
-        }
+impl ToTokens for Block {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
+        let stmts = self.statements.iter();
+        tokens.extend(quote!({ #(#stmts)* }))
     }
-    pub fn into_logic(self, crates: &mut BTreeSet<String>) -> syn::Block {
-        let stmts = self
-            .statements
-            .into_iter()
-            .map(|statement| statement.into_logic(crates))
-            .collect();
-        syn::Block {
-            stmts,
-            brace_token: Default::default(),
-        }
+}
+impl ToLogicTokens for Block {
+    fn to_logic_tokens(&self, tokens: &mut TokenStream2) {
+        let stmts = self.statements.iter().map(|stmt| stmt.to_logic());
+        tokens.extend(quote!({ #(#stmts)* }))
     }
 }
 
@@ -55,6 +43,7 @@ mod test {
             x
         });
 
-        assert_eq!(block.into_syn(&mut Default::default()), control)
+        let blk: syn::Block = parse_quote!(#block);
+        assert_eq!(blk, control)
     }
 }

@@ -5,11 +5,11 @@ prelude! {}
 pub trait ItemImplExt {
     type Name;
     type Itm;
-    fn new_simple(name: Self::Name, items: Vec<Self::Itm>) -> Self;
+    fn new_simple(name: Self::Name, items: Self::Itm) -> Self;
 }
 impl ItemImplExt for syn::ItemImpl {
     type Name = syn::Type;
-    type Itm = syn::ImplItem;
+    type Itm = Vec<syn::ImplItem>;
     fn new_simple(ty: syn::Type, items: Vec<syn::ImplItem>) -> Self {
         syn::ItemImpl {
             attrs: Vec::with_capacity(0),
@@ -26,7 +26,7 @@ impl ItemImplExt for syn::ItemImpl {
 }
 impl ItemImplExt for syn::ItemMod {
     type Name = syn::Ident;
-    type Itm = syn::Item;
+    type Itm = Vec<syn::Item>;
     fn new_simple(ident: syn::Ident, items: Vec<syn::Item>) -> Self {
         syn::ItemMod {
             attrs: Vec::with_capacity(0),
@@ -36,6 +36,71 @@ impl ItemImplExt for syn::ItemMod {
             ident,
             content: Some((Default::default(), items)),
             semi: None,
+        }
+    }
+}
+impl ItemImplExt for syn::Arm {
+    type Name = syn::Pat;
+    type Itm = syn::Expr;
+    fn new_simple(pat: syn::Pat, expr: syn::Expr) -> Self {
+        syn::Arm {
+            attrs: Vec::with_capacity(0),
+            pat,
+            guard: None,
+            fat_arrow_token: parse_quote!(=>),
+            body: Box::new(expr),
+            comma: parse_quote!(,),
+        }
+    }
+}
+impl ItemImplExt for syn::Block {
+    type Name = ();
+    type Itm = Vec<syn::Stmt>;
+    fn new_simple(_: (), stmts: Vec<syn::Stmt>) -> Self {
+        syn::Block {
+            brace_token: Default::default(),
+            stmts,
+        }
+    }
+}
+impl ItemImplExt for syn::ExprBlock {
+    type Name = ();
+    type Itm = Vec<syn::Stmt>;
+    fn new_simple(_: (), stmts: Vec<syn::Stmt>) -> Self {
+        syn::ExprBlock {
+            attrs: Vec::with_capacity(0),
+            label: None,
+            block: syn::Block {
+                brace_token: Default::default(),
+                stmts,
+            },
+        }
+    }
+}
+impl ItemImplExt for syn::ExprMatch {
+    type Name = syn::Expr;
+    type Itm = Vec<syn::Arm>;
+    fn new_simple(e: syn::Expr, arms: Vec<syn::Arm>) -> Self {
+        syn::ExprMatch {
+            attrs: Vec::with_capacity(0),
+            match_token: parse_quote!(match),
+            expr: Box::new(e),
+            brace_token: Default::default(),
+            arms,
+        }
+    }
+}
+impl ItemImplExt for syn::ExprIf {
+    type Name = syn::Expr;
+    type Itm = (syn::Block, Option<syn::Expr>);
+    fn new_simple(cond: syn::Expr, (then_branch, els): Self::Itm) -> Self {
+        let else_branch = els.map(|e| (Default::default(), Box::new(e)));
+        syn::ExprIf {
+            attrs: Vec::with_capacity(0),
+            if_token: parse_quote!(if),
+            cond: Box::new(cond),
+            then_branch,
+            else_branch,
         }
     }
 }

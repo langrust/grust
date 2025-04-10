@@ -21,24 +21,15 @@ mk_new! { impl ArrayAlias =>
     }
 }
 
-impl ArrayAlias {
-    pub fn into_syn(self) -> syn::ItemType {
+impl ToTokens for ArrayAlias {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
         let size = self.size;
-        syn::ItemType {
-            attrs: Default::default(),
-            vis: syn::Visibility::Public(Default::default()),
-            type_token: Default::default(),
-            ident: self.name,
-            generics: Default::default(),
-            eq_token: Default::default(),
-            ty: Box::new(syn::Type::Array(syn::TypeArray {
-                bracket_token: Default::default(),
-                elem: Box::new(self.array_type.into_syn()),
-                semi_token: Default::default(),
-                len: parse_quote! { #size},
-            })),
-            semi_token: Default::default(),
+        let name = &self.name;
+        let inner_typ = &self.array_type;
+        quote! {
+            pub type #name = [#inner_typ; #size];
         }
+        .to_tokens(tokens)
     }
 }
 
@@ -52,9 +43,12 @@ mod test {
             name: Loc::test_id("Matrix5x5"),
             array_type: Typ::array(Typ::int(), 5),
             size: 5,
-        };
+        }
+        .to_token_stream();
+        println!("{}", array_alias.to_token_stream());
 
         let control = parse_quote! { pub type Matrix5x5 = [[i64; 5usize]; 5usize];};
-        assert_eq!(array_alias.into_syn(), control)
+        let array_alias: syn::ItemType = parse_quote!(#array_alias);
+        assert_eq!(array_alias, control)
     }
 }

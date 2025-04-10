@@ -33,46 +33,33 @@ mk_new! { impl Stmt =>
     Log: log { ident: syn::Ident, expr: Expr }
 }
 
-impl Stmt {
-    pub fn into_syn(self, crates: &mut BTreeSet<String>) -> syn::Stmt {
+impl ToTokens for Stmt {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
         match self {
-            Self::Let { pattern, expr } => syn::Stmt::Local(syn::Local {
-                attrs: vec![],
-                let_token: Default::default(),
-                pat: pattern.into_syn(),
-                init: Some(syn::LocalInit {
-                    eq_token: Default::default(),
-                    expr: Box::new(expr.into_syn(crates)),
-                    diverge: None,
-                }),
-                semi_token: Default::default(),
+            Self::Let { pattern, expr } => tokens.extend(quote! {
+                let #pattern = #expr;
             }),
-            Self::ExprLast { expr } => syn::Stmt::Expr(expr.into_syn(crates), None),
+            Self::ExprLast { expr } => expr.to_tokens(tokens),
             Self::Log { ident, expr } => {
-                let lit = syn::LitStr::new(&format!("{ident}: {{:?}}"), ident.span());
-                let expr = expr.into_syn(crates);
-                parse_quote! { println!(#lit, #expr); }
+                let str = format!("{}: {{:?}}", ident);
+                tokens.extend(quote! {
+                    println!(#str, #expr);
+                })
             }
         }
     }
-    pub fn into_logic(self, crates: &mut BTreeSet<String>) -> syn::Stmt {
+}
+impl ToLogicTokens for Stmt {
+    fn to_logic_tokens(&self, tokens: &mut TokenStream2) {
         match self {
-            Self::Let { pattern, expr } => syn::Stmt::Local(syn::Local {
-                attrs: vec![],
-                let_token: Default::default(),
-                pat: pattern.into_syn(),
-                init: Some(syn::LocalInit {
-                    eq_token: Default::default(),
-                    expr: Box::new(expr.into_logic(crates)),
-                    diverge: None,
-                }),
-                semi_token: Default::default(),
-            }),
-            Self::ExprLast { expr } => syn::Stmt::Expr(expr.into_logic(crates), None),
+            Self::Let { pattern, expr } => {
+                let expr = expr.to_logic();
+                tokens.extend(quote!(let #pattern = #expr;))
+            }
+            Self::ExprLast { expr } => expr.to_logic_tokens(tokens),
             Self::Log { ident, expr } => {
-                let lit = syn::LitStr::new(&format!("{ident}: {{:?}}"), ident.span());
-                let expr = expr.into_syn(crates);
-                parse_quote! { println!(#lit, #expr); }
+                let str = format!("{}: {{:?}}", ident);
+                tokens.extend(quote!(println!(#str, #expr);))
             }
         }
     }
@@ -92,7 +79,8 @@ mod test {
         let control = parse_quote! {
             let x = 1i64;
         };
-        assert_eq!(statement.into_syn(&mut Default::default()), control)
+        let stmt: syn::Stmt = parse_quote!(#statement);
+        assert_eq!(stmt, control)
     }
 
     #[test]
@@ -112,7 +100,8 @@ mod test {
         );
 
         let control = parse_quote! { let o = <NodeState as grust::core::Component>::step(&mut self.node_state, NodeInput { i : 1i64 }); };
-        assert_eq!(statement.into_syn(&mut Default::default()), control)
+        let stmt: syn::Stmt = parse_quote!(#statement);
+        assert_eq!(stmt, control)
     }
 
     #[test]
@@ -120,7 +109,8 @@ mod test {
         let statement = Stmt::expression_last(Expr::lit(Constant::int(parse_quote!(1i64))));
 
         let control = syn::Stmt::Expr(parse_quote! { 1i64 }, None);
-        assert_eq!(statement.into_syn(&mut Default::default()), control)
+        let stmt = syn::Stmt::Expr(parse_quote!(#statement), None);
+        assert_eq!(stmt, control)
     }
 
     #[test]
@@ -133,6 +123,7 @@ mod test {
         );
 
         let control = parse_quote! { println!("x: {:?}", input.x); };
-        assert_eq!(statement.into_syn(&mut Default::default()), control)
+        let stmt: syn::Stmt = parse_quote!(#statement);
+        assert_eq!(stmt, control)
     }
 }

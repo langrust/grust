@@ -19,33 +19,33 @@ mk_new! { impl Structure =>
 }
 
 impl Structure {
-    /// Transform [ir2] structure into RustAST structure.
-    pub fn into_syn(self, ctx: &ir0::Ctx) -> syn::ItemStruct {
-        let fields = self.fields.into_iter().map(|(name, typ)| {
-            let typ = typ.into_syn();
-            syn::Field {
-                attrs: vec![],
-                vis: syn::Visibility::Public(Default::default()),
-                ident: Some(name),
-                colon_token: Default::default(),
-                ty: typ,
-                mutability: syn::FieldMutability::None,
-            }
-        });
-        let name = self.name;
-        let attribute: syn::Attribute = if ctx.conf.greusot {
-            parse_quote!(
+    /// Transform an [ir2] structure into a token stream.
+    pub fn to_token_stream(&self, ctx: &Ctx) -> TokenStream2 {
+        let mut tokens = TokenStream2::new();
+        self.to_tokens(ctx, &mut tokens);
+        tokens
+    }
+    /// Writes an [ir2] structure into a token stream.
+    pub fn to_tokens(&self, ctx: &ir0::Ctx, tokens: &mut TokenStream2) {
+        if ctx.conf.greusot {
+            quote!(
                 #[derive(prelude::Clone, Copy, prelude::PartialEq, DeepModel)]
             )
+            .to_tokens(tokens)
         } else {
-            parse_quote!(#[derive(Clone, Copy, PartialEq, Default, Debug)])
+            quote!(#[derive(Clone, Copy, PartialEq, Default, Debug)]).to_tokens(tokens)
         };
-        parse_quote! {
-            #attribute
+        let fields = self
+            .fields
+            .iter()
+            .map(|(name, typ)| quote! { pub #name: #typ });
+        let name = &self.name;
+        quote! {
             pub struct #name {
                 #(#fields),*
             }
         }
+        .to_tokens(tokens)
     }
 }
 
@@ -61,7 +61,8 @@ mod test {
                 (Loc::test_id("x"), Typ::int()),
                 (Loc::test_id("y"), Typ::int()),
             ],
-        );
+        )
+        .to_token_stream(&Ctx::empty());
 
         let control = parse_quote! {
             #[derive(Clone, Copy, PartialEq, Default, Debug)]
@@ -70,6 +71,7 @@ mod test {
                 pub y: i64
             }
         };
-        assert_eq!(structure.into_syn(&ir0::Ctx::empty()), control)
+        let structure: syn::ItemStruct = parse_quote!(#structure);
+        assert_eq!(structure, control)
     }
 }
