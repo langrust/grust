@@ -273,6 +273,31 @@ impl<T: ToLogicTokens> ToTokens for Logic<'_, T> {
     }
 }
 
+/// "Prefix" version of a part of the AST.
+///
+/// This is only used to implement `ToTokens<Prefix<T>>` for the "prefixed" version of the tokens of
+/// `T`.
+pub struct Prefix<'a, T> {
+    pub path: &'a syn::Path,
+    /// `T` value.
+    pub val: &'a T,
+}
+
+/// Tokens for the "prefix" version of a part of the AST.
+pub trait ToPrefixTokens: Sized {
+    /// Turns a `T` value into its "prefix" version.
+    fn to_prefix<'a>(&'a self, path: &'a syn::Path) -> Prefix<'a, Self> {
+        Prefix { path, val: self }
+    }
+    /// Turns a `T` value into its "prefix" version as tokens.
+    fn to_prefix_tokens(&self, path: &syn::Path, tokens: &mut TokenStream2);
+}
+impl<T: ToPrefixTokens> ToTokens for Prefix<'_, T> {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
+        self.val.to_prefix_tokens(self.path, tokens);
+    }
+}
+
 /// Byte-level levenshtein distance, not sure this makes sense for unicode.
 ///
 /// Stackless version of <https://en.wikipedia.org/wiki/Levenshtein_distance#Recursive>.
