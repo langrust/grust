@@ -44,7 +44,9 @@ impl ToTokens for ProjectTokens<'_> {
                         em.to_tokens(tokens)
                     }
                 }
-                Item::StateMachine(sm) => sm.prepare_tokens(ctx.conf.greusot).to_tokens(tokens),
+                Item::StateMachine(sm) => sm
+                    .prepare_tokens(ctx.conf.greusot, ctx.conf.align_mem)
+                    .to_tokens(tokens),
                 Item::Function(fun) => {
                     let (def, logic_opt) = fun.to_def_and_logic_tokens(ctx);
                     def.to_tokens(tokens);

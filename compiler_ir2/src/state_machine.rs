@@ -277,12 +277,14 @@ mk_new! { impl State => new {
 pub struct StateTokens<'a> {
     state: &'a State,
     with_contracts: bool,
+    align_mem: bool,
 }
 impl State {
-    pub fn prepare_tokens(&self, with_contracts: bool) -> StateTokens {
+    pub fn prepare_tokens(&self, with_contracts: bool, align_mem: bool) -> StateTokens {
         StateTokens {
             state: self,
             with_contracts,
+            align_mem,
         }
     }
 }
@@ -311,9 +313,17 @@ impl StateTokens<'_> {
         let input_ty = self.state.node_name.to_input_ty();
         let output_ty = &self.state.step.output_type;
         let state_ty = self.state.node_name.to_state_ty();
-        let structure = quote!(
-            pub struct #state_ty { #(#fields),* }
-        );
+
+        let structure = if self.align_mem {
+            quote!(
+                #[repr(align(64))]
+                pub struct #state_ty { #(#fields),* }
+            )
+        } else {
+            quote!(
+                pub struct #state_ty { #(#fields),* }
+            )
+        };
 
         let init = &self.state.init;
         let step = self.state.step.prepare_tokens(self.with_contracts);
@@ -350,12 +360,14 @@ mk_new! { impl StateMachine => new {
 pub struct StateMachineTokens<'a> {
     sm: &'a StateMachine,
     with_contracts: bool,
+    align_mem: bool,
 }
 impl StateMachine {
-    pub fn prepare_tokens(&self, with_contracts: bool) -> StateMachineTokens {
+    pub fn prepare_tokens(&self, with_contracts: bool, align_mem: bool) -> StateMachineTokens {
         StateMachineTokens {
             sm: self,
             with_contracts,
+            align_mem,
         }
     }
 }
@@ -369,7 +381,7 @@ impl ToTokens for StateMachineTokens<'_> {
         let (state_structure, state_implementation) = self
             .sm
             .state
-            .prepare_tokens(self.with_contracts)
+            .prepare_tokens(self.with_contracts, self.align_mem)
             .to_struct_and_impl_tokens();
         state_structure.to_tokens(tokens);
         state_implementation.to_tokens(tokens);
