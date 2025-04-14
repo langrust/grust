@@ -569,6 +569,7 @@ version = "0.1.0"
 name = "grust_std"
 version = "0.1.0"
 dependencies = [
+ "grust_core",
  "rayon",
 ]
 
