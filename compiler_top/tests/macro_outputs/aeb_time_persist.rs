@@ -249,15 +249,14 @@ pub mod runtime {
         use super::*;
         use futures::{sink::SinkExt, stream::StreamExt};
         mod ctx_ty {
-            use super::*;
             #[derive(Clone, Copy, PartialEq, Default, Debug)]
-            pub struct Brakes(Braking, bool);
+            pub struct Brakes(super::Braking, bool);
             impl Brakes {
-                pub fn set(&mut self, brakes: Braking) {
+                pub fn set(&mut self, brakes: super::Braking) {
                     self.1 = self.0 != brakes;
                     self.0 = brakes;
                 }
-                pub fn get(&self) -> Braking {
+                pub fn get(&self) -> super::Braking {
                     self.0
                 }
                 pub fn is_new(&self) -> bool {

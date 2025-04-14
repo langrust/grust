@@ -109,9 +109,9 @@ impl ToTokens for Input {
             .elements
             .iter()
             .map(|InputElm { identifier, typ }| quote!(pub #identifier : #typ));
-        let name = self.node_name.to_input_ty();
+        let input_ty = self.node_name.to_input_ty();
         quote!(
-            pub struct #name {
+            pub struct #input_ty {
                 #(#fields,)*
             }
         )

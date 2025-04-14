@@ -6,7 +6,7 @@ mod aeb {
         import signal car::speed_km_h                   : float;
         import event  car::detect::left::pedestrian_l   : float;
         import event  car::detect::right::pedestrian_r  : float;
-        export signal car::urban::braking::brakes       : Braking;
+        export signal car::urban::braking               : Braking;
 
         // Braking type
         enum Braking {
@@ -65,7 +65,7 @@ mod aeb {
             let event pedestrian: float = merge(pedestrian_l, pedestrian_r);
             let event timeout_pedest: unit = timeout(pedestrian, 2000);
             let signal acc_km_h: float = derive(speed_km_h, time());
-            brakes = braking_state(pedestrian, timeout_pedest, speed_km_h, acc_km_h);
+            braking = braking_state(pedestrian, timeout_pedest, speed_km_h, acc_km_h);
         }
     }
 }
@@ -109,13 +109,13 @@ fn into_aeb_service_input(input: Input) -> Option<RuntimeInput> {
 
 fn from_aeb_service_output(output: RuntimeOutput) -> Result<Output, Status> {
     match output {
-        RuntimeOutput::Brakes(aeb::Braking::UrgentBrake, instant) => Ok(Output {
+        RuntimeOutput::Braking(aeb::Braking::UrgentBrake, instant) => Ok(Output {
             brakes: Braking::UrgentBrake.into(),
         }),
-        RuntimeOutput::Brakes(aeb::Braking::SoftBrake, instant) => Ok(Output {
+        RuntimeOutput::Braking(aeb::Braking::SoftBrake, instant) => Ok(Output {
             brakes: Braking::SoftBrake.into(),
         }),
-        RuntimeOutput::Brakes(aeb::Braking::NoBrake, instant) => Ok(Output {
+        RuntimeOutput::Braking(aeb::Braking::NoBrake, instant) => Ok(Output {
             brakes: Braking::NoBrake.into(),
         }),
     }
