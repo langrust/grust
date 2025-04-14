@@ -402,7 +402,7 @@ impl Display for ErrorKind {
             AlreadyDefinedElement { name } => {
                 write!(f, "trying to redefine element `{name}`")
             }
-            AlreadyTyped {name} => write!(f, "trying to re-type `{name}`"),
+            AlreadyTyped { name } => write!(f, "trying to re-type `{name}`"),
             IncompatibleType {
                 given_type,
                 expected_type,
@@ -435,7 +435,7 @@ impl Display for ErrorKind {
                 "unknown output signal in node `{}`: `{}`",
                 node_name, signal_name
             ),
-            ExpectType {name} => write!(f, "expected type for `{name}`"),
+            ExpectType { name } => write!(f, "expected type for `{name}`"),
             ExpectConstant => write!(f, "expected constant"),
             ExpectInput => write!(f, "expected input"),
             ExpectArithType { given_type } => {
