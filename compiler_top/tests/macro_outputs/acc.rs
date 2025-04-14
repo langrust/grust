@@ -441,7 +441,6 @@ pub mod runtime {
         use super::*;
         use futures::{sink::SinkExt, stream::StreamExt};
         mod ctx_ty {
-            use super::*;
             #[derive(Clone, Copy, PartialEq, Default, Debug)]
             pub struct Condition(bool, bool);
             impl Condition {

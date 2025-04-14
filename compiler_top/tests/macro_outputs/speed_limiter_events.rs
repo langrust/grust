@@ -446,7 +446,6 @@ pub mod runtime {
         use super::*;
         use futures::{sink::SinkExt, stream::StreamExt};
         mod ctx_ty {
-            use super::*;
             #[derive(Clone, Copy, PartialEq, Default, Debug)]
             pub struct StateUpdate(bool, bool);
             impl StateUpdate {
@@ -482,13 +481,13 @@ pub mod runtime {
                 }
             }
             #[derive(Clone, Copy, PartialEq, Default, Debug)]
-            pub struct VacuumBrake(VacuumBrakeState, bool);
+            pub struct VacuumBrake(super::VacuumBrakeState, bool);
             impl VacuumBrake {
-                pub fn set(&mut self, vacuum_brake: VacuumBrakeState) {
+                pub fn set(&mut self, vacuum_brake: super::VacuumBrakeState) {
                     self.1 = self.0 != vacuum_brake;
                     self.0 = vacuum_brake;
                 }
-                pub fn get(&self) -> VacuumBrakeState {
+                pub fn get(&self) -> super::VacuumBrakeState {
                     self.0
                 }
                 pub fn is_new(&self) -> bool {
@@ -499,13 +498,13 @@ pub mod runtime {
                 }
             }
             #[derive(Clone, Copy, PartialEq, Default, Debug)]
-            pub struct Vdc(VdcState, bool);
+            pub struct Vdc(super::VdcState, bool);
             impl Vdc {
-                pub fn set(&mut self, vdc: VdcState) {
+                pub fn set(&mut self, vdc: super::VdcState) {
                     self.1 = self.0 != vdc;
                     self.0 = vdc;
                 }
-                pub fn get(&self) -> VdcState {
+                pub fn get(&self) -> super::VdcState {
                     self.0
                 }
                 pub fn is_new(&self) -> bool {
@@ -635,13 +634,13 @@ pub mod runtime {
                 }
             }
             #[derive(Clone, Copy, PartialEq, Default, Debug)]
-            pub struct OnState(SpeedLimiterOn, bool);
+            pub struct OnState(super::SpeedLimiterOn, bool);
             impl OnState {
-                pub fn set(&mut self, on_state: SpeedLimiterOn) {
+                pub fn set(&mut self, on_state: super::SpeedLimiterOn) {
                     self.1 = self.0 != on_state;
                     self.0 = on_state;
                 }
-                pub fn get(&self) -> SpeedLimiterOn {
+                pub fn get(&self) -> super::SpeedLimiterOn {
                     self.0
                 }
                 pub fn is_new(&self) -> bool {
@@ -652,13 +651,13 @@ pub mod runtime {
                 }
             }
             #[derive(Clone, Copy, PartialEq, Default, Debug)]
-            pub struct State(SpeedLimiter, bool);
+            pub struct State(super::SpeedLimiter, bool);
             impl State {
-                pub fn set(&mut self, state: SpeedLimiter) {
+                pub fn set(&mut self, state: super::SpeedLimiter) {
                     self.1 = self.0 != state;
                     self.0 = state;
                 }
-                pub fn get(&self) -> SpeedLimiter {
+                pub fn get(&self) -> super::SpeedLimiter {
                     self.0
                 }
                 pub fn is_new(&self) -> bool {

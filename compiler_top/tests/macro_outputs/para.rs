@@ -288,7 +288,6 @@ pub mod runtime {
         use super::*;
         use futures::{sink::SinkExt, stream::StreamExt};
         mod ctx_ty {
-            use super::*;
             #[derive(Clone, Copy, PartialEq, Default, Debug)]
             pub struct S2(i64, bool);
             impl S2 {
