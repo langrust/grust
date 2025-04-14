@@ -129,7 +129,12 @@ impl ToTokens for Flows {
             let items = self.elements.iter().map(|(element_name, element_ty)| {
                 let struct_name = element_name.to_camel();
                 let name = element_name;
-                let ty = element_ty;
+                let super_path = Ident::new(
+                    "super",
+                    element_ty.loc().expect("there should be a Loc").span,
+                )
+                .into();
+                let ty = element_ty.to_prefix(&super_path);
                 quote! {
                     #[derive(Clone, Copy, PartialEq, Default, Debug)]
                     pub struct #struct_name(#ty, bool);
@@ -145,7 +150,7 @@ impl ToTokens for Flows {
                 }
             });
             quote! {
-                mod ctx_ty { use super::*; #(#items)* }
+                mod ctx_ty { #(#items)* }
             }
             .to_tokens(tokens)
         }

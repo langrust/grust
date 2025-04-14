@@ -355,64 +355,111 @@ mk_new! { impl Typ =>
     Any: any()
 }
 
-impl ToTokens for Typ {
-    fn to_tokens(&self, tokens: &mut TokenStream2) {
-        match self {
-            Typ::Integer(_) => quote!(i64).to_tokens(tokens),
-            Typ::Float(_) => quote!(f64).to_tokens(tokens),
-            Typ::Boolean(_) => quote!(bool).to_tokens(tokens),
-            Typ::Unit(_) => quote!(()).to_tokens(tokens),
-            Typ::Enumeration { name, .. } | Typ::Structure { name, .. } => name.to_tokens(tokens),
-            Typ::Array { ty, size, .. } => {
-                let size = syn::Lit::Int(syn::LitInt::new(
-                    &(size.base10_digits().to_owned() + "usize"),
-                    size.span(),
-                ));
-                quote!( [#ty; #size] ).to_tokens(tokens)
-            }
-            Typ::Abstract { inputs, output, .. } => {
-                let inputs = inputs.iter();
-                quote!(impl Fn(#(#inputs),*) -> #output).to_tokens(tokens)
-            }
-            Typ::Tuple { elements, .. } => {
-                let elements = elements.iter();
-                quote!((#(#elements),*)).to_tokens(tokens)
-            }
-            Typ::Event { ty, .. } | Typ::Signal { ty, .. } => ty.to_tokens(tokens),
-            Typ::SMEvent { ty, .. } => quote!(Option<#ty>).to_tokens(tokens),
-            Typ::NotDefinedYet(_) | Typ::Polymorphism(_) | Typ::Any => {
-                noErrorDesc!()
+pub mod typ_tokens {
+    use super::*;
+
+    impl ToTokens for Typ {
+        fn to_tokens(&self, tokens: &mut TokenStream2) {
+            match self {
+                Typ::Integer(_) => quote!(i64).to_tokens(tokens),
+                Typ::Float(_) => quote!(f64).to_tokens(tokens),
+                Typ::Boolean(_) => quote!(bool).to_tokens(tokens),
+                Typ::Unit(_) => quote!(()).to_tokens(tokens),
+                Typ::Enumeration { name, .. } | Typ::Structure { name, .. } => {
+                    name.to_tokens(tokens)
+                }
+                Typ::Array { ty, size, .. } => {
+                    let size = syn::Lit::Int(syn::LitInt::new(
+                        &(size.base10_digits().to_owned() + "usize"),
+                        size.span(),
+                    ));
+                    quote!( [#ty; #size] ).to_tokens(tokens)
+                }
+                Typ::Abstract { inputs, output, .. } => {
+                    let inputs = inputs.iter();
+                    quote!(impl Fn(#(#inputs),*) -> #output).to_tokens(tokens)
+                }
+                Typ::Tuple { elements, .. } => {
+                    let elements = elements.iter();
+                    quote!((#(#elements),*)).to_tokens(tokens)
+                }
+                Typ::Event { ty, .. } | Typ::Signal { ty, .. } => ty.to_tokens(tokens),
+                Typ::SMEvent { ty, .. } => quote!(Option<#ty>).to_tokens(tokens),
+                Typ::NotDefinedYet(_) | Typ::Polymorphism(_) | Typ::Any => {
+                    noErrorDesc!()
+                }
             }
         }
     }
-}
-impl ToLogicTokens for Typ {
-    fn to_logic_tokens(&self, tokens: &mut TokenStream2) {
-        match self {
-            Typ::Integer(_) => quote!(Int).to_tokens(tokens),
-            Typ::Float(_) => quote!(Float).to_tokens(tokens),
-            Typ::Array { ty, size, .. } => {
-                let ty = ty.to_logic();
-                quote!([#ty; #size]).to_tokens(tokens)
+
+    impl ToLogicTokens for Typ {
+        fn to_logic_tokens(&self, tokens: &mut TokenStream2) {
+            match self {
+                Typ::Integer(_) => quote!(Int).to_tokens(tokens),
+                Typ::Float(_) => quote!(Float).to_tokens(tokens),
+                Typ::Array { ty, size, .. } => {
+                    let ty = ty.to_logic();
+                    quote!([#ty; #size]).to_tokens(tokens)
+                }
+                Typ::Tuple { elements, .. } => {
+                    let elements = elements.iter().map(|ty| ty.to_logic());
+                    quote!((#(#elements),*)).to_tokens(tokens)
+                }
+                Typ::SMEvent { ty, .. } => {
+                    let ty = ty.to_logic();
+                    quote!(Option<#ty>).to_tokens(tokens)
+                }
+                Typ::Boolean(_)
+                | Typ::Unit(_)
+                | Typ::Enumeration { .. }
+                | Typ::Structure { .. } => self.to_tokens(tokens),
+                Typ::Abstract { .. }
+                | Typ::Event { .. }
+                | Typ::Signal { .. }
+                | Typ::NotDefinedYet(_)
+                | Typ::Polymorphism(_)
+                | Typ::Any => {
+                    noErrorDesc!()
+                }
             }
-            Typ::Tuple { elements, .. } => {
-                let elements = elements.iter().map(|e| e.to_logic());
-                quote!((#(#elements),*)).to_tokens(tokens)
-            }
-            Typ::SMEvent { ty, .. } => {
-                let ty = ty.to_logic();
-                quote!(Option<#ty>).to_tokens(tokens)
-            }
-            Typ::Boolean(_) | Typ::Unit(_) | Typ::Enumeration { .. } | Typ::Structure { .. } => {
-                self.to_tokens(tokens)
-            }
-            Typ::Abstract { .. }
-            | Typ::Event { .. }
-            | Typ::Signal { .. }
-            | Typ::NotDefinedYet(_)
-            | Typ::Polymorphism(_)
-            | Typ::Any => {
-                noErrorDesc!()
+        }
+    }
+
+    impl ToPrefixTokens for Typ {
+        fn to_prefix_tokens(&self, path: &syn::Path, tokens: &mut TokenStream2) {
+            match self {
+                Typ::Integer(_) => quote!(i64).to_tokens(tokens),
+                Typ::Float(_) => quote!(f64).to_tokens(tokens),
+                Typ::Boolean(_) => quote!(bool).to_tokens(tokens),
+                Typ::Unit(_) => quote!(()).to_tokens(tokens),
+                Typ::Enumeration { name, .. } | Typ::Structure { name, .. } => {
+                    quote!(#path::#name).to_tokens(tokens)
+                }
+                Typ::Array { ty, size, .. } => {
+                    let size = syn::Lit::Int(syn::LitInt::new(
+                        &(size.base10_digits().to_owned() + "usize"),
+                        size.span(),
+                    ));
+                    let ty = ty.to_prefix(path);
+                    quote!( [#ty; #size] ).to_tokens(tokens)
+                }
+                Typ::Abstract { inputs, output, .. } => {
+                    let inputs = inputs.iter().map(|ty| ty.to_prefix(path));
+                    let output = output.to_prefix(path);
+                    quote!(impl Fn(#(#inputs),*) -> #output).to_tokens(tokens)
+                }
+                Typ::Tuple { elements, .. } => {
+                    let elements = elements.iter().map(|ty| ty.to_prefix(path));
+                    quote!((#(#elements),*)).to_tokens(tokens)
+                }
+                Typ::Event { ty, .. } | Typ::Signal { ty, .. } => ty.to_prefix_tokens(path, tokens),
+                Typ::SMEvent { ty, .. } => {
+                    let ty = ty.to_prefix(path);
+                    quote!(Option<#ty>).to_tokens(tokens)
+                }
+                Typ::NotDefinedYet(_) | Typ::Polymorphism(_) | Typ::Any => {
+                    noErrorDesc!()
+                }
             }
         }
     }
