@@ -765,7 +765,45 @@ pub mod runtime {
                 if self.delayed {
                     self.reset_time_constraints(_vdc_instant).await?;
                     self.context.reset();
+                    let in_regulation_ref = &mut None;
                     self.context.vdc.set(vdc);
+                    if self.context.vacuum_brake.is_new()
+                        || self.context.vdc.is_new()
+                        || self.context.speed.is_new()
+                        || self.context.v_set.is_new()
+                    {
+                        let (state, on_state, in_regulation_aux, state_update) =
+                            <SpeedLimiterState as grust::core::Component>::step(
+                                &mut self.speed_limiter,
+                                SpeedLimiterInput {
+                                    activation_req: None,
+                                    vacuum_brake_state: self.context.vacuum_brake.get(),
+                                    kickdown: None,
+                                    failure: None,
+                                    vdc_disabled: vdc,
+                                    speed: self.context.speed.get(),
+                                    v_set: self.context.v_set.get(),
+                                },
+                            );
+                        self.context.state.set(state);
+                        self.context.on_state.set(on_state);
+                        self.context.in_regulation_aux.set(in_regulation_aux);
+                        self.context.state_update.set(state_update);
+                    }
+                    if self.context.in_regulation_old.get() != self.context.in_regulation_aux.get()
+                    {
+                        self.context
+                            .in_regulation_old
+                            .set(self.context.in_regulation_aux.get());
+                        *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                    }
+                    if let Some(in_regulation) = *in_regulation_ref {
+                        self.send_output(
+                            O::InRegulation(in_regulation, _vdc_instant),
+                            _vdc_instant,
+                        )
+                        .await?;
+                    }
                 } else {
                     let unique = self.input_store.vdc.replace((vdc, _vdc_instant));
                     assert!(unique.is_none(), "flow `vdc` changes too frequently");
@@ -780,12 +818,6 @@ pub mod runtime {
                     .await?;
                 self.context.reset();
                 let in_regulation_ref = &mut None;
-                let (v_set_aux, v_update) = <ProcessSetSpeedState as grust::core::Component>::step(
-                    &mut self.process_set_speed,
-                    ProcessSetSpeedInput { set_speed: None },
-                );
-                self.context.v_set_aux.set(v_set_aux);
-                self.context.v_update.set(v_update);
                 let v_set = self.context.v_set_aux.get();
                 self.context.v_set.set(v_set);
                 self.send_output(
@@ -793,23 +825,29 @@ pub mod runtime {
                     _timeout_speed_limiter_instant,
                 )
                 .await?;
-                let (state, on_state, in_regulation_aux, state_update) =
-                    <SpeedLimiterState as grust::core::Component>::step(
-                        &mut self.speed_limiter,
-                        SpeedLimiterInput {
-                            activation_req: None,
-                            vacuum_brake_state: self.context.vacuum_brake.get(),
-                            kickdown: None,
-                            failure: None,
-                            vdc_disabled: self.context.vdc.get(),
-                            speed: self.context.speed.get(),
-                            v_set: v_set,
-                        },
-                    );
-                self.context.state.set(state);
-                self.context.on_state.set(on_state);
-                self.context.in_regulation_aux.set(in_regulation_aux);
-                self.context.state_update.set(state_update);
+                if self.context.vacuum_brake.is_new()
+                    || self.context.vdc.is_new()
+                    || self.context.speed.is_new()
+                    || self.context.v_set.is_new()
+                {
+                    let (state, on_state, in_regulation_aux, state_update) =
+                        <SpeedLimiterState as grust::core::Component>::step(
+                            &mut self.speed_limiter,
+                            SpeedLimiterInput {
+                                activation_req: None,
+                                vacuum_brake_state: self.context.vacuum_brake.get(),
+                                kickdown: None,
+                                failure: None,
+                                vdc_disabled: self.context.vdc.get(),
+                                speed: self.context.speed.get(),
+                                v_set: v_set,
+                            },
+                        );
+                    self.context.state.set(state);
+                    self.context.on_state.set(on_state);
+                    self.context.in_regulation_aux.set(in_regulation_aux);
+                    self.context.state_update.set(state_update);
+                }
                 if self.context.in_regulation_old.get() != self.context.in_regulation_aux.get() {
                     self.context
                         .in_regulation_old
@@ -843,7 +881,45 @@ pub mod runtime {
                 if self.delayed {
                     self.reset_time_constraints(_vacuum_brake_instant).await?;
                     self.context.reset();
+                    let in_regulation_ref = &mut None;
                     self.context.vacuum_brake.set(vacuum_brake);
+                    if self.context.vacuum_brake.is_new()
+                        || self.context.vdc.is_new()
+                        || self.context.speed.is_new()
+                        || self.context.v_set.is_new()
+                    {
+                        let (state, on_state, in_regulation_aux, state_update) =
+                            <SpeedLimiterState as grust::core::Component>::step(
+                                &mut self.speed_limiter,
+                                SpeedLimiterInput {
+                                    activation_req: None,
+                                    vacuum_brake_state: vacuum_brake,
+                                    kickdown: None,
+                                    failure: None,
+                                    vdc_disabled: self.context.vdc.get(),
+                                    speed: self.context.speed.get(),
+                                    v_set: self.context.v_set.get(),
+                                },
+                            );
+                        self.context.state.set(state);
+                        self.context.on_state.set(on_state);
+                        self.context.in_regulation_aux.set(in_regulation_aux);
+                        self.context.state_update.set(state_update);
+                    }
+                    if self.context.in_regulation_old.get() != self.context.in_regulation_aux.get()
+                    {
+                        self.context
+                            .in_regulation_old
+                            .set(self.context.in_regulation_aux.get());
+                        *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                    }
+                    if let Some(in_regulation) = *in_regulation_ref {
+                        self.send_output(
+                            O::InRegulation(in_regulation, _vacuum_brake_instant),
+                            _vacuum_brake_instant,
+                        )
+                        .await?;
+                    }
                 } else {
                     let unique = self
                         .input_store
@@ -867,23 +943,30 @@ pub mod runtime {
                     let activation_ref = &mut None;
                     let in_regulation_ref = &mut None;
                     *activation_ref = Some(activation);
-                    let (state, on_state, in_regulation_aux, state_update) =
-                        <SpeedLimiterState as grust::core::Component>::step(
-                            &mut self.speed_limiter,
-                            SpeedLimiterInput {
-                                activation_req: *activation_ref,
-                                vacuum_brake_state: self.context.vacuum_brake.get(),
-                                kickdown: None,
-                                failure: None,
-                                vdc_disabled: self.context.vdc.get(),
-                                speed: self.context.speed.get(),
-                                v_set: self.context.v_set.get(),
-                            },
-                        );
-                    self.context.state.set(state);
-                    self.context.on_state.set(on_state);
-                    self.context.in_regulation_aux.set(in_regulation_aux);
-                    self.context.state_update.set(state_update);
+                    if activation_ref.is_some()
+                        || self.context.vacuum_brake.is_new()
+                        || self.context.vdc.is_new()
+                        || self.context.speed.is_new()
+                        || self.context.v_set.is_new()
+                    {
+                        let (state, on_state, in_regulation_aux, state_update) =
+                            <SpeedLimiterState as grust::core::Component>::step(
+                                &mut self.speed_limiter,
+                                SpeedLimiterInput {
+                                    activation_req: *activation_ref,
+                                    vacuum_brake_state: self.context.vacuum_brake.get(),
+                                    kickdown: None,
+                                    failure: None,
+                                    vdc_disabled: self.context.vdc.get(),
+                                    speed: self.context.speed.get(),
+                                    v_set: self.context.v_set.get(),
+                                },
+                            );
+                        self.context.state.set(state);
+                        self.context.on_state.set(on_state);
+                        self.context.in_regulation_aux.set(in_regulation_aux);
+                        self.context.state_update.set(state_update);
+                    }
                     if self.context.in_regulation_old.get() != self.context.in_regulation_aux.get()
                     {
                         self.context
@@ -918,23 +1001,30 @@ pub mod runtime {
                     let kickdown_ref = &mut None;
                     let in_regulation_ref = &mut None;
                     *kickdown_ref = Some(kickdown);
-                    let (state, on_state, in_regulation_aux, state_update) =
-                        <SpeedLimiterState as grust::core::Component>::step(
-                            &mut self.speed_limiter,
-                            SpeedLimiterInput {
-                                activation_req: None,
-                                vacuum_brake_state: self.context.vacuum_brake.get(),
-                                kickdown: *kickdown_ref,
-                                failure: None,
-                                vdc_disabled: self.context.vdc.get(),
-                                speed: self.context.speed.get(),
-                                v_set: self.context.v_set.get(),
-                            },
-                        );
-                    self.context.state.set(state);
-                    self.context.on_state.set(on_state);
-                    self.context.in_regulation_aux.set(in_regulation_aux);
-                    self.context.state_update.set(state_update);
+                    if kickdown_ref.is_some()
+                        || self.context.vacuum_brake.is_new()
+                        || self.context.vdc.is_new()
+                        || self.context.speed.is_new()
+                        || self.context.v_set.is_new()
+                    {
+                        let (state, on_state, in_regulation_aux, state_update) =
+                            <SpeedLimiterState as grust::core::Component>::step(
+                                &mut self.speed_limiter,
+                                SpeedLimiterInput {
+                                    activation_req: None,
+                                    vacuum_brake_state: self.context.vacuum_brake.get(),
+                                    kickdown: *kickdown_ref,
+                                    failure: None,
+                                    vdc_disabled: self.context.vdc.get(),
+                                    speed: self.context.speed.get(),
+                                    v_set: self.context.v_set.get(),
+                                },
+                            );
+                        self.context.state.set(state);
+                        self.context.on_state.set(on_state);
+                        self.context.in_regulation_aux.set(in_regulation_aux);
+                        self.context.state_update.set(state_update);
+                    }
                     if self.context.in_regulation_old.get() != self.context.in_regulation_aux.get()
                     {
                         self.context
@@ -966,6 +1056,7 @@ pub mod runtime {
                 if self.delayed {
                     self.reset_time_constraints(_set_speed_instant).await?;
                     self.context.reset();
+                    let in_regulation_ref = &mut None;
                     let changed_set_speed_ref = &mut None;
                     if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                         self.context.x.set(set_speed);
@@ -974,20 +1065,59 @@ pub mod runtime {
                         self.context.changed_set_speed_old.set(self.context.x.get());
                         *changed_set_speed_ref = Some(self.context.x.get());
                     }
-                    let (v_set_aux, v_update) =
-                        <ProcessSetSpeedState as grust::core::Component>::step(
-                            &mut self.process_set_speed,
-                            ProcessSetSpeedInput {
-                                set_speed: *changed_set_speed_ref,
-                            },
-                        );
-                    self.context.v_set_aux.set(v_set_aux);
-                    self.context.v_update.set(v_update);
+                    if changed_set_speed_ref.is_some() {
+                        let (v_set_aux, v_update) =
+                            <ProcessSetSpeedState as grust::core::Component>::step(
+                                &mut self.process_set_speed,
+                                ProcessSetSpeedInput {
+                                    set_speed: *changed_set_speed_ref,
+                                },
+                            );
+                        self.context.v_set_aux.set(v_set_aux);
+                        self.context.v_update.set(v_update);
+                    }
                     let v_set = self.context.v_set_aux.get();
                     self.context.v_set.set(v_set);
                     if self.context.v_set.is_new() {
                         self.send_output(O::VSet(v_set, _set_speed_instant), _set_speed_instant)
                             .await?;
+                    }
+                    if self.context.vacuum_brake.is_new()
+                        || self.context.vdc.is_new()
+                        || self.context.speed.is_new()
+                        || self.context.v_set.is_new()
+                    {
+                        let (state, on_state, in_regulation_aux, state_update) =
+                            <SpeedLimiterState as grust::core::Component>::step(
+                                &mut self.speed_limiter,
+                                SpeedLimiterInput {
+                                    activation_req: None,
+                                    vacuum_brake_state: self.context.vacuum_brake.get(),
+                                    kickdown: None,
+                                    failure: None,
+                                    vdc_disabled: self.context.vdc.get(),
+                                    speed: self.context.speed.get(),
+                                    v_set: v_set,
+                                },
+                            );
+                        self.context.state.set(state);
+                        self.context.on_state.set(on_state);
+                        self.context.in_regulation_aux.set(in_regulation_aux);
+                        self.context.state_update.set(state_update);
+                    }
+                    if self.context.in_regulation_old.get() != self.context.in_regulation_aux.get()
+                    {
+                        self.context
+                            .in_regulation_old
+                            .set(self.context.in_regulation_aux.get());
+                        *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                    }
+                    if let Some(in_regulation) = *in_regulation_ref {
+                        self.send_output(
+                            O::InRegulation(in_regulation, _set_speed_instant),
+                            _set_speed_instant,
+                        )
+                        .await?;
                     }
                 } else {
                     let unique = self
@@ -1009,23 +1139,30 @@ pub mod runtime {
                     let failure_ref = &mut None;
                     let in_regulation_ref = &mut None;
                     *failure_ref = Some(failure);
-                    let (state, on_state, in_regulation_aux, state_update) =
-                        <SpeedLimiterState as grust::core::Component>::step(
-                            &mut self.speed_limiter,
-                            SpeedLimiterInput {
-                                activation_req: None,
-                                vacuum_brake_state: self.context.vacuum_brake.get(),
-                                kickdown: None,
-                                failure: *failure_ref,
-                                vdc_disabled: self.context.vdc.get(),
-                                speed: self.context.speed.get(),
-                                v_set: self.context.v_set.get(),
-                            },
-                        );
-                    self.context.state.set(state);
-                    self.context.on_state.set(on_state);
-                    self.context.in_regulation_aux.set(in_regulation_aux);
-                    self.context.state_update.set(state_update);
+                    if failure_ref.is_some()
+                        || self.context.vacuum_brake.is_new()
+                        || self.context.vdc.is_new()
+                        || self.context.speed.is_new()
+                        || self.context.v_set.is_new()
+                    {
+                        let (state, on_state, in_regulation_aux, state_update) =
+                            <SpeedLimiterState as grust::core::Component>::step(
+                                &mut self.speed_limiter,
+                                SpeedLimiterInput {
+                                    activation_req: None,
+                                    vacuum_brake_state: self.context.vacuum_brake.get(),
+                                    kickdown: None,
+                                    failure: *failure_ref,
+                                    vdc_disabled: self.context.vdc.get(),
+                                    speed: self.context.speed.get(),
+                                    v_set: self.context.v_set.get(),
+                                },
+                            );
+                        self.context.state.set(state);
+                        self.context.on_state.set(on_state);
+                        self.context.in_regulation_aux.set(in_regulation_aux);
+                        self.context.state_update.set(state_update);
+                    }
                     if self.context.in_regulation_old.get() != self.context.in_regulation_aux.get()
                     {
                         self.context
@@ -1067,290 +1204,31 @@ pub mod runtime {
                     ) {
                         (None, None, None, None, None, None, None) => {}
                         (Some((vdc, _vdc_instant)), None, None, None, None, None, None) => {
+                            let in_regulation_ref = &mut None;
                             self.context.vdc.set(vdc);
-                        }
-                        (
-                            None,
-                            Some((vacuum_brake, _vacuum_brake_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                        }
-                        (
-                            Some((vdc, _vdc_instant)),
-                            Some((vacuum_brake, _vacuum_brake_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.vdc.set(vdc);
-                        }
-                        (
-                            None,
-                            None,
-                            Some((activation, _activation_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            let activation_ref = &mut None;
-                            let in_regulation_ref = &mut None;
-                            *activation_ref = Some(activation);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: None,
-                                        failure: None,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            if self.context.in_regulation_old.get()
-                                != self.context.in_regulation_aux.get()
+                            if self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
                             {
-                                self.context
-                                    .in_regulation_old
-                                    .set(self.context.in_regulation_aux.get());
-                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
                             }
-                            if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(
-                                    O::InRegulation(in_regulation, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            Some((vdc, _vdc_instant)),
-                            None,
-                            Some((activation, _activation_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            let activation_ref = &mut None;
-                            let in_regulation_ref = &mut None;
-                            *activation_ref = Some(activation);
-                            self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: None,
-                                        failure: None,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            if self.context.in_regulation_old.get()
-                                != self.context.in_regulation_aux.get()
-                            {
-                                self.context
-                                    .in_regulation_old
-                                    .set(self.context.in_regulation_aux.get());
-                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            }
-                            if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(
-                                    O::InRegulation(in_regulation, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            None,
-                            Some((vacuum_brake, _vacuum_brake_instant)),
-                            Some((activation, _activation_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            let activation_ref = &mut None;
-                            let in_regulation_ref = &mut None;
-                            *activation_ref = Some(activation);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: None,
-                                        failure: None,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            if self.context.in_regulation_old.get()
-                                != self.context.in_regulation_aux.get()
-                            {
-                                self.context
-                                    .in_regulation_old
-                                    .set(self.context.in_regulation_aux.get());
-                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            }
-                            if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(
-                                    O::InRegulation(in_regulation, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            Some((vdc, _vdc_instant)),
-                            Some((vacuum_brake, _vacuum_brake_instant)),
-                            Some((activation, _activation_instant)),
-                            None,
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            let activation_ref = &mut None;
-                            let in_regulation_ref = &mut None;
-                            *activation_ref = Some(activation);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: None,
-                                        failure: None,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            if self.context.in_regulation_old.get()
-                                != self.context.in_regulation_aux.get()
-                            {
-                                self.context
-                                    .in_regulation_old
-                                    .set(self.context.in_regulation_aux.get());
-                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            }
-                            if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(
-                                    O::InRegulation(in_regulation, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            None,
-                            None,
-                            None,
-                            Some((kickdown, _kickdown_instant)),
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            let kickdown_ref = &mut None;
-                            let in_regulation_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            if self.context.in_regulation_old.get()
-                                != self.context.in_regulation_aux.get()
-                            {
-                                self.context
-                                    .in_regulation_old
-                                    .set(self.context.in_regulation_aux.get());
-                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            }
-                            if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(
-                                    O::InRegulation(in_regulation, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            Some((vdc, _vdc_instant)),
-                            None,
-                            None,
-                            Some((kickdown, _kickdown_instant)),
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            let kickdown_ref = &mut None;
-                            let in_regulation_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -1371,32 +1249,36 @@ pub mod runtime {
                             None,
                             Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((kickdown, _kickdown_instant)),
+                            None,
                             None,
                             None,
                             None,
                         ) => {
-                            let kickdown_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -1417,33 +1299,37 @@ pub mod runtime {
                             Some((vdc, _vdc_instant)),
                             Some((vacuum_brake, _vacuum_brake_instant)),
                             None,
-                            Some((kickdown, _kickdown_instant)),
+                            None,
                             None,
                             None,
                             None,
                         ) => {
-                            let kickdown_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -1464,397 +1350,38 @@ pub mod runtime {
                             None,
                             None,
                             Some((activation, _activation_instant)),
-                            Some((kickdown, _kickdown_instant)),
+                            None,
                             None,
                             None,
                             None,
                         ) => {
-                            let kickdown_ref = &mut None;
                             let activation_ref = &mut None;
                             let in_regulation_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            if self.context.in_regulation_old.get()
-                                != self.context.in_regulation_aux.get()
+                            if activation_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
                             {
-                                self.context
-                                    .in_regulation_old
-                                    .set(self.context.in_regulation_aux.get());
-                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
                             }
-                            if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(
-                                    O::InRegulation(in_regulation, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            Some((vdc, _vdc_instant)),
-                            None,
-                            Some((activation, _activation_instant)),
-                            Some((kickdown, _kickdown_instant)),
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            let kickdown_ref = &mut None;
-                            let activation_ref = &mut None;
-                            let in_regulation_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            *activation_ref = Some(activation);
-                            self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            if self.context.in_regulation_old.get()
-                                != self.context.in_regulation_aux.get()
-                            {
-                                self.context
-                                    .in_regulation_old
-                                    .set(self.context.in_regulation_aux.get());
-                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            }
-                            if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(
-                                    O::InRegulation(in_regulation, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            None,
-                            Some((vacuum_brake, _vacuum_brake_instant)),
-                            Some((activation, _activation_instant)),
-                            Some((kickdown, _kickdown_instant)),
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            let kickdown_ref = &mut None;
-                            let activation_ref = &mut None;
-                            let in_regulation_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            *activation_ref = Some(activation);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            if self.context.in_regulation_old.get()
-                                != self.context.in_regulation_aux.get()
-                            {
-                                self.context
-                                    .in_regulation_old
-                                    .set(self.context.in_regulation_aux.get());
-                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            }
-                            if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(
-                                    O::InRegulation(in_regulation, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            Some((vdc, _vdc_instant)),
-                            Some((vacuum_brake, _vacuum_brake_instant)),
-                            Some((activation, _activation_instant)),
-                            Some((kickdown, _kickdown_instant)),
-                            None,
-                            None,
-                            None,
-                        ) => {
-                            let kickdown_ref = &mut None;
-                            let activation_ref = &mut None;
-                            let in_regulation_ref = &mut None;
-                            *kickdown_ref = Some(kickdown);
-                            *activation_ref = Some(activation);
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
-                            if self.context.in_regulation_old.get()
-                                != self.context.in_regulation_aux.get()
-                            {
-                                self.context
-                                    .in_regulation_old
-                                    .set(self.context.in_regulation_aux.get());
-                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                            }
-                            if let Some(in_regulation) = *in_regulation_ref {
-                                self.send_output(
-                                    O::InRegulation(in_regulation, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            None,
-                            None,
-                            None,
-                            None,
-                            Some((set_speed, _set_speed_instant)),
-                            None,
-                            None,
-                        ) => {
-                            let changed_set_speed_ref = &mut None;
-                            if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
-                                self.context.x.set(set_speed);
-                            }
-                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
-                                self.context.changed_set_speed_old.set(self.context.x.get());
-                                *changed_set_speed_ref = Some(self.context.x.get());
-                            }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set = self.context.v_set_aux.get();
-                            self.context.v_set.set(v_set);
-                            if self.context.v_set.is_new() {
-                                self.send_output(
-                                    O::VSet(v_set, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            Some((vdc, _vdc_instant)),
-                            None,
-                            None,
-                            None,
-                            Some((set_speed, _set_speed_instant)),
-                            None,
-                            None,
-                        ) => {
-                            let changed_set_speed_ref = &mut None;
-                            if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
-                                self.context.x.set(set_speed);
-                            }
-                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
-                                self.context.changed_set_speed_old.set(self.context.x.get());
-                                *changed_set_speed_ref = Some(self.context.x.get());
-                            }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set = self.context.v_set_aux.get();
-                            self.context.v_set.set(v_set);
-                            if self.context.v_set.is_new() {
-                                self.send_output(
-                                    O::VSet(v_set, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                            self.context.vdc.set(vdc);
-                        }
-                        (
-                            None,
-                            Some((vacuum_brake, _vacuum_brake_instant)),
-                            None,
-                            None,
-                            Some((set_speed, _set_speed_instant)),
-                            None,
-                            None,
-                        ) => {
-                            let changed_set_speed_ref = &mut None;
-                            if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
-                                self.context.x.set(set_speed);
-                            }
-                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
-                                self.context.changed_set_speed_old.set(self.context.x.get());
-                                *changed_set_speed_ref = Some(self.context.x.get());
-                            }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set = self.context.v_set_aux.get();
-                            self.context.v_set.set(v_set);
-                            if self.context.v_set.is_new() {
-                                self.send_output(
-                                    O::VSet(v_set, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                            self.context.vacuum_brake.set(vacuum_brake);
-                        }
-                        (
-                            Some((vdc, _vdc_instant)),
-                            Some((vacuum_brake, _vacuum_brake_instant)),
-                            None,
-                            None,
-                            Some((set_speed, _set_speed_instant)),
-                            None,
-                            None,
-                        ) => {
-                            let changed_set_speed_ref = &mut None;
-                            if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
-                                self.context.x.set(set_speed);
-                            }
-                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
-                                self.context.changed_set_speed_old.set(self.context.x.get());
-                                *changed_set_speed_ref = Some(self.context.x.get());
-                            }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set = self.context.v_set_aux.get();
-                            self.context.v_set.set(v_set);
-                            if self.context.v_set.is_new() {
-                                self.send_output(
-                                    O::VSet(v_set, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                            self.context.vacuum_brake.set(vacuum_brake);
-                            self.context.vdc.set(vdc);
-                        }
-                        (
-                            None,
-                            None,
-                            Some((activation, _activation_instant)),
-                            None,
-                            Some((set_speed, _set_speed_instant)),
-                            None,
-                            None,
-                        ) => {
-                            let activation_ref = &mut None;
-                            let in_regulation_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
-                            if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
-                                self.context.x.set(set_speed);
-                            }
-                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
-                                self.context.changed_set_speed_old.set(self.context.x.get());
-                                *changed_set_speed_ref = Some(self.context.x.get());
-                            }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
-                            let v_set = self.context.v_set_aux.get();
-                            self.context.v_set.set(v_set);
-                            if self.context.v_set.is_new() {
-                                self.send_output(
-                                    O::VSet(v_set, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                            *activation_ref = Some(activation);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: None,
-                                        failure: None,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -1876,6 +1403,914 @@ pub mod runtime {
                             None,
                             Some((activation, _activation_instant)),
                             None,
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            let activation_ref = &mut None;
+                            let in_regulation_ref = &mut None;
+                            *activation_ref = Some(activation);
+                            self.context.vdc.set(vdc);
+                            if activation_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if self.context.in_regulation_old.get()
+                                != self.context.in_regulation_aux.get()
+                            {
+                                self.context
+                                    .in_regulation_old
+                                    .set(self.context.in_regulation_aux.get());
+                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (
+                            None,
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some((activation, _activation_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            let activation_ref = &mut None;
+                            let in_regulation_ref = &mut None;
+                            *activation_ref = Some(activation);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            if activation_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if self.context.in_regulation_old.get()
+                                != self.context.in_regulation_aux.get()
+                            {
+                                self.context
+                                    .in_regulation_old
+                                    .set(self.context.in_regulation_aux.get());
+                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some((activation, _activation_instant)),
+                            None,
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            let activation_ref = &mut None;
+                            let in_regulation_ref = &mut None;
+                            *activation_ref = Some(activation);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.vdc.set(vdc);
+                            if activation_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if self.context.in_regulation_old.get()
+                                != self.context.in_regulation_aux.get()
+                            {
+                                self.context
+                                    .in_regulation_old
+                                    .set(self.context.in_regulation_aux.get());
+                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (
+                            None,
+                            None,
+                            None,
+                            Some((kickdown, _kickdown_instant)),
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            let kickdown_ref = &mut None;
+                            let in_regulation_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            if kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if self.context.in_regulation_old.get()
+                                != self.context.in_regulation_aux.get()
+                            {
+                                self.context
+                                    .in_regulation_old
+                                    .set(self.context.in_regulation_aux.get());
+                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (
+                            Some((vdc, _vdc_instant)),
+                            None,
+                            None,
+                            Some((kickdown, _kickdown_instant)),
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            let kickdown_ref = &mut None;
+                            let in_regulation_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            self.context.vdc.set(vdc);
+                            if kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if self.context.in_regulation_old.get()
+                                != self.context.in_regulation_aux.get()
+                            {
+                                self.context
+                                    .in_regulation_old
+                                    .set(self.context.in_regulation_aux.get());
+                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (
+                            None,
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            None,
+                            Some((kickdown, _kickdown_instant)),
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            let kickdown_ref = &mut None;
+                            let in_regulation_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            if kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if self.context.in_regulation_old.get()
+                                != self.context.in_regulation_aux.get()
+                            {
+                                self.context
+                                    .in_regulation_old
+                                    .set(self.context.in_regulation_aux.get());
+                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            None,
+                            Some((kickdown, _kickdown_instant)),
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            let kickdown_ref = &mut None;
+                            let in_regulation_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.vdc.set(vdc);
+                            if kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if self.context.in_regulation_old.get()
+                                != self.context.in_regulation_aux.get()
+                            {
+                                self.context
+                                    .in_regulation_old
+                                    .set(self.context.in_regulation_aux.get());
+                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (
+                            None,
+                            None,
+                            Some((activation, _activation_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            let kickdown_ref = &mut None;
+                            let activation_ref = &mut None;
+                            let in_regulation_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            *activation_ref = Some(activation);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if self.context.in_regulation_old.get()
+                                != self.context.in_regulation_aux.get()
+                            {
+                                self.context
+                                    .in_regulation_old
+                                    .set(self.context.in_regulation_aux.get());
+                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (
+                            Some((vdc, _vdc_instant)),
+                            None,
+                            Some((activation, _activation_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            let kickdown_ref = &mut None;
+                            let activation_ref = &mut None;
+                            let in_regulation_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            *activation_ref = Some(activation);
+                            self.context.vdc.set(vdc);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if self.context.in_regulation_old.get()
+                                != self.context.in_regulation_aux.get()
+                            {
+                                self.context
+                                    .in_regulation_old
+                                    .set(self.context.in_regulation_aux.get());
+                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (
+                            None,
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some((activation, _activation_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            let kickdown_ref = &mut None;
+                            let activation_ref = &mut None;
+                            let in_regulation_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            *activation_ref = Some(activation);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if self.context.in_regulation_old.get()
+                                != self.context.in_regulation_aux.get()
+                            {
+                                self.context
+                                    .in_regulation_old
+                                    .set(self.context.in_regulation_aux.get());
+                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            Some((activation, _activation_instant)),
+                            Some((kickdown, _kickdown_instant)),
+                            None,
+                            None,
+                            None,
+                        ) => {
+                            let kickdown_ref = &mut None;
+                            let activation_ref = &mut None;
+                            let in_regulation_ref = &mut None;
+                            *kickdown_ref = Some(kickdown);
+                            *activation_ref = Some(activation);
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.vdc.set(vdc);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if self.context.in_regulation_old.get()
+                                != self.context.in_regulation_aux.get()
+                            {
+                                self.context
+                                    .in_regulation_old
+                                    .set(self.context.in_regulation_aux.get());
+                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (
+                            None,
+                            None,
+                            None,
+                            None,
+                            Some((set_speed, _set_speed_instant)),
+                            None,
+                            None,
+                        ) => {
+                            let in_regulation_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
+                            if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
+                                self.context.x.set(set_speed);
+                            }
+                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
+                                self.context.changed_set_speed_old.set(self.context.x.get());
+                                *changed_set_speed_ref = Some(self.context.x.get());
+                            }
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                            if self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if self.context.in_regulation_old.get()
+                                != self.context.in_regulation_aux.get()
+                            {
+                                self.context
+                                    .in_regulation_old
+                                    .set(self.context.in_regulation_aux.get());
+                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (
+                            Some((vdc, _vdc_instant)),
+                            None,
+                            None,
+                            None,
+                            Some((set_speed, _set_speed_instant)),
+                            None,
+                            None,
+                        ) => {
+                            let in_regulation_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
+                            if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
+                                self.context.x.set(set_speed);
+                            }
+                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
+                                self.context.changed_set_speed_old.set(self.context.x.get());
+                                *changed_set_speed_ref = Some(self.context.x.get());
+                            }
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                            self.context.vdc.set(vdc);
+                            if self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if self.context.in_regulation_old.get()
+                                != self.context.in_regulation_aux.get()
+                            {
+                                self.context
+                                    .in_regulation_old
+                                    .set(self.context.in_regulation_aux.get());
+                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (
+                            None,
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            None,
+                            None,
+                            Some((set_speed, _set_speed_instant)),
+                            None,
+                            None,
+                        ) => {
+                            let in_regulation_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
+                            if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
+                                self.context.x.set(set_speed);
+                            }
+                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
+                                self.context.changed_set_speed_old.set(self.context.x.get());
+                                *changed_set_speed_ref = Some(self.context.x.get());
+                            }
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            if self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if self.context.in_regulation_old.get()
+                                != self.context.in_regulation_aux.get()
+                            {
+                                self.context
+                                    .in_regulation_old
+                                    .set(self.context.in_regulation_aux.get());
+                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (
+                            Some((vdc, _vdc_instant)),
+                            Some((vacuum_brake, _vacuum_brake_instant)),
+                            None,
+                            None,
+                            Some((set_speed, _set_speed_instant)),
+                            None,
+                            None,
+                        ) => {
+                            let in_regulation_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
+                            if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
+                                self.context.x.set(set_speed);
+                            }
+                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
+                                self.context.changed_set_speed_old.set(self.context.x.get());
+                                *changed_set_speed_ref = Some(self.context.x.get());
+                            }
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                            self.context.vacuum_brake.set(vacuum_brake);
+                            self.context.vdc.set(vdc);
+                            if self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if self.context.in_regulation_old.get()
+                                != self.context.in_regulation_aux.get()
+                            {
+                                self.context
+                                    .in_regulation_old
+                                    .set(self.context.in_regulation_aux.get());
+                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (
+                            None,
+                            None,
+                            Some((activation, _activation_instant)),
+                            None,
                             Some((set_speed, _set_speed_instant)),
                             None,
                             None,
@@ -1890,15 +2325,97 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
+                            let v_set = self.context.v_set_aux.get();
+                            self.context.v_set.set(v_set);
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                            *activation_ref = Some(activation);
+                            if activation_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if self.context.in_regulation_old.get()
+                                != self.context.in_regulation_aux.get()
+                            {
+                                self.context
+                                    .in_regulation_old
+                                    .set(self.context.in_regulation_aux.get());
+                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (
+                            Some((vdc, _vdc_instant)),
+                            None,
+                            Some((activation, _activation_instant)),
+                            None,
+                            Some((set_speed, _set_speed_instant)),
+                            None,
+                            None,
+                        ) => {
+                            let activation_ref = &mut None;
+                            let in_regulation_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
+                            if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
+                                self.context.x.set(set_speed);
+                            }
+                            if self.context.changed_set_speed_old.get() != self.context.x.get() {
+                                self.context.changed_set_speed_old.set(self.context.x.get());
+                                *changed_set_speed_ref = Some(self.context.x.get());
+                            }
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -1910,23 +2427,30 @@ pub mod runtime {
                             }
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: None,
-                                        failure: None,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -1962,15 +2486,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -1982,23 +2508,30 @@ pub mod runtime {
                             }
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: None,
-                                        failure: None,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -2034,15 +2567,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -2055,23 +2590,30 @@ pub mod runtime {
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: None,
-                                        failure: None,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -2107,15 +2649,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -2126,23 +2670,30 @@ pub mod runtime {
                                 .await?;
                             }
                             *kickdown_ref = Some(kickdown);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -2178,15 +2729,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -2198,23 +2751,30 @@ pub mod runtime {
                             }
                             *kickdown_ref = Some(kickdown);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -2250,15 +2810,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -2270,23 +2832,30 @@ pub mod runtime {
                             }
                             *kickdown_ref = Some(kickdown);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -2322,15 +2891,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -2343,23 +2914,30 @@ pub mod runtime {
                             *kickdown_ref = Some(kickdown);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -2396,15 +2974,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -2416,23 +2996,31 @@ pub mod runtime {
                             }
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -2469,15 +3057,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -2490,23 +3080,31 @@ pub mod runtime {
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -2543,15 +3141,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -2564,23 +3164,31 @@ pub mod runtime {
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -2617,15 +3225,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -2639,23 +3249,31 @@ pub mod runtime {
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -2676,23 +3294,30 @@ pub mod runtime {
                             let failure_ref = &mut None;
                             let in_regulation_ref = &mut None;
                             *failure_ref = Some(failure);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -2722,23 +3347,30 @@ pub mod runtime {
                             let in_regulation_ref = &mut None;
                             *failure_ref = Some(failure);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -2768,23 +3400,30 @@ pub mod runtime {
                             let in_regulation_ref = &mut None;
                             *failure_ref = Some(failure);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -2815,23 +3454,30 @@ pub mod runtime {
                             *failure_ref = Some(failure);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -2862,23 +3508,31 @@ pub mod runtime {
                             let in_regulation_ref = &mut None;
                             *failure_ref = Some(failure);
                             *activation_ref = Some(activation);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -2910,23 +3564,31 @@ pub mod runtime {
                             *failure_ref = Some(failure);
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -2958,23 +3620,31 @@ pub mod runtime {
                             *failure_ref = Some(failure);
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -3007,23 +3677,31 @@ pub mod runtime {
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -3054,23 +3732,31 @@ pub mod runtime {
                             let in_regulation_ref = &mut None;
                             *failure_ref = Some(failure);
                             *kickdown_ref = Some(kickdown);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -3102,23 +3788,31 @@ pub mod runtime {
                             *failure_ref = Some(failure);
                             *kickdown_ref = Some(kickdown);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -3150,23 +3844,31 @@ pub mod runtime {
                             *failure_ref = Some(failure);
                             *kickdown_ref = Some(kickdown);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -3199,23 +3901,31 @@ pub mod runtime {
                             *kickdown_ref = Some(kickdown);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -3248,23 +3958,32 @@ pub mod runtime {
                             *failure_ref = Some(failure);
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -3298,23 +4017,32 @@ pub mod runtime {
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -3348,23 +4076,32 @@ pub mod runtime {
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -3399,23 +4136,32 @@ pub mod runtime {
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -3452,34 +4198,50 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                            if failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -3491,13 +4253,6 @@ pub mod runtime {
                             if let Some(in_regulation) = *in_regulation_ref {
                                 self.send_output(
                                     O::InRegulation(in_regulation, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                            if self.context.v_set.is_new() {
-                                self.send_output(
-                                    O::VSet(v_set, _grust_reserved_instant),
                                     _grust_reserved_instant,
                                 )
                                 .await?;
@@ -3523,15 +4278,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -3542,23 +4299,30 @@ pub mod runtime {
                                 .await?;
                             }
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -3595,15 +4359,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -3614,23 +4380,30 @@ pub mod runtime {
                                 .await?;
                             }
                             self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -3667,15 +4440,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -3687,23 +4462,30 @@ pub mod runtime {
                             }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -3741,15 +4523,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -3760,23 +4544,31 @@ pub mod runtime {
                                 .await?;
                             }
                             *activation_ref = Some(activation);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -3814,15 +4606,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -3834,23 +4628,31 @@ pub mod runtime {
                             }
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -3888,15 +4690,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -3908,23 +4712,31 @@ pub mod runtime {
                             }
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -3962,15 +4774,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -3983,23 +4797,31 @@ pub mod runtime {
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -4037,15 +4859,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -4056,23 +4880,31 @@ pub mod runtime {
                                 .await?;
                             }
                             *kickdown_ref = Some(kickdown);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -4110,15 +4942,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -4130,23 +4964,31 @@ pub mod runtime {
                             }
                             *kickdown_ref = Some(kickdown);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -4184,15 +5026,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -4204,23 +5048,31 @@ pub mod runtime {
                             }
                             *kickdown_ref = Some(kickdown);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -4258,15 +5110,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -4279,23 +5133,31 @@ pub mod runtime {
                             *kickdown_ref = Some(kickdown);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -4334,15 +5196,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -4354,23 +5218,32 @@ pub mod runtime {
                             }
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -4409,15 +5282,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -4430,23 +5305,32 @@ pub mod runtime {
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -4485,15 +5369,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -4506,23 +5392,32 @@ pub mod runtime {
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -4561,15 +5456,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -4583,23 +5480,32 @@ pub mod runtime {
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: self.context.speed.get(),
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: self.context.speed.get(),
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -4617,7 +5523,46 @@ pub mod runtime {
                             }
                         }
                         (None, None, None, None, None, None, Some((speed, _speed_instant))) => {
+                            let in_regulation_ref = &mut None;
                             self.context.speed.set(speed);
+                            if self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if self.context.in_regulation_old.get()
+                                != self.context.in_regulation_aux.get()
+                            {
+                                self.context
+                                    .in_regulation_old
+                                    .set(self.context.in_regulation_aux.get());
+                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
                         }
                         (
                             Some((vdc, _vdc_instant)),
@@ -4628,8 +5573,47 @@ pub mod runtime {
                             None,
                             Some((speed, _speed_instant)),
                         ) => {
+                            let in_regulation_ref = &mut None;
                             self.context.speed.set(speed);
                             self.context.vdc.set(vdc);
+                            if self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if self.context.in_regulation_old.get()
+                                != self.context.in_regulation_aux.get()
+                            {
+                                self.context
+                                    .in_regulation_old
+                                    .set(self.context.in_regulation_aux.get());
+                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
                         }
                         (
                             None,
@@ -4640,8 +5624,47 @@ pub mod runtime {
                             None,
                             Some((speed, _speed_instant)),
                         ) => {
+                            let in_regulation_ref = &mut None;
                             self.context.speed.set(speed);
                             self.context.vacuum_brake.set(vacuum_brake);
+                            if self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if self.context.in_regulation_old.get()
+                                != self.context.in_regulation_aux.get()
+                            {
+                                self.context
+                                    .in_regulation_old
+                                    .set(self.context.in_regulation_aux.get());
+                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
                         }
                         (
                             Some((vdc, _vdc_instant)),
@@ -4652,9 +5675,48 @@ pub mod runtime {
                             None,
                             Some((speed, _speed_instant)),
                         ) => {
+                            let in_regulation_ref = &mut None;
                             self.context.speed.set(speed);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
+                            if self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if self.context.in_regulation_old.get()
+                                != self.context.in_regulation_aux.get()
+                            {
+                                self.context
+                                    .in_regulation_old
+                                    .set(self.context.in_regulation_aux.get());
+                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
                         }
                         (
                             None,
@@ -4669,23 +5731,30 @@ pub mod runtime {
                             let in_regulation_ref = &mut None;
                             self.context.speed.set(speed);
                             *activation_ref = Some(activation);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: None,
-                                        failure: None,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -4716,23 +5785,30 @@ pub mod runtime {
                             self.context.speed.set(speed);
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: None,
-                                        failure: None,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -4763,23 +5839,30 @@ pub mod runtime {
                             self.context.speed.set(speed);
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: None,
-                                        failure: None,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -4811,23 +5894,30 @@ pub mod runtime {
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: None,
-                                        failure: None,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -4857,23 +5947,30 @@ pub mod runtime {
                             let in_regulation_ref = &mut None;
                             self.context.speed.set(speed);
                             *kickdown_ref = Some(kickdown);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -4904,23 +6001,30 @@ pub mod runtime {
                             self.context.speed.set(speed);
                             *kickdown_ref = Some(kickdown);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -4951,23 +6055,30 @@ pub mod runtime {
                             self.context.speed.set(speed);
                             *kickdown_ref = Some(kickdown);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -4999,23 +6110,30 @@ pub mod runtime {
                             *kickdown_ref = Some(kickdown);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -5047,23 +6165,31 @@ pub mod runtime {
                             self.context.speed.set(speed);
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -5096,23 +6222,31 @@ pub mod runtime {
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -5145,23 +6279,31 @@ pub mod runtime {
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -5195,23 +6337,31 @@ pub mod runtime {
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -5238,6 +6388,7 @@ pub mod runtime {
                             Some((speed, _speed_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
+                            let in_regulation_ref = &mut None;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -5246,20 +6397,60 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
                                 self.send_output(
                                     O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                            if self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if self.context.in_regulation_old.get()
+                                != self.context.in_regulation_aux.get()
+                            {
+                                self.context
+                                    .in_regulation_old
+                                    .set(self.context.in_regulation_aux.get());
+                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
                                     _grust_reserved_instant,
                                 )
                                 .await?;
@@ -5275,6 +6466,7 @@ pub mod runtime {
                             Some((speed, _speed_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
+                            let in_regulation_ref = &mut None;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -5283,15 +6475,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -5302,6 +6496,44 @@ pub mod runtime {
                                 .await?;
                             }
                             self.context.vdc.set(vdc);
+                            if self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if self.context.in_regulation_old.get()
+                                != self.context.in_regulation_aux.get()
+                            {
+                                self.context
+                                    .in_regulation_old
+                                    .set(self.context.in_regulation_aux.get());
+                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
                         }
                         (
                             None,
@@ -5313,6 +6545,7 @@ pub mod runtime {
                             Some((speed, _speed_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
+                            let in_regulation_ref = &mut None;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -5321,15 +6554,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -5340,6 +6575,44 @@ pub mod runtime {
                                 .await?;
                             }
                             self.context.vacuum_brake.set(vacuum_brake);
+                            if self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if self.context.in_regulation_old.get()
+                                != self.context.in_regulation_aux.get()
+                            {
+                                self.context
+                                    .in_regulation_old
+                                    .set(self.context.in_regulation_aux.get());
+                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
                         }
                         (
                             Some((vdc, _vdc_instant)),
@@ -5351,6 +6624,7 @@ pub mod runtime {
                             Some((speed, _speed_instant)),
                         ) => {
                             let changed_set_speed_ref = &mut None;
+                            let in_regulation_ref = &mut None;
                             self.context.speed.set(speed);
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
@@ -5359,15 +6633,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -5379,6 +6655,44 @@ pub mod runtime {
                             }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
+                            if self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
+                            if self.context.in_regulation_old.get()
+                                != self.context.in_regulation_aux.get()
+                            {
+                                self.context
+                                    .in_regulation_old
+                                    .set(self.context.in_regulation_aux.get());
+                                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                            }
+                            if let Some(in_regulation) = *in_regulation_ref {
+                                self.send_output(
+                                    O::InRegulation(in_regulation, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
                         }
                         (
                             None,
@@ -5400,15 +6714,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -5419,23 +6735,30 @@ pub mod runtime {
                                 .await?;
                             }
                             *activation_ref = Some(activation);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: None,
-                                        failure: None,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -5472,15 +6795,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -5492,23 +6817,30 @@ pub mod runtime {
                             }
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: None,
-                                        failure: None,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -5545,15 +6877,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -5565,23 +6899,30 @@ pub mod runtime {
                             }
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: None,
-                                        failure: None,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -5618,15 +6959,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -5639,23 +6982,30 @@ pub mod runtime {
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: None,
-                                        failure: None,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -5692,15 +7042,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -5711,23 +7063,30 @@ pub mod runtime {
                                 .await?;
                             }
                             *kickdown_ref = Some(kickdown);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -5764,15 +7123,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -5784,23 +7145,30 @@ pub mod runtime {
                             }
                             *kickdown_ref = Some(kickdown);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -5837,15 +7205,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -5857,23 +7227,30 @@ pub mod runtime {
                             }
                             *kickdown_ref = Some(kickdown);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -5910,15 +7287,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -5931,23 +7310,30 @@ pub mod runtime {
                             *kickdown_ref = Some(kickdown);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -5985,15 +7371,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -6005,23 +7393,31 @@ pub mod runtime {
                             }
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -6059,15 +7455,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -6080,23 +7478,31 @@ pub mod runtime {
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -6134,15 +7540,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -6155,23 +7563,31 @@ pub mod runtime {
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -6209,15 +7625,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -6231,23 +7649,31 @@ pub mod runtime {
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: None,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: None,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -6277,23 +7703,30 @@ pub mod runtime {
                             let in_regulation_ref = &mut None;
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -6324,23 +7757,30 @@ pub mod runtime {
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -6371,23 +7811,30 @@ pub mod runtime {
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -6419,23 +7866,30 @@ pub mod runtime {
                             *failure_ref = Some(failure);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -6467,23 +7921,31 @@ pub mod runtime {
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
                             *activation_ref = Some(activation);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -6516,23 +7978,31 @@ pub mod runtime {
                             *failure_ref = Some(failure);
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -6565,23 +8035,31 @@ pub mod runtime {
                             *failure_ref = Some(failure);
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -6615,23 +8093,31 @@ pub mod runtime {
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -6663,23 +8149,31 @@ pub mod runtime {
                             self.context.speed.set(speed);
                             *failure_ref = Some(failure);
                             *kickdown_ref = Some(kickdown);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -6712,23 +8206,31 @@ pub mod runtime {
                             *failure_ref = Some(failure);
                             *kickdown_ref = Some(kickdown);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -6761,23 +8263,31 @@ pub mod runtime {
                             *failure_ref = Some(failure);
                             *kickdown_ref = Some(kickdown);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -6811,23 +8321,31 @@ pub mod runtime {
                             *kickdown_ref = Some(kickdown);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -6861,23 +8379,32 @@ pub mod runtime {
                             *failure_ref = Some(failure);
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -6912,23 +8439,32 @@ pub mod runtime {
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -6963,23 +8499,32 @@ pub mod runtime {
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -7015,23 +8560,32 @@ pub mod runtime {
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: self.context.v_set.get(),
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: self.context.v_set.get(),
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -7069,34 +8623,50 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if self.context.v_set.is_new() {
+                                self.send_output(
+                                    O::VSet(v_set, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                            if failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -7108,13 +8678,6 @@ pub mod runtime {
                             if let Some(in_regulation) = *in_regulation_ref {
                                 self.send_output(
                                     O::InRegulation(in_regulation, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                            if self.context.v_set.is_new() {
-                                self.send_output(
-                                    O::VSet(v_set, _grust_reserved_instant),
                                     _grust_reserved_instant,
                                 )
                                 .await?;
@@ -7141,15 +8704,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -7160,23 +8725,30 @@ pub mod runtime {
                                 .await?;
                             }
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -7214,15 +8786,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -7233,23 +8807,30 @@ pub mod runtime {
                                 .await?;
                             }
                             self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -7287,15 +8868,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -7307,23 +8890,30 @@ pub mod runtime {
                             }
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -7362,15 +8952,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -7381,23 +8973,31 @@ pub mod runtime {
                                 .await?;
                             }
                             *activation_ref = Some(activation);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -7436,15 +9036,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -7456,23 +9058,31 @@ pub mod runtime {
                             }
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -7511,15 +9121,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -7531,23 +9143,31 @@ pub mod runtime {
                             }
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -7586,15 +9206,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -7607,23 +9229,31 @@ pub mod runtime {
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: None,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: None,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -7662,15 +9292,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -7681,23 +9313,31 @@ pub mod runtime {
                                 .await?;
                             }
                             *kickdown_ref = Some(kickdown);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -7736,15 +9376,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -7756,23 +9398,31 @@ pub mod runtime {
                             }
                             *kickdown_ref = Some(kickdown);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -7811,15 +9461,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -7831,23 +9483,31 @@ pub mod runtime {
                             }
                             *kickdown_ref = Some(kickdown);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -7886,15 +9546,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -7907,23 +9569,31 @@ pub mod runtime {
                             *kickdown_ref = Some(kickdown);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: None,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: None,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -7963,15 +9633,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -7983,23 +9655,32 @@ pub mod runtime {
                             }
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -8039,15 +9720,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -8060,23 +9743,32 @@ pub mod runtime {
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: self.context.vacuum_brake.get(),
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: self.context.vacuum_brake.get(),
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -8116,15 +9808,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -8137,23 +9831,32 @@ pub mod runtime {
                             *kickdown_ref = Some(kickdown);
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: self.context.vdc.get(),
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: self.context.vdc.get(),
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -8193,15 +9896,17 @@ pub mod runtime {
                                 self.context.changed_set_speed_old.set(self.context.x.get());
                                 *changed_set_speed_ref = Some(self.context.x.get());
                             }
-                            let (v_set_aux, v_update) =
-                                <ProcessSetSpeedState as grust::core::Component>::step(
-                                    &mut self.process_set_speed,
-                                    ProcessSetSpeedInput {
-                                        set_speed: *changed_set_speed_ref,
-                                    },
-                                );
-                            self.context.v_set_aux.set(v_set_aux);
-                            self.context.v_update.set(v_update);
+                            if changed_set_speed_ref.is_some() {
+                                let (v_set_aux, v_update) =
+                                    <ProcessSetSpeedState as grust::core::Component>::step(
+                                        &mut self.process_set_speed,
+                                        ProcessSetSpeedInput {
+                                            set_speed: *changed_set_speed_ref,
+                                        },
+                                    );
+                                self.context.v_set_aux.set(v_set_aux);
+                                self.context.v_update.set(v_update);
+                            }
                             let v_set = self.context.v_set_aux.get();
                             self.context.v_set.set(v_set);
                             if self.context.v_set.is_new() {
@@ -8215,23 +9920,32 @@ pub mod runtime {
                             *activation_ref = Some(activation);
                             self.context.vacuum_brake.set(vacuum_brake);
                             self.context.vdc.set(vdc);
-                            let (state, on_state, in_regulation_aux, state_update) =
-                                <SpeedLimiterState as grust::core::Component>::step(
-                                    &mut self.speed_limiter,
-                                    SpeedLimiterInput {
-                                        activation_req: *activation_ref,
-                                        vacuum_brake_state: vacuum_brake,
-                                        kickdown: *kickdown_ref,
-                                        failure: *failure_ref,
-                                        vdc_disabled: vdc,
-                                        speed: speed,
-                                        v_set: v_set,
-                                    },
-                                );
-                            self.context.state.set(state);
-                            self.context.on_state.set(on_state);
-                            self.context.in_regulation_aux.set(in_regulation_aux);
-                            self.context.state_update.set(state_update);
+                            if activation_ref.is_some()
+                                || kickdown_ref.is_some()
+                                || failure_ref.is_some()
+                                || self.context.vacuum_brake.is_new()
+                                || self.context.vdc.is_new()
+                                || self.context.speed.is_new()
+                                || self.context.v_set.is_new()
+                            {
+                                let (state, on_state, in_regulation_aux, state_update) =
+                                    <SpeedLimiterState as grust::core::Component>::step(
+                                        &mut self.speed_limiter,
+                                        SpeedLimiterInput {
+                                            activation_req: *activation_ref,
+                                            vacuum_brake_state: vacuum_brake,
+                                            kickdown: *kickdown_ref,
+                                            failure: *failure_ref,
+                                            vdc_disabled: vdc,
+                                            speed: speed,
+                                            v_set: v_set,
+                                        },
+                                    );
+                                self.context.state.set(state);
+                                self.context.on_state.set(on_state);
+                                self.context.in_regulation_aux.set(in_regulation_aux);
+                                self.context.state_update.set(state_update);
+                            }
                             if self.context.in_regulation_old.get()
                                 != self.context.in_regulation_aux.get()
                             {
@@ -8272,7 +9986,45 @@ pub mod runtime {
                 if self.delayed {
                     self.reset_time_constraints(_speed_instant).await?;
                     self.context.reset();
+                    let in_regulation_ref = &mut None;
                     self.context.speed.set(speed);
+                    if self.context.vacuum_brake.is_new()
+                        || self.context.vdc.is_new()
+                        || self.context.speed.is_new()
+                        || self.context.v_set.is_new()
+                    {
+                        let (state, on_state, in_regulation_aux, state_update) =
+                            <SpeedLimiterState as grust::core::Component>::step(
+                                &mut self.speed_limiter,
+                                SpeedLimiterInput {
+                                    activation_req: None,
+                                    vacuum_brake_state: self.context.vacuum_brake.get(),
+                                    kickdown: None,
+                                    failure: None,
+                                    vdc_disabled: self.context.vdc.get(),
+                                    speed: speed,
+                                    v_set: self.context.v_set.get(),
+                                },
+                            );
+                        self.context.state.set(state);
+                        self.context.on_state.set(on_state);
+                        self.context.in_regulation_aux.set(in_regulation_aux);
+                        self.context.state_update.set(state_update);
+                    }
+                    if self.context.in_regulation_old.get() != self.context.in_regulation_aux.get()
+                    {
+                        self.context
+                            .in_regulation_old
+                            .set(self.context.in_regulation_aux.get());
+                        *in_regulation_ref = Some(self.context.in_regulation_aux.get());
+                    }
+                    if let Some(in_regulation) = *in_regulation_ref {
+                        self.send_output(
+                            O::InRegulation(in_regulation, _speed_instant),
+                            _speed_instant,
+                        )
+                        .await?;
+                    }
                 } else {
                     let unique = self.input_store.speed.replace((speed, _speed_instant));
                     assert!(unique.is_none(), "flow `speed` changes too frequently");
