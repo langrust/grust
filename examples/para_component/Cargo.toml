@@ -1,5 +1,5 @@
 [package]
-name = "para_test"
+name = "para_component"
 version = "0.1.0"
 edition = "2021"
 
