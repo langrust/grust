@@ -8,8 +8,8 @@ prelude! {
 /// events and signals changes.
 #[derive(Clone, Default)]
 pub enum Propagation {
-    #[default]
     EventIsles,
+    #[default]
     OnChange,
 }
 

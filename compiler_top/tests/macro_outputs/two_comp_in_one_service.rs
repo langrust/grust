@@ -273,27 +273,31 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.reset_time_constraints(_timeout_test_instant).await?;
                 self.context.reset();
-                let o2 = <CounterState as grust::core::Component>::step(
-                    &mut self.counter,
-                    CounterInput {
-                        res: self.context.reset.get(),
-                        tick: None,
-                    },
-                );
-                self.context.o2.set(o2);
+                if self.context.reset.is_new() {
+                    let o2 = <CounterState as grust::core::Component>::step(
+                        &mut self.counter,
+                        CounterInput {
+                            res: self.context.reset.get(),
+                            tick: None,
+                        },
+                    );
+                    self.context.o2.set(o2);
+                }
                 self.send_output(
                     O::O2(self.context.o2.get(), _timeout_test_instant),
                     _timeout_test_instant,
                 )
                 .await?;
-                let o1 = <CounterState as grust::core::Component>::step(
-                    &mut self.counter_1,
-                    CounterInput {
-                        res: self.context.reset.get(),
-                        tick: None,
-                    },
-                );
-                self.context.o1.set(o1);
+                if self.context.reset.is_new() {
+                    let o1 = <CounterState as grust::core::Component>::step(
+                        &mut self.counter_1,
+                        CounterInput {
+                            res: self.context.reset.get(),
+                            tick: None,
+                        },
+                    );
+                    self.context.o1.set(o1);
+                }
                 self.send_output(
                     O::O1(self.context.o1.get(), _timeout_test_instant),
                     _timeout_test_instant,
@@ -321,35 +325,39 @@ pub mod runtime {
                     self.context.reset();
                     let clock_ref = &mut None;
                     *clock_ref = Some(clock);
-                    let o1 = <CounterState as grust::core::Component>::step(
-                        &mut self.counter_1,
-                        CounterInput {
-                            res: self.context.reset.get(),
-                            tick: *clock_ref,
-                        },
-                    );
-                    self.context.o1.set(o1);
-                    if self.context.o1.is_new() {
+                    if clock_ref.is_some() {
+                        self.send_timer(T::TimeoutX, _clock_instant).await?;
+                    }
+                    if self.context.reset.is_new() {
+                        let o2 = <CounterState as grust::core::Component>::step(
+                            &mut self.counter,
+                            CounterInput {
+                                res: self.context.reset.get(),
+                                tick: None,
+                            },
+                        );
+                        self.context.o2.set(o2);
+                    }
+                    if self.context.o2.is_new() {
                         self.send_output(
-                            O::O1(self.context.o1.get(), _clock_instant),
+                            O::O2(self.context.o2.get(), _clock_instant),
                             _clock_instant,
                         )
                         .await?;
                     }
-                    if clock_ref.is_some() {
-                        self.send_timer(T::TimeoutX, _clock_instant).await?;
+                    if clock_ref.is_some() || self.context.reset.is_new() {
+                        let o1 = <CounterState as grust::core::Component>::step(
+                            &mut self.counter_1,
+                            CounterInput {
+                                res: self.context.reset.get(),
+                                tick: *clock_ref,
+                            },
+                        );
+                        self.context.o1.set(o1);
                     }
-                    let o2 = <CounterState as grust::core::Component>::step(
-                        &mut self.counter,
-                        CounterInput {
-                            res: self.context.reset.get(),
-                            tick: None,
-                        },
-                    );
-                    self.context.o2.set(o2);
-                    if self.context.o2.is_new() {
+                    if self.context.o1.is_new() {
                         self.send_output(
-                            O::O2(self.context.o2.get(), _clock_instant),
+                            O::O1(self.context.o1.get(), _clock_instant),
                             _clock_instant,
                         )
                         .await?;
@@ -370,14 +378,16 @@ pub mod runtime {
                     let x_ref = &mut None;
                     *x_ref = Some(());
                     self.send_timer(T::TimeoutX, _timeout_x_instant).await?;
-                    let o2 = <CounterState as grust::core::Component>::step(
-                        &mut self.counter,
-                        CounterInput {
-                            res: self.context.reset.get(),
-                            tick: *x_ref,
-                        },
-                    );
-                    self.context.o2.set(o2);
+                    if x_ref.is_some() || self.context.reset.is_new() {
+                        let o2 = <CounterState as grust::core::Component>::step(
+                            &mut self.counter,
+                            CounterInput {
+                                res: self.context.reset.get(),
+                                tick: *x_ref,
+                            },
+                        );
+                        self.context.o2.set(o2);
+                    }
                     if self.context.o2.is_new() {
                         self.send_output(
                             O::O2(self.context.o2.get(), _timeout_x_instant),
@@ -400,6 +410,40 @@ pub mod runtime {
                     self.reset_time_constraints(_reset_instant).await?;
                     self.context.reset();
                     self.context.reset.set(reset);
+                    if self.context.reset.is_new() {
+                        let o2 = <CounterState as grust::core::Component>::step(
+                            &mut self.counter,
+                            CounterInput {
+                                res: reset,
+                                tick: None,
+                            },
+                        );
+                        self.context.o2.set(o2);
+                    }
+                    if self.context.o2.is_new() {
+                        self.send_output(
+                            O::O2(self.context.o2.get(), _reset_instant),
+                            _reset_instant,
+                        )
+                        .await?;
+                    }
+                    if self.context.reset.is_new() {
+                        let o1 = <CounterState as grust::core::Component>::step(
+                            &mut self.counter_1,
+                            CounterInput {
+                                res: reset,
+                                tick: None,
+                            },
+                        );
+                        self.context.o1.set(o1);
+                    }
+                    if self.context.o1.is_new() {
+                        self.send_output(
+                            O::O1(self.context.o1.get(), _reset_instant),
+                            _reset_instant,
+                        )
+                        .await?;
+                    }
                 } else {
                     let unique = self.input_store.reset.replace((reset, _reset_instant));
                     assert!(unique.is_none(), "flow `reset` changes too frequently");
@@ -422,35 +466,39 @@ pub mod runtime {
                         (Some((clock, _clock_instant)), None, None) => {
                             let clock_ref = &mut None;
                             *clock_ref = Some(clock);
-                            let o1 = <CounterState as grust::core::Component>::step(
-                                &mut self.counter_1,
-                                CounterInput {
-                                    res: self.context.reset.get(),
-                                    tick: *clock_ref,
-                                },
-                            );
-                            self.context.o1.set(o1);
-                            if self.context.o1.is_new() {
+                            if clock_ref.is_some() {
+                                self.send_timer(T::TimeoutX, _clock_instant).await?;
+                            }
+                            if self.context.reset.is_new() {
+                                let o2 = <CounterState as grust::core::Component>::step(
+                                    &mut self.counter,
+                                    CounterInput {
+                                        res: self.context.reset.get(),
+                                        tick: None,
+                                    },
+                                );
+                                self.context.o2.set(o2);
+                            }
+                            if self.context.o2.is_new() {
                                 self.send_output(
-                                    O::O1(self.context.o1.get(), _grust_reserved_instant),
+                                    O::O2(self.context.o2.get(), _grust_reserved_instant),
                                     _grust_reserved_instant,
                                 )
                                 .await?;
                             }
-                            if clock_ref.is_some() {
-                                self.send_timer(T::TimeoutX, _clock_instant).await?;
+                            if clock_ref.is_some() || self.context.reset.is_new() {
+                                let o1 = <CounterState as grust::core::Component>::step(
+                                    &mut self.counter_1,
+                                    CounterInput {
+                                        res: self.context.reset.get(),
+                                        tick: *clock_ref,
+                                    },
+                                );
+                                self.context.o1.set(o1);
                             }
-                            let o2 = <CounterState as grust::core::Component>::step(
-                                &mut self.counter,
-                                CounterInput {
-                                    res: self.context.reset.get(),
-                                    tick: None,
-                                },
-                            );
-                            self.context.o2.set(o2);
-                            if self.context.o2.is_new() {
+                            if self.context.o1.is_new() {
                                 self.send_output(
-                                    O::O2(self.context.o2.get(), _grust_reserved_instant),
+                                    O::O1(self.context.o1.get(), _grust_reserved_instant),
                                     _grust_reserved_instant,
                                 )
                                 .await?;
@@ -460,14 +508,16 @@ pub mod runtime {
                             let x_ref = &mut None;
                             *x_ref = Some(());
                             self.send_timer(T::TimeoutX, _timeout_x_instant).await?;
-                            let o2 = <CounterState as grust::core::Component>::step(
-                                &mut self.counter,
-                                CounterInput {
-                                    res: self.context.reset.get(),
-                                    tick: *x_ref,
-                                },
-                            );
-                            self.context.o2.set(o2);
+                            if x_ref.is_some() || self.context.reset.is_new() {
+                                let o2 = <CounterState as grust::core::Component>::step(
+                                    &mut self.counter,
+                                    CounterInput {
+                                        res: self.context.reset.get(),
+                                        tick: *x_ref,
+                                    },
+                                );
+                                self.context.o2.set(o2);
+                            }
                             if self.context.o2.is_new() {
                                 self.send_output(
                                     O::O2(self.context.o2.get(), _grust_reserved_instant),
@@ -486,14 +536,16 @@ pub mod runtime {
                                 *x_ref = Some(());
                                 self.send_timer(T::TimeoutX, _clock_instant).await?;
                             }
-                            let o2 = <CounterState as grust::core::Component>::step(
-                                &mut self.counter,
-                                CounterInput {
-                                    res: self.context.reset.get(),
-                                    tick: *x_ref,
-                                },
-                            );
-                            self.context.o2.set(o2);
+                            if x_ref.is_some() || self.context.reset.is_new() {
+                                let o2 = <CounterState as grust::core::Component>::step(
+                                    &mut self.counter,
+                                    CounterInput {
+                                        res: self.context.reset.get(),
+                                        tick: *x_ref,
+                                    },
+                                );
+                                self.context.o2.set(o2);
+                            }
                             if self.context.o2.is_new() {
                                 self.send_output(
                                     O::O2(self.context.o2.get(), _grust_reserved_instant),
@@ -501,14 +553,16 @@ pub mod runtime {
                                 )
                                 .await?;
                             }
-                            let o1 = <CounterState as grust::core::Component>::step(
-                                &mut self.counter_1,
-                                CounterInput {
-                                    res: self.context.reset.get(),
-                                    tick: *clock_ref,
-                                },
-                            );
-                            self.context.o1.set(o1);
+                            if clock_ref.is_some() || self.context.reset.is_new() {
+                                let o1 = <CounterState as grust::core::Component>::step(
+                                    &mut self.counter_1,
+                                    CounterInput {
+                                        res: self.context.reset.get(),
+                                        tick: *clock_ref,
+                                    },
+                                );
+                                self.context.o1.set(o1);
+                            }
                             if self.context.o1.is_new() {
                                 self.send_output(
                                     O::O1(self.context.o1.get(), _grust_reserved_instant),
@@ -519,19 +573,33 @@ pub mod runtime {
                         }
                         (None, None, Some((reset, _reset_instant))) => {
                             self.context.reset.set(reset);
-                        }
-                        (Some((clock, _clock_instant)), None, Some((reset, _reset_instant))) => {
-                            let clock_ref = &mut None;
-                            self.context.reset.set(reset);
-                            *clock_ref = Some(clock);
-                            let o1 = <CounterState as grust::core::Component>::step(
-                                &mut self.counter_1,
-                                CounterInput {
-                                    res: reset,
-                                    tick: *clock_ref,
-                                },
-                            );
-                            self.context.o1.set(o1);
+                            if self.context.reset.is_new() {
+                                let o2 = <CounterState as grust::core::Component>::step(
+                                    &mut self.counter,
+                                    CounterInput {
+                                        res: reset,
+                                        tick: None,
+                                    },
+                                );
+                                self.context.o2.set(o2);
+                            }
+                            if self.context.o2.is_new() {
+                                self.send_output(
+                                    O::O2(self.context.o2.get(), _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                            if self.context.reset.is_new() {
+                                let o1 = <CounterState as grust::core::Component>::step(
+                                    &mut self.counter_1,
+                                    CounterInput {
+                                        res: reset,
+                                        tick: None,
+                                    },
+                                );
+                                self.context.o1.set(o1);
+                            }
                             if self.context.o1.is_new() {
                                 self.send_output(
                                     O::O1(self.context.o1.get(), _grust_reserved_instant),
@@ -539,20 +607,44 @@ pub mod runtime {
                                 )
                                 .await?;
                             }
+                        }
+                        (Some((clock, _clock_instant)), None, Some((reset, _reset_instant))) => {
+                            let clock_ref = &mut None;
+                            self.context.reset.set(reset);
+                            *clock_ref = Some(clock);
                             if clock_ref.is_some() {
                                 self.send_timer(T::TimeoutX, _clock_instant).await?;
                             }
-                            let o2 = <CounterState as grust::core::Component>::step(
-                                &mut self.counter,
-                                CounterInput {
-                                    res: reset,
-                                    tick: None,
-                                },
-                            );
-                            self.context.o2.set(o2);
+                            if self.context.reset.is_new() {
+                                let o2 = <CounterState as grust::core::Component>::step(
+                                    &mut self.counter,
+                                    CounterInput {
+                                        res: reset,
+                                        tick: None,
+                                    },
+                                );
+                                self.context.o2.set(o2);
+                            }
                             if self.context.o2.is_new() {
                                 self.send_output(
                                     O::O2(self.context.o2.get(), _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                            if clock_ref.is_some() || self.context.reset.is_new() {
+                                let o1 = <CounterState as grust::core::Component>::step(
+                                    &mut self.counter_1,
+                                    CounterInput {
+                                        res: reset,
+                                        tick: *clock_ref,
+                                    },
+                                );
+                                self.context.o1.set(o1);
+                            }
+                            if self.context.o1.is_new() {
+                                self.send_output(
+                                    O::O1(self.context.o1.get(), _grust_reserved_instant),
                                     _grust_reserved_instant,
                                 )
                                 .await?;
@@ -561,16 +653,35 @@ pub mod runtime {
                         (None, Some(((), _timeout_x_instant)), Some((reset, _reset_instant))) => {
                             let x_ref = &mut None;
                             self.context.reset.set(reset);
+                            if self.context.reset.is_new() {
+                                let o1 = <CounterState as grust::core::Component>::step(
+                                    &mut self.counter_1,
+                                    CounterInput {
+                                        res: reset,
+                                        tick: None,
+                                    },
+                                );
+                                self.context.o1.set(o1);
+                            }
+                            if self.context.o1.is_new() {
+                                self.send_output(
+                                    O::O1(self.context.o1.get(), _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
                             *x_ref = Some(());
                             self.send_timer(T::TimeoutX, _timeout_x_instant).await?;
-                            let o2 = <CounterState as grust::core::Component>::step(
-                                &mut self.counter,
-                                CounterInput {
-                                    res: reset,
-                                    tick: *x_ref,
-                                },
-                            );
-                            self.context.o2.set(o2);
+                            if x_ref.is_some() || self.context.reset.is_new() {
+                                let o2 = <CounterState as grust::core::Component>::step(
+                                    &mut self.counter,
+                                    CounterInput {
+                                        res: reset,
+                                        tick: *x_ref,
+                                    },
+                                );
+                                self.context.o2.set(o2);
+                            }
                             if self.context.o2.is_new() {
                                 self.send_output(
                                     O::O2(self.context.o2.get(), _grust_reserved_instant),
@@ -594,14 +705,16 @@ pub mod runtime {
                                 *x_ref = Some(());
                                 self.send_timer(T::TimeoutX, _clock_instant).await?;
                             }
-                            let o2 = <CounterState as grust::core::Component>::step(
-                                &mut self.counter,
-                                CounterInput {
-                                    res: reset,
-                                    tick: *x_ref,
-                                },
-                            );
-                            self.context.o2.set(o2);
+                            if x_ref.is_some() || self.context.reset.is_new() {
+                                let o2 = <CounterState as grust::core::Component>::step(
+                                    &mut self.counter,
+                                    CounterInput {
+                                        res: reset,
+                                        tick: *x_ref,
+                                    },
+                                );
+                                self.context.o2.set(o2);
+                            }
                             if self.context.o2.is_new() {
                                 self.send_output(
                                     O::O2(self.context.o2.get(), _grust_reserved_instant),
@@ -609,14 +722,16 @@ pub mod runtime {
                                 )
                                 .await?;
                             }
-                            let o1 = <CounterState as grust::core::Component>::step(
-                                &mut self.counter_1,
-                                CounterInput {
-                                    res: reset,
-                                    tick: *clock_ref,
-                                },
-                            );
-                            self.context.o1.set(o1);
+                            if clock_ref.is_some() || self.context.reset.is_new() {
+                                let o1 = <CounterState as grust::core::Component>::step(
+                                    &mut self.counter_1,
+                                    CounterInput {
+                                        res: reset,
+                                        tick: *clock_ref,
+                                    },
+                                );
+                                self.context.o1.set(o1);
+                            }
                             if self.context.o1.is_new() {
                                 self.send_output(
                                     O::O1(self.context.o1.get(), _grust_reserved_instant),
