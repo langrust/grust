@@ -2346,14 +2346,13 @@ impl Ir0IntoIr1<ir1::ctx::WithLoc<'_>> for Typ {
                 }),
                 Typ::NotDefinedYet(name) => ctx
                     .get_struct_id(&name, false, ctx.loc, &mut vec![])
-                    .map(|id| Typ::Structure { name: name.clone(), id })
+                    .map(|id| Typ::structure(name.clone(), id))
                     .or_else(|_| {
                         ctx
                             .get_enum_id(&name, false, ctx.loc, &mut vec![])
                             .map(|id| Typ::enumeration(name.clone(), id))
                     }).or_else(|_| {
                         let id = ctx.ctx0
-
                             .get_array_id(&name, false, ctx.loc, ctx.errors)?;
                         Ok(ctx.get_array(id))
                     }),
