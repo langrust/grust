@@ -136,6 +136,9 @@ build_conf! {
         component_para: ComponentPara = ComponentPara::default() =>
             /// Item for the `component_para` configuration value.
             ComponentPara,
+        align_mem: bool = false =>
+            /// Item for the `align_mem` configuration value.
+            AlignMem,
         pub_components: bool = false =>
             /// Item for the `pub_components` configuration value.
             PubComponent,
@@ -210,6 +213,7 @@ mod parsing {
                     Self::StatsDepth(span, val)
                 }
                 "para" => Self::Para(span, true),
+                "align_mem" => Self::AlignMem(span, true),
                 "component_para_none" => Self::ComponentPara(span, ComponentPara::none()),
                 "component_para_threads" => Self::ComponentPara(span, ComponentPara::threads()),
                 "component_para_threads1" => {
