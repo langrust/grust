@@ -198,5 +198,68 @@ pub mod integration {
 }
 
 pub mod derivation {
+    /// Derivation method.
+    ///
+    /// Called in `grust!` macro via
+    /// `use component core::time::derivation::derive(x: float, t: float) -> (d: float);`.
+    pub struct DeriveState {
+        last_t: f64,
+        last_x: f64,
+    }
+    pub struct DeriveInput {
+        pub x: f64,
+        pub t: f64,
+    }
+    impl grust_core::Component for DeriveState {
+        type Input = DeriveInput;
+        type Output = f64;
 
+        fn init() -> Self {
+            DeriveState {
+                last_t: 0.,
+                last_x: 0.,
+            }
+        }
+
+        fn step(&mut self, input: Self::Input) -> Self::Output {
+            let dt = input.t - self.last_t;
+            let dx = input.x - self.last_x;
+            if self.last_x != input.x {
+                self.last_t = input.t;
+                self.last_x = input.x;
+            }
+            dx / dt
+        }
+    }
+
+    #[cfg(test)]
+    mod derive {
+        use grust_core::Component;
+
+        use super::{DeriveInput, DeriveState};
+
+        impl Clone for DeriveInput {
+            fn clone(&self) -> Self {
+                Self {
+                    x: self.x.clone(),
+                    t: self.t.clone(),
+                }
+            }
+        }
+
+        #[test]
+        fn should_be_resilient_to_oversampling() {
+            let mut derive_1 = DeriveState::init();
+            let mut derive_2 = DeriveState::init();
+            let i1 = DeriveInput { x: 4.0, t: 0.33 };
+            let i_over_sample = DeriveInput { x: 4.0, t: 1.77 };
+            let i2 = DeriveInput { x: 6.6, t: 2.13 };
+
+            let _ = (derive_1.step(i1.clone()), derive_2.step(i1));
+            let _ = derive_1.step(i_over_sample); // over sample
+            let (o1, o2) = (derive_1.step(i2.clone()), derive_2.step(i2));
+
+            assert_eq!(o1, o2)
+        }
+    }
 }
