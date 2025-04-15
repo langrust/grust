@@ -4,7 +4,7 @@ pub mod integration {
     /// Implements `F_n+1 = F_n + (t_n+1 - t_n) * f_n`.
     /// Called in `grust!` macro via
     /// `use component core::time::integration::backward_euler(x: float, t: float) -> (i: float);`.
-    struct BackwardEulerState {
+    pub struct BackwardEulerState {
         integral: f64,
         last_t: f64,
         last_x: f64,
@@ -70,7 +70,7 @@ pub mod integration {
     ///
     /// Called in `grust!` macro via
     /// `use component core::time::integration::trapeze(x: float, t: float) -> (i: float);`.
-    struct TrapezeState {
+    pub struct TrapezeState {
         integral: f64,
         last_t: f64,
         last_x: f64,
@@ -195,4 +195,8 @@ pub mod integration {
             assert_ne!(o1, o2)
         }
     }
+}
+
+pub mod derivation {
+
 }
