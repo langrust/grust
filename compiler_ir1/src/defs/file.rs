@@ -68,11 +68,11 @@ impl File {
     ///     x: int = 0 fby o;
     /// }
     /// ```
-    pub fn causality_analysis(&self, symbol_table: &Ctx, errors: &mut Vec<Error>) -> TRes<()> {
+    pub fn causality_analysis(&self, ctx: &Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         // check causality for each node
         self.components
             .iter()
-            .map(|node| node.causal(symbol_table, errors))
+            .map(|node| node.causal(ctx, errors))
             .collect::<Vec<_>>()
             .into_iter()
             .collect::<TRes<_>>()
@@ -112,12 +112,12 @@ impl File {
     /// ```
     ///
     /// This example is tested in source.
-    pub fn memorize(&mut self, symbol_table: &mut Ctx) -> Res<()> {
+    pub fn memorize(&mut self, ctx: &mut Ctx) -> Res<()> {
         for comp in self.components.iter_mut() {
-            comp.memorize(symbol_table)?;
+            comp.memorize(ctx)?;
         }
         for service in self.interface.services.iter_mut() {
-            service.memorize(symbol_table)?;
+            service.memorize(ctx)?;
         }
         Ok(())
     }
@@ -178,7 +178,7 @@ impl File {
     /// ```
     ///
     /// This example is tested in source.
-    pub fn normal_form(&mut self, symbol_table: &mut Ctx) {
+    pub fn normal_form(&mut self, ctx: &mut Ctx) {
         let mut nodes_reduced_graphs = HashMap::new();
         // get every nodes' graphs
         self.components.iter().for_each(|node| {
@@ -189,10 +189,10 @@ impl File {
         // normalize nodes
         self.components
             .iter_mut()
-            .for_each(|node| node.normal_form(&nodes_reduced_graphs, symbol_table));
+            .for_each(|node| node.normal_form(&nodes_reduced_graphs, ctx));
 
         // normalize interface
-        self.interface.normal_form(symbol_table);
+        self.interface.normal_form(ctx);
 
         // Debug: test it is in normal form
         debug_assert!(self.is_normal_form());
@@ -216,7 +216,7 @@ impl File {
     ///
     /// We need to inline the code, the output `fib` is defined before the input `fib`,
     /// which can not be computed by a function call.
-    pub fn inline_when_needed(&mut self, symbol_table: &mut Ctx) {
+    pub fn inline_when_needed(&mut self, ctx: &mut Ctx) {
         let nodes = self
             .components
             .iter()
@@ -224,7 +224,7 @@ impl File {
             .collect::<HashMap<_, _>>();
         self.components
             .iter_mut()
-            .for_each(|node| node.inline_when_needed(&nodes, symbol_table))
+            .for_each(|node| node.inline_when_needed(&nodes, ctx))
     }
 
     /// Schedule unitary nodes' equations.
@@ -406,11 +406,11 @@ impl File {
     ///     out z: int = 0 fby z;
     /// }
     /// ```
-    pub fn normalize(&mut self, symbol_table: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
-        self.normal_form(symbol_table);
+    pub fn normalize(&mut self, ctx: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
+        self.normal_form(ctx);
         self.generate_flows_dependency_graphs();
-        self.memorize(symbol_table).dewrap(errors)?;
-        self.inline_when_needed(symbol_table);
+        self.memorize(ctx).dewrap(errors)?;
+        self.inline_when_needed(ctx);
         self.schedule();
         Ok(())
     }
