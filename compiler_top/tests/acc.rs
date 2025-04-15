@@ -5,6 +5,9 @@ fn should_compile_acc() {
     let top: ir0::Top = parse_quote! {
         #![dump = "tests/macro_outputs/acc.rs", demo, propag = "onchange"]
 
+        use component core::time::integration::backward_euler(x: float, t: float) -> (i: float);
+        use component core::time::derivation::derive(x: float, t: float) -> (i: float);
+
         // Vehicle speed, computed by another service.
         import signal car::state::speed_km_h                : float;
         // Front distance, from radar sensor.
@@ -19,27 +22,6 @@ fn should_compile_acc() {
 
         const RHO: float = 2.0; // reaction time
         const B_MAX: float = 5.886; // 0.6*9.81
-
-        // Derivation component.
-        component derive(x: float, t_ms: float) -> (v_s: float) {
-            init (t_ms, x) = (0., 0.); // init `last` memories
-            v_s = v_ms / 1000.; // convert m/ms into m/s
-
-            let v_ms: float = (x - last x)/dt_ms;
-            let dt_ms: float = t_ms - last t_ms;
-        }
-
-        // Integration component.
-        component integrate(v_s: float, t_ms: float) -> (x: float) {
-            init (t_ms, x) = (0., 0.); // init `last` memories
-            let v_ms: float = v_s * 1000.; // convert m/s into m/ms
-
-            let unbounded_x: float = last x + v_ms*dt_ms;
-            x = if unbounded_x > 10. then 10.
-                else (if unbounded_x < -10. then -10. else unbounded_x);
-
-            let dt_ms: float = t_ms - last t_ms;
-        }
 
         // Safety distance computation.
         function safety_distance(sv_v_m_s: float, fv_v_m_s: float) -> float {
@@ -58,7 +40,7 @@ fn should_compile_acc() {
         //      ->   distance(t) = fv_x + fv_v*t - (sv_x + sv_v*t - b_c*t²/2) > d_safe
         // => b_c > (fv_v - sv_v)²/(fv_x - sv_x - d_safe)
         component command(distance_m: float, sv_v_km_h: float, t_ms: float) -> (brakes_command: float) {
-            let distancing_m_s: float = derive(distance_m, t_ms);
+            let distancing_m_s: float = derive(distance_m, t_ms) / 1000.;
             brakes_command = distancing_m_s*distancing_m_s / (distance_m - d_safe_m);
             let d_safe_m: float = safety_distance(sv_v_m_s, fv_v_m_s);
             let fv_v_m_s: float = sv_v_m_s + distancing_m_s;
@@ -67,7 +49,7 @@ fn should_compile_acc() {
 
         // Error on command.
         component error(sv_v_km_h: float, brakes_m_s_command: float, t_ms: float) -> (e_m_s: float) {
-            let a_m_s: float = derive(sv_v_m_s, t_ms);
+            let a_m_s: float = (derive(sv_v_m_s * 1000., t_ms)) / (1000.^2);
             let sv_v_m_s: float = sv_v_km_h / 3.6;
             e_m_s = a_m_s_command - a_m_s;
             let a_m_s_command: float = -brakes_m_s_command;
@@ -75,8 +57,8 @@ fn should_compile_acc() {
 
         // Proportional Integral Derivative controller.
         component pid(sv_v_km_h: float, b_m_s_command: float, t_ms: float) -> (b_m_s_control: float) {
-            let p_e: float = error(sv_v_km_h, b_m_s_command, t_ms);
-            let i_e: float = integrate(p_e, t_ms);
+            let p_e: float = error(sv_v_km_h, b_m_s_command, t_ms); // units???
+            let i_e: float = backward_euler(p_e, t_ms);
             let d_e: float = derive(p_e, t_ms);
             b_m_s_control = 1.*p_e + 0.1*i_e + 0.05*d_e;
         }
