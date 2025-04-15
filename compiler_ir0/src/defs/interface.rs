@@ -338,6 +338,8 @@ pub struct ExtCompDecl {
     pub outs: syn::Punctuated<Colon<Ident, Typ>, Token![,]>,
     /// Closing semicolon.
     pub semi_token: Token![;],
+    /// User-defined weight.
+    pub weight: Option<usize>,
 }
 impl ExtCompDecl {
     pub fn inputs(&self) -> Vec<(Ident, Typ)> {

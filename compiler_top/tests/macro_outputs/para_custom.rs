@@ -1,3 +1,6 @@
+pub fn add(i: i64, j: i64) -> i64 {
+    module::add_i64(i, j)
+}
 pub struct NextInput {
     pub i: i64,
 }
@@ -11,7 +14,7 @@ impl grust::core::Component for NextState {
         NextState { last_i: 1i64 }
     }
     fn step(&mut self, input: NextInput) -> i64 {
-        let next_o = module::add_i64(input.i, self.last_i);
+        let next_o = add(input.i, self.last_i);
         self.last_i = input.i;
         next_o
     }

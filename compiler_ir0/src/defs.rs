@@ -142,6 +142,8 @@ pub struct Component {
     pub brace: syn::token::Brace,
     /// Component's equations.
     pub equations: Vec<equation::ReactEq>,
+    /// User-specified weight.
+    pub weight: Option<usize>,
 }
 impl HasLoc for Component {
     fn loc(&self) -> Loc {
@@ -164,6 +166,8 @@ pub struct Function {
     pub brace: syn::token::Brace,
     /// Function's statements.
     pub statements: Vec<Stmt>,
+    /// User-specified weight.
+    pub weight: Option<usize>,
 }
 impl HasLoc for Function {
     fn loc(&self) -> Loc {

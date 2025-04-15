@@ -17,10 +17,10 @@ impl<U: Parse, V: Parse> Parse for Colon<U, V> {
 impl Parse for Item {
     fn parse(input: ParseStream) -> Res<Self> {
         // parse attributes if any
-        let attributes = input.call(syn::Attribute::parse_outer)?;
-        macro_rules! no_attributes {
+        let attrs = input.call(syn::Attribute::parse_outer)?;
+        macro_rules! no_attrs {
             {} => {
-                if let Some(next) = attributes.into_iter().next() {
+                if let Some(next) = attrs.into_iter().next() {
                     return Err(syn::Error::new_spanned(next, "unexpected attribute"))
                 }
             };
@@ -29,27 +29,25 @@ impl Parse for Item {
             no_attributes!();
             Ok(Item::ComponentImport(input.parse()?))
         } else if Component::peek(input) {
-            no_attributes!();
-            Ok(Item::Component(input.parse()?))
+            Ok(Item::Component(Component::parse_item(input, attrs)?))
         } else if Function::peek(input) {
-            no_attributes!();
-            Ok(Item::Function(input.parse()?))
+            Ok(Item::Function(Function::parse_item(input, attrs)?))
         } else if Typedef::peek(input) {
-            no_attributes!();
+            no_attrs!();
             Ok(Item::Typedef(input.parse()?))
         } else if Service::peek(input) {
-            no_attributes!();
+            no_attrs!();
             Ok(Item::Service(input.parse()?))
         } else if FlowImport::peek(input) {
-            no_attributes!();
+            no_attrs!();
             Ok(Item::Import(input.parse()?))
         } else if FlowExport::peek(input) {
-            no_attributes!();
+            no_attrs!();
             Ok(Item::Export(input.parse()?))
         } else if ExtFunDecl::peek(input) {
-            let mut ext_fun = ExtFunDecl::parse(input)?;
-            ext_fun.parse_attributes(attributes)?;
-            Ok(Item::ExtFun(ext_fun))
+            Ok(Item::ExtFun(ExtFunDecl::parse_item(input, attrs)?))
+        } else if ExtCompDecl::peek(input) {
+            Ok(Item::ExtComp(ExtCompDecl::parse_item(input, attrs)?))
         } else {
             Err(input.error(
                 "expected either a flow import/export, a type, a component definition/import, \
@@ -94,7 +92,9 @@ where
 
 mod interface {
     use super::*;
-    prelude! { just interface::* }
+    prelude! { just
+        interface::*, ParseItem
+    }
 
     impl Sample {
         pub fn peek(input: ParseStream) -> bool {
@@ -185,7 +185,29 @@ mod interface {
                 contract,
                 brace,
                 statements,
+                weight: None,
             })
+        }
+    }
+    impl ParseItem for Function {
+        const DESC: &str = "function";
+
+        fn parse_attributes(mut self, attrs: Vec<syn::Attribute>) -> syn::Res<Self> {
+            prelude! {}
+            for attr in attrs {
+                let span = attr.bracket_token.span.join();
+                if let Some(w) = attr.meta.parse_weight_percent_hint()? {
+                    if self.weight.is_some() {
+                        let msg = format!("this {} already has a weight percent hint", Self::DESC);
+                        return Err(syn::Error::new(span, msg));
+                    } else {
+                        self.weight = Some(w)
+                    }
+                } else {
+                    return Err(syn::Error::new(span, "unexpected attribute name"));
+                }
+            }
+            Ok(self)
         }
     }
     impl Timeout {
@@ -545,6 +567,27 @@ mod interface {
             })
         }
     }
+    impl ParseItem for ExtFunDecl {
+        const DESC: &'static str = "external function";
+
+        fn parse_attributes(mut self, attrs: Vec<syn::Attribute>) -> syn::Res<Self> {
+            prelude! {}
+            for attr in attrs {
+                let span = attr.bracket_token.span.join();
+                if let Some(w) = attr.meta.parse_weight_percent_hint()? {
+                    if self.weight.is_some() {
+                        let msg = format!("this {} already has a weight percent hint", Self::DESC);
+                        return Err(syn::Error::new(span, msg));
+                    } else {
+                        self.weight = Some(w)
+                    }
+                } else {
+                    return Err(syn::Error::new(span, "unexpected attribute name"));
+                }
+            }
+            Ok(self)
+        }
+    }
 
     impl ExtCompDecl {
         pub fn peek(input: ParseStream) -> bool {
@@ -584,7 +627,29 @@ mod interface {
                 outs_paren,
                 outs,
                 semi_token,
+                weight: None,
             })
+        }
+    }
+    impl ParseItem for ExtCompDecl {
+        const DESC: &str = "external component";
+
+        fn parse_attributes(mut self, attrs: Vec<syn::Attribute>) -> syn::Res<Self> {
+            prelude! {}
+            for attr in attrs {
+                let span = attr.bracket_token.span.join();
+                if let Some(w) = attr.meta.parse_weight_percent_hint()? {
+                    if self.weight.is_some() {
+                        let msg = format!("this {} already has a weight percent hint", Self::DESC);
+                        return Err(syn::Error::new(span, msg));
+                    } else {
+                        self.weight = Some(w)
+                    }
+                } else {
+                    return Err(syn::Error::new(span, "unexpected attribute name"));
+                }
+            }
+            Ok(self)
         }
     }
 
@@ -679,7 +744,7 @@ impl Component {
         input.peek(keyword::component)
     }
 }
-impl Parse for Component {
+impl syn::Parse for Component {
     fn parse(input: ParseStream) -> Res<Self> {
         let component_token: keyword::component = input.parse()?;
         let ident: Ident = input.parse()?;
@@ -713,7 +778,29 @@ impl Parse for Component {
             contract,
             brace,
             equations,
+            weight: None,
         })
+    }
+}
+impl ParseItem for Component {
+    const DESC: &str = "component";
+
+    fn parse_attributes(mut self, attrs: Vec<syn::Attribute>) -> syn::Res<Self> {
+        prelude! {}
+        for attr in attrs {
+            let span = attr.bracket_token.span.join();
+            if let Some(w) = attr.meta.parse_weight_percent_hint()? {
+                if self.weight.is_some() {
+                    let msg = format!("this {} already has a weight percent hint", Self::DESC);
+                    return Err(syn::Error::new(span, msg));
+                } else {
+                    self.weight = Some(w)
+                }
+            } else {
+                return Err(syn::Error::new(span, "unexpected attribute name"));
+            }
+        }
+        Ok(self)
     }
 }
 

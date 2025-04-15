@@ -42,3 +42,25 @@ pub mod ir0 {
 
 pub use crate::parsing::ParsePrec;
 pub use ir0::*;
+
+pub trait ParseItem: Sized + syn::Parse {
+    /// Description of the `Self`-item.
+    const DESC: &'static str;
+    /// Parses the attributes of a `Self`-item.
+    fn parse_attributes(self, attrs: Vec<syn::Attribute>) -> syn::Res<Self> {
+        if let Some(attr) = attrs.iter().next() {
+            Err(syn::Error::new_spanned(
+                attr,
+                format!("item {} does not accept attributes", Self::DESC),
+            ))
+        } else {
+            Ok(self)
+        }
+    }
+
+    /// Parses an item and its attributes.
+    fn parse_item(input: ParseStream, attrs: Vec<syn::Attribute>) -> syn::Res<Self> {
+        let slf: Self = input.parse()?;
+        slf.parse_attributes(attrs)
+    }
+}
