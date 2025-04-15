@@ -148,6 +148,9 @@ build_conf! {
         dump_code: Option<syn::LitStr> = None =>
             /// Item for the `dump_code` configuration value.
             DumpCode,
+        dump_graph: Option<syn::LitStr> = None =>
+            /// Item for the `dump_graph` configuration value.
+            DumpGraph,
         greusot: bool = false =>
             /// Item for the `greusot` configuration value.
             Greusot,
@@ -208,6 +211,11 @@ mod parsing {
                     let _: Token![=] = input.parse()?;
                     let val: syn::LitStr = input.parse()?;
                     Self::DumpCode(span, Some(val))
+                }
+                "dump_graph" => {
+                    let _: Token![=] = input.parse()?;
+                    let val: syn::LitStr = input.parse()?;
+                    Self::DumpGraph(span, Some(val))
                 }
                 "stats_depth" => {
                     let _: Token![=] = input.parse()?;

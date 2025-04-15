@@ -1,6 +1,7 @@
 #![feature(proc_macro_diagnostic)]
 
 pub extern crate itertools;
+pub extern crate json;
 pub extern crate lazy_static;
 pub extern crate once_cell;
 pub extern crate petgraph;
