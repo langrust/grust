@@ -4,7 +4,7 @@ pub mod integration {
     /// Implements `F_n+1 = F_n + (t_n+1 - t_n) * f_n`.
     /// Called in `grust!` macro via
     /// `use component core::time::integration::backward_euler(x: float, t: float) -> (i: float);`.
-    pub struct BackwardEulerState {
+    struct BackwardEulerState {
         integral: f64,
         last_t: f64,
         last_x: f64,
@@ -65,7 +65,75 @@ pub mod integration {
             assert_eq!(o1, o2)
         }
     }
-    
+
+    /// Trapeze method.
+    ///
+    /// Called in `grust!` macro via
+    /// `use component core::time::integration::trapeze(x: float, t: float) -> (i: float);`.
+    struct TrapezeState {
+        integral: f64,
+        last_t: f64,
+        last_x: f64,
+    }
+    pub struct TrapezeInput {
+        pub x: f64,
+        pub t: f64,
+    }
+    impl grust_core::Component for TrapezeState {
+        type Input = TrapezeInput;
+        type Output = f64;
+
+        fn init() -> Self {
+            TrapezeState {
+                integral: 0.,
+                last_t: 0.,
+                last_x: 0.,
+            }
+        }
+
+        fn step(&mut self, input: Self::Input) -> Self::Output {
+            let dt = input.t - self.last_t;
+            let integral = self.integral + (input.x + self.last_x) * dt / 2.;
+            if self.last_x != input.x {
+                self.integral = integral;
+                self.last_t = input.t;
+                self.last_x = input.x;
+            }
+            integral
+        }
+    }
+
+    #[cfg(test)]
+    mod trapeze {
+        use grust_core::Component;
+
+        use super::{TrapezeInput, TrapezeState};
+
+        impl Clone for TrapezeInput {
+            fn clone(&self) -> Self {
+                Self {
+                    x: self.x.clone(),
+                    t: self.t.clone(),
+                }
+            }
+        }
+
+        #[test]
+        fn should_be_resilient_to_oversampling() {
+            let mut trapeze_1 = TrapezeState::init();
+            let mut trapeze_2 = TrapezeState::init();
+            let i1 = TrapezeInput { x: 4.0, t: 0.33 };
+            let i_over_sample = TrapezeInput { x: 4.0, t: 1.77 };
+            let i2 = TrapezeInput { x: 6.6, t: 2.13 };
+
+            let _ = (trapeze_1.step(i1.clone()), trapeze_2.step(i1));
+            let _ = trapeze_1.step(i_over_sample); // over sample
+            let (o1, o2) = (trapeze_1.step(i2.clone()), trapeze_2.step(i2));
+
+            assert_eq!(o1, o2)
+        }
+    }
+
     /// Forward Euler method.
     ///
     /// F_n+1 = F_n + (t_n+1 - t_n) * f_n+1
@@ -118,7 +186,7 @@ pub mod integration {
             let mut euler_2 = ForwardEulerState::init();
             let i1 = ForwardEulerInput { x: 4.0, t: 0.33 };
             let i_over_sample = ForwardEulerInput { x: 4.0, t: 1.77 };
-            let i2 = ForwardEulerInput { x: 6.0, t: 2.13 };
+            let i2 = ForwardEulerInput { x: 6.6, t: 2.13 };
 
             let _ = (euler_1.step(i1.clone()), euler_2.step(i1));
             let _ = euler_1.step(i_over_sample); // over sample
