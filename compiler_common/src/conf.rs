@@ -32,6 +32,9 @@ impl ComponentPara {
     pub fn none() -> Self {
         Self::None
     }
+    pub fn para(no_para_ubx: usize, rayon_ubx: usize, threads_ubx: usize) -> Self {
+        Self::Para(WeightBounds::new(no_para_ubx, rayon_ubx, threads_ubx))
+    }
     pub fn rayon_mult(n: usize) -> Self {
         WeightBounds::only_rayon_mult(n).into()
     }

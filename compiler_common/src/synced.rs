@@ -158,7 +158,7 @@ impl WeightBounds {
     };
 
     /// Constructor.
-    fn new(no_para_ubx: Weight, rayon_ubx: Weight, threads_ubx: Weight) -> Self {
+    pub fn new(no_para_ubx: Weight, rayon_ubx: Weight, threads_ubx: Weight) -> Self {
         Self {
             no_para_ubx,
             rayon_ubx,
