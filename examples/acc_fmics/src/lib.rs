@@ -3,6 +3,8 @@
 use grust::grust;
 
 grust! {
+    use component core::time::derivation::derive(x: float, t: float) -> (i: float);
+
     import signal car::state::speed_km_h        : float;
     import signal car::sensors::radar_m         : float;
     import event  car::hmi::acc_active          : Activation;
@@ -59,16 +61,7 @@ grust! {
     }
 
     // Derivation component.
-    component derive(x: float, t_ms: float) -> (v_s: float) {
-        init (t_ms, x) = (0., 0.); // init `last` memories
-        v_s = v_ms / 1000.; // convert m/ms into m/s
-
-        let v_ms: float = (x - last x)/dt_ms;
-        let dt_ms: float = t_ms - last t_ms;
-    }
-
-    // Derivation component.
-    component convert(x_km_h: float) -> (x_m_s: float) {
-        x_m_s = x_km_h / 3.6;
+    function convert(x_km_h: float) -> float {
+        return x_km_h / 3.6;
     }
 }
