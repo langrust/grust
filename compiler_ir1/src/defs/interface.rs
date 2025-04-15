@@ -170,18 +170,18 @@ impl Service {
     }
 
     /// Create memory identifiers for [ir1] components called by service.
-    pub fn memorize(&mut self, symbol_table: &mut Ctx) -> Res<()> {
+    pub fn memorize(&mut self, ctx: &mut Ctx) -> Res<()> {
         // create an IdentifierCreator, a local Ctx and Memory
-        let mut identifier_creator = IdentifierCreator::from(self.get_flows_names(symbol_table));
-        symbol_table.local();
+        let mut identifier_creator = IdentifierCreator::from(self.get_flows_names(ctx));
+        ctx.local();
 
         for statement in self.statements.values_mut() {
             let kind = &mut statement.get_expr_mut().kind;
-            kind.memorize(&mut identifier_creator, symbol_table)?;
+            kind.memorize(&mut identifier_creator, ctx)?;
         }
 
         // drop IdentifierCreator (auto) and local Ctx
-        symbol_table.global();
+        ctx.global();
 
         Ok(())
     }

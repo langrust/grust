@@ -84,7 +84,7 @@ impl Component {
     ///     x: int = o;
     /// }
     /// ```
-    pub fn causal(&self, symbol_table: &Ctx, errors: &mut Vec<Error>) -> TRes<()> {
+    pub fn causal(&self, ctx: &Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         match &self.body_or_path {
             Either::Left(body) => {
                 // construct component's subgraph containing only 0-label weight
@@ -102,7 +102,7 @@ impl Component {
                 // if a schedule exists, then the component is causal
                 let res = graph::toposort(&subgraph, None);
                 if let Err(signal) = res {
-                    let name = symbol_table.get_name(signal.node_id());
+                    let name = ctx.get_name(signal.node_id());
                     bad!( errors, @self.get_location() => ErrorKind::signal_non_causal(name.to_string()) )
                 }
 
@@ -144,9 +144,9 @@ impl Component {
     ///     },
     /// }
     /// ```
-    pub fn memorize(&mut self, symbol_table: &mut Ctx) -> Res<()> {
+    pub fn memorize(&mut self, ctx: &mut Ctx) -> Res<()> {
         match &mut self.body_or_path {
-            Either::Left(body) => body.memorize(symbol_table),
+            Either::Left(body) => body.memorize(ctx),
             Either::Right(_) => Ok(()),
         }
     }
@@ -193,10 +193,10 @@ impl Component {
     pub fn normal_form(
         &mut self,
         nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
-        symbol_table: &mut Ctx,
+        ctx: &mut Ctx,
     ) {
         match &mut self.body_or_path {
-            Either::Left(body) => body.normal_form(nodes_reduced_graphs, symbol_table),
+            Either::Left(body) => body.normal_form(nodes_reduced_graphs, ctx),
             Either::Right(_) => (),
         }
     }
@@ -219,13 +219,9 @@ impl Component {
     ///
     /// We need to inline the code, the output `fib` is defined before the input `fib`, which can
     /// not be computed by a function call.
-    pub fn inline_when_needed(
-        &mut self,
-        components: &HashMap<usize, Component>,
-        symbol_table: &mut Ctx,
-    ) {
+    pub fn inline_when_needed(&mut self, components: &HashMap<usize, Component>, ctx: &mut Ctx) {
         match &mut self.body_or_path {
-            Either::Left(body) => body.inline_when_needed(components, symbol_table),
+            Either::Left(body) => body.inline_when_needed(components, ctx),
             Either::Right(_) => (),
         }
     }
@@ -260,7 +256,7 @@ impl Component {
         identifier_creator: &mut IdentifierCreator,
         inputs: &[(usize, stream::Expr)],
         new_output_pattern: Option<stmt::Pattern>,
-        symbol_table: &mut Ctx,
+        ctx: &mut Ctx,
     ) -> (Vec<stream::Stmt>, Memory) {
         match &self.body_or_path {
             Either::Left(body) => {
@@ -273,8 +269,7 @@ impl Component {
                 // add output signals to context
                 new_output_pattern.map(|pattern| {
                     let signals = pattern.identifiers();
-                    symbol_table
-                        .get_node_outputs(self.sign.id)
+                    ctx.get_node_outputs(self.sign.id)
                         .iter()
                         .zip(signals)
                         .for_each(|((_, output_id), new_output_id)| {
@@ -282,11 +277,7 @@ impl Component {
                         })
                 });
 
-                body.instantiate_statements_and_memory(
-                    identifier_creator,
-                    context_map,
-                    symbol_table,
-                )
+                body.instantiate_statements_and_memory(identifier_creator, context_map, ctx)
             }
             Either::Right(_) => (vec![], Memory::new()),
         }
@@ -500,12 +491,12 @@ impl ComponentBody {
     }
 
     /// Return vector of component's signals name.
-    pub fn get_signals_names(&self, symbol_table: &Ctx) -> Vec<Ident> {
+    pub fn get_signals_names(&self, ctx: &Ctx) -> Vec<Ident> {
         self.statements
             .iter()
             .flat_map(|statement| statement.get_identifiers())
             .chain(self.memory.get_identifiers().cloned())
-            .map(|id| symbol_table.get_name(id).clone())
+            .map(|id| ctx.get_name(id).clone())
             .collect()
     }
 
@@ -562,25 +553,25 @@ impl ComponentBody {
     ///     },
     /// }
     /// ```
-    pub fn memorize(&mut self, symbol_table: &mut Ctx) -> Res<()> {
+    pub fn memorize(&mut self, ctx: &mut Ctx) -> Res<()> {
         // create an IdentifierCreator, a local Ctx and Memory
-        let mut identifier_creator = IdentifierCreator::from(self.get_signals_names(symbol_table));
-        symbol_table.local();
+        let mut identifier_creator = IdentifierCreator::from(self.get_signals_names(ctx));
+        ctx.local();
         let mut memory = Memory::new();
 
         for init in self.inits.drain(..) {
-            init.memorize(&mut memory, symbol_table)?;
+            init.memorize(&mut memory, ctx)?;
         }
 
         for statement in self.statements.iter_mut() {
-            statement.memorize(&mut identifier_creator, &mut memory, symbol_table)?;
+            statement.memorize(&mut identifier_creator, &mut memory, ctx)?;
         }
 
         self.contract
-            .memorize(&mut identifier_creator, &mut memory, symbol_table);
+            .memorize(&mut identifier_creator, &mut memory, ctx);
 
         // drop IdentifierCreator (auto), local Ctx and set Memory
-        symbol_table.global();
+        ctx.global();
         self.memory = memory;
 
         // add a dependency graph to the component
@@ -637,11 +628,11 @@ impl ComponentBody {
     pub fn normal_form(
         &mut self,
         nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
-        symbol_table: &mut Ctx,
+        ctx: &mut Ctx,
     ) {
         // create an IdentifierCreator and a local Ctx
-        let mut identifier_creator = IdentifierCreator::from(self.get_signals_names(symbol_table));
-        symbol_table.local();
+        let mut identifier_creator = IdentifierCreator::from(self.get_signals_names(ctx));
+        ctx.local();
 
         for init in &self.inits {
             // initialization expressions should already be in normal form
@@ -651,14 +642,14 @@ impl ComponentBody {
         let mut new_stmts = vec![];
         for stmt in self.statements.drain(..) {
             let (add_stmts, add_inits) =
-                stmt.normal_form(nodes_reduced_graphs, &mut identifier_creator, symbol_table);
+                stmt.normal_form(nodes_reduced_graphs, &mut identifier_creator, ctx);
             new_stmts.extend(add_stmts);
             self.inits.extend(add_inits);
         }
         self.statements = new_stmts;
 
         // drop IdentifierCreator (auto) and local Ctx
-        symbol_table.global();
+        ctx.global();
 
         // add a dependency graph to the component
         let mut graph = GraphMap::new();
@@ -689,13 +680,9 @@ impl ComponentBody {
     ///
     /// We need to inline the code, the output `fib` is defined before the input `fib`, which can
     /// not be computed by a function call.
-    pub fn inline_when_needed(
-        &mut self,
-        components: &HashMap<usize, Component>,
-        symbol_table: &mut Ctx,
-    ) {
+    pub fn inline_when_needed(&mut self, components: &HashMap<usize, Component>, ctx: &mut Ctx) {
         // create identifier creator containing the signals
-        let mut identifier_creator = IdentifierCreator::from(self.get_signals_names(symbol_table));
+        let mut identifier_creator = IdentifierCreator::from(self.get_signals_names(ctx));
 
         // compute new statements for the component
         let mut new_statements: Vec<stream::Stmt> = vec![];
@@ -705,7 +692,7 @@ impl ComponentBody {
                 let mut retrieved_statements = statement.inline_when_needed_recursive(
                     &mut self.memory,
                     &mut identifier_creator,
-                    symbol_table,
+                    ctx,
                     components,
                 );
                 new_statements.append(&mut retrieved_statements)
@@ -744,15 +731,15 @@ impl ComponentBody {
         &self,
         identifier_creator: &mut IdentifierCreator,
         mut context_map: HashMap<usize, Either<usize, stream::Expr>>,
-        symbol_table: &mut Ctx,
+        ctx: &mut Ctx,
     ) -> (Vec<stream::Stmt>, Memory) {
         // add identifiers of the inlined statements to the context
         self.statements.iter().for_each(|statement| {
-            statement.add_necessary_renaming(identifier_creator, &mut context_map, symbol_table)
+            statement.add_necessary_renaming(identifier_creator, &mut context_map, ctx)
         });
         // add identifiers of the inlined memory to the context
         self.memory
-            .add_necessary_renaming(identifier_creator, &mut context_map, symbol_table);
+            .add_necessary_renaming(identifier_creator, &mut context_map, ctx);
 
         // reduce statements according to the context
         let statements = self
@@ -762,7 +749,7 @@ impl ComponentBody {
             .collect();
 
         // reduce memory according to the context
-        let memory = self.memory.replace_by_context(&context_map, &symbol_table);
+        let memory = self.memory.replace_by_context(&context_map, &ctx);
 
         (statements, memory)
     }
