@@ -214,14 +214,7 @@ where
 
         match self {
             Constant { .. } => weight::zero,
-            Identifier { id } => {
-                if ctx.is_function(*id) {
-                    let weight_hint = ctx.get_function_weight_percent_hint(*id);
-                    wb.function_weight(weight_hint)
-                } else {
-                    weight::zero
-                }
-            }
+            Identifier { id } => ctx.get_weight_percent_hint(*id).unwrap_or(weight::lo),
             UnOp { expr, .. } => expr.weight(wb, ctx) + weight::lo,
             BinOp { lft, rgt, .. } => lft.weight(wb, ctx) + rgt.weight(wb, ctx) + weight::lo,
             IfThenElse { cnd, thn, els } => {

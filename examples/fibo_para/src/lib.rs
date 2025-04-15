@@ -9,14 +9,18 @@ pub mod module {
 }
 
 grust! {
-    #![component_para (2, 6, 20)]
-
-    #[weight = 15]
+    #[weight_percent = 5]
     fn module::add_i64(n: int, m: int) -> int;
 
+    #[weight_percent = 10]
+    function add(i: int, j: int) -> int {
+        return add_i64(i, j);
+    }
+
+    #[weight_percent = 12]
     component next(i: int) -> (next_o: int) {
         init i = 1;
-        next_o = add_i64(i, last i);
+        next_o = add(i, last i);
     }
 
     component semi_fib(i: int) -> (o: int) {

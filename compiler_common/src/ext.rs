@@ -297,3 +297,73 @@ impl HasLoc for Ident {
         self.span().into()
     }
 }
+
+pub trait MetaExt: Sized {
+    fn parse_grust_meta<T>(
+        self,
+        f_path: impl FnOnce(syn::Path) -> syn::Res<T>,
+        f_meta_list: impl FnOnce(syn::Path, TokenStream2) -> syn::Res<T>,
+        f_value: impl FnOnce(syn::Path, syn::Expr) -> syn::Res<T>,
+    ) -> syn::Res<T>;
+    fn parse_grust_ident_value<T>(
+        self,
+        f: impl FnOnce(&syn::Ident, syn::Expr) -> syn::Res<T>,
+    ) -> syn::Res<T> {
+        self.parse_grust_meta(
+            |p| Err(syn::Error::new_spanned(p, "unexpected path attribute")),
+            |p, _| {
+                Err(syn::Error::new_spanned(
+                    p,
+                    "unexpected metal-list attribute",
+                ))
+            },
+            |p, e| {
+                let name = if let Some(id) = p.get_ident() {
+                    id
+                } else {
+                    return Err(syn::Error::new_spanned(p, "expected identifier"));
+                };
+                f(name, e)
+            },
+        )
+    }
+
+    fn parse_weight_percent_hint(self) -> syn::Res<Option<usize>> {
+        self.parse_grust_ident_value(|id, e| {
+            let w = if let "weight_percent" = id.to_string().as_str() {
+                Some(e.parse_usize()?)
+            } else {
+                None
+            };
+            Ok(w)
+        })
+    }
+}
+impl MetaExt for syn::Meta {
+    fn parse_grust_meta<T>(
+        self,
+        f_path: impl FnOnce(syn::Path) -> syn::Res<T>,
+        f_meta_list: impl FnOnce(syn::Path, TokenStream2) -> syn::Res<T>,
+        f_value: impl FnOnce(syn::Path, syn::Expr) -> syn::Res<T>,
+    ) -> syn::Res<T> {
+        match self {
+            Self::Path(path) => f_path(path),
+            Self::List(ml) => f_meta_list(ml.path, ml.tokens),
+            Self::NameValue(nv) => f_value(nv.path, nv.value),
+        }
+    }
+}
+
+pub trait SynExprExt {
+    fn parse_usize(&self) -> syn::Res<usize>;
+}
+impl SynExprExt for syn::Expr {
+    fn parse_usize(&self) -> syn::Res<usize> {
+        if let syn::Expr::Lit(lit) = self {
+            if let syn::Lit::Int(n) = &lit.lit {
+                return n.base10_parse();
+            }
+        }
+        return Err(syn::Error::new_spanned(self, "expected a `usize` value"));
+    }
+}

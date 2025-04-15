@@ -33,6 +33,14 @@ pub mod weight {
         /// Weight under which we use threads, no parallelization for higher weights.
         threads_ubx = 10_000,
 
+        /// Lowest weight above [weight::no_para_ubx], *i.e.* rayon's lower bound (inclusive).
+        rayon_lbi = no_para_ubx,
+        /// Lowest weight above [weight::rayon_ubx], *i.e.* threads' lower bound (inclusive).
+        threads_lbi = rayon_ubx,
+        /// Lowest weight above [weight::threads_ubx], *i.e.* "infinite weight"'s lower bound
+        /// (inclusive).
+        infinity_lbi = threads_ubx,
+
         /// "Zero" (sub-)expression weight.
         zero = 0,
         /// "Low" (sub-)expression weight.

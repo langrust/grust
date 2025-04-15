@@ -88,6 +88,7 @@ impl Ir0Store for Component {
             Some(locals),
             Some(inits),
             None,
+            self.weight,
             ctx.errors,
         )?;
 
@@ -489,7 +490,7 @@ impl Ir0Store for ir0::Function {
             None,
             false,
             None,
-            None,
+            self.weight,
             ctx.errors,
         )?;
 
@@ -589,6 +590,7 @@ impl Ir0Store for ir0::ExtCompDecl {
             None,
             None,
             Some(self.path.clone()),
+            self.weight,
             ctx.errors,
         )?;
 

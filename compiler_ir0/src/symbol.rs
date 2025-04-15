@@ -50,7 +50,7 @@ pub enum SymbolKind {
         typing: Option<Typ>,
         /// Path to rewrite calls to this function with.
         path_opt: Option<syn::Path>,
-        /// A weight hint, typically provided for external functions by users.
+        /// A weight hint, typically provided by users.
         ///
         /// **This value is understood as a weight percentage, whatever it means for users.** This
         /// value **can** go over `100%`.
@@ -68,6 +68,11 @@ pub enum SymbolKind {
         inits: Option<HashMap<Ident, usize>>,
         /// Path to call component from.
         path_opt: Option<syn::Path>,
+        /// A weight hint, typically provided by users.
+        ///
+        /// **This value is understood as a weight percentage, whatever it means for users.** This
+        /// value **can** go over `100%`.
+        weight_percent_hint: Option<usize>,
     },
     /// Service kind.
     Service,
@@ -588,6 +593,7 @@ impl Table {
         locals: Option<HashMap<Ident, usize>>,
         inits: Option<HashMap<Ident, usize>>,
         path_opt: Option<syn::Path>,
+        weight_percent_hint: Option<usize>,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol = Symbol::new(
@@ -597,6 +603,7 @@ impl Table {
                 locals,
                 inits,
                 path_opt,
+                weight_percent_hint,
             },
             name,
         );
@@ -897,8 +904,8 @@ impl Table {
         }
     }
 
-    /// Get function input identifiers from identifier.
-    pub fn get_function_weight_percent_hint(&self, id: usize) -> Option<usize> {
+    /// Retrieves the weight percent hint of a node/function.
+    pub fn get_weight_percent_hint(&self, id: usize) -> Option<synced::Weight> {
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
@@ -906,8 +913,12 @@ impl Table {
             SymbolKind::Function {
                 weight_percent_hint,
                 ..
-            } => weight_percent_hint.clone(),
-            _ => noErrorDesc!(),
+            } => Some(weight_percent_hint.unwrap_or(synced::weight::mid)),
+            SymbolKind::Node {
+                weight_percent_hint,
+                ..
+            } => Some(weight_percent_hint.unwrap_or(synced::weight::threads_lbi)),
+            _ => None,
         }
     }
 
