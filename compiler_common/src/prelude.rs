@@ -136,6 +136,7 @@ pub use crate::{
     hash_map::*,
     iter_1,
     itertools,
+    json,
     keyword,
     lazy_static::lazy_static,
     lerror,

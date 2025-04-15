@@ -41,6 +41,9 @@ pub fn into_token_stream(ast: Ast, ctx: &mut ir0::Ctx) -> TokenStream2 {
             return parse_quote! {};
         }
     };
+    if let Some(filepath) = &ctx.conf.dump_graph {
+        ir1.dump_graph(filepath.value(), ctx);
+    }
     let ir2 = stats.timed("ir1 → ir2", || ir1.into_ir2(ctx));
     let rust = stats.timed("codegen (ir2 → rust tokens)", || {
         ir2.prepare_tokens(ctx).to_token_stream()

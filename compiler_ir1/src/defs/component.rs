@@ -339,6 +339,115 @@ impl Component {
     }
 }
 
+pub mod dump_graph {
+    prelude! { graph::* }
+    use compiler_common::{json::append_json, serde::ser::SerializeStruct};
+
+    impl Component {
+        /// Dump dependency graph with parallelization weights.
+        pub fn dump_graph<P: AsRef<std::path::Path>>(&self, filepath: P, ctx: &Ctx) {
+            if let Either::Left(body) = &self.body_or_path {
+                let mut graph = DiGraphMap::new();
+                if let conf::ComponentPara::Para(bounds) = ctx.conf.component_para {
+                    // map identifiers to the weight of their stmt
+                    let weight_map: HashMap<usize, usize> = body
+                        .statements
+                        .iter()
+                        .flat_map(|stmt| {
+                            let w = stmt.weight(&bounds, ctx);
+                            stmt.get_identifiers().into_iter().map(move |id| (id, w))
+                        })
+                        .collect();
+                    // build another graph, with more infos (such as signals' names, and their weights)
+                    for (a, b, label) in body.graph.all_edges() {
+                        match label {
+                            Label::Contract => (),
+                            Label::Weight(memory_depth) => {
+                                graph.add_edge(
+                                    Flow::new(
+                                        a,
+                                        ctx.get_name(a),
+                                        weight_map.get(&a).map_or(0, |w| *w),
+                                    ),
+                                    Flow::new(
+                                        b,
+                                        ctx.get_name(b),
+                                        weight_map.get(&b).map_or(0, |w| *w),
+                                    ),
+                                    *memory_depth,
+                                );
+                            }
+                        }
+                    }
+                }
+                // push in JSON file
+                append_json(
+                    filepath,
+                    ComponentGraph::new(ctx.get_name(self.get_id()), graph),
+                );
+            }
+        }
+    }
+
+    #[derive(Debug, Clone, Copy, Eq, Ord)]
+    pub struct Flow<'a> {
+        id: usize,
+        name: &'a Ident,
+        weight: usize,
+    }
+    impl<'a> Flow<'a> {
+        fn new(id: usize, name: &'a Ident, weight: usize) -> Self {
+            Self { id, name, weight }
+        }
+    }
+    impl<'a> Hash for Flow<'a> {
+        fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+            self.id.hash(state);
+        }
+    }
+    impl<'a> PartialEq for Flow<'a> {
+        fn eq(&self, other: &Self) -> bool {
+            self.id == other.id
+        }
+    }
+    impl<'a> PartialOrd for Flow<'a> {
+        fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+            self.id.partial_cmp(&other.id)
+        }
+    }
+    impl<'a> compiler_common::prelude::Serialize for Flow<'a> {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer,
+        {
+            let mut flow = serializer.serialize_struct("Flow", 3)?;
+            flow.serialize_field("name", &self.name.to_string())?;
+            flow.serialize_field("weight", &self.weight)?;
+            flow.end()
+        }
+    }
+    pub struct ComponentGraph<'a> {
+        name: &'a Ident,
+        graph: DiGraphMap<Flow<'a>, usize>,
+    }
+    impl<'a> ComponentGraph<'a> {
+        fn new(name: &'a Ident, graph: DiGraphMap<Flow<'a>, usize>) -> Self {
+            Self { name, graph }
+        }
+    }
+    impl<'a> compiler_common::prelude::Serialize for ComponentGraph<'a> {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer,
+        {
+            let mut comp_graph = serializer.serialize_struct("Component", 2)?;
+            comp_graph.serialize_field("name", &self.name.to_string())?;
+            comp_graph.serialize_field("graph", &self.graph)?;
+            comp_graph.end()
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 /// LanGRust component definition.
 pub struct ComponentBody {

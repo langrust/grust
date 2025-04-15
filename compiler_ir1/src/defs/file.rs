@@ -415,3 +415,19 @@ impl File {
         Ok(())
     }
 }
+
+pub mod dump_graph {
+    prelude! {}
+    use compiler_common::json::{begin_json, end_json};
+
+    impl File {
+        /// Dump dependency graph with parallelization weights.
+        pub fn dump_graph<P: AsRef<std::path::Path>>(&self, filepath: P, ctx: &Ctx) {
+            begin_json(&filepath);
+            self.components
+                .iter()
+                .for_each(|comp| comp.dump_graph(&filepath, ctx));
+            end_json(&filepath);
+        }
+    }
+}

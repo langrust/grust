@@ -250,6 +250,7 @@ version = "0.1.0"
 dependencies = [
  "either",
  "itertools",
+ "json",
  "lazy_static",
  "once_cell",
  "petgraph",
@@ -888,6 +889,13 @@ dependencies = [
 
 [[package]]
 name = "para_component"
+version = "0.1.0"
+dependencies = [
+ "grust",
+]
+
+[[package]]
+name = "para_component_dump"
 version = "0.1.0"
 dependencies = [
  "grust",
