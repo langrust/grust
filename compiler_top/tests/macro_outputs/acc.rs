@@ -283,6 +283,7 @@ pub mod runtime {
             v1.get_instant().cmp(&v2.get_instant())
         }
     }
+    #[derive(Debug, PartialEq)]
     pub enum RuntimeOutput {
         BrakesMS(f64, std::time::Instant),
     }
@@ -394,6 +395,9 @@ pub mod runtime {
                 pub fn get(&self) -> bool {
                     self.0
                 }
+                pub fn take(&mut self) -> bool {
+                    std::mem::take(&mut self.0)
+                }
                 pub fn is_new(&self) -> bool {
                     self.1
                 }
@@ -410,6 +414,9 @@ pub mod runtime {
                 }
                 pub fn get(&self) -> f64 {
                     self.0
+                }
+                pub fn take(&mut self) -> f64 {
+                    std::mem::take(&mut self.0)
                 }
                 pub fn is_new(&self) -> bool {
                     self.1
@@ -428,6 +435,9 @@ pub mod runtime {
                 pub fn get(&self) -> f64 {
                     self.0
                 }
+                pub fn take(&mut self) -> f64 {
+                    std::mem::take(&mut self.0)
+                }
                 pub fn is_new(&self) -> bool {
                     self.1
                 }
@@ -445,6 +455,9 @@ pub mod runtime {
                 pub fn get(&self) -> f64 {
                     self.0
                 }
+                pub fn take(&mut self) -> f64 {
+                    std::mem::take(&mut self.0)
+                }
                 pub fn is_new(&self) -> bool {
                     self.1
                 }
@@ -461,6 +474,9 @@ pub mod runtime {
                 }
                 pub fn get(&self) -> f64 {
                     self.0
+                }
+                pub fn take(&mut self) -> f64 {
+                    std::mem::take(&mut self.0)
                 }
                 pub fn is_new(&self) -> bool {
                     self.1
@@ -1027,16 +1043,6 @@ pub mod runtime {
                 self.reset_time_constraints(_timeout_adaptive_cruise_control_instant)
                     .await?;
                 self.context.reset();
-                if self.context.distance_m.is_new() {
-                    let condition = <ActivateState as grust::core::Component>::step(
-                        &mut self.activate,
-                        ActivateInput {
-                            acc_active: None,
-                            distance_m: self.context.distance_m.get(),
-                        },
-                    );
-                    self.context.condition.set(condition);
-                }
                 let t = (_timeout_adaptive_cruise_control_instant
                     .duration_since(self.begin)
                     .as_millis()) as f64;

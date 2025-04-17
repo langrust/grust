@@ -109,6 +109,7 @@ pub mod runtime {
             v1.get_instant().cmp(&v2.get_instant())
         }
     }
+    #[derive(Debug, PartialEq)]
     pub enum RuntimeOutput {
         Brakes(Braking, std::time::Instant),
     }
@@ -215,6 +216,9 @@ pub mod runtime {
                 pub fn get(&self) -> super::Braking {
                     self.0
                 }
+                pub fn take(&mut self) -> super::Braking {
+                    std::mem::take(&mut self.0)
+                }
                 pub fn is_new(&self) -> bool {
                     self.1
                 }
@@ -231,6 +235,9 @@ pub mod runtime {
                 }
                 pub fn get(&self) -> f64 {
                     self.0
+                }
+                pub fn take(&mut self) -> f64 {
+                    std::mem::take(&mut self.0)
                 }
                 pub fn is_new(&self) -> bool {
                     self.1
@@ -988,17 +995,6 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.reset_time_constraints(_timeout_aeb_instant).await?;
                 self.context.reset();
-                if self.context.speed_km_h.is_new() {
-                    let brakes = <BrakingStateState as grust::core::Component>::step(
-                        &mut self.braking_state,
-                        BrakingStateInput {
-                            pedest: None,
-                            timeout_pedestrian: None,
-                            speed: self.context.speed_km_h.get(),
-                        },
-                    );
-                    self.context.brakes.set(brakes);
-                }
                 self.send_output(
                     O::Brakes(self.context.brakes.get(), _timeout_aeb_instant),
                     _timeout_aeb_instant,
