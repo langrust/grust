@@ -386,6 +386,7 @@ mod flow_instr {
                 service,
                 ctx0,
                 imports,
+                exports,
                 timing_events,
             );
             // add edge in graph between any import (excluding service delay) and `time` stmts
@@ -660,6 +661,7 @@ mod flow_instr {
             service: &mut Service,
             symbols: &mut Ctx,
             imports: &mut HashMap<usize, FlowImport>,
+            exports: &'a HashMap<usize, FlowExport>,
             timing_events: &mut Vec<TimingEvent>,
         ) {
             // add service delay
@@ -717,11 +719,8 @@ mod flow_instr {
             );
             // add timing_event in graph
             service.graph.add_node(fresh_statement_id);
-            service.statements.iter().for_each(|(stmt_id, stmt)| {
-                if stmt.is_comp_call() {
-                    // todo: why particularly components?
-                    service.graph.add_edge(fresh_statement_id, *stmt_id, ());
-                }
+            exports.keys().for_each(|stmt_id| {
+                service.graph.add_edge(fresh_statement_id, *stmt_id, ());
             });
             // push timing_event
             timing_events.push(TimingEvent {
@@ -860,7 +859,6 @@ mod flow_instr {
             let mut ids = pattern.identifiers();
             debug_assert!(ids.len() == 1);
             let id_pattern = ids.pop().unwrap();
-            let flow_name = self.get_name(id_pattern);
 
             // get the source id, debug-check there is only one flow
             debug_assert!(dependencies.len() == 1);
@@ -886,12 +884,10 @@ mod flow_instr {
             }
             // if timing event is activated
             if self.events.contains(&timer_id) {
-                // update signal by taking from stored event value
-                let take_update = FlowInstruction::update_ctx(
-                    flow_name.clone(),
-                    Expression::take_from_ctx(source_name.clone()),
-                );
-                instrs.push(take_update)
+                // if activated, create event by taking from stored event value
+                let take =
+                    self.define_event(id_pattern, Expression::take_from_ctx(source_name.clone()));
+                instrs.push(take)
             }
 
             FlowInstruction::seq(instrs)
@@ -908,6 +904,7 @@ mod flow_instr {
             let mut ids = pattern.identifiers();
             debug_assert!(ids.len() == 1);
             let id_pattern = ids.pop().unwrap();
+            let flow_name = self.get_name(id_pattern);
 
             // get the source id, debug-check there is only one flow
             debug_assert!(dependencies.len() == 1);
@@ -917,9 +914,10 @@ mod flow_instr {
 
             // timer is an event, look if it is defined
             if self.events.contains(&timer_id) {
-                // if activated, create event
-                let expr = Expression::some(self.get_signal(id_source));
-                self.define_event(id_pattern, expr)
+                // update signal by taking from source signal
+                let update =
+                    FlowInstruction::update_ctx(flow_name.clone(), self.get_signal(id_source));
+                update
             } else {
                 // 'scan' can be activated by the source signal, but it won't do anything
                 FlowInstruction::seq(vec![])
