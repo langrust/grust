@@ -1247,6 +1247,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e72df1d3e26fc17c55ac50bbe79449bc050d98f6c685964683e5a6e9399beea8"
 
 [[package]]
+name = "scan_sample"
+version = "0.1.0"
+dependencies = [
+ "futures",
+ "grust",
+ "json",
+ "lazy_static",
+ "pin-project",
+ "priority_stream",
+ "serde",
+ "timer_stream",
+ "tokio",
+ "tonic-build",
+]
+
+[[package]]
 name = "scopeguard"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

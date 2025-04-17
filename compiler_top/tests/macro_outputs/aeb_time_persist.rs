@@ -153,6 +153,7 @@ pub mod runtime {
             v1.get_instant().cmp(&v2.get_instant())
         }
     }
+    #[derive(Debug, PartialEq)]
     pub enum RuntimeOutput {
         Brakes(Braking, std::time::Instant),
     }
@@ -259,6 +260,9 @@ pub mod runtime {
                 pub fn get(&self) -> super::Braking {
                     self.0
                 }
+                pub fn take(&mut self) -> super::Braking {
+                    std::mem::take(&mut self.0)
+                }
                 pub fn is_new(&self) -> bool {
                     self.1
                 }
@@ -275,6 +279,9 @@ pub mod runtime {
                 }
                 pub fn get(&self) -> f64 {
                     self.0
+                }
+                pub fn take(&mut self) -> f64 {
+                    std::mem::take(&mut self.0)
                 }
                 pub fn is_new(&self) -> bool {
                     self.1
@@ -293,6 +300,9 @@ pub mod runtime {
                 pub fn get(&self) -> f64 {
                     self.0
                 }
+                pub fn take(&mut self) -> f64 {
+                    std::mem::take(&mut self.0)
+                }
                 pub fn is_new(&self) -> bool {
                     self.1
                 }
@@ -309,6 +319,9 @@ pub mod runtime {
                 }
                 pub fn get(&self) -> f64 {
                     self.0
+                }
+                pub fn take(&mut self) -> f64 {
+                    std::mem::take(&mut self.0)
                 }
                 pub fn is_new(&self) -> bool {
                     self.1

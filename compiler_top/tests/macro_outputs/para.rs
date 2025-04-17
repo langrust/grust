@@ -209,6 +209,7 @@ pub mod runtime {
             v1.get_instant().cmp(&v2.get_instant())
         }
     }
+    #[derive(Debug, PartialEq)]
     pub enum RuntimeOutput {
         O1(i64, std::time::Instant),
     }
@@ -298,6 +299,9 @@ pub mod runtime {
                 pub fn get(&self) -> i64 {
                     self.0
                 }
+                pub fn take(&mut self) -> i64 {
+                    std::mem::take(&mut self.0)
+                }
                 pub fn is_new(&self) -> bool {
                     self.1
                 }
@@ -314,6 +318,9 @@ pub mod runtime {
                 }
                 pub fn get(&self) -> i64 {
                     self.0
+                }
+                pub fn take(&mut self) -> i64 {
+                    std::mem::take(&mut self.0)
                 }
                 pub fn is_new(&self) -> bool {
                     self.1
@@ -332,6 +339,9 @@ pub mod runtime {
                 pub fn get(&self) -> i64 {
                     self.0
                 }
+                pub fn take(&mut self) -> i64 {
+                    std::mem::take(&mut self.0)
+                }
                 pub fn is_new(&self) -> bool {
                     self.1
                 }
@@ -348,6 +358,9 @@ pub mod runtime {
                 }
                 pub fn get(&self) -> i64 {
                     self.0
+                }
+                pub fn take(&mut self) -> i64 {
+                    std::mem::take(&mut self.0)
                 }
                 pub fn is_new(&self) -> bool {
                     self.1
@@ -366,6 +379,9 @@ pub mod runtime {
                 pub fn get(&self) -> i64 {
                     self.0
                 }
+                pub fn take(&mut self) -> i64 {
+                    std::mem::take(&mut self.0)
+                }
                 pub fn is_new(&self) -> bool {
                     self.1
                 }
@@ -383,6 +399,9 @@ pub mod runtime {
                 pub fn get(&self) -> i64 {
                     self.0
                 }
+                pub fn take(&mut self) -> i64 {
+                    std::mem::take(&mut self.0)
+                }
                 pub fn is_new(&self) -> bool {
                     self.1
                 }
@@ -399,6 +418,9 @@ pub mod runtime {
                 }
                 pub fn get(&self) -> i64 {
                     self.0
+                }
+                pub fn take(&mut self) -> i64 {
+                    std::mem::take(&mut self.0)
                 }
                 pub fn is_new(&self) -> bool {
                     self.1
@@ -651,50 +673,6 @@ pub mod runtime {
                 self.reset_time_constraints(_timeout_para_mess_instant)
                     .await?;
                 self.context.reset();
-                let e3_ref = &mut None;
-                let e1_ref = &mut None;
-                let e2_ref = &mut None;
-                tokio::join!(
-                    async {
-                        if e1_ref.is_some() {
-                            let (s3, e3) = <C2State as grust::core::Component>::step(
-                                &mut self.c_2,
-                                C2Input { e1: *e1_ref },
-                            );
-                            self.context.s3.set(s3);
-                            *e3_ref = e3;
-                        }
-                    },
-                    async {
-                        if self.context.s2.is_new() {
-                            let (e2) = <C3State as grust::core::Component>::step(
-                                &mut self.c_3,
-                                C3Input {
-                                    s2: self.context.s2.get(),
-                                },
-                            );
-                            *e2_ref = e2;
-                        }
-                        if e2_ref.is_some() {
-                            let (s4) = <C4State as grust::core::Component>::step(
-                                &mut self.c_4,
-                                C4Input { e2: *e2_ref },
-                            );
-                            self.context.s4.set(s4);
-                        }
-                    }
-                );
-                if e3_ref.is_some() || self.context.s4.is_new() || self.context.s3.is_new() {
-                    let o1 = <C5State as grust::core::Component>::step(
-                        &mut self.c_5,
-                        C5Input {
-                            s4: self.context.s4.get(),
-                            s3: self.context.s3.get(),
-                            e3: *e3_ref,
-                        },
-                    );
-                    self.context.o1.set(o1);
-                }
                 self.send_output(
                     O::O1(self.context.o1.get(), _timeout_para_mess_instant),
                     _timeout_para_mess_instant,

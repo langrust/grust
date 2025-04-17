@@ -58,6 +58,7 @@ pub mod runtime {
             v1.get_instant().cmp(&v2.get_instant())
         }
     }
+    #[derive(Debug, PartialEq)]
     pub enum RuntimeOutput {
         O2(i64, std::time::Instant),
         O1(i64, std::time::Instant),
@@ -166,6 +167,9 @@ pub mod runtime {
                 pub fn get(&self) -> i64 {
                     self.0
                 }
+                pub fn take(&mut self) -> i64 {
+                    std::mem::take(&mut self.0)
+                }
                 pub fn is_new(&self) -> bool {
                     self.1
                 }
@@ -183,6 +187,9 @@ pub mod runtime {
                 pub fn get(&self) -> bool {
                     self.0
                 }
+                pub fn take(&mut self) -> bool {
+                    std::mem::take(&mut self.0)
+                }
                 pub fn is_new(&self) -> bool {
                     self.1
                 }
@@ -199,6 +206,9 @@ pub mod runtime {
                 }
                 pub fn get(&self) -> i64 {
                     self.0
+                }
+                pub fn take(&mut self) -> i64 {
+                    std::mem::take(&mut self.0)
                 }
                 pub fn is_new(&self) -> bool {
                     self.1
@@ -272,31 +282,11 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.reset_time_constraints(_timeout_test_instant).await?;
                 self.context.reset();
-                if self.context.reset.is_new() {
-                    let o2 = <CounterState as grust::core::Component>::step(
-                        &mut self.counter,
-                        CounterInput {
-                            res: self.context.reset.get(),
-                            tick: None,
-                        },
-                    );
-                    self.context.o2.set(o2);
-                }
                 self.send_output(
                     O::O2(self.context.o2.get(), _timeout_test_instant),
                     _timeout_test_instant,
                 )
                 .await?;
-                if self.context.reset.is_new() {
-                    let o1 = <CounterState as grust::core::Component>::step(
-                        &mut self.counter_1,
-                        CounterInput {
-                            res: self.context.reset.get(),
-                            tick: None,
-                        },
-                    );
-                    self.context.o1.set(o1);
-                }
                 self.send_output(
                     O::O1(self.context.o1.get(), _timeout_test_instant),
                     _timeout_test_instant,

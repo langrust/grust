@@ -329,6 +329,7 @@ pub mod runtime {
             v1.get_instant().cmp(&v2.get_instant())
         }
     }
+    #[derive(Debug, PartialEq)]
     pub enum RuntimeOutput {
         InRegulation(bool, std::time::Instant),
         VSet(f64, std::time::Instant),
@@ -456,6 +457,9 @@ pub mod runtime {
                 pub fn get(&self) -> bool {
                     self.0
                 }
+                pub fn take(&mut self) -> bool {
+                    std::mem::take(&mut self.0)
+                }
                 pub fn is_new(&self) -> bool {
                     self.1
                 }
@@ -472,6 +476,9 @@ pub mod runtime {
                 }
                 pub fn get(&self) -> bool {
                     self.0
+                }
+                pub fn take(&mut self) -> bool {
+                    std::mem::take(&mut self.0)
                 }
                 pub fn is_new(&self) -> bool {
                     self.1
@@ -490,6 +497,9 @@ pub mod runtime {
                 pub fn get(&self) -> super::VacuumBrakeState {
                     self.0
                 }
+                pub fn take(&mut self) -> super::VacuumBrakeState {
+                    std::mem::take(&mut self.0)
+                }
                 pub fn is_new(&self) -> bool {
                     self.1
                 }
@@ -506,6 +516,9 @@ pub mod runtime {
                 }
                 pub fn get(&self) -> super::VdcState {
                     self.0
+                }
+                pub fn take(&mut self) -> super::VdcState {
+                    std::mem::take(&mut self.0)
                 }
                 pub fn is_new(&self) -> bool {
                     self.1
@@ -524,6 +537,9 @@ pub mod runtime {
                 pub fn get(&self) -> f64 {
                     self.0
                 }
+                pub fn take(&mut self) -> f64 {
+                    std::mem::take(&mut self.0)
+                }
                 pub fn is_new(&self) -> bool {
                     self.1
                 }
@@ -540,6 +556,9 @@ pub mod runtime {
                 }
                 pub fn get(&self) -> f64 {
                     self.0
+                }
+                pub fn take(&mut self) -> f64 {
+                    std::mem::take(&mut self.0)
                 }
                 pub fn is_new(&self) -> bool {
                     self.1
@@ -558,6 +577,9 @@ pub mod runtime {
                 pub fn get(&self) -> f64 {
                     self.0
                 }
+                pub fn take(&mut self) -> f64 {
+                    std::mem::take(&mut self.0)
+                }
                 pub fn is_new(&self) -> bool {
                     self.1
                 }
@@ -574,6 +596,9 @@ pub mod runtime {
                 }
                 pub fn get(&self) -> bool {
                     self.0
+                }
+                pub fn take(&mut self) -> bool {
+                    std::mem::take(&mut self.0)
                 }
                 pub fn is_new(&self) -> bool {
                     self.1
@@ -592,6 +617,9 @@ pub mod runtime {
                 pub fn get(&self) -> f64 {
                     self.0
                 }
+                pub fn take(&mut self) -> f64 {
+                    std::mem::take(&mut self.0)
+                }
                 pub fn is_new(&self) -> bool {
                     self.1
                 }
@@ -608,6 +636,9 @@ pub mod runtime {
                 }
                 pub fn get(&self) -> bool {
                     self.0
+                }
+                pub fn take(&mut self) -> bool {
+                    std::mem::take(&mut self.0)
                 }
                 pub fn is_new(&self) -> bool {
                     self.1
@@ -626,6 +657,9 @@ pub mod runtime {
                 pub fn get(&self) -> f64 {
                     self.0
                 }
+                pub fn take(&mut self) -> f64 {
+                    std::mem::take(&mut self.0)
+                }
                 pub fn is_new(&self) -> bool {
                     self.1
                 }
@@ -643,6 +677,9 @@ pub mod runtime {
                 pub fn get(&self) -> super::SpeedLimiterOn {
                     self.0
                 }
+                pub fn take(&mut self) -> super::SpeedLimiterOn {
+                    std::mem::take(&mut self.0)
+                }
                 pub fn is_new(&self) -> bool {
                     self.1
                 }
@@ -659,6 +696,9 @@ pub mod runtime {
                 }
                 pub fn get(&self) -> super::SpeedLimiter {
                     self.0
+                }
+                pub fn take(&mut self) -> super::SpeedLimiter {
+                    std::mem::take(&mut self.0)
                 }
                 pub fn is_new(&self) -> bool {
                     self.1
@@ -816,50 +856,11 @@ pub mod runtime {
                 self.reset_time_constraints(_timeout_speed_limiter_instant)
                     .await?;
                 self.context.reset();
-                let in_regulation_ref = &mut None;
-                let v_set = self.context.v_set_aux.get();
-                self.context.v_set.set(v_set);
                 self.send_output(
-                    O::VSet(v_set, _timeout_speed_limiter_instant),
+                    O::VSet(self.context.v_set.get(), _timeout_speed_limiter_instant),
                     _timeout_speed_limiter_instant,
                 )
                 .await?;
-                if self.context.vacuum_brake.is_new()
-                    || self.context.vdc.is_new()
-                    || self.context.speed.is_new()
-                    || self.context.v_set.is_new()
-                {
-                    let (state, on_state, in_regulation_aux, state_update) =
-                        <SpeedLimiterState as grust::core::Component>::step(
-                            &mut self.speed_limiter,
-                            SpeedLimiterInput {
-                                activation_req: None,
-                                vacuum_brake_state: self.context.vacuum_brake.get(),
-                                kickdown: None,
-                                failure: None,
-                                vdc_disabled: self.context.vdc.get(),
-                                speed: self.context.speed.get(),
-                                v_set: v_set,
-                            },
-                        );
-                    self.context.state.set(state);
-                    self.context.on_state.set(on_state);
-                    self.context.in_regulation_aux.set(in_regulation_aux);
-                    self.context.state_update.set(state_update);
-                }
-                if self.context.in_regulation_old.get() != self.context.in_regulation_aux.get() {
-                    self.context
-                        .in_regulation_old
-                        .set(self.context.in_regulation_aux.get());
-                    *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                }
-                if let Some(in_regulation) = *in_regulation_ref {
-                    self.send_output(
-                        O::InRegulation(in_regulation, _timeout_speed_limiter_instant),
-                        _timeout_speed_limiter_instant,
-                    )
-                    .await?;
-                }
                 Ok(())
             }
             #[inline]
