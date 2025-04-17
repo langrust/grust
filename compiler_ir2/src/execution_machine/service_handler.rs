@@ -741,7 +741,7 @@ impl ToTokens for Expression {
             Expression::Identifier { identifier } => identifier.to_tokens(tokens),
             Expression::InContext { flow } => quote! { self.context.#flow.get() }.to_tokens(tokens),
             Expression::TakeFromContext { flow } => {
-                quote! { std::mem::take(&mut self.context.#flow.0) }.to_tokens(tokens)
+                quote! { self.context.#flow.take() }.to_tokens(tokens)
             }
             Expression::Some { expression } => quote! { Some(#expression) }.to_tokens(tokens),
             Expression::None => quote! { None }.to_tokens(tokens),
