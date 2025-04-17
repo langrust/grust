@@ -154,6 +154,7 @@ impl ToTokens for ExecutionMachine {
             }
             .to_tokens(&mut tokens);
             quote! {
+                #[derive(Debug, PartialEq)]
                 pub enum RuntimeOutput {
                     #(#output_variants),*
                 }
