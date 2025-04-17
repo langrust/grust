@@ -129,11 +129,7 @@ impl ToTokens for Flows {
             let items = self.elements.iter().map(|(element_name, element_ty)| {
                 let struct_name = element_name.to_camel();
                 let name = element_name;
-                let super_path = Ident::new(
-                    "super",
-                    element_ty.loc().expect("there should be a Loc").span,
-                )
-                .into();
+                let super_path = Ident::new("super", Span::call_site()).into();
                 let ty = element_ty.to_prefix(&super_path);
                 quote! {
                     #[derive(Clone, Copy, PartialEq, Default, Debug)]
@@ -144,6 +140,7 @@ impl ToTokens for Flows {
                             self.0 = #name;
                         }
                         pub fn get(&self) -> #ty { self.0 }
+                        pub fn take(&mut self) -> #ty { std::mem::take(&mut self.0) }
                         pub fn is_new(&self) -> bool { self.1 }
                         pub fn reset(&mut self) { self.1 = false; }
                     }
