@@ -468,20 +468,26 @@ pub mod runtime {
             self,
             _grust_reserved_init_instant: std::time::Instant,
             input: impl futures::Stream<Item = I>,
+            vdc: VdcState,
+            speed: f64,
+            vacuum_brake: VacuumBrakeState,
+            activation: ActivationRequest,
+            kickdown: KickdownState,
+            set_speed: f64,
         ) -> Result<(), futures::channel::mpsc::SendError> {
             futures::pin_mut!(input);
             let mut runtime = self;
             runtime
-                .send_timer(T::TimeoutSpeedLimiter, _grust_reserved_init_instant)
-                .await?;
-            runtime
-                .send_output(O::InRegulation(
-                    Default::default(),
+                .speed_limiter
+                .handle_init(
                     _grust_reserved_init_instant,
-                ))
-                .await?;
-            runtime
-                .send_output(O::VSet(Default::default(), _grust_reserved_init_instant))
+                    vdc,
+                    speed,
+                    vacuum_brake,
+                    activation,
+                    kickdown,
+                    set_speed,
+                )
                 .await?;
             while let Some(input) = input.next().await {
                 match input {
@@ -910,6 +916,63 @@ pub mod runtime {
                     output,
                     timer,
                 }
+            }
+            pub async fn handle_init(
+                &mut self,
+                _grust_reserved_instant: std::time::Instant,
+                vdc: VdcState,
+                speed: f64,
+                vacuum_brake: VacuumBrakeState,
+                activation: ActivationRequest,
+                kickdown: KickdownState,
+                set_speed: f64,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.reset_service_timeout(_grust_reserved_instant).await?;
+                self.context.set_speed.set(set_speed);
+                let (v_set_aux, v_update) = <ProcessSetSpeedState as grust::core::Component>::step(
+                    &mut self.process_set_speed,
+                    ProcessSetSpeedInput {
+                        set_speed: set_speed,
+                    },
+                );
+                self.context.v_set_aux.set(v_set_aux);
+                self.context.v_update.set(v_update);
+                let v_set = self.context.v_set_aux.get();
+                self.context.v_set.set(v_set);
+                self.context.kickdown.set(kickdown);
+                self.context.activation.set(activation);
+                self.context.vacuum_brake.set(vacuum_brake);
+                self.send_output(
+                    O::VSet(v_set, _grust_reserved_instant),
+                    _grust_reserved_instant,
+                )
+                .await?;
+                self.context.speed.set(speed);
+                self.context.vdc.set(vdc);
+                let (state, on_state, in_regulation_aux, state_update) =
+                    <SpeedLimiterState as grust::core::Component>::step(
+                        &mut self.speed_limiter,
+                        SpeedLimiterInput {
+                            activation_req: activation,
+                            vacuum_brake_state: vacuum_brake,
+                            kickdown: kickdown,
+                            vdc_disabled: vdc,
+                            speed: speed,
+                            v_set: v_set,
+                        },
+                    );
+                self.context.state.set(state);
+                self.context.on_state.set(on_state);
+                self.context.in_regulation_aux.set(in_regulation_aux);
+                self.context.state_update.set(state_update);
+                let in_regulation = self.context.in_regulation_aux.get();
+                self.context.in_regulation.set(in_regulation);
+                self.send_output(
+                    O::InRegulation(in_regulation, _grust_reserved_instant),
+                    _grust_reserved_instant,
+                )
+                .await?;
+                Ok(())
             }
             pub async fn handle_delay_speed_limiter(
                 &mut self,

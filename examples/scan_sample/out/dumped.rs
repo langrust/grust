@@ -108,23 +108,13 @@ pub mod runtime {
             self,
             _grust_reserved_init_instant: std::time::Instant,
             input: impl futures::Stream<Item = I>,
+            temperature: f64,
         ) -> Result<(), futures::channel::mpsc::SendError> {
             futures::pin_mut!(input);
             let mut runtime = self;
             runtime
-                .send_timer(T::TimeoutScanSample, _grust_reserved_init_instant)
-                .await?;
-            runtime
-                .send_timer(T::PeriodScannedTemperature, _grust_reserved_init_instant)
-                .await?;
-            runtime
-                .send_timer(T::PeriodSampledPedestrian, _grust_reserved_init_instant)
-                .await?;
-            runtime
-                .send_output(O::ScannedTemperature(
-                    Default::default(),
-                    _grust_reserved_init_instant,
-                ))
+                .scan_sample
+                .handle_init(_grust_reserved_init_instant, temperature)
                 .await?;
             while let Some(input) = input.next().await {
                 match input {
@@ -311,6 +301,37 @@ pub mod runtime {
                     output,
                     timer,
                 }
+            }
+            pub async fn handle_init(
+                &mut self,
+                _grust_reserved_instant: std::time::Instant,
+                temperature: f64,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.reset_service_timeout(_grust_reserved_instant).await?;
+                let sampled_pedestrian_ref = &mut None;
+                self.context.temperature.set(temperature);
+                self.send_timer(T::PeriodScannedTemperature, _grust_reserved_instant)
+                    .await?;
+                self.context.scanned_temperature.set(temperature);
+                self.send_timer(T::PeriodSampledPedestrian, _grust_reserved_instant)
+                    .await?;
+                *sampled_pedestrian_ref = self.context.pedestrian.take();
+                self.send_output(
+                    O::ScannedTemperature(
+                        self.context.scanned_temperature.get(),
+                        _grust_reserved_instant,
+                    ),
+                    _grust_reserved_instant,
+                )
+                .await?;
+                if let Some(sampled_pedestrian) = *sampled_pedestrian_ref {
+                    self.send_output(
+                        O::SampledPedestrian(sampled_pedestrian, _grust_reserved_instant),
+                        _grust_reserved_instant,
+                    )
+                    .await?;
+                }
+                Ok(())
             }
             pub async fn handle_timeout_scan_sample(
                 &mut self,

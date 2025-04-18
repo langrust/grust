@@ -147,7 +147,7 @@ impl Aeb for AebRuntime {
         );
 
         let aeb_service = Runtime::new(output_sink, timers_sink);
-        tokio::spawn(aeb_service.run_loop(INIT.clone(), input_stream));
+        tokio::spawn(aeb_service.run_loop(INIT.clone(), input_stream, 0.0));
 
         Ok(Response::new(output_stream.map(
             from_aeb_service_output as fn(RuntimeOutput) -> Result<Output, Status>,

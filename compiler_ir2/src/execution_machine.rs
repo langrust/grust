@@ -64,11 +64,8 @@ impl ToTokens for ExecutionMachine {
                 }
             }
 
-            for InterfaceFlow {
-                identifier, typ, ..
-            } in self.input_flows.iter()
-            {
-                let enum_ident = identifier.to_camel();
+            for InterfaceFlow { ident, typ, .. } in self.input_flows.iter() {
+                let enum_ident = ident.to_camel();
                 input_variants.push(quote! { #enum_ident(#typ, std::time::Instant) });
                 input_eq_arms.push(quote! {
                     (I::#enum_ident(this, _), I::#enum_ident(other, _)) => this.eq(other)
@@ -76,11 +73,8 @@ impl ToTokens for ExecutionMachine {
                 let instant = Ident::instant_var();
                 input_get_instant_arms.push(quote! { I::#enum_ident(_, #instant) => *#instant });
             }
-            for InterfaceFlow {
-                identifier, typ, ..
-            } in self.output_flows.iter()
-            {
-                let enum_ident = identifier.to_camel();
+            for InterfaceFlow { ident, typ, .. } in self.output_flows.iter() {
+                let enum_ident = ident.to_camel();
                 output_variants.push(quote! { #enum_ident(#typ, std::time::Instant) });
             }
 
@@ -216,7 +210,8 @@ impl ToTokens for ExecutionMachine {
                 }
             };
 
-            let run_loop = self.runtime_loop.prepare_tokens(&self.output_flows);
+            let run_loop = self.runtime_loop.prepare_tokens(&self.input_flows);
+
             quote! {
                 impl Runtime {
                     #new_runtime
@@ -258,7 +253,7 @@ pub struct InterfaceFlow {
     /// Path of the flow.
     pub path: syn::Path,
     /// The name of the flow.
-    pub identifier: Ident,
+    pub ident: Ident,
     /// The type of the flow.
     pub typ: Typ,
 }

@@ -101,20 +101,13 @@ pub mod runtime {
             self,
             _grust_reserved_init_instant: std::time::Instant,
             input: impl futures::Stream<Item = I>,
+            reset: bool,
         ) -> Result<(), futures::channel::mpsc::SendError> {
             futures::pin_mut!(input);
             let mut runtime = self;
             runtime
-                .send_timer(T::TimeoutX, _grust_reserved_init_instant)
-                .await?;
-            runtime
-                .send_timer(T::TimeoutTest, _grust_reserved_init_instant)
-                .await?;
-            runtime
-                .send_output(O::O2(Default::default(), _grust_reserved_init_instant))
-                .await?;
-            runtime
-                .send_output(O::O1(Default::default(), _grust_reserved_init_instant))
+                .test
+                .handle_init(_grust_reserved_init_instant, reset)
                 .await?;
             while let Some(input) = input.next().await {
                 match input {
@@ -275,6 +268,45 @@ pub mod runtime {
                     output,
                     timer,
                 }
+            }
+            pub async fn handle_init(
+                &mut self,
+                _grust_reserved_instant: std::time::Instant,
+                reset: bool,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.reset_service_timeout(_grust_reserved_instant).await?;
+                let x_ref = &mut None;
+                self.context.reset.set(reset);
+                let o1 = <CounterState as grust::core::Component>::step(
+                    &mut self.counter_1,
+                    CounterInput {
+                        res: reset,
+                        tick: None,
+                    },
+                );
+                self.context.o1.set(o1);
+                *x_ref = Some(());
+                self.send_timer(T::TimeoutX, _grust_reserved_instant)
+                    .await?;
+                let o2 = <CounterState as grust::core::Component>::step(
+                    &mut self.counter,
+                    CounterInput {
+                        res: reset,
+                        tick: *x_ref,
+                    },
+                );
+                self.context.o2.set(o2);
+                self.send_output(
+                    O::O2(self.context.o2.get(), _grust_reserved_instant),
+                    _grust_reserved_instant,
+                )
+                .await?;
+                self.send_output(
+                    O::O1(self.context.o1.get(), _grust_reserved_instant),
+                    _grust_reserved_instant,
+                )
+                .await?;
+                Ok(())
             }
             pub async fn handle_timeout_test(
                 &mut self,
@@ -516,8 +548,8 @@ pub mod runtime {
                             }
                         }
                         (Some((clock, _clock_instant)), Some(((), _timeout_x_instant)), None) => {
-                            let clock_ref = &mut None;
                             let x_ref = &mut None;
+                            let clock_ref = &mut None;
                             *clock_ref = Some(clock);
                             if clock_ref.is_some() {
                                 self.send_timer(T::TimeoutX, _clock_instant).await?;
@@ -684,8 +716,8 @@ pub mod runtime {
                             Some(((), _timeout_x_instant)),
                             Some((reset, _reset_instant)),
                         ) => {
-                            let clock_ref = &mut None;
                             let x_ref = &mut None;
+                            let clock_ref = &mut None;
                             self.context.reset.set(reset);
                             *clock_ref = Some(clock);
                             if clock_ref.is_some() {
