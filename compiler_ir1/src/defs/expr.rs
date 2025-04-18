@@ -101,6 +101,13 @@ pub enum Kind<E> {
         /// The element to access.
         element_number: usize,
     },
+    /// Array element access expression.
+    ArrayAccess {
+        /// The tuple expression.
+        expr: Box<E>,
+        /// The index to access.
+        index: syn::LitInt,
+    },
     /// Array map operator expression.
     Map {
         /// The array expression.
@@ -188,6 +195,10 @@ mk_new! { impl{E} Kind<E> =>
         expr: E = expr.into(),
         element_number: usize,
     }
+    ArrayAccess: array_access {
+        expr: E = expr.into(),
+        index: syn::LitInt,
+    }
     Map: map {
         expr: E = expr.into(),
         fun: E = fun.into(),
@@ -239,7 +250,9 @@ where
                         .max()
                         .unwrap_or(weight::zero)
             }
-            FieldAccess { expr, .. } | TupleElementAccess { expr, .. } => expr.weight(wb, ctx),
+            FieldAccess { expr, .. }
+            | TupleElementAccess { expr, .. }
+            | ArrayAccess { expr, .. } => expr.weight(wb, ctx),
             Map { expr, fun } => {
                 // well, we can't do much without knowing the length of the array...
                 expr.weight(wb, ctx) + fun.weight(wb, ctx) + weight::hi
@@ -324,8 +337,9 @@ impl<E> Kind<E> {
                             && expr_pred(expr)
                     })
             }
-            Kind::FieldAccess { expr, .. } => expr_pred(expr),
-            Kind::TupleElementAccess { expr, .. } => expr_pred(expr),
+            Kind::FieldAccess { expr, .. }
+            | Kind::TupleElementAccess { expr, .. }
+            | Kind::ArrayAccess { expr, .. } => expr_pred(expr),
             Kind::Map { expr, fun } => expr_pred(expr) && expr_pred(fun),
             Kind::Fold { array, init, fun } => {
                 expr_pred(array) && expr_pred(init) && expr_pred(fun)

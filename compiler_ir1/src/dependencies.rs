@@ -363,8 +363,9 @@ impl stream::ExprKind {
                     }
                 }
             }
-            Self::FieldAccess { expr, .. } => expr.get_called_nodes(target),
-            Self::TupleElementAccess { expr, .. } => expr.get_called_nodes(target),
+            Self::FieldAccess { expr, .. }
+            | Self::TupleElementAccess { expr, .. }
+            | Self::ArrayAccess { expr, .. } => expr.get_called_nodes(target),
             Self::Map { expr, fun } => {
                 expr.get_called_nodes(target);
                 fun.get_called_nodes(target);
@@ -412,12 +413,13 @@ impl stream::ExprKind {
             Structure { fields, .. } => Self::structure_deps(ctx, fields),
             Array { elements } => Self::array_deps(ctx, elements),
             Tuple { elements } => Self::tuple_deps(ctx, elements),
-            Match { expr, arms } => Self::match_deps(&self, ctx, expr, arms),
-            FieldAccess { expr, .. } => Self::field_access_deps(&self, ctx, expr),
+            Match { expr, arms } => Self::match_deps(ctx, expr, arms),
+            FieldAccess { expr, .. } => Self::field_access_deps(ctx, expr),
             TupleElementAccess { expr, .. } => Self::tuple_access_deps(ctx, expr),
+            ArrayAccess { expr, .. } => Self::array_access_deps(ctx, expr),
             Map { expr, .. } => Self::map_deps(ctx, expr),
             Fold { array, init, .. } => Self::fold_deps(ctx, array, init),
-            Sort { expr, .. } => Self::sort_deps(&self, ctx, expr),
+            Sort { expr, .. } => Self::sort_deps(ctx, expr),
             Zip { arrays } => Self::zip_deps(ctx, arrays),
         }
     }
@@ -487,11 +489,7 @@ impl stream::ExprKind {
     }
 
     /// Compute dependencies of a field access stream expression.
-    fn field_access_deps(
-        &self,
-        ctx: &mut GraphProcCtx,
-        expr: &stream::Expr,
-    ) -> TRes<Vec<(usize, Label)>> {
+    fn field_access_deps(ctx: &mut GraphProcCtx, expr: &stream::Expr) -> TRes<Vec<(usize, Label)>> {
         // get accessed expression dependencies
         expr.compute_dependencies(ctx)?;
         Ok(expr.get_dependencies().clone())
@@ -552,7 +550,6 @@ impl stream::ExprKind {
 
     /// Compute dependencies of a match stream expression.
     pub fn match_deps(
-        &self,
         ctx: &mut GraphProcCtx,
         expr: &stream::Expr,
         arms: &Vec<(
@@ -601,11 +598,7 @@ impl stream::ExprKind {
     }
 
     /// Compute dependencies of a sort stream expression.
-    pub fn sort_deps(
-        &self,
-        ctx: &mut GraphProcCtx,
-        expr: &stream::Expr,
-    ) -> TRes<Vec<(usize, Label)>> {
+    pub fn sort_deps(ctx: &mut GraphProcCtx, expr: &stream::Expr) -> TRes<Vec<(usize, Label)>> {
         // get sorted expression dependencies
         expr.compute_dependencies(ctx)?;
         Ok(expr.get_dependencies().clone())
@@ -628,6 +621,16 @@ impl stream::ExprKind {
 
     /// Compute dependencies of a tuple element access stream expression.
     pub fn tuple_access_deps(
+        ctx: &mut GraphProcCtx,
+        expr: &stream::Expr,
+    ) -> TRes<Vec<(usize, Label)>> {
+        // get accessed expression dependencies
+        expr.compute_dependencies(ctx)?;
+        Ok(expr.get_dependencies().clone())
+    }
+
+    /// Compute dependencies of an array element access stream expression.
+    pub fn array_access_deps(
         ctx: &mut GraphProcCtx,
         expr: &stream::Expr,
     ) -> TRes<Vec<(usize, Label)>> {

@@ -511,26 +511,6 @@ pub mod runtime {
                             .handle_speed(_grust_reserved_instant, speed)
                             .await?;
                     }
-                    I::Activation(activation, _grust_reserved_instant) => {
-                        runtime
-                            .speed_limiter
-                            .handle_activation(_grust_reserved_instant, activation)
-                            .await?;
-                        runtime
-                            .another_speed_limiter
-                            .handle_activation(_grust_reserved_instant, activation)
-                            .await?;
-                    }
-                    I::Kickdown(kickdown, _grust_reserved_instant) => {
-                        runtime
-                            .speed_limiter
-                            .handle_kickdown(_grust_reserved_instant, kickdown)
-                            .await?;
-                        runtime
-                            .another_speed_limiter
-                            .handle_kickdown(_grust_reserved_instant, kickdown)
-                            .await?;
-                    }
                     I::SetSpeed(set_speed, _grust_reserved_instant) => {
                         runtime
                             .speed_limiter
@@ -559,12 +539,6 @@ pub mod runtime {
                             .handle_delay_speed_limiter(_grust_reserved_instant)
                             .await?;
                     }
-                    I::Timer(T::TimeoutSpeedLimiter, _grust_reserved_instant) => {
-                        runtime
-                            .speed_limiter
-                            .handle_timeout_speed_limiter(_grust_reserved_instant)
-                            .await?;
-                    }
                     I::VacuumBrake(vacuum_brake, _grust_reserved_instant) => {
                         runtime
                             .speed_limiter
@@ -573,6 +547,32 @@ pub mod runtime {
                         runtime
                             .another_speed_limiter
                             .handle_vacuum_brake(_grust_reserved_instant, vacuum_brake)
+                            .await?;
+                    }
+                    I::Timer(T::TimeoutSpeedLimiter, _grust_reserved_instant) => {
+                        runtime
+                            .speed_limiter
+                            .handle_timeout_speed_limiter(_grust_reserved_instant)
+                            .await?;
+                    }
+                    I::Activation(activation, _grust_reserved_instant) => {
+                        runtime
+                            .speed_limiter
+                            .handle_activation(_grust_reserved_instant, activation)
+                            .await?;
+                        runtime
+                            .another_speed_limiter
+                            .handle_activation(_grust_reserved_instant, activation)
+                            .await?;
+                    }
+                    I::Kickdown(kickdown, _grust_reserved_instant) => {
+                        runtime
+                            .speed_limiter
+                            .handle_kickdown(_grust_reserved_instant, kickdown)
+                            .await?;
+                        runtime
+                            .another_speed_limiter
+                            .handle_kickdown(_grust_reserved_instant, kickdown)
                             .await?;
                     }
                     I::Vdc(vdc, _grust_reserved_instant) => {

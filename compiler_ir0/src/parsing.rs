@@ -880,7 +880,7 @@ impl Parse for Typedef {
                     size,
                 })
             } else {
-                Err(input.error("expected array alias definition"))
+                Err(content.error("expected array alias definition"))
             }
         } else {
             Err(input.error("expected type definition"))
@@ -1488,16 +1488,37 @@ mod parse_expr {
 
     impl<E> Parse for Array<E>
     where
-        E: Parse,
+        E: Parse + Clone,
     {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let content;
             let brackets = bracketed!(content in input);
-            let elements: Punctuated<E, Token![,]> = Punctuated::parse_terminated(&content)?;
-            Ok(Array::new(
-                brackets.span.join(),
-                elements.into_iter().collect(),
-            ))
+
+            if content.is_empty() {
+                Ok(Array::new(brackets.span.join(), vec![]))
+            } else {
+                let first: E = content.parse()?;
+                let elements = if content.peek(Token![;]) {
+                    let _: Token![;] = content.parse()?;
+                    let size: syn::LitInt = content.parse()?;
+                    if content.is_empty() {
+                        let n: usize = size.base10_parse()?;
+                        vec![first; n]
+                    } else {
+                        return Err(content.error("expected closed bracket"));
+                    }
+                } else if content.peek(Token![,]) {
+                    let _: Token![,] = content.parse()?;
+                    let others: Punctuated<E, Token![,]> = Punctuated::parse_terminated(&content)?;
+                    let mut elements = Vec::with_capacity(others.len() + 1);
+                    elements.push(first);
+                    elements.extend(others.into_iter());
+                    elements
+                } else {
+                    vec![first]
+                };
+                Ok(Array::new(brackets.span.join(), elements))
+            }
         }
     }
 
@@ -1726,13 +1747,33 @@ mod parse_expr {
     {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let expr: E = input.parse()?;
-            let _: Token![.] = input.parse()?;
-            let element_number: syn::LitInt = input.parse()?;
-            Ok(TupleElementAccess::new(
-                expr.loc().join(element_number.span()),
-                expr,
-                element_number.base10_parse().unwrap(),
-            ))
+            Self::parse(expr, input)
+        }
+    }
+
+    impl<E> ArrayAccess<E>
+    where
+        E: Parse + HasLoc,
+    {
+        pub fn peek(input: ParseStream) -> bool {
+            input.peek(token::Bracket)
+        }
+
+        pub fn parse(expr: E, input: ParseStream) -> syn::Res<Self> {
+            let content;
+            let braces = bracketed!(content in input);
+            let index: syn::LitInt = content.parse()?;
+            let loc = expr.loc().join(braces.span.close()).join(index.span());
+            Ok(ArrayAccess::new(loc, expr, index))
+        }
+    }
+    impl<E> Parse for ArrayAccess<E>
+    where
+        E: Parse + HasLoc,
+    {
+        fn parse(input: ParseStream) -> syn::Res<Self> {
+            let expr: E = input.parse()?;
+            Self::parse(expr, input)
         }
     }
 
@@ -1954,6 +1995,8 @@ mod parse_expr {
                     expr = Self::fold(Fold::parse(expr, input)?)
                 } else if TupleElementAccess::<Self>::peek(input) {
                     expr = Self::tuple_access(TupleElementAccess::parse(expr, input)?)
+                } else if ArrayAccess::<Self>::peek(input) {
+                    expr = Self::array_access(ArrayAccess::parse(expr, input)?)
                 } else if FieldAccess::<Self>::peek(input) {
                     expr = Self::field_access(FieldAccess::parse(expr, input)?)
                 } else if Application::<Self>::peek(input) {

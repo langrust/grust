@@ -776,6 +776,9 @@ impl<E: Typing> expr::Kind<E> {
                 expr,
                 element_number,
             } => typing.tuple_element_access(expr.as_mut(), *element_number),
+            expr::Kind::ArrayAccess { expr, index } => {
+                typing.array_access(expr.as_mut(), index.base10_parse().map_err(|_| ())?)
+            }
             expr::Kind::Enumeration { enum_id, .. } => typing.enumeration(*enum_id),
         }
     }
@@ -1125,6 +1128,23 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
                 } else {
                     bad!(self.errors, @self.loc => ErrorKind::oob())
                 }
+            }
+            given_type => {
+                bad!(self.errors, @self.loc => ErrorKind::expected_tuple(given_type.clone()))
+            }
+        }
+    }
+
+    fn array_access(&mut self, expr: &mut E, index: usize) -> TRes<Typ> {
+        expr.typ_check(self.table, self.errors)?;
+
+        match expr.get_typ().unwrap() {
+            Typ::Array { ty, size, .. } => {
+                let size: usize = size.base10_parse().map_err(|_| ())?;
+                if size <= index {
+                    bad!(self.errors, @self.loc => ErrorKind::oob())
+                }
+                Ok((**ty).clone())
             }
             given_type => {
                 bad!(self.errors, @self.loc => ErrorKind::expected_tuple(given_type.clone()))

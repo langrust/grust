@@ -44,12 +44,14 @@ impl Ctx {
     }
 }
 
+#[derive(Debug)]
 pub struct Colon<U, V> {
     pub left: U,
-    pub colon: Token![:],
+    pub colon: syn::token::Colon,
     pub right: V,
 }
 
+#[derive(Debug)]
 /// GRust user defined type AST.
 pub enum Typedef {
     /// Represents a structure definition.

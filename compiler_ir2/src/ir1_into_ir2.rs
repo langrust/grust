@@ -463,6 +463,10 @@ where
                 expr: Box::new(expr.into_ir2(ctx)),
                 field: FieldIdentifier::Unnamed(element_number),
             },
+            Self::ArrayAccess { expr, index, .. } => Expr::ArrayAccess {
+                expr: Box::new(expr.into_ir2(ctx)),
+                index,
+            },
             Self::Map { expr, fun, .. } => Expr::Map {
                 mapped: Box::new(expr.into_ir2(ctx)),
                 function: Box::new(fun.into_ir2(ctx)),

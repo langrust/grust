@@ -1287,9 +1287,13 @@ impl Table {
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Array { array_type, size } => {
-                Typ::array(array_type.as_ref().expect("expect type").clone(), *size)
-            }
+            SymbolKind::Array { array_type, size } => Typ::array(
+                array_type
+                    .as_ref()
+                    .expect("expect array element type")
+                    .clone(),
+                *size,
+            ),
             _ => noErrorDesc!(),
         }
     }
@@ -1300,7 +1304,9 @@ impl Table {
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Array { array_type, .. } => array_type.as_ref().expect("expect type"),
+            SymbolKind::Array { array_type, .. } => {
+                array_type.as_ref().expect("expect array element type")
+            }
             _ => noErrorDesc!(),
         }
     }
