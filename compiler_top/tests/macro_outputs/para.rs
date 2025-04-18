@@ -155,36 +155,13 @@ impl grust::core::Component for C5State {
 pub mod runtime {
     use super::*;
     use futures::{sink::SinkExt, stream::StreamExt};
-    use RuntimeInput as I;
-    use RuntimeOutput as O;
-    use RuntimeTimer as T;
-    #[derive(PartialEq)]
-    pub enum RuntimeTimer {
-        DelayParaMess,
-        TimeoutParaMess,
-    }
-    impl timer_stream::Timing for RuntimeTimer {
-        fn get_duration(&self) -> std::time::Duration {
-            match self {
-                T::DelayParaMess => std::time::Duration::from_millis(10u64),
-                T::TimeoutParaMess => std::time::Duration::from_millis(500u64),
-            }
-        }
-        fn do_reset(&self) -> bool {
-            match self {
-                T::DelayParaMess => true,
-                T::TimeoutParaMess => true,
-            }
-        }
-    }
     pub enum RuntimeInput {
         E0(i64, std::time::Instant),
-        Timer(T, std::time::Instant),
     }
+    use RuntimeInput as I;
     impl priority_stream::Reset for RuntimeInput {
         fn do_reset(&self) -> bool {
             match self {
-                I::Timer(timer, _) => timer_stream::Timing::do_reset(timer),
                 _ => false,
             }
         }
@@ -193,7 +170,6 @@ pub mod runtime {
         fn eq(&self, other: &Self) -> bool {
             match (self, other) {
                 (I::E0(this, _), I::E0(other, _)) => this.eq(other),
-                (I::Timer(this, _), I::Timer(other, _)) => this.eq(other),
                 _ => false,
             }
         }
@@ -202,7 +178,6 @@ pub mod runtime {
         pub fn get_instant(&self) -> std::time::Instant {
             match self {
                 I::E0(_, _grust_reserved_instant) => *_grust_reserved_instant,
-                I::Timer(_, _grust_reserved_instant) => *_grust_reserved_instant,
             }
         }
         pub fn order(v1: &Self, v2: &Self) -> std::cmp::Ordering {
@@ -213,22 +188,15 @@ pub mod runtime {
     pub enum RuntimeOutput {
         O1(i64, std::time::Instant),
     }
+    use RuntimeOutput as O;
     pub struct Runtime {
         para_mess: para_mess_service::ParaMessService,
         output: futures::channel::mpsc::Sender<O>,
-        timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
     }
     impl Runtime {
-        pub fn new(
-            output: futures::channel::mpsc::Sender<O>,
-            timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
-        ) -> Runtime {
-            let para_mess = para_mess_service::ParaMessService::init(output.clone(), timer.clone());
-            Runtime {
-                para_mess,
-                output,
-                timer,
-            }
+        pub fn new(output: futures::channel::mpsc::Sender<O>) -> Runtime {
+            let para_mess = para_mess_service::ParaMessService::init(output.clone());
+            Runtime { para_mess, output }
         }
         #[inline]
         pub async fn send_output(
@@ -236,15 +204,6 @@ pub mod runtime {
             output: O,
         ) -> Result<(), futures::channel::mpsc::SendError> {
             self.output.send(output).await?;
-            Ok(())
-        }
-        #[inline]
-        pub async fn send_timer(
-            &mut self,
-            timer: T,
-            instant: std::time::Instant,
-        ) -> Result<(), futures::channel::mpsc::SendError> {
-            self.timer.send((timer, instant)).await?;
             Ok(())
         }
         pub async fn run_loop(
@@ -264,18 +223,6 @@ pub mod runtime {
                         runtime
                             .para_mess
                             .handle_e0(_grust_reserved_instant, e0)
-                            .await?;
-                    }
-                    I::Timer(T::TimeoutParaMess, _grust_reserved_instant) => {
-                        runtime
-                            .para_mess
-                            .handle_timeout_para_mess(_grust_reserved_instant)
-                            .await?;
-                    }
-                    I::Timer(T::DelayParaMess, _grust_reserved_instant) => {
-                        runtime
-                            .para_mess
-                            .handle_delay_para_mess(_grust_reserved_instant)
                             .await?;
                     }
                 }
@@ -472,13 +419,9 @@ pub mod runtime {
             c_2: C2State,
             c_3: C3State,
             output: futures::channel::mpsc::Sender<O>,
-            timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
         }
         impl ParaMessService {
-            pub fn init(
-                output: futures::channel::mpsc::Sender<O>,
-                timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
-            ) -> ParaMessService {
+            pub fn init(output: futures::channel::mpsc::Sender<O>) -> ParaMessService {
                 let context = Context::init();
                 let delayed = true;
                 let input_store = Default::default();
@@ -498,111 +441,12 @@ pub mod runtime {
                     c_2,
                     c_3,
                     output,
-                    timer,
                 }
             }
             pub async fn handle_init(
                 &mut self,
                 _grust_reserved_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.reset_service_timeout(_grust_reserved_instant).await?;
-                tokio::join!(async {}, async {});
-                self.send_output(
-                    O::O1(self.context.o1.get(), _grust_reserved_instant),
-                    _grust_reserved_instant,
-                )
-                .await?;
-                Ok(())
-            }
-            pub async fn handle_delay_para_mess(
-                &mut self,
-                _grust_reserved_instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.context.reset();
-                if self.input_store.not_empty() {
-                    self.reset_time_constraints(_grust_reserved_instant).await?;
-                    match (self.input_store.e0.take()) {
-                        (None) => {}
-                        (Some((e0, _e0_instant))) => {
-                            let e0_ref = &mut None;
-                            let e3_ref = &mut None;
-                            let e1_ref = &mut None;
-                            let e2_ref = &mut None;
-                            *e0_ref = Some(e0);
-                            if e0_ref.is_some() {
-                                let (s2, e1) = <C1State as grust::core::Component>::step(
-                                    &mut self.c_1,
-                                    C1Input { e0: *e0_ref },
-                                );
-                                self.context.s2.set(s2);
-                                *e1_ref = e1;
-                            }
-                            tokio::join!(
-                                async {
-                                    if e1_ref.is_some() {
-                                        let (s3, e3) = <C2State as grust::core::Component>::step(
-                                            &mut self.c_2,
-                                            C2Input { e1: *e1_ref },
-                                        );
-                                        self.context.s3.set(s3);
-                                        *e3_ref = e3;
-                                    }
-                                },
-                                async {
-                                    if self.context.s2.is_new() {
-                                        let (e2) = <C3State as grust::core::Component>::step(
-                                            &mut self.c_3,
-                                            C3Input {
-                                                s2: self.context.s2.get(),
-                                            },
-                                        );
-                                        *e2_ref = e2;
-                                    }
-                                    if e2_ref.is_some() {
-                                        let (s4) = <C4State as grust::core::Component>::step(
-                                            &mut self.c_4,
-                                            C4Input { e2: *e2_ref },
-                                        );
-                                        self.context.s4.set(s4);
-                                    }
-                                }
-                            );
-                            if e3_ref.is_some()
-                                || self.context.s4.is_new()
-                                || self.context.s3.is_new()
-                            {
-                                let o1 = <C5State as grust::core::Component>::step(
-                                    &mut self.c_5,
-                                    C5Input {
-                                        s4: self.context.s4.get(),
-                                        s3: self.context.s3.get(),
-                                        e3: *e3_ref,
-                                    },
-                                );
-                                self.context.o1.set(o1);
-                            }
-                            if self.context.o1.is_new() {
-                                self.send_output(
-                                    O::O1(self.context.o1.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                    }
-                } else {
-                    self.delayed = true;
-                }
-                Ok(())
-            }
-            #[inline]
-            pub async fn reset_service_delay(
-                &mut self,
-                _grust_reserved_instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.timer
-                    .send((T::DelayParaMess, _grust_reserved_instant))
-                    .await?;
                 Ok(())
             }
             pub async fn handle_e0(
@@ -677,36 +521,11 @@ pub mod runtime {
                 }
                 Ok(())
             }
-            pub async fn handle_timeout_para_mess(
-                &mut self,
-                _timeout_para_mess_instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.reset_time_constraints(_timeout_para_mess_instant)
-                    .await?;
-                self.context.reset();
-                self.send_output(
-                    O::O1(self.context.o1.get(), _timeout_para_mess_instant),
-                    _timeout_para_mess_instant,
-                )
-                .await?;
-                Ok(())
-            }
-            #[inline]
-            pub async fn reset_service_timeout(
-                &mut self,
-                _timeout_para_mess_instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.timer
-                    .send((T::TimeoutParaMess, _timeout_para_mess_instant))
-                    .await?;
-                Ok(())
-            }
             #[inline]
             pub async fn reset_time_constraints(
                 &mut self,
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.reset_service_delay(instant).await?;
                 self.delayed = false;
                 Ok(())
             }
@@ -716,17 +535,7 @@ pub mod runtime {
                 output: O,
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.reset_service_timeout(instant).await?;
                 self.output.send(output).await?;
-                Ok(())
-            }
-            #[inline]
-            pub async fn send_timer(
-                &mut self,
-                timer: T,
-                instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.timer.send((timer, instant)).await?;
                 Ok(())
             }
         }

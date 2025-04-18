@@ -261,9 +261,8 @@ use interface::{
 };
 use lazy_static::lazy_static;
 use priority_stream::prio_stream;
-use sl::runtime::{Runtime, RuntimeInput, RuntimeOutput, RuntimeTimer};
+use sl::runtime::{Runtime, RuntimeInput, RuntimeOutput};
 use std::time::{Duration, Instant};
-use timer_stream::timer_stream;
 use tonic::{transport::Server, Request, Response, Status, Streaming};
 
 // include the `interface` module, which is generated from interface.proto.
@@ -373,20 +372,14 @@ impl Sl for SlRuntime {
         &self,
         request: Request<Streaming<Input>>,
     ) -> Result<Response<Self::RunSLStream>, Status> {
-        let (timers_sink, timers_stream) = futures::channel::mpsc::channel(4);
         let (output_sink, output_stream) = futures::channel::mpsc::channel(4);
 
         let request_stream = request.into_inner().filter_map(|input| async {
             input.map(into_speed_limiter_service_input).ok().flatten()
         });
-        let timers_stream = timer_stream::<_, _, 6>(timers_stream)
-            .map(|(timer, deadline): (RuntimeTimer, Instant)| RuntimeInput::Timer(timer, deadline));
-        let input_stream = prio_stream::<_, _, 10>(
-            futures::stream::select(request_stream, timers_stream),
-            RuntimeInput::order,
-        );
+        let input_stream = prio_stream::<_, _, 10>(request_stream, RuntimeInput::order);
 
-        let speed_limiter_service = Runtime::new(output_sink, timers_sink);
+        let speed_limiter_service = Runtime::new(output_sink);
         tokio::spawn(speed_limiter_service.run_loop(
             INIT.clone(),
             input_stream,

@@ -223,14 +223,12 @@ impl grust::core::Component for FilteredAccState {
 pub mod runtime {
     use super::*;
     use futures::{sink::SinkExt, stream::StreamExt};
-    use RuntimeInput as I;
-    use RuntimeOutput as O;
-    use RuntimeTimer as T;
     #[derive(PartialEq)]
     pub enum RuntimeTimer {
         DelayAdaptiveCruiseControl,
         TimeoutAdaptiveCruiseControl,
     }
+    use RuntimeTimer as T;
     impl timer_stream::Timing for RuntimeTimer {
         fn get_duration(&self) -> std::time::Duration {
             match self {
@@ -251,6 +249,7 @@ pub mod runtime {
         SpeedKmH(f64, std::time::Instant),
         Timer(T, std::time::Instant),
     }
+    use RuntimeInput as I;
     impl priority_stream::Reset for RuntimeInput {
         fn do_reset(&self) -> bool {
             match self {
@@ -287,6 +286,7 @@ pub mod runtime {
     pub enum RuntimeOutput {
         BrakesMS(f64, std::time::Instant),
     }
+    use RuntimeOutput as O;
     pub struct Runtime {
         adaptive_cruise_control: adaptive_cruise_control_service::AdaptiveCruiseControlService,
         output: futures::channel::mpsc::Sender<O>,

@@ -27,9 +27,6 @@ impl ToTokens for ExecutionMachine {
             tokens.extend(quote! {
                 use futures::{stream::StreamExt, sink::SinkExt};
                 use super::*;
-                use RuntimeTimer as T;
-                use RuntimeInput as I;
-                use RuntimeOutput as O;
             });
 
             // create runtime structures and their implementations
@@ -85,44 +82,54 @@ impl ToTokens for ExecutionMachine {
                 );
                 let instant = Ident::instant_var();
                 input_get_instant_arms.push(parse_quote! { I::Timer(_, #instant) => *#instant });
-            }
-            input_eq_arms.push(parse_quote! { _ => false });
 
-            quote! {
-                #[derive(PartialEq)]
-                pub enum RuntimeTimer {
-                    #(#timer_variants),*
-                }
-            }
-            .to_tokens(&mut tokens);
-
-            quote! {
-                impl timer_stream::Timing for RuntimeTimer {
-                    fn get_duration(&self) -> std::time::Duration {
-                        match self { #(#timer_duration_arms),* }
-                    }
-                    fn do_reset(&self) -> bool {
-                        match self { #(#timer_reset_arms),* }
-                    }
-                }
-            }
-            .to_tokens(&mut tokens);
-
-            quote! { pub enum RuntimeInput { #(#input_variants),* } }.to_tokens(&mut tokens);
-
-            if !timer_variants.is_empty() {
                 quote! {
-                    impl priority_stream::Reset for RuntimeInput {
+                    #[derive(PartialEq)]
+                    pub enum RuntimeTimer {
+                        #(#timer_variants),*
+                    }
+                    use RuntimeTimer as T;
+                }
+                .to_tokens(&mut tokens);
+
+                quote! {
+                    impl timer_stream::Timing for RuntimeTimer {
+                        fn get_duration(&self) -> std::time::Duration {
+                            match self { #(#timer_duration_arms),* }
+                        }
                         fn do_reset(&self) -> bool {
-                            match self {
-                                    I::Timer(timer, _) => timer_stream::Timing::do_reset(timer),
-                                    _ => false,
-                            }
+                            match self { #(#timer_reset_arms),* }
                         }
                     }
                 }
                 .to_tokens(&mut tokens);
             }
+            input_eq_arms.push(parse_quote! { _ => false });
+
+            quote! {
+                pub enum RuntimeInput {
+                    #(#input_variants),*
+                }
+                use RuntimeInput as I;
+            }
+            .to_tokens(&mut tokens);
+
+            let timer_reset = if !timer_variants.is_empty() {
+                quote! {I::Timer(timer, _) => timer_stream::Timing::do_reset(timer),}
+            } else {
+                quote! {}
+            };
+            quote! {
+                impl priority_stream::Reset for RuntimeInput {
+                    fn do_reset(&self) -> bool {
+                        match self {
+                                #timer_reset
+                                _ => false,
+                        }
+                    }
+                }
+            }
+            .to_tokens(&mut tokens);
 
             quote! {
                 impl PartialEq for RuntimeInput {
@@ -152,6 +159,7 @@ impl ToTokens for ExecutionMachine {
                 pub enum RuntimeOutput {
                     #(#output_variants),*
                 }
+                use RuntimeOutput as O;
             }
             .to_tokens(&mut tokens);
 
@@ -169,9 +177,12 @@ impl ToTokens for ExecutionMachine {
 
             runtime_fields.push(quote!(output : futures::channel::mpsc::Sender<O>));
             field_values.push(quote!(output));
-            runtime_fields
-                .push(quote! { timer: futures::channel::mpsc::Sender<(T, std::time::Instant)> });
-            field_values.push(quote!(timer));
+            if !timer_variants.is_empty() {
+                runtime_fields.push(
+                    quote! { timer: futures::channel::mpsc::Sender<(T, std::time::Instant)> },
+                );
+                field_values.push(quote!(timer));
+            }
 
             quote! {
                 pub struct Runtime {
@@ -189,19 +200,27 @@ impl ToTokens for ExecutionMachine {
                          service_mod_ident,
                          ..
                      }| {
+                        // parse the function that creates a new runtime
+                        let timer = if !timer_variants.is_empty() {
+                            quote! {timer.clone()}
+                        } else {
+                            quote! {}
+                        };
                         quote! {
                             let #service_ident = #service_mod_ident::#service_struct_ident::init(
-                                output.clone(), timer.clone()
+                                output.clone(), #timer
                             );
                         }
                     },
                 );
                 // parse the function that creates a new runtime
+                let timer = if !timer_variants.is_empty() {
+                    quote! {timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>}
+                } else {
+                    quote! {}
+                };
                 quote! {
-                    pub fn new(
-                        output: futures::channel::mpsc::Sender<O>,
-                        timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>
-                    ) -> Runtime {
+                    pub fn new(output: futures::channel::mpsc::Sender<O>, #timer) -> Runtime {
                         #(#services_init)*
                         Runtime {
                             #(#field_values),*
@@ -211,7 +230,19 @@ impl ToTokens for ExecutionMachine {
             };
 
             let run_loop = self.runtime_loop.prepare_tokens(&self.input_flows);
-
+            let send_timer = if !timer_variants.is_empty() {
+                quote! {
+                    #[inline]
+                    pub async fn send_timer(
+                        &mut self, timer: T, instant: std::time::Instant,
+                    ) -> Result<(), futures::channel::mpsc::SendError> {
+                        self.timer.send((timer, instant)).await?;
+                        Ok(())
+                    }
+                }
+            } else {
+                quote! {}
+            };
             quote! {
                 impl Runtime {
                     #new_runtime
@@ -224,13 +255,7 @@ impl ToTokens for ExecutionMachine {
                         Ok(())
                     }
 
-                    #[inline]
-                    pub async fn send_timer(
-                        &mut self, timer: T, instant: std::time::Instant,
-                    ) -> Result<(), futures::channel::mpsc::SendError> {
-                        self.timer.send((timer, instant)).await?;
-                        Ok(())
-                    }
+                    #send_timer
 
                     #run_loop
                 }
@@ -238,7 +263,9 @@ impl ToTokens for ExecutionMachine {
             .to_tokens(&mut tokens);
 
             for handler in self.services_handlers.iter() {
-                handler.to_tokens(&mut tokens)
+                handler
+                    .prepare_tokens(!timer_variants.is_empty())
+                    .to_tokens(&mut tokens)
             }
 
             tokens

@@ -322,6 +322,7 @@ mod service_handler {
         InitHandler {
             input_flows,
             instruction,
+            has_time_range: ctx.has_time_range(),
         }
     }
 
@@ -329,6 +330,7 @@ mod service_handler {
     pub fn build<'a>(mut ctx: flow_instr::Builder<'a>) -> ServiceHandler {
         // get service's name
         let service = ctx.service_name().clone();
+        let has_time_range = ctx.has_time_range();
         let init_handler = init_handler(&mut ctx);
         // create flow handlers according to propagations of every incoming flows
         let flow_handlers: Vec<_> = ctx
@@ -340,6 +342,7 @@ mod service_handler {
 
         ServiceHandler::new(
             service,
+            has_time_range,
             components,
             init_handler,
             flow_handlers,
@@ -437,14 +440,17 @@ mod flow_instr {
                 &mut components,
             );
             // add events related to service's constraints
-            Self::build_constraint_events(
-                &mut identifier_creator,
-                service,
-                ctx0,
-                imports,
-                exports,
-                timing_events,
-            );
+            if let Some(time_range) = service.time_range {
+                Self::build_constraint_events(
+                    time_range,
+                    &mut identifier_creator,
+                    service,
+                    ctx0,
+                    imports,
+                    exports,
+                    timing_events,
+                );
+            }
             // add edge in graph between any import (excluding service delay) and `time` stmts
             service
                 .statements
@@ -492,7 +498,9 @@ mod flow_instr {
         pub fn init_service(&self) -> bool {
             self.init_service
         }
-
+        pub fn has_time_range(&self) -> bool {
+            self.service.time_range.is_some()
+        }
         pub fn get_stmt(&self, stmt_id: usize) -> Option<&FlowStatement> {
             self.service.statements.get(&stmt_id)
         }
@@ -721,6 +729,7 @@ mod flow_instr {
 
         /// Adds events related to service's constraints.
         fn build_constraint_events(
+            (min_delay, max_timeout): (u64, u64),
             identifier_creator: &mut IdentifierCreator,
             service: &mut Service,
             symbols: &mut Ctx,
@@ -728,8 +737,6 @@ mod flow_instr {
             exports: &'a HashMap<usize, FlowExport>,
             timing_events: &mut Vec<TimingEvent>,
         ) {
-            // add service delay
-            let min_delay = service.time_range.0;
             // add new timing event into the identifier creator
             let fresh_name = {
                 let s = symbols.get_name(service.id);
@@ -758,8 +765,6 @@ mod flow_instr {
                 kind: TimingEventKind::ServiceDelay(min_delay),
             });
 
-            // add service timeout
-            let max_timeout = service.time_range.1;
             // add new timing event into the identifier creator
             let fresh_name = {
                 let s = symbols.get_name(service.id);

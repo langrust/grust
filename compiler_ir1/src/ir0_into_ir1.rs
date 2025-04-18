@@ -111,11 +111,7 @@ mod interface_impl {
         fn into_ir1(self, ctx: &mut ir1::ctx::Simple<'a>) -> TRes<Self::Ir1> {
             let id = ctx.ctx0.insert_service(self.ident, true, ctx.errors)?;
 
-            let time_range = if let Some(timerange) = self.time_range {
-                timerange.into_ir1(ctx)?
-            } else {
-                (10, 500)
-            };
+            let time_range = self.time_range.map(|tr| tr.into_ir1(ctx)).transpose()?;
 
             ctx.local();
             let statements = self
