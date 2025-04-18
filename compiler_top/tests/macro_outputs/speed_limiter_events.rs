@@ -813,17 +813,12 @@ pub mod runtime {
                 speed: f64,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.reset_service_timeout(_grust_reserved_instant).await?;
-                let changed_set_speed_ref = &mut None;
-                let in_regulation_ref = &mut None;
                 self.context.speed.set(speed);
                 self.context.x.set(set_speed);
                 self.context.changed_set_speed_old.set(self.context.x.get());
-                *changed_set_speed_ref = Some(self.context.x.get());
                 let (v_set_aux, v_update) = <ProcessSetSpeedState as grust::core::Component>::step(
                     &mut self.process_set_speed,
-                    ProcessSetSpeedInput {
-                        set_speed: *changed_set_speed_ref,
-                    },
+                    ProcessSetSpeedInput { set_speed: None },
                 );
                 self.context.v_set_aux.set(v_set_aux);
                 self.context.v_update.set(v_update);
@@ -856,14 +851,6 @@ pub mod runtime {
                 self.context
                     .in_regulation_old
                     .set(self.context.in_regulation_aux.get());
-                *in_regulation_ref = Some(self.context.in_regulation_aux.get());
-                if let Some(in_regulation) = *in_regulation_ref {
-                    self.send_output(
-                        O::InRegulation(in_regulation, _grust_reserved_instant),
-                        _grust_reserved_instant,
-                    )
-                    .await?;
-                }
                 Ok(())
             }
             pub async fn handle_vdc(
@@ -1126,8 +1113,8 @@ pub mod runtime {
                 if self.delayed {
                     self.reset_time_constraints(_set_speed_instant).await?;
                     self.context.reset();
-                    let changed_set_speed_ref = &mut None;
                     let in_regulation_ref = &mut None;
+                    let changed_set_speed_ref = &mut None;
                     if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                         self.context.x.set(set_speed);
                     }
@@ -2073,8 +2060,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
                             }
@@ -2150,8 +2137,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
                             }
@@ -2228,8 +2215,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
                             }
@@ -2306,8 +2293,8 @@ pub mod runtime {
                             None,
                             None,
                         ) => {
-                            let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
                             }
@@ -2386,8 +2373,8 @@ pub mod runtime {
                             None,
                         ) => {
                             let activation_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
                             }
@@ -2466,8 +2453,8 @@ pub mod runtime {
                             None,
                         ) => {
                             let activation_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
                             }
@@ -2547,8 +2534,8 @@ pub mod runtime {
                             None,
                         ) => {
                             let activation_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
                             }
@@ -2628,8 +2615,8 @@ pub mod runtime {
                             None,
                         ) => {
                             let activation_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
                             }
@@ -2710,8 +2697,8 @@ pub mod runtime {
                             None,
                         ) => {
                             let kickdown_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
                             }
@@ -2790,8 +2777,8 @@ pub mod runtime {
                             None,
                         ) => {
                             let kickdown_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
                             }
@@ -2871,8 +2858,8 @@ pub mod runtime {
                             None,
                         ) => {
                             let kickdown_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
                             }
@@ -2952,8 +2939,8 @@ pub mod runtime {
                             None,
                         ) => {
                             let kickdown_ref = &mut None;
-                            let changed_set_speed_ref = &mut None;
                             let in_regulation_ref = &mut None;
+                            let changed_set_speed_ref = &mut None;
                             if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                                 self.context.x.set(set_speed);
                             }

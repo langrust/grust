@@ -864,7 +864,7 @@ mod flow_instr {
                 flow::Kind::Throttle { delta, .. } => {
                     self.handle_throttle(pattern, dependencies, delta.clone())
                 }
-                flow::Kind::OnChange { .. } => self.handle_on_change(pattern, dependencies),
+                flow::Kind::OnChange { .. } => self.handle_onchange(pattern, dependencies),
                 flow::Kind::Persist { .. } => self.handle_persist(pattern, dependencies),
                 flow::Kind::Merge { .. } => self.handle_merge(pattern, dependencies),
                 flow::Kind::Time { loc } => self.handle_time(stmt_id, pattern, *loc),
@@ -1064,7 +1064,7 @@ mod flow_instr {
         }
 
         /// Compute the instruction from an on_change expression.
-        fn handle_on_change(
+        fn handle_onchange(
             &mut self,
             pattern: &ir1::stmt::Pattern,
             mut dependencies: Vec<usize>,
@@ -1082,13 +1082,15 @@ mod flow_instr {
             let old_event_name = self.ctx0.get_name(id_old_event).clone();
 
             // detect changes on signal
-            let then = FlowInstruction::seq(vec![
-                FlowInstruction::update_ctx(old_event_name.clone(), self.get_signal(id_source)),
-                self.define_event(id_pattern, Expression::some(self.get_signal(id_source))),
-            ]);
+            let update =
+                FlowInstruction::update_ctx(old_event_name.clone(), self.get_signal(id_source));
             if self.init_service() {
-                then
+                update
             } else {
+                let then = FlowInstruction::seq(vec![
+                    update,
+                    self.define_event(id_pattern, Expression::some(self.get_signal(id_source))),
+                ]);
                 FlowInstruction::if_change(old_event_name, self.get_signal(id_source), then)
             }
         }
