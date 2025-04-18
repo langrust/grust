@@ -33,11 +33,13 @@ pub struct ServiceHandler {
     pub service_store_ident: Ident,
     pub service_struct_ident: Ident,
     pub service_mod_ident: Ident,
+    pub has_time_range: bool,
 }
 
 impl ServiceHandler {
     pub fn new(
         service: impl Into<Ident>,
+        has_time_range: bool,
         components: Vec<(Ident, Ident)>,
         init_handler: InitHandler,
         flow_handlers: Vec<FlowHandler>,
@@ -60,26 +62,41 @@ impl ServiceHandler {
             service_store_ident,
             service_struct_ident,
             service_mod_ident,
+            has_time_range,
         }
     }
 }
 
-impl ToTokens for ServiceHandler {
+pub struct ServiceHandlerTokens<'a> {
+    sh: &'a ServiceHandler,
+    has_timer: bool,
+}
+impl ServiceHandler {
+    pub fn prepare_tokens<'a>(&'a self, has_timer: bool) -> ServiceHandlerTokens<'a> {
+        ServiceHandlerTokens {
+            sh: self,
+            has_timer,
+        }
+    }
+}
+
+impl<'a> ToTokens for ServiceHandlerTokens<'a> {
     fn to_tokens(&self, tokens: &mut TokenStream2) {
-        let service_store_ident = &self.service_store_ident;
-        let service_name = &self.service_struct_ident;
+        let service_store_ident = &self.sh.service_store_ident;
+        let service_name = &self.sh.service_struct_ident;
 
         let mut item_tokens = quote! {
             use futures::{stream::StreamExt, sink::SinkExt};
             use super::*;
         }
         .to_token_stream();
-        self.flow_context.to_tokens(&mut item_tokens);
+        self.sh.flow_context.to_tokens(&mut item_tokens);
 
         // store all inputs in a `service_store`
         {
             let service_store_fields =
-                self.flow_handlers
+                self.sh
+                    .flow_handlers
                     .iter()
                     .filter_map(|FlowHandler { arriving_flow, .. }| match arriving_flow {
                         ArrivingFlow::Channel(ident, flow_type, _) => {
@@ -91,7 +108,8 @@ impl ToTokens for ServiceHandler {
                         ArrivingFlow::ServiceDelay(_) | ArrivingFlow::ServiceTimeout(_) => None,
                     });
             let service_store_is_some_s =
-                self.flow_handlers
+                self.sh
+                    .flow_handlers
                     .iter()
                     .filter_map(|FlowHandler { arriving_flow, .. }| match arriving_flow {
                         ArrivingFlow::Channel(ident, ..)
@@ -133,7 +151,7 @@ impl ToTokens for ServiceHandler {
                 state_ty_ident,
                 field_ident,
                 ..
-            } in self.components_info.iter()
+            } in self.sh.components_info.iter()
             {
                 service_fields.push(quote! {
                     #field_ident: #state_ty_ident
@@ -142,10 +160,13 @@ impl ToTokens for ServiceHandler {
             }
             // and sending channels
             service_fields.push(quote! { output: futures::channel::mpsc::Sender<O> });
-            service_fields
-                .push(quote! { timer: futures::channel::mpsc::Sender<(T, std::time::Instant)> });
             field_values.push(quote! { output });
-            field_values.push(quote! { timer });
+            if self.has_timer {
+                service_fields.push(
+                    quote! { timer: futures::channel::mpsc::Sender<(T, std::time::Instant)> },
+                );
+                field_values.push(quote! { timer });
+            }
             quote! {
                 pub struct #service_name {
                     #(#service_fields),*
@@ -158,7 +179,7 @@ impl ToTokens for ServiceHandler {
                 // `init` function
                 let mut impl_tokens = {
                     // create components states
-                    let components_states = self.components_info.iter().map(
+                    let components_states = self.sh.components_info.iter().map(
                         |ComponentInfo {
                              state_ty_ident,
                              field_ident,
@@ -170,10 +191,15 @@ impl ToTokens for ServiceHandler {
                             }
                         },
                     );
+                    let timer = if self.has_timer {
+                        quote! {timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,}
+                    } else {
+                        quote! {}
+                    };
                     quote! {
                         pub fn init(
                             output: futures::channel::mpsc::Sender<O>,
-                            timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
+                            #timer
                         ) -> #service_name {
                             let context = Context::init();
                             let delayed = true;
@@ -186,11 +212,25 @@ impl ToTokens for ServiceHandler {
                     }
                 };
 
-                self.init_handler.to_tokens(&mut impl_tokens);
+                self.sh.init_handler.to_tokens(&mut impl_tokens);
 
-                for handler in self.flow_handlers.iter() {
+                for handler in self.sh.flow_handlers.iter() {
                     handler.to_tokens(&mut impl_tokens)
                 }
+
+                // reset service delay
+                let service_delay = if self.sh.has_time_range {
+                    quote! {self.reset_service_delay(instant).await?;}
+                } else {
+                    quote! {}
+                };
+
+                // reset service timeout
+                let service_timeout = if self.sh.has_time_range {
+                    quote! {self.reset_service_timeout(instant).await?;}
+                } else {
+                    quote! {}
+                };
 
                 // service handlers in an implementation block
                 quote! {
@@ -198,7 +238,7 @@ impl ToTokens for ServiceHandler {
                     pub async fn reset_time_constraints(
                         &mut self, instant: std::time::Instant
                     ) -> Result<(), futures::channel::mpsc::SendError> {
-                        self.reset_service_delay(instant).await?;
+                        #service_delay
                         self.delayed = false;
                         Ok(())
                     }
@@ -209,29 +249,31 @@ impl ToTokens for ServiceHandler {
                     pub async fn send_output(
                         &mut self, output: O, instant: std::time::Instant
                     ) -> Result<(), futures::channel::mpsc::SendError> {
-                        self.reset_service_timeout(instant).await?;
+                        #service_timeout
                         self.output.send(output).await?;
                         Ok(())
                     }
                 }
                 .to_tokens(&mut impl_tokens);
-                quote! {
-                    #[inline]
-                    pub async fn send_timer(
-                        &mut self, timer: T, instant: std::time::Instant
-                    ) -> Result<(), futures::channel::mpsc::SendError> {
-                        self.timer.send((timer, instant)).await?;
-                        Ok(())
+                if self.has_timer {
+                    quote! {
+                        #[inline]
+                        pub async fn send_timer(
+                            &mut self, timer: T, instant: std::time::Instant
+                        ) -> Result<(), futures::channel::mpsc::SendError> {
+                            self.timer.send((timer, instant)).await?;
+                            Ok(())
+                        }
                     }
+                    .to_tokens(&mut impl_tokens);
                 }
-                .to_tokens(&mut impl_tokens);
 
                 // build `impl` block
                 quote! { impl #service_name { #impl_tokens } }.to_tokens(&mut item_tokens);
             }
         }
 
-        let mod_ident = &self.service_mod_ident;
+        let mod_ident = &self.sh.service_mod_ident;
         quote!(pub mod #mod_ident { #item_tokens }).to_tokens(tokens)
     }
 }
@@ -373,6 +415,7 @@ pub struct InitHandler {
     pub input_flows: Vec<InterfaceFlow>,
     /// The instructions.
     pub instruction: FlowInstruction,
+    pub has_time_range: bool,
 }
 impl ToTokens for InitHandler {
     fn to_tokens(&self, tokens: &mut TokenStream2) {
@@ -386,6 +429,13 @@ impl ToTokens for InitHandler {
         let instrs = &self.instruction;
         let instant = Ident::instant_var();
 
+        // init service timeout
+        let service_timeout = if self.has_time_range {
+            quote! {self.reset_service_timeout(#instant).await?;}
+        } else {
+            quote! {}
+        };
+
         // `handle_init` function
         quote! {
             pub async fn handle_init(
@@ -393,7 +443,7 @@ impl ToTokens for InitHandler {
                 #instant: std::time::Instant,
                 #(#init_args),*
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.reset_service_timeout(#instant).await?;
+                #service_timeout
                 #instrs
                 Ok(())
             }

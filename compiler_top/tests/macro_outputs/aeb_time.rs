@@ -90,15 +90,13 @@ impl grust::core::Component for BrakingStateState {
 pub mod runtime {
     use super::*;
     use futures::{sink::SinkExt, stream::StreamExt};
-    use RuntimeInput as I;
-    use RuntimeOutput as O;
-    use RuntimeTimer as T;
     #[derive(PartialEq)]
     pub enum RuntimeTimer {
         TimeoutTimeoutPedest,
         DelayAeb,
         TimeoutAeb,
     }
+    use RuntimeTimer as T;
     impl timer_stream::Timing for RuntimeTimer {
         fn get_duration(&self) -> std::time::Duration {
             match self {
@@ -121,6 +119,7 @@ pub mod runtime {
         PedestrianR(f64, std::time::Instant),
         Timer(T, std::time::Instant),
     }
+    use RuntimeInput as I;
     impl priority_stream::Reset for RuntimeInput {
         fn do_reset(&self) -> bool {
             match self {
@@ -157,6 +156,7 @@ pub mod runtime {
     pub enum RuntimeOutput {
         Brakes(Braking, std::time::Instant),
     }
+    use RuntimeOutput as O;
     pub struct Runtime {
         aeb: aeb_service::AebService,
         output: futures::channel::mpsc::Sender<O>,
