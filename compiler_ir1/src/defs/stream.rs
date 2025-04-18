@@ -436,10 +436,9 @@ impl ExprKind {
                     expr.memorize(identifier_creator, memory, ctx)?;
                 }
             }
-            Self::FieldAccess { expr, .. } => {
-                expr.memorize(identifier_creator, memory, ctx)?;
-            }
-            Self::TupleElementAccess { expr, .. } => {
+            Self::FieldAccess { expr, .. }
+            | Self::TupleElementAccess { expr, .. }
+            | Self::ArrayAccess { expr, .. } => {
                 expr.memorize(identifier_creator, memory, ctx)?;
             }
             Self::Map { expr, fun } => {
@@ -653,15 +652,9 @@ impl ExprKind {
 
                 (new_stmts, new_inits)
             }
-            Self::FieldAccess { expr, .. } => {
-                let (new_stmts, new_inits) =
-                    expr.normal_form(nodes_reduced_graphs, identifier_creator, ctx);
-
-                *dependencies = Dependencies::from(expr.get_dependencies().clone());
-
-                (new_stmts, new_inits)
-            }
-            Self::TupleElementAccess { expr, .. } => {
+            Self::FieldAccess { expr, .. }
+            | Self::TupleElementAccess { expr, .. }
+            | Self::ArrayAccess { expr, .. } => {
                 let (new_stmts, new_inits) =
                     expr.normal_form(nodes_reduced_graphs, identifier_creator, ctx);
 
@@ -871,15 +864,9 @@ impl ExprKind {
                 *dependencies = Dependencies::from(expr_dependencies);
                 None
             }
-            Self::FieldAccess { ref mut expr, .. } => {
-                expr.replace_by_context(context_map);
-                // get matched expression dependencies
-                let expr_dependencies = expr.get_dependencies().clone();
-                // push all dependencies in arms dependencies
-                *dependencies = Dependencies::from(expr_dependencies);
-                None
-            }
-            Self::TupleElementAccess { ref mut expr, .. } => {
+            Self::FieldAccess { ref mut expr, .. }
+            | Self::TupleElementAccess { ref mut expr, .. }
+            | Self::ArrayAccess { ref mut expr, .. } => {
                 expr.replace_by_context(context_map);
                 // get matched expression dependencies
                 let expr_dependencies = expr.get_dependencies().clone();

@@ -442,16 +442,28 @@ mod equation {
 
 impl Ir0Store for Ast {
     fn store(&self, symbol_table: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
+        // store type definition first, so they can be used after
+        self.items
+            .iter()
+            .filter_map(|item| match item {
+                ir0::Item::Typedef(typedef) => Some(typedef),
+                _ => None,
+            })
+            .map(|typedef| typedef.store(symbol_table, errors))
+            .collect::<TRes<Vec<_>>>()?;
+
         self.items
             .iter()
             .map(|item| match item {
                 ir0::Item::Component(component) => component.store(symbol_table, errors),
                 ir0::Item::Function(function) => function.store(symbol_table, errors),
-                ir0::Item::Typedef(typedef) => typedef.store(symbol_table, errors),
                 ir0::Item::ExtFun(extfun) => extfun.store(symbol_table, errors),
                 ir0::Item::ExtComp(extcomp) => extcomp.store(symbol_table, errors),
                 ir0::Item::Const(const_decl) => const_decl.store(symbol_table, errors),
-                ir0::Item::Service(_) | ir0::Item::Import(_) | ir0::Item::Export(_) => Ok(()),
+                ir0::Item::Typedef(_) // already stored
+                | ir0::Item::Service(_)
+                | ir0::Item::Import(_)
+                | ir0::Item::Export(_) => Ok(()),
             })
             .collect::<TRes<Vec<_>>>()?;
         Ok(())
@@ -835,23 +847,37 @@ mod stmt_pattern {
 impl Ir0Store for ir0::Typedef {
     /// Store typedef's identifiers in symbol table.
     fn store(&self, symbol_table: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
+        let ctx = &mut ir1::ctx::WithLoc::new(self.loc(), symbol_table, errors);
+
         match self {
             ir0::Typedef::Structure { ident, fields, .. } => {
-                symbol_table.local();
+                ctx.local();
 
                 let field_ids = fields
                     .iter()
-                    .map(|ir0::Colon { left: ident, .. }| {
-                        let field_id =
-                            symbol_table.insert_identifier(ident.clone(), None, true, errors)?;
-                        Ok(field_id)
-                    })
+                    .map(
+                        |ir0::Colon {
+                             left: ident,
+                             right: typing,
+                             ..
+                         }| {
+                            let typing = typing.clone().into_ir1(ctx)?;
+                            let field_id = ctx.ctx0.insert_identifier(
+                                ident.clone(),
+                                Some(typing),
+                                true,
+                                ctx.errors,
+                            )?;
+                            Ok(field_id)
+                        },
+                    )
                     .collect::<TRes<Vec<_>>>()?;
 
-                symbol_table.global();
+                ctx.global();
 
                 let _ =
-                    symbol_table.insert_struct(ident.clone(), field_ids.clone(), false, errors)?;
+                    ctx.ctx0
+                        .insert_struct(ident.clone(), field_ids.clone(), false, ctx.errors)?;
             }
             ir0::Typedef::Enumeration {
                 ident, elements, ..
@@ -872,9 +898,17 @@ impl Ir0Store for ir0::Typedef {
                 let _ =
                     symbol_table.insert_enum(ident.clone(), element_ids.clone(), false, errors)?;
             }
-            ir0::Typedef::Array { ident, size, .. } => {
+            ir0::Typedef::Array {
+                ident,
+                size,
+                array_type,
+                ..
+            } => {
+                let typing = array_type.clone().into_ir1(ctx)?;
                 let size = size.base10_parse().unwrap();
-                let _ = symbol_table.insert_array(ident.clone(), None, size, false, errors)?;
+                let _ =
+                    ctx.ctx0
+                        .insert_array(ident.clone(), Some(typing), size, false, ctx.errors)?;
             }
         }
 

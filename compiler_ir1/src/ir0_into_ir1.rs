@@ -1635,6 +1635,23 @@ mod simple_expr_impl {
         }
     }
 
+    impl<'a, E> Ir0IntoIr1<ir1::ctx::PatLoc<'a>> for ArrayAccess<E>
+    where
+        E: Ir0IntoIr1<ir1::ctx::PatLoc<'a>>,
+    {
+        type Ir1 = expr::Kind<E::Ir1>;
+
+        /// Transforms AST into [ir1] and check identifiers good use.
+        fn into_ir1(self, ctx: &mut ir1::ctx::PatLoc<'a>) -> TRes<expr::Kind<E::Ir1>> {
+            // pre-condition: identifiers are stored in symbol table
+            // post-condition: construct [ir1] expression kind and check identifiers good use
+            Ok(expr::Kind::array_access(
+                self.expr.into_ir1(ctx)?,
+                self.index,
+            ))
+        }
+    }
+
     impl<'a, E> Ir0IntoIr1<ir1::ctx::PatLoc<'a>> for Map<E>
     where
         E: Ir0IntoIr1<ir1::ctx::PatLoc<'a>>,
@@ -1759,6 +1776,7 @@ mod simple_expr_impl {
                 Match(e) => e.into_ir1(ctx)?,
                 FieldAccess(e) => e.into_ir1(ctx)?,
                 TupleElementAccess(e) => e.into_ir1(ctx)?,
+                ArrayAccess(e) => e.into_ir1(ctx)?,
                 Map(e) => e.into_ir1(ctx)?,
                 Fold(e) => e.into_ir1(ctx)?,
                 Sort(e) => e.into_ir1(ctx)?,
@@ -2394,27 +2412,12 @@ impl Ir0IntoIr1<ir1::ctx::Simple<'_>> for ir0::Typedef {
     // pre-condition: typedefs are already stored in symbol table
     // post-condition: construct [ir1] typedef and check identifiers good use
     fn into_ir1(self, ctx: &mut ir1::ctx::Simple) -> TRes<Self::Ir1> {
-        use ir0::{Colon, Typedef};
+        use ir0::Typedef;
         let loc = self.loc();
         match self {
-            Typedef::Structure { ident, fields, .. } => {
+            Typedef::Structure { ident, .. } => {
                 let type_id = ctx.ctx0.get_struct_id(&ident, false, loc, ctx.errors)?;
                 let field_ids = ctx.get_struct_fields(type_id).clone();
-
-                // insert field's type in symbol table
-                for (
-                    id,
-                    Colon {
-                        left: ident,
-                        right: typing,
-                        ..
-                    },
-                ) in field_ids.iter().zip(fields)
-                {
-                    debug_assert_eq!(&ident, ctx.get_name(*id));
-                    let typing = typing.into_ir1(&mut ctx.add_loc(loc))?;
-                    ctx.set_type(*id, typing)
-                }
 
                 Ok(ir1::Typedef {
                     id: type_id,
@@ -2435,15 +2438,8 @@ impl Ir0IntoIr1<ir1::ctx::Simple<'_>> for ir0::Typedef {
                 })
             }
 
-            Typedef::Array {
-                ident, array_type, ..
-            } => {
+            Typedef::Array { ident, .. } => {
                 let type_id = ctx.ctx0.get_array_id(&ident, false, loc, ctx.errors)?;
-
-                // insert array's type in symbol table
-                let typing = array_type.into_ir1(&mut ctx.add_loc(loc))?;
-                ctx.set_array_type(type_id, typing);
-
                 Ok(ir1::Typedef {
                     id: type_id,
                     kind: ir1::typedef::Kind::Array,

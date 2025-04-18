@@ -384,16 +384,10 @@ pub mod runtime {
                 .await?;
             while let Some(input) = input.next().await {
                 match input {
-                    I::Kickdown(kickdown, _grust_reserved_instant) => {
+                    I::Failure(failure, _grust_reserved_instant) => {
                         runtime
                             .speed_limiter
-                            .handle_kickdown(_grust_reserved_instant, kickdown)
-                            .await?;
-                    }
-                    I::SetSpeed(set_speed, _grust_reserved_instant) => {
-                        runtime
-                            .speed_limiter
-                            .handle_set_speed(_grust_reserved_instant, set_speed)
+                            .handle_failure(_grust_reserved_instant, failure)
                             .await?;
                     }
                     I::Speed(speed, _grust_reserved_instant) => {
@@ -408,22 +402,10 @@ pub mod runtime {
                             .handle_activation(_grust_reserved_instant, activation)
                             .await?;
                     }
-                    I::Failure(failure, _grust_reserved_instant) => {
+                    I::SetSpeed(set_speed, _grust_reserved_instant) => {
                         runtime
                             .speed_limiter
-                            .handle_failure(_grust_reserved_instant, failure)
-                            .await?;
-                    }
-                    I::VacuumBrake(vacuum_brake, _grust_reserved_instant) => {
-                        runtime
-                            .speed_limiter
-                            .handle_vacuum_brake(_grust_reserved_instant, vacuum_brake)
-                            .await?;
-                    }
-                    I::Timer(T::TimeoutSpeedLimiter, _grust_reserved_instant) => {
-                        runtime
-                            .speed_limiter
-                            .handle_timeout_speed_limiter(_grust_reserved_instant)
+                            .handle_set_speed(_grust_reserved_instant, set_speed)
                             .await?;
                     }
                     I::Timer(T::DelaySpeedLimiter, _grust_reserved_instant) => {
@@ -432,10 +414,28 @@ pub mod runtime {
                             .handle_delay_speed_limiter(_grust_reserved_instant)
                             .await?;
                     }
+                    I::Timer(T::TimeoutSpeedLimiter, _grust_reserved_instant) => {
+                        runtime
+                            .speed_limiter
+                            .handle_timeout_speed_limiter(_grust_reserved_instant)
+                            .await?;
+                    }
+                    I::VacuumBrake(vacuum_brake, _grust_reserved_instant) => {
+                        runtime
+                            .speed_limiter
+                            .handle_vacuum_brake(_grust_reserved_instant, vacuum_brake)
+                            .await?;
+                    }
                     I::Vdc(vdc, _grust_reserved_instant) => {
                         runtime
                             .speed_limiter
                             .handle_vdc(_grust_reserved_instant, vdc)
+                            .await?;
+                    }
+                    I::Kickdown(kickdown, _grust_reserved_instant) => {
+                        runtime
+                            .speed_limiter
+                            .handle_kickdown(_grust_reserved_instant, kickdown)
                             .await?;
                     }
                 }

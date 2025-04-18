@@ -425,6 +425,29 @@ mk_new! { impl{E} TupleElementAccess<E> =>
     }
 }
 
+/// Array access expression.
+#[derive(Debug, PartialEq, Clone)]
+pub struct ArrayAccess<E> {
+    /// Location.
+    pub loc: Loc,
+    /// The structure expression.
+    pub expr: Box<E>,
+    /// The index to access.
+    pub index: syn::LitInt,
+}
+impl<E> HasLoc for ArrayAccess<E> {
+    fn loc(&self) -> Loc {
+        self.loc
+    }
+}
+mk_new! { impl{E} ArrayAccess<E> =>
+    new {
+        loc: impl Into<Loc> = loc.into(),
+        expr: impl Into<Box<E>> = expr.into(),
+        index: impl Into<syn::LitInt> = index.into(),
+    }
+}
+
 /// Array map operator expression.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Map<E> {
@@ -546,6 +569,8 @@ pub enum Expr {
     FieldAccess(FieldAccess<Self>),
     /// Tuple element access expression.
     TupleElementAccess(TupleElementAccess<Self>),
+    /// Array access expression.
+    ArrayAccess(ArrayAccess<Self>),
     /// Array map operator expression.
     Map(Map<Self>),
     /// Array fold operator expression.
@@ -574,6 +599,7 @@ impl HasLoc for Expr {
             Match(m) => m.loc(),
             FieldAccess(fa) => fa.loc(),
             TupleElementAccess(ta) => ta.loc(),
+            ArrayAccess(aa) => aa.loc(),
             Map(m) => m.loc(),
             Fold(f) => f.loc(),
             Sort(s) => s.loc(),
@@ -601,6 +627,7 @@ mk_new! { impl Expr =>
     Match: pat_match (val: Match<Self> = val)
     FieldAccess: field_access (val: FieldAccess<Self> = val)
     TupleElementAccess: tuple_access (val: TupleElementAccess<Self> = val)
+    ArrayAccess: array_access (val: ArrayAccess<Self> = val)
     Map: map (val: Map<Self> = val)
     Fold: fold (val: Fold<Self> = val)
     Sort: sort (val: Sort<Self> = val)

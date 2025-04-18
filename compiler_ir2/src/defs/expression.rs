@@ -118,6 +118,13 @@ pub enum Expr {
         /// The identifier of the field.
         field: FieldIdentifier,
     },
+    /// A array access: `my_array[idx]`.
+    ArrayAccess {
+        /// The array expression.
+        expr: Box<Self>,
+        /// The index to access.
+        index: syn::LitInt,
+    },
     /// A lambda expression: `|x, y| x * y`.
     Lambda {
         /// If true, the closure is a `move` closure.
@@ -262,7 +269,8 @@ impl Expr {
             | Array { .. }
             | Tuple { .. }
             | Block { .. }
-            | FieldAccess { .. } => false,
+            | FieldAccess { .. }
+            | ArrayAccess { .. } => false,
             UnOp { .. }
             | BinOp { .. }
             | IfThenElse { .. }
@@ -295,6 +303,7 @@ impl Expr {
             | MemoryAccess { .. }
             | InputAccess { .. }
             | FieldAccess { .. }
+            | ArrayAccess { .. }
             | Enumeration { .. }
             | Structure { .. }
             | Array { .. }
@@ -389,6 +398,7 @@ impl ToTokens for Expr {
                 }
             }
             Self::FieldAccess { expr, field } => tokens.extend(quote!(#expr . #field)),
+            Self::ArrayAccess { expr, index } => tokens.extend(quote!(#expr[#index])),
             Self::Lambda {
                 is_move,
                 inputs,
@@ -545,6 +555,7 @@ impl ToLogicTokens for Expr {
                 }
             }
             Self::FieldAccess { expr, field } => quote!(#expr . #field).to_tokens(tokens),
+            Self::ArrayAccess { expr, index } => quote!(#expr[#index]).to_tokens(tokens),
             Self::Lambda {
                 is_move,
                 inputs,

@@ -491,18 +491,6 @@ pub mod runtime {
                             .handle_speed(_grust_reserved_instant, speed)
                             .await?;
                     }
-                    I::Activation(activation, _grust_reserved_instant) => {
-                        runtime
-                            .speed_limiter
-                            .handle_activation(_grust_reserved_instant, activation)
-                            .await?;
-                    }
-                    I::Kickdown(kickdown, _grust_reserved_instant) => {
-                        runtime
-                            .speed_limiter
-                            .handle_kickdown(_grust_reserved_instant, kickdown)
-                            .await?;
-                    }
                     I::SetSpeed(set_speed, _grust_reserved_instant) => {
                         runtime
                             .speed_limiter
@@ -525,6 +513,18 @@ pub mod runtime {
                         runtime
                             .speed_limiter
                             .handle_vacuum_brake(_grust_reserved_instant, vacuum_brake)
+                            .await?;
+                    }
+                    I::Activation(activation, _grust_reserved_instant) => {
+                        runtime
+                            .speed_limiter
+                            .handle_activation(_grust_reserved_instant, activation)
+                            .await?;
+                    }
+                    I::Kickdown(kickdown, _grust_reserved_instant) => {
+                        runtime
+                            .speed_limiter
+                            .handle_kickdown(_grust_reserved_instant, kickdown)
                             .await?;
                     }
                     I::Vdc(vdc, _grust_reserved_instant) => {
