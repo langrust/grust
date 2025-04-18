@@ -387,7 +387,14 @@ impl Sl for SlRuntime {
         );
 
         let speed_limiter_service = Runtime::new(output_sink, timers_sink);
-        tokio::spawn(speed_limiter_service.run_loop(INIT.clone(), input_stream));
+        tokio::spawn(speed_limiter_service.run_loop(
+            INIT.clone(),
+            input_stream,
+            Default::default(),
+            Default::default(),
+            Default::default(),
+            Default::default(),
+        ));
 
         Ok(Response::new(output_stream.map(
             from_speed_limiter_service_output as fn(RuntimeOutput) -> Result<Output, Status>,

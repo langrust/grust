@@ -191,17 +191,13 @@ pub mod runtime {
             self,
             _grust_reserved_init_instant: std::time::Instant,
             input: impl futures::Stream<Item = I>,
+            speed_km_h: f64,
         ) -> Result<(), futures::channel::mpsc::SendError> {
             futures::pin_mut!(input);
             let mut runtime = self;
             runtime
-                .send_timer(T::TimeoutAeb, _grust_reserved_init_instant)
-                .await?;
-            runtime
-                .send_timer(T::TimeoutTimeoutPedest, _grust_reserved_init_instant)
-                .await?;
-            runtime
-                .send_output(O::Brakes(Default::default(), _grust_reserved_init_instant))
+                .aeb
+                .handle_init(_grust_reserved_init_instant, speed_km_h)
                 .await?;
             while let Some(input) = input.next().await {
                 match input {
@@ -394,6 +390,46 @@ pub mod runtime {
                     output,
                     timer,
                 }
+            }
+            pub async fn handle_init(
+                &mut self,
+                _grust_reserved_instant: std::time::Instant,
+                speed_km_h: f64,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.reset_service_timeout(_grust_reserved_instant).await?;
+                let timeout_pedest_ref = &mut None;
+                *timeout_pedest_ref = Some(());
+                self.send_timer(T::TimeoutTimeoutPedest, _grust_reserved_instant)
+                    .await?;
+                self.context.speed_km_h.set(speed_km_h);
+                let x = (_grust_reserved_instant
+                    .duration_since(self.begin)
+                    .as_millis()) as f64;
+                self.context.x.set(x);
+                let acc_km_h = <DeriveState as grust::core::Component>::step(
+                    &mut self.derive,
+                    DeriveInput {
+                        v_km_h: speed_km_h,
+                        t: x,
+                    },
+                );
+                self.context.acc_km_h.set(acc_km_h);
+                let brakes = <BrakingStateState as grust::core::Component>::step(
+                    &mut self.braking_state,
+                    BrakingStateInput {
+                        pedest: None,
+                        timeout_pedest: *timeout_pedest_ref,
+                        speed: speed_km_h,
+                        acc: self.context.acc_km_h.get(),
+                    },
+                );
+                self.context.brakes.set(brakes);
+                self.send_output(
+                    O::Brakes(self.context.brakes.get(), _grust_reserved_instant),
+                    _grust_reserved_instant,
+                )
+                .await?;
+                Ok(())
             }
             pub async fn handle_timeout_aeb(
                 &mut self,
@@ -695,8 +731,9 @@ pub mod runtime {
                         (None, None, None, None) => {}
                         (Some((speed_km_h, _speed_km_h_instant)), None, None, None) => {
                             self.context.speed_km_h.set(speed_km_h);
-                            let x =
-                                (_speed_km_h_instant.duration_since(self.begin).as_millis()) as f64;
+                            let x = (_grust_reserved_instant
+                                .duration_since(self.begin)
+                                .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.speed_km_h.is_new() || self.context.x.is_new() {
                                 let acc_km_h = <DeriveState as grust::core::Component>::step(
@@ -739,8 +776,9 @@ pub mod runtime {
                                 self.send_timer(T::TimeoutTimeoutPedest, _pedestrian_l_instant)
                                     .await?;
                             }
-                            let x = (_pedestrian_l_instant.duration_since(self.begin).as_millis())
-                                as f64;
+                            let x = (_grust_reserved_instant
+                                .duration_since(self.begin)
+                                .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.speed_km_h.is_new() || self.context.x.is_new() {
                                 let acc_km_h = <DeriveState as grust::core::Component>::step(
@@ -792,8 +830,9 @@ pub mod runtime {
                                     .await?;
                             }
                             self.context.speed_km_h.set(speed_km_h);
-                            let x =
-                                (_speed_km_h_instant.duration_since(self.begin).as_millis()) as f64;
+                            let x = (_grust_reserved_instant
+                                .duration_since(self.begin)
+                                .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.speed_km_h.is_new() || self.context.x.is_new() {
                                 let acc_km_h = <DeriveState as grust::core::Component>::step(
@@ -836,7 +875,7 @@ pub mod runtime {
                                 _timeout_timeout_pedest_instant,
                             )
                             .await?;
-                            let x = (_timeout_timeout_pedest_instant
+                            let x = (_grust_reserved_instant
                                 .duration_since(self.begin)
                                 .as_millis()) as f64;
                             self.context.x.set(x);
@@ -887,8 +926,9 @@ pub mod runtime {
                             )
                             .await?;
                             self.context.speed_km_h.set(speed_km_h);
-                            let x =
-                                (_speed_km_h_instant.duration_since(self.begin).as_millis()) as f64;
+                            let x = (_grust_reserved_instant
+                                .duration_since(self.begin)
+                                .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.speed_km_h.is_new() || self.context.x.is_new() {
                                 let acc_km_h = <DeriveState as grust::core::Component>::step(
@@ -929,9 +969,9 @@ pub mod runtime {
                             Some(((), _timeout_timeout_pedest_instant)),
                             None,
                         ) => {
+                            let pedestrian_ref = &mut None;
                             let timeout_pedest_ref = &mut None;
                             let pedestrian_l_ref = &mut None;
-                            let pedestrian_ref = &mut None;
                             *pedestrian_l_ref = Some(pedestrian_l);
                             if pedestrian_l_ref.is_some() {
                                 *pedestrian_ref = *pedestrian_l_ref;
@@ -944,8 +984,9 @@ pub mod runtime {
                                 self.send_timer(T::TimeoutTimeoutPedest, _pedestrian_l_instant)
                                     .await?;
                             }
-                            let x = (_pedestrian_l_instant.duration_since(self.begin).as_millis())
-                                as f64;
+                            let x = (_grust_reserved_instant
+                                .duration_since(self.begin)
+                                .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.speed_km_h.is_new() || self.context.x.is_new() {
                                 let acc_km_h = <DeriveState as grust::core::Component>::step(
@@ -1003,8 +1044,9 @@ pub mod runtime {
                                     .await?;
                             }
                             self.context.speed_km_h.set(speed_km_h);
-                            let x =
-                                (_speed_km_h_instant.duration_since(self.begin).as_millis()) as f64;
+                            let x = (_grust_reserved_instant
+                                .duration_since(self.begin)
+                                .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.speed_km_h.is_new() || self.context.x.is_new() {
                                 let acc_km_h = <DeriveState as grust::core::Component>::step(
@@ -1051,8 +1093,9 @@ pub mod runtime {
                                 self.send_timer(T::TimeoutTimeoutPedest, _pedestrian_r_instant)
                                     .await?;
                             }
-                            let x = (_pedestrian_r_instant.duration_since(self.begin).as_millis())
-                                as f64;
+                            let x = (_grust_reserved_instant
+                                .duration_since(self.begin)
+                                .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.speed_km_h.is_new() || self.context.x.is_new() {
                                 let acc_km_h = <DeriveState as grust::core::Component>::step(
@@ -1104,8 +1147,9 @@ pub mod runtime {
                                     .await?;
                             }
                             self.context.speed_km_h.set(speed_km_h);
-                            let x =
-                                (_speed_km_h_instant.duration_since(self.begin).as_millis()) as f64;
+                            let x = (_grust_reserved_instant
+                                .duration_since(self.begin)
+                                .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.speed_km_h.is_new() || self.context.x.is_new() {
                                 let acc_km_h = <DeriveState as grust::core::Component>::step(
@@ -1162,8 +1206,9 @@ pub mod runtime {
                                 self.send_timer(T::TimeoutTimeoutPedest, _pedestrian_l_instant)
                                     .await?;
                             }
-                            let x = (_pedestrian_l_instant.duration_since(self.begin).as_millis())
-                                as f64;
+                            let x = (_grust_reserved_instant
+                                .duration_since(self.begin)
+                                .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.speed_km_h.is_new() || self.context.x.is_new() {
                                 let acc_km_h = <DeriveState as grust::core::Component>::step(
@@ -1221,8 +1266,9 @@ pub mod runtime {
                                     .await?;
                             }
                             self.context.speed_km_h.set(speed_km_h);
-                            let x =
-                                (_speed_km_h_instant.duration_since(self.begin).as_millis()) as f64;
+                            let x = (_grust_reserved_instant
+                                .duration_since(self.begin)
+                                .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.speed_km_h.is_new() || self.context.x.is_new() {
                                 let acc_km_h = <DeriveState as grust::core::Component>::step(
@@ -1284,7 +1330,7 @@ pub mod runtime {
                                 )
                                 .await?;
                             }
-                            let x = (_timeout_timeout_pedest_instant
+                            let x = (_grust_reserved_instant
                                 .duration_since(self.begin)
                                 .as_millis()) as f64;
                             self.context.x.set(x);
@@ -1350,8 +1396,9 @@ pub mod runtime {
                                 .await?;
                             }
                             self.context.speed_km_h.set(speed_km_h);
-                            let x =
-                                (_speed_km_h_instant.duration_since(self.begin).as_millis()) as f64;
+                            let x = (_grust_reserved_instant
+                                .duration_since(self.begin)
+                                .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.speed_km_h.is_new() || self.context.x.is_new() {
                                 let acc_km_h = <DeriveState as grust::core::Component>::step(
@@ -1414,8 +1461,9 @@ pub mod runtime {
                                 self.send_timer(T::TimeoutTimeoutPedest, _pedestrian_l_instant)
                                     .await?;
                             }
-                            let x = (_pedestrian_l_instant.duration_since(self.begin).as_millis())
-                                as f64;
+                            let x = (_grust_reserved_instant
+                                .duration_since(self.begin)
+                                .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.speed_km_h.is_new() || self.context.x.is_new() {
                                 let acc_km_h = <DeriveState as grust::core::Component>::step(
@@ -1479,8 +1527,9 @@ pub mod runtime {
                                     .await?;
                             }
                             self.context.speed_km_h.set(speed_km_h);
-                            let x =
-                                (_speed_km_h_instant.duration_since(self.begin).as_millis()) as f64;
+                            let x = (_grust_reserved_instant
+                                .duration_since(self.begin)
+                                .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.speed_km_h.is_new() || self.context.x.is_new() {
                                 let acc_km_h = <DeriveState as grust::core::Component>::step(

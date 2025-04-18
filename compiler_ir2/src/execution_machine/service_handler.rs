@@ -1,6 +1,4 @@
-prelude! {
-    execution_machine::ArrivingFlow,
-}
+prelude! { execution_machine::{ArrivingFlow, InterfaceFlow} }
 
 #[derive(Debug, PartialEq)]
 pub struct ComponentInfo {
@@ -24,6 +22,8 @@ impl ComponentInfo {
 pub struct ServiceHandler {
     /// The service name.
     pub service_ident: Ident,
+    /// The initialization of service flows.
+    pub init_handler: InitHandler,
     /// The flows handling.
     pub flow_handlers: Vec<FlowHandler>,
     /// The signals context from where components will get their inputs.
@@ -39,6 +39,7 @@ impl ServiceHandler {
     pub fn new(
         service: impl Into<Ident>,
         components: Vec<(Ident, Ident)>,
+        init_handler: InitHandler,
         flow_handlers: Vec<FlowHandler>,
         flow_context: ir1::ctx::Flows,
     ) -> Self {
@@ -52,6 +53,7 @@ impl ServiceHandler {
         let service_mod_ident = service.to_service_mod();
         Self {
             service_ident: service,
+            init_handler,
             flow_handlers,
             flow_context,
             components_info,
@@ -76,27 +78,27 @@ impl ToTokens for ServiceHandler {
 
         // store all inputs in a `service_store`
         {
-            // #TODO avoid allocations here
-            let mut service_store_fields = vec![];
-            let mut service_store_is_some_s = vec![];
-            for FlowHandler { arriving_flow, .. } in self.flow_handlers.iter() {
-                match arriving_flow {
-                    ArrivingFlow::Channel(flow_name, flow_type, _) => {
-                        let ident = flow_name;
-                        service_store_fields
-                            .push(quote! { #ident: Option<(#flow_type, std::time::Instant)> });
-                        service_store_is_some_s.push(quote! { self.#ident.is_some() });
-                    }
-                    ArrivingFlow::Period(time_flow_name)
-                    | ArrivingFlow::Deadline(time_flow_name) => {
-                        let ident = time_flow_name;
-                        service_store_fields
-                            .push(quote! { #ident: Option<((), std::time::Instant)> });
-                        service_store_is_some_s.push(quote! { self.#ident.is_some() });
-                    }
-                    ArrivingFlow::ServiceDelay(_) | ArrivingFlow::ServiceTimeout(_) => (),
-                }
-            }
+            let service_store_fields =
+                self.flow_handlers
+                    .iter()
+                    .filter_map(|FlowHandler { arriving_flow, .. }| match arriving_flow {
+                        ArrivingFlow::Channel(ident, flow_type, _) => {
+                            Some(quote! { #ident: Option<(#flow_type, std::time::Instant)> })
+                        }
+                        ArrivingFlow::Period(ident) | ArrivingFlow::Deadline(ident) => {
+                            Some(quote! { #ident: Option<((), std::time::Instant)> })
+                        }
+                        ArrivingFlow::ServiceDelay(_) | ArrivingFlow::ServiceTimeout(_) => None,
+                    });
+            let service_store_is_some_s =
+                self.flow_handlers
+                    .iter()
+                    .filter_map(|FlowHandler { arriving_flow, .. }| match arriving_flow {
+                        ArrivingFlow::Channel(ident, ..)
+                        | ArrivingFlow::Period(ident)
+                        | ArrivingFlow::Deadline(ident) => Some(quote! { self.#ident.is_some() }),
+                        ArrivingFlow::ServiceDelay(_) | ArrivingFlow::ServiceTimeout(_) => None,
+                    });
             // service store
             quote! {
                 #[derive(Default)]
@@ -184,6 +186,8 @@ impl ToTokens for ServiceHandler {
                     }
                 };
 
+                self.init_handler.to_tokens(&mut impl_tokens);
+
                 for handler in self.flow_handlers.iter() {
                     handler.to_tokens(&mut impl_tokens)
                 }
@@ -237,7 +241,6 @@ pub struct FlowHandler {
     pub arriving_flow: ArrivingFlow,
     pub instruction: FlowInstruction,
 }
-
 impl ToTokens for FlowHandler {
     fn to_tokens(&self, tokens: &mut TokenStream2) {
         let instrs = &self.instruction;
@@ -363,6 +366,42 @@ impl ToTokens for FlowHandler {
     }
 }
 
+/// The service init function.
+#[derive(Debug, PartialEq, Default)]
+pub struct InitHandler {
+    /// The input flows.
+    pub input_flows: Vec<InterfaceFlow>,
+    /// The instructions.
+    pub instruction: FlowInstruction,
+}
+impl ToTokens for InitHandler {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
+        // initial signals' values
+        let init_args = self
+            .input_flows
+            .iter()
+            .map(|InterfaceFlow { ident, typ, .. }| {
+                quote! { #ident: #typ }
+            });
+        let instrs = &self.instruction;
+        let instant = Ident::instant_var();
+
+        // `handle_init` function
+        quote! {
+            pub async fn handle_init(
+                &mut self,
+                #instant: std::time::Instant,
+                #(#init_args),*
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.reset_service_timeout(#instant).await?;
+                #instrs
+                Ok(())
+            }
+        }
+        .to_tokens(tokens)
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub enum FlowInstruction {
     Let(Ident, Expression),
@@ -374,12 +413,17 @@ pub enum FlowInstruction {
     IfThrottle(Ident, Ident, Constant, Box<Self>),
     IfChange(Ident, Expression, Box<Self>),
     IfActivated(Vec<Ident>, Vec<Ident>, Box<Self>, Option<Box<Self>>),
-    ResetTimer(Ident, Ident),
+    ResetTimer(Ident, Option<Ident>),
     ComponentCall(Pattern, Ident, Ident, Vec<(Ident, Expression)>),
     FunctionCall(Pattern, Ident, Vec<Expression>),
     HandleDelay(Vec<Ident>, Vec<MatchArm>),
     Seq(Vec<Self>),
     Para(BTreeMap<ParaMethod, Vec<Self>>),
+}
+impl Default for FlowInstruction {
+    fn default() -> Self {
+        Self::Seq(vec![])
+    }
 }
 impl ToTokens for FlowInstruction {
     fn to_tokens(&self, tokens: &mut TokenStream2) {
@@ -440,9 +484,13 @@ impl ToTokens for FlowInstruction {
                 }
                 .to_tokens(tokens)
             }
-            FlowInstruction::ResetTimer(timer_name, import_name) => {
+            FlowInstruction::ResetTimer(timer_name, opt_import_name) => {
                 let enum_ident = timer_name.to_ty();
-                let instant = import_name.to_instant_var();
+                let instant = if let Some(import_name) = opt_import_name.as_ref() {
+                    import_name.to_instant_var()
+                } else {
+                    Ident::instant_var()
+                };
                 quote! { self.send_timer(T::#enum_ident, #instant).await?; }.to_tokens(tokens)
             }
             FlowInstruction::ComponentCall(pattern, memory_name, comp_name, inputs_fields) => {
@@ -608,9 +656,13 @@ mk_new! { impl FlowInstruction =>
         then: FlowInstruction = then.into(),
         els: Option<FlowInstruction> = els.map(Into::into),
     )
+    ResetTimer: reset_instant (
+        name: impl Into<Ident> = name.into(),
+        instant: impl Into<Ident> = Some(instant.into()),
+    )
     ResetTimer: reset (
         name: impl Into<Ident> = name.into(),
-        instant: impl Into<Ident> = instant.into(),
+        instant = None,
     )
     ComponentCall: comp_call (
         pat: Pattern = pat,
@@ -704,7 +756,7 @@ pub enum Expression {
     /// None expression: `None`.
     None,
     /// Retrieve the instant of computation.
-    Instant { ident: Ident },
+    Instant { opt_ident: Option<Ident> },
 }
 
 mk_new! { impl Expression =>
@@ -727,7 +779,7 @@ mk_new! { impl Expression =>
         expression: Expression = expression.into()
     }
     None: none {}
-    Instant: instant { ident: Ident }
+    Instant: instant { opt_ident: Option<Ident> }
 }
 impl ToTokens for Expression {
     #[inline(always)]
@@ -745,8 +797,12 @@ impl ToTokens for Expression {
             }
             Expression::Some { expression } => quote! { Some(#expression) }.to_tokens(tokens),
             Expression::None => quote! { None }.to_tokens(tokens),
-            Expression::Instant { ident } => {
-                let instant = ident.to_instant_var();
+            Expression::Instant { opt_ident } => {
+                let instant = if let Some(ident) = opt_ident {
+                    ident.to_instant_var()
+                } else {
+                    Ident::instant_var()
+                };
                 quote! { (#instant.duration_since(self.begin).as_millis()) as f64 }
                     .to_tokens(tokens)
             }

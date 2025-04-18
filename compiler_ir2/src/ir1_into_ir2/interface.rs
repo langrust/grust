@@ -1,7 +1,7 @@
 prelude! {
     ir1::interface::{FlowExport, FlowImport, Interface, Service},
     execution_machine::{
-        ServiceHandler, InputHandler, RuntimeLoop, ExecutionMachine,TimingEvent, InterfaceFlow,
+        ServiceHandler, ServiceInit, ServiceTrigger, RuntimeLoop, ExecutionMachine,TimingEvent, InterfaceFlow,
     },
 }
 
@@ -44,9 +44,16 @@ impl Ir1IntoIr2<&mut Ctx> for Interface {
         });
         // put the latest in a runtime loop
         let runtime_loop = RuntimeLoop {
+            init_handlers: services_handlers
+                .iter()
+                .map(|service_handler| ServiceInit {
+                    service: service_handler.service_ident.clone(),
+                    input_flows: service_handler.init_handler.input_flows.clone(),
+                })
+                .collect(),
             input_handlers: input_handlers
                 .into_iter()
-                .map(|(ref_to, services)| InputHandler {
+                .map(|(ref_to, services)| ServiceTrigger {
                     arriving_flow: ref_to.clone(),
                     services,
                 })
@@ -85,7 +92,7 @@ impl Ir1IntoIr2<&'_ Ctx> for FlowImport {
         } else {
             Some(InterfaceFlow {
                 path: self.path,
-                identifier: symbol_table.get_name(self.id).clone(),
+                ident: symbol_table.get_name(self.id).clone(),
                 typ: self.flow_type,
             })
         }
@@ -98,7 +105,7 @@ impl Ir1IntoIr2<&'_ Ctx> for FlowExport {
     fn into_ir2(self, symbol_table: &Ctx) -> Self::Ir2 {
         InterfaceFlow {
             path: self.path,
-            identifier: symbol_table.get_name(self.id).clone(),
+            ident: symbol_table.get_name(self.id).clone(),
             typ: self.flow_type,
         }
     }
@@ -127,7 +134,7 @@ mod service_handler {
     prelude! {
         {
             execution_machine::{
-                FlowHandler, FlowInstruction, MatchArm, ServiceHandler, ArrivingFlow,
+                InitHandler, InterfaceFlow, FlowHandler, FlowInstruction, MatchArm, ServiceHandler, ArrivingFlow,
             },
             Pattern,
         },
@@ -144,9 +151,21 @@ mod service_handler {
         if ctx.is_delay(flow_id) {
             propagate_input_store(ctx, flow_id)
         } else {
+            ctx.set_init_service(false);
             ctx.set_multiple_inputs(false);
             flow_instruction(ctx, std::iter::once(stmt_id))
         }
+    }
+    /// Compute the instruction propagating the initial values of signals.
+    fn propagate_init<'a>(
+        ctx: &mut flow_instr::Builder<'a>,
+        imports: impl Iterator<Item = usize>,
+    ) -> FlowInstruction {
+        debug_assert!(ctx.is_clear());
+        // compute the instruction that will propagate changes
+        ctx.set_init_service(true);
+        ctx.set_multiple_inputs(true);
+        flow_instruction(ctx, imports)
     }
 
     /// Compute the instruction propagating the changes of the input store.
@@ -201,6 +220,7 @@ mod service_handler {
                 })
                 .collect();
             // compute the instruction that will propagate changes
+            ctx.set_init_service(false);
             ctx.set_multiple_inputs(true);
             let instr = flow_instruction(ctx, imports.into_iter());
             MatchArm::new(patterns, instr)
@@ -278,10 +298,38 @@ mod service_handler {
         }
     }
 
+    /// Compute the initialization handler.
+    fn init_handler<'a>(ctx: &mut flow_instr::Builder<'a>) -> InitHandler {
+        let ctx0 = ctx.ctx0();
+
+        // propagate signals' initial values and timers
+        let imports: Vec<_> = ctx
+            .service_imports()
+            .filter(|(_, flow_id)| ctx0.is_signal(*flow_id) || ctx0.is_timer(*flow_id))
+            .collect();
+        let input_flows: Vec<InterfaceFlow> = imports
+            .iter()
+            .filter_map(|(stmt_id, _)| {
+                let import = ctx
+                    .get_import(*stmt_id)
+                    .expect("there should be a flow import");
+                import.clone().into_ir2(ctx)
+            })
+            .collect();
+        // construct the instruction to perform
+        let instruction = propagate_init(ctx, imports.into_iter().map(|(stmt_id, _)| stmt_id));
+
+        InitHandler {
+            input_flows,
+            instruction,
+        }
+    }
+
     /// Compute the service handler.
     pub fn build<'a>(mut ctx: flow_instr::Builder<'a>) -> ServiceHandler {
         // get service's name
         let service = ctx.service_name().clone();
+        let init_handler = init_handler(&mut ctx);
         // create flow handlers according to propagations of every incoming flows
         let flow_handlers: Vec<_> = ctx
             .service_imports()
@@ -290,7 +338,13 @@ mod service_handler {
         // destroy 'ctx'
         let (flows_context, components) = ctx.destroy();
 
-        ServiceHandler::new(service, components, flow_handlers, flows_context)
+        ServiceHandler::new(
+            service,
+            components,
+            init_handler,
+            flow_handlers,
+            flows_context,
+        )
     }
 }
 
@@ -342,6 +396,8 @@ mod flow_instr {
         components: Vec<(Ident, Ident)>,
         /// Triggers graph,
         graph: trigger::Graph<'a>,
+        /// Tells wether we are in service initialization.
+        init_service: bool,
     }
     impl ops::Deref for Builder<'_> {
         type Target = Ctx;
@@ -429,7 +485,12 @@ mod flow_instr {
                 exports,
                 components,
                 graph,
+                init_service: false,
             }
+        }
+
+        pub fn init_service(&self) -> bool {
+            self.init_service
         }
 
         pub fn get_stmt(&self, stmt_id: usize) -> Option<&FlowStatement> {
@@ -468,6 +529,9 @@ mod flow_instr {
         }
         pub fn set_multiple_inputs(&mut self, multiple_inputs: bool) {
             self.multiple_inputs = multiple_inputs
+        }
+        pub fn set_init_service(&mut self, init_service: bool) {
+            self.init_service = init_service
         }
         pub fn destroy(self) -> (ir1::ctx::Flows, Vec<(Ident, Ident)>) {
             (self.flows_context, self.components)
@@ -942,16 +1006,18 @@ mod flow_instr {
             let source_name = self.ctx0.get_name(id_source);
 
             let timer_id = self.stmts_timers[&stmt_id].clone();
+            let import_flow = self.get_stmt_import(stmt_id);
 
             let occurrences = (
                 self.events.contains(&id_source),
                 self.events.contains(&timer_id),
             );
-            let import_flow = self.get_stmt_import(stmt_id);
-            let reset = self.reset_timer(timer_id, import_flow);
-            let source_instr = |els| {
-                // if activated, reset timer
-                FlowInstruction::if_activated(vec![source_name.clone()], [], reset, els)
+            let source_instr = {
+                let reset = self.reset_timer(timer_id, import_flow);
+                |els| {
+                    // if activated, reset timer
+                    FlowInstruction::if_activated(vec![source_name.clone()], [], reset, els)
+                }
             };
             let mut timer_instr = || {
                 // if activated, define timeout event and reset timer
@@ -981,21 +1047,20 @@ mod flow_instr {
             let mut ids = pattern.identifiers();
             debug_assert!(ids.len() == 1);
             let id_pattern = ids.pop().unwrap();
-            let flow_name = self.get_name(id_pattern);
+            let flow_name = self.get_name(id_pattern).clone();
 
             // get the source id, debug-check there is only one flow
             debug_assert!(dependencies.len() == 1);
             let id_source = dependencies.pop().unwrap();
-            let source_name = self.get_name(id_source);
+            let source_name = self.get_name(id_source).clone();
 
             // update created signal
-            let expr = self.get_signal(id_source);
-            FlowInstruction::if_throttle(
-                flow_name.clone(),
-                source_name.clone(),
-                delta,
-                FlowInstruction::update_ctx(flow_name.clone(), expr),
-            )
+            let instr = FlowInstruction::update_ctx(flow_name.clone(), self.get_signal(id_source));
+            if self.init_service() {
+                instr
+            } else {
+                FlowInstruction::if_throttle(flow_name, source_name, delta, instr)
+            }
         }
 
         /// Compute the instruction from an on_change expression.
@@ -1014,20 +1079,18 @@ mod flow_instr {
             let id_source = dependencies.pop().unwrap();
 
             let id_old_event = self.on_change_events[&id_pattern];
-            let old_event_name = self.ctx0.get_name(id_old_event);
+            let old_event_name = self.ctx0.get_name(id_old_event).clone();
 
             // detect changes on signal
-            let expr = Expression::some(self.get_signal(id_source));
-            let event_def = self.define_event(id_pattern, expr);
-            let then = vec![
+            let then = FlowInstruction::seq(vec![
                 FlowInstruction::update_ctx(old_event_name.clone(), self.get_signal(id_source)),
-                event_def,
-            ];
-            FlowInstruction::if_change(
-                old_event_name.clone(),
-                self.get_signal(id_source),
-                FlowInstruction::seq(then),
-            )
+                self.define_event(id_pattern, Expression::some(self.get_signal(id_source))),
+            ]);
+            if self.init_service() {
+                then
+            } else {
+                FlowInstruction::if_change(old_event_name, self.get_signal(id_source), then)
+            }
         }
 
         /// Compute the instruction from a persist expression.
@@ -1113,12 +1176,17 @@ mod flow_instr {
             debug_assert!(ids.len() == 1);
             let id_pattern = ids.pop().unwrap();
             // get the import flow that triggered ``time``
-            let import_flow = self.get_stmt_import(stmt_id);
-            let mut import_name = self.get_name(import_flow).clone();
+            let opt_name = if self.init_service || self.multiple_inputs {
+                None
+            } else {
+                let import_flow = self.get_stmt_import(stmt_id);
+                let mut name = self.get_name(import_flow).clone();
+                name.set_span(loc.span);
+                Some(name)
+            };
 
             // retrieve the instant of computation
-            import_name.set_span(loc.span);
-            let expr = Expression::instant(import_name);
+            let expr = Expression::instant(opt_name);
             // define a nex signal
             let def = self.define_signal(id_pattern, expr);
             // update context if needed
@@ -1228,8 +1296,12 @@ mod flow_instr {
         /// Add reset timer in current propagation branch.
         fn reset_timer(&self, timer_id: usize, import_flow: usize) -> FlowInstruction {
             let timer_name = self.get_name(timer_id);
-            let import_name = self.get_name(import_flow);
-            FlowInstruction::reset(timer_name.clone(), import_name.clone())
+            if self.init_service() {
+                FlowInstruction::reset(timer_name.clone())
+            } else {
+                let import_name = self.get_name(import_flow);
+                FlowInstruction::reset_instant(timer_name.clone(), import_name.clone())
+            }
         }
 
         /// Get event call expression.
@@ -1276,7 +1348,8 @@ mod flow_instr {
             let comp_call = FlowInstruction::seq(instrs);
 
             match self.conf.propagation {
-                conf::Propagation::EventIsles => comp_call, // call component when activated by isle
+                conf::Propagation::EventIsles => comp_call,
+                conf::Propagation::OnChange if self.init_service() => comp_call,
                 conf::Propagation::OnChange => {
                     // call component when activated by inputs
                     FlowInstruction::if_activated(events, signals, comp_call, None)
@@ -1312,7 +1385,8 @@ mod flow_instr {
             let fun_call = FlowInstruction::seq(instrs);
 
             match self.conf.propagation {
-                conf::Propagation::EventIsles => fun_call, // call function when activated by isle
+                conf::Propagation::EventIsles => fun_call,
+                conf::Propagation::OnChange if self.init_service() => fun_call,
                 conf::Propagation::OnChange => {
                     // call component when activated by inputs
                     FlowInstruction::if_activated(vec![], signals, fun_call, None)
@@ -1324,16 +1398,17 @@ mod flow_instr {
         fn send_signal(&self, signal_id: usize, import_flow: usize) -> FlowInstruction {
             let signal_name = self.get_name(signal_id);
             let expr = self.get_signal(signal_id);
-            let send = if self.multiple_inputs {
+            let send = if self.init_service || self.multiple_inputs {
                 FlowInstruction::send(signal_name.clone(), expr, false)
             } else {
                 let import_name = self.get_name(import_flow);
                 FlowInstruction::send_from(signal_name.clone(), expr, import_name.clone(), false)
             };
-            if self
-                .events
-                .iter()
-                .any(|event_id| self.ctx0.is_timeout(*event_id))
+            if self.init_service
+                || self
+                    .events
+                    .iter()
+                    .any(|event_id| self.ctx0.is_timeout(*event_id))
             {
                 send
             } else {
@@ -1348,7 +1423,7 @@ mod flow_instr {
                 // if activated, send event
                 let event_name = self.get_name(event_id);
                 let expr = Expression::ident(event_name.clone());
-                if self.multiple_inputs {
+                if self.init_service || self.multiple_inputs {
                     FlowInstruction::send(event_name.clone(), expr, true)
                 } else {
                     let import_name = self.get_name(import_flow);

@@ -255,10 +255,8 @@ pub mod runtime {
             futures::pin_mut!(input);
             let mut runtime = self;
             runtime
-                .send_timer(T::TimeoutParaMess, _grust_reserved_init_instant)
-                .await?;
-            runtime
-                .send_output(O::O1(Default::default(), _grust_reserved_init_instant))
+                .para_mess
+                .handle_init(_grust_reserved_init_instant)
                 .await?;
             while let Some(input) = input.next().await {
                 match input {
@@ -502,6 +500,19 @@ pub mod runtime {
                     output,
                     timer,
                 }
+            }
+            pub async fn handle_init(
+                &mut self,
+                _grust_reserved_instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.reset_service_timeout(_grust_reserved_instant).await?;
+                tokio::join!(async {}, async {});
+                self.send_output(
+                    O::O1(self.context.o1.get(), _grust_reserved_instant),
+                    _grust_reserved_instant,
+                )
+                .await?;
+                Ok(())
             }
             pub async fn handle_delay_para_mess(
                 &mut self,

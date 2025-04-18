@@ -42,7 +42,7 @@ pub fn run_scan_sample(
     );
 
     let scan_sample_service = Runtime::new(output_sink, timers_sink);
-    tokio::spawn(scan_sample_service.run_loop(INIT.clone(), input_stream));
+    tokio::spawn(scan_sample_service.run_loop(INIT.clone(), input_stream, 10.0));
 
     output_stream
 }
@@ -55,48 +55,39 @@ mod sample_scan {
 
     #[tokio::test]
     async fn should_scan_and_sample_at_right_time() {
-        let import_stream =
-            futures::stream::once(async { RuntimeInput::Temperature(10., Instant::now()) })
-                .chain(futures::stream::once(async {
-                    sleep(Duration::from_millis(10)).await;
-                    RuntimeInput::Pedestrian(100., Instant::now())
-                }))
-                .chain(futures::stream::once(async {
-                    sleep(Duration::from_millis(110)).await;
-                    RuntimeInput::Temperature(12., Instant::now())
-                }))
-                .chain(futures::stream::once(async {
-                    sleep(Duration::from_millis(20)).await;
-                    RuntimeInput::Temperature(13., Instant::now())
-                }))
-                .chain(futures::stream::once(async {
-                    sleep(Duration::from_millis(90)).await;
-                    RuntimeInput::Temperature(15., Instant::now())
-                }))
-                .chain(futures::stream::once(async {
-                    sleep(Duration::from_millis(50)).await;
-                    RuntimeInput::Pedestrian(200., Instant::now())
-                }))
-                .chain(futures::stream::once(async {
-                    sleep(Duration::from_millis(500)).await;
-                    RuntimeInput::Pedestrian(300., Instant::now())
-                }))
-                .chain(futures::stream::once(async {
-                    sleep(Duration::from_millis(10)).await;
-                    RuntimeInput::Pedestrian(400., Instant::now())
-                }));
+        let import_stream = futures::stream::once(async {
+            sleep(Duration::from_millis(10)).await;
+            RuntimeInput::Pedestrian(100., Instant::now())
+        })
+        .chain(futures::stream::once(async {
+            sleep(Duration::from_millis(110)).await;
+            RuntimeInput::Temperature(12., Instant::now())
+        }))
+        .chain(futures::stream::once(async {
+            sleep(Duration::from_millis(20)).await;
+            RuntimeInput::Temperature(13., Instant::now())
+        }))
+        .chain(futures::stream::once(async {
+            sleep(Duration::from_millis(90)).await;
+            RuntimeInput::Temperature(15., Instant::now())
+        }))
+        .chain(futures::stream::once(async {
+            sleep(Duration::from_millis(50)).await;
+            RuntimeInput::Pedestrian(200., Instant::now())
+        }))
+        .chain(futures::stream::once(async {
+            sleep(Duration::from_millis(500)).await;
+            RuntimeInput::Pedestrian(300., Instant::now())
+        }))
+        .chain(futures::stream::once(async {
+            sleep(Duration::from_millis(10)).await;
+            RuntimeInput::Pedestrian(400., Instant::now())
+        }));
         let mut output_stream = run_scan_sample(import_stream);
 
         assert_eq!(
             output_stream.next().await,
-            Some(RuntimeOutput::ScannedTemperature(0.0, INIT.clone()))
-        );
-        assert_eq!(
-            output_stream.next().await,
-            Some(RuntimeOutput::ScannedTemperature(
-                10.0,
-                INIT.clone() + Duration::from_millis(100)
-            ))
+            Some(RuntimeOutput::ScannedTemperature(10.0, INIT.clone()))
         );
         assert_eq!(
             output_stream.next().await,

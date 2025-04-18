@@ -147,17 +147,13 @@ pub mod runtime {
             self,
             _grust_reserved_init_instant: std::time::Instant,
             input: impl futures::Stream<Item = I>,
+            speed_km_h: f64,
         ) -> Result<(), futures::channel::mpsc::SendError> {
             futures::pin_mut!(input);
             let mut runtime = self;
             runtime
-                .send_timer(T::TimeoutTimeoutPedestrian, _grust_reserved_init_instant)
-                .await?;
-            runtime
-                .send_timer(T::TimeoutAeb, _grust_reserved_init_instant)
-                .await?;
-            runtime
-                .send_output(O::Brakes(Default::default(), _grust_reserved_init_instant))
+                .aeb
+                .handle_init(_grust_reserved_init_instant, speed_km_h)
                 .await?;
             while let Some(input) = input.next().await {
                 match input {
@@ -303,6 +299,33 @@ pub mod runtime {
                     output,
                     timer,
                 }
+            }
+            pub async fn handle_init(
+                &mut self,
+                _grust_reserved_instant: std::time::Instant,
+                speed_km_h: f64,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.reset_service_timeout(_grust_reserved_instant).await?;
+                let timeout_pedestrian_ref = &mut None;
+                *timeout_pedestrian_ref = Some(());
+                self.send_timer(T::TimeoutTimeoutPedestrian, _grust_reserved_instant)
+                    .await?;
+                self.context.speed_km_h.set(speed_km_h);
+                let brakes = <BrakingStateState as grust::core::Component>::step(
+                    &mut self.braking_state,
+                    BrakingStateInput {
+                        pedest: None,
+                        timeout_pedestrian: *timeout_pedestrian_ref,
+                        speed: speed_km_h,
+                    },
+                );
+                self.context.brakes.set(brakes);
+                self.send_output(
+                    O::Brakes(self.context.brakes.get(), _grust_reserved_instant),
+                    _grust_reserved_instant,
+                )
+                .await?;
+                Ok(())
             }
             pub async fn handle_pedestrian_r(
                 &mut self,

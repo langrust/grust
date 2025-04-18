@@ -329,20 +329,14 @@ pub mod runtime {
             self,
             _grust_reserved_init_instant: std::time::Instant,
             input: impl futures::Stream<Item = I>,
+            distance_m: f64,
+            speed_km_h: f64,
         ) -> Result<(), futures::channel::mpsc::SendError> {
             futures::pin_mut!(input);
             let mut runtime = self;
             runtime
-                .send_timer(
-                    T::TimeoutAdaptiveCruiseControl,
-                    _grust_reserved_init_instant,
-                )
-                .await?;
-            runtime
-                .send_output(O::BrakesMS(
-                    Default::default(),
-                    _grust_reserved_init_instant,
-                ))
+                .adaptive_cruise_control
+                .handle_init(_grust_reserved_init_instant, distance_m, speed_km_h)
                 .await?;
             while let Some(input) = input.next().await {
                 match input {
@@ -548,6 +542,44 @@ pub mod runtime {
                     timer,
                 }
             }
+            pub async fn handle_init(
+                &mut self,
+                _grust_reserved_instant: std::time::Instant,
+                distance_m: f64,
+                speed_km_h: f64,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.reset_service_timeout(_grust_reserved_instant).await?;
+                self.context.speed_km_h.set(speed_km_h);
+                self.context.distance_m.set(distance_m);
+                let condition = <ActivateState as grust::core::Component>::step(
+                    &mut self.activate,
+                    ActivateInput {
+                        acc_active: None,
+                        distance_m: distance_m,
+                    },
+                );
+                self.context.condition.set(condition);
+                let t = (_grust_reserved_instant
+                    .duration_since(self.begin)
+                    .as_millis()) as f64;
+                self.context.t.set(t);
+                let brakes_m_s = <FilteredAccState as grust::core::Component>::step(
+                    &mut self.filtered_acc,
+                    FilteredAccInput {
+                        condition: self.context.condition.get(),
+                        distance_m: distance_m,
+                        sv_v_km_h: speed_km_h,
+                        t_ms: t,
+                    },
+                );
+                self.context.brakes_m_s.set(brakes_m_s);
+                self.send_output(
+                    O::BrakesMS(self.context.brakes_m_s.get(), _grust_reserved_instant),
+                    _grust_reserved_instant,
+                )
+                .await?;
+                Ok(())
+            }
             pub async fn handle_distance_m(
                 &mut self,
                 _distance_m_instant: std::time::Instant,
@@ -680,8 +712,9 @@ pub mod runtime {
                                 );
                                 self.context.condition.set(condition);
                             }
-                            let t =
-                                (_distance_m_instant.duration_since(self.begin).as_millis()) as f64;
+                            let t = (_grust_reserved_instant
+                                .duration_since(self.begin)
+                                .as_millis()) as f64;
                             self.context.t.set(t);
                             if self.context.condition.is_new()
                                 || self.context.distance_m.is_new()
@@ -723,8 +756,9 @@ pub mod runtime {
                                 );
                                 self.context.condition.set(condition);
                             }
-                            let t =
-                                (_acc_active_instant.duration_since(self.begin).as_millis()) as f64;
+                            let t = (_grust_reserved_instant
+                                .duration_since(self.begin)
+                                .as_millis()) as f64;
                             self.context.t.set(t);
                             if self.context.condition.is_new()
                                 || self.context.distance_m.is_new()
@@ -771,8 +805,9 @@ pub mod runtime {
                                 );
                                 self.context.condition.set(condition);
                             }
-                            let t =
-                                (_distance_m_instant.duration_since(self.begin).as_millis()) as f64;
+                            let t = (_grust_reserved_instant
+                                .duration_since(self.begin)
+                                .as_millis()) as f64;
                             self.context.t.set(t);
                             if self.context.condition.is_new()
                                 || self.context.distance_m.is_new()
@@ -803,8 +838,9 @@ pub mod runtime {
                         }
                         (None, None, Some((speed_km_h, _speed_km_h_instant))) => {
                             self.context.speed_km_h.set(speed_km_h);
-                            let t =
-                                (_speed_km_h_instant.duration_since(self.begin).as_millis()) as f64;
+                            let t = (_grust_reserved_instant
+                                .duration_since(self.begin)
+                                .as_millis()) as f64;
                             self.context.t.set(t);
                             if self.context.condition.is_new()
                                 || self.context.distance_m.is_new()
@@ -850,8 +886,9 @@ pub mod runtime {
                                 );
                                 self.context.condition.set(condition);
                             }
-                            let t =
-                                (_distance_m_instant.duration_since(self.begin).as_millis()) as f64;
+                            let t = (_grust_reserved_instant
+                                .duration_since(self.begin)
+                                .as_millis()) as f64;
                             self.context.t.set(t);
                             if self.context.condition.is_new()
                                 || self.context.distance_m.is_new()
@@ -898,8 +935,9 @@ pub mod runtime {
                                 );
                                 self.context.condition.set(condition);
                             }
-                            let t =
-                                (_acc_active_instant.duration_since(self.begin).as_millis()) as f64;
+                            let t = (_grust_reserved_instant
+                                .duration_since(self.begin)
+                                .as_millis()) as f64;
                             self.context.t.set(t);
                             if self.context.condition.is_new()
                                 || self.context.distance_m.is_new()
@@ -947,8 +985,9 @@ pub mod runtime {
                                 );
                                 self.context.condition.set(condition);
                             }
-                            let t =
-                                (_distance_m_instant.duration_since(self.begin).as_millis()) as f64;
+                            let t = (_grust_reserved_instant
+                                .duration_since(self.begin)
+                                .as_millis()) as f64;
                             self.context.t.set(t);
                             if self.context.condition.is_new()
                                 || self.context.distance_m.is_new()

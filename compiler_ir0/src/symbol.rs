@@ -1197,6 +1197,11 @@ impl Table {
         }
     }
 
+    /// Tell wether the id corresponds to a signal.
+    pub fn is_signal(&self, id: usize) -> bool {
+        !self.get_typ(id).is_event()
+    }
+
     /// Tell wether the id is the service timeout timer.
     pub fn is_service_timeout(&self, service_id: usize, id: usize) -> bool {
         let symbol = self
