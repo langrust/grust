@@ -547,7 +547,7 @@ mod interface {
             let arrow_token = input.parse()?;
             let output_typ: Typ = input.parse()?;
             let semi_token = input.parse()?;
-            let full_typ = Typ::Abstract {
+            let full_typ = Typ::Fn {
                 paren_token: Some(args_paren),
                 inputs: args.iter().map(|pair| pair.right.clone()).collect(),
                 arrow_token: arrow_token,

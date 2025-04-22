@@ -2370,7 +2370,7 @@ impl Ir0IntoIr1<ir1::ctx::WithLoc<'_>> for Typ {
                             .get_array_id(&name, false, ctx.loc, ctx.errors)?;
                         Ok(ctx.get_array(id))
                     }),
-                Typ::Abstract { paren_token, inputs, arrow_token, output } => {
+                Typ::Fn { paren_token, inputs, arrow_token, output } => {
                     let inputs = inputs.into_pairs()
                     .map(|pair| {
                         let (ty, comma) = pair.into_tuple();
@@ -2378,7 +2378,7 @@ impl Ir0IntoIr1<ir1::ctx::WithLoc<'_>> for Typ {
                         Ok(Pair::new(ty, comma))
                     }).collect::<TRes<Punctuated<Typ, Token![,]>>>()?;
                     let output = output.into_ir1(ctx)?;
-                    Ok(Typ::Abstract { paren_token, inputs, arrow_token, output: output.into() })
+                    Ok(Typ::Fn { paren_token, inputs, arrow_token, output: output.into() })
                 }
                 Typ::SMEvent { ty, question_token } => Ok(Typ::SMEvent {
                     ty: Box::new(ty.into_ir1(ctx)?),
