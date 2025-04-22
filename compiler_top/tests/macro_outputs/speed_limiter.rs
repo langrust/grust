@@ -417,14 +417,6 @@ pub mod runtime {
                 output,
             }
         }
-        #[inline]
-        pub async fn send_output(
-            &mut self,
-            output: O,
-        ) -> Result<(), futures::channel::mpsc::SendError> {
-            self.output.send(output).await?;
-            Ok(())
-        }
         pub async fn run_loop(
             self,
             _grust_reserved_init_instant: std::time::Instant,
@@ -1251,7 +1243,7 @@ pub mod runtime {
                 output: O,
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.output.send(output).await?;
+                self.output.feed(output).await?;
                 Ok(())
             }
         }
