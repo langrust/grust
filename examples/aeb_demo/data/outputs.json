@@ -1,4 +1,8 @@
 [{
+  "timestamp": 0,
+  "brakes": 0
+}
+,{
   "timestamp": 800,
   "brakes": 2
 }
@@ -36,10 +40,6 @@
 }
 ,{
   "timestamp": 19100,
-  "brakes": 0
-}
-,{
-  "timestamp": 22100,
   "brakes": 0
 }
 ]
