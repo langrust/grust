@@ -11,7 +11,7 @@ fn should_compile_fibo() {
     let top: ir0::Top = parse_quote! {
         #![dump = "tests/macro_outputs/fibo.rs"]
 
-        fn module::add_isize(n: int, m: int) -> int;
+        use function module::add_isize(n: int, m: int) -> int;
 
         component next(i: int) -> (next_o: int) {
             init i = 1;

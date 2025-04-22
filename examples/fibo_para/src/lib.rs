@@ -10,7 +10,7 @@ pub mod module {
 
 grust! {
     #[weight_percent = 5]
-    fn module::add_i64(n: int, m: int) -> int;
+    use function module::add_i64(n: int, m: int) -> int;
 
     #[weight_percent = 10]
     function add(i: int, j: int) -> int {

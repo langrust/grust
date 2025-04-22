@@ -363,8 +363,8 @@ impl HasLoc for ExtCompDecl {
 
 /// External function declaration.
 pub struct ExtFunDecl {
-    /// `fn` token.
-    pub fn_token: syn::Token![fn],
+    pub use_token: Token![use],
+    pub function_token: keyword::function,
     /// Function's path.
     pub path: syn::Path,
     /// Function's identifier.
@@ -445,7 +445,7 @@ impl ExtFunDecl {
 }
 impl HasLoc for ExtFunDecl {
     fn loc(&self) -> Loc {
-        Loc::from(self.fn_token.span).join(self.semi_token.span)
+        Loc::from(self.use_token.span).join(self.semi_token.span)
     }
 }
 
