@@ -102,26 +102,29 @@ mk_new! { impl{E} Application<E> =>
     }
 }
 
-/// Abstraction expression with inputs types.
+/// Lambda expression with inputs types.
 #[derive(Debug, PartialEq, Clone)]
-pub struct TypedAbstraction<E> {
+pub struct Lambda<E> {
     pub loc: Loc,
-    /// The inputs to the abstraction.
+    /// The inputs to the lambda.
     pub inputs: Vec<(Ident, Typ)>,
     /// The expression abstracted.
-    pub expr: Box<E>,
+    pub expr: Box<Expr>,
+    /// To make Rust type check.
+    _phantom: std::marker::PhantomData<E>,
 }
-impl<E> HasLoc for TypedAbstraction<E> {
+impl<E> HasLoc for Lambda<E> {
     fn loc(&self) -> Loc {
         self.loc
     }
 }
 
-mk_new! { impl{E} TypedAbstraction<E> =>
+mk_new! { impl{E} Lambda<E> =>
     new {
         loc: impl Into<Loc> = loc.into(),
         inputs: Vec<(Ident, Typ)>,
-        expr: impl Into<Box<E>> = expr.into(),
+        expr: Expr = expr.into(),
+        _phantom = std::marker::PhantomData::default(),
     }
 }
 
@@ -553,8 +556,8 @@ pub enum Expr {
     IfThenElse(IfThenElse<Self>),
     /// Application expression.
     Application(Application<Self>),
-    /// Abstraction expression with inputs types.
-    TypedAbstraction(TypedAbstraction<Self>),
+    /// Lambda expression with inputs types.
+    Lambda(Lambda<Self>),
     /// Structure expression.
     Structure(Structure<Self>),
     /// Tuple expression.
@@ -591,7 +594,7 @@ impl HasLoc for Expr {
             BinOp(op) => op.loc(),
             IfThenElse(ite) => ite.loc(),
             Application(app) => app.loc(),
-            TypedAbstraction(ta) => ta.loc(),
+            Lambda(lbd) => lbd.loc(),
             Structure(s) => s.loc(),
             Tuple(t) => t.loc(),
             Enumeration(e) => e.loc(),
@@ -619,7 +622,7 @@ mk_new! { impl Expr =>
     BinOp: binop (val: BinOp<Self> = val)
     IfThenElse: ite (val: IfThenElse<Self> = val)
     Application: app (val: Application<Self> = val)
-    TypedAbstraction: typed_abstraction (val: TypedAbstraction<Self> = val)
+    Lambda: typed_lambda (val: Lambda<Self> = val)
     Structure: structure (val: Structure<Self> = val)
     Tuple: tuple (val: Tuple<Self> = val)
     Enumeration: enumeration (val: Enumeration<Self> = val)

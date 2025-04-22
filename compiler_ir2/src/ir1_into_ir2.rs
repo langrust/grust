@@ -383,7 +383,7 @@ where
                     arguments,
                 }
             }
-            Self::Abstraction { inputs, expr, .. } => {
+            Self::Lambda { inputs, expr, .. } => {
                 let inputs = inputs
                     .iter()
                     .map(|id| (ctx.get_name(*id).clone(), ctx.get_typ(*id).clone()))

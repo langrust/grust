@@ -1096,8 +1096,8 @@ mod parse_stream {
     }
     impl Parse for stream::Expr {
         fn parse(input: ParseStream) -> syn::Res<Self> {
-            let expression = if expr::TypedAbstraction::<Self>::peek(input) {
-                Self::TypedAbstraction(input.parse()?)
+            let expression = if expr::Lambda::<Self>::peek(input) {
+                Self::Lambda(input.parse()?)
             } else if expr::IfThenElse::<Self>::peek(input) {
                 Self::IfThenElse(input.parse()?)
             } else if stream::Emit::peek(input) {
@@ -1360,18 +1360,12 @@ mod parse_expr {
         }
     }
 
-    impl<E> TypedAbstraction<E>
-    where
-        E: Parse,
-    {
+    impl<E> Lambda<E> {
         pub fn peek(input: ParseStream) -> bool {
             input.peek(Token![|])
         }
     }
-    impl<E> Parse for TypedAbstraction<E>
-    where
-        E: Parse + HasLoc,
-    {
+    impl<E> Parse for Lambda<E> {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let open_pipe: Token![|] = input.parse()?;
             let mut inputs: Punctuated<Colon<Ident, Typ>, Token![,]> = Punctuated::new();
@@ -1388,8 +1382,8 @@ mod parse_expr {
                 inputs.push_punct(comma);
             }
             let _: Token![|] = input.parse()?;
-            let expr: E = input.parse()?;
-            Ok(TypedAbstraction::new(
+            let expr: Expr = input.parse()?;
+            Ok(Lambda::new(
                 Loc::from(open_pipe.span).join(expr.loc()),
                 inputs
                     .into_iter()
@@ -2058,8 +2052,8 @@ mod parse_expr {
     }
     impl Parse for Expr {
         fn parse(input: ParseStream) -> syn::Res<Self> {
-            let expr = if TypedAbstraction::<Self>::peek(input) {
-                Self::typed_abstraction(input.parse()?)
+            let expr = if Lambda::<Self>::peek(input) {
+                Self::typed_lambda(input.parse()?)
             } else if IfThenElse::<Self>::peek(input) {
                 Self::ite(input.parse()?)
             } else {
@@ -2718,15 +2712,15 @@ mod parsing_tests {
         }
 
         #[test]
-        fn should_parse_typed_abstraction() {
+        fn should_parse_typed_lambda() {
             let expression: ReactExpr = syn::parse_quote! {|x: int| f(x)};
-            let control = ReactExpr::expr(Expr::type_abstraction(TypedAbstraction::new(
+            let control = ReactExpr::expr(Expr::type_lambda(Lambda::new(
                 Loc::test_dummy(),
                 vec![(Loc::test_id("x"), Typ::int())],
-                Expr::app(Application::new(
+                expr::Expr::app(Application::new(
                     Loc::test_dummy(),
-                    Expr::test_ident("f"),
-                    vec![Expr::test_ident("x")],
+                    expr::Expr::test_ident("f"),
+                    vec![expr::Expr::test_ident("x")],
                 )),
             )));
             assert_eq!(expression, control)
@@ -3195,9 +3189,9 @@ mod parsing_tests {
         }
 
         #[test]
-        fn should_parse_typed_abstraction() {
+        fn should_parse_typed_lambda() {
             let expr: Expr = parse_quote! {|x: int| f(x)};
-            let control = Expr::typed_abstraction(TypedAbstraction::new(
+            let control = Expr::typed_lambda(Lambda::new(
                 Loc::test_dummy(),
                 vec![(Loc::test_id("x"), Typ::int())],
                 Expr::app(Application::new(

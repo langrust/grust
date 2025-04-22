@@ -49,12 +49,14 @@ pub enum Kind<E> {
         /// The inputs to the expression.
         inputs: Vec<E>,
     },
-    /// Abstraction expression.
-    Abstraction {
-        /// The inputs to the abstraction.
+    /// Lambda expression.
+    Lambda {
+        /// The inputs to the lambda.
         inputs: Vec<usize>,
         /// The expression abstracted.
-        expr: Box<E>,
+        expr: Box<Expr>,
+        /// To make Rust type check.
+        _phantom: std::marker::PhantomData<E>,
     },
     /// Structure expression.
     Structure {
@@ -138,16 +140,6 @@ pub enum Kind<E> {
     },
 }
 
-impl<E> Kind<E> {
-    pub fn is_default_constant(&self) -> bool {
-        if let Self::Constant { constant } = self {
-            constant.is_default()
-        } else {
-            false
-        }
-    }
-}
-
 mk_new! { impl{E} Kind<E> =>
     Constant: constant { constant: Constant }
     Identifier: ident { id : usize }
@@ -169,9 +161,10 @@ mk_new! { impl{E} Kind<E> =>
         fun: E = fun.into(),
         inputs: Vec<E>,
     }
-    Abstraction: lambda {
+    Lambda: lambda {
         inputs: Vec<usize>,
-        expr: E = expr.into(),
+        expr: Expr = expr.into(),
+        _phantom = std::marker::PhantomData::default(),
     }
     Structure: structure {
         id: usize,
@@ -234,7 +227,7 @@ where
             Application { fun, inputs } => {
                 fun.weight(wb, ctx) + w8!(wb, ctx => sum inputs) + weight::hi
             }
-            Abstraction { expr, .. } => expr.weight(wb, ctx),
+            Lambda { expr, .. } => expr.weight(wb, ctx),
             Structure { fields, .. } => w8!(sum fields, |(_, e)| e.weight(wb, ctx)) + weight::lo,
             Enumeration { .. } => weight::zero,
             Array { elements } | Tuple { elements } => w8!(wb, ctx => sum elements) + weight::mid,
@@ -273,36 +266,6 @@ where
     }
 }
 
-/// expression.
-#[derive(Debug, PartialEq, Clone)]
-pub struct Expr {
-    /// Expression kind.
-    pub kind: ir1::expr::Kind<Self>,
-    /// Expression type.
-    pub typing: Option<Typ>,
-    /// Expression location.
-    pub loc: Loc,
-    /// Expression dependencies.
-    pub dependencies: ir1::Dependencies,
-}
-
-impl Expr {
-    /// Get expression's type.
-    pub fn get_type(&self) -> Option<&Typ> {
-        self.typing.as_ref()
-    }
-    /// Get expression's mutable type.
-    pub fn get_type_mut(&mut self) -> Option<&mut Typ> {
-        self.typing.as_mut()
-    }
-    /// Get expression's dependencies.
-    pub fn get_dependencies(&self) -> &Vec<(usize, Label)> {
-        self.dependencies
-            .get()
-            .expect("there should be dependencies")
-    }
-}
-
 impl<E> Kind<E> {
     /// Propagate a predicate over the expression tree.
     pub fn propagate_predicate<F1, F2>(&self, expr_pred: F1, stmt_pred: F2) -> bool
@@ -313,7 +276,7 @@ impl<E> Kind<E> {
         match self {
             Kind::Constant { .. }
             | Kind::Identifier { .. }
-            | Kind::Abstraction { .. }
+            | Kind::Lambda { .. }
             | Kind::Enumeration { .. } => true,
             Kind::UnOp { expr, .. } => expr_pred(expr),
             Kind::BinOp { lft, rgt, .. } => expr_pred(lft) && expr_pred(rgt),
@@ -347,5 +310,49 @@ impl<E> Kind<E> {
             Kind::Sort { expr, fun } => expr_pred(expr) && expr_pred(fun),
             Kind::Zip { arrays } => arrays.iter().all(|expr| expr_pred(expr)),
         }
+    }
+
+    pub fn is_default_constant(&self) -> bool {
+        if let Self::Constant { constant } = self {
+            constant.is_default()
+        } else {
+            false
+        }
+    }
+}
+
+/// expression.
+#[derive(Debug, PartialEq, Clone)]
+pub struct Expr {
+    /// Expression kind.
+    pub kind: ir1::expr::Kind<Self>,
+    /// Expression type.
+    pub typing: Option<Typ>,
+    /// Expression location.
+    pub loc: Loc,
+    /// Expression dependencies.
+    pub dependencies: ir1::Dependencies,
+}
+
+impl HasWeight for Expr {
+    fn weight(&self, bounds: &synced::WeightBounds, ctx: &Ctx) -> synced::Weight {
+        self.kind.weight(bounds, ctx)
+    }
+}
+
+impl Expr {
+    /// Get expression's type.
+    pub fn get_type(&self) -> Option<&Typ> {
+        self.typing.as_ref()
+    }
+    /// Get expression's mutable type.
+    pub fn get_type_mut(&mut self) -> Option<&mut Typ> {
+        self.typing.as_mut()
+    }
+    /// Get expression's dependencies.
+    pub fn get_dependencies(&self) -> &Vec<(usize, Label)> {
+        self.dependencies
+            .get()
+            .expect("there should be dependencies")
     }
 }

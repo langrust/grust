@@ -560,9 +560,9 @@ impl Typ {
     ///
     /// let input_types = vec![Typ::int()];
     /// let output_type = Typ::bool();
-    /// let mut abstraction_type = Typ::function(input_types.clone(), output_type.clone());
+    /// let mut fn_type = Typ::function(input_types.clone(), output_type.clone());
     ///
-    /// let application_result = abstraction_type
+    /// let application_result = _type
     ///     .apply(input_types, Loc::test_dummy(), &mut errors)
     ///     .unwrap();
     ///
@@ -570,7 +570,7 @@ impl Typ {
     /// ```
     pub fn apply(&mut self, input_types: Vec<Typ>, loc: Loc, errors: &mut Vec<Error>) -> TRes<Typ> {
         match self {
-            // if self is an abstraction, check if the input types are equal
+            // if self is a lambda, check if the input types are equal
             // and return the output type as the type of the application
             Typ::Abstract { inputs, output, .. } => {
                 check::arity::expect(loc, input_types.len(), inputs.len()).move_err(errors);
@@ -627,17 +627,17 @@ impl Typ {
         check::typ::expect(loc, self, expected)
     }
 
-    /// Get inputs from abstraction type.
+    /// Get inputs from lambda type.
     ///
-    /// - returns a copy of abstraction type inputs;
-    /// - panics if not abstraction type.
+    /// - returns a copy of lambda type inputs;
+    /// - panics if not lambda type.
     ///
     /// # Example
     ///
     /// ```rust
     /// # compiler_common::prelude! {}
-    /// let abstraction_type = Typ::function(vec![Typ::int(), Typ::int()], Typ::int());
-    /// assert!(abstraction_type.get_inputs().all(|ty| ty == &Typ::int()));
+    /// let fn_type = Typ::function(vec![Typ::int(), Typ::int()], Typ::int());
+    /// assert!(fn_type.get_inputs().all(|ty| ty == &Typ::int()));
     /// ```
     pub fn get_inputs<'a>(&'a self) -> impl Iterator<Item = &'a Typ> + 'a {
         match self {
@@ -792,14 +792,14 @@ mod test {
     }
 
     #[test]
-    fn should_apply_input_to_abstraction_when_compatible() {
+    fn should_apply_input_to_fn_type_when_compatible() {
         let mut errors = vec![];
 
         let input_types = vec![Typ::int()];
         let output_type = Typ::bool();
-        let mut abstraction_type = Typ::function(input_types.clone(), output_type.clone());
+        let mut fn_type = Typ::function(input_types.clone(), output_type.clone());
 
-        let application_result = abstraction_type
+        let application_result = fn_type
             .apply(input_types, Loc::test_dummy(), &mut errors)
             .unwrap();
 
@@ -807,14 +807,14 @@ mod test {
     }
 
     #[test]
-    fn should_raise_error_when_incompatible_abstraction() {
+    fn should_raise_error_when_incompatible_fn() {
         let mut errors = vec![];
 
         let input_types = vec![Typ::int()];
         let output_type = Typ::bool();
-        let mut abstraction_type = Typ::function(input_types, output_type);
+        let mut fn_type = Typ::function(input_types, output_type);
 
-        abstraction_type
+        fn_type
             .apply(vec![Typ::float()], Loc::test_dummy(), &mut errors)
             .unwrap_err();
     }
@@ -865,20 +865,20 @@ mod test {
     }
 
     #[test]
-    fn should_return_inputs_from_abstraction_type() {
-        let abstraction_type = Typ::function(vec![Typ::int(), Typ::int()], Typ::int());
+    fn should_return_inputs_from_fn_type() {
+        let fn_type = Typ::function(vec![Typ::int(), Typ::int()], Typ::int());
 
         assert_eq!(
-            abstraction_type.get_inputs().cloned().collect_vec(),
+            fn_type.get_inputs().cloned().collect_vec(),
             vec![Typ::int(), Typ::int()]
         );
     }
 
     #[test]
     #[should_panic]
-    fn should_panic_when_not_abstraction_type() {
-        let not_abstraction_type = Typ::int();
-        let _ = not_abstraction_type.get_inputs();
+    fn should_panic_when_not_fn_type() {
+        let not_fn_type = Typ::int();
+        let _ = not_fn_type.get_inputs();
     }
 
     #[test]

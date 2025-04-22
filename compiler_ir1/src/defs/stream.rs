@@ -394,7 +394,7 @@ impl ExprKind {
         match self {
             Self::Constant { .. }
             | Self::Identifier { .. }
-            | Self::Abstraction { .. }
+            | Self::Lambda { .. }
             | Self::Enumeration { .. } => (),
             Self::UnOp { expr, .. } => {
                 expr.memorize(identifier_creator, memory, ctx)?;
@@ -493,7 +493,7 @@ impl ExprKind {
             Self::Constant { .. }
             | Self::Identifier { .. }
             | Self::Enumeration { .. }
-            | Self::Abstraction { .. } => (vec![], vec![]),
+            | Self::Lambda { .. } => (vec![], vec![]),
             Self::UnOp { expr, .. } => {
                 let (new_stmts, new_inits) =
                     expr.normal_form(nodes_reduced_graphs, identifier_creator, ctx);
@@ -735,7 +735,7 @@ impl ExprKind {
         context_map: &HashMap<usize, Either<usize, stream::Expr>>,
     ) -> Option<stream::Expr> {
         match self {
-            Self::Constant { .. } | Self::Abstraction { .. } | Self::Enumeration { .. } => None,
+            Self::Constant { .. } | Self::Lambda { .. } | Self::Enumeration { .. } => None,
             Self::Identifier { ref mut id } => {
                 if let Some(element) = context_map.get(id) {
                     match element {
