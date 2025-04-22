@@ -760,9 +760,7 @@ impl<E: Typing> expr::Kind<E> {
                 typing.if_then_else(cnd.as_mut(), thn.as_mut(), els.as_mut())
             }
             expr::Kind::Application { fun: f, inputs } => typing.application(f.as_mut(), inputs),
-            expr::Kind::Lambda { inputs, expr, .. } => {
-                typing.lambda(inputs, expr.as_mut())
-            }
+            expr::Kind::Lambda { inputs, expr, .. } => typing.lambda(inputs, expr.as_mut()),
             expr::Kind::Structure { id, fields } => typing.structure(*id, fields),
             expr::Kind::Array { elements } => typing.array(elements),
             expr::Kind::Tuple { elements } => typing.tuple(elements),
