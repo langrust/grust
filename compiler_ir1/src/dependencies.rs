@@ -325,14 +325,15 @@ impl stream::ExprKind {
     /// Get nodes applications identifiers.
     pub fn get_called_nodes(&self, target: &mut Vec<usize>) {
         match &self {
-            Self::Constant { .. } | Self::Identifier { .. } | Self::Enumeration { .. } => (),
+            Self::Constant { .. }
+            | Self::Identifier { .. }
+            | Self::Enumeration { .. }
+            | Self::Lambda { .. } => (),
             Self::Application { fun, inputs } => {
                 inputs.iter().for_each(|e| e.get_called_nodes(target));
                 fun.get_called_nodes(target);
             }
-            Self::Abstraction { expr, .. } | Self::UnOp { expr, .. } => {
-                expr.get_called_nodes(target)
-            }
+            Self::UnOp { expr, .. } => expr.get_called_nodes(target),
             Self::BinOp { lft, rgt, .. } => {
                 lft.get_called_nodes(target);
                 rgt.get_called_nodes(target);
@@ -404,7 +405,7 @@ impl stream::ExprKind {
         match self {
             Constant { .. } => Self::constant_deps(),
             Identifier { id, .. } => Self::ident_deps(ctx.ctx, *id),
-            Abstraction { .. } => Self::abstraction_deps(),
+            Lambda { .. } => Self::lambda_deps(),
             Enumeration { .. } => Self::enumeration_deps(),
             UnOp { expr, .. } => Self::unop_deps(ctx, expr),
             BinOp { lft, rgt, .. } => Self::binop_deps(ctx, lft, rgt),
@@ -426,8 +427,8 @@ impl stream::ExprKind {
 }
 
 impl stream::ExprKind {
-    /// Compute dependencies of an abstraction stream expression.
-    fn abstraction_deps() -> TRes<Vec<(usize, Label)>> {
+    /// Compute dependencies of a lambda stream expression.
+    fn lambda_deps() -> TRes<Vec<(usize, Label)>> {
         Ok(vec![])
     }
 

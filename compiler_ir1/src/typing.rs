@@ -760,7 +760,9 @@ impl<E: Typing> expr::Kind<E> {
                 typing.if_then_else(cnd.as_mut(), thn.as_mut(), els.as_mut())
             }
             expr::Kind::Application { fun: f, inputs } => typing.application(f.as_mut(), inputs),
-            expr::Kind::Abstraction { inputs, expr } => typing.abstraction(inputs, expr.as_mut()),
+            expr::Kind::Lambda { inputs, expr, .. } => {
+                typing.lambda(inputs, expr.as_mut())
+            }
             expr::Kind::Structure { id, fields } => typing.structure(*id, fields),
             expr::Kind::Array { elements } => typing.array(elements),
             expr::Kind::Tuple { elements } => typing.tuple(elements),
@@ -800,18 +802,18 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
         }
     }
 
-    fn abstraction(&mut self, inputs: &Vec<usize>, expr: &mut E) -> TRes<Typ> {
+    fn lambda(&mut self, inputs: &Vec<usize>, expr: &mut Expr) -> TRes<Typ> {
         // type the abstracted expression with the local context
         expr.typ_check(self.table, self.errors)?;
 
-        // compute abstraction type
+        // compute lambda type
         let input_types = inputs
             .iter()
             .map(|id| self.table.get_typ(*id).clone())
             .collect::<Vec<_>>();
-        let abstraction_type = Typ::function(input_types, expr.get_typ().unwrap().clone());
+        let lambda_type = Typ::function(input_types, expr.get_typ().unwrap().clone());
 
-        Ok(abstraction_type)
+        Ok(lambda_type)
     }
 
     fn application(&mut self, f: &mut E, inputs: &mut Vec<E>) -> TRes<Typ> {

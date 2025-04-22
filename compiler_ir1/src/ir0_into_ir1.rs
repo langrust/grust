@@ -1717,7 +1717,7 @@ mod simple_expr_impl {
         }
     }
 
-    impl<'a, E> Ir0IntoIr1<ir1::ctx::PatLoc<'a>> for TypedAbstraction<E>
+    impl<'a, E> Ir0IntoIr1<ir1::ctx::PatLoc<'a>> for Lambda<E>
     where
         E: Ir0IntoIr1<ir1::ctx::PatLoc<'a>>,
     {
@@ -1764,7 +1764,7 @@ mod simple_expr_impl {
                 BinOp(e) => e.into_ir1(ctx)?,
                 IfThenElse(e) => e.into_ir1(ctx)?,
                 Application(e) => e.into_ir1(ctx)?,
-                TypedAbstraction(e) => e.into_ir1(ctx)?,
+                Lambda(e) => e.into_ir1(ctx)?,
                 Structure(e) => e.into_ir1(ctx)?,
                 Tuple(e) => e.into_ir1(ctx)?,
                 Enumeration(e) => e.into_ir1(ctx)?,
@@ -2284,7 +2284,7 @@ mod stream_impl {
                 stream::Expr::UnOp(expr) => Kind::expr(expr.into_ir1(ctx)?),
                 stream::Expr::BinOp(expr) => Kind::expr(expr.into_ir1(ctx)?),
                 stream::Expr::IfThenElse(expr) => Kind::expr(expr.into_ir1(ctx)?),
-                stream::Expr::TypedAbstraction(expr) => Kind::expr(expr.into_ir1(ctx)?),
+                stream::Expr::Lambda(expr) => Kind::expr(expr.into_ir1(ctx)?),
                 stream::Expr::Structure(expr) => Kind::expr(expr.into_ir1(ctx)?),
                 stream::Expr::Tuple(expr) => Kind::expr(expr.into_ir1(ctx)?),
                 stream::Expr::Enumeration(expr) => Kind::expr(expr.into_ir1(ctx)?),

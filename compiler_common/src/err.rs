@@ -200,11 +200,11 @@ pub enum ErrorKind {
         /// Given type.
         given_type: Typ,
     },
-    /// Expected abstraction with input type.
-    ExpectAbstraction {
-        /// Expected types as input for the abstraction.
+    /// Expected lambda with input type.
+    ExpectLambda {
+        /// Expected types as input for the lambda.
         input_types: Vec<Typ>,
-        /// Given type instead of the abstraction.
+        /// Given type instead of the lambda.
         given_type: Typ,
     },
     /// Expected option type.
@@ -297,7 +297,7 @@ mk_new! { impl ErrorKind =>
     ExpectArithType: expected_arith_type {
         given_type: Typ,
     }
-    ExpectAbstraction: expected_lambda {
+    ExpectLambda: expected_lambda {
         input_types: Vec<Typ>, given_type: Typ,
     }
     ExpectEvent: expected_event {
@@ -445,7 +445,7 @@ impl Display for ErrorKind {
                     given_type,
                 )
             }
-            ExpectAbstraction { .. } => write!(f, "expected abstraction"),
+            ExpectLambda { .. } => write!(f, "expected lambda"),
             ExpectOption { .. } => write!(f, "expected option"),
             ExpectStructure { .. } => write!(f, "expected structure"),
             ExpectTuple { .. } => write!(f, "expected tuple"),

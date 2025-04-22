@@ -116,8 +116,8 @@ pub enum Expr {
     BinOp(BinOp<Self>),
     /// IfThenElse expression.
     IfThenElse(IfThenElse<Self>),
-    /// Abstraction expression with inputs types.
-    TypedAbstraction(TypedAbstraction<Self>),
+    /// Lambda expression with inputs types.
+    Lambda(Lambda<Self>),
     /// Structure expression.
     Structure(Structure<Self>),
     /// Tuple expression.
@@ -153,7 +153,7 @@ mk_new! { impl Expr =>
     UnOp: unop(arg: UnOp<Self> = arg)
     BinOp: binop(arg: BinOp<Self> = arg)
     IfThenElse: ite(arg: IfThenElse<Self> = arg)
-    TypedAbstraction: type_abstraction(arg: TypedAbstraction<Self> = arg)
+    Lambda: type_lambda(arg: Lambda<Self> = arg)
     Structure: structure(arg: Structure<Self> = arg)
     Tuple: tuple(arg: Tuple<Self> = arg)
     Enumeration: enumeration(arg: Enumeration<Self> = arg)
@@ -182,7 +182,7 @@ impl HasLoc for Expr {
             UnOp(op) => op.op_loc.join(op.expr.loc()),
             BinOp(op) => op.op_loc.join(op.lft.loc()).join(op.rgt.loc()),
             IfThenElse(ite) => ite.cnd.loc().join(ite.thn.loc()).join(ite.els.loc()),
-            TypedAbstraction(abs) => abs.loc(),
+            Lambda(abs) => abs.loc(),
             Structure(s) => s.loc(),
             Tuple(t) => t.loc(),
             Enumeration(e) => e.loc(),
@@ -206,7 +206,7 @@ impl Expr {
             // Constant by default
             stream::Expr::Constant { .. } | stream::Expr::Enumeration { .. } => Ok(()),
             // Not constant by default
-            stream::Expr::TypedAbstraction { .. }
+            stream::Expr::Lambda { .. }
             | stream::Expr::Match { .. }
             | stream::Expr::Emit { .. }
             | stream::Expr::FieldAccess { .. }
