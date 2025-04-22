@@ -35,7 +35,7 @@ mod test {
                 Pattern::test_ident("x"),
                 Expr::lit(Constant::int(parse_quote!(1i64))),
             ),
-            Stmt::expression_last(Expr::test_ident("x")),
+            Stmt::expr_last(Expr::test_ident("x")),
         ]);
 
         let control: syn::Block = parse_quote!({

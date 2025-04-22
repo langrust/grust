@@ -832,7 +832,7 @@ mod test {
             Expr::block(Block {
                 statements: vec![
                     Stmt::let_binding(Pattern::test_ident("y"), Expr::test_ident("x")),
-                    Stmt::expression_last(Expr::test_ident("y")),
+                    Stmt::expr_last(Expr::test_ident("y")),
                 ],
             }),
         );
@@ -846,10 +846,10 @@ mod test {
     fn should_create_rust_ast_if_then_else_from_ir2_if_then_else() {
         let expression = Expr::ite(
             Expr::test_ident("test"),
-            Block::new(vec![Stmt::expression_last(Expr::lit(Constant::int(
+            Block::new(vec![Stmt::expr_last(Expr::lit(Constant::int(
                 parse_quote!(1i64),
             )))]),
-            Block::new(vec![Stmt::expression_last(Expr::lit(Constant::int(
+            Block::new(vec![Stmt::expr_last(Expr::lit(Constant::int(
                 parse_quote!(0i64),
             )))]),
         );

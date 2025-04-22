@@ -389,18 +389,8 @@ where
                     .map(|id| (ctx.get_name(*id).clone(), ctx.get_typ(*id).clone()))
                     .collect();
                 let output = expr.try_get_typ().expect("it should be typed").clone();
-                Expr::Lambda {
-                    is_move: true,
-                    inputs,
-                    output,
-                    body: Box::new(Expr::Block {
-                        block: Block {
-                            statements: vec![Stmt::ExprLast {
-                                expr: expr.into_ir2(ctx),
-                            }],
-                        },
-                    }),
-                }
+                let body = Expr::block(Block::new(vec![Stmt::expr_last(expr.into_ir2(ctx))]));
+                Expr::lambda(false, inputs, output, body)
             }
             Self::Structure { id, fields, .. } => Expr::Structure {
                 name: ctx.get_name(id).clone(),
