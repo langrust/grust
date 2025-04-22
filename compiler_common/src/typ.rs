@@ -21,7 +21,7 @@ prelude! {
 ///   - if `p = Point { x: 1, y: 0}`,
 ///   - then `p: Structure(Point)`.
 /// - [Typ::NotDefinedYet] is not defined yet, if `x: Color` then `x: NotDefinedYet(Color)`
-/// - [Typ::Abstract] are functions types, if `f = |x| x+1` then `f: int -> int`
+/// - [Typ::Fn] are functions types, if `f = |x| x+1` then `f: int -> int`
 /// - [Typ::Polymorphism] is an inferable function type:
 ///   - if `add = |x, y| x+y`,
 ///   - then `add: 't -> 't -> 't` with `'t` in `{int, float}`.
@@ -62,7 +62,7 @@ pub enum Typ {
         id: usize,
     },
     /// Functions types, if `f = |x| x+1` then `f: int -> int`
-    Abstract {
+    Fn {
         paren_token: Option<token::Paren>,
         inputs: Punctuated<Typ, Token![,]>,
         arrow_token: Token![->],
@@ -136,12 +136,12 @@ impl PartialEq for Typ {
                 },
             ) => l_name.to_string() == r_name.to_string() && l_id == r_id,
             (
-                Self::Abstract {
+                Self::Fn {
                     inputs: l_inputs,
                     output: l_output,
                     ..
                 },
-                Self::Abstract {
+                Self::Fn {
                     inputs: r_inputs,
                     output: r_output,
                     ..
@@ -174,7 +174,7 @@ impl Display for Typ {
             Typ::SMEvent { ty, .. } => write!(f, "SMEvent<{}>", *ty),
             Typ::Enumeration { name, .. } => write!(f, "{name}"),
             Typ::Structure { name, .. } => write!(f, "{name}"),
-            Typ::Abstract { inputs, output, .. } => {
+            Typ::Fn { inputs, output, .. } => {
                 write!(f, "(")?;
                 let mut sep = "";
                 for typ in inputs {
@@ -257,7 +257,7 @@ impl Parse for Typ {
                     Typ::Tuple {
                         paren_token,
                         elements,
-                    } => Typ::Abstract {
+                    } => Typ::Fn {
                         paren_token: Some(paren_token),
                         inputs: elements,
                         arrow_token,
@@ -266,7 +266,7 @@ impl Parse for Typ {
                     _ => {
                         let mut inputs = syn::Punctuated::new();
                         inputs.push_value(ty);
-                        Typ::Abstract {
+                        Typ::Fn {
                             paren_token: None,
                             inputs,
                             arrow_token,
@@ -318,7 +318,7 @@ mk_new! { impl Typ =>
         name: impl Into<Ident> = name.into(),
         id: usize,
     }
-    Abstract: function {
+    Fn: function {
         paren_token = Default::default(),
         inputs: Vec<Typ> = {
             let mut args = Punctuated::new();
@@ -375,7 +375,7 @@ pub mod typ_tokens {
                     ));
                     quote!( [#ty; #size] ).to_tokens(tokens)
                 }
-                Typ::Abstract { inputs, output, .. } => {
+                Typ::Fn { inputs, output, .. } => {
                     let inputs = inputs.iter();
                     quote!(impl Fn(#(#inputs),*) -> #output).to_tokens(tokens)
                 }
@@ -413,7 +413,7 @@ pub mod typ_tokens {
                 | Typ::Unit(_)
                 | Typ::Enumeration { .. }
                 | Typ::Structure { .. } => self.to_tokens(tokens),
-                Typ::Abstract { .. }
+                Typ::Fn { .. }
                 | Typ::Event { .. }
                 | Typ::Signal { .. }
                 | Typ::NotDefinedYet(_)
@@ -443,7 +443,7 @@ pub mod typ_tokens {
                     let ty = ty.to_prefix(path);
                     quote!( [#ty; #size] ).to_tokens(tokens)
                 }
-                Typ::Abstract { inputs, output, .. } => {
+                Typ::Fn { inputs, output, .. } => {
                     let inputs = inputs.iter().map(|ty| ty.to_prefix(path));
                     let output = output.to_prefix(path);
                     quote!(impl Fn(#(#inputs),*) -> #output).to_tokens(tokens)
@@ -475,7 +475,7 @@ impl Typ {
             | Typ::Enumeration { .. }
             | Typ::Structure { .. }
             | Typ::SMEvent { .. } => false,
-            Typ::Abstract { .. }
+            Typ::Fn { .. }
             | Typ::Event { .. }
             | Typ::Signal { .. }
             | Typ::NotDefinedYet(_)
@@ -496,11 +496,11 @@ impl Typ {
             Typ::Array { bracket_token, .. } => Some(bracket_token.span.join().into()),
             Typ::SMEvent { ty, question_token } => ty.loc()?.try_join(question_token.span),
             Typ::Enumeration { name, .. } | Typ::Structure { name, .. } => Some(name.span().into()),
-            Typ::Abstract {
+            Typ::Fn {
                 paren_token: Some(paren),
                 ..
             } => Some(paren.span.join().into()),
-            Typ::Abstract { inputs, output, .. } => inputs.first()?.loc()?.try_join(output.loc()?),
+            Typ::Fn { inputs, output, .. } => inputs.first()?.loc()?.try_join(output.loc()?),
             Typ::Tuple { paren_token, .. } => Some(paren_token.span.join().into()),
             Typ::Event { ty, event_token } => ty.loc()?.try_join(event_token.span),
             Typ::Signal { ty, signal_token } => ty.loc()?.try_join(signal_token.span),
@@ -524,7 +524,7 @@ impl Typ {
             | Typ::SMEvent { .. }
             | Typ::Enumeration { .. }
             | Typ::Structure { .. }
-            | Typ::Abstract { .. }
+            | Typ::Fn { .. }
             | Typ::Tuple { .. }
             | Typ::Event { .. }
             | Typ::Signal { .. }
@@ -562,7 +562,7 @@ impl Typ {
     /// let output_type = Typ::bool();
     /// let mut fn_type = Typ::function(input_types.clone(), output_type.clone());
     ///
-    /// let application_result = _type
+    /// let application_result = fn_type
     ///     .apply(input_types, Loc::test_dummy(), &mut errors)
     ///     .unwrap();
     ///
@@ -572,7 +572,7 @@ impl Typ {
         match self {
             // if self is a lambda, check if the input types are equal
             // and return the output type as the type of the application
-            Typ::Abstract { inputs, output, .. } => {
+            Typ::Fn { inputs, output, .. } => {
                 check::arity::expect(loc, input_types.len(), inputs.len()).move_err(errors);
                 let mut fail = false;
                 for (idx, (typ, expected)) in input_types.iter().zip(inputs).enumerate() {
@@ -641,7 +641,7 @@ impl Typ {
     /// ```
     pub fn get_inputs<'a>(&'a self) -> impl Iterator<Item = &'a Typ> + 'a {
         match self {
-            Typ::Abstract { inputs, .. } => inputs.iter(),
+            Typ::Fn { inputs, .. } => inputs.iter(),
             _ => noErrorDesc!(),
         }
     }
@@ -750,7 +750,7 @@ impl Typ {
                     current = ty;
                     continue 'go_down;
                 }
-                Abstract { inputs, output, .. } => {
+                Fn { inputs, output, .. } => {
                     for ty in inputs {
                         stack.push(ty);
                     }
@@ -950,7 +950,7 @@ mod test {
     }
 
     #[test]
-    fn should_create_closure_from_ir2_abstract() {
+    fn should_create_closure_from_ir2_fn() {
         let typ = Typ::function(vec![Typ::int()], Typ::float());
         let control = parse_quote!(impl Fn(i64) -> f64);
 
