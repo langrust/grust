@@ -247,14 +247,6 @@ impl ToTokens for ExecutionMachine {
                 impl Runtime {
                     #new_runtime
 
-                    #[inline]
-                    pub async fn send_output(
-                        &mut self, output: O,
-                    ) -> Result<(), futures::channel::mpsc::SendError> {
-                        self.output.send(output).await?;
-                        Ok(())
-                    }
-
                     #send_timer
 
                     #run_loop

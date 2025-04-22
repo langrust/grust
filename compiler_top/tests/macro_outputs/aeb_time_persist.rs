@@ -171,14 +171,6 @@ pub mod runtime {
             Runtime { aeb, output, timer }
         }
         #[inline]
-        pub async fn send_output(
-            &mut self,
-            output: O,
-        ) -> Result<(), futures::channel::mpsc::SendError> {
-            self.output.send(output).await?;
-            Ok(())
-        }
-        #[inline]
         pub async fn send_timer(
             &mut self,
             timer: T,
@@ -1632,7 +1624,7 @@ pub mod runtime {
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.reset_service_timeout(instant).await?;
-                self.output.send(output).await?;
+                self.output.feed(output).await?;
                 Ok(())
             }
             #[inline]
@@ -1641,7 +1633,7 @@ pub mod runtime {
                 timer: T,
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.timer.send((timer, instant)).await?;
+                self.timer.feed((timer, instant)).await?;
                 Ok(())
             }
         }

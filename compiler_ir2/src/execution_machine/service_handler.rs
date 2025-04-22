@@ -250,7 +250,7 @@ impl<'a> ToTokens for ServiceHandlerTokens<'a> {
                         &mut self, output: O, instant: std::time::Instant
                     ) -> Result<(), futures::channel::mpsc::SendError> {
                         #service_timeout
-                        self.output.send(output).await?;
+                        self.output.feed(output).await?;
                         Ok(())
                     }
                 }
@@ -261,7 +261,7 @@ impl<'a> ToTokens for ServiceHandlerTokens<'a> {
                         pub async fn send_timer(
                             &mut self, timer: T, instant: std::time::Instant
                         ) -> Result<(), futures::channel::mpsc::SendError> {
-                            self.timer.send((timer, instant)).await?;
+                            self.timer.feed((timer, instant)).await?;
                             Ok(())
                         }
                     }
