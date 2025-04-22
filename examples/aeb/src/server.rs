@@ -121,6 +121,10 @@ fn from_aeb_service_output(output: RuntimeOutput) -> Result<Output, Status> {
     }
 }
 
+const OUTPUT_CHANNEL_SIZE: usize = 4;
+const TIMER_CHANNEL_SIZE: usize = 4;
+const PRIO_STREAM_SIZE: usize = 100;
+
 pub struct AebRuntime;
 
 #[tonic::async_trait]
@@ -134,14 +138,17 @@ impl Aeb for AebRuntime {
         &self,
         request: Request<Streaming<Input>>,
     ) -> Result<Response<Self::RunAEBStream>, Status> {
-        let input_stream = request
+        let (output_sink, output_stream) = futures::channel::mpsc::channel(TIMER_CHANNEL_SIZE);
+        let (timers_sink, timers_stream) = futures::channel::mpsc::channel(OUTPUT_CHANNEL_SIZE);
+
+        let request_stream = request
             .into_inner()
             .filter_map(|input| async { input.map(into_aeb_service_input).ok().flatten() });
         let timers_stream = timers_stream.map(|(timer, instant): (RuntimeTimer, Instant)| {
             let deadline = instant + timer_stream::Timing::get_duration(&timer);
             RuntimeInput::Timer(timer, deadline)
         });
-        let input_stream = prio_stream::<_, _, 100>(
+        let input_stream = prio_stream::<_, _, PRIO_STREAM_SIZE>(
             futures::stream::select(request_stream, timers_stream),
             RuntimeInput::order,
         );

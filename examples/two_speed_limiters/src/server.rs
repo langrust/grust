@@ -359,6 +359,9 @@ fn from_speed_limiter_service_output(output: RuntimeOutput) -> Result<Output, St
     }
 }
 
+const OUTPUT_CHANNEL_SIZE: usize = 4;
+const PRIO_STREAM_SIZE: usize = 10;
+
 pub struct SlRuntime;
 
 #[tonic::async_trait]
@@ -372,12 +375,13 @@ impl Sl for SlRuntime {
         &self,
         request: Request<Streaming<Input>>,
     ) -> Result<Response<Self::RunSLStream>, Status> {
-        let (output_sink, output_stream) = futures::channel::mpsc::channel(4);
+        let (output_sink, output_stream) = futures::channel::mpsc::channel(OUTPUT_CHANNEL_SIZE);
 
         let request_stream = request.into_inner().filter_map(|input| async {
             input.map(into_speed_limiter_service_input).ok().flatten()
         });
-        let input_stream = prio_stream::<_, _, 10>(request_stream, RuntimeInput::order);
+        let input_stream =
+            prio_stream::<_, _, PRIO_STREAM_SIZE>(request_stream, RuntimeInput::order);
 
         let speed_limiter_service = Runtime::new(output_sink);
         tokio::spawn(speed_limiter_service.run_loop(

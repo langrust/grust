@@ -44,7 +44,7 @@ pub fn sort_my_array(to_sort: [i64; 10usize]) -> [i64; 10usize] {
     {
         let mut grust_reserved_sort = to_sort.clone();
         grust_reserved_sort.sort_by(|a, b| {
-            let cmp = move |a: i64, b: i64| -> i64 { a - b }(*a, *b);
+            let cmp = |a: i64, b: i64| -> i64 { a - b }(*a, *b);
             if cmp < 0 {
                 std::cmp::Ordering::Less
             } else if 0 < cmp {
@@ -60,7 +60,7 @@ pub fn sum_by_fold(a: i64, b: i64) -> i64 {
     let my_array = [1i64, 2i64, 3i64, a, b];
     let sum = my_array
         .into_iter()
-        .fold(0i64, move |x: i64, y: i64| -> i64 { x + y });
+        .fold(0i64, |x: i64, y: i64| -> i64 { x + y });
     sum
 }
 pub fn map_two(
@@ -73,7 +73,7 @@ pub fn map_two(
 pub fn alarm_filtering(alarm_list: [Alarm; 100usize]) -> [FilteredAlarm; 100usize] {
     {
         let mut grust_reserved_sort = alarm_list
-            .map(move |alarm: Alarm| -> FilteredAlarm {
+            .map(|alarm: Alarm| -> FilteredAlarm {
                 FilteredAlarm {
                     alarm: alarm,
                     filtered: alarm.data <= 0i64,
@@ -81,7 +81,7 @@ pub fn alarm_filtering(alarm_list: [Alarm; 100usize]) -> [FilteredAlarm; 100usiz
             })
             .clone();
         grust_reserved_sort.sort_by(|a, b| {
-            let cmp = move |a1: FilteredAlarm, a2: FilteredAlarm| -> i64 {
+            let cmp = |a1: FilteredAlarm, a2: FilteredAlarm| -> i64 {
                 match (a1.alarm.prio, a2.alarm.prio) {
                     (p1, p2) if p1 == p2 => 0i64,
                     (Priority::Hight, _) => -1i64,

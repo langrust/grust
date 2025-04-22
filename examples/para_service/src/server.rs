@@ -112,6 +112,10 @@ fn from_para_service_output(output: RuntimeOutput) -> Result<Output, Status> {
     }
 }
 
+const OUTPUT_CHANNEL_SIZE: usize = 4;
+const TIMER_CHANNEL_SIZE: usize = 4;
+const PRIO_STREAM_SIZE: usize = 100;
+
 pub struct ParaRuntime;
 
 #[tonic::async_trait]
@@ -125,8 +129,8 @@ impl Para for ParaRuntime {
         &self,
         request: Request<Streaming<Input>>,
     ) -> Result<Response<Self::RunPARAStream>, Status> {
-        let (timers_sink, timers_stream) = futures::channel::mpsc::channel(4);
-        let (output_sink, output_stream) = futures::channel::mpsc::channel(4);
+        let (timers_sink, timers_stream) = futures::channel::mpsc::channel(TIMER_CHANNEL_SIZE);
+        let (output_sink, output_stream) = futures::channel::mpsc::channel(OUTPUT_CHANNEL_SIZE);
 
         let request_stream = request
             .into_inner()
@@ -135,7 +139,7 @@ impl Para for ParaRuntime {
             let deadline = instant + timer_stream::Timing::get_duration(&timer);
             RuntimeInput::Timer(timer, deadline)
         });
-        let input_stream = prio_stream::<_, _, 100>(
+        let input_stream = prio_stream::<_, _, PRIO_STREAM_SIZE>(
             futures::stream::select(request_stream, timers_stream),
             RuntimeInput::order,
         );
