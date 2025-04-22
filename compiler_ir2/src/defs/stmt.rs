@@ -29,7 +29,7 @@ mk_new! { impl Stmt =>
         pattern: Pattern,
         expr: Expr,
     }
-    ExprLast: expression_last { expr: Expr }
+    ExprLast: expr_last { expr: Expr }
     Log: log { ident: syn::Ident, expr: Expr }
 }
 
@@ -106,7 +106,7 @@ mod test {
 
     #[test]
     fn should_create_rust_ast_last_expression_from_ir2_last_expression() {
-        let statement = Stmt::expression_last(Expr::lit(Constant::int(parse_quote!(1i64))));
+        let statement = Stmt::expr_last(Expr::lit(Constant::int(parse_quote!(1i64))));
 
         let control = syn::Stmt::Expr(parse_quote! { 1i64 }, None);
         let stmt = syn::Stmt::Expr(parse_quote!(#statement), None);
