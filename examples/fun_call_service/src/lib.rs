@@ -9,7 +9,7 @@ mod utils {
 }
 
 grust! {
-    fn utils::floor(a: float) -> int;
+    use function utils::floor(a: float) -> int;
 
     import signal float_signal: float;
     export signal int_signal: int;

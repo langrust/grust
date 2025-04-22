@@ -50,8 +50,8 @@ impl Parse for Item {
             Ok(Item::ExtComp(ExtCompDecl::parse_item(input, attrs)?))
         } else {
             Err(input.error(
-                "expected either a flow import/export, a type, a component definition/import, \
-                or a function/service definition",
+                "expected either a flow import/export, a type, a component or function \
+                definition/import, or a service definition",
             ))
         }
     }
@@ -528,12 +528,14 @@ mod interface {
     impl ExtFunDecl {
         pub fn peek(input: ParseStream) -> bool {
             let forked = input.fork();
-            forked.parse::<syn::Token![fn]>().is_ok()
+            let res = forked.parse::<Token![use]>().is_ok();
+            res && forked.parse::<keyword::function>().is_ok()
         }
     }
     impl Parse for ExtFunDecl {
         fn parse(input: ParseStream) -> syn::Res<Self> {
-            let fn_token: syn::Token![fn] = input.parse()?;
+            let use_token: Token![use] = input.parse()?;
+            let function_token: keyword::function = input.parse()?;
             let path: syn::Path = input.parse()?;
             let ident = if let Some(last) = path.segments.last() {
                 last.ident.clone()
@@ -554,7 +556,8 @@ mod interface {
                 output: Box::new(output_typ.clone()),
             };
             Ok(ExtFunDecl {
-                fn_token,
+                use_token,
+                function_token,
                 path,
                 ident,
                 args_paren,
@@ -1103,7 +1106,7 @@ mod parse_stream {
             } else if stream::Emit::peek(input) {
                 Self::Emit(input.parse()?)
             } else if stream::When::peek(input) {
-                return Err(input.error("'when' is a root expression"));
+                return Err(input.error("'when' should be a root expression"));
             } else {
                 Self::parse_prec4(input)?
             };
@@ -1792,7 +1795,7 @@ mod parse_expr {
             if content.is_empty() {
                 Ok(Self::new(expr.loc().join(parens.span.join()), expr, fun))
             } else {
-                Err(input.error("expected only one expression"))
+                Err(input.error("expects one argument"))
             }
         }
     }
@@ -1810,7 +1813,7 @@ mod parse_expr {
             if content.is_empty() {
                 Ok(Self::new(expr.loc().join(parens.span.join()), expr, fun))
             } else {
-                Err(input.error("expected only one expression"))
+                Err(input.error("expects one argument"))
             }
         }
     }
@@ -1843,7 +1846,7 @@ mod parse_expr {
                     function,
                 ))
             } else {
-                Err(input.error("expected only two expressions"))
+                Err(input.error("expects two arguments"))
             }
         }
     }
@@ -1868,7 +1871,7 @@ mod parse_expr {
                     function,
                 ))
             } else {
-                Err(input.error("expected only two expressions"))
+                Err(input.error("expects two arguments"))
             }
         }
     }
@@ -1894,7 +1897,7 @@ mod parse_expr {
             if content.is_empty() {
                 Ok(Self::new(expr.loc().join(parens.span.join()), expr, fun))
             } else {
-                Err(input.error("expected only one expression"))
+                Err(input.error("expects one argument"))
             }
         }
     }
@@ -1912,7 +1915,7 @@ mod parse_expr {
             if content.is_empty() {
                 Ok(Self::new(expr.loc().join(parens.span.join()), expr, fun))
             } else {
-                Err(input.error("expected only one expression"))
+                Err(input.error("expects one argument"))
             }
         }
     }

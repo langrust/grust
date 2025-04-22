@@ -371,7 +371,7 @@ fn should_compile_para_custom() {
     let top: ir0::Top = parse_quote! {
         #![dump = "tests/macro_outputs/para_custom.rs", component_para (2, 6, 20)]
         #[weight_percent = 5]
-        fn module::add_i64(n: int, m: int) -> int;
+        use function module::add_i64(n: int, m: int) -> int;
 
         #[weight_percent = 10]
         function add(i: int, j: int) -> int {
