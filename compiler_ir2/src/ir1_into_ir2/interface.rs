@@ -396,7 +396,7 @@ mod flow_instr {
         /// Map from id to export.
         exports: &'a HashMap<usize, FlowExport>,
         /// Called components.
-        components: Vec<(Ident, Ident)>,
+        components: Vec<(Ident, Option<syn::Path>, Ident)>,
         /// Triggers graph,
         graph: trigger::Graph<'a>,
         /// Tells wether we are in service initialization.
@@ -541,7 +541,7 @@ mod flow_instr {
         pub fn set_init_service(&mut self, init_service: bool) {
             self.init_service = init_service
         }
-        pub fn destroy(self) -> (ir1::ctx::Flows, Vec<(Ident, Ident)>) {
+        pub fn destroy(self) -> (ir1::ctx::Flows, Vec<(Ident, Option<syn::Path>, Ident)>) {
             (self.flows_context, self.components)
         }
 
@@ -588,7 +588,7 @@ mod flow_instr {
             flows_context: &mut ir1::ctx::Flows,
             imports: &mut HashMap<usize, FlowImport>,
             timing_events: &mut Vec<TimingEvent>,
-            components: &mut Vec<(Ident, Ident)>,
+            components: &mut Vec<(Ident, Option<syn::Path>, Ident)>,
         ) -> (HashMap<usize, usize>, HashMap<usize, usize>) {
             // collects components, timing events, on_change_events that are present in the service
             let mut stmts_timers = HashMap::new();
@@ -717,6 +717,7 @@ mod flow_instr {
                                 symbols
                                     .get_name(*memory_id.as_ref().expect("memorized"))
                                     .clone(),
+                                symbols.try_get_comp_path(*called_comp_id).cloned(),
                                 symbols.get_name(*called_comp_id).clone(),
                             )),
                         }
@@ -1328,6 +1329,7 @@ mod flow_instr {
             events: Vec<Ident>,
         ) -> FlowInstruction {
             let mem_name = self.get_name(memory_id);
+            let path_opt = self.try_get_comp_path(called_comp_id);
             let comp_name = self.get_name(called_comp_id);
             let outputs_ids = output_pattern.identifiers();
 
@@ -1335,6 +1337,7 @@ mod flow_instr {
             let mut instrs = vec![FlowInstruction::comp_call(
                 output_pattern.into_ir2(self),
                 mem_name.clone(),
+                path_opt.cloned(),
                 comp_name.clone(),
                 inputs,
             )];

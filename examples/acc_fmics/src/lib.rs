@@ -3,7 +3,8 @@
 use grust::grust;
 
 grust! {
-    use component core::time::derivation::derive(x: float, t: float) -> (i: float);
+    #![demo, dump = "examples/acc_fmics/out/mod.rs"]
+    use component grust::std::time::derivation::derive(x: float, t: float) -> (i: float);
 
     import signal car::state::speed_km_h        : float;
     import signal car::sensors::radar_m         : float;
