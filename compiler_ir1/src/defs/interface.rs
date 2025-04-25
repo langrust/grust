@@ -456,7 +456,7 @@ impl FlowStatement {
                         flows_context.add_element(source_name, &ty);
                         flows_context.add_element(flow_name, &ty);
                     }
-                    flow::Kind::Scan { expr, .. } => {
+                    flow::Kind::Scan { expr, .. } | flow::Kind::OnChange { expr, .. }=> {
                         // get the id of expr (and check it is an identifier, from
                         // normalization)
                         let id = match &expr.kind {
@@ -498,7 +498,6 @@ impl FlowStatement {
                         });
                     }
                     flow::Kind::Ident { .. }
-                    | flow::Kind::OnChange { .. }
                     | flow::Kind::Timeout { .. }
                     | flow::Kind::Merge { .. }
                     | flow::Kind::Time { .. } => (),
