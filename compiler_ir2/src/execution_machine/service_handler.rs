@@ -3,15 +3,17 @@ prelude! { execution_machine::{ArrivingFlow, InterfaceFlow} }
 #[derive(Debug, PartialEq)]
 pub struct ComponentInfo {
     pub ty_ident: Ident,
+    pub path_opt: Option<syn::Path>,
     pub state_ty_ident: Ident,
     pub field_ident: Ident,
 }
 impl ComponentInfo {
-    pub fn new(mem_name: Ident, ty_ident: Ident) -> Self {
+    pub fn new(mem_name: Ident, path_opt: Option<syn::Path>, ty_ident: Ident) -> Self {
         let field_ident = mem_name.to_field();
         let state_ty_ident = ty_ident.to_state_ty();
         Self {
             ty_ident,
+            path_opt,
             field_ident,
             state_ty_ident,
         }
@@ -40,15 +42,15 @@ impl ServiceHandler {
     pub fn new(
         service: impl Into<Ident>,
         has_time_range: bool,
-        components: Vec<(Ident, Ident)>,
+        components: Vec<(Ident, Option<syn::Path>, Ident)>,
         init_handler: InitHandler,
         flow_handlers: Vec<FlowHandler>,
         flow_context: ir1::ctx::Flows,
     ) -> Self {
         let service = service.into();
         let components_info = components
-            .iter()
-            .map(|(mem_name, ty_ident)| ComponentInfo::new(mem_name.clone(), ty_ident.clone()))
+            .into_iter()
+            .map(|(mem_name, path_opt, ty_ident)| ComponentInfo::new(mem_name, path_opt, ty_ident))
             .collect();
         let service_store_ident = service.to_service_store_ty();
         let service_struct_ident = service.to_service_state_ty();
@@ -149,13 +151,24 @@ impl<'a> ToTokens for ServiceHandlerTokens<'a> {
             // with components states
             for ComponentInfo {
                 state_ty_ident,
+                path_opt,
                 field_ident,
                 ..
             } in self.sh.components_info.iter()
             {
-                service_fields.push(quote! {
-                    #field_ident: #state_ty_ident
-                });
+                if let Some(mut path) = path_opt.clone() {
+                    path.segments.pop();
+                    let mut state_path = path;
+                    state_path.segments.push(state_ty_ident.clone().into());
+                    service_fields.push(quote! {
+                        #field_ident: #state_path
+                    });
+                } else {
+                    service_fields.push(quote! {
+                        #field_ident: #state_ty_ident
+                    });
+                }
+
                 field_values.push(field_ident.to_token_stream());
             }
             // and sending channels
@@ -182,12 +195,23 @@ impl<'a> ToTokens for ServiceHandlerTokens<'a> {
                     let components_states = self.sh.components_info.iter().map(
                         |ComponentInfo {
                              state_ty_ident,
+                             path_opt,
                              field_ident,
                              ..
                          }| {
-                            quote! {
-                                let #field_ident =
-                                    <#state_ty_ident as grust::core::Component>::init();
+                            if let Some(mut path) = path_opt.clone() {
+                                path.segments.pop();
+                                let mut state_path = path;
+                                state_path.segments.push(state_ty_ident.clone().into());
+                                quote! {
+                                    let #field_ident =
+                                        <#state_path as grust::core::Component>::init();
+                                }
+                            } else {
+                                quote! {
+                                    let #field_ident =
+                                        <#state_ty_ident as grust::core::Component>::init();
+                                }
                             }
                         },
                     );
@@ -464,7 +488,13 @@ pub enum FlowInstruction {
     IfChange(Ident, Expression, Box<Self>),
     IfActivated(Vec<Ident>, Vec<Ident>, Box<Self>, Option<Box<Self>>),
     ResetTimer(Ident, Option<Ident>),
-    ComponentCall(Pattern, Ident, Ident, Vec<(Ident, Expression)>),
+    ComponentCall(
+        Pattern,
+        Ident,
+        Option<syn::Path>,
+        Ident,
+        Vec<(Ident, Expression)>,
+    ),
     FunctionCall(Pattern, Ident, Vec<Expression>),
     HandleDelay(Vec<Ident>, Vec<MatchArm>),
     Seq(Vec<Self>),
@@ -543,7 +573,13 @@ impl ToTokens for FlowInstruction {
                 };
                 quote! { self.send_timer(T::#enum_ident, #instant).await?; }.to_tokens(tokens)
             }
-            FlowInstruction::ComponentCall(pattern, memory_name, comp_name, inputs_fields) => {
+            FlowInstruction::ComponentCall(
+                pattern,
+                memory_name,
+                path_opt,
+                comp_name,
+                inputs_fields,
+            ) => {
                 let outputs = pattern;
                 let mem_ident = memory_name.to_field();
                 let input_ty = comp_name.to_input_ty();
@@ -553,21 +589,38 @@ impl ToTokens for FlowInstruction {
                     quote! { #field_name : #input }
                 });
 
-                quote! {
-                    let #outputs = <#state_ty as grust::core::Component>::step(
-                        &mut self.#mem_ident,
-                        #input_ty {
-                            #(#input_fields),*
-                        }
-                    );
+                if let Some(mut path) = path_opt.clone() {
+                    path.segments.pop();
+                    let mut state_path = path.clone();
+                    let mut input_path = path;
+                    state_path.segments.push(state_ty.clone().into());
+                    input_path.segments.push(input_ty.clone().into());
+                    quote! {
+                        let #outputs = <#state_path as grust::core::Component>::step(
+                            &mut self.#mem_ident,
+                            #input_path {
+                                #(#input_fields),*
+                            }
+                        );
+                    }
+                    .to_tokens(tokens)
+                } else {
+                    quote! {
+                        let #outputs = <#state_ty as grust::core::Component>::step(
+                            &mut self.#mem_ident,
+                            #input_ty {
+                                #(#input_fields),*
+                            }
+                        );
+                    }
+                    .to_tokens(tokens)
                 }
-                .to_tokens(tokens)
             }
             FlowInstruction::FunctionCall(pattern, function_name, inputs) => {
                 let outputs = &pattern;
                 let function_ident = function_name.to_field();
                 quote! {
-                    let #outputs = self.#function_ident(#(#inputs),*);
+                    let #outputs = #function_ident(#(#inputs),*);
                 }
                 .to_tokens(tokens)
             }
@@ -717,6 +770,7 @@ mk_new! { impl FlowInstruction =>
     ComponentCall: comp_call (
         pat: Pattern = pat,
         mem_name: impl Into<Ident> = mem_name.into(),
+        path_opt: Option<syn::Path> = path_opt,
         comp_name: impl Into<Ident> = comp_name.into(),
         inputs: impl Into<Vec<(Ident, Expression)>> = inputs.into(),
     )
