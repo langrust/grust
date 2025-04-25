@@ -3,7 +3,7 @@
 use grust::grust;
 
 grust! {
-    #![dump = "examples/array_operations/out/dumped.rs"]
+    #![dump = "examples/array_operations/out/dumped.rs", levenshtein = false]
     array MyArray [int; 10]
     array MyMatrix [MyArray; 10]
 
@@ -67,5 +67,9 @@ grust! {
                 _                       => 0
             }
         );
+    }
+
+    function levenshtein_horror(variable_with_a_very_long_name: int) -> int {
+        return variable_with_a_very_long_name;
     }
 }

@@ -317,30 +317,32 @@ impl Table {
         symbol_opt
     }
 
-    pub fn unknown_ident_error<T>(&self, id: &Ident) -> Res<T> {
+    pub fn unknown_ident_error<T>(&self, id: &Ident, levenshtein: bool) -> Res<T> {
         let str = id.to_string();
         let max_levenshtein_distance = 2;
         let e = error!(@id.loc() => ErrorKind::unknown_ident(str.clone()));
-        if let Some(symbol) = self.levenshtein_closest(&str, max_levenshtein_distance) {
-            Err(e
-                .add_note(note!("did you mean `{}`?", symbol.name_string))
-                .add_note(note!(@symbol.name.loc() => "declared here")))
-        } else {
-            Err(e)
+        if levenshtein {
+            if let Some(symbol) = self.levenshtein_closest(&str, max_levenshtein_distance) {
+                return Err(e
+                    .add_note(note!("did you mean `{}`?", symbol.name_string))
+                    .add_note(note!(@symbol.name.loc() => "declared here")));
+            }
         }
+        Err(e)
     }
 
-    pub fn unknown_init_error<T>(&self, id: &Ident) -> Res<T> {
+    pub fn unknown_init_error<T>(&self, id: &Ident, levenshtein: bool) -> Res<T> {
         let str = id.to_string();
         let max_levenshtein_distance = 2;
         let e = error!(@id.loc() => ErrorKind::unknown_init(str.clone()));
-        if let Some(symbol) = self.levenshtein_closest(&str, max_levenshtein_distance) {
-            Err(e
-                .add_note(note!("did you mean `{}`?", symbol.name_string))
-                .add_note(note!(@symbol.name.loc() => "declared here")))
-        } else {
-            Err(e)
+        if levenshtein {
+            if let Some(symbol) = self.levenshtein_closest(&str, max_levenshtein_distance) {
+                return Err(e
+                    .add_note(note!("did you mean `{}`?", symbol.name_string))
+                    .add_note(note!(@symbol.name.loc() => "declared here")));
+            }
         }
+        Err(e)
     }
 
     /// Initialize symbol table with builtin operators.
@@ -1328,8 +1330,13 @@ impl Table {
     }
 
     /// Gets a constant value.
-    pub fn get_const(&self, ident: &Ident, errors: &mut Vec<Error>) -> TRes<&Constant> {
-        let id = self.get_ident(ident, false, false, errors)?;
+    pub fn get_const(
+        &self,
+        ident: &Ident,
+        levenshtein: bool,
+        errors: &mut Vec<Error>,
+    ) -> TRes<&Constant> {
+        let id = self.get_ident(ident, false, false, levenshtein, errors)?;
         let symbol = self
             .get_symbol(id)
             .expect(&format!("expect symbol for {id}"));
@@ -1359,6 +1366,7 @@ impl Table {
         name: &Ident,
         local: bool,
         or_function: bool,
+        levenshtein: bool,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol_hash = SymbolKey::Identifier { name: name.clone() };
@@ -1366,9 +1374,9 @@ impl Table {
             Some(id) => Ok(id),
             None => {
                 if or_function {
-                    self.get_function_id(name, local, errors)
+                    self.get_function_id(name, local, levenshtein, errors)
                 } else {
-                    self.unknown_ident_error(name).dewrap(errors)
+                    self.unknown_ident_error(name, levenshtein).dewrap(errors)
                 }
             }
         }
@@ -1378,9 +1386,10 @@ impl Table {
         &self,
         name: &Ident,
         local: bool,
+        levenshtein: bool,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
-        self.get_ident(name, local, false, errors)
+        self.get_ident(name, local, false, levenshtein, errors)
     }
 
     /// Get function symbol identifier.
@@ -1388,6 +1397,7 @@ impl Table {
         &self,
         name: &Ident,
         local: bool,
+        levenshtein: bool,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol_hash = SymbolKey::Function { name: name.clone() };
@@ -1410,7 +1420,7 @@ impl Table {
                                 break;
                             }
                         }
-                        self.unknown_ident_error(name)
+                        self.unknown_ident_error(name, levenshtein)
                             .err_note(|| note!(@name.span() => "bad"))
                             .dewrap(errors)
                     }
@@ -1420,11 +1430,17 @@ impl Table {
     }
 
     /// Get init symbol identifier.
-    pub fn get_init_id(&self, name: &Ident, local: bool, errors: &mut Vec<Error>) -> TRes<usize> {
+    pub fn get_init_id(
+        &self,
+        name: &Ident,
+        local: bool,
+        levenshtein: bool,
+        errors: &mut Vec<Error>,
+    ) -> TRes<usize> {
         let symbol_hash = SymbolKey::Init { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
-            None => self.unknown_init_error(name).dewrap(errors),
+            None => self.unknown_init_error(name, levenshtein).dewrap(errors),
             // bad!(errors, @name.loc() => ErrorKind::unknown_ident(name.to_string())),
         }
     }
@@ -1434,6 +1450,7 @@ impl Table {
         &self,
         local: bool,
         loc: Loc,
+        levenshtein: bool,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let ident = Ident::result(loc.span);
@@ -1442,7 +1459,7 @@ impl Table {
         };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
-            None => self.unknown_ident_error(&ident).dewrap(errors),
+            None => self.unknown_ident_error(&ident, levenshtein).dewrap(errors),
             // None => bad!(errors, @loc => ErrorKind::unknown_ident(name)),
         }
     }

@@ -102,3 +102,6 @@ pub fn alarm_filtering(alarm_list: [Alarm; 100usize]) -> [FilteredAlarm; 100usiz
         grust_reserved_sort
     }
 }
+pub fn levenshtein_horror(variable_with_a_very_long_name: i64) -> i64 {
+    variable_with_a_very_long_name
+}
