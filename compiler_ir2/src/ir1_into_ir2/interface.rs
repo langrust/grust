@@ -1376,11 +1376,13 @@ mod flow_instr {
             signals: Vec<Ident>,
         ) -> FlowInstruction {
             let function_name = self.get_name(function_id);
+            let path_opt = self.try_get_function_path(function_id);
             let outputs_ids = output_pattern.identifiers();
 
             // call component
             let mut instrs = vec![FlowInstruction::fun_call(
                 output_pattern.into_ir2(self),
+                path_opt.cloned(),
                 function_name.clone(),
                 inputs,
             )];

@@ -9,9 +9,6 @@ pub fn safety_distance(sv_v: f64, fv_v: f64) -> f64 {
     let fv_d_stop = (fv_v * fv_v) / (2.0f64 * 5.886f64);
     sv_d_stop - fv_d_stop
 }
-pub fn convert(x_km_h: f64) -> f64 {
-    x_km_h / 3.6f64
-}
 pub struct AccInput {
     pub c: bool,
     pub d: f64,
@@ -473,7 +470,7 @@ pub mod runtime {
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.reset_service_timeout(_grust_reserved_instant).await?;
                 self.context.speed_km_h.set(speed_km_h);
-                let speed_m_s = convert(speed_km_h);
+                let speed_m_s = utils::convert(speed_km_h);
                 self.context.speed_m_s.set(speed_m_s);
                 self.context.radar_m.set(radar_m);
                 self.context.radar_e_old.set(radar_m);
@@ -757,7 +754,7 @@ pub mod runtime {
                         (None, None, Some((speed_km_h, _speed_km_h_instant))) => {
                             self.context.speed_km_h.set(speed_km_h);
                             if self.context.speed_km_h.is_new() {
-                                let speed_m_s = convert(speed_km_h);
+                                let speed_m_s = utils::convert(speed_km_h);
                                 self.context.speed_m_s.set(speed_m_s);
                             }
                             let x = (_grust_reserved_instant
@@ -806,7 +803,7 @@ pub mod runtime {
                             let radar_e_ref = &mut None;
                             self.context.speed_km_h.set(speed_km_h);
                             if self.context.speed_km_h.is_new() {
-                                let speed_m_s = convert(speed_km_h);
+                                let speed_m_s = utils::convert(speed_km_h);
                                 self.context.speed_m_s.set(speed_m_s);
                             }
                             self.context.radar_m.set(radar_m);
@@ -870,7 +867,7 @@ pub mod runtime {
                             let acc_active_ref = &mut None;
                             self.context.speed_km_h.set(speed_km_h);
                             if self.context.speed_km_h.is_new() {
-                                let speed_m_s = convert(speed_km_h);
+                                let speed_m_s = utils::convert(speed_km_h);
                                 self.context.speed_m_s.set(speed_m_s);
                             }
                             *acc_active_ref = Some(acc_active);
@@ -931,7 +928,7 @@ pub mod runtime {
                             let radar_e_ref = &mut None;
                             self.context.speed_km_h.set(speed_km_h);
                             if self.context.speed_km_h.is_new() {
-                                let speed_m_s = convert(speed_km_h);
+                                let speed_m_s = utils::convert(speed_km_h);
                                 self.context.speed_m_s.set(speed_m_s);
                             }
                             *acc_active_ref = Some(acc_active);
@@ -1136,7 +1133,7 @@ pub mod runtime {
                     self.context.reset();
                     self.context.speed_km_h.set(speed_km_h);
                     if self.context.speed_km_h.is_new() {
-                        let speed_m_s = convert(speed_km_h);
+                        let speed_m_s = utils::convert(speed_km_h);
                         self.context.speed_m_s.set(speed_m_s);
                     }
                     let x = (_speed_km_h_instant.duration_since(self.begin).as_millis()) as f64;

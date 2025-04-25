@@ -2,9 +2,16 @@
 
 use grust::grust;
 
+pub mod utils {
+    pub fn convert(x_km_h: f64) -> f64 {
+        x_km_h / 3.6
+    }
+}
+
 grust! {
     #![demo, dump = "examples/acc_fmics/out/mod.rs"]
     use component grust::std::time::derivation::derive(x: float, t: float) -> (i: float);
+    use function utils::convert(x_km_h: float) -> float;
 
     import signal car::state::speed_km_h        : float;
     import signal car::sensors::radar_m         : float;
@@ -59,10 +66,5 @@ grust! {
             r? => { let d: float = r; let approach: bool = d < last d; }
         }
         c = active && approach;
-    }
-
-    // Derivation component.
-    function convert(x_km_h: float) -> float {
-        return x_km_h / 3.6;
     }
 }
