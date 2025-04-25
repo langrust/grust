@@ -495,7 +495,7 @@ pub enum FlowInstruction {
         Ident,
         Vec<(Ident, Expression)>,
     ),
-    FunctionCall(Pattern, Ident, Vec<Expression>),
+    FunctionCall(Pattern, Option<syn::Path>, Ident, Vec<Expression>),
     HandleDelay(Vec<Ident>, Vec<MatchArm>),
     Seq(Vec<Self>),
     Para(BTreeMap<ParaMethod, Vec<Self>>),
@@ -616,13 +616,22 @@ impl ToTokens for FlowInstruction {
                     .to_tokens(tokens)
                 }
             }
-            FlowInstruction::FunctionCall(pattern, function_name, inputs) => {
+            FlowInstruction::FunctionCall(pattern, path_opt, function_name, inputs) => {
                 let outputs = &pattern;
                 let function_ident = function_name.to_field();
-                quote! {
-                    let #outputs = #function_ident(#(#inputs),*);
+                if let Some(mut path) = path_opt.clone() {
+                    path.segments.pop();
+                    path.segments.push(function_ident.clone().into());
+                    quote! {
+                        let #outputs = #path(#(#inputs),*);
+                    }
+                    .to_tokens(tokens)
+                } else {
+                    quote! {
+                        let #outputs = #function_ident(#(#inputs),*);
+                    }
+                    .to_tokens(tokens)
                 }
-                .to_tokens(tokens)
             }
             FlowInstruction::HandleDelay(input_flows, match_arms) => {
                 let input_flows = input_flows.iter().map(|name| {
@@ -776,6 +785,7 @@ mk_new! { impl FlowInstruction =>
     )
     FunctionCall: fun_call (
         pat: Pattern = pat,
+        path_opt: Option<syn::Path> = path_opt,
         name: impl Into<Ident> = name.into(),
         inputs: impl Into<Vec<Expression>> = inputs.into(),
     )
