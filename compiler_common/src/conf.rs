@@ -160,6 +160,9 @@ build_conf! {
         demo: bool = false =>
             /// Item for the `demo` configuration value.
             Demo,
+        levenshtein: bool = true =>
+            /// Item for the `levenshtein` configuration value.
+            Levenshtein,
         stats_depth: usize = 0 =>
             /// Item for the `stats_depth` configuration value.
             StatsDepth,
@@ -245,7 +248,13 @@ mod parsing {
                 "pub" => Self::PubComponent(span, true),
                 "greusot" => Self::Greusot(span, true),
                 "test" => Self::Test(span, true),
-                "demo" => Self::Test(span, true),
+                "demo" => Self::Demo(span, true),
+                "levenshtein" => {
+                    let _: Token![=] = input.parse()?;
+                    let val: syn::LitBool = input.parse()?;
+                    let val: bool = val.value();
+                    Self::Levenshtein(span, val)
+                }
                 _ => {
                     return Err(syn::Error::new_spanned(
                         ident,

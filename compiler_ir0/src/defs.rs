@@ -42,6 +42,62 @@ impl Ctx {
     pub fn empty() -> Self {
         Self::from_conf(Conf::default())
     }
+
+    /// Gets a constant value.
+    pub fn get_const(&self, ident: &Ident, errors: &mut Vec<Error>) -> TRes<&Constant> {
+        self.table.get_const(ident, self.conf.levenshtein, errors)
+    }
+
+    /// Gets a variable (or function) identifier.
+    pub fn get_ident(
+        &self,
+        name: &Ident,
+        local: bool,
+        or_function: bool,
+        errors: &mut Vec<Error>,
+    ) -> TRes<usize> {
+        self.table
+            .get_ident(name, local, or_function, self.conf.levenshtein, errors)
+    }
+
+    /// Get identifier symbol identifier.
+    pub fn get_identifier_id(
+        &self,
+        name: &Ident,
+        local: bool,
+        errors: &mut Vec<Error>,
+    ) -> TRes<usize> {
+        self.table
+            .get_identifier_id(name, local, self.conf.levenshtein, errors)
+    }
+
+    /// Get function symbol identifier.
+    pub fn get_function_id(
+        &self,
+        name: &Ident,
+        local: bool,
+        errors: &mut Vec<Error>,
+    ) -> TRes<usize> {
+        self.table
+            .get_function_id(name, local, self.conf.levenshtein, errors)
+    }
+
+    /// Get init symbol identifier.
+    pub fn get_init_id(&self, name: &Ident, local: bool, errors: &mut Vec<Error>) -> TRes<usize> {
+        self.table
+            .get_init_id(name, local, self.conf.levenshtein, errors)
+    }
+
+    /// Get function result symbol identifier.
+    pub fn get_function_result_id(
+        &self,
+        local: bool,
+        loc: Loc,
+        errors: &mut Vec<Error>,
+    ) -> TRes<usize> {
+        self.table
+            .get_function_result_id(local, loc, self.conf.levenshtein, errors)
+    }
 }
 
 #[derive(Debug)]
