@@ -13,7 +13,7 @@ prelude! {
 /// - [Typ::Boolean] is the [bool] type for booleans, if `b = true` then `b: bool`
 /// - [Typ::Unit] is the unit type, if `u = ()` then `u: unit`
 /// - [Typ::Array] is the array type, if `a = [1, 2, 3]` then `a: [int; 3]`
-/// - [Typ::SMEvent] is the event type for StateMachine, noted `n: int?`
+/// - [Typ::Option] is the event type for StateMachine, noted `n: int?`
 /// - [Typ::Enumeration] is a user-defined enumeration:
 ///   - if `c = Color.Yellow`,
 ///   - then `c: Enumeration(Color)`.
@@ -42,8 +42,8 @@ pub enum Typ {
         semi_token: Token![;],
         size: syn::LitInt,
     },
-    /// SMEvent type, noted `n: int?`
-    SMEvent {
+    /// Option type, noted `n: int?`
+    Option {
         ty: Box<Typ>,
         question_token: Token![?],
     },
@@ -114,7 +114,7 @@ impl PartialEq for Typ {
                     ..
                 },
             ) => l_ty == r_ty && l_size == r_size,
-            (Self::SMEvent { ty: l_ty, .. }, Self::SMEvent { ty: r_ty, .. }) => l_ty == r_ty,
+            (Self::Option { ty: l_ty, .. }, Self::Option { ty: r_ty, .. }) => l_ty == r_ty,
             (
                 Self::Enumeration {
                     name: l_name,
@@ -171,7 +171,7 @@ impl Display for Typ {
             Typ::Boolean(_) => write!(f, "bool"),
             Typ::Unit(_) => write!(f, "unit"),
             Typ::Array { ty, size, .. } => write!(f, "[{}; {size}]", *ty),
-            Typ::SMEvent { ty, .. } => write!(f, "SMEvent<{}>", *ty),
+            Typ::Option { ty, .. } => write!(f, "Option<{}>", *ty),
             Typ::Enumeration { name, .. } => write!(f, "{name}"),
             Typ::Structure { name, .. } => write!(f, "{name}"),
             Typ::Fn { inputs, output, .. } => {
@@ -246,7 +246,7 @@ impl Parse for Typ {
         loop {
             if input.peek(Token![?]) {
                 let question_token: Token![?] = input.parse()?;
-                ty = Typ::SMEvent {
+                ty = Typ::Option {
                     ty: Box::new(ty),
                     question_token,
                 }
@@ -336,7 +336,7 @@ mk_new! { impl Typ =>
             tys
         },
     }
-    SMEvent: sm_event {
+    Option: sm_event {
         ty: Typ = ty.into(),
         question_token = Default::default(),
     }
@@ -384,7 +384,7 @@ pub mod typ_tokens {
                     quote!((#(#elements),*)).to_tokens(tokens)
                 }
                 Typ::Event { ty, .. } | Typ::Signal { ty, .. } => ty.to_tokens(tokens),
-                Typ::SMEvent { ty, .. } => quote!(Option<#ty>).to_tokens(tokens),
+                Typ::Option { ty, .. } => quote!(Option<#ty>).to_tokens(tokens),
                 Typ::NotDefinedYet(_) | Typ::Polymorphism(_) | Typ::Any => {
                     noErrorDesc!()
                 }
@@ -405,7 +405,7 @@ pub mod typ_tokens {
                     let elements = elements.iter().map(|ty| ty.to_logic());
                     quote!((#(#elements),*)).to_tokens(tokens)
                 }
-                Typ::SMEvent { ty, .. } => {
+                Typ::Option { ty, .. } => {
                     let ty = ty.to_logic();
                     quote!(Option<#ty>).to_tokens(tokens)
                 }
@@ -453,7 +453,7 @@ pub mod typ_tokens {
                     quote!((#(#elements),*)).to_tokens(tokens)
                 }
                 Typ::Event { ty, .. } | Typ::Signal { ty, .. } => ty.to_prefix_tokens(path, tokens),
-                Typ::SMEvent { ty, .. } => {
+                Typ::Option { ty, .. } => {
                     let ty = ty.to_prefix(path);
                     quote!(Option<#ty>).to_tokens(tokens)
                 }
@@ -474,7 +474,7 @@ impl Typ {
             | Typ::Unit(_)
             | Typ::Enumeration { .. }
             | Typ::Structure { .. }
-            | Typ::SMEvent { .. } => false,
+            | Typ::Option { .. } => false,
             Typ::Fn { .. }
             | Typ::Event { .. }
             | Typ::Signal { .. }
@@ -494,7 +494,7 @@ impl Typ {
             Typ::Boolean(kw) => Some(kw.span.into()),
             Typ::Unit(kw) => Some(kw.span.into()),
             Typ::Array { bracket_token, .. } => Some(bracket_token.span.join().into()),
-            Typ::SMEvent { ty, question_token } => ty.loc()?.try_join(question_token.span),
+            Typ::Option { ty, question_token } => ty.loc()?.try_join(question_token.span),
             Typ::Enumeration { name, .. } | Typ::Structure { name, .. } => Some(name.span().into()),
             Typ::Fn {
                 paren_token: Some(paren),
@@ -521,7 +521,7 @@ impl Typ {
             Typ::Boolean(_)
             | Typ::Unit(_)
             | Typ::Array { .. }
-            | Typ::SMEvent { .. }
+            | Typ::Option { .. }
             | Typ::Enumeration { .. }
             | Typ::Structure { .. }
             | Typ::Fn { .. }
@@ -689,7 +689,7 @@ impl Typ {
     pub fn convert(&self) -> Self {
         match self {
             Typ::Signal { ty, .. } => ty.as_ref().clone(),
-            Typ::Event { ty, event_token } => Typ::SMEvent {
+            Typ::Event { ty, event_token } => Typ::Option {
                 ty: ty.clone(),
                 question_token: Token![?](event_token.span),
             },
@@ -716,14 +716,14 @@ impl Typ {
     pub fn rev_convert(&self) -> Self {
         match self {
             Typ::Signal { .. } | Typ::Event { .. } => noErrorDesc!(),
-            Typ::SMEvent { ty, .. } => Typ::event((**ty).clone()),
+            Typ::Option { ty, .. } => Typ::event((**ty).clone()),
             ty => Typ::signal(ty.clone()),
         }
     }
 
     pub fn is_event(&self) -> bool {
         match self {
-            Typ::Event { .. } | Typ::SMEvent { .. } => true,
+            Typ::Event { .. } | Typ::Option { .. } => true,
             _ => false,
         }
     }
@@ -746,7 +746,7 @@ impl Typ {
                 | Structure { .. }
                 | Any => (),
                 // nodes we need to go down into
-                Array { ty, .. } | SMEvent { ty, .. } | Signal { ty, .. } | Event { ty, .. } => {
+                Array { ty, .. } | Option { ty, .. } | Signal { ty, .. } | Event { ty, .. } => {
                     current = ty;
                     continue 'go_down;
                 }
