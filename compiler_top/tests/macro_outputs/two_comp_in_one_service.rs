@@ -267,7 +267,6 @@ pub mod runtime {
                 reset: bool,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.reset_service_timeout(_grust_reserved_instant).await?;
-                let x_ref = &mut None;
                 self.context.reset.set(reset);
                 let o1 = <utils::CounterState as grust::core::Component>::step(
                     &mut self.counter_1,
@@ -277,14 +276,13 @@ pub mod runtime {
                     },
                 );
                 self.context.o1.set(o1);
-                *x_ref = Some(());
                 self.send_timer(T::TimeoutX, _grust_reserved_instant)
                     .await?;
                 let o2 = <utils::CounterState as grust::core::Component>::step(
                     &mut self.counter,
                     utils::CounterInput {
                         res: reset,
-                        tick: *x_ref,
+                        tick: None,
                     },
                 );
                 self.context.o2.set(o2);
@@ -540,8 +538,8 @@ pub mod runtime {
                             }
                         }
                         (Some((clock, _clock_instant)), Some(((), _timeout_x_instant)), None) => {
-                            let x_ref = &mut None;
                             let clock_ref = &mut None;
+                            let x_ref = &mut None;
                             *clock_ref = Some(clock);
                             if clock_ref.is_some() {
                                 self.send_timer(T::TimeoutX, _clock_instant).await?;
@@ -708,8 +706,8 @@ pub mod runtime {
                             Some(((), _timeout_x_instant)),
                             Some((reset, _reset_instant)),
                         ) => {
-                            let x_ref = &mut None;
                             let clock_ref = &mut None;
+                            let x_ref = &mut None;
                             self.context.reset.set(reset);
                             *clock_ref = Some(clock);
                             if clock_ref.is_some() {
