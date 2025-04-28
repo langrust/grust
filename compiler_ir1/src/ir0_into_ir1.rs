@@ -1935,7 +1935,15 @@ mod stmt_pattern_impl {
                             let init_id = ctx.ctx0.get_init_id(&ident, false, ctx.errors)?;
                             ir1::stream::Kind::last(init_id, signal_id)
                         } else {
-                            ir1::stream::Kind::none_event()
+                            let id = ctx.ctx0.get_identifier_id(ident, false, ctx.errors)?;
+                            let ty = ctx.get_typ(id);
+                            if ty.is_event() {
+                                ir1::stream::Kind::none_event()
+                            } else {
+                                Err(
+                                error!(@ident.loc() => ErrorKind::unknown_init(ident.to_string())))
+                                    .dewrap(ctx.errors)?
+                            }
                         }
                     }
                 }
