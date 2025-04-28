@@ -1028,9 +1028,13 @@ mod flow_instr {
             let mut timer_instr = || {
                 // if activated, define timeout event and reset timer
                 let unit_expr = Expression::some(Expression::lit(Constant::unit_default()));
-                let def = self.define_event(id_pattern, unit_expr);
                 let reset = self.reset_timer(timer_id, import_flow);
-                FlowInstruction::seq(vec![def, reset])
+                if self.init_service() {
+                    FlowInstruction::seq(vec![reset])
+                } else {
+                    let def = self.define_event(id_pattern, unit_expr);
+                    FlowInstruction::seq(vec![def, reset])
+                }
             };
             match occurrences {
                 (true, true) => source_instr(Some(timer_instr())),

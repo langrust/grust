@@ -387,8 +387,6 @@ pub mod runtime {
                 _grust_reserved_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.reset_service_timeout(_grust_reserved_instant).await?;
-                let timeout_pedest_ref = &mut None;
-                *timeout_pedest_ref = Some(());
                 self.send_timer(T::TimeoutTimeoutPedest, _grust_reserved_instant)
                     .await?;
                 let x = (_grust_reserved_instant
@@ -407,7 +405,7 @@ pub mod runtime {
                     &mut self.braking_state,
                     BrakingStateInput {
                         pedest: None,
-                        timeout_pedest: *timeout_pedest_ref,
+                        timeout_pedest: None,
                         speed: self.context.speed_km_h_bis.get(),
                         acc: self.context.acc_km_h.get(),
                     },

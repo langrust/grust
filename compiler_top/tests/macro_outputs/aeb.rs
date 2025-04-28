@@ -298,8 +298,6 @@ pub mod runtime {
                 speed_km_h: f64,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.reset_service_timeout(_grust_reserved_instant).await?;
-                let timeout_pedestrian_ref = &mut None;
-                *timeout_pedestrian_ref = Some(());
                 self.send_timer(T::TimeoutTimeoutPedestrian, _grust_reserved_instant)
                     .await?;
                 self.context.speed_km_h.set(speed_km_h);
@@ -307,7 +305,7 @@ pub mod runtime {
                     &mut self.braking_state,
                     BrakingStateInput {
                         pedest: None,
-                        timeout_pedestrian: *timeout_pedestrian_ref,
+                        timeout_pedestrian: None,
                         speed: speed_km_h,
                     },
                 );
