@@ -141,7 +141,7 @@ impl Typing for contract::Term {
             contract::Kind::PresentEvent { event_id, pattern } => {
                 let typing = symbols.get_typ(*event_id).clone();
                 match &typing {
-                    Typ::SMEvent { ty, .. } => {
+                    Typ::Option { ty, .. } => {
                         symbols.set_type(*pattern, *ty.clone());
                     }
                     _ => noErrorDesc!(),
@@ -655,7 +655,7 @@ impl Pattern {
                 _ => bad!(errors, @self.loc => ErrorKind::expected_tuple_pat()),
             },
             Kind::Some { ref mut pattern } => match expected_type {
-                Typ::SMEvent { ty, .. } => {
+                Typ::Option { ty, .. } => {
                     pattern.typ_check(ty, symbols, errors)?;
                     let pattern_type = pattern.get_typ().unwrap().clone();
                     self.typing = Some(Typ::sm_event(pattern_type));
@@ -679,7 +679,7 @@ impl Pattern {
                 expected_type.expect(self.loc, &typing).dewrap(errors)?;
 
                 match &typing {
-                    Typ::SMEvent { ty, .. } => pattern.typ_check(&ty, symbols, errors)?,
+                    Typ::Option { ty, .. } => pattern.typ_check(&ty, symbols, errors)?,
                     _ => noErrorDesc!(),
                 };
 

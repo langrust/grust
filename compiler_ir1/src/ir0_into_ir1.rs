@@ -2388,7 +2388,7 @@ impl Ir0IntoIr1<ir1::ctx::WithLoc<'_>> for Typ {
                     let output = output.into_ir1(ctx)?;
                     Ok(Typ::Fn { paren_token, inputs, arrow_token, output: output.into() })
                 }
-                Typ::SMEvent { ty, question_token } => Ok(Typ::SMEvent {
+                Typ::Option { ty, question_token } => Ok(Typ::Option {
                     ty: Box::new(ty.into_ir1(ctx)?),
                     question_token
                 }),

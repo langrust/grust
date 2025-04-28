@@ -289,7 +289,7 @@ mod term {
                     contract::Term::implication(left.into_ir2(ctx), right.into_ir2(ctx))
                 }
                 Kind::PresentEvent { event_id, pattern } => match ctx.get_typ(event_id) {
-                    Typ::SMEvent { .. } => {
+                    Typ::Option { .. } => {
                         let name = ctx.get_name(pattern).clone();
                         contract::Term::some(contract::Term::ident(name, false))
                     }
@@ -636,11 +636,11 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Pattern {
             Kind::None => Pattern::None,
             Kind::Default(loc) => Pattern::Default(loc),
             Kind::PresentEvent { event_id, pattern } => match ctx.get_typ(event_id) {
-                Typ::SMEvent { .. } => Pattern::some(pattern.into_ir2(ctx)),
+                Typ::Option { .. } => Pattern::some(pattern.into_ir2(ctx)),
                 _ => noErrorDesc!(),
             },
             Kind::NoEvent { event_id } => match ctx.get_typ(event_id) {
-                Typ::SMEvent { .. } => Pattern::none(),
+                Typ::Option { .. } => Pattern::none(),
                 _ => noErrorDesc!(),
             },
         }
