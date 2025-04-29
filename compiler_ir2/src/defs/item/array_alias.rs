@@ -12,7 +12,6 @@ pub struct ArrayAlias {
     /// The array's size.
     pub size: usize,
 }
-
 mk_new! { impl ArrayAlias =>
     new {
         name: impl Into<Ident> = name.into(),
@@ -21,13 +20,28 @@ mk_new! { impl ArrayAlias =>
     }
 }
 
-impl ToTokens for ArrayAlias {
+pub struct ArrayAliasTokens<'a> {
+    aa: &'a ArrayAlias,
+    public: bool,
+}
+impl ArrayAlias {
+    pub fn prepare_tokens<'a>(&'a self, public: bool) -> ArrayAliasTokens<'a> {
+        ArrayAliasTokens { aa: self, public }
+    }
+}
+
+impl<'a> ToTokens for ArrayAliasTokens<'a> {
     fn to_tokens(&self, tokens: &mut TokenStream2) {
-        let size = self.size;
-        let name = &self.name;
-        let inner_typ = &self.array_type;
+        let size = self.aa.size;
+        let name = &self.aa.name;
+        let inner_typ = &self.aa.array_type;
+        let pub_token = if self.public {
+            quote! {pub}
+        } else {
+            quote! {}
+        };
         quote! {
-            pub type #name = [#inner_typ; #size];
+            #pub_token type #name = [#inner_typ; #size];
         }
         .to_tokens(tokens)
     }
@@ -44,6 +58,7 @@ mod test {
             array_type: Typ::array(Typ::int(), 5),
             size: 5,
         }
+        .prepare_tokens(true)
         .to_token_stream();
         println!("{}", array_alias.to_token_stream());
 

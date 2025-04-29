@@ -103,15 +103,31 @@ mk_new! { impl Input =>
     }
 }
 
-impl ToTokens for Input {
+pub struct InputTokens<'a> {
+    i: &'a Input,
+    public: bool,
+}
+impl Input {
+    pub fn prepare_tokens<'a>(&'a self, public: bool) -> InputTokens<'a> {
+        InputTokens { i: self, public }
+    }
+}
+
+impl<'a> ToTokens for InputTokens<'a> {
     fn to_tokens(&self, tokens: &mut TokenStream2) {
         let fields = self
+            .i
             .elements
             .iter()
             .map(|InputElm { identifier, typ }| quote!(pub #identifier : #typ));
-        let input_ty = self.node_name.to_input_ty();
+        let input_ty = self.i.node_name.to_input_ty();
+        let pub_token = if self.public {
+            quote! {pub}
+        } else {
+            quote! {}
+        };
         quote!(
-            pub struct #input_ty {
+            #pub_token struct #input_ty {
                 #(#fields,)*
             }
         )
@@ -278,13 +294,15 @@ pub struct StateTokens<'a> {
     state: &'a State,
     with_contracts: bool,
     align: bool,
+    public: bool,
 }
 impl State {
-    pub fn prepare_tokens(&self, with_contracts: bool, align: bool) -> StateTokens {
+    pub fn prepare_tokens(&self, with_contracts: bool, align: bool, public: bool) -> StateTokens {
         StateTokens {
             state: self,
             with_contracts,
             align,
+            public,
         }
     }
 }
@@ -313,16 +331,20 @@ impl StateTokens<'_> {
         let input_ty = self.state.node_name.to_input_ty();
         let output_ty = &self.state.step.output_type;
         let state_ty = self.state.node_name.to_state_ty();
-
-        let structure = if self.align {
-            quote!(
-                #[repr(align(64))]
-                pub struct #state_ty { #(#fields),* }
-            )
+        let align_conf = if self.align {
+            quote! { #[repr(align(64))]}
         } else {
-            quote!(
-                pub struct #state_ty { #(#fields),* }
-            )
+            quote! {}
+        };
+        let pub_token = if self.public {
+            quote! {pub}
+        } else {
+            quote! {}
+        };
+
+        let structure = quote! {
+            #align_conf
+            #pub_token struct #state_ty { #(#fields),* }
         };
 
         let init = &self.state.init;
@@ -361,13 +383,20 @@ pub struct StateMachineTokens<'a> {
     sm: &'a StateMachine,
     with_contracts: bool,
     align: bool,
+    public: bool,
 }
 impl StateMachine {
-    pub fn prepare_tokens(&self, with_contracts: bool, align: bool) -> StateMachineTokens {
+    pub fn prepare_tokens(
+        &self,
+        with_contracts: bool,
+        align: bool,
+        public: bool,
+    ) -> StateMachineTokens {
         StateMachineTokens {
             sm: self,
             with_contracts,
             align,
+            public,
         }
     }
 }
@@ -376,12 +405,14 @@ impl ToTokens for StateMachineTokens<'_> {
     /// Transform [ir2] state_machine into items.
     fn to_tokens(&self, tokens: &mut TokenStream2) {
         let input_structure = &self.sm.input;
-        input_structure.to_tokens(tokens);
+        input_structure
+            .prepare_tokens(self.public)
+            .to_tokens(tokens);
 
         let (state_structure, state_implementation) = self
             .sm
             .state
-            .prepare_tokens(self.with_contracts, self.align)
+            .prepare_tokens(self.with_contracts, self.align, self.public)
             .to_struct_and_impl_tokens();
         state_structure.to_tokens(tokens);
         state_implementation.to_tokens(tokens);
@@ -567,7 +598,9 @@ mod test {
                 identifier: Loc::test_id("i"),
                 typ: Typ::int(),
             }],
-        };
+        }
+        .prepare_tokens(true)
+        .to_token_stream();
         let control = parse_quote!(
             pub struct NodeInput {
                 pub i: i64,

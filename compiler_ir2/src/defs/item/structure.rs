@@ -18,16 +18,24 @@ mk_new! { impl Structure =>
     }
 }
 
+pub struct StructureTokens<'a> {
+    s: &'a Structure,
+    public: bool,
+    greusot: bool,
+}
 impl Structure {
-    /// Transform an [ir2] structure into a token stream.
-    pub fn to_token_stream(&self, ctx: &Ctx) -> TokenStream2 {
-        let mut tokens = TokenStream2::new();
-        self.to_tokens(ctx, &mut tokens);
-        tokens
+    pub fn prepare_tokens<'a>(&'a self, public: bool, greusot: bool) -> StructureTokens<'a> {
+        StructureTokens {
+            s: self,
+            public,
+            greusot,
+        }
     }
-    /// Writes an [ir2] structure into a token stream.
-    pub fn to_tokens(&self, ctx: &ir0::Ctx, tokens: &mut TokenStream2) {
-        if ctx.conf.greusot {
+}
+
+impl<'a> ToTokens for StructureTokens<'a> {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
+        if self.greusot {
             quote!(
                 #[derive(prelude::Clone, Copy, prelude::PartialEq, DeepModel)]
             )
@@ -35,13 +43,19 @@ impl Structure {
         } else {
             quote!(#[derive(Clone, Copy, PartialEq, Default, Debug)]).to_tokens(tokens)
         };
+        let pub_token = if self.public {
+            quote! {pub}
+        } else {
+            quote! {}
+        };
         let fields = self
+            .s
             .fields
             .iter()
-            .map(|(name, typ)| quote! { pub #name: #typ });
-        let name = &self.name;
+            .map(|(name, typ)| quote! { #pub_token #name: #typ });
+        let name = &self.s.name;
         quote! {
-            pub struct #name {
+            #pub_token struct #name {
                 #(#fields),*
             }
         }
@@ -62,7 +76,8 @@ mod test {
                 (Loc::test_id("y"), Typ::int()),
             ],
         )
-        .to_token_stream(&Ctx::empty());
+        .prepare_tokens(true, false)
+        .to_token_stream();
 
         let control = parse_quote! {
             #[derive(Clone, Copy, PartialEq, Default, Debug)]
