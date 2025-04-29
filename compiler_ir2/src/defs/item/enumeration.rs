@@ -18,31 +18,44 @@ mk_new! { impl Enumeration =>
     }
 }
 
+pub struct EnumerationTokens<'a> {
+    e: &'a Enumeration,
+    public: bool,
+    greusot: bool,
+}
 impl Enumeration {
-    /// Transform an [ir2] enumeration into a token stream.
-    pub fn to_token_stream(&self, ctx: &Ctx) -> TokenStream2 {
-        let mut tokens = TokenStream2::new();
-        self.to_tokens(ctx, &mut tokens);
-        tokens
+    pub fn prepare_tokens<'a>(&'a self, public: bool, greusot: bool) -> EnumerationTokens<'a> {
+        EnumerationTokens {
+            e: self,
+            public,
+            greusot,
+        }
     }
-    /// Writes an [ir2] enumeration to a token stream.
-    pub fn to_tokens(&self, ctx: &Ctx, tokens: &mut TokenStream2) {
-        if ctx.conf.greusot {
+}
+
+impl<'a> ToTokens for EnumerationTokens<'a> {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
+        if self.greusot {
             quote!(#[derive(prelude::Clone, Copy, prelude::PartialEq, DeepModel)]).to_tokens(tokens)
         } else {
             quote!(#[derive(Clone, Copy, PartialEq, Default, Debug)]).to_tokens(tokens)
         }
-        let name = &self.name;
-        let variants = self.elements.iter().enumerate().map(|(index, element)| {
-            let attr = if !ctx.conf.greusot && (index == 0) {
+        let name = &self.e.name;
+        let variants = self.e.elements.iter().enumerate().map(|(index, element)| {
+            let attr = if !self.greusot && (index == 0) {
                 Some(quote!(# [default]))
             } else {
                 None
             };
             quote! { #attr #element }
         });
+        let pub_token = if self.public {
+            quote! {pub}
+        } else {
+            quote! {}
+        };
         quote! {
-            pub enum #name {
+            #pub_token enum #name {
                 #(#variants),*
             }
         }
@@ -64,7 +77,8 @@ mod test {
                 Loc::test_id("Green"),
             ],
         )
-        .to_token_stream(&Ctx::empty());
+        .prepare_tokens(true, false)
+        .to_token_stream();
 
         let control = parse_quote! {
         #[derive(Clone, Copy, PartialEq, Default, Debug)]

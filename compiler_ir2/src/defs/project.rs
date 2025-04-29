@@ -45,7 +45,7 @@ impl ToTokens for ProjectTokens<'_> {
                     }
                 }
                 Item::StateMachine(sm) => sm
-                    .prepare_tokens(ctx.conf.greusot, ctx.conf.align)
+                    .prepare_tokens(ctx.conf.greusot, ctx.conf.align, ctx.conf.public)
                     .to_tokens(tokens),
                 Item::Function(fun) => {
                     let (def, logic_opt) = fun.to_def_and_logic_tokens(ctx);
@@ -54,9 +54,13 @@ impl ToTokens for ProjectTokens<'_> {
                         add_logic!(logic)
                     }
                 }
-                Item::Enumeration(enumeration) => enumeration.to_tokens(ctx, tokens),
-                Item::Structure(structure) => structure.to_tokens(ctx, tokens),
-                Item::ArrayAlias(alias) => alias.to_tokens(tokens),
+                Item::Enumeration(enumeration) => enumeration
+                    .prepare_tokens(ctx.conf.public, ctx.conf.greusot)
+                    .to_tokens(tokens),
+                Item::Structure(structure) => structure
+                    .prepare_tokens(ctx.conf.public, ctx.conf.greusot)
+                    .to_tokens(tokens),
+                Item::ArrayAlias(alias) => alias.prepare_tokens(ctx.conf.public).to_tokens(tokens),
             }
         }
 

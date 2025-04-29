@@ -142,9 +142,9 @@ build_conf! {
         align: bool = false =>
             /// Item for the `align` configuration value.
             AlignMem,
-        pub_components: bool = false =>
-            /// Item for the `pub_components` configuration value.
-            PubComponent,
+        public: bool = true =>
+            /// Item for the `public` configuration value.
+            PubThings,
         dump_code: Option<syn::LitStr> = None =>
             /// Item for the `dump_code` configuration value.
             DumpCode,
@@ -245,7 +245,7 @@ mod parsing {
                 "component_para_rayon3" => Self::ComponentPara(span, ComponentPara::rayon_mult(3)),
                 "component_para_mixed" => Self::ComponentPara(span, ComponentPara::mixed()),
                 "component_para" => Self::ComponentPara(span, WeightBounds::parse(input)?.into()),
-                "pub" => Self::PubComponent(span, true),
+                "pub" => Self::PubThings(span, true),
                 "greusot" => Self::Greusot(span, true),
                 "test" => Self::Test(span, true),
                 "demo" => Self::Demo(span, true),

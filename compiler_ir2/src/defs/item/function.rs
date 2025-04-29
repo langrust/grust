@@ -30,6 +30,11 @@ impl Function {
         let inputs = self.inputs.iter().map(|(name, typ)| quote!( #name: #typ ));
         let name = &self.name;
         let output = &self.output;
+        let pub_token = if ctx.conf.public {
+            quote! {pub}
+        } else {
+            quote! {}
+        };
 
         if ctx.conf.greusot {
             let logic_args = self.inputs.iter().map(|(name, ty)| {
@@ -58,7 +63,7 @@ impl Function {
                 quote! {
                     #contract
                     #[ensures(#logic_result == logical::#name(#(#logic_args),*))]
-                    pub fn #name(#(#inputs),*) -> #output
+                    #pub_token fn #name(#(#inputs),*) -> #output
                     #body
                 },
                 Some(quote! {
@@ -70,7 +75,10 @@ impl Function {
             )
         } else {
             let body = &self.body;
-            (quote! { pub fn #name(#(#inputs),*) -> #output #body }, None)
+            (
+                quote! { #pub_token fn #name(#(#inputs),*) -> #output #body },
+                None,
+            )
         }
     }
 }
