@@ -1,21 +1,21 @@
 #[derive(Clone, Copy, PartialEq, Default, Debug)]
-pub enum Activation {
+enum Activation {
     #[default]
     On,
     Off,
 }
-pub fn safety_distance(sv_v: f64, fv_v: f64) -> f64 {
+fn safety_distance(sv_v: f64, fv_v: f64) -> f64 {
     let sv_d_stop = (sv_v * 1.0f64) + ((sv_v * sv_v) / (2.0f64 * 5.886f64));
     let fv_d_stop = (fv_v * fv_v) / (2.0f64 * 5.886f64);
     sv_d_stop - fv_d_stop
 }
-pub struct AccInput {
-    pub c: bool,
-    pub d: f64,
-    pub v: f64,
-    pub s: f64,
+struct AccInput {
+    c: bool,
+    d: f64,
+    v: f64,
+    s: f64,
 }
-pub struct AccState {}
+struct AccState {}
 impl grust::core::Component for AccState {
     type Input = AccInput;
     type Output = f64;
@@ -39,11 +39,11 @@ impl grust::core::Component for AccState {
         b
     }
 }
-pub struct ActivateInput {
-    pub act: Option<Activation>,
-    pub r: Option<f64>,
+struct ActivateInput {
+    act: Option<Activation>,
+    r: Option<f64>,
 }
-pub struct ActivateState {
+struct ActivateState {
     last_active: bool,
     last_approach: bool,
     last_d: f64,
