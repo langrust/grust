@@ -245,7 +245,12 @@ mod parsing {
                 "component_para_rayon3" => Self::ComponentPara(span, ComponentPara::rayon_mult(3)),
                 "component_para_mixed" => Self::ComponentPara(span, ComponentPara::mixed()),
                 "component_para" => Self::ComponentPara(span, WeightBounds::parse(input)?.into()),
-                "pub" => Self::PubThings(span, true),
+                "public" => {
+                    let _: Token![=] = input.parse()?;
+                    let val: syn::LitBool = input.parse()?;
+                    let val: bool = val.value();
+                    Self::PubThings(span, val)
+                }
                 "greusot" => Self::Greusot(span, true),
                 "test" => Self::Test(span, true),
                 "demo" => Self::Demo(span, true),

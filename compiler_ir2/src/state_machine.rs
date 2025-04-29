@@ -115,17 +115,17 @@ impl Input {
 
 impl<'a> ToTokens for InputTokens<'a> {
     fn to_tokens(&self, tokens: &mut TokenStream2) {
-        let fields = self
-            .i
-            .elements
-            .iter()
-            .map(|InputElm { identifier, typ }| quote!(pub #identifier : #typ));
-        let input_ty = self.i.node_name.to_input_ty();
         let pub_token = if self.public {
             quote! {pub}
         } else {
             quote! {}
         };
+        let fields = self
+            .i
+            .elements
+            .iter()
+            .map(|InputElm { identifier, typ }| quote!(#pub_token #identifier : #typ));
+        let input_ty = self.i.node_name.to_input_ty();
         quote!(
             #pub_token struct #input_ty {
                 #(#fields,)*
