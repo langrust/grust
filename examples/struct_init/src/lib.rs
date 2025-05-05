@@ -14,7 +14,7 @@ grust! {
         data: int,
     }
 
-    component alarm_filtering(alarm: Alarm) -> (delayed: Alarm) {
+    component delayed_alarm(alarm: Alarm) -> (delayed: Alarm) {
         init temp = Alarm { prio: Priority::Low, data: 0 };
         delayed = last temp;
         let temp: Alarm = alarm;
