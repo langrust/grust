@@ -1385,6 +1385,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "struct_init"
+version = "0.1.0"
+dependencies = [
+ "grust",
+]
+
+[[package]]
 name = "strum"
 version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
