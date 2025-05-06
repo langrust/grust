@@ -392,12 +392,12 @@ impl Display for ErrorKind {
                 structure_name,
                 field_name,
                 ..
-            } => write!(f, "unknown field `{structure_name}::{field_name}"),
+            } => write!(f, "unknown field `{field_name}` in `{structure_name}` structure"),
             MissingField {
                 structure_name,
                 field_name,
                 ..
-            } => write!(f, "missing field `{structure_name}::{field_name}"),
+            } => write!(f, "missing field `{field_name}` in `{structure_name}` structure"),
             IndexOutOfBounds => write!(f, "index out of bounds"),
             AlreadyDefinedElement { name } => {
                 write!(f, "trying to redefine element `{name}`")
