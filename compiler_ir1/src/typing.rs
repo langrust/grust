@@ -144,7 +144,8 @@ impl Typing for contract::Term {
                     Typ::Option { ty, .. } => {
                         symbols.set_type(*pattern, *ty.clone());
                     }
-                    _ => noErrorDesc!(),
+                    ty => Err(error!(@self.loc => ErrorKind::expected_event(ty.clone())))
+                        .dewrap(errors)?,
                 };
                 typing
             }
@@ -680,7 +681,8 @@ impl Pattern {
 
                 match &typing {
                     Typ::Option { ty, .. } => pattern.typ_check(&ty, symbols, errors)?,
-                    _ => noErrorDesc!(),
+                    ty => Err(error!(@self.loc() => ErrorKind::expected_event(ty.clone())))
+                        .dewrap(errors)?,
                 };
 
                 self.typing = Some(typing);
