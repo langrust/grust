@@ -445,20 +445,30 @@ impl Display for ErrorKind {
                     given_type,
                 )
             }
-            ExpectLambda { .. } => write!(f, "expected lambda"),
-            ExpectOption { .. } => write!(f, "expected option"),
-            ExpectStructure { .. } => write!(f, "expected structure"),
-            ExpectTuple { .. } => write!(f, "expected tuple"),
-            ExpectArray { .. } => write!(f, "expected array"),
-            ExpectEvent { .. } => write!(f, "expected event"),
-            ExpectSignal { .. } => write!(f, "expected signal"),
+            ExpectLambda { given_type, .. } => write!(f, "expected lambda but given {given_type}"),
+            ExpectOption { given_type } => write!(f, "expected option but given {given_type}"),
+            ExpectStructure { given_type } => {
+                write!(f, "expected structure but given {given_type}")
+            }
+            ExpectTuple { given_type } => write!(f, "expected tuple but given {given_type}"),
+            ExpectArray { given_type } => write!(f, "expected array but given {given_type}"),
+            ExpectEvent { given_type } => write!(f, "expected event but given {given_type}"),
+            ExpectSignal { given_type } => write!(f, "expected signal but given {given_type}"),
             ExpectOptionPattern => write!(f, "expected option pattern"),
             ExpectTuplePattern => write!(f, "expected tuple pattern"),
-            IncompatibleLength { .. } => write!(f, "incompatible Length"),
+            IncompatibleLength {
+                given_length,
+                expected_length,
+            } => write!(
+                f,
+                "incompatible length, given {given_length} but expect {expected_length}"
+            ),
             NoTypeInference => write!(f, "no type inference"),
-            NotCausalSignal { .. } => write!(f, "not causal signal"),
-            NotCausalNode { .. } => write!(f, "not causal node"),
-            UnusedSignal { .. } => write!(f, "unused signal"),
+            NotCausalSignal { signal } => write!(f, "signal `{signal}` is not causal"),
+            NotCausalNode { node } => write!(f, "node `{node}` is not causal"),
+            UnusedSignal { signal, node } => {
+                write!(f, "signal `{signal}` is unused in node `{node}`")
+            }
         }
     }
 }
