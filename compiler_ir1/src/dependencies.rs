@@ -110,7 +110,7 @@ impl Component {
     ///     x: int = i;     // depends on i
     /// }
     /// ```
-    pub fn compute_dependencies(&mut self, ctx: &mut DepCtx) -> TRes<()> {
+    pub fn compute_dependencies(&mut self, ctx: &mut DepCtx, mut stats: StatsMut) -> TRes<()> {
         match &mut self.body_or_path {
             Either::Left(body) => {
                 // create a graph with inputs
@@ -120,14 +120,21 @@ impl Component {
                 let mut process_manager = HashMap::new();
                 self.sign.inputs_in_proc(&mut process_manager, ctx);
                 // add dependencies
-                body.compute_dependencies(graph, process_manager, ctx)?;
+                stats.timed(&format!("compute dependencies (ir1)"), || {
+                    body.compute_dependencies(graph, process_manager, ctx)
+                })?;
                 // construct reduced graph
-                self.sign.construct_reduced_graph(&body.graph, ctx);
+                stats.timed_with(&format!("construct reduced graph (ir1)"), |sub_stats| {
+                    self.sign
+                        .construct_reduced_graph(&body.graph, ctx, sub_stats)
+                });
                 Ok(())
             }
             Either::Right(_) => {
                 // direct reduced graph (inputs -[0]-> outputs)
-                self.sign.construct_reduced_graph_ext(ctx);
+                stats.timed(&format!("construct reduced graph (ir1)"), || {
+                    self.sign.construct_reduced_graph_ext(ctx)
+                });
                 Ok(())
             }
         }
@@ -152,7 +159,7 @@ impl ComponentSignature {
     }
 
     /// Construct reduced graph, linking inputs to their dependent outputs.
-    fn construct_reduced_graph(&mut self, graph: &Graph, ctx: &mut DepCtx) {
+    fn construct_reduced_graph(&mut self, graph: &Graph, ctx: &mut DepCtx, mut stats: StatsMut) {
         let mut reduced_graph = DiGraphMap::new();
 
         // add output dependencies over inputs in reduced graph
@@ -681,7 +688,8 @@ impl File {
     /// Generate dependency graph for every nodes/component.
     pub fn generate_dependency_graphs(
         &mut self,
-        ctx: &ir0::Ctx,
+        ctx: &mut ir0::Ctx,
+        mut stats: StatsMut,
         errors: &mut Vec<Error>,
     ) -> TRes<()> {
         // initialize dictionary for reduced graphs
@@ -689,12 +697,15 @@ impl File {
 
         // create graph of nodes
         let mut nodes_graph = DiGraphMap::new();
+        stats.timed("component dependencies graph (ir1)", || {
         self.components
             .iter()
-            .for_each(|component| component.add_node_dependencies(&mut nodes_graph));
+                .for_each(|component| component.add_node_dependencies(&mut nodes_graph))
+        });
 
         // sort nodes according to their dependencies
-        let sorted_nodes = toposort(&nodes_graph, None)
+        let sorted_nodes = stats.timed("toposort of component dependencies graph (ir1)", || {
+            toposort(&nodes_graph, None)
             .map_err(|component| {
                 error!(@self.loc =>
                     ErrorKind::node_non_causal(
@@ -702,7 +713,10 @@ impl File {
                     )
                 )
             })
-            .dewrap(errors)?;
+                .dewrap(errors)
+        })?;
+
+        stats.timed("sort components using toposort (ir1)", || {
         self.components.sort_by(|c1, c2| {
             let index1 = sorted_nodes
                 .iter()
@@ -712,15 +726,23 @@ impl File {
                 .iter()
                 .position(|id| *id == c2.get_id())
                 .expect("should be in sorted list");
-
             Ord::cmp(&index2, &index1)
+            })
         });
 
         // ordered nodes complete their dependency graphs
         let mut ctx = DepCtx::new(ctx, &mut nodes_reduced_graphs, errors);
         self.components
             .iter_mut()
-            .map(|component| component.compute_dependencies(&mut ctx))
+            .map(|component| {
+                stats.timed_with(
+                    &format!(
+                        "`{}` dependency graph generation (ir1)",
+                        ctx.get_name(component.get_id())
+                    ),
+                    |sub_stats| component.compute_dependencies(&mut ctx, sub_stats),
+                )
+            })
             .collect_res()?;
 
         Ok(())
