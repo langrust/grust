@@ -1094,6 +1094,35 @@ impl Table {
         }
     }
 
+    /// Get node local identifiers from identifier.
+    pub fn get_node_locals(&self, id: usize) -> Vec<&usize> {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::Node { locals, .. } => {
+                locals.as_ref().map_or(vec![], |h| h.values().collect())
+            }
+            _ => noErrorDesc!(),
+        }
+    }
+
+    /// Get node's number of identifiers.
+    pub fn node_idents_number(&self, id: usize) -> usize {
+        let symbol = self
+            .get_symbol(id)
+            .expect(&format!("expect symbol for {id}"));
+        match symbol.kind() {
+            SymbolKind::Node {
+                inputs,
+                outputs,
+                locals,
+                ..
+            } => inputs.len() + outputs.len() + locals.as_ref().map_or(0, |h| h.len()),
+            _ => noErrorDesc!(),
+        }
+    }
+
     /// Get flow's kind from identifier.
     pub fn get_flow_kind(&self, id: usize) -> FlowKind {
         let symbol = self

@@ -86,9 +86,7 @@ fn should_compile_this_quickly() {
             let qyl: float = last qy + last qw * gy2 - last qx * gz2 + last qz * gx2;
             let qzl: float = last qz + last qw * gz2 + last qx * gy2 - last qy * gx2;
 
-            let (nq1: float, nq2: float, nq3: float, nq4: float) = normalize_quat(qwl, qxl, qyl, qzl);
-
-            (qw, qx, qy, qz) = (0.0, nq2, nq3, nq4);
+            (qw, qx, qy, qz) = normalize_quat(qwl, qxl, qyl, qzl);
         }
     };
     let (ast, mut ctx) = top.init();

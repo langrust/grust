@@ -226,7 +226,7 @@ impl grust::core::Component for Sensfusion6QuatState {
             ((self.last_qy + (self.last_qw * gy2)) - (self.last_qx * gz2)) + (self.last_qz * gx2);
         let qzl =
             ((self.last_qz + (self.last_qw * gz2)) + (self.last_qx * gy2)) - (self.last_qy * gx2);
-        let (nq1, nq2, nq3, nq4) = <NormalizeQuatState as grust::core::Component>::step(
+        let (qw, qx, qy, qz) = <NormalizeQuatState as grust::core::Component>::step(
             &mut self.normalize_quat,
             NormalizeQuatInput {
                 qw: qwl,
@@ -235,7 +235,6 @@ impl grust::core::Component for Sensfusion6QuatState {
                 qz: qzl,
             },
         );
-        let (qw, qx, qy, qz) = (0.0f64, nq2, nq3, nq4);
         self.last_qw = qw;
         self.last_qx = qx;
         self.last_qy = qy;
