@@ -38,7 +38,7 @@ pub fn from_ast_timed(
         };
         { $desc:expr, $e:expr $(,)? } => {{
             check_errors!();
-            match stats.timed($desc, || $e) {
+            match stats.timed_with($desc, $e) {
                 Ok(res) => res,
                 Err(()) => {
                     if errors.is_empty() {
@@ -52,18 +52,15 @@ pub fn from_ast_timed(
             }
         }};
     }
-    let mut ir1 = check_errors!("parsing (ir0 → ir1)", raw_from_ast(ast, symbols, errors));
-    check_errors!("type-checking (ir1)", ir1.typ_check(symbols, errors));
-    check_errors!(
-        "dependency graph generation (ir1)",
-        ir1.generate_dependency_graphs(symbols, errors),
-        &errors,
-    );
-    check_errors!(
-        "causality analysis (ir1)",
-        ir1.causality_analysis(symbols, errors)
-    );
-    check_errors!("normalization (ir1)", ir1.normalize(symbols, errors));
+    let mut ir1 = check_errors!("parsing (ir0 → ir1)", |_| raw_from_ast(
+        ast, symbols, errors
+    ));
+    check_errors!("type-checking (ir1)", |_| ir1.typ_check(symbols, errors));
+    check_errors!("dependency graph generation (ir1)", |sub_stats| ir1
+        .generate_dependency_graphs(symbols, sub_stats, errors),);
+    check_errors!("causality analysis (ir1)", |_| ir1
+        .causality_analysis(symbols, errors));
+    check_errors!("normalization (ir1)", |_| ir1.normalize(symbols, errors));
     Ok(ir1)
 }
 
