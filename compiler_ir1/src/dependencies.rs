@@ -167,20 +167,48 @@ impl ComponentSignature {
             .iter()
             .for_each(|(_, output_id)| {
                 ctx.get_node_inputs(self.id).iter().for_each(|input_id| {
-                    let paths = petgraph::algo::all_simple_paths::<Vec<_>, _>(
-                        graph, *output_id, *input_id, 0, None,
+                    // get all paths between output and input
+                    let paths = stats.timed(
+                        &format!("get paths between `{output_id}` and `{input_id}`"),
+                        || {
+                            petgraph::algo::all_simple_paths::<Vec<_>, _>(
+                                graph, *output_id, *input_id, 0, None,
+                            )
+                        },
                     );
-                    for path in paths {
-                        if let Some(label) = path
-                            .into_iter()
+                    // convert into label
+                    let paths_labels = paths.filter_map(|path| {
+                        path.into_iter()
                             .tuple_windows()
                             .map(|(a, b)| {
                                 graph.edge_weight(a, b).expect("their is a path...").clone()
                             })
                             .reduce(|l1, l2| l1.add(&l2))
-                        {
-                            add_edge(&mut reduced_graph, *output_id, *input_id, label);
-                        }
+                    });
+                    // get min label
+                    let opt_min_label =
+                        stats.timed(&format!("convert paths into one edge"), || {
+                            let mut opt_min_label = None;
+
+                            for label in paths_labels {
+                                if let Some(min_label) = opt_min_label {
+                                    if min_label == Label::Weight(0) {
+                                        break;
+                                    } else if label < min_label {
+                                        opt_min_label = Some(label)
+                                    }
+                                } else {
+                                    opt_min_label = Some(label)
+                                }
+                            }
+
+                            opt_min_label
+                        });
+                    // add edge in reduced graph
+                    if let Some(label) = opt_min_label {
+                        stats.timed(&format!("add edge"), || {
+                            add_edge(&mut reduced_graph, *output_id, *input_id, label)
+                        });
                     }
                 })
             });
@@ -698,35 +726,35 @@ impl File {
         // create graph of nodes
         let mut nodes_graph = DiGraphMap::new();
         stats.timed("component dependencies graph (ir1)", || {
-        self.components
-            .iter()
+            self.components
+                .iter()
                 .for_each(|component| component.add_node_dependencies(&mut nodes_graph))
         });
 
         // sort nodes according to their dependencies
         let sorted_nodes = stats.timed("toposort of component dependencies graph (ir1)", || {
             toposort(&nodes_graph, None)
-            .map_err(|component| {
-                error!(@self.loc =>
-                    ErrorKind::node_non_causal(
-                        ctx.get_name(component.node_id()).to_string()
+                .map_err(|component| {
+                    error!(@self.loc =>
+                        ErrorKind::node_non_causal(
+                            ctx.get_name(component.node_id()).to_string()
+                        )
                     )
-                )
-            })
+                })
                 .dewrap(errors)
         })?;
 
         stats.timed("sort components using toposort (ir1)", || {
-        self.components.sort_by(|c1, c2| {
-            let index1 = sorted_nodes
-                .iter()
-                .position(|id| *id == c1.get_id())
-                .expect("should be in sorted list");
-            let index2 = sorted_nodes
-                .iter()
-                .position(|id| *id == c2.get_id())
-                .expect("should be in sorted list");
-            Ord::cmp(&index2, &index1)
+            self.components.sort_by(|c1, c2| {
+                let index1 = sorted_nodes
+                    .iter()
+                    .position(|id| *id == c1.get_id())
+                    .expect("should be in sorted list");
+                let index2 = sorted_nodes
+                    .iter()
+                    .position(|id| *id == c2.get_id())
+                    .expect("should be in sorted list");
+                Ord::cmp(&index2, &index1)
             })
         });
 
