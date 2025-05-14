@@ -1,6 +1,5 @@
 //! Dependency graph.
 
-use itertools::Itertools;
 use std::ops::Deref;
 
 prelude! { graph::* }
@@ -161,57 +160,51 @@ impl ComponentSignature {
     /// Construct reduced graph, linking inputs to their dependent outputs.
     fn construct_reduced_graph(&mut self, graph: &Graph, ctx: &mut DepCtx, mut stats: StatsMut) {
         let mut reduced_graph = DiGraphMap::new();
+        let inputs = ctx.get_node_inputs(self.id);
+        let mut stack: Vec<usize> = inputs.clone();
+        let mut seen: Vec<usize> = Vec::with_capacity(ctx.node_idents_number(self.id));
 
-        // add output dependencies over inputs in reduced graph
-        ctx.get_node_outputs(self.id)
-            .iter()
-            .for_each(|(_, output_id)| {
-                ctx.get_node_inputs(self.id).iter().for_each(|input_id| {
-                    // get all paths between output and input
-                    let paths = stats.timed(
-                        &format!("get paths between `{output_id}` and `{input_id}`"),
-                        || {
-                            petgraph::algo::all_simple_paths::<Vec<_>, _>(
-                                graph, *output_id, *input_id, 0, None,
-                            )
-                        },
-                    );
-                    // convert into label
-                    let paths_labels = paths.filter_map(|path| {
-                        path.into_iter()
-                            .tuple_windows()
-                            .map(|(a, b)| {
-                                graph.edge_weight(a, b).expect("their is a path...").clone()
-                            })
-                            .reduce(|l1, l2| l1.add(&l2))
-                    });
-                    // get min label
-                    let opt_min_label =
-                        stats.timed(&format!("convert paths into one edge"), || {
-                            let mut opt_min_label = None;
+        // remove all local nodes from reduced_graph
+        stats.timed("generate reduced graph", || {
+            while let Some(to_propag) = stack.pop() {
+                // set `seen`
+                seen.push(to_propag);
 
-                            for label in paths_labels {
-                                if let Some(min_label) = opt_min_label {
-                                    if min_label == Label::Weight(0) {
-                                        break;
-                                    } else if label < min_label {
-                                        opt_min_label = Some(label)
-                                    }
-                                } else {
-                                    opt_min_label = Some(label)
-                                }
-                            }
+                // get the idents that depends on `to_propag`
+                let depending_edges = graph.edges_directed(to_propag, Direction::Incoming);
+                // get the inputs on which `to_propag` depends
+                let input_deps = reduced_graph
+                    .edges_directed(to_propag, Direction::Outgoing)
+                    .map(|(a, b, l): (usize, usize, &Label)| (a, b, l.clone()))
+                    .collect::<Vec<_>>();
 
-                            opt_min_label
-                        });
-                    // add edge in reduced graph
-                    if let Some(label) = opt_min_label {
-                        stats.timed(&format!("add edge"), || {
-                            add_edge(&mut reduced_graph, *output_id, *input_id, label)
-                        });
+                for (depending, _, l1) in depending_edges {
+                    // add edge to inputs
+                    if inputs.contains(&to_propag) {
+                        add_edge(&mut reduced_graph, depending, to_propag, *l1)
+                    } else {
+                        for (_, input_id, l2) in input_deps.iter() {
+                            add_edge(&mut reduced_graph, depending, *input_id, l1.add(l2))
+                        }
                     }
-                })
-            });
+                    // update stack: not already seen && no path with all the idents in stack
+                    if !seen.contains(&depending)
+                        && stack.iter().all(|id| {
+                            !petgraph::algo::has_path_connecting(graph, depending, *id, None)
+                        })
+                    {
+                        stack.push(depending);
+                    }
+                }
+            }
+        });
+
+        // remove all local nodes from reduced_graph
+        stats.timed("remove all local idents from reduced graph", || {
+            ctx.get_node_locals(self.id).iter().for_each(|local_id| {
+                reduced_graph.remove_node(**local_id);
+            })
+        });
 
         self.reduced_graph = reduced_graph;
         ctx.reduced_graphs
