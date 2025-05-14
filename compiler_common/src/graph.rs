@@ -35,10 +35,10 @@ mod label {
     #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
     /// Edge label.
     pub enum Label {
-        /// Contract label.
-        Contract,
         /// Weighted label.
         Weight(usize),
+        /// Contract label.
+        Contract,
     }
 
     mk_new! { impl Label =>
@@ -69,6 +69,31 @@ mod label {
                 Self::Weight(w) => w == n,
                 Self::Contract => false,
             }
+        }
+    }
+
+    #[cfg(test)]
+    mod label_order {
+        use super::Label;
+
+        #[test]
+        fn contract_label_should_be_max() {
+            let l_min = Label::Weight(0);
+            let l = Label::Weight(1);
+            let l_max = Label::Contract;
+
+            assert!(l < l_max);
+            assert!(l_min < l_max);
+        }
+
+        #[test]
+        fn weight_0_label_should_be_min() {
+            let l_min = Label::Weight(0);
+            let l = Label::Weight(1);
+            let l_max = Label::Contract;
+
+            assert!(l_min < l);
+            assert!(l_min < l_max);
         }
     }
 }
