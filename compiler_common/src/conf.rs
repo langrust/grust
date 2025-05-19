@@ -160,7 +160,7 @@ build_conf! {
         demo: bool = false =>
             /// Item for the `demo` configuration value.
             Demo,
-        levenshtein: bool = true =>
+        levenshtein: bool = false =>
             /// Item for the `levenshtein` configuration value.
             Levenshtein,
         stats_depth: usize = 0 =>
