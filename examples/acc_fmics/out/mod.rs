@@ -567,7 +567,9 @@ pub mod runtime {
                         .input_store
                         .radar_m
                         .replace((radar_m, _radar_m_instant));
-                    assert!(unique.is_none(), "flow `radar_m` changes too frequently");
+                    assert!
+                    (unique.is_none(),
+                    "flow `radar_m` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -1058,7 +1060,9 @@ pub mod runtime {
                         .input_store
                         .acc_active
                         .replace((acc_active, _acc_active_instant));
-                    assert!(unique.is_none(), "flow `acc_active` changes too frequently");
+                    assert!
+                    (unique.is_none(),
+                    "flow `acc_active` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -1173,7 +1177,9 @@ pub mod runtime {
                         .input_store
                         .speed_km_h
                         .replace((speed_km_h, _speed_km_h_instant));
-                    assert!(unique.is_none(), "flow `speed_km_h` changes too frequently");
+                    assert!
+                    (unique.is_none(),
+                    "flow `speed_km_h` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }

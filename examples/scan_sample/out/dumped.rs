@@ -382,10 +382,9 @@ pub mod runtime {
                         .input_store
                         .period_sampled_pedestrian
                         .replace(((), _period_sampled_pedestrian_instant));
-                    assert!(
-                        unique.is_none(),
-                        "flow `period_sampled_pedestrian` changes too frequently"
-                    );
+                    assert!
+                    (unique.is_none(),
+                    "flow `period_sampled_pedestrian` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -420,10 +419,9 @@ pub mod runtime {
                         .input_store
                         .period_scanned_temperature
                         .replace(((), _period_scanned_temperature_instant));
-                    assert!(
-                        unique.is_none(),
-                        "flow `period_scanned_temperature` changes too frequently"
-                    );
+                    assert!
+                    (unique.is_none(),
+                    "flow `period_scanned_temperature` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -451,10 +449,9 @@ pub mod runtime {
                         .input_store
                         .temperature
                         .replace((temperature, _temperature_instant));
-                    assert!(
-                        unique.is_none(),
-                        "flow `temperature` changes too frequently"
-                    );
+                    assert!
+                    (unique.is_none(),
+                    "flow `temperature` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -951,7 +948,9 @@ pub mod runtime {
                         .input_store
                         .pedestrian
                         .replace((pedestrian, _pedestrian_instant));
-                    assert!(unique.is_none(), "flow `pedestrian` changes too frequently");
+                    assert!
+                    (unique.is_none(),
+                    "flow `pedestrian` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
