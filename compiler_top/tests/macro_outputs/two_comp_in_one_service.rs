@@ -375,7 +375,7 @@ pub mod runtime {
                     }
                 } else {
                     let unique = self.input_store.clock.replace((clock, _clock_instant));
-                    assert!(unique.is_none(), "flow `clock` changes too frequently");
+                    assert ! (unique . is_none () , "flow `clock` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -408,7 +408,7 @@ pub mod runtime {
                     }
                 } else {
                     let unique = self.input_store.timeout_x.replace(((), _timeout_x_instant));
-                    assert!(unique.is_none(), "flow `timeout_x` changes too frequently");
+                    assert ! (unique . is_none () , "flow `timeout_x` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -457,7 +457,7 @@ pub mod runtime {
                     }
                 } else {
                     let unique = self.input_store.reset.replace((reset, _reset_instant));
-                    assert!(unique.is_none(), "flow `reset` changes too frequently");
+                    assert ! (unique . is_none () , "flow `reset` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
