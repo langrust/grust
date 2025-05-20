@@ -316,7 +316,7 @@ impl ToTokens for FlowHandler {
                 let function_name: Ident = flow_name.to_handle_fn();
                 let ty = flow_type;
                 let message = syn::LitStr::new(
-                    format!("flow `{flow_name}` changes too frequently").as_str(),
+                    format!("flow `{flow_name}` changes twice within one minimal delay of the service, consider reducing this delay").as_str(),
                     Span::call_site(),
                 );
                 quote! {
@@ -346,7 +346,7 @@ impl ToTokens for FlowHandler {
                 let instant = time_flow_name.to_instant_var();
                 let function_name: Ident = time_flow_name.to_handle_fn();
                 let message = syn::LitStr::new(
-                    format!("flow `{time_flow_name}` changes too frequently").as_str(),
+                    format!("flow `{time_flow_name}` changes twice within one minimal delay of the service, consider reducing this delay").as_str(),
                     Span::call_site(),
                 );
                 quote! {
