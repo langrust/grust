@@ -1,0 +1,21 @@
+rust_defaults {
+    name: "priority_stream_defaults",
+    defaults: ["sdv@rust_defaults"],
+    rustlibs: [
+        "libpin_project",
+        "libtokio_macros",
+        "libtokio",
+        "libfutures",
+    ],
+
+    vendor_available: true,
+    product_available: true,
+    host_supported: true,
+}
+
+rust_library {
+    name: "libpriority_stream",
+    srcs: ["src/lib.rs"],
+    defaults: ["priority_stream_defaults"],
+    crate_name: "priority_stream",
+}

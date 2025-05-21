@@ -1,0 +1,12 @@
+rust_proc_macro {
+    name: "libstream_proc_macros",
+    srcs: ["src/lib.rs"],
+    crate_name: "stream_proc_macros",
+    rustlibs: [
+        "libfutures",
+        "libpin_project",
+        "libproc_macro2",
+        "libquote"
+        "libsyn"
+    ],
+}

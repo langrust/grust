@@ -1,0 +1,22 @@
+rust_defaults {
+    name: "timer_stream_defaults",
+    defaults: ["sdv@rust_defaults"],
+    rustlibs: [
+        "libpin_project",
+        "libtokio_macros",
+        "libtokio",
+        "libfutures",
+        "librand",
+    ],
+
+    vendor_available: true,
+    product_available: true,
+    host_supported: true,
+}
+
+rust_library {
+    name: "libtimer_stream",
+    srcs: ["src/lib.rs"],
+    defaults: ["timer_stream_defaults"],
+    crate_name: "timer_stream",
+}

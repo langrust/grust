@@ -1,0 +1,27 @@
+rust_defaults {
+    name: "compiler_common_defaults",
+    defaults: ["sdv@rust_defaults"],
+    rustlibs: [
+        "librustc_hash",
+        "libquote",
+        "libsyn",
+        "libproc_macro2",
+        "liblazy_static",
+        "libserde",
+        "libjson",
+        "libstrum",
+        "libpetgraph",
+        "libonce_cell",
+        "libitertools",
+    ],
+    vendor_available: true,
+    product_available: true,
+    host_supported: true,
+}
+
+rust_library {
+    name: "libcompiler_common",
+    srcs: ["src/lib.rs"],
+    defaults: ["compiler_common_defaults"],
+    crate_name: "compiler_common",
+}
