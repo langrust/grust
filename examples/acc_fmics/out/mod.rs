@@ -541,10 +541,7 @@ pub mod runtime {
                     let x = (_radar_m_instant.duration_since(self.begin).as_millis()) as f64;
                     self.context.x.set(x);
                     if self.context.radar_m.is_new() || self.context.x.is_new() {
-                        let vel_delta = < grust :: std :: time :: derivation ::
-                        DeriveState as grust :: core :: Component > ::
-                        step(& mut self.derive, grust :: std :: time :: derivation
-                        :: DeriveInput { x : radar_m, t : x });
+                        let vel_delta = < grust :: std :: time :: derivation :: DeriveState as grust :: core :: Component > :: step (& mut self . derive , grust :: std :: time :: derivation :: DeriveInput {x : radar_m , t : x}) ;
                         self.context.vel_delta.set(vel_delta);
                     }
                     if self.context.cond.is_new()
@@ -575,9 +572,7 @@ pub mod runtime {
                         .input_store
                         .radar_m
                         .replace((radar_m, _radar_m_instant));
-                    assert!
-                    (unique.is_none(),
-                    "flow `radar_m` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert ! (unique . is_none () , "flow `radar_m` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -616,10 +611,7 @@ pub mod runtime {
                                 .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.radar_m.is_new() || self.context.x.is_new() {
-                                let vel_delta = < grust :: std :: time :: derivation ::
-                                DeriveState as grust :: core :: Component > ::
-                                step(& mut self.derive, grust :: std :: time :: derivation
-                                :: DeriveInput { x : radar_m, t : x });
+                                let vel_delta = < grust :: std :: time :: derivation :: DeriveState as grust :: core :: Component > :: step (& mut self . derive , grust :: std :: time :: derivation :: DeriveInput {x : radar_m , t : x}) ;
                                 self.context.vel_delta.set(vel_delta);
                             }
                             if self.context.cond.is_new()
@@ -667,10 +659,7 @@ pub mod runtime {
                                 .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.radar_m.is_new() || self.context.x.is_new() {
-                                let vel_delta = < grust :: std :: time :: derivation ::
-                                DeriveState as grust :: core :: Component > ::
-                                step(& mut self.derive, grust :: std :: time :: derivation
-                                :: DeriveInput { x : self.context.radar_m.get(), t : x });
+                                let vel_delta = < grust :: std :: time :: derivation :: DeriveState as grust :: core :: Component > :: step (& mut self . derive , grust :: std :: time :: derivation :: DeriveInput {x : self . context . radar_m . get () , t : x}) ;
                                 self.context.vel_delta.set(vel_delta);
                             }
                             if self.context.cond.is_new()
@@ -728,10 +717,7 @@ pub mod runtime {
                                 .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.radar_m.is_new() || self.context.x.is_new() {
-                                let vel_delta = < grust :: std :: time :: derivation ::
-                                DeriveState as grust :: core :: Component > ::
-                                step(& mut self.derive, grust :: std :: time :: derivation
-                                :: DeriveInput { x : radar_m, t : x });
+                                let vel_delta = < grust :: std :: time :: derivation :: DeriveState as grust :: core :: Component > :: step (& mut self . derive , grust :: std :: time :: derivation :: DeriveInput {x : radar_m , t : x}) ;
                                 self.context.vel_delta.set(vel_delta);
                             }
                             if self.context.cond.is_new()
@@ -772,10 +758,7 @@ pub mod runtime {
                                 .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.radar_m.is_new() || self.context.x.is_new() {
-                                let vel_delta = < grust :: std :: time :: derivation ::
-                                DeriveState as grust :: core :: Component > ::
-                                step(& mut self.derive, grust :: std :: time :: derivation
-                                :: DeriveInput { x : self.context.radar_m.get(), t : x });
+                                let vel_delta = < grust :: std :: time :: derivation :: DeriveState as grust :: core :: Component > :: step (& mut self . derive , grust :: std :: time :: derivation :: DeriveInput {x : self . context . radar_m . get () , t : x}) ;
                                 self.context.vel_delta.set(vel_delta);
                             }
                             if self.context.cond.is_new()
@@ -836,10 +819,7 @@ pub mod runtime {
                                 .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.radar_m.is_new() || self.context.x.is_new() {
-                                let vel_delta = < grust :: std :: time :: derivation ::
-                                DeriveState as grust :: core :: Component > ::
-                                step(& mut self.derive, grust :: std :: time :: derivation
-                                :: DeriveInput { x : radar_m, t : x });
+                                let vel_delta = < grust :: std :: time :: derivation :: DeriveState as grust :: core :: Component > :: step (& mut self . derive , grust :: std :: time :: derivation :: DeriveInput {x : radar_m , t : x}) ;
                                 self.context.vel_delta.set(vel_delta);
                             }
                             if self.context.cond.is_new()
@@ -896,10 +876,7 @@ pub mod runtime {
                                 .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.radar_m.is_new() || self.context.x.is_new() {
-                                let vel_delta = < grust :: std :: time :: derivation ::
-                                DeriveState as grust :: core :: Component > ::
-                                step(& mut self.derive, grust :: std :: time :: derivation
-                                :: DeriveInput { x : self.context.radar_m.get(), t : x });
+                                let vel_delta = < grust :: std :: time :: derivation :: DeriveState as grust :: core :: Component > :: step (& mut self . derive , grust :: std :: time :: derivation :: DeriveInput {x : self . context . radar_m . get () , t : x}) ;
                                 self.context.vel_delta.set(vel_delta);
                             }
                             if self.context.cond.is_new()
@@ -962,10 +939,7 @@ pub mod runtime {
                                 .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.radar_m.is_new() || self.context.x.is_new() {
-                                let vel_delta = < grust :: std :: time :: derivation ::
-                                DeriveState as grust :: core :: Component > ::
-                                step(& mut self.derive, grust :: std :: time :: derivation
-                                :: DeriveInput { x : radar_m, t : x });
+                                let vel_delta = < grust :: std :: time :: derivation :: DeriveState as grust :: core :: Component > :: step (& mut self . derive , grust :: std :: time :: derivation :: DeriveInput {x : radar_m , t : x}) ;
                                 self.context.vel_delta.set(vel_delta);
                             }
                             if self.context.cond.is_new()
@@ -1034,10 +1008,7 @@ pub mod runtime {
                     let x = (_acc_active_instant.duration_since(self.begin).as_millis()) as f64;
                     self.context.x.set(x);
                     if self.context.radar_m.is_new() || self.context.x.is_new() {
-                        let vel_delta = < grust :: std :: time :: derivation ::
-                        DeriveState as grust :: core :: Component > ::
-                        step(& mut self.derive, grust :: std :: time :: derivation
-                        :: DeriveInput { x : self.context.radar_m.get(), t : x });
+                        let vel_delta = < grust :: std :: time :: derivation :: DeriveState as grust :: core :: Component > :: step (& mut self . derive , grust :: std :: time :: derivation :: DeriveInput {x : self . context . radar_m . get () , t : x}) ;
                         self.context.vel_delta.set(vel_delta);
                     }
                     if self.context.cond.is_new()
@@ -1068,9 +1039,7 @@ pub mod runtime {
                         .input_store
                         .acc_active
                         .replace((acc_active, _acc_active_instant));
-                    assert!
-                    (unique.is_none(),
-                    "flow `acc_active` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert ! (unique . is_none () , "flow `acc_active` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -1151,10 +1120,7 @@ pub mod runtime {
                     let x = (_speed_km_h_instant.duration_since(self.begin).as_millis()) as f64;
                     self.context.x.set(x);
                     if self.context.radar_m.is_new() || self.context.x.is_new() {
-                        let vel_delta = < grust :: std :: time :: derivation ::
-                        DeriveState as grust :: core :: Component > ::
-                        step(& mut self.derive, grust :: std :: time :: derivation
-                        :: DeriveInput { x : self.context.radar_m.get(), t : x });
+                        let vel_delta = < grust :: std :: time :: derivation :: DeriveState as grust :: core :: Component > :: step (& mut self . derive , grust :: std :: time :: derivation :: DeriveInput {x : self . context . radar_m . get () , t : x}) ;
                         self.context.vel_delta.set(vel_delta);
                     }
                     if self.context.cond.is_new()
@@ -1185,9 +1151,7 @@ pub mod runtime {
                         .input_store
                         .speed_km_h
                         .replace((speed_km_h, _speed_km_h_instant));
-                    assert!
-                    (unique.is_none(),
-                    "flow `speed_km_h` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert ! (unique . is_none () , "flow `speed_km_h` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
