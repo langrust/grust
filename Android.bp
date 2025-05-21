@@ -1,0 +1,18 @@
+rust_defaults {
+    name: "grust_macro_default",
+    defaults: ["sdv@rust_defaults"],
+    prefer_rlib: true,
+    rustlibs: [
+        "libquote",
+        "libsyn",
+        "libproc_macro2",
+    ],
+    vendor: true,
+}
+
+rust_proc_macro {
+    name: "libgrust_macro",
+    srcs: ["src/lib.rs"],
+    defaults: ["grust_macro_default"],
+    crate_name: "grust_macro",
+}

@@ -1,0 +1,19 @@
+rust_defaults {
+    name: "grust_std_defaults",
+    defaults: ["sdv@rust_defaults"],
+    rustlibs: [
+        "librayon",
+        "libgrust_core",
+    ],
+
+    vendor_available: true,
+    product_available: true,
+    host_supported: true,
+}
+
+rust_library {
+    name: "libgrust_std",
+    srcs: ["src/lib.rs"],
+    defaults: ["grust_std_defaults"],
+    crate_name: "grust_std",
+}

@@ -1,0 +1,24 @@
+rust_defaults {
+    name: "greact_defaults",
+    defaults: ["sdv@rust_defaults"],
+    rustlibs: [
+        "libfutures",
+        "libpin_project",
+        "librand",
+        "libtokio",
+        "libtokio_stream",
+    ],
+    proc_macros: [
+        "libstream_proc_macros",
+    ],
+    vendor_available: true,
+    product_available: true,
+    host_supported: true,
+}
+
+rust_library {
+    name: "libgreact",
+    srcs: ["src/lib.rs"],
+    defaults: ["greact_defaults"],
+    crate_name: "greact",
+}

@@ -1,0 +1,20 @@
+rust_defaults {
+    name: "compiler_ir2_defaults",
+    defaults: ["sdv@rust_defaults"],
+    rustlibs: [
+        "libcompiler_common"
+        "libcompiler_ir0",
+        "libcompiler_ir1",
+        "librayon",
+    ],
+    vendor_available: true,
+    product_available: true,
+    host_supported: true,
+}
+
+rust_library {
+    name: "libcompiler_ir2",
+    srcs: ["src/lib.rs"],
+    defaults: ["compiler_ir2_defaults"],
+    crate_name: "compiler_ir2",
+}
