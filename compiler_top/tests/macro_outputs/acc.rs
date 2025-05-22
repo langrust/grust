@@ -223,26 +223,6 @@ impl grust::core::Component for FilteredAccState {
 pub mod runtime {
     use super::*;
     use futures::{sink::SinkExt, stream::StreamExt};
-    #[derive(PartialEq)]
-    pub enum RuntimeTimer {
-        DelayAdaptiveCruiseControl,
-        TimeoutAdaptiveCruiseControl,
-    }
-    use RuntimeTimer as T;
-    impl timer_stream::Timing for RuntimeTimer {
-        fn get_duration(&self) -> std::time::Duration {
-            match self {
-                T::DelayAdaptiveCruiseControl => std::time::Duration::from_millis(10u64),
-                T::TimeoutAdaptiveCruiseControl => std::time::Duration::from_millis(3000u64),
-            }
-        }
-        fn do_reset(&self) -> bool {
-            match self {
-                T::DelayAdaptiveCruiseControl => true,
-                T::TimeoutAdaptiveCruiseControl => true,
-            }
-        }
-    }
     pub enum RuntimeInput {
         DistanceM(f64, std::time::Instant),
         AccActive(Activation, std::time::Instant),
@@ -287,6 +267,31 @@ pub mod runtime {
         BrakesMS(f64, std::time::Instant),
     }
     use RuntimeOutput as O;
+    #[derive(Debug)]
+    pub struct RuntimeInit {
+        pub distance_m: f64,
+        pub speed_km_h: f64,
+    }
+    #[derive(PartialEq)]
+    pub enum RuntimeTimer {
+        DelayAdaptiveCruiseControl,
+        TimeoutAdaptiveCruiseControl,
+    }
+    use RuntimeTimer as T;
+    impl timer_stream::Timing for RuntimeTimer {
+        fn get_duration(&self) -> std::time::Duration {
+            match self {
+                T::DelayAdaptiveCruiseControl => std::time::Duration::from_millis(10u64),
+                T::TimeoutAdaptiveCruiseControl => std::time::Duration::from_millis(3000u64),
+            }
+        }
+        fn do_reset(&self) -> bool {
+            match self {
+                T::DelayAdaptiveCruiseControl => true,
+                T::TimeoutAdaptiveCruiseControl => true,
+            }
+        }
+    }
     pub struct Runtime {
         adaptive_cruise_control: adaptive_cruise_control_service::AdaptiveCruiseControlService,
         output: futures::channel::mpsc::Sender<O>,
@@ -321,11 +326,14 @@ pub mod runtime {
             self,
             _grust_reserved_init_instant: std::time::Instant,
             input: impl futures::Stream<Item = I>,
-            distance_m: f64,
-            speed_km_h: f64,
+            init_vals: RuntimeInit,
         ) -> Result<(), futures::channel::mpsc::SendError> {
             futures::pin_mut!(input);
             let mut runtime = self;
+            let RuntimeInit {
+                distance_m,
+                speed_km_h,
+            } = init_vals;
             runtime
                 .adaptive_cruise_control
                 .handle_init(_grust_reserved_init_instant, distance_m, speed_km_h)

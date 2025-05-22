@@ -80,7 +80,7 @@ use interface::{
     Input, Output,
 };
 use lazy_static::lazy_static;
-use para::runtime::{Runtime, RuntimeInput, RuntimeOutput, RuntimeTimer};
+use para::runtime::{Runtime, RuntimeInit, RuntimeInput, RuntimeOutput, RuntimeTimer};
 use priority_stream::prio_stream;
 use std::time::{Duration, Instant};
 use tonic::{transport::Server, Request, Response, Status, Streaming};
@@ -145,7 +145,7 @@ impl Para for ParaRuntime {
         );
 
         let para_service = Runtime::new(output_sink, timers_sink);
-        tokio::spawn(para_service.run_loop(INIT.clone(), input_stream));
+        tokio::spawn(para_service.run_loop(INIT.clone(), input_stream, RuntimeInit {}));
 
         Ok(Response::new(output_stream.map(
             from_para_service_output as fn(RuntimeOutput) -> Result<Output, Status>,

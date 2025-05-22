@@ -1,32 +1,6 @@
 pub mod runtime {
     use super::*;
     use futures::{sink::SinkExt, stream::StreamExt};
-    #[derive(PartialEq)]
-    pub enum RuntimeTimer {
-        PeriodSampledPedestrian,
-        PeriodScannedTemperature,
-        DelayScanSample,
-        TimeoutScanSample,
-    }
-    use RuntimeTimer as T;
-    impl timer_stream::Timing for RuntimeTimer {
-        fn get_duration(&self) -> std::time::Duration {
-            match self {
-                T::PeriodSampledPedestrian => std::time::Duration::from_millis(250u64),
-                T::PeriodScannedTemperature => std::time::Duration::from_millis(100u64),
-                T::DelayScanSample => std::time::Duration::from_millis(10u64),
-                T::TimeoutScanSample => std::time::Duration::from_millis(3000u64),
-            }
-        }
-        fn do_reset(&self) -> bool {
-            match self {
-                T::PeriodSampledPedestrian => false,
-                T::PeriodScannedTemperature => false,
-                T::DelayScanSample => true,
-                T::TimeoutScanSample => true,
-            }
-        }
-    }
     pub enum RuntimeInput {
         Temperature(f64, std::time::Instant),
         Pedestrian(f64, std::time::Instant),
@@ -69,6 +43,36 @@ pub mod runtime {
         SampledPedestrian(f64, std::time::Instant),
     }
     use RuntimeOutput as O;
+    #[derive(Debug)]
+    pub struct RuntimeInit {
+        pub temperature: f64,
+    }
+    #[derive(PartialEq)]
+    pub enum RuntimeTimer {
+        PeriodSampledPedestrian,
+        PeriodScannedTemperature,
+        DelayScanSample,
+        TimeoutScanSample,
+    }
+    use RuntimeTimer as T;
+    impl timer_stream::Timing for RuntimeTimer {
+        fn get_duration(&self) -> std::time::Duration {
+            match self {
+                T::PeriodSampledPedestrian => std::time::Duration::from_millis(250u64),
+                T::PeriodScannedTemperature => std::time::Duration::from_millis(100u64),
+                T::DelayScanSample => std::time::Duration::from_millis(10u64),
+                T::TimeoutScanSample => std::time::Duration::from_millis(3000u64),
+            }
+        }
+        fn do_reset(&self) -> bool {
+            match self {
+                T::PeriodSampledPedestrian => false,
+                T::PeriodScannedTemperature => false,
+                T::DelayScanSample => true,
+                T::TimeoutScanSample => true,
+            }
+        }
+    }
     pub struct Runtime {
         scan_sample: scan_sample_service::ScanSampleService,
         output: futures::channel::mpsc::Sender<O>,
@@ -100,10 +104,11 @@ pub mod runtime {
             self,
             _grust_reserved_init_instant: std::time::Instant,
             input: impl futures::Stream<Item = I>,
-            temperature: f64,
+            init_vals: RuntimeInit,
         ) -> Result<(), futures::channel::mpsc::SendError> {
             futures::pin_mut!(input);
             let mut runtime = self;
+            let RuntimeInit { temperature } = init_vals;
             runtime
                 .scan_sample
                 .handle_init(_grust_reserved_init_instant, temperature)

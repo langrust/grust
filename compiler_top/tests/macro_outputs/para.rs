@@ -189,6 +189,8 @@ pub mod runtime {
         O1(i64, std::time::Instant),
     }
     use RuntimeOutput as O;
+    #[derive(Debug)]
+    pub struct RuntimeInit {}
     pub struct Runtime {
         para_mess: para_mess_service::ParaMessService,
         output: futures::channel::mpsc::Sender<O>,
@@ -202,9 +204,11 @@ pub mod runtime {
             self,
             _grust_reserved_init_instant: std::time::Instant,
             input: impl futures::Stream<Item = I>,
+            init_vals: RuntimeInit,
         ) -> Result<(), futures::channel::mpsc::SendError> {
             futures::pin_mut!(input);
             let mut runtime = self;
+            let RuntimeInit {} = init_vals;
             runtime
                 .para_mess
                 .handle_init(_grust_reserved_init_instant)

@@ -81,26 +81,6 @@ impl grust::core::Component for ActivateState {
 pub mod runtime {
     use super::*;
     use futures::{sink::SinkExt, stream::StreamExt};
-    #[derive(PartialEq)]
-    pub enum RuntimeTimer {
-        DelayAdaptiveCruiseControl,
-        TimeoutAdaptiveCruiseControl,
-    }
-    use RuntimeTimer as T;
-    impl timer_stream::Timing for RuntimeTimer {
-        fn get_duration(&self) -> std::time::Duration {
-            match self {
-                T::DelayAdaptiveCruiseControl => std::time::Duration::from_millis(10u64),
-                T::TimeoutAdaptiveCruiseControl => std::time::Duration::from_millis(3000u64),
-            }
-        }
-        fn do_reset(&self) -> bool {
-            match self {
-                T::DelayAdaptiveCruiseControl => true,
-                T::TimeoutAdaptiveCruiseControl => true,
-            }
-        }
-    }
     pub enum RuntimeInput {
         RadarM(f64, std::time::Instant),
         AccActive(Activation, std::time::Instant),
@@ -145,6 +125,31 @@ pub mod runtime {
         BrakesMS(f64, std::time::Instant),
     }
     use RuntimeOutput as O;
+    #[derive(Debug)]
+    pub struct RuntimeInit {
+        pub radar_m: f64,
+        pub speed_km_h: f64,
+    }
+    #[derive(PartialEq)]
+    pub enum RuntimeTimer {
+        DelayAdaptiveCruiseControl,
+        TimeoutAdaptiveCruiseControl,
+    }
+    use RuntimeTimer as T;
+    impl timer_stream::Timing for RuntimeTimer {
+        fn get_duration(&self) -> std::time::Duration {
+            match self {
+                T::DelayAdaptiveCruiseControl => std::time::Duration::from_millis(10u64),
+                T::TimeoutAdaptiveCruiseControl => std::time::Duration::from_millis(3000u64),
+            }
+        }
+        fn do_reset(&self) -> bool {
+            match self {
+                T::DelayAdaptiveCruiseControl => true,
+                T::TimeoutAdaptiveCruiseControl => true,
+            }
+        }
+    }
     pub struct Runtime {
         adaptive_cruise_control: adaptive_cruise_control_service::AdaptiveCruiseControlService,
         output: futures::channel::mpsc::Sender<O>,
@@ -179,11 +184,14 @@ pub mod runtime {
             self,
             _grust_reserved_init_instant: std::time::Instant,
             input: impl futures::Stream<Item = I>,
-            radar_m: f64,
-            speed_km_h: f64,
+            init_vals: RuntimeInit,
         ) -> Result<(), futures::channel::mpsc::SendError> {
             futures::pin_mut!(input);
             let mut runtime = self;
+            let RuntimeInit {
+                radar_m,
+                speed_km_h,
+            } = init_vals;
             runtime
                 .adaptive_cruise_control
                 .handle_init(_grust_reserved_init_instant, radar_m, speed_km_h)
@@ -533,7 +541,10 @@ pub mod runtime {
                     let x = (_radar_m_instant.duration_since(self.begin).as_millis()) as f64;
                     self.context.x.set(x);
                     if self.context.radar_m.is_new() || self.context.x.is_new() {
-                        let vel_delta = < grust :: std :: time :: derivation :: DeriveState as grust :: core :: Component > :: step (& mut self . derive , grust :: std :: time :: derivation :: DeriveInput {x : radar_m , t : x}) ;
+                        let vel_delta = < grust :: std :: time :: derivation ::
+                        DeriveState as grust :: core :: Component > ::
+                        step(& mut self.derive, grust :: std :: time :: derivation
+                        :: DeriveInput { x : radar_m, t : x });
                         self.context.vel_delta.set(vel_delta);
                     }
                     if self.context.cond.is_new()
@@ -564,7 +575,9 @@ pub mod runtime {
                         .input_store
                         .radar_m
                         .replace((radar_m, _radar_m_instant));
-                    assert ! (unique . is_none () , "flow `radar_m` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert!
+                    (unique.is_none(),
+                    "flow `radar_m` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -603,7 +616,10 @@ pub mod runtime {
                                 .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.radar_m.is_new() || self.context.x.is_new() {
-                                let vel_delta = < grust :: std :: time :: derivation :: DeriveState as grust :: core :: Component > :: step (& mut self . derive , grust :: std :: time :: derivation :: DeriveInput {x : radar_m , t : x}) ;
+                                let vel_delta = < grust :: std :: time :: derivation ::
+                                DeriveState as grust :: core :: Component > ::
+                                step(& mut self.derive, grust :: std :: time :: derivation
+                                :: DeriveInput { x : radar_m, t : x });
                                 self.context.vel_delta.set(vel_delta);
                             }
                             if self.context.cond.is_new()
@@ -651,7 +667,10 @@ pub mod runtime {
                                 .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.radar_m.is_new() || self.context.x.is_new() {
-                                let vel_delta = < grust :: std :: time :: derivation :: DeriveState as grust :: core :: Component > :: step (& mut self . derive , grust :: std :: time :: derivation :: DeriveInput {x : self . context . radar_m . get () , t : x}) ;
+                                let vel_delta = < grust :: std :: time :: derivation ::
+                                DeriveState as grust :: core :: Component > ::
+                                step(& mut self.derive, grust :: std :: time :: derivation
+                                :: DeriveInput { x : self.context.radar_m.get(), t : x });
                                 self.context.vel_delta.set(vel_delta);
                             }
                             if self.context.cond.is_new()
@@ -709,7 +728,10 @@ pub mod runtime {
                                 .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.radar_m.is_new() || self.context.x.is_new() {
-                                let vel_delta = < grust :: std :: time :: derivation :: DeriveState as grust :: core :: Component > :: step (& mut self . derive , grust :: std :: time :: derivation :: DeriveInput {x : radar_m , t : x}) ;
+                                let vel_delta = < grust :: std :: time :: derivation ::
+                                DeriveState as grust :: core :: Component > ::
+                                step(& mut self.derive, grust :: std :: time :: derivation
+                                :: DeriveInput { x : radar_m, t : x });
                                 self.context.vel_delta.set(vel_delta);
                             }
                             if self.context.cond.is_new()
@@ -750,7 +772,10 @@ pub mod runtime {
                                 .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.radar_m.is_new() || self.context.x.is_new() {
-                                let vel_delta = < grust :: std :: time :: derivation :: DeriveState as grust :: core :: Component > :: step (& mut self . derive , grust :: std :: time :: derivation :: DeriveInput {x : self . context . radar_m . get () , t : x}) ;
+                                let vel_delta = < grust :: std :: time :: derivation ::
+                                DeriveState as grust :: core :: Component > ::
+                                step(& mut self.derive, grust :: std :: time :: derivation
+                                :: DeriveInput { x : self.context.radar_m.get(), t : x });
                                 self.context.vel_delta.set(vel_delta);
                             }
                             if self.context.cond.is_new()
@@ -811,7 +836,10 @@ pub mod runtime {
                                 .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.radar_m.is_new() || self.context.x.is_new() {
-                                let vel_delta = < grust :: std :: time :: derivation :: DeriveState as grust :: core :: Component > :: step (& mut self . derive , grust :: std :: time :: derivation :: DeriveInput {x : radar_m , t : x}) ;
+                                let vel_delta = < grust :: std :: time :: derivation ::
+                                DeriveState as grust :: core :: Component > ::
+                                step(& mut self.derive, grust :: std :: time :: derivation
+                                :: DeriveInput { x : radar_m, t : x });
                                 self.context.vel_delta.set(vel_delta);
                             }
                             if self.context.cond.is_new()
@@ -868,7 +896,10 @@ pub mod runtime {
                                 .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.radar_m.is_new() || self.context.x.is_new() {
-                                let vel_delta = < grust :: std :: time :: derivation :: DeriveState as grust :: core :: Component > :: step (& mut self . derive , grust :: std :: time :: derivation :: DeriveInput {x : self . context . radar_m . get () , t : x}) ;
+                                let vel_delta = < grust :: std :: time :: derivation ::
+                                DeriveState as grust :: core :: Component > ::
+                                step(& mut self.derive, grust :: std :: time :: derivation
+                                :: DeriveInput { x : self.context.radar_m.get(), t : x });
                                 self.context.vel_delta.set(vel_delta);
                             }
                             if self.context.cond.is_new()
@@ -931,7 +962,10 @@ pub mod runtime {
                                 .as_millis()) as f64;
                             self.context.x.set(x);
                             if self.context.radar_m.is_new() || self.context.x.is_new() {
-                                let vel_delta = < grust :: std :: time :: derivation :: DeriveState as grust :: core :: Component > :: step (& mut self . derive , grust :: std :: time :: derivation :: DeriveInput {x : radar_m , t : x}) ;
+                                let vel_delta = < grust :: std :: time :: derivation ::
+                                DeriveState as grust :: core :: Component > ::
+                                step(& mut self.derive, grust :: std :: time :: derivation
+                                :: DeriveInput { x : radar_m, t : x });
                                 self.context.vel_delta.set(vel_delta);
                             }
                             if self.context.cond.is_new()
@@ -1000,7 +1034,10 @@ pub mod runtime {
                     let x = (_acc_active_instant.duration_since(self.begin).as_millis()) as f64;
                     self.context.x.set(x);
                     if self.context.radar_m.is_new() || self.context.x.is_new() {
-                        let vel_delta = < grust :: std :: time :: derivation :: DeriveState as grust :: core :: Component > :: step (& mut self . derive , grust :: std :: time :: derivation :: DeriveInput {x : self . context . radar_m . get () , t : x}) ;
+                        let vel_delta = < grust :: std :: time :: derivation ::
+                        DeriveState as grust :: core :: Component > ::
+                        step(& mut self.derive, grust :: std :: time :: derivation
+                        :: DeriveInput { x : self.context.radar_m.get(), t : x });
                         self.context.vel_delta.set(vel_delta);
                     }
                     if self.context.cond.is_new()
@@ -1031,7 +1068,9 @@ pub mod runtime {
                         .input_store
                         .acc_active
                         .replace((acc_active, _acc_active_instant));
-                    assert ! (unique . is_none () , "flow `acc_active` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert!
+                    (unique.is_none(),
+                    "flow `acc_active` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -1112,7 +1151,10 @@ pub mod runtime {
                     let x = (_speed_km_h_instant.duration_since(self.begin).as_millis()) as f64;
                     self.context.x.set(x);
                     if self.context.radar_m.is_new() || self.context.x.is_new() {
-                        let vel_delta = < grust :: std :: time :: derivation :: DeriveState as grust :: core :: Component > :: step (& mut self . derive , grust :: std :: time :: derivation :: DeriveInput {x : self . context . radar_m . get () , t : x}) ;
+                        let vel_delta = < grust :: std :: time :: derivation ::
+                        DeriveState as grust :: core :: Component > ::
+                        step(& mut self.derive, grust :: std :: time :: derivation
+                        :: DeriveInput { x : self.context.radar_m.get(), t : x });
                         self.context.vel_delta.set(vel_delta);
                     }
                     if self.context.cond.is_new()
@@ -1143,7 +1185,9 @@ pub mod runtime {
                         .input_store
                         .speed_km_h
                         .replace((speed_km_h, _speed_km_h_instant));
-                    assert ! (unique . is_none () , "flow `speed_km_h` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert!
+                    (unique.is_none(),
+                    "flow `speed_km_h` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
