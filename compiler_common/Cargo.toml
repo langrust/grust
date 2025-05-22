@@ -17,7 +17,6 @@ strum = { workspace = true }
 petgraph = { workspace = true }
 once_cell = { workspace = true }
 itertools = { workspace = true }
-either = { workspace = true }
 json = { workspace = true }
 
 # codespan-reporting = "0.11.1"
