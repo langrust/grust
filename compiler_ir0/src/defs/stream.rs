@@ -59,19 +59,19 @@ mk_new! { impl InitArmWhen =>
 
 /// Pattern matching for event expression.
 #[derive(Debug, PartialEq, Clone)]
-pub struct When {
+pub struct WhenExpr {
     pub when_token: keyword::when,
     /// The optional init arm.
     pub init: Option<InitArmWhen>,
     /// The different event cases.
     pub arms: Vec<EventArmWhen>,
 }
-impl When {
+impl WhenExpr {
     pub fn loc(&self) -> Loc {
         self.pattern.loc()
     }
 }
-mk_new! { impl When =>
+mk_new! { impl WhenExpr =>
     new {
         when_token: keyword::when,
         init: Option<InitArmWhen>,
@@ -127,7 +127,7 @@ pub enum Expr {
     /// Array expression.
     Array(Array<Self>),
     /// Pattern matching expression.
-    Match(Match<Self>),
+    MatchExpr(MatchExpr<Self>),
     /// Field access expression.
     FieldAccess(FieldAccess<Self>),
     /// Tuple element access expression.
@@ -158,7 +158,7 @@ mk_new! { impl Expr =>
     Tuple: tuple(arg: Tuple<Self> = arg)
     Enumeration: enumeration(arg: Enumeration<Self> = arg)
     Array: array(arg: Array<Self> = arg)
-    Match: pat_match(arg: Match<Self> = arg)
+    MatchExpr: match_expr(arg: MatchExpr<Self> = arg)
     FieldAccess: field_access(arg: FieldAccess<Self> = arg)
     TupleElementAccess: tuple_access(arg: TupleElementAccess<Self> = arg)
     Map: map(arg: Map<Self> = arg)
@@ -187,7 +187,7 @@ impl HasLoc for Expr {
             Tuple(t) => t.loc(),
             Enumeration(e) => e.loc(),
             Array(a) => a.loc(),
-            Match(m) => m.loc(),
+            MatchExpr(m) => m.loc(),
             FieldAccess(fa) => fa.loc(),
             TupleElementAccess(ta) => ta.loc(),
             Map(m) => m.loc(),
@@ -207,7 +207,7 @@ impl Expr {
             stream::Expr::Constant { .. } | stream::Expr::Enumeration { .. } => Ok(()),
             // Not constant by default
             stream::Expr::Lambda { .. }
-            | stream::Expr::Match { .. }
+            | stream::Expr::MatchExpr { .. }
             | stream::Expr::Emit { .. }
             | stream::Expr::FieldAccess { .. }
             | stream::Expr::TupleElementAccess { .. }
@@ -266,23 +266,23 @@ pub enum ReactExpr {
     /// Stream expression.
     Expr(Expr),
     /// Pattern matching event.
-    When(When),
+    WhenExpr(WhenExpr),
 }
 mk_new! { impl ReactExpr =>
     Expr: expr(arg: Expr = arg)
-    When: when_match(arg: When = arg)
+    WhenExpr: when_expr(arg: WhenExpr = arg)
 }
 impl ReactExpr {
     pub fn loc(&self) -> Loc {
         match self {
             Self::Expr(e) => e.loc(),
-            Self::When(w) => w.loc(),
+            Self::WhenExpr(w) => w.loc(),
         }
     }
     pub fn check_is_constant(&self, table: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         match &self {
             stream::ReactExpr::Expr(expr) => expr.check_is_constant(table, errors),
-            stream::ReactExpr::When(whn) => {
+            stream::ReactExpr::WhenExpr(whn) => {
                 bad!(errors, @whn.loc() => ErrorKind::expected_constant())
             }
         }

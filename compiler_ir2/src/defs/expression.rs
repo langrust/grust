@@ -137,7 +137,7 @@ pub enum Expr {
         body: Box<Self>,
     },
     /// A match expression: `match c { Color::Blue => 1, _ => 0, }`
-    Match {
+    MatchExpr {
         /// The matched expression.
         matched: Box<Self>,
         /// The pattern matching arms.
@@ -231,7 +231,7 @@ impl Expr {
             output: Typ,
             body: Self = body.into(),
         }
-        Match: pat_match {
+        MatchExpr: match_expr {
             matched: Self = matched.into(),
             arms: Vec<(Pattern, Option<Self>, Self)>
         }
@@ -278,7 +278,7 @@ impl Expr {
             | FunctionCall { .. }
             | NodeCall { .. }
             | Lambda { .. }
-            | Match { .. }
+            | MatchExpr { .. }
             | Map { .. }
             | Fold { .. }
             | Sort { .. }
@@ -309,7 +309,7 @@ impl Expr {
             | Array { .. }
             | Tuple { .. }
             | Block { .. }
-            | Match { .. }
+            | MatchExpr { .. }
             | Map { .. }
             | Fold { .. }
             | Sort { .. }
@@ -415,7 +415,7 @@ impl ToTokens for Expr {
                 .to_tokens(tokens)
             }
             Self::IfThenElse { cnd, thn, els } => quote!(if #cnd #thn else #els).to_tokens(tokens),
-            Self::Match { matched, arms } => {
+            Self::MatchExpr { matched, arms } => {
                 let arms = arms.iter().map(|(pat, guard_opt, code)| {
                     if let Some(guard) = guard_opt.as_ref() {
                         quote!(#pat if #guard => #code)
@@ -575,7 +575,7 @@ impl ToLogicTokens for Expr {
                 let (cnd, thn, els) = (cnd.to_logic(), thn.to_logic(), els.to_logic());
                 quote!(if #cnd #thn else #els).to_tokens(tokens)
             }
-            Self::Match { matched, arms } => {
+            Self::MatchExpr { matched, arms } => {
                 let matched = matched.to_logic();
                 let arms = arms.iter().map(|(pat, guard_opt, code)| {
                     let code = code.to_logic();
@@ -861,7 +861,7 @@ mod test {
 
     #[test]
     fn should_create_rust_ast_match_from_ir2_match() {
-        let expression = Expr::pat_match(
+        let expression = Expr::match_expr(
             Expr::test_ident("my_color"),
             vec![
                 (

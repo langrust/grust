@@ -891,7 +891,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Eq {
     /// Post-condition: construct [ir1] equation and check identifiers good use.
     fn into_ir1(self, ctx: &mut ctx::Simple) -> TRes<Self::Ir1> {
         use ir0::{
-            equation::{Arm, Eq, Instantiation, Match},
+            equation::{Arm, Eq, Instantiation, MatchEq},
             stmt::LetDecl,
         };
         let loc = self.loc();
@@ -911,7 +911,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Eq {
                 let pattern = pattern.into_ir1(&mut ctx.add_loc(loc))?;
                 Ok(ir1::Stmt { pattern, expr, loc })
             }
-            Eq::Match(Match { expr, arms, .. }) => {
+            Eq::MatchEq(MatchEq { expr, arms, .. }) => {
                 // create the receiving pattern for the equation
                 let pattern = {
                     let mut elements = res_vec!(
@@ -1032,7 +1032,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
     /// Post-condition: construct [ir1] equation and check identifiers good use.
     fn into_ir1(self, ctx: &mut ctx::Simple) -> TRes<Self::Ir1> {
         use ir0::{
-            equation::{Arm, EventArmWhen, Instantiation, MatchWhen},
+            equation::{Arm, EventArmWhen, Instantiation, WhenEq},
             stmt::LetDecl,
             ReactEq,
         };
@@ -1056,7 +1056,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                     Some(stream::Stmt { pattern, expr, loc }),
                 )))
             }
-            ReactEq::Match(ir0::equation::Match { expr, arms, .. }) => {
+            ReactEq::MatchEq(ir0::equation::MatchEq { expr, arms, .. }) => {
                 // create the receiving pattern for the equation
                 let pattern = {
                     let mut elements = res_vec!(
@@ -1172,7 +1172,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                     Some(stream::Stmt { pattern, expr, loc }),
                 )))
             }
-            ReactEq::MatchWhen(MatchWhen { init, arms, .. }) => {
+            ReactEq::WhenEq(WhenEq { init, arms, .. }) => {
                 // create the pattern defined by the equation
                 let def_eq_pat = {
                     let mut elements: Vec<_> = defined_signals.into_values().collect();
@@ -1569,7 +1569,7 @@ mod simple_expr_impl {
         }
     }
 
-    impl<'a, E> Ir0IntoIr1<ir1::ctx::PatLoc<'a>> for Match<E>
+    impl<'a, E> Ir0IntoIr1<ir1::ctx::PatLoc<'a>> for MatchExpr<E>
     where
         E: Ir0IntoIr1<ir1::ctx::PatLoc<'a>>,
     {
@@ -1769,7 +1769,7 @@ mod simple_expr_impl {
                 Tuple(e) => e.into_ir1(ctx)?,
                 Enumeration(e) => e.into_ir1(ctx)?,
                 Array(e) => e.into_ir1(ctx)?,
-                Match(e) => e.into_ir1(ctx)?,
+                MatchExpr(e) => e.into_ir1(ctx)?,
                 FieldAccess(e) => e.into_ir1(ctx)?,
                 TupleElementAccess(e) => e.into_ir1(ctx)?,
                 ArrayAccess(e) => e.into_ir1(ctx)?,
@@ -2053,7 +2053,7 @@ mod stream_impl {
         itertools::Itertools,
     }
 
-    impl Ir0IntoIr1<ir1::ctx::PatLoc<'_>> for stream::When {
+    impl Ir0IntoIr1<ir1::ctx::PatLoc<'_>> for stream::WhenExpr {
         /// Reactive expressions `when` can contain initializations that are
         /// also part of their [ir1] representation, along the [ir1::stream::Kind].
         type Ir1 = (Option<ir1::stream::InitStmt>, ir1::stream::Kind);
@@ -2062,7 +2062,7 @@ mod stream_impl {
         fn into_ir1(self, ctx: &mut ir1::ctx::PatLoc) -> TRes<Self::Ir1> {
             // pre-condition: identifiers are stored in symbol table
             // post-condition: construct [ir1] expression kind and check identifiers good use
-            let stream::When {
+            let stream::WhenExpr {
                 init,
                 arms,
                 when_token,
@@ -2297,7 +2297,7 @@ mod stream_impl {
                 stream::Expr::Tuple(expr) => Kind::expr(expr.into_ir1(ctx)?),
                 stream::Expr::Enumeration(expr) => Kind::expr(expr.into_ir1(ctx)?),
                 stream::Expr::Array(expr) => Kind::expr(expr.into_ir1(ctx)?),
-                stream::Expr::Match(expr) => Kind::expr(expr.into_ir1(ctx)?),
+                stream::Expr::MatchExpr(expr) => Kind::expr(expr.into_ir1(ctx)?),
                 stream::Expr::FieldAccess(expr) => Kind::expr(expr.into_ir1(ctx)?),
                 stream::Expr::TupleElementAccess(expr) => Kind::expr(expr.into_ir1(ctx)?),
                 stream::Expr::Map(expr) => Kind::expr(expr.into_ir1(ctx)?),
@@ -2324,7 +2324,7 @@ mod stream_impl {
         fn into_ir1(self, ctx: &mut ir1::ctx::PatLoc) -> TRes<Self::Ir1> {
             match self {
                 stream::ReactExpr::Expr(expr) => Ok((None, expr.into_ir1(ctx)?)),
-                stream::ReactExpr::When(expr) => {
+                stream::ReactExpr::WhenExpr(expr) => {
                     let (opt_init, kind) = expr.into_ir1(ctx)?;
                     Ok((
                         opt_init,

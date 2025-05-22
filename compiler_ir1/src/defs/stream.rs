@@ -16,7 +16,7 @@ impl Stmt {
     pub fn get_identifiers(&self) -> Vec<usize> {
         let mut identifiers = match &self.expr.kind {
             stream::Kind::Expression { expr } => match expr {
-                expr::Kind::Match { arms, .. } => arms
+                expr::Kind::MatchExpr { arms, .. } => arms
                     .iter()
                     .flat_map(|(pattern, _, statements, _)| {
                         statements
@@ -140,7 +140,7 @@ impl Stmt {
         }
         match &self.expr.kind {
             stream::Kind::Expression { expr } => match expr {
-                ir1::expr::Kind::Match { arms, .. } => {
+                ir1::expr::Kind::MatchExpr { arms, .. } => {
                     arms.iter().for_each(|(_, bound, statements, _)| {
                         if let Some(bound) = bound {
                             for from in signals.iter() {
@@ -347,7 +347,7 @@ impl InitStmt {
     pub fn get_identifiers(&self) -> Vec<usize> {
         let mut identifiers = match &self.expr.kind {
             stream::Kind::Expression { expr } => match expr {
-                expr::Kind::Match { arms, .. } => arms
+                expr::Kind::MatchExpr { arms, .. } => arms
                     .iter()
                     .flat_map(|(pattern, _, statements, _)| {
                         statements
@@ -424,7 +424,7 @@ impl ExprKind {
                     expr.memorize(identifier_creator, memory, ctx)?;
                 }
             }
-            Self::Match { expr, arms } => {
+            Self::MatchExpr { expr, arms } => {
                 expr.memorize(identifier_creator, memory, ctx)?;
                 for (_, option, block, expr) in arms.iter_mut() {
                     if let Some(expr) = option.as_mut() {
@@ -595,7 +595,7 @@ impl ExprKind {
 
                 (new_stmts, new_inits)
             }
-            Self::Match { expr, arms, .. } => {
+            Self::MatchExpr { expr, arms, .. } => {
                 let (mut new_stmts, mut new_inits) =
                     expr.normal_form(nodes_reduced_graphs, identifier_creator, ctx);
                 let mut expr_dependencies = expr.get_dependencies().clone();
@@ -819,7 +819,7 @@ impl ExprKind {
                 );
                 None
             }
-            Self::Match {
+            Self::MatchExpr {
                 ref mut expr,
                 ref mut arms,
                 ..

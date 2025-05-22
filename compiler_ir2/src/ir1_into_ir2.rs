@@ -415,7 +415,7 @@ where
                     .map(|element| element.into_ir2(ctx))
                     .collect(),
             },
-            Self::Match { expr, arms, .. } => Expr::Match {
+            Self::MatchExpr { expr, arms, .. } => Expr::MatchExpr {
                 matched: Box::new(expr.into_ir2(ctx)),
                 arms: arms
                     .into_iter()
