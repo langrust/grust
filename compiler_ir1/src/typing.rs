@@ -766,7 +766,7 @@ impl<E: Typing> expr::Kind<E> {
             expr::Kind::Structure { id, fields } => typing.structure(*id, fields),
             expr::Kind::Array { elements } => typing.array(elements),
             expr::Kind::Tuple { elements } => typing.tuple(elements),
-            expr::Kind::Match { expr, arms } => typing.matching(expr.as_mut(), arms),
+            expr::Kind::MatchExpr { expr, arms } => typing.matching(expr.as_mut(), arms),
             expr::Kind::FieldAccess { expr, field } => typing.field_access(expr.as_mut(), field),
             expr::Kind::Map { expr, fun } => typing.map(expr.as_mut(), fun.as_mut()),
             expr::Kind::Fold { array, init, fun } => {

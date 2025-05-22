@@ -181,7 +181,7 @@ mod equation {
                     .typed_pattern
                     .store(true, symbol_table, errors)
                     .map(|idents| signals.extend(idents)),
-                Eq::Match(Match { arms, .. }) => {
+                Eq::MatchEq(MatchEq { arms, .. }) => {
                     let Arm { equations, .. } = arms.first().unwrap();
                     for eq in equations.iter() {
                         eq.store_signals(store_outputs, signals, symbol_table, errors)?;
@@ -215,7 +215,7 @@ mod equation {
                     .typed_pattern
                     .get_signals(symbol_table, errors)
                     .map(|idents| signals.extend(idents)),
-                Eq::Match(Match { arms, .. }) => {
+                Eq::MatchEq(MatchEq { arms, .. }) => {
                     let Arm { equations, .. } = arms.first().unwrap();
                     for eq in equations {
                         eq.get_signals(signals, symbol_table, errors)?;
@@ -283,14 +283,14 @@ mod equation {
                     .typed_pattern
                     .store(true, symbol_table, errors)
                     .map(|idents| signals.extend(idents)),
-                ReactEq::Match(Match { arms, .. }) => {
+                ReactEq::MatchEq(MatchEq { arms, .. }) => {
                     let Arm { equations, .. } = arms.first().unwrap();
                     for eq in equations.iter() {
                         eq.store_signals(store_outputs, signals, symbol_table, errors)?;
                     }
                     Ok(())
                 }
-                ReactEq::MatchWhen(MatchWhen { arms, .. }) => {
+                ReactEq::WhenEq(WhenEq { arms, .. }) => {
                     // we want to collect every identifier, but events might be declared in only one
                     // branch then, it is needed to explore all branches
                     let mut when_signals = HashMap::new();
@@ -339,8 +339,9 @@ mod equation {
                     .store_inits(symbol_table, errors)
                     .map(|idents| inits.extend(idents)),
                 ReactEq::OutputDef(instantiation) => {
-                    if let ir0::stream::ReactExpr::When(ir0::stream::When {
-                        init: Some(_), ..
+                    if let ir0::stream::ReactExpr::WhenExpr(ir0::stream::WhenExpr {
+                        init: Some(_),
+                        ..
                     }) = instantiation.expr
                     {
                         instantiation
@@ -351,8 +352,9 @@ mod equation {
                     Ok(())
                 }
                 ReactEq::LocalDef(declaration) => {
-                    if let ir0::stream::ReactExpr::When(ir0::stream::When {
-                        init: Some(_), ..
+                    if let ir0::stream::ReactExpr::WhenExpr(ir0::stream::WhenExpr {
+                        init: Some(_),
+                        ..
                     }) = declaration.expr
                     {
                         declaration
@@ -362,8 +364,8 @@ mod equation {
                     }
                     Ok(())
                 }
-                ReactEq::Match(_) | ReactEq::Log(_) => Ok(()),
-                ReactEq::MatchWhen(MatchWhen { init, .. }) => {
+                ReactEq::MatchEq(_) | ReactEq::Log(_) => Ok(()),
+                ReactEq::WhenEq(WhenEq { init, .. }) => {
                     // store initializations
                     if let Some(init) = init {
                         init.store_inits(inits, symbol_table, errors)?;
@@ -388,14 +390,14 @@ mod equation {
                     .typed_pattern
                     .get_signals(symbol_table, errors)
                     .map(|idents| signals.extend(idents)),
-                ReactEq::Match(Match { arms, .. }) => {
+                ReactEq::MatchEq(MatchEq { arms, .. }) => {
                     let Arm { equations, .. } = arms.first().unwrap();
                     for eq in equations {
                         eq.get_signals(signals, symbol_table, errors)?;
                     }
                     Ok(())
                 }
-                ReactEq::MatchWhen(MatchWhen { arms, .. }) => {
+                ReactEq::WhenEq(WhenEq { arms, .. }) => {
                     let mut add_signals = |equations: &Vec<Eq>| {
                         // we want to collect every identifier, but events might be declared in only
                         // one branch then, it is needed to explore all branches
@@ -422,9 +424,9 @@ mod equation {
             match self {
                 ReactEq::OutputDef(_)
                 | ReactEq::LocalDef(_)
-                | ReactEq::Match(_)
+                | ReactEq::MatchEq(_)
                 | ReactEq::Log(_) => Ok(()),
-                ReactEq::MatchWhen(MatchWhen { init, .. }) => {
+                ReactEq::WhenEq(WhenEq { init, .. }) => {
                     if let Some(init) = init {
                         init.get_inits(inits, symbol_table, errors)
                     } else {

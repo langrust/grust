@@ -830,7 +830,7 @@ impl ComponentBody {
         self.statements.iter_mut().for_each(|statement| {
             match &mut statement.expr.kind {
                 stream::Kind::Expression { expr } => match expr {
-                    ir1::expr::Kind::Match { arms, .. } => arms
+                    ir1::expr::Kind::MatchExpr { arms, .. } => arms
                         .iter_mut()
                         .for_each(|(_, _, statements, _)| statements.sort_by_key(compare)),
                     _ => (),

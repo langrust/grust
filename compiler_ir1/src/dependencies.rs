@@ -380,7 +380,7 @@ impl stream::ExprKind {
             Self::Tuple { elements } => elements
                 .iter()
                 .for_each(|expression| expression.get_called_nodes(target)),
-            Self::Match { expr, arms } => {
+            Self::MatchExpr { expr, arms } => {
                 expr.get_called_nodes(target);
                 for (_, bound, body, expr) in arms.iter() {
                     for stmt in body.iter() {
@@ -442,7 +442,7 @@ impl stream::ExprKind {
             Structure { fields, .. } => Self::structure_deps(ctx, fields),
             Array { elements } => Self::array_deps(ctx, elements),
             Tuple { elements } => Self::tuple_deps(ctx, elements),
-            Match { expr, arms } => Self::match_deps(ctx, expr, arms),
+            MatchExpr { expr, arms } => Self::match_deps(ctx, expr, arms),
             FieldAccess { expr, .. } => Self::field_access_deps(ctx, expr),
             TupleElementAccess { expr, .. } => Self::tuple_access_deps(ctx, expr),
             ArrayAccess { expr, .. } => Self::array_access_deps(ctx, expr),

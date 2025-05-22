@@ -944,12 +944,12 @@ mod parse_stream {
         }
     }
 
-    impl When {
+    impl WhenExpr {
         pub fn peek(input: ParseStream) -> bool {
             input.peek(keyword::when)
         }
     }
-    impl Parse for When {
+    impl Parse for WhenExpr {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let when_token: keyword::when = input.parse()?;
             let content;
@@ -963,7 +963,7 @@ mod parse_stream {
                 }
             };
             let arms: Punctuated<EventArmWhen, Token![,]> = Punctuated::parse_terminated(&content)?;
-            Ok(When::new(when_token, init, arms.into_iter().collect()))
+            Ok(WhenExpr::new(when_token, init, arms.into_iter().collect()))
         }
     }
 
@@ -995,8 +995,8 @@ mod parse_stream {
                 Self::UnOp(input.parse()?)
             } else if expr::Zip::<Self>::peek(input) {
                 Self::Zip(input.parse()?)
-            } else if expr::Match::<Self>::peek(input) {
-                Self::Match(input.parse()?)
+            } else if expr::MatchExpr::<Self>::peek(input) {
+                Self::MatchExpr(input.parse()?)
             } else if expr::Tuple::<Self>::peek(input) {
                 let mut tuple: expr::Tuple<Self> = input.parse()?;
                 if tuple.elements.len() == 1 {
@@ -1105,7 +1105,7 @@ mod parse_stream {
                 Self::IfThenElse(input.parse()?)
             } else if stream::Emit::peek(input) {
                 Self::Emit(input.parse()?)
-            } else if stream::When::peek(input) {
+            } else if stream::WhenExpr::peek(input) {
                 return Err(input.error("'when' should be a root expression"));
             } else {
                 Self::parse_prec4(input)?
@@ -1116,8 +1116,8 @@ mod parse_stream {
 
     impl Parse for ReactExpr {
         fn parse(input: ParseStream) -> syn::Res<Self> {
-            let expression = if When::peek(input) {
-                Self::when_match(input.parse()?)
+            let expression = if WhenExpr::peek(input) {
+                Self::when_expr(input.parse()?)
             } else {
                 Self::expr(input.parse()?)
             };
@@ -1660,7 +1660,7 @@ mod parse_expr {
         }
     }
 
-    impl<E> Match<E>
+    impl<E> MatchExpr<E>
     where
         E: Parse,
     {
@@ -1668,18 +1668,18 @@ mod parse_expr {
             input.peek(Token![match])
         }
     }
-    impl<E> Parse for Match<E>
+    impl<E> Parse for MatchExpr<E>
     where
         E: Parse,
     {
         fn parse(input: ParseStream) -> syn::Res<Self> {
-            let m4tch: Token![match] = input.parse()?;
+            let match_token: Token![match] = input.parse()?;
             let expr: E = input.parse()?;
             let content;
             let braces = braced!(content in input);
             let arms: Punctuated<Arm<E>, Token![,]> = Punctuated::parse_terminated(&content)?;
-            Ok(Match::new(
-                Loc::from(m4tch.span).join(braces.span.join()),
+            Ok(MatchExpr::new(
+                Loc::from(match_token.span).join(braces.span.join()),
                 expr,
                 arms.into_iter().collect(),
             ))
@@ -1952,8 +1952,8 @@ mod parse_expr {
                 Self::unop(input.parse()?)
             } else if Zip::<Self>::peek(input) {
                 Self::zip(input.parse()?)
-            } else if Match::<Self>::peek(input) {
-                Self::pat_match(input.parse()?)
+            } else if MatchExpr::<Self>::peek(input) {
+                Self::match_expr(input.parse()?)
             } else if Tuple::<Self>::peek(input) {
                 let mut tuple: Tuple<Self> = input.parse()?;
                 if tuple.elements.len() == 1 {
@@ -2109,7 +2109,7 @@ mod parse_equation {
         }
     }
 
-    impl Parse for Match {
+    impl Parse for MatchEq {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let match_token = input.parse()?;
             let expr = input.parse()?;
@@ -2117,14 +2117,14 @@ mod parse_equation {
             let brace = braced!(content in input);
             let arms: Punctuated<Arm, Token![,]> = Punctuated::parse_terminated(&content)?;
 
-            Ok(Match::new(match_token, expr, brace, arms))
+            Ok(MatchEq::new(match_token, expr, brace, arms))
         }
     }
 
     impl Parse for Eq {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             if input.peek(Token![match]) {
-                Ok(Eq::pat_match(input.parse()?))
+                Ok(Eq::match_eq(input.parse()?))
             } else if input.peek(Token![let]) {
                 Ok(Eq::local_def(input.parse()?))
             } else {
@@ -2235,7 +2235,7 @@ mod parse_equation {
         }
     }
 
-    impl Parse for MatchWhen {
+    impl Parse for WhenEq {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let when_token = input.parse()?;
             let content;
@@ -2252,7 +2252,7 @@ mod parse_equation {
             while !content.is_empty() {
                 arms.push(content.parse()?);
             }
-            Ok(MatchWhen::new(when_token, brace, init, arms))
+            Ok(WhenEq::new(when_token, brace, init, arms))
         }
     }
 
@@ -2272,9 +2272,9 @@ mod parse_equation {
     impl Parse for ReactEq {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             if input.peek(Token![match]) {
-                Ok(ReactEq::pat_match(input.parse()?))
+                Ok(ReactEq::match_eq(input.parse()?))
             } else if input.peek(keyword::when) {
-                Ok(ReactEq::match_when(input.parse()?))
+                Ok(ReactEq::when_eq(input.parse()?))
             } else if input.peek(Token![let]) {
                 Ok(ReactEq::local_def(input.parse()?))
             } else if input.peek(keyword::init) {
@@ -2646,7 +2646,7 @@ mod parsing_tests {
     #[cfg(test)]
     mod parse_stream {
         prelude! {
-            stream::{Expr, ReactExpr, Last, Emit, When},
+            stream::{Expr, ReactExpr, Last, Emit, WhenExpr},
             expr::*,
         }
 
@@ -2796,7 +2796,7 @@ mod parsing_tests {
                     _ => 1,
                 }
             };
-            let control = ReactExpr::expr(Expr::pat_match(Match::new(
+            let control = ReactExpr::expr(Expr::match_expr(MatchExpr::new(
                 Loc::test_dummy(),
                 Expr::test_ident("a"),
                 vec![
@@ -2925,7 +2925,7 @@ mod parsing_tests {
         #[test]
         fn should_parse_when() {
             let expression: ReactExpr = syn::parse_quote! { when {let d = p? => emit x} };
-            let control = ReactExpr::when_match(When::new(
+            let control = ReactExpr::when_expr(WhenExpr::new(
                 Default::default(),
                 None,
                 vec![stream::EventArmWhen::new(
@@ -2950,7 +2950,7 @@ mod parsing_tests {
         #[test]
         fn should_parse_when_with_guard() {
             let expression: ReactExpr = syn::parse_quote! { when {p? if p > 0 => emit x} };
-            let control = ReactExpr::when_match(When::new(
+            let control = ReactExpr::when_expr(WhenExpr::new(
                 Default::default(),
                 None,
                 vec![stream::EventArmWhen::new(
@@ -2985,7 +2985,7 @@ mod parsing_tests {
                     p? if p > 0 => p
                 }
             };
-            let control = ReactExpr::when_match(When::new(
+            let control = ReactExpr::when_expr(WhenExpr::new(
                 Default::default(),
                 Some(stream::InitArmWhen::new(
                     Default::default(),
@@ -3273,7 +3273,7 @@ mod parsing_tests {
                     _ => 1,
                 }
             };
-            let control = Expr::pat_match(Match::new(
+            let control = Expr::match_expr(MatchExpr::new(
                 Loc::test_dummy(),
                 Expr::test_ident("a"),
                 vec![

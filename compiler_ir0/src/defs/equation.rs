@@ -49,7 +49,7 @@ mk_new! { impl Arm =>
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Match {
+pub struct MatchEq {
     pub match_token: Token![match],
     /// The stream expression defining the signals.
     pub expr: stream::Expr,
@@ -57,12 +57,12 @@ pub struct Match {
     /// The different matching cases.
     pub arms: syn::Punctuated<Arm, Token![,]>,
 }
-impl HasLoc for Match {
+impl HasLoc for MatchEq {
     fn loc(&self) -> Loc {
         Loc::from(self.match_token.span).join(self.brace_token.span.join())
     }
 }
-mk_new! { impl Match =>
+mk_new! { impl MatchEq =>
     new {
         match_token: Token![match],
         expr: stream::Expr,
@@ -76,21 +76,21 @@ mk_new! { impl Match =>
 pub enum Eq {
     LocalDef(LetDecl<stream::Expr>),
     OutputDef(Instantiation<stream::Expr>),
-    Match(Match),
+    MatchEq(MatchEq),
 }
 impl HasLoc for Eq {
     fn loc(&self) -> Loc {
         match self {
             Self::LocalDef(ld) => ld.loc(),
             Self::OutputDef(od) => od.loc(),
-            Self::Match(m) => m.loc(),
+            Self::MatchEq(m) => m.loc(),
         }
     }
 }
 mk_new! { impl Eq =>
     LocalDef: local_def(e: LetDecl<stream::Expr> = e)
     OutputDef: out_def(i: Instantiation<stream::Expr> = i)
-    Match: pat_match(m : Match = m)
+    MatchEq: match_eq(m : MatchEq = m)
 }
 
 #[derive(PartialEq, Clone)]
@@ -204,7 +204,7 @@ mk_new! { impl InitArmWhen =>
 }
 
 #[derive(Debug, PartialEq)]
-pub struct MatchWhen {
+pub struct WhenEq {
     pub when_token: keyword::when,
     pub brace_token: syn::token::Brace,
     /// The optional init arm.
@@ -212,12 +212,12 @@ pub struct MatchWhen {
     /// The different event cases.
     pub arms: Vec<EventArmWhen>,
 }
-impl HasLoc for MatchWhen {
+impl HasLoc for WhenEq {
     fn loc(&self) -> Loc {
         Loc::from(self.when_token.span).join(self.brace_token.span.join())
     }
 }
-mk_new! { impl MatchWhen =>
+mk_new! { impl WhenEq =>
     new {
         when_token: keyword::when,
         brace_token: syn::token::Brace,
@@ -256,8 +256,8 @@ mk_new! { impl InitSignal =>
 pub enum ReactEq {
     LocalDef(LetDecl<stream::ReactExpr>),
     OutputDef(Instantiation<stream::ReactExpr>),
-    MatchWhen(MatchWhen),
-    Match(Match),
+    WhenEq(WhenEq),
+    MatchEq(MatchEq),
     Init(InitSignal),
     Log(LogStmt),
 }
@@ -266,8 +266,8 @@ impl HasLoc for ReactEq {
         match self {
             Self::LocalDef(ld) => ld.loc(),
             Self::OutputDef(od) => od.loc(),
-            Self::MatchWhen(mw) => mw.loc(),
-            Self::Match(m) => m.loc(),
+            Self::WhenEq(mw) => mw.loc(),
+            Self::MatchEq(m) => m.loc(),
             Self::Init(i) => i.loc(),
             Self::Log(log) => log.loc(),
         }
@@ -276,8 +276,8 @@ impl HasLoc for ReactEq {
 mk_new! { impl ReactEq =>
     LocalDef: local_def(e: LetDecl<stream::ReactExpr> = e)
     OutputDef: out_def(i: Instantiation<stream::ReactExpr> = i)
-    MatchWhen: match_when(m : MatchWhen = m)
-    Match: pat_match(m : Match = m)
+    WhenEq: when_eq(m : WhenEq = m)
+    MatchEq: match_eq(m : MatchEq = m)
     Init: init(i: InitSignal = i)
     Log: log(l : LogStmt = l)
 }

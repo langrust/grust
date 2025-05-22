@@ -83,7 +83,7 @@ pub enum Kind<E> {
         elements: Vec<E>,
     },
     /// Pattern matching expression.
-    Match {
+    MatchExpr {
         /// The expression to match.
         expr: Box<E>,
         /// The different matching cases.
@@ -176,7 +176,7 @@ mk_new! { impl{E} Kind<E> =>
     }
     Array: array { elements: Vec<E> }
     Tuple: tuple { elements: Vec<E> }
-    Match: match_expr {
+    MatchExpr: match_expr {
         expr: E = expr.into(),
         arms: Vec<(ir1::Pattern, Option<E>, Vec<ir1::Stmt<E>>, E)>,
     }
@@ -231,7 +231,7 @@ where
             Structure { fields, .. } => w8!(sum fields, |(_, e)| e.weight(wb, ctx)) + weight::lo,
             Enumeration { .. } => weight::zero,
             Array { elements } | Tuple { elements } => w8!(wb, ctx => sum elements) + weight::mid,
-            Match { expr, arms } => {
+            MatchExpr { expr, arms } => {
                 expr.weight(wb, ctx)
                     + arms
                         .iter()
@@ -292,7 +292,7 @@ impl<E> Kind<E> {
             Kind::Array { elements } | Kind::Tuple { elements } => {
                 elements.iter().all(|expression| expr_pred(expression))
             }
-            Kind::Match { expr, arms } => {
+            Kind::MatchExpr { expr, arms } => {
                 expr_pred(expr)
                     && arms.iter().all(|(_, option, body, expr)| {
                         body.iter().all(|statement| stmt_pred(statement))

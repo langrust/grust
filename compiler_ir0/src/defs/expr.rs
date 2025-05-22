@@ -361,7 +361,7 @@ impl<E> Arm<E> {
 
 /// Pattern matching expression.
 #[derive(Debug, PartialEq, Clone)]
-pub struct Match<E> {
+pub struct MatchExpr<E> {
     /// Location.
     pub loc: Loc,
     /// The expression to match.
@@ -369,12 +369,12 @@ pub struct Match<E> {
     /// The different matching cases.
     pub arms: Vec<Arm<E>>,
 }
-impl<E> HasLoc for Match<E> {
+impl<E> HasLoc for MatchExpr<E> {
     fn loc(&self) -> Loc {
         self.loc
     }
 }
-mk_new! { impl{E} Match<E> =>
+mk_new! { impl{E} MatchExpr<E> =>
     new {
         loc: impl Into<Loc> = loc.into(),
         expr: impl Into<Box<E>> = expr.into(),
@@ -567,7 +567,7 @@ pub enum Expr {
     /// Array expression.
     Array(Array<Self>),
     /// Pattern matching expression.
-    Match(Match<Self>),
+    MatchExpr(MatchExpr<Self>),
     /// Field access expression.
     FieldAccess(FieldAccess<Self>),
     /// Tuple element access expression.
@@ -599,7 +599,7 @@ impl HasLoc for Expr {
             Tuple(t) => t.loc(),
             Enumeration(e) => e.loc(),
             Array(a) => a.loc(),
-            Match(m) => m.loc(),
+            MatchExpr(m) => m.loc(),
             FieldAccess(fa) => fa.loc(),
             TupleElementAccess(ta) => ta.loc(),
             ArrayAccess(aa) => aa.loc(),
@@ -627,7 +627,7 @@ mk_new! { impl Expr =>
     Tuple: tuple (val: Tuple<Self> = val)
     Enumeration: enumeration (val: Enumeration<Self> = val)
     Array: array (val: Array<Self> = val)
-    Match: pat_match (val: Match<Self> = val)
+    MatchExpr: match_expr (val: MatchExpr<Self> = val)
     FieldAccess: field_access (val: FieldAccess<Self> = val)
     TupleElementAccess: tuple_access (val: TupleElementAccess<Self> = val)
     ArrayAccess: array_access (val: ArrayAccess<Self> = val)
