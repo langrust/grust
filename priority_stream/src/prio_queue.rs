@@ -15,7 +15,7 @@ where
     /// Create empty queue.
     pub fn new(order: F) -> Self {
         PrioQueue {
-            queue: array_init::array_init(|_| None),
+            queue: std::array::from_fn(|_| None),
             order,
             len: 0,
         }
