@@ -11,7 +11,7 @@ mod para {
     use grust::grust;
 
     grust! {
-        #![para, mode = test]
+        #![service_para, mode = test]
         import event e0: int;
         export signal o1: int;
 

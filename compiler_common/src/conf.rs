@@ -166,9 +166,9 @@ build_conf! {
         propagation: Propagation = Propagation::default() =>
             /// Item for the `propagation` configuration value.
             Propagation,
-        para: bool = false =>
-            /// Item for the `para` configuration value.
-            Para,
+        service_para: bool = false =>
+            /// Item for the `service_para` configuration value.
+            ServicePara,
         component_para: ComponentPara = ComponentPara::default() =>
             /// Item for the `component_para` configuration value.
             ComponentPara,
@@ -251,7 +251,7 @@ mod parsing {
                     let val: usize = val.base10_parse()?;
                     Self::StatsDepth(span, val)
                 }
-                "para" => Self::Para(span, true),
+                "service_para" => Self::ServicePara(span, true),
                 "align" => Self::AlignMem(span, true),
                 "public" => {
                     let _: Token![=] = input.parse()?;
