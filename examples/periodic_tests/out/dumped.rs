@@ -20,20 +20,20 @@ impl grust::core::Component for ScanOnState {
         scanned
     }
 }
-pub struct SampledOnInput {
+pub struct SampleOnInput {
     pub input: Option<i64>,
     pub ck: Option<f64>,
 }
-pub struct SampledOnState {
+pub struct SampleOnState {
     last_mem: i64,
 }
-impl grust::core::Component for SampledOnState {
-    type Input = SampledOnInput;
+impl grust::core::Component for SampleOnState {
+    type Input = SampleOnInput;
     type Output = Option<i64>;
-    fn init() -> SampledOnState {
-        SampledOnState { last_mem: 0i64 }
+    fn init() -> SampleOnState {
+        SampleOnState { last_mem: 0i64 }
     }
-    fn step(&mut self, input: SampledOnInput) -> Option<i64> {
+    fn step(&mut self, input: SampleOnInput) -> Option<i64> {
         let mem = match (input.input) {
             (Some(input)) => input,
             (_) => self.last_mem,
@@ -292,7 +292,7 @@ pub mod runtime {
             delayed: bool,
             input_store: TestServiceStore,
             scan_on: ScanOnState,
-            sampled_on: SampledOnState,
+            sample_on: SampleOnState,
             output: futures::channel::mpsc::Sender<O>,
             timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
         }
@@ -305,14 +305,14 @@ pub mod runtime {
                 let delayed = true;
                 let input_store = Default::default();
                 let scan_on = <ScanOnState as grust::core::Component>::init();
-                let sampled_on = <SampledOnState as grust::core::Component>::init();
+                let sample_on = <SampleOnState as grust::core::Component>::init();
                 TestService {
                     begin: std::time::Instant::now(),
                     context,
                     delayed,
                     input_store,
                     scan_on,
-                    sampled_on,
+                    sample_on,
                     output,
                     timer,
                 }
@@ -341,9 +341,9 @@ pub mod runtime {
                     },
                 );
                 self.context.scanned.set(scanned);
-                let sampled = <SampledOnState as grust::core::Component>::step(
-                    &mut self.sampled_on,
-                    SampledOnInput {
+                let sampled = <SampleOnState as grust::core::Component>::step(
+                    &mut self.sample_on,
+                    SampleOnInput {
                         input: None,
                         ck: *clock_ref,
                     },
@@ -375,9 +375,9 @@ pub mod runtime {
                     let sampled_ref = &mut None;
                     *input_e_ref = Some(input_e);
                     if input_e_ref.is_some() {
-                        let sampled = <SampledOnState as grust::core::Component>::step(
-                            &mut self.sampled_on,
-                            SampledOnInput {
+                        let sampled = <SampleOnState as grust::core::Component>::step(
+                            &mut self.sample_on,
+                            SampleOnInput {
                                 input: *input_e_ref,
                                 ck: None,
                             },
@@ -393,9 +393,7 @@ pub mod runtime {
                         .input_store
                         .input_e
                         .replace((input_e, _input_e_instant));
-                    assert!
-                    (unique.is_none(),
-                    "flow `input_e` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert ! (unique . is_none () , "flow `input_e` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -453,9 +451,9 @@ pub mod runtime {
                         .await?;
                     }
                     if clock_ref.is_some() {
-                        let sampled = <SampledOnState as grust::core::Component>::step(
-                            &mut self.sampled_on,
-                            SampledOnInput {
+                        let sampled = <SampleOnState as grust::core::Component>::step(
+                            &mut self.sample_on,
+                            SampleOnInput {
                                 input: None,
                                 ck: *clock_ref,
                             },
@@ -474,9 +472,7 @@ pub mod runtime {
                         .input_store
                         .period_clock
                         .replace(((), _period_clock_instant));
-                    assert!
-                    (unique.is_none(),
-                    "flow `period_clock` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert ! (unique . is_none () , "flow `period_clock` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -511,9 +507,7 @@ pub mod runtime {
                         .input_store
                         .input_s
                         .replace((input_s, _input_s_instant));
-                    assert!
-                    (unique.is_none(),
-                    "flow `input_s` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert ! (unique . is_none () , "flow `input_s` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -535,9 +529,9 @@ pub mod runtime {
                             let sampled_ref = &mut None;
                             *input_e_ref = Some(input_e);
                             if input_e_ref.is_some() {
-                                let sampled = <SampledOnState as grust::core::Component>::step(
-                                    &mut self.sampled_on,
-                                    SampledOnInput {
+                                let sampled = <SampleOnState as grust::core::Component>::step(
+                                    &mut self.sample_on,
+                                    SampleOnInput {
                                         input: *input_e_ref,
                                         ck: None,
                                     },
@@ -580,9 +574,9 @@ pub mod runtime {
                                 .await?;
                             }
                             if clock_ref.is_some() {
-                                let sampled = <SampledOnState as grust::core::Component>::step(
-                                    &mut self.sampled_on,
-                                    SampledOnInput {
+                                let sampled = <SampleOnState as grust::core::Component>::step(
+                                    &mut self.sample_on,
+                                    SampleOnInput {
                                         input: None,
                                         ck: *clock_ref,
                                     },
@@ -631,9 +625,9 @@ pub mod runtime {
                             }
                             *input_e_ref = Some(input_e);
                             if input_e_ref.is_some() || clock_ref.is_some() {
-                                let sampled = <SampledOnState as grust::core::Component>::step(
-                                    &mut self.sampled_on,
-                                    SampledOnInput {
+                                let sampled = <SampleOnState as grust::core::Component>::step(
+                                    &mut self.sample_on,
+                                    SampleOnInput {
                                         input: *input_e_ref,
                                         ck: *clock_ref,
                                     },
@@ -695,9 +689,9 @@ pub mod runtime {
                             }
                             *input_e_ref = Some(input_e);
                             if input_e_ref.is_some() {
-                                let sampled = <SampledOnState as grust::core::Component>::step(
-                                    &mut self.sampled_on,
-                                    SampledOnInput {
+                                let sampled = <SampleOnState as grust::core::Component>::step(
+                                    &mut self.sample_on,
+                                    SampleOnInput {
                                         input: *input_e_ref,
                                         ck: None,
                                     },
@@ -745,9 +739,9 @@ pub mod runtime {
                                 .await?;
                             }
                             if clock_ref.is_some() {
-                                let sampled = <SampledOnState as grust::core::Component>::step(
-                                    &mut self.sampled_on,
-                                    SampledOnInput {
+                                let sampled = <SampleOnState as grust::core::Component>::step(
+                                    &mut self.sample_on,
+                                    SampleOnInput {
                                         input: None,
                                         ck: *clock_ref,
                                     },
@@ -797,9 +791,9 @@ pub mod runtime {
                             }
                             *input_e_ref = Some(input_e);
                             if input_e_ref.is_some() || clock_ref.is_some() {
-                                let sampled = <SampledOnState as grust::core::Component>::step(
-                                    &mut self.sampled_on,
-                                    SampledOnInput {
+                                let sampled = <SampleOnState as grust::core::Component>::step(
+                                    &mut self.sample_on,
+                                    SampleOnInput {
                                         input: *input_e_ref,
                                         ck: *clock_ref,
                                     },
