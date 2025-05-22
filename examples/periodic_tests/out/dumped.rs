@@ -1,57 +1,9 @@
-pub struct ScanOnInput {
-    pub input: i64,
-    pub ck: Option<f64>,
-}
-pub struct ScanOnState {
-    last_scanned: i64,
-}
-impl grust::core::Component for ScanOnState {
-    type Input = ScanOnInput;
-    type Output = i64;
-    fn init() -> ScanOnState {
-        ScanOnState { last_scanned: 0i64 }
-    }
-    fn step(&mut self, input: ScanOnInput) -> i64 {
-        let scanned = match (input.ck) {
-            (Some(ck)) => input.input,
-            (_) => self.last_scanned,
-        };
-        self.last_scanned = scanned;
-        scanned
-    }
-}
-pub struct SampleOnInput {
-    pub input: Option<i64>,
-    pub ck: Option<f64>,
-}
-pub struct SampleOnState {
-    last_mem: i64,
-}
-impl grust::core::Component for SampleOnState {
-    type Input = SampleOnInput;
-    type Output = Option<i64>;
-    fn init() -> SampleOnState {
-        SampleOnState { last_mem: 0i64 }
-    }
-    fn step(&mut self, input: SampleOnInput) -> Option<i64> {
-        let mem = match (input.input) {
-            (Some(input)) => input,
-            (_) => self.last_mem,
-        };
-        let sampled = match (input.ck) {
-            (Some(ck)) => Some(mem),
-            (_) => None,
-        };
-        self.last_mem = mem;
-        sampled
-    }
-}
 pub mod runtime {
     use super::*;
     use futures::{sink::SinkExt, stream::StreamExt};
     pub enum RuntimeInput {
-        InputE(i64, std::time::Instant),
         InputS(i64, std::time::Instant),
+        InputE(i64, std::time::Instant),
         Timer(T, std::time::Instant),
     }
     use RuntimeInput as I;
@@ -66,8 +18,8 @@ pub mod runtime {
     impl PartialEq for RuntimeInput {
         fn eq(&self, other: &Self) -> bool {
             match (self, other) {
-                (I::InputE(this, _), I::InputE(other, _)) => this.eq(other),
                 (I::InputS(this, _), I::InputS(other, _)) => this.eq(other),
+                (I::InputE(this, _), I::InputE(other, _)) => this.eq(other),
                 (I::Timer(this, _), I::Timer(other, _)) => this.eq(other),
                 _ => false,
             }
@@ -76,8 +28,8 @@ pub mod runtime {
     impl RuntimeInput {
         pub fn get_instant(&self) -> std::time::Instant {
             match self {
-                I::InputE(_, _grust_reserved_instant) => *_grust_reserved_instant,
                 I::InputS(_, _grust_reserved_instant) => *_grust_reserved_instant,
+                I::InputE(_, _grust_reserved_instant) => *_grust_reserved_instant,
                 I::Timer(_, _grust_reserved_instant) => *_grust_reserved_instant,
             }
         }
@@ -219,16 +171,36 @@ pub mod runtime {
                 }
             }
             #[derive(Clone, Copy, PartialEq, Default, Debug)]
-            pub struct Sampled(i64, bool);
+            pub struct Sampled(Option<i64>, bool);
             impl Sampled {
-                pub fn set(&mut self, sampled: i64) {
+                pub fn set(&mut self, sampled: Option<i64>) {
                     self.1 = self.0 != sampled;
                     self.0 = sampled;
                 }
-                pub fn get(&self) -> i64 {
+                pub fn get(&self) -> Option<i64> {
                     self.0
                 }
-                pub fn take(&mut self) -> i64 {
+                pub fn take(&mut self) -> Option<i64> {
+                    std::mem::take(&mut self.0)
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
+            }
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct InputE(Option<i64>, bool);
+            impl InputE {
+                pub fn set(&mut self, input_e: Option<i64>) {
+                    self.1 = self.0 != input_e;
+                    self.0 = input_e;
+                }
+                pub fn get(&self) -> Option<i64> {
+                    self.0
+                }
+                pub fn take(&mut self) -> Option<i64> {
                     std::mem::take(&mut self.0)
                 }
                 pub fn is_new(&self) -> bool {
@@ -263,6 +235,7 @@ pub mod runtime {
         pub struct Context {
             pub scanned: ctx_ty::Scanned,
             pub sampled: ctx_ty::Sampled,
+            pub input_e: ctx_ty::InputE,
             pub input_s: ctx_ty::InputS,
         }
         impl Context {
@@ -272,18 +245,19 @@ pub mod runtime {
             fn reset(&mut self) {
                 self.scanned.reset();
                 self.sampled.reset();
+                self.input_e.reset();
                 self.input_s.reset();
             }
         }
         #[derive(Default)]
         pub struct TestServiceStore {
-            input_e: Option<(i64, std::time::Instant)>,
             period_clock: Option<((), std::time::Instant)>,
             input_s: Option<(i64, std::time::Instant)>,
+            input_e: Option<(i64, std::time::Instant)>,
         }
         impl TestServiceStore {
             pub fn not_empty(&self) -> bool {
-                self.input_e.is_some() || self.period_clock.is_some() || self.input_s.is_some()
+                self.period_clock.is_some() || self.input_s.is_some() || self.input_e.is_some()
             }
         }
         pub struct TestService {
@@ -291,8 +265,6 @@ pub mod runtime {
             context: Context,
             delayed: bool,
             input_store: TestServiceStore,
-            scan_on: ScanOnState,
-            sample_on: SampleOnState,
             output: futures::channel::mpsc::Sender<O>,
             timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
         }
@@ -304,15 +276,11 @@ pub mod runtime {
                 let context = Context::init();
                 let delayed = true;
                 let input_store = Default::default();
-                let scan_on = <ScanOnState as grust::core::Component>::init();
-                let sample_on = <SampleOnState as grust::core::Component>::init();
                 TestService {
                     begin: std::time::Instant::now(),
                     context,
                     delayed,
                     input_store,
-                    scan_on,
-                    sample_on,
                     output,
                     timer,
                 }
@@ -333,27 +301,9 @@ pub mod runtime {
                         .duration_since(self.begin)
                         .as_millis()) as f64,
                 );
-                let scanned = <ScanOnState as grust::core::Component>::step(
-                    &mut self.scan_on,
-                    ScanOnInput {
-                        input: input_s,
-                        ck: *clock_ref,
-                    },
-                );
-                self.context.scanned.set(scanned);
-                let sampled = <SampleOnState as grust::core::Component>::step(
-                    &mut self.sample_on,
-                    SampleOnInput {
-                        input: None,
-                        ck: *clock_ref,
-                    },
-                );
-                *sampled_ref = sampled;
-                self.send_output(
-                    O::Scanned(self.context.scanned.get(), _grust_reserved_instant),
-                    _grust_reserved_instant,
-                )
-                .await?;
+                if clock_ref.is_some() {
+                    *sampled_ref = self.context.input_e.take();
+                }
                 if let Some(sampled) = *sampled_ref {
                     self.send_output(
                         O::Sampled(sampled, _grust_reserved_instant),
@@ -361,39 +311,297 @@ pub mod runtime {
                     )
                     .await?;
                 }
+                if clock_ref.is_some() {
+                    self.context.scanned.set(input_s);
+                }
+                self.send_output(
+                    O::Scanned(self.context.scanned.get(), _grust_reserved_instant),
+                    _grust_reserved_instant,
+                )
+                .await?;
                 Ok(())
             }
-            pub async fn handle_input_e(
+            pub async fn handle_period_clock(
                 &mut self,
-                _input_e_instant: std::time::Instant,
-                input_e: i64,
+                _period_clock_instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constraints(_input_e_instant).await?;
+                    self.reset_time_constraints(_period_clock_instant).await?;
                     self.context.reset();
-                    let input_e_ref = &mut None;
+                    let clock_ref = &mut None;
                     let sampled_ref = &mut None;
-                    *input_e_ref = Some(input_e);
-                    if input_e_ref.is_some() {
-                        let sampled = <SampleOnState as grust::core::Component>::step(
-                            &mut self.sample_on,
-                            SampleOnInput {
-                                input: *input_e_ref,
-                                ck: None,
-                            },
-                        );
-                        *sampled_ref = sampled;
+                    self.send_timer(T::PeriodClock, _period_clock_instant)
+                        .await?;
+                    *clock_ref =
+                        Some((_period_clock_instant.duration_since(self.begin).as_millis()) as f64);
+                    if clock_ref.is_some() {
+                        *sampled_ref = self.context.input_e.take();
                     }
                     if let Some(sampled) = *sampled_ref {
-                        self.send_output(O::Sampled(sampled, _input_e_instant), _input_e_instant)
-                            .await?;
+                        self.send_output(
+                            O::Sampled(sampled, _period_clock_instant),
+                            _period_clock_instant,
+                        )
+                        .await?;
+                    }
+                    if clock_ref.is_some() {
+                        self.context.scanned.set(self.context.input_s.get());
+                    }
+                    if self.context.scanned.is_new() {
+                        self.send_output(
+                            O::Scanned(self.context.scanned.get(), _period_clock_instant),
+                            _period_clock_instant,
+                        )
+                        .await?;
                     }
                 } else {
                     let unique = self
                         .input_store
-                        .input_e
-                        .replace((input_e, _input_e_instant));
-                    assert ! (unique . is_none () , "flow `input_e` changes twice within one minimal delay of the service, consider reducing this delay");
+                        .period_clock
+                        .replace(((), _period_clock_instant));
+                    assert!
+                    (unique.is_none(),
+                    "flow `period_clock` changes twice within one minimal delay of the service, consider reducing this delay");
+                }
+                Ok(())
+            }
+            pub async fn handle_delay_test(
+                &mut self,
+                _grust_reserved_instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.context.reset();
+                if self.input_store.not_empty() {
+                    self.reset_time_constraints(_grust_reserved_instant).await?;
+                    match (
+                        self.input_store.period_clock.take(),
+                        self.input_store.input_s.take(),
+                        self.input_store.input_e.take(),
+                    ) {
+                        (None, None, None) => {}
+                        (Some(((), _period_clock_instant)), None, None) => {
+                            let clock_ref = &mut None;
+                            let sampled_ref = &mut None;
+                            self.send_timer(T::PeriodClock, _period_clock_instant)
+                                .await?;
+                            *clock_ref = Some(
+                                (_grust_reserved_instant
+                                    .duration_since(self.begin)
+                                    .as_millis()) as f64,
+                            );
+                            if clock_ref.is_some() {
+                                *sampled_ref = self.context.input_e.take();
+                            }
+                            if let Some(sampled) = *sampled_ref {
+                                self.send_output(
+                                    O::Sampled(sampled, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                            if clock_ref.is_some() {
+                                self.context.scanned.set(self.context.input_s.get());
+                            }
+                            if self.context.scanned.is_new() {
+                                self.send_output(
+                                    O::Scanned(self.context.scanned.get(), _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (None, Some((input_s, _input_s_instant)), None) => {
+                            self.context.input_s.set(input_s);
+                            if self.context.scanned.is_new() {
+                                self.send_output(
+                                    O::Scanned(self.context.scanned.get(), _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (
+                            Some(((), _period_clock_instant)),
+                            Some((input_s, _input_s_instant)),
+                            None,
+                        ) => {
+                            let clock_ref = &mut None;
+                            let sampled_ref = &mut None;
+                            self.context.input_s.set(input_s);
+                            self.send_timer(T::PeriodClock, _period_clock_instant)
+                                .await?;
+                            *clock_ref = Some(
+                                (_grust_reserved_instant
+                                    .duration_since(self.begin)
+                                    .as_millis()) as f64,
+                            );
+                            if clock_ref.is_some() {
+                                *sampled_ref = self.context.input_e.take();
+                            }
+                            if let Some(sampled) = *sampled_ref {
+                                self.send_output(
+                                    O::Sampled(sampled, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                            if clock_ref.is_some() {
+                                self.context.scanned.set(input_s);
+                            }
+                            if self.context.scanned.is_new() {
+                                self.send_output(
+                                    O::Scanned(self.context.scanned.get(), _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (None, None, Some((input_e, _input_e_instant))) => {
+                            let input_e_ref = &mut None;
+                            *input_e_ref = Some(input_e);
+                            if input_e_ref.is_some() {
+                                self.context.input_e.set(*input_e_ref);
+                            }
+                        }
+                        (
+                            Some(((), _period_clock_instant)),
+                            None,
+                            Some((input_e, _input_e_instant)),
+                        ) => {
+                            let input_e_ref = &mut None;
+                            let clock_ref = &mut None;
+                            let sampled_ref = &mut None;
+                            *input_e_ref = Some(input_e);
+                            self.send_timer(T::PeriodClock, _period_clock_instant)
+                                .await?;
+                            *clock_ref = Some(
+                                (_grust_reserved_instant
+                                    .duration_since(self.begin)
+                                    .as_millis()) as f64,
+                            );
+                            if input_e_ref.is_some() {
+                                self.context.input_e.set(*input_e_ref);
+                            }
+                            if clock_ref.is_some() {
+                                *sampled_ref = self.context.input_e.take();
+                            }
+                            if let Some(sampled) = *sampled_ref {
+                                self.send_output(
+                                    O::Sampled(sampled, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                            if clock_ref.is_some() {
+                                self.context.scanned.set(self.context.input_s.get());
+                            }
+                            if self.context.scanned.is_new() {
+                                self.send_output(
+                                    O::Scanned(self.context.scanned.get(), _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (
+                            None,
+                            Some((input_s, _input_s_instant)),
+                            Some((input_e, _input_e_instant)),
+                        ) => {
+                            let input_e_ref = &mut None;
+                            *input_e_ref = Some(input_e);
+                            if input_e_ref.is_some() {
+                                self.context.input_e.set(*input_e_ref);
+                            }
+                            self.context.input_s.set(input_s);
+                            if self.context.scanned.is_new() {
+                                self.send_output(
+                                    O::Scanned(self.context.scanned.get(), _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                        (
+                            Some(((), _period_clock_instant)),
+                            Some((input_s, _input_s_instant)),
+                            Some((input_e, _input_e_instant)),
+                        ) => {
+                            let input_e_ref = &mut None;
+                            let clock_ref = &mut None;
+                            let sampled_ref = &mut None;
+                            *input_e_ref = Some(input_e);
+                            self.context.input_s.set(input_s);
+                            self.send_timer(T::PeriodClock, _period_clock_instant)
+                                .await?;
+                            *clock_ref = Some(
+                                (_grust_reserved_instant
+                                    .duration_since(self.begin)
+                                    .as_millis()) as f64,
+                            );
+                            if input_e_ref.is_some() {
+                                self.context.input_e.set(*input_e_ref);
+                            }
+                            if clock_ref.is_some() {
+                                *sampled_ref = self.context.input_e.take();
+                            }
+                            if let Some(sampled) = *sampled_ref {
+                                self.send_output(
+                                    O::Sampled(sampled, _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                            if clock_ref.is_some() {
+                                self.context.scanned.set(input_s);
+                            }
+                            if self.context.scanned.is_new() {
+                                self.send_output(
+                                    O::Scanned(self.context.scanned.get(), _grust_reserved_instant),
+                                    _grust_reserved_instant,
+                                )
+                                .await?;
+                            }
+                        }
+                    }
+                } else {
+                    self.delayed = true;
+                }
+                Ok(())
+            }
+            #[inline]
+            pub async fn reset_service_delay(
+                &mut self,
+                _grust_reserved_instant: std::time::Instant,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                self.timer
+                    .send((T::DelayTest, _grust_reserved_instant))
+                    .await?;
+                Ok(())
+            }
+            pub async fn handle_input_s(
+                &mut self,
+                _input_s_instant: std::time::Instant,
+                input_s: i64,
+            ) -> Result<(), futures::channel::mpsc::SendError> {
+                if self.delayed {
+                    self.reset_time_constraints(_input_s_instant).await?;
+                    self.context.reset();
+                    self.context.input_s.set(input_s);
+                    if self.context.scanned.is_new() {
+                        self.send_output(
+                            O::Scanned(self.context.scanned.get(), _input_s_instant),
+                            _input_s_instant,
+                        )
+                        .await?;
+                    }
+                } else {
+                    let unique = self
+                        .input_store
+                        .input_s
+                        .replace((input_s, _input_s_instant));
+                    assert!
+                    (unique.is_none(),
+                    "flow `input_s` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -420,408 +628,28 @@ pub mod runtime {
                     .await?;
                 Ok(())
             }
-            pub async fn handle_period_clock(
+            pub async fn handle_input_e(
                 &mut self,
-                _period_clock_instant: std::time::Instant,
+                _input_e_instant: std::time::Instant,
+                input_e: i64,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 if self.delayed {
-                    self.reset_time_constraints(_period_clock_instant).await?;
+                    self.reset_time_constraints(_input_e_instant).await?;
                     self.context.reset();
-                    let clock_ref = &mut None;
-                    let sampled_ref = &mut None;
-                    self.send_timer(T::PeriodClock, _period_clock_instant)
-                        .await?;
-                    *clock_ref =
-                        Some((_period_clock_instant.duration_since(self.begin).as_millis()) as f64);
-                    if clock_ref.is_some() || self.context.input_s.is_new() {
-                        let scanned = <ScanOnState as grust::core::Component>::step(
-                            &mut self.scan_on,
-                            ScanOnInput {
-                                input: self.context.input_s.get(),
-                                ck: *clock_ref,
-                            },
-                        );
-                        self.context.scanned.set(scanned);
-                    }
-                    if self.context.scanned.is_new() {
-                        self.send_output(
-                            O::Scanned(self.context.scanned.get(), _period_clock_instant),
-                            _period_clock_instant,
-                        )
-                        .await?;
-                    }
-                    if clock_ref.is_some() {
-                        let sampled = <SampleOnState as grust::core::Component>::step(
-                            &mut self.sample_on,
-                            SampleOnInput {
-                                input: None,
-                                ck: *clock_ref,
-                            },
-                        );
-                        *sampled_ref = sampled;
-                    }
-                    if let Some(sampled) = *sampled_ref {
-                        self.send_output(
-                            O::Sampled(sampled, _period_clock_instant),
-                            _period_clock_instant,
-                        )
-                        .await?;
+                    let input_e_ref = &mut None;
+                    *input_e_ref = Some(input_e);
+                    if input_e_ref.is_some() {
+                        self.context.input_e.set(*input_e_ref);
                     }
                 } else {
                     let unique = self
                         .input_store
-                        .period_clock
-                        .replace(((), _period_clock_instant));
-                    assert ! (unique . is_none () , "flow `period_clock` changes twice within one minimal delay of the service, consider reducing this delay");
+                        .input_e
+                        .replace((input_e, _input_e_instant));
+                    assert!
+                    (unique.is_none(),
+                    "flow `input_e` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
-                Ok(())
-            }
-            pub async fn handle_input_s(
-                &mut self,
-                _input_s_instant: std::time::Instant,
-                input_s: i64,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                if self.delayed {
-                    self.reset_time_constraints(_input_s_instant).await?;
-                    self.context.reset();
-                    self.context.input_s.set(input_s);
-                    if self.context.input_s.is_new() {
-                        let scanned = <ScanOnState as grust::core::Component>::step(
-                            &mut self.scan_on,
-                            ScanOnInput {
-                                input: input_s,
-                                ck: None,
-                            },
-                        );
-                        self.context.scanned.set(scanned);
-                    }
-                    if self.context.scanned.is_new() {
-                        self.send_output(
-                            O::Scanned(self.context.scanned.get(), _input_s_instant),
-                            _input_s_instant,
-                        )
-                        .await?;
-                    }
-                } else {
-                    let unique = self
-                        .input_store
-                        .input_s
-                        .replace((input_s, _input_s_instant));
-                    assert ! (unique . is_none () , "flow `input_s` changes twice within one minimal delay of the service, consider reducing this delay");
-                }
-                Ok(())
-            }
-            pub async fn handle_delay_test(
-                &mut self,
-                _grust_reserved_instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.context.reset();
-                if self.input_store.not_empty() {
-                    self.reset_time_constraints(_grust_reserved_instant).await?;
-                    match (
-                        self.input_store.input_e.take(),
-                        self.input_store.period_clock.take(),
-                        self.input_store.input_s.take(),
-                    ) {
-                        (None, None, None) => {}
-                        (Some((input_e, _input_e_instant)), None, None) => {
-                            let input_e_ref = &mut None;
-                            let sampled_ref = &mut None;
-                            *input_e_ref = Some(input_e);
-                            if input_e_ref.is_some() {
-                                let sampled = <SampleOnState as grust::core::Component>::step(
-                                    &mut self.sample_on,
-                                    SampleOnInput {
-                                        input: *input_e_ref,
-                                        ck: None,
-                                    },
-                                );
-                                *sampled_ref = sampled;
-                            }
-                            if let Some(sampled) = *sampled_ref {
-                                self.send_output(
-                                    O::Sampled(sampled, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (None, Some(((), _period_clock_instant)), None) => {
-                            let clock_ref = &mut None;
-                            let sampled_ref = &mut None;
-                            self.send_timer(T::PeriodClock, _period_clock_instant)
-                                .await?;
-                            *clock_ref = Some(
-                                (_grust_reserved_instant
-                                    .duration_since(self.begin)
-                                    .as_millis()) as f64,
-                            );
-                            if clock_ref.is_some() || self.context.input_s.is_new() {
-                                let scanned = <ScanOnState as grust::core::Component>::step(
-                                    &mut self.scan_on,
-                                    ScanOnInput {
-                                        input: self.context.input_s.get(),
-                                        ck: *clock_ref,
-                                    },
-                                );
-                                self.context.scanned.set(scanned);
-                            }
-                            if self.context.scanned.is_new() {
-                                self.send_output(
-                                    O::Scanned(self.context.scanned.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                            if clock_ref.is_some() {
-                                let sampled = <SampleOnState as grust::core::Component>::step(
-                                    &mut self.sample_on,
-                                    SampleOnInput {
-                                        input: None,
-                                        ck: *clock_ref,
-                                    },
-                                );
-                                *sampled_ref = sampled;
-                            }
-                            if let Some(sampled) = *sampled_ref {
-                                self.send_output(
-                                    O::Sampled(sampled, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            Some((input_e, _input_e_instant)),
-                            Some(((), _period_clock_instant)),
-                            None,
-                        ) => {
-                            let input_e_ref = &mut None;
-                            let clock_ref = &mut None;
-                            let sampled_ref = &mut None;
-                            self.send_timer(T::PeriodClock, _period_clock_instant)
-                                .await?;
-                            *clock_ref = Some(
-                                (_grust_reserved_instant
-                                    .duration_since(self.begin)
-                                    .as_millis()) as f64,
-                            );
-                            if clock_ref.is_some() || self.context.input_s.is_new() {
-                                let scanned = <ScanOnState as grust::core::Component>::step(
-                                    &mut self.scan_on,
-                                    ScanOnInput {
-                                        input: self.context.input_s.get(),
-                                        ck: *clock_ref,
-                                    },
-                                );
-                                self.context.scanned.set(scanned);
-                            }
-                            if self.context.scanned.is_new() {
-                                self.send_output(
-                                    O::Scanned(self.context.scanned.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                            *input_e_ref = Some(input_e);
-                            if input_e_ref.is_some() || clock_ref.is_some() {
-                                let sampled = <SampleOnState as grust::core::Component>::step(
-                                    &mut self.sample_on,
-                                    SampleOnInput {
-                                        input: *input_e_ref,
-                                        ck: *clock_ref,
-                                    },
-                                );
-                                *sampled_ref = sampled;
-                            }
-                            if let Some(sampled) = *sampled_ref {
-                                self.send_output(
-                                    O::Sampled(sampled, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (None, None, Some((input_s, _input_s_instant))) => {
-                            self.context.input_s.set(input_s);
-                            if self.context.input_s.is_new() {
-                                let scanned = <ScanOnState as grust::core::Component>::step(
-                                    &mut self.scan_on,
-                                    ScanOnInput {
-                                        input: input_s,
-                                        ck: None,
-                                    },
-                                );
-                                self.context.scanned.set(scanned);
-                            }
-                            if self.context.scanned.is_new() {
-                                self.send_output(
-                                    O::Scanned(self.context.scanned.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            Some((input_e, _input_e_instant)),
-                            None,
-                            Some((input_s, _input_s_instant)),
-                        ) => {
-                            let input_e_ref = &mut None;
-                            let sampled_ref = &mut None;
-                            self.context.input_s.set(input_s);
-                            if self.context.input_s.is_new() {
-                                let scanned = <ScanOnState as grust::core::Component>::step(
-                                    &mut self.scan_on,
-                                    ScanOnInput {
-                                        input: input_s,
-                                        ck: None,
-                                    },
-                                );
-                                self.context.scanned.set(scanned);
-                            }
-                            if self.context.scanned.is_new() {
-                                self.send_output(
-                                    O::Scanned(self.context.scanned.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                            *input_e_ref = Some(input_e);
-                            if input_e_ref.is_some() {
-                                let sampled = <SampleOnState as grust::core::Component>::step(
-                                    &mut self.sample_on,
-                                    SampleOnInput {
-                                        input: *input_e_ref,
-                                        ck: None,
-                                    },
-                                );
-                                *sampled_ref = sampled;
-                            }
-                            if let Some(sampled) = *sampled_ref {
-                                self.send_output(
-                                    O::Sampled(sampled, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            None,
-                            Some(((), _period_clock_instant)),
-                            Some((input_s, _input_s_instant)),
-                        ) => {
-                            let clock_ref = &mut None;
-                            let sampled_ref = &mut None;
-                            self.context.input_s.set(input_s);
-                            self.send_timer(T::PeriodClock, _period_clock_instant)
-                                .await?;
-                            *clock_ref = Some(
-                                (_grust_reserved_instant
-                                    .duration_since(self.begin)
-                                    .as_millis()) as f64,
-                            );
-                            if clock_ref.is_some() || self.context.input_s.is_new() {
-                                let scanned = <ScanOnState as grust::core::Component>::step(
-                                    &mut self.scan_on,
-                                    ScanOnInput {
-                                        input: input_s,
-                                        ck: *clock_ref,
-                                    },
-                                );
-                                self.context.scanned.set(scanned);
-                            }
-                            if self.context.scanned.is_new() {
-                                self.send_output(
-                                    O::Scanned(self.context.scanned.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                            if clock_ref.is_some() {
-                                let sampled = <SampleOnState as grust::core::Component>::step(
-                                    &mut self.sample_on,
-                                    SampleOnInput {
-                                        input: None,
-                                        ck: *clock_ref,
-                                    },
-                                );
-                                *sampled_ref = sampled;
-                            }
-                            if let Some(sampled) = *sampled_ref {
-                                self.send_output(
-                                    O::Sampled(sampled, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            Some((input_e, _input_e_instant)),
-                            Some(((), _period_clock_instant)),
-                            Some((input_s, _input_s_instant)),
-                        ) => {
-                            let input_e_ref = &mut None;
-                            let clock_ref = &mut None;
-                            let sampled_ref = &mut None;
-                            self.context.input_s.set(input_s);
-                            self.send_timer(T::PeriodClock, _period_clock_instant)
-                                .await?;
-                            *clock_ref = Some(
-                                (_grust_reserved_instant
-                                    .duration_since(self.begin)
-                                    .as_millis()) as f64,
-                            );
-                            if clock_ref.is_some() || self.context.input_s.is_new() {
-                                let scanned = <ScanOnState as grust::core::Component>::step(
-                                    &mut self.scan_on,
-                                    ScanOnInput {
-                                        input: input_s,
-                                        ck: *clock_ref,
-                                    },
-                                );
-                                self.context.scanned.set(scanned);
-                            }
-                            if self.context.scanned.is_new() {
-                                self.send_output(
-                                    O::Scanned(self.context.scanned.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                            *input_e_ref = Some(input_e);
-                            if input_e_ref.is_some() || clock_ref.is_some() {
-                                let sampled = <SampleOnState as grust::core::Component>::step(
-                                    &mut self.sample_on,
-                                    SampleOnInput {
-                                        input: *input_e_ref,
-                                        ck: *clock_ref,
-                                    },
-                                );
-                                *sampled_ref = sampled;
-                            }
-                            if let Some(sampled) = *sampled_ref {
-                                self.send_output(
-                                    O::Sampled(sampled, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                    }
-                } else {
-                    self.delayed = true;
-                }
-                Ok(())
-            }
-            #[inline]
-            pub async fn reset_service_delay(
-                &mut self,
-                _grust_reserved_instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.timer
-                    .send((T::DelayTest, _grust_reserved_instant))
-                    .await?;
                 Ok(())
             }
             #[inline]

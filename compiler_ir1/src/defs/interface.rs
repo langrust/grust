@@ -437,7 +437,7 @@ impl FlowStatement {
                         let ty = ctx.get_typ(pattern_id);
                         flows_context.add_element(flow_name.clone(), ty);
                     }
-                    flow::Kind::Sample { expr, .. } => {
+                    flow::Kind::Sample { expr, .. } | flow::Kind::SampleOn { expr, .. } => {
                         // get the id of expr (and check it is an identifier, from
                         // normalization)
                         let id = match &expr.kind {
@@ -456,7 +456,9 @@ impl FlowStatement {
                         flows_context.add_element(source_name, &ty);
                         flows_context.add_element(flow_name, &ty);
                     }
-                    flow::Kind::Scan { expr, .. } | flow::Kind::OnChange { expr, .. } => {
+                    flow::Kind::Scan { expr, .. }
+                    | flow::Kind::ScanOn { expr, .. }
+                    | flow::Kind::OnChange { expr, .. } => {
                         // get the id of expr (and check it is an identifier, from
                         // normalization)
                         let id = match &expr.kind {

@@ -175,6 +175,60 @@ mod interface {
         }
     }
 
+    impl SampleOn {
+        pub fn peek(input: ParseStream) -> bool {
+            input.peek(keyword::sample_on)
+        }
+    }
+    impl Parse for SampleOn {
+        fn parse(input: ParseStream) -> syn::Res<Self> {
+            let sample_on_token: keyword::sample_on = input.parse()?;
+            let content;
+            let paren_token: token::Paren = parenthesized!(content in input);
+            let expr: FlowExpression = content.parse()?;
+            let comma_token: Token![,] = content.parse()?;
+            let event: FlowExpression = content.parse()?;
+            if content.is_empty() {
+                Ok(SampleOn::new(
+                    sample_on_token,
+                    paren_token,
+                    expr,
+                    comma_token,
+                    event,
+                ))
+            } else {
+                Err(content.error("expected two input expressions"))
+            }
+        }
+    }
+
+    impl ScanOn {
+        pub fn peek(input: ParseStream) -> bool {
+            input.peek(keyword::scan_on)
+        }
+    }
+    impl Parse for ScanOn {
+        fn parse(input: ParseStream) -> syn::Res<Self> {
+            let scan_on_token: keyword::scan_on = input.parse()?;
+            let content;
+            let paren_token: token::Paren = parenthesized!(content in input);
+            let expr: FlowExpression = content.parse()?;
+            let comma_token: Token![,] = content.parse()?;
+            let event: FlowExpression = content.parse()?;
+            if content.is_empty() {
+                Ok(ScanOn::new(
+                    scan_on_token,
+                    paren_token,
+                    expr,
+                    comma_token,
+                    event,
+                ))
+            } else {
+                Err(content.error("expected two input expressions"))
+            }
+        }
+    }
+
     impl Function {
         pub fn peek(input: ParseStream) -> bool {
             input.peek(keyword::function)
@@ -405,10 +459,14 @@ mod interface {
                 Ok(Self::merge(input.parse()?))
             } else if Time::peek(input) {
                 Ok(Self::time(input.parse()?))
-            } else if input.fork().call(Call::parse).is_ok() {
-                Ok(Self::comp_call(input.parse()?))
             } else if Period::peek(input) {
                 Ok(Self::period(input.parse()?))
+            } else if SampleOn::peek(input) {
+                Ok(Self::sample_on(input.parse()?))
+            } else if ScanOn::peek(input) {
+                Ok(Self::scan_on(input.parse()?))
+            } else if input.fork().call(Call::parse).is_ok() {
+                Ok(Self::comp_call(input.parse()?))
             } else {
                 let ident: Ident = input.parse()?;
                 Ok(Self::ident(ident))

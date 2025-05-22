@@ -61,6 +61,20 @@ pub enum Kind {
         /// Period in milliseconds.
         period_ms: u64,
     },
+    /// GReact `sample_on` operator.
+    SampleOn {
+        /// Input expression.
+        expr: Box<Expr>,
+        /// Sampling event.
+        event: Box<Expr>,
+    },
+    /// GReact `scan_on` operator.
+    ScanOn {
+        /// Input expression.
+        expr: Box<Expr>,
+        /// Scanning event.
+        event: Box<Expr>,
+    },
     /// Component call.
     ComponentCall {
         /// Component's id in memory.
@@ -111,6 +125,14 @@ mk_new! { impl Kind =>
     }
     Time: time { loc: Loc }
     Period: period { period_ms: u64 }
+    SampleOn: sample_on {
+            expr: Expr = expr.into(),
+            event: Expr = event.into(),
+    }
+    ScanOn: scan_on {
+            expr: Expr = expr.into(),
+            event: Expr = event.into(),
+    }
     ComponentCall: comp_call {
             memory_id = None,
             called_comp_id: usize,
@@ -137,7 +159,15 @@ impl Kind {
             | Kind::Throttle { expr, .. }
             | Kind::OnChange { expr }
             | Kind::Persist { expr } => expr.kind.memorize(identifier_creator, ctx)?,
-            Kind::Merge { expr_1, expr_2 } => {
+            Kind::Merge { expr_1, expr_2 }
+            | Kind::SampleOn {
+                expr: expr_1,
+                event: expr_2,
+            }
+            | Kind::ScanOn {
+                expr: expr_1,
+                event: expr_2,
+            } => {
                 expr_1.kind.memorize(identifier_creator, ctx)?;
                 expr_2.kind.memorize(identifier_creator, ctx)?
             }
@@ -199,7 +229,15 @@ impl Expr {
             | Kind::Throttle { expr, .. }
             | Kind::OnChange { expr }
             | Kind::Persist { expr } => expr.get_dependencies(),
-            Kind::Merge { expr_1, expr_2 } => {
+            Kind::Merge { expr_1, expr_2 }
+            | Kind::SampleOn {
+                expr: expr_1,
+                event: expr_2,
+            }
+            | Kind::ScanOn {
+                expr: expr_1,
+                event: expr_2,
+            } => {
                 let mut dependencies = expr_1.get_dependencies();
                 dependencies.extend(expr_2.get_dependencies());
                 dependencies
@@ -221,7 +259,15 @@ impl Expr {
             | flow::Kind::Throttle { expr, .. }
             | flow::Kind::OnChange { expr }
             | flow::Kind::Persist { expr } => expr.is_ident(),
-            flow::Kind::Merge { expr_1, expr_2 } => expr_1.is_ident() && expr_2.is_ident(),
+            flow::Kind::Merge { expr_1, expr_2 }
+            | Kind::SampleOn {
+                expr: expr_1,
+                event: expr_2,
+            }
+            | Kind::ScanOn {
+                expr: expr_1,
+                event: expr_2,
+            } => expr_1.is_ident() && expr_2.is_ident(),
             flow::Kind::ComponentCall { inputs, .. } | Kind::FunctionCall { inputs, .. } => {
                 inputs.iter().all(|(_, expr)| expr.is_ident())
             }
@@ -271,7 +317,15 @@ impl Expr {
             flow::Kind::Throttle { expr, .. } => expr.into_flow_call(identifier_creator, ctx),
             flow::Kind::OnChange { expr } => expr.into_flow_call(identifier_creator, ctx),
             flow::Kind::Persist { expr } => expr.into_flow_call(identifier_creator, ctx),
-            flow::Kind::Merge { expr_1, expr_2 } => {
+            flow::Kind::Merge { expr_1, expr_2 }
+            | Kind::SampleOn {
+                expr: expr_1,
+                event: expr_2,
+            }
+            | Kind::ScanOn {
+                expr: expr_1,
+                event: expr_2,
+            } => {
                 let mut stmts = expr_1.into_flow_call(identifier_creator, ctx);
                 stmts.extend(expr_2.into_flow_call(identifier_creator, ctx));
                 stmts

@@ -604,6 +604,8 @@ mod flow_instr {
                             | flow::Kind::Merge { .. }
                             | flow::Kind::Time { .. }
                             | flow::Kind::Persist { .. }
+                            | flow::Kind::SampleOn { .. }
+                            | flow::Kind::ScanOn { .. }
                             | flow::Kind::FunctionCall { .. } => (),
                             flow::Kind::OnChange { .. } => {
                                 // get the identifier of the created event
@@ -867,7 +869,6 @@ mod flow_instr {
                 flow::Kind::Ident { id } => self.handle_ident(pattern, *id),
                 flow::Kind::Sample { .. } => self.handle_sample(stmt_id, pattern, dependencies),
                 flow::Kind::Scan { .. } => self.handle_scan(stmt_id, pattern, dependencies),
-                flow::Kind::Period { .. } => self.handle_period(stmt_id, pattern, expr.loc),
                 flow::Kind::Timeout { .. } => self.handle_timeout(stmt_id, pattern, dependencies),
                 flow::Kind::Throttle { delta, .. } => {
                     self.handle_throttle(pattern, dependencies, delta.clone())
@@ -876,6 +877,9 @@ mod flow_instr {
                 flow::Kind::Persist { .. } => self.handle_persist(pattern, dependencies),
                 flow::Kind::Merge { .. } => self.handle_merge(pattern, dependencies),
                 flow::Kind::Time { loc } => self.handle_time(stmt_id, pattern, *loc),
+                flow::Kind::Period { .. } => self.handle_period(stmt_id, pattern, expr.loc),
+                flow::Kind::SampleOn { .. } => self.handle_sample_on(pattern, dependencies),
+                flow::Kind::ScanOn { .. } => self.handle_scan_on(pattern, dependencies),
                 flow::Kind::ComponentCall {
                     memory_id,
                     called_comp_id,
@@ -1239,6 +1243,85 @@ mod flow_instr {
             if self.events.contains(&timer_id) {
                 self.define_event(id_pattern, Expression::some(Expression::instant(opt_name)))
             } else {
+                FlowInstruction::seq(vec![])
+            }
+        }
+
+        /// Compute the instruction from a sample_on expression.
+        fn handle_sample_on(
+            &mut self,
+            pattern: &ir1::stmt::Pattern,
+            mut dependencies: Vec<usize>,
+        ) -> FlowInstruction {
+            // get the id of pattern's flow, debug-check there is only one flow
+            let mut ids = pattern.identifiers();
+            debug_assert!(ids.len() == 1);
+            let id_pattern = ids.pop().unwrap();
+
+            // get the source id, debug-check there is only two flows
+            debug_assert!(dependencies.len() == 2);
+            let id_source_2 = dependencies.pop().unwrap();
+            let sampling_name = self.get_name(id_source_2).clone();
+            let id_source_1 = dependencies.pop().unwrap();
+            let source_name = self.get_name(id_source_1).clone();
+
+            let mut instrs = vec![];
+            // source is an event, look if it is defined
+            if self.events.contains(&id_source_1) {
+                // if activated, store event value in context
+                let update = FlowInstruction::update_ctx(
+                    source_name.clone(),
+                    Expression::event(source_name.clone()),
+                );
+                instrs.push(FlowInstruction::if_activated(
+                    vec![source_name.clone()],
+                    [],
+                    update,
+                    None,
+                ))
+            }
+            // if timing event is activated
+            if self.events.contains(&id_source_2) {
+                // if activated, create event by taking from stored event value
+                let take =
+                    self.define_event(id_pattern, Expression::take_from_ctx(source_name.clone()));
+                instrs.push(FlowInstruction::if_activated(
+                    vec![sampling_name.clone()],
+                    [],
+                    take,
+                    None,
+                ))
+            }
+
+            FlowInstruction::seq(instrs)
+        }
+
+        /// Compute the instruction from a scan_on expression.
+        fn handle_scan_on(
+            &mut self,
+            pattern: &ir1::stmt::Pattern,
+            mut dependencies: Vec<usize>,
+        ) -> FlowInstruction {
+            // get the id of pattern's flow, debug-check there is only one flow
+            let mut ids = pattern.identifiers();
+            debug_assert!(ids.len() == 1);
+            let id_pattern = ids.pop().unwrap();
+            let flow_name = self.get_name(id_pattern);
+
+            // get the source id, debug-check there is only two flows
+            debug_assert!(dependencies.len() == 2);
+            let id_source_2 = dependencies.pop().unwrap();
+            let sampling_name = self.get_name(id_source_2).clone();
+            let id_source_1 = dependencies.pop().unwrap();
+
+            // timer is an event, look if it is defined
+            if self.events.contains(&id_source_2) {
+                // update signal by taking from source signal
+                let update =
+                    FlowInstruction::update_ctx(flow_name.clone(), self.get_signal(id_source_1));
+                FlowInstruction::if_activated(vec![sampling_name.clone()], [], update, None)
+            } else {
+                // 'scan' can be activated by the source signal, but it won't do anything
                 FlowInstruction::seq(vec![])
             }
         }

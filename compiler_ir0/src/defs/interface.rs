@@ -189,6 +189,46 @@ mk_new! { impl Period =>
     }
 }
 
+/// GReact `sample_on` operator.
+pub struct SampleOn {
+    pub sample_on_token: keyword::sample_on,
+    pub paren_token: token::Paren,
+    /// Input expression.
+    pub expr: Box<FlowExpression>,
+    pub comma_token: Token![,],
+    /// Sampling event.
+    pub event: Box<FlowExpression>,
+}
+mk_new! { impl SampleOn =>
+    new {
+        sample_on_token: keyword::sample_on,
+        paren_token: token::Paren,
+        expr: FlowExpression = expr.into(),
+        comma_token: Token![,],
+        event: FlowExpression = event.into(),
+    }
+}
+
+/// GReact `scan_on` operator.
+pub struct ScanOn {
+    pub scan_on_token: keyword::scan_on,
+    pub paren_token: token::Paren,
+    /// Input expression.
+    pub expr: Box<FlowExpression>,
+    pub comma_token: Token![,],
+    /// Scanning event.
+    pub event: Box<FlowExpression>,
+}
+mk_new! { impl ScanOn =>
+    new {
+        scan_on_token: keyword::scan_on,
+        paren_token: token::Paren,
+        expr: FlowExpression = expr.into(),
+        comma_token: Token![,],
+        event: FlowExpression = event.into(),
+    }
+}
+
 /// Call.
 pub struct Call {
     /// Identifier to the called component/function.
@@ -222,6 +262,10 @@ pub enum FlowExpression {
     Time(Time),
     /// GReact `period` operator.
     Period(Period),
+    /// GReact `sample` operator.
+    SampleOn(SampleOn),
+    /// GReact `scan` operator.
+    ScanOn(ScanOn),
 }
 
 mk_new! { impl FlowExpression =>
@@ -236,6 +280,8 @@ mk_new! { impl FlowExpression =>
     Time: time (val: Time = val)
     Period: period (val: Period = val)
     Call: comp_call (val: Call = val)
+    SampleOn: sample_on (val: SampleOn = val)
+    ScanOn: scan_on (val: ScanOn = val)
 }
 
 #[derive(Clone)]
