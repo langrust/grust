@@ -56,6 +56,11 @@ pub enum Kind {
     },
     /// GReact `time` operator.
     Time { loc: Loc },
+    /// GReact `period` operator.
+    Period {
+        /// Period in milliseconds.
+        period_ms: u64,
+    },
     /// Component call.
     ComponentCall {
         /// Component's id in memory.
@@ -105,6 +110,7 @@ mk_new! { impl Kind =>
         expr_2: Expr = expr_2.into(),
     }
     Time: time { loc: Loc }
+    Period: period { period_ms: u64 }
     ComponentCall: comp_call {
             memory_id = None,
             called_comp_id: usize,
@@ -124,7 +130,7 @@ impl Kind {
         ctx: &mut Ctx,
     ) -> Res<()> {
         match self {
-            Kind::Ident { .. } | Kind::Time { .. } => (),
+            Kind::Ident { .. } | Kind::Time { .. } | Kind::Period { .. } => (),
             Kind::Sample { expr, .. }
             | Kind::Scan { expr, .. }
             | Kind::Timeout { expr, .. }
@@ -202,13 +208,13 @@ impl Expr {
                 .iter()
                 .flat_map(|(_, expr)| expr.get_dependencies())
                 .collect(),
-            Kind::Time { .. } => vec![],
+            Kind::Time { .. } | Kind::Period { .. } => vec![],
         }
     }
 
     pub fn is_normal(&self) -> bool {
         match &self.kind {
-            flow::Kind::Ident { .. } | Kind::Time { .. } => true,
+            flow::Kind::Ident { .. } | Kind::Time { .. } | Kind::Period { .. } => true,
             flow::Kind::Sample { expr, .. }
             | flow::Kind::Scan { expr, .. }
             | flow::Kind::Timeout { expr, .. }
@@ -258,7 +264,7 @@ impl Expr {
         ctx: &mut Ctx,
     ) -> Vec<interface::FlowStatement> {
         match &mut self.kind {
-            flow::Kind::Ident { .. } | Kind::Time { .. } => vec![],
+            flow::Kind::Ident { .. } | Kind::Time { .. } | Kind::Period { .. } => vec![],
             flow::Kind::Sample { expr, .. } => expr.into_flow_call(identifier_creator, ctx),
             flow::Kind::Scan { expr, .. } => expr.into_flow_call(identifier_creator, ctx),
             flow::Kind::Timeout { expr, .. } => expr.into_flow_call(identifier_creator, ctx),

@@ -380,6 +380,10 @@ impl Typing for flow::Expr {
                 self.typ = Some(Typ::signal(Typ::float()));
                 Ok(())
             }
+            flow::Kind::Period { .. } => {
+                self.typ = Some(Typ::event(Typ::float()));
+                Ok(())
+            }
             flow::Kind::ComponentCall {
                 ref called_comp_id,
                 ref mut inputs,

@@ -169,6 +169,26 @@ mk_new! { impl Time =>
 
 }
 
+/// GReact `period` operator.
+pub struct Period {
+    pub period_token: keyword::period,
+    pub paren_token: token::Paren,
+    /// Period in milliseconds.
+    pub period_ms: Either<LitInt, Ident>,
+}
+mk_new! { impl Period =>
+    new_lit {
+        period_token: keyword::period,
+        paren_token: token::Paren,
+        period_ms: LitInt = Either::Left(period_ms),
+    }
+    new_id {
+        period_token: keyword::period,
+        paren_token: token::Paren,
+        period_ms: Ident = Either::Right(period_ms),
+    }
+}
+
 /// Call.
 pub struct Call {
     /// Identifier to the called component/function.
@@ -200,6 +220,8 @@ pub enum FlowExpression {
     Ident(Ident),
     /// Time flow.
     Time(Time),
+    /// GReact `period` operator.
+    Period(Period),
 }
 
 mk_new! { impl FlowExpression =>
@@ -212,6 +234,7 @@ mk_new! { impl FlowExpression =>
     Persist: persist (val: Persist = val)
     Merge: merge (val: Merge = val)
     Time: time (val: Time = val)
+    Period: period (val: Period = val)
     Call: comp_call (val: Call = val)
 }
 
