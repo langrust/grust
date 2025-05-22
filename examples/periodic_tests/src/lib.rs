@@ -3,7 +3,7 @@
 use grust::grust;
 
 grust! {
-    #![dump = "examples/periodic_tests/out/dumped.rs", demo]
+    #![dump = "examples/periodic_tests/out/dumped.rs", mode = demo]
 
     import signal input_s: int;
     import event input_e: int;

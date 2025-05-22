@@ -3,7 +3,7 @@ compiler_top::prelude! {}
 #[test]
 fn should_compile_speed_limiter() {
     let top: ir0::Top = parse_quote! {
-        #![dump = "tests/macro_outputs/speed_limiter.rs", test]
+        #![dump = "tests/macro_outputs/speed_limiter.rs", mode = test]
 
         // # Imports
         import signal  car::hmi::speed_limiter::activation : ActivationRequest;

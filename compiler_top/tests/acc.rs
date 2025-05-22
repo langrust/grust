@@ -3,7 +3,7 @@ compiler_top::prelude! {}
 #[test]
 fn should_compile_acc() {
     let top: ir0::Top = parse_quote! {
-        #![dump = "tests/macro_outputs/acc.rs", demo, propag = "onchange"]
+        #![dump = "tests/macro_outputs/acc.rs", mode = demo]
 
         use component core::time::integration::backward_euler(x: float, t: float) -> (i: float);
         use component core::time::derivation::derive(x: float, t: float) -> (i: float);

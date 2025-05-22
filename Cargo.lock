@@ -398,7 +398,11 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 name = "fun_call_service"
 version = "1.4.0"
 dependencies = [
+ "futures",
  "grust",
+ "priority_stream",
+ "timer_stream",
+ "tokio",
 ]
 
 [[package]]

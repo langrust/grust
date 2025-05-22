@@ -3,7 +3,7 @@
 use grust::grust;
 
 grust! {
-    #![test]
+    #![mode = test]
     // # Imports
     import signal  car::hmi::speed_limiter::activation : ActivationRequest;
     import signal  car::hmi::speed_limiter::set_speed : float;

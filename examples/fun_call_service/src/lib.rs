@@ -3,7 +3,7 @@
 use grust::grust;
 
 mod utils {
-    fn floor(a: f64) -> i64 {
+    pub fn floor(a: f64) -> i64 {
         a.floor() as i64
     }
 }

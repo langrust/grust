@@ -9,7 +9,7 @@ pub mod utils {
 }
 
 grust! {
-    #![demo, dump = "examples/acc_fmics/out/mod.rs", public = false]
+    #![mode = demo, dump = "examples/acc_fmics/out/mod.rs", public = false]
     use component grust::std::time::derivation::derive(x: float, t: float) -> (i: float);
     use function utils::convert(x_km_h: float) -> float;
 

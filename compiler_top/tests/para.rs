@@ -3,7 +3,7 @@ compiler_top::prelude! {}
 #[test]
 fn should_compile_para() {
     let top: ir0::Top = parse_quote! {
-        #![dump = "tests/macro_outputs/para.rs", propag = "onchange", para, test]
+        #![dump = "tests/macro_outputs/para.rs", para, mode = test]
         import event e0: int;
         export signal o1: int;
 

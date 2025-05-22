@@ -3,7 +3,7 @@
 use grust::grust;
 
 grust! {
-    #![greusot]
+    #![mode = greusot]
 
     const RHO: int = 1; // reaction time
     const B_MAX: int = 6; // 0.6*9.81

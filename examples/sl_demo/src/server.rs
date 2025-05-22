@@ -2,7 +2,7 @@ mod sl {
     use grust::grust;
 
     grust! {
-        #![test]
+        #![mode = test]
 
         // # Imports
         import event    car::hmi::speed_limiter::activation : ActivationRequest;
