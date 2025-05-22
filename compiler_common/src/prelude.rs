@@ -152,7 +152,6 @@ pub use crate::{
     quote,
     res_vec,
     rustc_hash,
-    safe_index,
     scope::Scope,
     serde,
     stats::*,
