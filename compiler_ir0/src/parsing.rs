@@ -467,8 +467,6 @@ mod interface {
                 Ok(Self::scan_on(input.parse()?))
             } else if input.fork().call(Call::parse).is_ok() {
                 Ok(Self::comp_call(input.parse()?))
-            } else if Period::peek(input) {
-                Ok(Self::period(input.parse()?))
             } else {
                 let ident: Ident = input.parse()?;
                 Ok(Self::ident(ident))
