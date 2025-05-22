@@ -15,7 +15,7 @@ grust! {
         scanned = when { init => 0, ck? => input };
     }
 
-    component sampled_on(input: int?, ck: float?) -> (sampled: int?) {
+    component sample_on(input: int?, ck: float?) -> (sampled: int?) {
         let mem: int = when { init => 0, input? => input };
         sampled = when { ck? => emit mem };
     }
@@ -23,6 +23,6 @@ grust! {
     service test @[10, 2000] {
         let event clock: float = period(100);
         scanned = scan_on(input_s, clock);
-        sampled = sampled_on(input_e, clock);
+        sampled = sample_on(input_e, clock);
     }
 }
