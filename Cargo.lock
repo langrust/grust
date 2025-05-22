@@ -246,16 +246,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
-name = "colored"
-version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "117725a109d387c937a1533ce01b450cbde6b88abceea8473c4d7a85853cda3c"
-dependencies = [
- "lazy_static",
- "windows-sys 0.59.0",
-]
-
-[[package]]
 name = "compiler_common"
 version = "1.4.0"
 dependencies = [
@@ -536,20 +526,6 @@ name = "gimli"
 version = "0.31.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "07e28edb80900c19c28f1072f2e8aeca7fa06b23cd4169cefe1af5aa3260783f"
-
-[[package]]
-name = "greact"
-version = "1.4.0"
-dependencies = [
- "colored",
- "futures",
- "pin-project",
- "rand",
- "shared_stream",
- "stream_proc_macros",
- "tokio",
- "tokio-stream",
-]
 
 [[package]]
 name = "grust"
@@ -1290,16 +1266,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "shared_stream"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa1c6c095efaa0b509376134c818af805c74ee32e2e6699b74a670dd32562e79"
-dependencies = [
- "futures-core",
- "pin-project-lite",
-]
-
-[[package]]
 name = "signal-hook-registry"
 version = "1.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1371,17 +1337,6 @@ dependencies = [
  "priority_stream",
  "timer_stream",
  "tokio",
-]
-
-[[package]]
-name = "stream_proc_macros"
-version = "1.4.0"
-dependencies = [
- "futures",
- "pin-project",
- "proc-macro2",
- "quote",
- "syn 2.0.101",
 ]
 
 [[package]]
