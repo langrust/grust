@@ -4,7 +4,6 @@ exclude = ["creusot"]
 members = [
     "proc",
     "grust",
-    "greact",
     "examples/*",
     "compiler_common",
     "compiler_ir0",
@@ -83,7 +82,6 @@ compiler_ir2 = { path = "./compiler_ir2" }
 compiler_top = { path = "./compiler_top" }
 
 json = { path = "./json" }
-stream_proc_macros = { path = "./greact/stream_proc_macros" }
 proc = { path = "./proc" }
 creusot-contracts = { path = "./creusot/creusot-contracts" }
 
