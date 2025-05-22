@@ -869,6 +869,7 @@ mod flow_instr {
                 flow::Kind::Ident { id } => self.handle_ident(pattern, *id),
                 flow::Kind::Sample { .. } => self.handle_sample(stmt_id, pattern, dependencies),
                 flow::Kind::Scan { .. } => self.handle_scan(stmt_id, pattern, dependencies),
+                flow::Kind::Period { .. } => self.handle_period(stmt_id, pattern, expr.loc),
                 flow::Kind::Timeout { .. } => self.handle_timeout(stmt_id, pattern, dependencies),
                 flow::Kind::Throttle { delta, .. } => {
                     self.handle_throttle(pattern, dependencies, delta.clone())
