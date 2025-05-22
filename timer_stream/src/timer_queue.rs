@@ -12,7 +12,7 @@ impl<T, const N: usize> TimerQueue<T, N> {
     /// Create empty queue.
     pub fn new() -> Self {
         TimerQueue {
-            queue: array_init::array_init(|_| None),
+            queue: std::array::from_fn(|_| None),
             len: 0,
         }
     }
