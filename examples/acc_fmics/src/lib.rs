@@ -50,7 +50,7 @@ grust! {
                 b = v^2 / (2.*(d - d_safe));
                 let d_safe: float = safety_distance(s, fv_v);
                 let fv_v: float = s + v;
-            },
+            }
             false => {
                 b = 0.;
                 let (fv_v: float, d_safe: float) = (0., 0.);
@@ -61,8 +61,8 @@ grust! {
     // Activation condition of the ACC
     component activate(act: Activation?, r: float?) -> (c: bool) {
         when {
-            init => { d = 0.; active = false; approach = false; }
-            act? => { let active: bool = act == Activation::On; }
+            init => { d = 0.; active = false; approach = false; },
+            act? => { let active: bool = act == Activation::On; },
             r? => { let d: float = r; let approach: bool = d < last d; }
         }
         c = active && approach;

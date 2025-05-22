@@ -2115,7 +2115,7 @@ mod parse_equation {
             let expr = input.parse()?;
             let content;
             let brace = braced!(content in input);
-            let arms: Punctuated<Arm, Token![,]> = Punctuated::parse_terminated(&content)?;
+            let arms: Punctuated<Arm, Option<Token![,]>> = Punctuated::parse_terminated(&content)?;
 
             Ok(MatchEq::new(match_token, expr, brace, arms))
         }
@@ -2248,10 +2248,11 @@ mod parse_equation {
                     None
                 }
             };
-            let mut arms: Vec<EventArmWhen> = vec![];
-            while !content.is_empty() {
-                arms.push(content.parse()?);
+            if content.peek(Token![,]) {
+                let _: Token![,] = content.parse()?;
             }
+            let arms: Punctuated<EventArmWhen, Option<Token![,]>> =
+                Punctuated::parse_terminated(&content)?;
             Ok(WhenEq::new(when_token, brace, init, arms))
         }
     }
@@ -3424,6 +3425,190 @@ mod parsing_tests {
                 semi_token: parse_quote! {;},
             });
             assert_eq!(equation, control)
+        }
+
+        #[test]
+        fn should_parse_when_equation() {
+            let expression: ReactEq = syn::parse_quote! {
+                when {
+                    e1? if e1 > 0 => {
+                        y = emit e1;
+                    }
+                    e2? => {
+                        y = emit e2;
+                    },
+                    e3? => {
+                        y = emit e3;
+                    }
+                }
+            };
+            let mut arms = Punctuated::new();
+            arms.push_value(equation::EventArmWhen::new(
+                equation::EventPattern::Let(equation::LetEventPattern::new(
+                    Default::default(),
+                    expr::Pattern::test_ident("e1"),
+                    Default::default(),
+                    format_ident!("e1"),
+                    Default::default(),
+                )),
+                Some((
+                    Default::default(),
+                    stream::Expr::binop(expr::BinOp::new(
+                        BOp::Gt,
+                        Loc::test_dummy(),
+                        stream::Expr::test_ident("e1"),
+                        stream::Expr::cst(Constant::Integer(syn::parse_quote! {0})),
+                    )),
+                )),
+                Default::default(),
+                Default::default(),
+                vec![Eq::OutputDef(Instantiation::new(
+                    stmt::Pattern::Identifier(format_ident!("y")),
+                    Default::default(),
+                    stream::Expr::emit(stream::Emit::new(
+                        Loc::test_dummy(),
+                        Default::default(),
+                        stream::Expr::test_ident("e1"),
+                    )),
+                    Default::default(),
+                ))],
+            ));
+            arms.push_punct(None);
+            arms.push_value(equation::EventArmWhen::new(
+                equation::EventPattern::Let(equation::LetEventPattern::new(
+                    Default::default(),
+                    expr::Pattern::test_ident("e2"),
+                    Default::default(),
+                    format_ident!("e2"),
+                    Default::default(),
+                )),
+                None,
+                Default::default(),
+                Default::default(),
+                vec![Eq::OutputDef(Instantiation::new(
+                    stmt::Pattern::Identifier(format_ident!("y")),
+                    Default::default(),
+                    stream::Expr::emit(stream::Emit::new(
+                        Loc::test_dummy(),
+                        Default::default(),
+                        stream::Expr::test_ident("e2"),
+                    )),
+                    Default::default(),
+                ))],
+            ));
+            arms.push_punct(Some(Default::default()));
+            arms.push_value(equation::EventArmWhen::new(
+                equation::EventPattern::Let(equation::LetEventPattern::new(
+                    Default::default(),
+                    expr::Pattern::test_ident("e3"),
+                    Default::default(),
+                    format_ident!("e3"),
+                    Default::default(),
+                )),
+                None,
+                Default::default(),
+                Default::default(),
+                vec![Eq::OutputDef(Instantiation::new(
+                    stmt::Pattern::Identifier(format_ident!("y")),
+                    Default::default(),
+                    stream::Expr::emit(stream::Emit::new(
+                        Loc::test_dummy(),
+                        Default::default(),
+                        stream::Expr::test_ident("e3"),
+                    )),
+                    Default::default(),
+                ))],
+            ));
+            let control = ReactEq::when_eq(WhenEq::new(
+                Default::default(),
+                Default::default(),
+                None,
+                arms,
+            ));
+            assert_eq!(expression, control)
+        }
+
+        #[test]
+        fn should_parse_match_equation() {
+            let expression: ReactEq = syn::parse_quote! {
+                match e {
+                    x if x > 0 => {
+                        y = x;
+                    }
+                    x if x < 0 => {
+                        y = -x;
+                    },
+                    x => {
+                        y = x;
+                    }
+                }
+            };
+            let mut arms = Punctuated::new();
+            arms.push_value(equation::Arm::new(
+                expr::Pattern::Identifier(format_ident!("x")),
+                Some((
+                    Default::default(),
+                    stream::Expr::binop(expr::BinOp::new(
+                        BOp::Gt,
+                        Loc::test_dummy(),
+                        stream::Expr::test_ident("x"),
+                        stream::Expr::cst(Constant::Integer(syn::parse_quote! {0})),
+                    )),
+                )),
+                Default::default(),
+                Default::default(),
+                vec![Eq::OutputDef(Instantiation::new(
+                    stmt::Pattern::Identifier(format_ident!("y")),
+                    Default::default(),
+                    stream::Expr::test_ident("x"),
+                    Default::default(),
+                ))],
+            ));
+            arms.push_punct(None);
+            arms.push_value(equation::Arm::new(
+                expr::Pattern::Identifier(format_ident!("x")),
+                Some((
+                    Default::default(),
+                    stream::Expr::binop(expr::BinOp::new(
+                        BOp::Lt,
+                        Loc::test_dummy(),
+                        stream::Expr::test_ident("x"),
+                        stream::Expr::cst(Constant::Integer(syn::parse_quote! {0})),
+                    )),
+                )),
+                Default::default(),
+                Default::default(),
+                vec![Eq::OutputDef(Instantiation::new(
+                    stmt::Pattern::Identifier(format_ident!("y")),
+                    Default::default(),
+                    stream::Expr::unop(expr::UnOp::new(
+                        UOp::Neg,
+                        Loc::test_dummy(),
+                        stream::Expr::test_ident("x"),
+                    )),
+                    Default::default(),
+                ))],
+            ));
+            arms.push_punct(Some(Default::default()));
+            arms.push_value(equation::Arm::new(
+                expr::Pattern::Identifier(format_ident!("x")),
+                None,
+                Default::default(),
+                Default::default(),
+                vec![Eq::OutputDef(Instantiation::new(
+                    stmt::Pattern::Identifier(format_ident!("y")),
+                    Default::default(),
+                    stream::Expr::test_ident("x"),
+                    Default::default(),
+                ))],
+            ));
+            let control = ReactEq::match_eq(MatchEq::new(
+                Default::default(),
+                stream::Expr::test_ident("e"),
+                Default::default(),
+                arms,
+            ));
+            assert_eq!(expression, control)
         }
 
         #[test]

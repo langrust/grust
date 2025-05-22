@@ -55,7 +55,7 @@ pub struct MatchEq {
     pub expr: stream::Expr,
     pub brace_token: syn::token::Brace,
     /// The different matching cases.
-    pub arms: syn::Punctuated<Arm, Token![,]>,
+    pub arms: syn::Punctuated<Arm, Option<Token![,]>>,
 }
 impl HasLoc for MatchEq {
     fn loc(&self) -> Loc {
@@ -67,7 +67,7 @@ mk_new! { impl MatchEq =>
         match_token: Token![match],
         expr: stream::Expr,
         brace_token: syn::token::Brace,
-        arms: syn::Punctuated<Arm, Token![,]>,
+        arms: syn::Punctuated<Arm, Option<Token![,]>>,
     }
 }
 
@@ -210,7 +210,7 @@ pub struct WhenEq {
     /// The optional init arm.
     pub init: Option<InitArmWhen>,
     /// The different event cases.
-    pub arms: Vec<EventArmWhen>,
+    pub arms: syn::Punctuated<EventArmWhen, Option<Token![,]>>,
 }
 impl HasLoc for WhenEq {
     fn loc(&self) -> Loc {
@@ -222,7 +222,7 @@ mk_new! { impl WhenEq =>
         when_token: keyword::when,
         brace_token: syn::token::Brace,
         init: Option<InitArmWhen>,
-        arms: Vec<EventArmWhen>,
+        arms: syn::Punctuated<EventArmWhen, Option<Token![,]>>,
     }
 }
 
