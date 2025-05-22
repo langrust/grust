@@ -509,11 +509,11 @@ pub mod runtime {
                             let pedestrian_r_ref = &mut None;
                             *pedestrian_l_ref = Some(pedestrian_l);
                             *pedestrian_r_ref = Some(pedestrian_r);
-                            if pedestrian_r_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_r_ref;
+                            if pedestrian_l_ref.is_some() {
+                                *pedestrian_ref = *pedestrian_l_ref;
                             } else {
-                                if pedestrian_l_ref.is_some() {
-                                    *pedestrian_ref = *pedestrian_l_ref;
+                                if pedestrian_r_ref.is_some() {
+                                    *pedestrian_ref = *pedestrian_r_ref;
                                 }
                             }
                             if pedestrian_ref.is_some() {
@@ -587,11 +587,11 @@ pub mod runtime {
                             *pedestrian_l_ref = Some(pedestrian_l);
                             self.context.speed_km_h.set(speed_km_h);
                             *pedestrian_r_ref = Some(pedestrian_r);
-                            if pedestrian_r_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_r_ref;
+                            if pedestrian_l_ref.is_some() {
+                                *pedestrian_ref = *pedestrian_l_ref;
                             } else {
-                                if pedestrian_l_ref.is_some() {
-                                    *pedestrian_ref = *pedestrian_l_ref;
+                                if pedestrian_r_ref.is_some() {
+                                    *pedestrian_ref = *pedestrian_r_ref;
                                 }
                             }
                             if pedestrian_ref.is_some() {
@@ -821,11 +821,11 @@ pub mod runtime {
                             let pedestrian_r_ref = &mut None;
                             *pedestrian_l_ref = Some(pedestrian_l);
                             *pedestrian_r_ref = Some(pedestrian_r);
-                            if pedestrian_r_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_r_ref;
+                            if pedestrian_l_ref.is_some() {
+                                *pedestrian_ref = *pedestrian_l_ref;
                             } else {
-                                if pedestrian_l_ref.is_some() {
-                                    *pedestrian_ref = *pedestrian_l_ref;
+                                if pedestrian_r_ref.is_some() {
+                                    *pedestrian_ref = *pedestrian_r_ref;
                                 }
                             }
                             if pedestrian_ref.is_some() {
@@ -915,11 +915,11 @@ pub mod runtime {
                             *pedestrian_l_ref = Some(pedestrian_l);
                             self.context.speed_km_h.set(speed_km_h);
                             *pedestrian_r_ref = Some(pedestrian_r);
-                            if pedestrian_r_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_r_ref;
+                            if pedestrian_l_ref.is_some() {
+                                *pedestrian_ref = *pedestrian_l_ref;
                             } else {
-                                if pedestrian_l_ref.is_some() {
-                                    *pedestrian_ref = *pedestrian_l_ref;
+                                if pedestrian_r_ref.is_some() {
+                                    *pedestrian_ref = *pedestrian_r_ref;
                                 }
                             }
                             if pedestrian_ref.is_some() {
