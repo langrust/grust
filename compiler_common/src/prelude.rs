@@ -110,7 +110,6 @@ pub mod syn {
     pub type Res<T> = syn::Result<T>;
 }
 
-pub use either::{Either, IntoEither};
 pub use macro1;
 pub use macro2::{Span, TokenStream as TokenStream2};
 pub use quote::{format_ident, quote, quote_spanned, ToTokens};
@@ -129,6 +128,7 @@ pub use crate::{
     conf::{self, Conf},
     constant::Constant,
     convert_case::{to_camel_case, to_snake_case},
+    either::Either,
     err::*,
     error,
     ext::*,

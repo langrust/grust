@@ -26,6 +26,7 @@ mod ext;
 mod stats;
 // mod error;
 pub mod check;
+mod either;
 mod hash_map;
 mod location;
 mod scope;
