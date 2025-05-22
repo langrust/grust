@@ -134,7 +134,7 @@ pub mod runtime {
         Brakes(Braking, std::time::Instant),
     }
     use RuntimeOutput as O;
-    #[derive(Debug)]
+    #[derive(Debug, Default)]
     pub struct RuntimeInit {}
     #[derive(PartialEq)]
     pub enum RuntimeTimer {

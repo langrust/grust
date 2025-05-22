@@ -310,7 +310,7 @@ pub mod runtime {
         VSet(f64, std::time::Instant),
     }
     use RuntimeOutput as O;
-    #[derive(Debug)]
+    #[derive(Debug, Default)]
     pub struct RuntimeInit {
         pub vdc: VdcState,
         pub vacuum_brake: VacuumBrakeState,
