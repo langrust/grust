@@ -500,7 +500,8 @@ impl FlowStatement {
                     flow::Kind::Ident { .. }
                     | flow::Kind::Timeout { .. }
                     | flow::Kind::Merge { .. }
-                    | flow::Kind::Time { .. } => (),
+                    | flow::Kind::Time { .. }
+                    | flow::Kind::Period { .. } => (),
                 }
             }
         }

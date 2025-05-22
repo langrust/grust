@@ -34,6 +34,7 @@ custom_keyword!(on_change);
 custom_keyword!(merge);
 custom_keyword!(time);
 custom_keyword!(persist);
+custom_keyword!(period);
 
 // Types
 custom_keyword!(int);

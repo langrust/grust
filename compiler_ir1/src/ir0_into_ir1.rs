@@ -334,6 +334,7 @@ mod interface_impl {
             ir0::interface::{
                 FlowExpression, Call, OnChange, Merge,
                 Scan, Throttle, Timeout, Time, Persist,
+                Period
             },
             ir1::flow,
         }
@@ -425,6 +426,18 @@ mod interface_impl {
             }
         }
 
+        impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for Period {
+            type Ir1 = ir1::flow::Kind;
+
+            /// Transforms AST into [ir1] and check identifiers good use.
+            fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
+                Ok(ir1::flow::Kind::period(super::into_u64(
+                    self.period_ms,
+                    &mut ctx.rm_loc(),
+                )?))
+            }
+        }
+
         impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for Call {
             type Ir1 = ir1::flow::Kind;
 
@@ -500,6 +513,7 @@ mod interface_impl {
                     FlowExpression::Persist(expr) => expr.into_ir1(ctx)?,
                     FlowExpression::Merge(expr) => expr.into_ir1(ctx)?,
                     FlowExpression::Time(expr) => expr.into_ir1(ctx)?,
+                    FlowExpression::Period(expr) => expr.into_ir1(ctx)?,
                 };
                 Ok(flow::Expr {
                     kind,

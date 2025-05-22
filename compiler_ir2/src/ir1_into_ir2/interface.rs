@@ -634,7 +634,8 @@ mod flow_instr {
                                 on_change_events.insert(flow_event_id, fresh_id);
                             }
                             flow::Kind::Sample { period_ms, .. }
-                            | flow::Kind::Scan { period_ms, .. } => {
+                            | flow::Kind::Scan { period_ms, .. }
+                            | flow::Kind::Period { period_ms, .. } => {
                                 // add new timing event into the identifier creator
                                 let flow_name =
                                     symbols.get_name(pattern.identifiers().pop().unwrap());
@@ -866,6 +867,7 @@ mod flow_instr {
                 flow::Kind::Ident { id } => self.handle_ident(pattern, *id),
                 flow::Kind::Sample { .. } => self.handle_sample(stmt_id, pattern, dependencies),
                 flow::Kind::Scan { .. } => self.handle_scan(stmt_id, pattern, dependencies),
+                flow::Kind::Period { .. } => self.handle_period(stmt_id, pattern, expr.loc),
                 flow::Kind::Timeout { .. } => self.handle_timeout(stmt_id, pattern, dependencies),
                 flow::Kind::Throttle { delta, .. } => {
                     self.handle_throttle(pattern, dependencies, delta.clone())
@@ -1206,6 +1208,38 @@ mod flow_instr {
                 FlowInstruction::seq(vec![def, update])
             } else {
                 def
+            }
+        }
+
+        /// Compute the instruction from a period expression.
+        fn handle_period(
+            &mut self,
+            stmt_id: usize,
+            pattern: &ir1::stmt::Pattern,
+            loc: Loc,
+        ) -> FlowInstruction {
+            // get the id of pattern's flow, debug-check there is only one flow
+            let mut ids = pattern.identifiers();
+            debug_assert!(ids.len() == 1);
+            let id_pattern = ids.pop().unwrap();
+
+            let timer_id = self.stmts_timers[&stmt_id];
+
+            // get the import flow that triggered ``time``
+            let opt_name = if self.init_service || self.multiple_inputs {
+                None
+            } else {
+                let import_flow = self.get_stmt_import(stmt_id);
+                let mut name = self.get_name(import_flow).clone();
+                name.set_span(loc.span);
+                Some(name)
+            };
+
+            // timer is an event, look if it is defined
+            if self.events.contains(&timer_id) {
+                self.define_event(id_pattern, Expression::some(Expression::instant(opt_name)))
+            } else {
+                FlowInstruction::seq(vec![])
             }
         }
 

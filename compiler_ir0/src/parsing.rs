@@ -150,6 +150,31 @@ mod interface {
         }
     }
 
+    impl Period {
+        pub fn peek(input: ParseStream) -> bool {
+            input.peek(keyword::period)
+        }
+    }
+    impl Parse for Period {
+        fn parse(input: ParseStream) -> syn::Res<Self> {
+            let period_token: keyword::period = input.parse()?;
+            let content;
+            let paren_token: token::Paren = parenthesized!(content in input);
+            let period = if content.peek(LitInt) {
+                let period_ms: LitInt = content.parse()?;
+                Period::new_lit(period_token, paren_token, period_ms)
+            } else {
+                let period_ms: Ident = content.parse()?;
+                Period::new_id(period_token, paren_token, period_ms)
+            };
+            if content.is_empty() {
+                Ok(period)
+            } else {
+                Err(content.error("expected two input expressions"))
+            }
+        }
+    }
+
     impl Function {
         pub fn peek(input: ParseStream) -> bool {
             input.peek(keyword::function)
@@ -382,6 +407,8 @@ mod interface {
                 Ok(Self::time(input.parse()?))
             } else if input.fork().call(Call::parse).is_ok() {
                 Ok(Self::comp_call(input.parse()?))
+            } else if Period::peek(input) {
+                Ok(Self::period(input.parse()?))
             } else {
                 let ident: Ident = input.parse()?;
                 Ok(Self::ident(ident))
