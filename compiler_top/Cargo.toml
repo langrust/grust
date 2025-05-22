@@ -1,10 +1,10 @@
 [package]
 name = "compiler_top"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 
 [dependencies]
-compiler_common = { path = "../compiler_common" }
-compiler_ir0 = { path = "../compiler_ir0" }
-compiler_ir1 = { path = "../compiler_ir1" }
-compiler_ir2 = { path = "../compiler_ir2" }
+compiler_common = {workspace = true}
+compiler_ir0 = {workspace = true}
+compiler_ir1 = {workspace = true}
+compiler_ir2 = {workspace = true}

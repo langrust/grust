@@ -1,11 +1,11 @@
 [package]
 name = "acc_fmics"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 
 [dependencies]
-grust = { path = "../../grust" }
-priority_stream = { path = "../../priority_stream" }
-timer_stream = { path = "../../timer_stream" }
-tokio = { version = "1.38.0", features = ["full"] }
-futures = "0.3.30"
+grust = { workspace = true }
+priority_stream = { workspace = true }
+timer_stream = { workspace = true }
+tokio = { workspace = true }
+futures = { workspace = true }

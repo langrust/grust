@@ -1,14 +1,14 @@
 [package]
 name = "compiler_ir2"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-compiler_common = { path = "../compiler_common" }
-compiler_ir0 = { path = "../compiler_ir0" }
-compiler_ir1 = { path = "../compiler_ir1" }
+compiler_common = {workspace = true}
+compiler_ir0 = {workspace = true}
+compiler_ir1 = {workspace = true}
 
 [dev-dependencies]
-rayon = "^1.10"
+rayon = {workspace = true}

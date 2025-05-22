@@ -1,11 +1,14 @@
 [package]
 name = "timer_stream"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 
 [dependencies]
-array-init = "2.1.0"
-pin-project = "1.1.5"
-rand = "0.8.5"
-tokio = { version = "1.38.0", features = [ "macros", "rt", "time", "sync" ] }
-futures = "0.3.30"
+array-init = { workspace = true }
+pin-project = { workspace = true }
+rand = { workspace = true }
+tokio = { workspace = true }
+futures = { workspace = true }
+
+[lints]
+workspace = true

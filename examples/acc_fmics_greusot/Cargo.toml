@@ -1,8 +1,8 @@
 [package]
 name = "acc_fmics_greusot"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 
 [dependencies]
-grust = { path = "../../grust" }
-creusot-contracts = { path = "../../creusot/creusot-contracts" }
+grust = {workspace = true}
+creusot-contracts = {workspace = true}
