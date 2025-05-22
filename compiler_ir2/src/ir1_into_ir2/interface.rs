@@ -238,7 +238,7 @@ mod service_handler {
         // construct subgraph representing the propagation of 'imports'
         let subgraph = &ctx.graph().subgraph(imports);
 
-        let synced = if ctx.conf.para {
+        let synced = if ctx.conf.service_para {
             // if config is 'para' then build 'synced' with //-algo
             if subgraph.node_count() == 0 {
                 return FlowInstruction::seq(vec![]);
