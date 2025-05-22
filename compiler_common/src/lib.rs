@@ -9,7 +9,6 @@ pub extern crate proc_macro as macro1;
 pub extern crate proc_macro2 as macro2;
 pub extern crate quote;
 pub extern crate rustc_hash;
-pub extern crate safe_index;
 pub extern crate serde;
 pub extern crate strum;
 pub extern crate syn;

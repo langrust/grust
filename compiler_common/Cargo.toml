@@ -17,7 +17,6 @@ strum = { workspace = true }
 petgraph = { workspace = true }
 once_cell = { workspace = true }
 itertools = { workspace = true }
-safe_index = { workspace = true }
 either = { workspace = true }
 json = { workspace = true }
 
