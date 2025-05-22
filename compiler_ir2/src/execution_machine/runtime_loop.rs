@@ -28,8 +28,8 @@ impl ToTokens for RuntimeLoopTokens<'_> {
             .in_flows
             .iter()
             .filter(|flow| !flow.typ.is_event())
-            .map(|InterfaceFlow { ident, typ, .. }| {
-                quote! { #ident: #typ }
+            .map(|InterfaceFlow { ident, .. }| {
+                quote! { #ident }
             });
 
         // todo: call init functions of services with initial signals' values
@@ -98,10 +98,13 @@ impl ToTokens for RuntimeLoopTokens<'_> {
                 self,
                 #init_instant: std::time::Instant,
                 input: impl futures::Stream<Item = I>,
-                #(#init_args),*
+                init_vals: RuntimeInit,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 futures::pin_mut!(input);
                 let mut runtime = self;
+                let RuntimeInit {
+                    #(#init_args),*
+                } = init_vals;
                 #(#run_inits)*
                 #async_loop
                 Ok(())

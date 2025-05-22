@@ -261,7 +261,7 @@ use interface::{
 };
 use lazy_static::lazy_static;
 use priority_stream::prio_stream;
-use sl::runtime::{Runtime, RuntimeInput, RuntimeOutput};
+use sl::runtime::{Runtime, RuntimeInit, RuntimeInput, RuntimeOutput};
 use std::time::{Duration, Instant};
 use tonic::{transport::Server, Request, Response, Status, Streaming};
 
@@ -387,10 +387,12 @@ impl Sl for SlRuntime {
         tokio::spawn(speed_limiter_service.run_loop(
             INIT.clone(),
             input_stream,
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
+            RuntimeInit {
+                vdc: Default::default(),
+                vacuum_brake: Default::default(),
+                set_speed: Default::default(),
+                speed: Default::default(),
+            },
         ));
 
         Ok(Response::new(output_stream.map(

@@ -19,7 +19,7 @@ mod scan_sample {
 use futures::{Stream, StreamExt};
 use lazy_static::lazy_static;
 use priority_stream::prio_stream;
-use scan_sample::runtime::{Runtime, RuntimeInput, RuntimeOutput, RuntimeTimer};
+use scan_sample::runtime::{Runtime, RuntimeInit, RuntimeInput, RuntimeOutput, RuntimeTimer};
 use std::time::Instant;
 use timer_stream::timer_stream;
 
@@ -42,7 +42,11 @@ pub fn run_scan_sample(
     );
 
     let scan_sample_service = Runtime::new(output_sink, timers_sink);
-    tokio::spawn(scan_sample_service.run_loop(INIT.clone(), input_stream, 10.0));
+    tokio::spawn(scan_sample_service.run_loop(
+        INIT.clone(),
+        input_stream,
+        RuntimeInit { temperature: 10.0 },
+    ));
 
     output_stream
 }

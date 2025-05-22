@@ -310,6 +310,13 @@ pub mod runtime {
         VSet(f64, std::time::Instant),
     }
     use RuntimeOutput as O;
+    #[derive(Debug)]
+    pub struct RuntimeInit {
+        pub vdc: VdcState,
+        pub vacuum_brake: VacuumBrakeState,
+        pub set_speed: f64,
+        pub speed: f64,
+    }
     pub struct Runtime {
         speed_limiter: speed_limiter_service::SpeedLimiterService,
         output: futures::channel::mpsc::Sender<O>,
@@ -326,13 +333,16 @@ pub mod runtime {
             self,
             _grust_reserved_init_instant: std::time::Instant,
             input: impl futures::Stream<Item = I>,
-            vdc: VdcState,
-            vacuum_brake: VacuumBrakeState,
-            set_speed: f64,
-            speed: f64,
+            init_vals: RuntimeInit,
         ) -> Result<(), futures::channel::mpsc::SendError> {
             futures::pin_mut!(input);
             let mut runtime = self;
+            let RuntimeInit {
+                vdc,
+                vacuum_brake,
+                set_speed,
+                speed,
+            } = init_vals;
             runtime
                 .speed_limiter
                 .handle_init(

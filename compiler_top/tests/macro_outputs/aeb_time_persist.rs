@@ -90,29 +90,6 @@ impl grust::core::Component for BrakingStateState {
 pub mod runtime {
     use super::*;
     use futures::{sink::SinkExt, stream::StreamExt};
-    #[derive(PartialEq)]
-    pub enum RuntimeTimer {
-        TimeoutTimeoutPedest,
-        DelayAeb,
-        TimeoutAeb,
-    }
-    use RuntimeTimer as T;
-    impl timer_stream::Timing for RuntimeTimer {
-        fn get_duration(&self) -> std::time::Duration {
-            match self {
-                T::TimeoutTimeoutPedest => std::time::Duration::from_millis(2000u64),
-                T::DelayAeb => std::time::Duration::from_millis(10u64),
-                T::TimeoutAeb => std::time::Duration::from_millis(3000u64),
-            }
-        }
-        fn do_reset(&self) -> bool {
-            match self {
-                T::TimeoutTimeoutPedest => true,
-                T::DelayAeb => true,
-                T::TimeoutAeb => true,
-            }
-        }
-    }
     pub enum RuntimeInput {
         SpeedKmH(f64, std::time::Instant),
         PedestrianL(f64, std::time::Instant),
@@ -157,6 +134,31 @@ pub mod runtime {
         Brakes(Braking, std::time::Instant),
     }
     use RuntimeOutput as O;
+    #[derive(Debug)]
+    pub struct RuntimeInit {}
+    #[derive(PartialEq)]
+    pub enum RuntimeTimer {
+        TimeoutTimeoutPedest,
+        DelayAeb,
+        TimeoutAeb,
+    }
+    use RuntimeTimer as T;
+    impl timer_stream::Timing for RuntimeTimer {
+        fn get_duration(&self) -> std::time::Duration {
+            match self {
+                T::TimeoutTimeoutPedest => std::time::Duration::from_millis(2000u64),
+                T::DelayAeb => std::time::Duration::from_millis(10u64),
+                T::TimeoutAeb => std::time::Duration::from_millis(3000u64),
+            }
+        }
+        fn do_reset(&self) -> bool {
+            match self {
+                T::TimeoutTimeoutPedest => true,
+                T::DelayAeb => true,
+                T::TimeoutAeb => true,
+            }
+        }
+    }
     pub struct Runtime {
         aeb: aeb_service::AebService,
         output: futures::channel::mpsc::Sender<O>,
@@ -183,9 +185,11 @@ pub mod runtime {
             self,
             _grust_reserved_init_instant: std::time::Instant,
             input: impl futures::Stream<Item = I>,
+            init_vals: RuntimeInit,
         ) -> Result<(), futures::channel::mpsc::SendError> {
             futures::pin_mut!(input);
             let mut runtime = self;
+            let RuntimeInit {} = init_vals;
             runtime
                 .aeb
                 .handle_init(_grust_reserved_init_instant)

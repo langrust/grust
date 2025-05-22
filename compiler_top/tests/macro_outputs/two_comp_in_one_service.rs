@@ -1,29 +1,6 @@
 pub mod runtime {
     use super::*;
     use futures::{sink::SinkExt, stream::StreamExt};
-    #[derive(PartialEq)]
-    pub enum RuntimeTimer {
-        TimeoutX,
-        DelayTest,
-        TimeoutTest,
-    }
-    use RuntimeTimer as T;
-    impl timer_stream::Timing for RuntimeTimer {
-        fn get_duration(&self) -> std::time::Duration {
-            match self {
-                T::TimeoutX => std::time::Duration::from_millis(1000u64),
-                T::DelayTest => std::time::Duration::from_millis(10u64),
-                T::TimeoutTest => std::time::Duration::from_millis(3000u64),
-            }
-        }
-        fn do_reset(&self) -> bool {
-            match self {
-                T::TimeoutX => true,
-                T::DelayTest => true,
-                T::TimeoutTest => true,
-            }
-        }
-    }
     pub enum RuntimeInput {
         Reset(bool, std::time::Instant),
         Timer(T, std::time::Instant),
@@ -63,6 +40,33 @@ pub mod runtime {
         O1(i64, std::time::Instant),
     }
     use RuntimeOutput as O;
+    #[derive(Debug)]
+    pub struct RuntimeInit {
+        pub reset: bool,
+    }
+    #[derive(PartialEq)]
+    pub enum RuntimeTimer {
+        TimeoutX,
+        DelayTest,
+        TimeoutTest,
+    }
+    use RuntimeTimer as T;
+    impl timer_stream::Timing for RuntimeTimer {
+        fn get_duration(&self) -> std::time::Duration {
+            match self {
+                T::TimeoutX => std::time::Duration::from_millis(1000u64),
+                T::DelayTest => std::time::Duration::from_millis(10u64),
+                T::TimeoutTest => std::time::Duration::from_millis(3000u64),
+            }
+        }
+        fn do_reset(&self) -> bool {
+            match self {
+                T::TimeoutX => true,
+                T::DelayTest => true,
+                T::TimeoutTest => true,
+            }
+        }
+    }
     pub struct Runtime {
         test: test_service::TestService,
         output: futures::channel::mpsc::Sender<O>,
@@ -93,10 +97,11 @@ pub mod runtime {
             self,
             _grust_reserved_init_instant: std::time::Instant,
             input: impl futures::Stream<Item = I>,
-            reset: bool,
+            init_vals: RuntimeInit,
         ) -> Result<(), futures::channel::mpsc::SendError> {
             futures::pin_mut!(input);
             let mut runtime = self;
+            let RuntimeInit { reset } = init_vals;
             runtime
                 .test
                 .handle_init(_grust_reserved_init_instant, reset)
