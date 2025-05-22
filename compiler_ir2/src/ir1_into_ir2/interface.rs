@@ -1147,12 +1147,12 @@ mod flow_instr {
             debug_assert!(ids.len() == 1);
             let id_pattern = ids.pop().unwrap();
 
-            // get the source id, debug-check there is only one flow
+            // get the source id, debug-check there is only two flows
             debug_assert!(dependencies.len() == 2);
-            let id_source_1 = dependencies.pop().unwrap();
-            let event_1 = self.get_name(id_source_1).clone();
             let id_source_2 = dependencies.pop().unwrap();
             let event_2 = self.get_name(id_source_2).clone();
+            let id_source_1 = dependencies.pop().unwrap();
+            let event_1 = self.get_name(id_source_1).clone();
 
             let expr_1 = self.get_event(id_source_1);
             let instr_1 = self.define_event(id_pattern, expr_1);

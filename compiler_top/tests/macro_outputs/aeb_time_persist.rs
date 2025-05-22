@@ -1156,11 +1156,11 @@ pub mod runtime {
                             let pedestrian_l_ref = &mut None;
                             *pedestrian_r_ref = Some(pedestrian_r);
                             *pedestrian_l_ref = Some(pedestrian_l);
-                            if pedestrian_r_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_r_ref;
+                            if pedestrian_l_ref.is_some() {
+                                *pedestrian_ref = *pedestrian_l_ref;
                             } else {
-                                if pedestrian_l_ref.is_some() {
-                                    *pedestrian_ref = *pedestrian_l_ref;
+                                if pedestrian_r_ref.is_some() {
+                                    *pedestrian_ref = *pedestrian_r_ref;
                                 }
                             }
                             if pedestrian_ref.is_some() {
@@ -1216,11 +1216,11 @@ pub mod runtime {
                             let pedestrian_l_ref = &mut None;
                             *pedestrian_r_ref = Some(pedestrian_r);
                             *pedestrian_l_ref = Some(pedestrian_l);
-                            if pedestrian_r_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_r_ref;
+                            if pedestrian_l_ref.is_some() {
+                                *pedestrian_ref = *pedestrian_l_ref;
                             } else {
-                                if pedestrian_l_ref.is_some() {
-                                    *pedestrian_ref = *pedestrian_l_ref;
+                                if pedestrian_r_ref.is_some() {
+                                    *pedestrian_ref = *pedestrian_r_ref;
                                 }
                             }
                             if pedestrian_ref.is_some() {
@@ -1415,11 +1415,11 @@ pub mod runtime {
                             let pedestrian_l_ref = &mut None;
                             *pedestrian_r_ref = Some(pedestrian_r);
                             *pedestrian_l_ref = Some(pedestrian_l);
-                            if pedestrian_r_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_r_ref;
+                            if pedestrian_l_ref.is_some() {
+                                *pedestrian_ref = *pedestrian_l_ref;
                             } else {
-                                if pedestrian_l_ref.is_some() {
-                                    *pedestrian_ref = *pedestrian_l_ref;
+                                if pedestrian_r_ref.is_some() {
+                                    *pedestrian_ref = *pedestrian_r_ref;
                                 }
                             }
                             if pedestrian_ref.is_some() {
@@ -1481,11 +1481,11 @@ pub mod runtime {
                             let pedestrian_l_ref = &mut None;
                             *pedestrian_r_ref = Some(pedestrian_r);
                             *pedestrian_l_ref = Some(pedestrian_l);
-                            if pedestrian_r_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_r_ref;
+                            if pedestrian_l_ref.is_some() {
+                                *pedestrian_ref = *pedestrian_l_ref;
                             } else {
-                                if pedestrian_l_ref.is_some() {
-                                    *pedestrian_ref = *pedestrian_l_ref;
+                                if pedestrian_r_ref.is_some() {
+                                    *pedestrian_ref = *pedestrian_r_ref;
                                 }
                             }
                             if pedestrian_ref.is_some() {
