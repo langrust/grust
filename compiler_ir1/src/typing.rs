@@ -256,40 +256,36 @@ impl Typing for interface::FlowStatement {
 
 impl Typing for flow::Expr {
     fn typ_check(&mut self, symbols: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
-        let loc = self.loc;
         match &mut self.kind {
             flow::Kind::Ident { id } => {
-                let typ = symbols.get_typ(*id);
-                self.typ = Some(typ.clone());
+                self.typ = Some(symbols.get_typ(*id).clone());
                 Ok(())
             }
             flow::Kind::Sample { expr, .. } => {
                 expr.typ_check(symbols, errors)?;
                 // get expression type
-                let typ = expr.get_typ().unwrap();
-                match typ {
+                match expr.get_typ().unwrap() {
                     Typ::Event { ty: typ, .. } => {
                         // set typing
                         self.typ = Some(Typ::event((**typ).clone()));
                         Ok(())
                     }
                     given_type => {
-                        bad!(errors, @loc => ErrorKind::expected_event(given_type.clone()))
+                        bad!(errors, @expr.loc => ErrorKind::expected_event(given_type.clone()))
                     }
                 }
             }
             flow::Kind::Scan { expr, .. } => {
                 expr.typ_check(symbols, errors)?;
                 // get expression type
-                let typ = expr.get_typ().unwrap();
-                match typ {
+                match expr.get_typ().unwrap() {
                     Typ::Signal { ty: typ, .. } => {
                         // set typ
                         self.typ = Some(Typ::signal((**typ).clone()));
                         Ok(())
                     }
                     given_type => {
-                        bad!(errors, @loc => ErrorKind::expected_signal(given_type.clone()))
+                        bad!(errors, @expr.loc => ErrorKind::expected_signal(given_type.clone()))
                     }
                 }
             }
@@ -299,7 +295,7 @@ impl Typing for flow::Expr {
                 match expr.get_typ().unwrap() {
                     Typ::Event { .. } => (),
                     given_type => {
-                        bad!(errors, @loc => ErrorKind::expected_event(given_type.clone()))
+                        bad!(errors, @expr.loc => ErrorKind::expected_event(given_type.clone()))
                     }
                 }
                 // set typing
@@ -309,8 +305,7 @@ impl Typing for flow::Expr {
             flow::Kind::Throttle { expr, delta } => {
                 expr.typ_check(symbols, errors)?;
                 // get expression type
-                let typ = expr.get_typ().unwrap();
-                match typ {
+                match expr.get_typ().unwrap() {
                     Typ::Signal { ty: typ, .. } => {
                         let delta_ty = delta.get_typ();
                         typ.expect(expr.loc, &delta_ty).dewrap(errors)?;
@@ -319,37 +314,35 @@ impl Typing for flow::Expr {
                         Ok(())
                     }
                     given_type => {
-                        bad!(errors, @loc => ErrorKind::expected_signal(given_type.clone()))
+                        bad!(errors, @expr.loc => ErrorKind::expected_signal(given_type.clone()))
                     }
                 }
             }
             flow::Kind::OnChange { expr } => {
                 expr.typ_check(symbols, errors)?;
                 // get expression type
-                let typ = expr.get_typ().unwrap();
-                match typ {
+                match expr.get_typ().unwrap() {
                     Typ::Signal { ty: typ, .. } => {
                         // set typing
                         self.typ = Some(Typ::event((**typ).clone()));
                         Ok(())
                     }
                     given_type => {
-                        bad!(errors, @loc => ErrorKind::expected_signal(given_type.clone()))
+                        bad!(errors, @expr.loc => ErrorKind::expected_signal(given_type.clone()))
                     }
                 }
             }
             flow::Kind::Persist { expr } => {
                 expr.typ_check(symbols, errors)?;
                 // get expression type
-                let typ = expr.get_typ().unwrap();
-                match typ {
+                match expr.get_typ().unwrap() {
                     Typ::Event { ty: typ, .. } => {
                         // set typing
                         self.typ = Some(Typ::signal((**typ).clone()));
                         Ok(())
                     }
                     given_type => {
-                        bad!(errors, @loc => ErrorKind::expected_event(given_type.clone()))
+                        bad!(errors, @expr.loc => ErrorKind::expected_event(given_type.clone()))
                     }
                 }
             }
@@ -361,18 +354,18 @@ impl Typing for flow::Expr {
                     Typ::Event { ty: typ_1, .. } => {
                         match expr_2.get_typ().unwrap() {
                             Typ::Event { ty: typ_2, .. } => {
-                                typ_2.expect(loc, typ_1).dewrap(errors)?;
+                                typ_2.expect(expr_2.loc, typ_1).dewrap(errors)?;
                                 // set typing
                                 self.typ = Some(Typ::event((**typ_1).clone()));
                                 Ok(())
                             }
                             given_type => {
-                                bad!(errors, @loc => ErrorKind::expected_event(given_type.clone()))
+                                bad!(errors, @expr_2.loc => ErrorKind::expected_event(given_type.clone()))
                             }
                         }
                     }
                     given_type => {
-                        bad!(errors, @loc => ErrorKind::expected_event(given_type.clone()))
+                        bad!(errors, @expr_1.loc => ErrorKind::expected_event(given_type.clone()))
                     }
                 }
             }
@@ -383,6 +376,48 @@ impl Typing for flow::Expr {
             flow::Kind::Period { .. } => {
                 self.typ = Some(Typ::event(Typ::float()));
                 Ok(())
+            }
+            flow::Kind::SampleOn { expr, event } => {
+                expr.typ_check(symbols, errors)?;
+                event.typ_check(symbols, errors)?;
+                // get expression type
+                match expr.get_typ().unwrap() {
+                    Typ::Event { ty: typ, .. } => {
+                        // set typing
+                        self.typ = Some(Typ::event((**typ).clone()));
+                        // check 'event' is an event
+                        match event.get_typ().unwrap() {
+                            Typ::Event { .. } => Ok(()),
+                            given_type => {
+                                bad!(errors, @event.loc => ErrorKind::expected_event(given_type.clone()))
+                            }
+                        }
+                    }
+                    given_type => {
+                        bad!(errors, @expr.loc => ErrorKind::expected_event(given_type.clone()))
+                    }
+                }
+            }
+            flow::Kind::ScanOn { expr, event } => {
+                expr.typ_check(symbols, errors)?;
+                event.typ_check(symbols, errors)?;
+                // get expression type
+                match expr.get_typ().unwrap() {
+                    Typ::Signal { ty: typ, .. } => {
+                        // set typ
+                        self.typ = Some(Typ::signal((**typ).clone()));
+                        // check 'event' is an event
+                        match event.get_typ().unwrap() {
+                            Typ::Event { .. } => Ok(()),
+                            given_type => {
+                                bad!(errors, @event.loc => ErrorKind::expected_event(given_type.clone()))
+                            }
+                        }
+                    }
+                    given_type => {
+                        bad!(errors, @expr.loc => ErrorKind::expected_signal(given_type.clone()))
+                    }
+                }
             }
             flow::Kind::ComponentCall {
                 ref called_comp_id,

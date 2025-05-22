@@ -334,12 +334,12 @@ mod interface_impl {
             ir0::interface::{
                 FlowExpression, Call, OnChange, Merge,
                 Scan, Throttle, Timeout, Time, Persist,
-                Period
+                Period, Sample, SampleOn, ScanOn,
             },
             ir1::flow,
         }
 
-        impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for ir0::interface::Sample {
+        impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for Sample {
             type Ir1 = ir1::flow::Kind;
 
             /// Transforms AST into [ir1] and check identifiers good use.
@@ -438,6 +438,30 @@ mod interface_impl {
             }
         }
 
+        impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for SampleOn {
+            type Ir1 = ir1::flow::Kind;
+
+            /// Transforms AST into [ir1] and check identifiers good use.
+            fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
+                Ok(ir1::flow::Kind::sample_on(
+                    self.expr.into_ir1(ctx)?,
+                    self.event.into_ir1(ctx)?,
+                ))
+            }
+        }
+
+        impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for ScanOn {
+            type Ir1 = ir1::flow::Kind;
+
+            /// Transforms AST into [ir1] and check identifiers good use.
+            fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
+                Ok(ir1::flow::Kind::scan_on(
+                    self.expr.into_ir1(ctx)?,
+                    self.event.into_ir1(ctx)?,
+                ))
+            }
+        }
+
         impl<'a> Ir0IntoIr1<ir1::ctx::WithLoc<'a>> for Call {
             type Ir1 = ir1::flow::Kind;
 
@@ -514,6 +538,8 @@ mod interface_impl {
                     FlowExpression::Merge(expr) => expr.into_ir1(ctx)?,
                     FlowExpression::Time(expr) => expr.into_ir1(ctx)?,
                     FlowExpression::Period(expr) => expr.into_ir1(ctx)?,
+                    FlowExpression::SampleOn(expr) => expr.into_ir1(ctx)?,
+                    FlowExpression::ScanOn(expr) => expr.into_ir1(ctx)?,
                 };
                 Ok(flow::Expr {
                     kind,
