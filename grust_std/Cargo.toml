@@ -1,8 +1,8 @@
 [package]
 name = "grust_std"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 
 [dependencies]
-rayon = "^1.10"
-grust_core = { path = "../grust_core" }
+rayon = { workspace = true }
+grust_core = { workspace = true }

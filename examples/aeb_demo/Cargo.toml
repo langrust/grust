@@ -1,25 +1,25 @@
 [package]
 name = "aeb_demo"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-grust = { path = "../../grust" }
-json = { path = "../../json" }
-priority_stream = { path = "../../priority_stream" }
-timer_stream = { path = "../../timer_stream" }
-tokio = { version = "1.38.0", features = ["full"] }
-futures = "0.3.30"
-prost = "0.12"
-prost-types = "0.12"
-tonic = "0.11.0"
-serde = { version = "1.0.139", features = ["derive"] }
-lazy_static = "1.4.0"
+grust = { workspace = true }
+json = { workspace = true }
+priority_stream = { workspace = true }
+timer_stream = { workspace = true }
+tokio = { workspace = true }
+futures = { workspace = true }
+prost ={ workspace = true }
+prost-types = { workspace = true }
+tonic = { workspace = true }
+serde = { workspace = true }
+lazy_static = { workspace = true }
 
 [build-dependencies]
-tonic-build = "0.11.0"
+tonic-build = { workspace = true }
 
 [[bin]]
 name = "aeb-demo-server"

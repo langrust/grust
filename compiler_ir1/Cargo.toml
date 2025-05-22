@@ -1,8 +1,8 @@
 [package]
 name = "compiler_ir1"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 
 [dependencies]
-compiler_common = { path = "../compiler_common" }
-compiler_ir0 = { path = "../compiler_ir0" }
+compiler_common = { workspace = true }
+compiler_ir0 = { workspace = true }

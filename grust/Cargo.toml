@@ -1,11 +1,11 @@
 [package]
 name = "grust"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-proc = { path = "../proc" }
-grust_std = { path = "../grust_std" }
-grust_core = { path = "../grust_core" }
+proc = {workspace = true}
+grust_std = {workspace = true}
+grust_core = {workspace = true}
