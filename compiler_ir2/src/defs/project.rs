@@ -21,7 +21,11 @@ impl Project {
 impl ToTokens for ProjectTokens<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream2) {
         let ctx = self.ctx;
-        let mut logic_fun: Option<Vec<_>> = if ctx.conf.greusot { Some(vec![]) } else { None };
+        let mut logic_fun: Option<Vec<_>> = if ctx.conf.mode.greusot() {
+            Some(vec![])
+        } else {
+            None
+        };
         macro_rules! add_logic {
             { $($stuff:tt)* } => {
                 if let Some(vec) = logic_fun.as_mut() {
@@ -30,7 +34,7 @@ impl ToTokens for ProjectTokens<'_> {
             };
         }
 
-        if ctx.conf.greusot {
+        if ctx.conf.mode.greusot() {
             quote!(
                 use creusot_contracts::{DeepModel, ensures, logic, open, prelude, requires};
             )
@@ -40,12 +44,12 @@ impl ToTokens for ProjectTokens<'_> {
         for item in self.project.items.iter() {
             match item {
                 Item::ExecutionMachine(em) => {
-                    if ctx.conf.test || ctx.conf.demo {
+                    if ctx.conf.mode.test() || ctx.conf.mode.demo() {
                         em.to_tokens(tokens)
                     }
                 }
                 Item::StateMachine(sm) => sm
-                    .prepare_tokens(ctx.conf.greusot, ctx.conf.align, ctx.conf.public)
+                    .prepare_tokens(ctx.conf.mode.greusot(), ctx.conf.align, ctx.conf.public)
                     .to_tokens(tokens),
                 Item::Function(fun) => {
                     let (def, logic_opt) = fun.to_def_and_logic_tokens(ctx);
@@ -55,10 +59,10 @@ impl ToTokens for ProjectTokens<'_> {
                     }
                 }
                 Item::Enumeration(enumeration) => enumeration
-                    .prepare_tokens(ctx.conf.public, ctx.conf.greusot)
+                    .prepare_tokens(ctx.conf.public, ctx.conf.mode.greusot())
                     .to_tokens(tokens),
                 Item::Structure(structure) => structure
-                    .prepare_tokens(ctx.conf.public, ctx.conf.greusot)
+                    .prepare_tokens(ctx.conf.public, ctx.conf.mode.greusot())
                     .to_tokens(tokens),
                 Item::ArrayAlias(alias) => alias.prepare_tokens(ctx.conf.public).to_tokens(tokens),
             }

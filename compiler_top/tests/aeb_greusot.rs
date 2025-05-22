@@ -3,7 +3,7 @@ compiler_top::prelude! {}
 #[test]
 fn should_compile_aeb_greusot() {
     let top: ir0::Top = parse_quote! {
-        #![dump = "tests/macro_outputs/aeb_greusot.rs", greusot]
+        #![dump = "tests/macro_outputs/aeb_greusot.rs", mode = greusot]
 
         // Braking type
         enum Braking {

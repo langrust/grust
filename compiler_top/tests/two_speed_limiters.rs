@@ -3,7 +3,7 @@ compiler_top::prelude! {}
 #[test]
 fn should_compile_two_speed_limiters() {
     let top: ir0::Top = parse_quote! {
-        #![dump = "tests/macro_outputs/two_speed_limiters.rs", test]
+        #![dump = "tests/macro_outputs/two_speed_limiters.rs", mode = test]
 
         // # Imports
         import signal  car::hmi::speed_limiter::activation : ActivationRequest;

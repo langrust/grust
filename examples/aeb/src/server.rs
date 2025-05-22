@@ -2,7 +2,7 @@ mod aeb {
     use grust::grust;
 
     grust! {
-        #![test]
+        #![mode = test]
         import signal car::speed_km_h                   : float;
         import event  car::detect::left::pedestrian_l   : float;
         import event  car::detect::right::pedestrian_r  : float;

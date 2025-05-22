@@ -3,7 +3,7 @@ compiler_top::prelude! {}
 #[test]
 fn should_compile_aeb() {
     let top: ir0::Top = parse_quote! {
-        #![dump = "tests/macro_outputs/aeb.rs", demo, propag = "onchange"]
+        #![dump = "tests/macro_outputs/aeb.rs", mode = demo]
 
         import signal car::speed_km_h                   : float;
         import event  car::detect::left::pedestrian_l   : float;

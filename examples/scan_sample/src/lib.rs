@@ -2,7 +2,7 @@ mod scan_sample {
     use grust::grust;
 
     grust! {
-        #![demo, dump = "examples/scan_sample/out/dumped.rs"]
+        #![mode = demo, dump = "examples/scan_sample/out/dumped.rs"]
         import signal temperature: float;
         import event pedestrian: float;
 

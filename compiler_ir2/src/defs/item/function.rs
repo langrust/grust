@@ -36,7 +36,7 @@ impl Function {
             quote! {}
         };
 
-        if ctx.conf.greusot {
+        if ctx.conf.mode.greusot() {
             let logic_args = self.inputs.iter().map(|(name, ty)| {
                 let mut ts = name.to_token_stream();
                 if ty.needs_view() {

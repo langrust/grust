@@ -3,7 +3,7 @@
 use grust::grust;
 
 grust! {
-    #![greusot]
+    #![mode = greusot]
 
     // Braking type
     enum Braking {

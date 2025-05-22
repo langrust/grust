@@ -13,6 +13,7 @@ pub enum Propagation {
     OnChange,
 }
 
+/// Component parallelization configuration.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ComponentPara {
     None,
@@ -61,6 +62,38 @@ impl ComponentPara {
 
     pub fn decide(&self, weight: synced::Weight) -> synced::Kind {
         synced::Kind::decide(self, weight)
+    }
+}
+
+/// Compilation modes.
+#[derive(Clone, Default)]
+pub enum CompilationMode {
+    #[default]
+    Demo,
+    Greusot,
+    Test,
+}
+impl CompilationMode {
+    /// Tells if the compilation mode is GReusot or not.
+    pub fn greusot(&self) -> bool {
+        if let Self::Greusot = self {
+            return true;
+        }
+        return false;
+    }
+    /// Tells if the compilation mode is Test or not.
+    pub fn test(&self) -> bool {
+        if let Self::Test = self {
+            return true;
+        }
+        return false;
+    }
+    /// Tells if the compilation mode is Demo or not.
+    pub fn demo(&self) -> bool {
+        if let Self::Demo = self {
+            return true;
+        }
+        return false;
     }
 }
 
@@ -151,39 +184,15 @@ build_conf! {
         dump_graph: Option<syn::LitStr> = None =>
             /// Item for the `dump_graph` configuration value.
             DumpGraph,
-        greusot: bool = false =>
-            /// Item for the `greusot` configuration value.
-            Greusot,
-        test: bool = false =>
-            /// Item for the `test` configuration value.
-            Test,
-        demo: bool = false =>
-            /// Item for the `demo` configuration value.
-            Demo,
+        mode: CompilationMode = CompilationMode::default() =>
+            /// Item for the `mode` configuration value.
+            Mode,
         levenshtein: bool = false =>
             /// Item for the `levenshtein` configuration value.
             Levenshtein,
         stats_depth: usize = 0 =>
             /// Item for the `stats_depth` configuration value.
             StatsDepth,
-    }
-}
-
-impl Conf {
-    pub fn check_sanity(&self, report_on: Span) -> syn::Res<()> {
-        if self.greusot && (self.test || self.demo) {
-            return Err(syn::Error::new(
-                report_on,
-                "illegal configuration: `greusot` cannot be active in `test` or `demo` modes",
-            ));
-        }
-        if self.test && self.demo {
-            return Err(syn::Error::new(
-                report_on,
-                "illegal configuration: `test` and `demo` modes are incompatible",
-            ));
-        }
-        Ok(())
     }
 }
 
@@ -197,15 +206,31 @@ mod parsing {
             let item = match ident.to_string().as_str() {
                 "propag" => {
                     let _: Token![=] = input.parse()?;
-                    let val: syn::LitStr = input.parse()?;
-                    match val.value().as_str() {
+                    let ident: Ident = input.parse()?;
+                    match ident.to_string().as_str() {
                         "onchange" => Self::Propagation(span, Propagation::OnChange),
                         "onevent" => Self::Propagation(span, Propagation::EventIsles),
                         _ => {
                             return Err(syn::Error::new_spanned(
-                                val,
+                                ident,
                                 "unexpected propagation configuration, \
                                 expected `onchange` or `onevent`",
+                            ));
+                        }
+                    }
+                }
+                "mode" => {
+                    let _: Token![=] = input.parse()?;
+                    let ident: Ident = input.parse()?;
+                    match ident.to_string().as_str() {
+                        "greusot" => Self::Mode(span, CompilationMode::Greusot),
+                        "test" => Self::Mode(span, CompilationMode::Test),
+                        "demo" => Self::Mode(span, CompilationMode::Demo),
+                        _ => {
+                            return Err(syn::Error::new_spanned(
+                                ident,
+                                "unexpected compilation mode, \
+                                expected `demo`, `test` or `greusot`",
                             ));
                         }
                     }
@@ -228,6 +253,19 @@ mod parsing {
                 }
                 "para" => Self::Para(span, true),
                 "align" => Self::AlignMem(span, true),
+                "public" => {
+                    let _: Token![=] = input.parse()?;
+                    let val: syn::LitBool = input.parse()?;
+                    let val: bool = val.value();
+                    Self::PubThings(span, val)
+                }
+                "levenshtein" => {
+                    let _: Token![=] = input.parse()?;
+                    let val: syn::LitBool = input.parse()?;
+                    let val: bool = val.value();
+                    Self::Levenshtein(span, val)
+                }
+                "component_para" => Self::ComponentPara(span, WeightBounds::parse(input)?.into()),
                 "component_para_none" => Self::ComponentPara(span, ComponentPara::none()),
                 "component_para_threads" => Self::ComponentPara(span, ComponentPara::threads()),
                 "component_para_threads1" => {
@@ -244,22 +282,6 @@ mod parsing {
                 "component_para_rayon2" => Self::ComponentPara(span, ComponentPara::rayon_mult(2)),
                 "component_para_rayon3" => Self::ComponentPara(span, ComponentPara::rayon_mult(3)),
                 "component_para_mixed" => Self::ComponentPara(span, ComponentPara::mixed()),
-                "component_para" => Self::ComponentPara(span, WeightBounds::parse(input)?.into()),
-                "public" => {
-                    let _: Token![=] = input.parse()?;
-                    let val: syn::LitBool = input.parse()?;
-                    let val: bool = val.value();
-                    Self::PubThings(span, val)
-                }
-                "greusot" => Self::Greusot(span, true),
-                "test" => Self::Test(span, true),
-                "demo" => Self::Demo(span, true),
-                "levenshtein" => {
-                    let _: Token![=] = input.parse()?;
-                    let val: syn::LitBool = input.parse()?;
-                    let val: bool = val.value();
-                    Self::Levenshtein(span, val)
-                }
                 _ => {
                     return Err(syn::Error::new_spanned(
                         ident,
@@ -286,9 +308,7 @@ mod parsing {
                 let items: syn::Punctuated<ConfItem, Token![,]> =
                     syn::Punctuated::parse_terminated(&content)?;
                 for item in items {
-                    let span = item.span();
                     slf.with(item);
-                    slf.check_sanity(span)?;
                 }
             }
             Ok(slf)

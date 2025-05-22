@@ -3,7 +3,7 @@ compiler_top::prelude! {}
 #[test]
 fn should_compile_acc_greusot() {
     let top: ir0::Top = parse_quote! {
-        #![dump = "tests/macro_outputs/acc_greusot.rs", greusot]
+        #![dump = "tests/macro_outputs/acc_greusot.rs", mode = greusot]
 
         const RHO: int = 1; // reaction time
         const B_MAX: int = 6; // 0.6*9.81

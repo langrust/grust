@@ -528,8 +528,10 @@ impl Ir1IntoIr2<&'_ mut ir0::Ctx> for ir1::File {
             .map(Item::StateMachine);
         items.extend(state_machines);
 
-        let execution_machines = self.interface.into_ir2(&mut ctx);
-        items.push(Item::ExecutionMachine(execution_machines));
+        if !self.interface.services.is_empty() {
+            let execution_machine = self.interface.into_ir2(&mut ctx);
+            items.push(Item::ExecutionMachine(execution_machine));
+        }
 
         Project { items }
     }
