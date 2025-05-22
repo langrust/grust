@@ -40,7 +40,7 @@ pub mod runtime {
         O1(i64, std::time::Instant),
     }
     use RuntimeOutput as O;
-    #[derive(Debug)]
+    #[derive(Debug, Default)]
     pub struct RuntimeInit {
         pub reset: bool,
     }

@@ -185,7 +185,7 @@ impl ToTokens for ExecutionMachine {
                 // runtime output struct
                 {
                     quote! {
-                        #[derive(Debug)]
+                        #[derive(Debug, Default)]
                         pub struct RuntimeInit {
                             #(#init_fields),*
                         }

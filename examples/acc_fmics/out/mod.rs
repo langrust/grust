@@ -125,7 +125,7 @@ pub mod runtime {
         BrakesMS(f64, std::time::Instant),
     }
     use RuntimeOutput as O;
-    #[derive(Debug)]
+    #[derive(Debug, Default)]
     pub struct RuntimeInit {
         pub radar_m: f64,
         pub speed_km_h: f64,

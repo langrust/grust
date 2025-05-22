@@ -43,7 +43,7 @@ pub mod runtime {
         SampledPedestrian(f64, std::time::Instant),
     }
     use RuntimeOutput as O;
-    #[derive(Debug)]
+    #[derive(Debug, Default)]
     pub struct RuntimeInit {
         pub temperature: f64,
     }

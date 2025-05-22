@@ -90,7 +90,7 @@ pub mod runtime {
         Brakes(Braking, std::time::Instant),
     }
     use RuntimeOutput as O;
-    #[derive(Debug)]
+    #[derive(Debug, Default)]
     pub struct RuntimeInit {
         pub speed_km_h: f64,
     }
