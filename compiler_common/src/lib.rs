@@ -19,7 +19,6 @@ pub mod prelude;
 #[macro_use]
 mod mk_new_def;
 
-#[cfg(feature = "diagnostics")]
 mod err;
 
 mod constant;
