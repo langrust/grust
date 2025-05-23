@@ -5,6 +5,10 @@ edition.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = ["diagnostics"]
+diagnostics = []
+
 [dependencies]
 # custom hashing so that hashmap order is deterministic
 rustc-hash = { workspace = true }

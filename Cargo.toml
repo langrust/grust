@@ -40,12 +40,6 @@ negative_feature_names = "warn"
 redundant_feature_names = "warn"
 wildcard_dependencies = "warn"
 
-[profile.release]
-panic = 'abort'
-
-[profile.dev]
-panic = 'abort'
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [workspace.dependencies]
 rustc-hash = "^1.1"
@@ -86,3 +80,9 @@ timer_stream = { path = "./timer_stream" }
 grust_std = { path = "./grust_std" }
 grust_core = { path = "./grust_core" }
 grust = { path = "./grust" }
+
+[profile.release]
+panic = 'abort'
+
+[profile.dev]
+panic = 'abort'
