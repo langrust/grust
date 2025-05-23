@@ -1,4 +1,4 @@
-#![feature(proc_macro_diagnostic)]
+#![cfg_attr(feature = "diagnostics", feature(proc_macro_diagnostic))]
 
 pub extern crate itertools;
 pub extern crate json;
@@ -19,9 +19,11 @@ pub mod prelude;
 #[macro_use]
 mod mk_new_def;
 
+#[cfg(feature = "diagnostics")]
+mod err;
+
 mod constant;
 mod convert_case;
-mod err;
 mod ext;
 mod stats;
 // mod error;
