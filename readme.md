@@ -12,7 +12,7 @@ A procedural macro for the grust language.
 
 2. Restart terminal
 3. Install `protoc` (instructions: https://protobuf.dev/installation/)
-    
+
     ```text
     > sudo apt install protobuf-compiler
 
@@ -46,4 +46,3 @@ Use cargo to build everything:
 > cargo test --all
 [...]
 ```
-
