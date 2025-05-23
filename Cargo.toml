@@ -63,12 +63,13 @@ prost = "0.12"
 prost-types = "0.12"
 tonic = "0.11.0"
 tonic-build = "0.11.0"
+rustversion = "1.0"
 
-compiler_common = { path = "./compiler_common" }
+compiler_common = { path = "./compiler_common"}
 compiler_ir0 = { path = "./compiler_ir0" }
 compiler_ir1 = { path = "./compiler_ir1" }
 compiler_ir2 = { path = "./compiler_ir2" }
-compiler_top = { path = "./compiler_top" }
+compiler_top = { path = "./compiler_top"}
 
 json = { path = "./json" }
 proc = { path = "./proc" }
