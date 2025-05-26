@@ -23,9 +23,9 @@ mod err;
 
 mod constant;
 mod convert_case;
+mod err;
 mod ext;
 mod stats;
-mod err;
 // mod error;
 pub mod check;
 mod either;
