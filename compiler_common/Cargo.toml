@@ -23,7 +23,7 @@ petgraph = { workspace = true }
 once_cell = { workspace = true }
 itertools = { workspace = true }
 json = { workspace = true }
-rustversion = {workspace = true}
+rustversion = { workspace = true }
 
 # codespan-reporting = "0.11.1"
 # proc_macro = "^1.83"
