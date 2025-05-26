@@ -30,21 +30,6 @@ pub fn handle_tokens(tokens: TokenStream) -> TokenStream {
     TokenStream::from(tokens)
 }
 
-/// Compiles input GRust tokens into output Rust tokens using non nightly function.
-#[cfg(feature = "no_diagnostics")]
-pub fn handle_tokens(tokens: TokenStream) -> TokenStream {
-    let top = parse_macro_input!(tokens as ir0::Top);
-    let (ast, mut ctx) = top.init();
-    let tokens = into_token_stream(ast, &mut ctx);
-    if let Some(path) = ctx.conf.dump_code.as_ref() {
-        let res = dump_code(path, &tokens);
-        if let Err(e) = res {
-            panic!("compilation error detected: {}", e.0);
-        }
-    }
-    TokenStream::from(tokens)
-}
-
 /// Creates RustAST from GRust file using nightly funtion.
 #[cfg(not(feature = "no_diagnostics"))]
 pub fn into_token_stream(ast: Ast, ctx: &mut ir0::Ctx) -> TokenStream2 {
@@ -74,6 +59,21 @@ pub fn into_token_stream(ast: Ast, ctx: &mut ir0::Ctx) -> TokenStream2 {
         tokens.append_all(rust);
     }
     tokens
+}
+
+/// Compiles input GRust tokens into output Rust tokens using non nightly function.
+#[cfg(feature = "no_diagnostics")]
+pub fn handle_tokens(tokens: TokenStream) -> TokenStream {
+    let top = parse_macro_input!(tokens as ir0::Top);
+    let (ast, mut ctx) = top.init();
+    let tokens = into_token_stream(ast, &mut ctx);
+    if let Some(path) = ctx.conf.dump_code.as_ref() {
+        let res = dump_code(path, &tokens);
+        if let Err(e) = res {
+            panic!("compilation error detected: {}", e.0);
+        }
+    }
+    TokenStream::from(tokens)
 }
 
 /// Creates RustAST from GRust file using nightly funtion.
