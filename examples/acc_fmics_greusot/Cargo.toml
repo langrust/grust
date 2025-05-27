@@ -1,0 +1,8 @@
+[package]
+name = "acc_fmics_greusot"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+grust = { workspace = true }
+creusot-contracts = { workspace = true }

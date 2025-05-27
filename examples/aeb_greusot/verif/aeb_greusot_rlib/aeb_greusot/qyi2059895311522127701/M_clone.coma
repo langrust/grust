@@ -1,0 +1,30 @@
+(* #"/home/thome/Documents/git/langrust/grustine/examples/aeb_greusot/src/lib.rs" 5 0 54 1 *)
+
+(* <Braking as creusot_contracts::Clone> *)
+
+let%span slib0 = "/home/thome/Documents/git/langrust/grustine/examples/aeb_greusot/src/lib.rs" 5 0 54 1
+
+type t_Braking'0  =
+  | C_UrgentBrake'0
+  | C_SoftBrake'0
+  | C_NoBrake'0
+
+use creusot.prelude.Intrinsic
+
+meta "compute_max_steps" 1000000
+
+let rec clone'0[#"/home/thome/Documents/git/langrust/grustine/examples/aeb_greusot/src/lib.rs" 5 0 54 1] (self:t_Braking'0) (return'  (ret:t_Braking'0))= (! bb0
+  [ bb0 = any
+    [ br0 -> {self = C_UrgentBrake'0 } (! bb2)
+    | br1 -> {self = C_SoftBrake'0 } (! bb3)
+    | br2 -> {self = C_NoBrake'0 } (! bb4) ]
+  
+  | bb4 = s0 [ s0 =  [ &_0 <- C_NoBrake'0 ] s1 | s1 = bb7 ] 
+  | bb3 = bb5
+  | bb5 = s0 [ s0 =  [ &_0 <- C_SoftBrake'0 ] s1 | s1 = bb7 ] 
+  | bb2 = bb6
+  | bb6 = s0 [ s0 =  [ &_0 <- C_UrgentBrake'0 ] s1 | s1 = bb7 ] 
+  | bb7 = return' {_0} ]
+  ) [ & _0 : t_Braking'0 = Intrinsic.any_l () | & self : t_Braking'0 = self ] 
+  [ return' (result:t_Braking'0)-> {[@expl:clone ensures] [%#slib0] result = self} (! return' {result}) ]
+  

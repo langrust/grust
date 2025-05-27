@@ -1,0 +1,94 @@
+(* #"/home/thome/Documents/git/langrust/grustine/examples/acc_fmics_greusot/src/lib.rs" 5 0 56 1 *)
+
+let%span slib0 = "/home/thome/Documents/git/langrust/grustine/examples/acc_fmics_greusot/src/lib.rs" 8 21 8 22
+let%span slib1 = "/home/thome/Documents/git/langrust/grustine/examples/acc_fmics_greusot/src/lib.rs" 9 23 9 24
+let%span slib2 = "/home/thome/Documents/git/langrust/grustine/examples/acc_fmics_greusot/src/lib.rs" 17 48 17 49
+let%span slib3 = "/home/thome/Documents/git/langrust/grustine/examples/acc_fmics_greusot/src/lib.rs" 5 0 56 1
+let%span slib4 = "/home/thome/Documents/git/langrust/grustine/examples/acc_fmics_greusot/src/lib.rs" 18 37 18 38
+let%span slib5 = "/home/thome/Documents/git/langrust/grustine/examples/acc_fmics_greusot/src/lib.rs" 5 0 56 1
+
+use creusot.int.Int64
+
+use creusot.prelude.Intrinsic
+
+use creusot.int.Int64
+
+use mach.int.Int
+
+function safety_distance'1 [#"/home/thome/Documents/git/langrust/grustine/examples/acc_fmics_greusot/src/lib.rs" 5 0 56 1] (sv_v : int) (fv_v : int) : int
+
+ =
+  [%#slib5] let sv_d_stop = sv_v * 1 + Int.div (sv_v * sv_v) (2 * 6) in let fv_d_stop = Int.div (fv_v * fv_v) (2
+  * 6) in sv_d_stop - fv_d_stop
+
+meta "compute_max_steps" 1000000
+
+let rec safety_distance'0[#"/home/thome/Documents/git/langrust/grustine/examples/acc_fmics_greusot/src/lib.rs" 5 0 56 1] (sv_v:Int64.t) (fv_v:Int64.t) (return'  (ret:Int64.t))= {[@expl:safety_distance requires #0] [%#slib3] 0
+  < Int64.to_int sv_v
+  /\ Int64.to_int sv_v <= 50}
+  {[@expl:safety_distance requires #1] [%#slib3] 0 < Int64.to_int fv_v
+  /\ Int64.to_int fv_v < Int64.to_int sv_v /\ Int64.to_int sv_v - Int64.to_int fv_v <= 10}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = Int64.mul {sv_v} {[%#slib0] (1 : Int64.t)} (fun (_ret':Int64.t) ->  [ &_8 <- _ret' ] s1)
+    | s1 = Int64.mul {sv_v} {sv_v} (fun (_ret':Int64.t) ->  [ &_11 <- _ret' ] s2)
+    | s2 = Int64.mul {[%#slib2] (2 : Int64.t)} {[%#slib1] (6 : Int64.t)} (fun (_ret':Int64.t) ->  [ &_14 <- _ret' ] s3)
+    | s3 = Int64.eq {_14} {[%#slib3] (0 : Int64.t)} (fun (_ret':bool) ->  [ &_15 <- _ret' ] s4)
+    | s4 = {[@expl:division by zero] [%#slib3] not _15} s5
+    | s5 = bb1 ]
+  
+  | bb1 = s0
+    [ s0 = Int64.eq {_14} {[%#slib3] (-1 : Int64.t)} (fun (_ret':bool) ->  [ &_16 <- _ret' ] s1)
+    | s1 = Int64.eq {_11} {[%#slib3] (-9223372036854775808 : Int64.t)} (fun (_ret':bool) ->  [ &_17 <- _ret' ] s2)
+    | s2 =  [ &_18 <- _16 && _17 ] s3
+    | s3 = {[@expl:Div overflow] [%#slib3] not _18} s4
+    | s4 = bb2 ]
+  
+  | bb2 = s0
+    [ s0 = Int64.div {_11} {_14} (fun (_ret':Int64.t) ->  [ &_10 <- _ret' ] s1)
+    | s1 = Int64.add {_8} {_10} (fun (_ret':Int64.t) ->  [ &sv_d_stop <- _ret' ] s2)
+    | s2 = Int64.mul {fv_v} {fv_v} (fun (_ret':Int64.t) ->  [ &_20 <- _ret' ] s3)
+    | s3 = Int64.mul {[%#slib4] (2 : Int64.t)} {[%#slib1] (6 : Int64.t)} (fun (_ret':Int64.t) ->  [ &_23 <- _ret' ] s4)
+    | s4 = Int64.eq {_23} {[%#slib3] (0 : Int64.t)} (fun (_ret':bool) ->  [ &_24 <- _ret' ] s5)
+    | s5 = {[@expl:division by zero] [%#slib3] not _24} s6
+    | s6 = bb3 ]
+  
+  | bb3 = s0
+    [ s0 = Int64.eq {_23} {[%#slib3] (-1 : Int64.t)} (fun (_ret':bool) ->  [ &_25 <- _ret' ] s1)
+    | s1 = Int64.eq {_20} {[%#slib3] (-9223372036854775808 : Int64.t)} (fun (_ret':bool) ->  [ &_26 <- _ret' ] s2)
+    | s2 =  [ &_27 <- _25 && _26 ] s3
+    | s3 = {[@expl:Div overflow] [%#slib3] not _27} s4
+    | s4 = bb4 ]
+  
+  | bb4 = s0
+    [ s0 = Int64.div {_20} {_23} (fun (_ret':Int64.t) ->  [ &fv_d_stop <- _ret' ] s1)
+    | s1 = Int64.sub {sv_d_stop} {fv_d_stop} (fun (_ret':Int64.t) ->  [ &_0 <- _ret' ] s2)
+    | s2 = return' {_0} ]
+   ]
+  )
+  [ & _0 : Int64.t = Intrinsic.any_l ()
+  | & sv_v : Int64.t = sv_v
+  | & fv_v : Int64.t = fv_v
+  | & sv_d_stop : Int64.t = Intrinsic.any_l ()
+  | & _8 : Int64.t = Intrinsic.any_l ()
+  | & _10 : Int64.t = Intrinsic.any_l ()
+  | & _11 : Int64.t = Intrinsic.any_l ()
+  | & _14 : Int64.t = Intrinsic.any_l ()
+  | & _15 : bool = Intrinsic.any_l ()
+  | & _16 : bool = Intrinsic.any_l ()
+  | & _17 : bool = Intrinsic.any_l ()
+  | & _18 : bool = Intrinsic.any_l ()
+  | & fv_d_stop : Int64.t = Intrinsic.any_l ()
+  | & _20 : Int64.t = Intrinsic.any_l ()
+  | & _23 : Int64.t = Intrinsic.any_l ()
+  | & _24 : bool = Intrinsic.any_l ()
+  | & _25 : bool = Intrinsic.any_l ()
+  | & _26 : bool = Intrinsic.any_l ()
+  | & _27 : bool = Intrinsic.any_l () ]
+  
+  [ return' (result:Int64.t)-> {[@expl:safety_distance ensures #0] [%#slib3] 0 < Int64.to_int result
+    /\ Int64.to_int result < 150}
+    {[@expl:safety_distance ensures #1] [%#slib3] Int64.to_int result
+    = safety_distance'1 (Int64.to_int sv_v) (Int64.to_int fv_v)}
+    (! return' {result}) ]
+  

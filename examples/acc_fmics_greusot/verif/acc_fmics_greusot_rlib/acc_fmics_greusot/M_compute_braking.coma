@@ -1,0 +1,58 @@
+(* #"/home/thome/Documents/git/langrust/grustine/examples/acc_fmics_greusot/src/lib.rs" 5 0 56 1 *)
+
+let%span slib0 = "/home/thome/Documents/git/langrust/grustine/examples/acc_fmics_greusot/src/lib.rs" 54 24 54 25
+let%span slib1 = "/home/thome/Documents/git/langrust/grustine/examples/acc_fmics_greusot/src/lib.rs" 5 0 56 1
+
+use creusot.int.Int64
+
+use creusot.prelude.Intrinsic
+
+use creusot.int.Int64
+
+use mach.int.Int
+
+function compute_braking'1 [#"/home/thome/Documents/git/langrust/grustine/examples/acc_fmics_greusot/src/lib.rs" 5 0 56 1] (d_grace : int) (v : int) : int
+
+ =
+  [%#slib1] Int.div (v * v) (2 * d_grace)
+
+meta "compute_max_steps" 1000000
+
+let rec compute_braking'0[#"/home/thome/Documents/git/langrust/grustine/examples/acc_fmics_greusot/src/lib.rs" 5 0 56 1] (d_grace:Int64.t) (v:Int64.t) (return'  (ret:Int64.t))= {[@expl:compute_braking requires #0] [%#slib1] 0
+  < Int64.to_int d_grace
+  /\ Int64.to_int d_grace < 150 /\ Int64.to_int v < 0 /\ - Int64.to_int v <= 10}
+  {[@expl:compute_braking requires #1] [%#slib1] Int64.to_int d_grace
+  > Int.div (Int64.to_int v * Int64.to_int v) (2 * 6)}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = Int64.mul {v} {v} (fun (_ret':Int64.t) ->  [ &_7 <- _ret' ] s1)
+    | s1 = Int64.mul {[%#slib0] (2 : Int64.t)} {d_grace} (fun (_ret':Int64.t) ->  [ &_10 <- _ret' ] s2)
+    | s2 = Int64.eq {_10} {[%#slib1] (0 : Int64.t)} (fun (_ret':bool) ->  [ &_12 <- _ret' ] s3)
+    | s3 = {[@expl:division by zero] [%#slib1] not _12} s4
+    | s4 = bb1 ]
+  
+  | bb1 = s0
+    [ s0 = Int64.eq {_10} {[%#slib1] (-1 : Int64.t)} (fun (_ret':bool) ->  [ &_13 <- _ret' ] s1)
+    | s1 = Int64.eq {_7} {[%#slib1] (-9223372036854775808 : Int64.t)} (fun (_ret':bool) ->  [ &_14 <- _ret' ] s2)
+    | s2 =  [ &_15 <- _13 && _14 ] s3
+    | s3 = {[@expl:Div overflow] [%#slib1] not _15} s4
+    | s4 = bb2 ]
+  
+  | bb2 = s0 [ s0 = Int64.div {_7} {_10} (fun (_ret':Int64.t) ->  [ &_0 <- _ret' ] s1) | s1 = return' {_0} ]  ]
+  )
+  [ & _0 : Int64.t = Intrinsic.any_l ()
+  | & d_grace : Int64.t = d_grace
+  | & v : Int64.t = v
+  | & _7 : Int64.t = Intrinsic.any_l ()
+  | & _10 : Int64.t = Intrinsic.any_l ()
+  | & _12 : bool = Intrinsic.any_l ()
+  | & _13 : bool = Intrinsic.any_l ()
+  | & _14 : bool = Intrinsic.any_l ()
+  | & _15 : bool = Intrinsic.any_l () ]
+  
+  [ return' (result:Int64.t)-> {[@expl:compute_braking ensures #0] [%#slib1] 0 <= Int64.to_int result
+    /\ Int64.to_int result <= 6}
+    {[@expl:compute_braking ensures #1] [%#slib1] Int64.to_int result
+    = compute_braking'1 (Int64.to_int d_grace) (Int64.to_int v)}
+    (! return' {result}) ]
+  
