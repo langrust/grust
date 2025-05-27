@@ -242,6 +242,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 [[package]]
 name = "compiler_common"
 version = "1.4.0"
+version = "1.4.0"
 dependencies = [
  "itertools",
  "json",
@@ -260,12 +261,14 @@ dependencies = [
 [[package]]
 name = "compiler_ir0"
 version = "1.4.0"
+version = "1.4.0"
 dependencies = [
  "compiler_common",
 ]
 
 [[package]]
 name = "compiler_ir1"
+version = "1.4.0"
 version = "1.4.0"
 dependencies = [
  "compiler_common",
@@ -274,6 +277,7 @@ dependencies = [
 
 [[package]]
 name = "compiler_ir2"
+version = "1.4.0"
 version = "1.4.0"
 dependencies = [
  "compiler_common",
@@ -284,6 +288,7 @@ dependencies = [
 
 [[package]]
 name = "compiler_top"
+version = "1.4.0"
 version = "1.4.0"
 dependencies = [
  "compiler_common",
