@@ -16,7 +16,7 @@ pub mod prelude;
 prelude! {}
 
 /// Compiles input GRust tokens into output Rust tokens using nightly function.
-#[cfg(feature = "diagnostics")]
+#[cfg(not(feature = "no_diagnostics"))]
 pub fn handle_tokens(tokens: TokenStream) -> TokenStream {
     let top = parse_macro_input!(tokens as ir0::Top);
     let (ast, mut ctx) = top.init();
@@ -31,7 +31,7 @@ pub fn handle_tokens(tokens: TokenStream) -> TokenStream {
 }
 
 /// Creates RustAST from GRust file using nightly funtion.
-#[cfg(feature = "diagnostics")]
+#[cfg(not(feature = "no_diagnostics"))]
 pub fn into_token_stream(ast: Ast, ctx: &mut ir0::Ctx) -> TokenStream2 {
     let mut stats = Stats::new();
     let ir1 = match ir1::from_ast_timed(ast, ctx, stats.as_mut()) {
@@ -77,7 +77,7 @@ pub fn handle_tokens(tokens: TokenStream) -> TokenStream {
 }
 
 /// Creates RustAST from GRust file using nightly funtion.
-#[cfg(not(feature = "diagnostics"))]
+#[cfg(feature = "no_diagnostics")]
 pub fn into_token_stream(ast: Ast, ctx: &mut ir0::Ctx) -> TokenStream2 {
     let mut stats = Stats::new();
     let ir1 = match ir1::from_ast_timed(ast, ctx, stats.as_mut()) {

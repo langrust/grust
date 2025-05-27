@@ -7,6 +7,7 @@ edition.workspace = true
 
 [features]
 diagnostics = []
+no_diagnostics = []
 
 [dependencies]
 # custom hashing so that hashmap order is deterministic
@@ -21,6 +22,7 @@ strum = { workspace = true }
 petgraph = { workspace = true }
 once_cell = { workspace = true }
 itertools = { workspace = true }
+rustversion = {workspace = true}
 
 # codespan-reporting = "0.11.1"
 # proc_macro = "^1.83"
