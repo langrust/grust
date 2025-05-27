@@ -2,13 +2,15 @@ rust_defaults {
     name: "grust_defaults",
     defaults: ["sdv@rust_defaults"],
     rustlibs: [
-    ],
-    proc_macros: [
-        "libgrust_proc_macros",
+        "libgrust_std",
+        "libgrust_core",
     ],
     vendor_available: true,
     product_available: true,
     host_supported: true,
+    proc_macros: [
+        "libgrust_proc_macros",
+    ],
 }
 
 rust_library {

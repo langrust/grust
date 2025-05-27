@@ -1,9 +1,6 @@
 rust_defaults {
     name: "grust_core_defaults",
     defaults: ["sdv@rust_defaults"],
-    rustlibs: [
-    ],
-
     vendor_available: true,
     product_available: true,
     host_supported: true,

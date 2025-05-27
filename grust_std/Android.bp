@@ -5,7 +5,6 @@ rust_defaults {
         "librayon",
         "libgrust_core",
     ],
-
     vendor_available: true,
     product_available: true,
     host_supported: true,

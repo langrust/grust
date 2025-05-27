@@ -3,7 +3,6 @@ rust_defaults {
     defaults: ["sdv@rust_defaults"],
     rustlibs: [
         "libpin_project",
-        "libtokio_macros",
         "libtokio",
         "libfutures",
     ],
@@ -11,6 +10,9 @@ rust_defaults {
     vendor_available: true,
     product_available: true,
     host_supported: true,
+    proc_macros: [
+        "libpin_project",
+    ],
 }
 
 rust_library {
