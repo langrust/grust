@@ -14,6 +14,7 @@ members = [
     "timer_stream",
     "json",
     "grust_std",
+    "grust_core",
 ]
 
 [workspace.package]

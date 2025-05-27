@@ -3,6 +3,9 @@ name = "compiler_ir1"
 version.workspace = true
 edition.workspace = true
 
+[features]
+diagnostics = []
+
 [dependencies]
 compiler_common = { workspace = true }
 compiler_ir0 = { workspace = true }
