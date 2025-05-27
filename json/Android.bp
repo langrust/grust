@@ -5,7 +5,6 @@ rust_defaults {
         "libserde",
         "libserde_json",
     ],
-
     vendor_available: true,
     product_available: true,
     host_supported: true,

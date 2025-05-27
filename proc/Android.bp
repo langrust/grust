@@ -1,8 +1,16 @@
+rust_defaults {
+    name: "grust_proc_macros",
+    defaults: ["sdv@rust_defaults"],
+    prefer_rlib: true,
+    rustlibs: [
+        "libcompiler_top"
+    ],
+    vendor: true,
+}
+
 rust_proc_macro {
     name: "libgrust_proc_macros",
     srcs: ["src/lib.rs"],
-    crate_name: "grust_proc_macros",
-    rustlibs: [
-        "lib
-    ],
+    defaults: ["grust_proc_macros"],
+    crate_name: "proc",
 }
