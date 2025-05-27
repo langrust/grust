@@ -5,11 +5,11 @@ edition.workspace = true
 
 [features]
 default = []
-diagnostics = [
-    "compiler_common/diagnostics",
-    "compiler_ir0/diagnostics",
-    "compiler_ir1/diagnostics",
-    "compiler_ir2/diagnostics",
+no_diagnostics = [
+    "compiler_common/no_diagnostics",
+    "compiler_ir0/no_diagnostics",
+    "compiler_ir1/no_diagnostics",
+    "compiler_ir2/no_diagnostics",
 ]
 
 [dependencies]

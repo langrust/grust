@@ -6,8 +6,7 @@ edition.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = []
-diagnostics = []
+no_diagnostics = []
 
 [dependencies]
 # custom hashing so that hashmap order is deterministic
