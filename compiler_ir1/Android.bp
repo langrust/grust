@@ -2,7 +2,7 @@ rust_defaults {
     name: "compiler_ir1_defaults",
     defaults: ["sdv@rust_defaults"],
     rustlibs: [
-        "libcompiler_common"
+        "libcompiler_common",
         "libcompiler_ir0",
     ],
     vendor_available: true,

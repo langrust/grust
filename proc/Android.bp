@@ -3,7 +3,7 @@ rust_defaults {
     defaults: ["sdv@rust_defaults"],
     prefer_rlib: true,
     rustlibs: [
-        "libcompiler_top"
+        "libcompiler_top",
     ],
     vendor: true,
 }
