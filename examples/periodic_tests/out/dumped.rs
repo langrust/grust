@@ -359,7 +359,9 @@ pub mod runtime {
                         .input_store
                         .period_clock
                         .replace(((), _period_clock_instant));
-                    assert ! (unique . is_none () , "flow `period_clock` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert!
+                    (unique.is_none(),
+                    "flow `period_clock` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -597,7 +599,9 @@ pub mod runtime {
                         .input_store
                         .input_s
                         .replace((input_s, _input_s_instant));
-                    assert ! (unique . is_none () , "flow `input_s` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert!
+                    (unique.is_none(),
+                    "flow `input_s` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -642,7 +646,9 @@ pub mod runtime {
                         .input_store
                         .input_e
                         .replace((input_e, _input_e_instant));
-                    assert ! (unique . is_none () , "flow `input_e` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert!
+                    (unique.is_none(),
+                    "flow `input_e` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
