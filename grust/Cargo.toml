@@ -7,7 +7,7 @@ edition.workspace = true
 
 [features]
 no_diagnostics = [
-    "compiler_top/no_diagnostics",
+    "proc/no_diagnostics",
 ]
 
 [dependencies]
