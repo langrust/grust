@@ -74,7 +74,7 @@ pub struct ServiceHandlerTokens<'a> {
     has_timer: bool,
 }
 impl ServiceHandler {
-    pub fn prepare_tokens<'a>(&'a self, has_timer: bool) -> ServiceHandlerTokens<'a> {
+    pub fn prepare_tokens(&self, has_timer: bool) -> ServiceHandlerTokens<'_> {
         ServiceHandlerTokens {
             sh: self,
             has_timer,
@@ -664,9 +664,7 @@ impl ToTokens for FlowInstruction {
                 if events.is_empty() && signals.is_empty() {
                     if let Some(els) = els {
                         els.to_tokens(tokens)
-                    } else {
-                        ()
-                    }
+                    } 
                 } else {
                     let els = els.as_ref().map(|els| quote!(else { #els }));
                     quote! {
@@ -716,7 +714,7 @@ impl FlowInstruction {
     pub fn send(name: impl Into<Ident>, expr: Expression, is_event: bool) -> Self {
         let name = name.into();
         if is_event {
-            FlowInstruction::SendEvent(name.clone(), Expression::event(name).into(), expr, None)
+            FlowInstruction::SendEvent(name.clone(), Expression::event(name), expr, None)
         } else {
             FlowInstruction::SendSignal(name, expr, None)
         }
@@ -738,18 +736,18 @@ impl FlowInstruction {
 mk_new! { impl FlowInstruction =>
     Let: def_let (
         name: impl Into<Ident> = name.into(),
-        expr: Expression = expr.into(),
+        expr: Expression = expr,
     )
     InitEvent: init_event (
         name: impl Into<Ident> = name.into(),
     )
     UpdateEvent: update_event (
         name: impl Into<Ident> = name.into(),
-        expr: Expression = expr.into(),
+        expr: Expression = expr,
     )
     UpdateContext: update_ctx (
         name: impl Into<Ident> = name.into(),
-        expr: Expression = expr.into(),
+        expr: Expression = expr,
     )
     IfThrottle: if_throttle (
         flow_name: impl Into<Ident> = flow_name.into(),

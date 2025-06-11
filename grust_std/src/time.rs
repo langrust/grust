@@ -44,8 +44,8 @@ pub mod integration {
         impl Clone for BackwardEulerInput {
             fn clone(&self) -> Self {
                 Self {
-                    x: self.x.clone(),
-                    t: self.t.clone(),
+                    x: self.x,
+                    t: self.t,
                 }
             }
         }
@@ -112,8 +112,8 @@ pub mod integration {
         impl Clone for TrapezeInput {
             fn clone(&self) -> Self {
                 Self {
-                    x: self.x.clone(),
-                    t: self.t.clone(),
+                    x: self.x,
+                    t: self.t,
                 }
             }
         }
@@ -174,8 +174,8 @@ pub mod integration {
         impl Clone for ForwardEulerInput {
             fn clone(&self) -> Self {
                 Self {
-                    x: self.x.clone(),
-                    t: self.t.clone(),
+                    x: self.x,
+                    t: self.t,
                 }
             }
         }
@@ -241,8 +241,8 @@ pub mod derivation {
         impl Clone for DeriveInput {
             fn clone(&self) -> Self {
                 Self {
-                    x: self.x.clone(),
-                    t: self.t.clone(),
+                    x: self.x,
+                    t: self.t,
                 }
             }
         }

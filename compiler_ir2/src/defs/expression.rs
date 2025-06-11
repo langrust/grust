@@ -373,7 +373,7 @@ impl ToTokens for Expr {
             } => {
                 let state_ty = name.to_state_ty();
                 let input_ty = name.to_input_ty();
-                let input_fields = input_fields.into_iter().map(|(name, expr)| {
+                let input_fields = input_fields.iter().map(|(name, expr)| {
                     quote! { #name : #expr }
                 });
                 if let Some(mut path) = path_opt.clone() {

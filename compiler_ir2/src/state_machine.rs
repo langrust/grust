@@ -108,7 +108,7 @@ pub struct InputTokens<'a> {
     public: bool,
 }
 impl Input {
-    pub fn prepare_tokens<'a>(&'a self, public: bool) -> InputTokens<'a> {
+    pub fn prepare_tokens(&self, public: bool) -> InputTokens<'_> {
         InputTokens { i: self, public }
     }
 }

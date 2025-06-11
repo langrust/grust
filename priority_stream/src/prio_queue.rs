@@ -116,18 +116,18 @@ where
         self.push(value)
     }
 }
-impl<T, F, const N: usize> Into<Vec<T>> for PrioQueue<T, F, N>
+impl<T, F, const N: usize> From<PrioQueue<T, F, N>> for Vec<T>
 where
     F: FnMut(&T, &T) -> Ordering,
 {
-    fn into(self) -> Vec<T> {
-        let v = self
+    fn from(val: PrioQueue<T, F, N>) -> Self {
+        let v = val
             .queue
             .into_iter()
-            .take(self.len)
+            .take(val.len)
             .map(|opt| opt.unwrap())
             .collect::<Vec<_>>();
-        debug_assert!(v.len() == self.len);
+        debug_assert!(v.len() == val.len);
         v
     }
 }
@@ -212,8 +212,8 @@ mod prio_queue {
         assert_eq!(prio_queue.pop(), Some(4));
         assert!(prio_queue.len() == 1);
         assert_eq!(prio_queue.pop(), Some(5));
-        assert!(prio_queue.len() == 0);
+        assert!(prio_queue.is_empty());
         assert_eq!(prio_queue.pop(), None);
-        assert!(prio_queue.len() == 0);
+        assert!(prio_queue.is_empty());
     }
 }
