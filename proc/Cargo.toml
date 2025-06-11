@@ -6,9 +6,9 @@ edition.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = []
-no_diagnostics = [
-    "compiler_top/no_diagnostics",
+default = ["diagnostics"]
+diagnostics = [
+    "compiler_top/diagnostics",
 ]
 
 [lib]
