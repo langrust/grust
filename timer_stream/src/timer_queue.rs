@@ -8,6 +8,13 @@ pub struct TimerQueue<T, const N: usize> {
     queue: [Option<Timer<T>>; N],
     len: usize,
 }
+
+impl<T, const N: usize> Default for TimerQueue<T, N> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T, const N: usize> TimerQueue<T, N> {
     /// Create empty queue.
     pub fn new() -> Self {
@@ -42,7 +49,7 @@ impl<T, const N: usize> TimerQueue<T, N> {
         // puts the value at the right place
         for index in 0..self.len {
             let curr = self.queue[index].as_ref().unwrap();
-            match value.get_deadline().cmp(&curr.get_deadline()) {
+            match value.get_deadline().cmp(curr.get_deadline()) {
                 Ordering::Greater | Ordering::Equal => {
                     self.queue[index..=self.len].rotate_right(1);
                     self.queue[index] = Some(value);
@@ -101,7 +108,7 @@ where
 
             // if curr should be resetted then remove it
             // and add its dealine to the next timer (if it exists)
-            if &curr.get_kind() == &value.get_kind() {
+            if curr.get_kind() == value.get_kind() {
                 self.queue[index] = None;
                 self.queue[index..self.len].rotate_left(1);
                 self.len -= 1;
@@ -111,15 +118,16 @@ where
         self.push(value)
     }
 }
-impl<T, const N: usize> Into<Vec<T>> for TimerQueue<T, N> {
-    fn into(self) -> Vec<T> {
-        let v = self
+
+impl<T, const N: usize> From<TimerQueue<T, N>> for Vec<T> {
+    fn from(val: TimerQueue<T, N>) -> Self {
+        let v = val
             .queue
             .into_iter()
-            .take(self.len)
+            .take(val.len)
             .map(|timer| timer.unwrap().get_kind_and_deadline().0)
             .collect::<Vec<_>>();
-        debug_assert!(v.len() == self.len);
+        debug_assert!(v.len() == val.len);
         v
     }
 }
