@@ -22,6 +22,16 @@ where
     queue: [Option<U>; N],
     len: usize,
 }
+
+impl<U, const N: usize> Default for MergeQueue<U, N>
+where
+    U: MergeTimer,
+ {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<U, const N: usize> MergeQueue<U, N>
 where
     U: MergeTimer,
@@ -69,7 +79,7 @@ where
         // puts the value at the right place
         for index in 0..self.len {
             let curr = self.queue[index].as_mut().unwrap();
-            match value.get_instant().cmp(&curr.get_instant()) {
+            match value.get_instant().cmp(curr.get_instant()) {
                 Ordering::Greater | Ordering::Equal => {
                     self.queue[index..=self.len].rotate_right(1);
                     self.queue[index] = Some(value);
@@ -146,18 +156,18 @@ where
         }
     }
 }
-impl<U, const N: usize> Into<Vec<U>> for MergeQueue<U, N>
+impl<U, const N: usize> From<MergeQueue<U, N>> for Vec<U> 
 where
     U: MergeTimer,
 {
-    fn into(self) -> Vec<U> {
-        let v = self
+    fn from(val: MergeQueue<U, N>) -> Self {
+        let v = val
             .queue
             .into_iter()
-            .take(self.len)
+            .take(val.len)
             .map(|timer| timer.unwrap())
             .collect::<Vec<_>>();
-        debug_assert!(v.len() == self.len);
+        debug_assert!(v.len() == val.len);
         v
     }
 }

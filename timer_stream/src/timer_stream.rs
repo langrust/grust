@@ -85,7 +85,7 @@ where
                     // update `sleep_infos`
                     let output = std::mem::replace(
                         project.sleep_infos,
-                        Some((timer_kind, timer_deadline.into())),
+                        Some((timer_kind, timer_deadline)),
                     );
                     // if `sleep` terminated then send its infos
                     if !abort && output.is_some() {
