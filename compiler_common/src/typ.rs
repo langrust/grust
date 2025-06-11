@@ -25,7 +25,8 @@ prelude! {
 /// - [Typ::Polymorphism] is an inferable function type:
 ///   - if `add = |x, y| x+y`,
 ///   - then `add: 't -> 't -> 't` with `'t` in `{int, float}`.
-#[derive(Debug, Eq, Clone)]
+#[allow(clippy::derived_hash_with_manual_eq)]
+#[derive(Debug, Eq, Hash, Clone)]
 pub enum Typ {
     /// [i64] integers, if `n = 1` then `n: int`
     Integer(keyword::int),

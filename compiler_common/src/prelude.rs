@@ -222,12 +222,11 @@ impl From<Span> for Loc {
         Self { span }
     }
 }
-impl Into<Span> for Loc {
-    fn into(self) -> Span {
-        self.span
+impl From<Loc> for Span {
+    fn from(span: Loc) -> Self {
+        span.span
     }
 }
-
 pub fn plural(n: usize) -> &'static str {
     if n == 1 {
         ""
