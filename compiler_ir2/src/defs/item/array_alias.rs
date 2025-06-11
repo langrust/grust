@@ -25,7 +25,7 @@ pub struct ArrayAliasTokens<'a> {
     public: bool,
 }
 impl ArrayAlias {
-    pub fn prepare_tokens<'a>(&'a self, public: bool) -> ArrayAliasTokens<'a> {
+    pub fn prepare_tokens(&self, public: bool) -> ArrayAliasTokens<'_> {
         ArrayAliasTokens { aa: self, public }
     }
 }

@@ -260,8 +260,7 @@ impl Context {
             contains.or_else(|| {
                 self.global_context
                     .as_ref()
-                    .map(|context| context.get_id(key, local))
-                    .flatten()
+                    .and_then(|context| context.get_id(key, local))
             })
         }
     }
@@ -311,7 +310,7 @@ impl Table {
         for symbol in self.table.values() {
             let distance = levenshtein(name, &symbol.name_string);
             if distance < min {
-                symbol_opt = Some(&symbol);
+                symbol_opt = Some(symbol);
             }
         }
         symbol_opt
@@ -792,7 +791,7 @@ impl Table {
     fn restore_context_from_id(&mut self, id: usize) {
         let key = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"))
+            .unwrap_or_else(|| panic!("expect symbol for {id}"))
             .hash();
         self.known_symbols.add_symbol(key, id);
     }
@@ -807,7 +806,7 @@ impl Table {
     ) -> TRes<()> {
         let key = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"))
+            .unwrap_or_else(|| panic!("expect symbol for {id}"))
             .hash();
         if self.known_symbols.contains(&key, local) {
             bad!(errors, @loc => ErrorKind::elm_redef(self.get_name(id).to_string()))
@@ -821,7 +820,7 @@ impl Table {
     pub fn restore_context(&mut self, id: usize) {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"))
+            .unwrap_or_else(|| panic!("expect symbol for {id}"))
             .clone();
         match symbol.kind() {
             SymbolKind::Function { inputs, .. } => {
@@ -868,18 +867,18 @@ impl Table {
     pub fn get_typ(&self, id: usize) -> &Typ {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Identifier { typing, .. } => typing
                 .as_ref()
-                .expect(&format!("{} should be typed", symbol.name)),
+                .unwrap_or_else(|| panic!("{} should be typed", symbol.name)),
             SymbolKind::Init { typing, .. } => typing
                 .as_ref()
-                .expect(&format!("{} should be typed", symbol.name)),
+                .unwrap_or_else(|| panic!("{} should be typed", symbol.name)),
             SymbolKind::Flow { typing, .. } => typing,
             SymbolKind::Function { typing, .. } => typing
                 .as_ref()
-                .expect(&format!("{} should be typed", symbol.name)),
+                .unwrap_or_else(|| panic!("{} should be typed", symbol.name)),
             _ => noErrorDesc!(),
         }
     }
@@ -888,7 +887,7 @@ impl Table {
     pub fn get_function_output_type(&self, id: usize) -> &Typ {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Function { output_type, .. } => output_type.as_ref().expect("expect type"),
             _ => noErrorDesc!(),
@@ -899,7 +898,7 @@ impl Table {
     pub fn get_function_input(&self, id: usize) -> &Vec<usize> {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Function { inputs, .. } => inputs,
             _ => noErrorDesc!(),
@@ -910,7 +909,7 @@ impl Table {
     pub fn get_weight_percent_hint(&self, id: usize) -> Option<synced::Weight> {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Function {
                 weight_percent_hint,
@@ -928,7 +927,7 @@ impl Table {
     pub fn set_function_output_type(&mut self, id: usize, new_type: Typ) {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         let inputs_type = match &symbol.kind {
             SymbolKind::Function { ref inputs, .. } => inputs
                 .iter()
@@ -939,7 +938,7 @@ impl Table {
 
         let symbol = self
             .get_symbol_mut(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match &mut symbol.kind {
             SymbolKind::Function {
                 ref mut output_type,
@@ -964,7 +963,7 @@ impl Table {
     ) {
         let symbol = self
             .get_symbol_mut(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
 
         match &mut symbol.kind {
             SymbolKind::Function {
@@ -981,7 +980,7 @@ impl Table {
     pub fn is_function(&self, id: usize) -> bool {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Function { .. } => true,
             _ => false,
@@ -992,7 +991,7 @@ impl Table {
     pub fn try_get_function_path(&self, id: usize) -> Option<&syn::Path> {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Function { path_opt, .. } => path_opt.as_ref(),
             _ => None,
@@ -1003,7 +1002,7 @@ impl Table {
     pub fn set_type(&mut self, id: usize, new_type: Typ) {
         let symbol = self
             .get_symbol_mut(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match &mut symbol.kind {
             SymbolKind::Identifier { ref mut typing, .. } => {
                 if typing.is_some() {
@@ -1019,7 +1018,7 @@ impl Table {
     pub fn set_path(&mut self, id: usize, new_path: syn::Path) {
         let symbol = self
             .get_symbol_mut(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match &mut symbol.kind {
             SymbolKind::Flow { ref mut path, .. } => {
                 if path.is_some() {
@@ -1035,7 +1034,7 @@ impl Table {
     pub fn get_path(&self, id: usize) -> &syn::Path {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match &symbol.kind {
             SymbolKind::Flow { path, .. } => path.as_ref().unwrap(),
             _ => noErrorDesc!(),
@@ -1046,7 +1045,7 @@ impl Table {
     pub fn get_name(&self, id: usize) -> &Ident {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         &symbol.name
     }
 
@@ -1054,7 +1053,7 @@ impl Table {
     pub fn get_scope(&self, id: usize) -> &Scope {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Identifier { scope, .. } => scope,
             _ => noErrorDesc!(),
@@ -1065,7 +1064,7 @@ impl Table {
     pub fn set_scope(&mut self, id: usize, new_scope: Scope) {
         let symbol = self
             .get_symbol_mut(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind {
             SymbolKind::Identifier { ref mut scope, .. } => *scope = new_scope,
             _ => noErrorDesc!(),
@@ -1076,7 +1075,7 @@ impl Table {
     pub fn get_node_inputs(&self, id: usize) -> &Vec<usize> {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Node { inputs, .. } => inputs,
             _ => noErrorDesc!(),
@@ -1087,7 +1086,7 @@ impl Table {
     pub fn get_node_outputs(&self, id: usize) -> &Vec<(Ident, usize)> {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Node { outputs, .. } => outputs,
             _ => noErrorDesc!(),
@@ -1098,7 +1097,7 @@ impl Table {
     pub fn get_node_locals(&self, id: usize) -> Vec<&usize> {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Node { locals, .. } => {
                 locals.as_ref().map_or(vec![], |h| h.values().collect())
@@ -1111,7 +1110,7 @@ impl Table {
     pub fn node_idents_number(&self, id: usize) -> usize {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Node {
                 inputs,
@@ -1127,7 +1126,7 @@ impl Table {
     pub fn get_flow_kind(&self, id: usize) -> FlowKind {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Flow { kind, .. } => kind.clone(),
             _ => noErrorDesc!(),
@@ -1138,7 +1137,7 @@ impl Table {
     pub fn try_get_comp_path(&self, id: usize) -> Option<&syn::Path> {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Node { path_opt, .. } => path_opt.as_ref(),
             _ => None,
@@ -1149,7 +1148,7 @@ impl Table {
     pub fn is_timer(&self, id: usize) -> bool {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Flow { timer, .. } => timer.is_some(),
             _ => noErrorDesc!(),
@@ -1160,7 +1159,7 @@ impl Table {
     pub fn is_deadline(&self, id: usize) -> bool {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Flow { timer, .. } => timer.as_ref().map_or(false, |timer| match timer {
                 TimerKind::Deadline(_) => true,
@@ -1174,7 +1173,7 @@ impl Table {
     pub fn is_period(&self, id: usize) -> bool {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Flow { timer, .. } => timer.as_ref().map_or(false, |timer| match timer {
                 TimerKind::Period(_) => true,
@@ -1188,7 +1187,7 @@ impl Table {
     pub fn is_service_delay(&self, service_id: usize, id: usize) -> bool {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Flow { timer, .. } => timer.as_ref().map_or(false, |timer| match timer {
                 TimerKind::ServiceDelay(other_service_id, _) if service_id == *other_service_id => {
@@ -1204,7 +1203,7 @@ impl Table {
     pub fn is_timeout(&self, id: usize) -> bool {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Flow { timer, .. } => timer.as_ref().map_or(false, |timer| match timer {
                 TimerKind::ServiceTimeout(_, _) => true,
@@ -1218,7 +1217,7 @@ impl Table {
     pub fn is_delay(&self, id: usize) -> bool {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Flow { timer, .. } => timer.as_ref().map_or(false, |timer| match timer {
                 TimerKind::ServiceDelay(_, _) => true,
@@ -1237,7 +1236,7 @@ impl Table {
     pub fn is_service_timeout(&self, service_id: usize, id: usize) -> bool {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Flow { timer, .. } => timer.as_ref().map_or(false, |timer| match timer {
                 TimerKind::ServiceTimeout(other_service_id, _)
@@ -1255,15 +1254,14 @@ impl Table {
     pub fn get_period(&self, id: usize) -> Option<&u64> {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Flow { timer, .. } => timer
                 .as_ref()
-                .map(|timer| match timer {
+                .and_then(|timer| match timer {
                     TimerKind::Period(period) => Some(period),
                     _ => None,
-                })
-                .flatten(),
+                }),
             _ => noErrorDesc!(),
         }
     }
@@ -1272,7 +1270,7 @@ impl Table {
     pub fn get_struct_fields(&self, id: usize) -> &Vec<usize> {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Structure { fields, .. } => fields,
             _ => noErrorDesc!(),
@@ -1283,7 +1281,7 @@ impl Table {
     pub fn get_enum_elements(&self, id: usize) -> &Vec<usize> {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Enumeration { elements, .. } => elements,
             _ => noErrorDesc!(),
@@ -1293,17 +1291,14 @@ impl Table {
     /// Tell if identifier is a node.
     pub fn is_node(&self, name: &Ident, local: bool) -> bool {
         let symbol_hash = SymbolKey::Node { name: name.clone() };
-        match self.known_symbols.get_id(&symbol_hash, local) {
-            Some(_) => true,
-            None => false,
-        }
+        self.known_symbols.get_id(&symbol_hash, local).is_some()
     }
 
     /// Set array type from identifier.
     pub fn set_array_type(&mut self, id: usize, new_type: Typ) {
         let symbol = self
             .get_symbol_mut(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match &mut symbol.kind {
             SymbolKind::Array {
                 ref mut array_type, ..
@@ -1321,7 +1316,7 @@ impl Table {
     pub fn get_array(&self, id: usize) -> Typ {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Array { array_type, size } => Typ::array(
                 array_type
@@ -1338,7 +1333,7 @@ impl Table {
     pub fn get_array_type(&self, id: usize) -> &Typ {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Array { array_type, .. } => {
                 array_type.as_ref().expect("expect array element type")
@@ -1351,7 +1346,7 @@ impl Table {
     pub fn get_array_size(&self, id: usize) -> usize {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Array { size, .. } => *size,
             _ => noErrorDesc!(),
@@ -1368,7 +1363,7 @@ impl Table {
         let id = self.get_ident(ident, false, false, levenshtein, errors)?;
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Identifier {
                 constant: Some(constant),
@@ -1382,7 +1377,7 @@ impl Table {
     pub fn try_get_const(&self, id: usize) -> Option<&Constant> {
         let symbol = self
             .get_symbol(id)
-            .expect(&format!("expect symbol for {id}"));
+            .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
             SymbolKind::Identifier { constant, .. } => constant.as_ref(),
             _ => None,
@@ -1444,7 +1439,7 @@ impl Table {
                             }
                             if let Some(next) = current.global_context.as_ref() {
                                 println!("next");
-                                current = &*next
+                                current = next
                             } else {
                                 break;
                             }

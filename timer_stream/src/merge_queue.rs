@@ -293,7 +293,7 @@ mod merge_queue {
             merge_queue.pop(),
             Some(Value::Timer(Period10ms, now + Duration::from_millis(10)))
         );
-        now = now + Duration::from_millis(10);
+        now += Duration::from_millis(10);
 
         assert!(merge_queue.len() == 3);
         merge_queue.push_timer(Timer::init(Period10ms, now));
@@ -303,21 +303,21 @@ mod merge_queue {
             merge_queue.pop(),
             Some(Value::Timer(Period15ms, now + Duration::from_millis(5)))
         );
-        now = now + Duration::from_millis(5);
+        now += Duration::from_millis(5);
 
         assert!(merge_queue.len() == 3);
         assert_eq!(
             merge_queue.pop(),
             Some(Value::Timer(Timeout20ms, now + Duration::from_millis(5)))
         );
-        now = now + Duration::from_millis(5);
+        now += Duration::from_millis(5);
 
         assert!(merge_queue.len() == 2);
         assert_eq!(
             merge_queue.pop(),
             Some(Value::Timer(Period10ms, now + Duration::from_millis(0)))
         );
-        now = now + Duration::from_millis(0);
+        now += Duration::from_millis(0);
 
         assert!(merge_queue.len() == 1);
         assert_eq!(
@@ -325,9 +325,9 @@ mod merge_queue {
             Some(Value::Timer(Timeout30ms, now + Duration::from_millis(10)))
         );
 
-        assert!(merge_queue.len() == 0);
+        assert!(merge_queue.is_empty());
         assert_eq!(merge_queue.pop(), None);
-        assert!(merge_queue.len() == 0);
+        assert!(merge_queue.is_empty());
     }
 
     struct TimersManager {

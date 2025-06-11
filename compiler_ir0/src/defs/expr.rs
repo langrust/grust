@@ -124,7 +124,7 @@ mk_new! { impl{E} Lambda<E> =>
         loc: impl Into<Loc> = loc.into(),
         inputs: Vec<(Ident, Typ)>,
         expr: Expr = expr.into(),
-        _phantom = std::marker::PhantomData::default(),
+        _phantom = std::marker::PhantomData,
     }
 }
 

@@ -24,7 +24,7 @@ pub struct StructureTokens<'a> {
     greusot: bool,
 }
 impl Structure {
-    pub fn prepare_tokens<'a>(&'a self, public: bool, greusot: bool) -> StructureTokens<'a> {
+    pub fn prepare_tokens(&self, public: bool, greusot: bool) -> StructureTokens<'_> {
         StructureTokens {
             s: self,
             public,

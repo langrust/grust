@@ -254,7 +254,7 @@ mod timer_queue {
             timer_queue.pop(),
             Some(Timer::from_millis(10, Period10ms(0), now))
         );
-        now = now + Duration::from_millis(10);
+        now += Duration::from_millis(10);
 
         assert!(timer_queue.len() == 3);
         timer_queue.push(Timer::init(Period10ms(1), now));
@@ -264,21 +264,21 @@ mod timer_queue {
             timer_queue.pop(),
             Some(Timer::from_millis(5, Period15ms(0), now))
         );
-        now = now + Duration::from_millis(5);
+        now += Duration::from_millis(5);
 
         assert!(timer_queue.len() == 3);
         assert_eq!(
             timer_queue.pop(),
             Some(Timer::from_millis(5, Timeout20ms(0), now))
         );
-        now = now + Duration::from_millis(5);
+        now += Duration::from_millis(5);
 
         assert!(timer_queue.len() == 2);
         assert_eq!(
             timer_queue.pop(),
             Some(Timer::from_millis(0, Period10ms(1), now))
         );
-        now = now + Duration::from_millis(0);
+        now += Duration::from_millis(0);
 
         assert!(timer_queue.len() == 1);
         assert_eq!(
@@ -287,9 +287,9 @@ mod timer_queue {
         );
         // now = now + Duration::from_millis(10);
 
-        assert!(timer_queue.len() == 0);
+        assert!(timer_queue.is_empty());
         assert_eq!(timer_queue.pop(), None);
-        assert!(timer_queue.len() == 0);
+        assert!(timer_queue.is_empty());
     }
 
     struct TimerInfos {

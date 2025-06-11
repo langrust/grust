@@ -41,7 +41,7 @@ where
 {
     // Open file and append when writing
     let mut file = OpenOptions::new()
-        .write(true)
+        
         .append(true)
         .open(filepath)
         .unwrap();
@@ -59,7 +59,7 @@ where
 {
     // Open file and append when writing
     let mut file = OpenOptions::new()
-        .write(true)
+        
         .append(true)
         .open(filepath)
         .unwrap();

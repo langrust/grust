@@ -322,7 +322,7 @@ impl HasLoc for FlowPattern {
     fn loc(&self) -> Loc {
         match self {
             Self::Tuple { paren_token, .. } => paren_token.span.join().into(),
-            Self::SingleTyped { ident, .. } | Self::Single { ident } => ident.loc().into(),
+            Self::SingleTyped { ident, .. } | Self::Single { ident } => ident.loc(),
         }
     }
 }
@@ -491,7 +491,7 @@ impl ExtFunDecl {
                             "unexpected `path` name, expected `weight`",
                         )
                     })?;
-                    if ident.to_string() != "weight" {
+                    if *ident != "weight" {
                         return Err(syn::Error::new_spanned(ident, "expected `weight`"));
                     }
                     let value_tokens = mnv.value.to_token_stream();

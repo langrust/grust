@@ -24,7 +24,7 @@ pub struct EnumerationTokens<'a> {
     greusot: bool,
 }
 impl Enumeration {
-    pub fn prepare_tokens<'a>(&'a self, public: bool, greusot: bool) -> EnumerationTokens<'a> {
+    pub fn prepare_tokens(&self, public: bool, greusot: bool) -> EnumerationTokens<'_> {
         EnumerationTokens {
             e: self,
             public,

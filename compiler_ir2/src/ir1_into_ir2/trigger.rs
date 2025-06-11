@@ -101,7 +101,7 @@ impl<'a> EventIslesGraph<'a> {
 impl<'a> TriggersGraph<'a> for EventIslesGraph<'a> {
     fn new(ctx: &'a Ctx, service: &'a Service, imports: &'a HashMap<usize, FlowImport>) -> Self {
         // create events isles
-        let mut isle_builder = isles::IsleBuilder::new(ctx, service, &imports);
+        let mut isle_builder = isles::IsleBuilder::new(ctx, service, imports);
         isle_builder.trace_events(service.get_flows_ids(imports.values()));
         let isles = isle_builder.into_isles();
 
@@ -150,8 +150,7 @@ impl<'a> TriggersGraph<'a> for EventIslesGraph<'a> {
             .get_def_flows(parent)
             .into_iter()
             .filter_map(|parent_flow| self.isles.get_isle_for(parent_flow))
-            .flatten()
-            .map(|to_insert| *to_insert);
+            .flatten().copied();
 
         // extend stack with union of event isle and dependencies
         isles.chain(dependencies).unique().collect()

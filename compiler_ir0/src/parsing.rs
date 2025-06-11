@@ -637,7 +637,7 @@ mod interface {
             let full_typ = Typ::Fn {
                 paren_token: Some(args_paren),
                 inputs: args.iter().map(|pair| pair.right.clone()).collect(),
-                arrow_token: arrow_token,
+                arrow_token,
                 output: Box::new(output_typ.clone()),
             };
             Ok(ExtFunDecl {
@@ -1594,7 +1594,7 @@ mod parse_expr {
                     let others: Punctuated<E, Token![,]> = Punctuated::parse_terminated(&content)?;
                     let mut elements = Vec::with_capacity(others.len() + 1);
                     elements.push(first);
-                    elements.extend(others.into_iter());
+                    elements.extend(others);
                     elements
                 } else {
                     vec![first]

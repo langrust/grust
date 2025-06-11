@@ -48,7 +48,7 @@ pub trait ParseItem: Sized + syn::Parse {
     const DESC: &'static str;
     /// Parses the attributes of a `Self`-item.
     fn parse_attributes(self, attrs: Vec<syn::Attribute>) -> syn::Res<Self> {
-        if let Some(attr) = attrs.iter().next() {
+        if let Some(attr) = attrs.first() {
             Err(syn::Error::new_spanned(
                 attr,
                 format!("item {} does not accept attributes", Self::DESC),

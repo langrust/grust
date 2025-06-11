@@ -38,7 +38,7 @@ impl Ir1IntoIr2<&mut Ctx> for Interface {
                 .for_each(|flow_handler| {
                     input_handlers
                         .entry(&flow_handler.arriving_flow)
-                        .or_insert_with(|| vec![])
+                        .or_insert_with(std::vec::Vec::new)
                         .push(service_handler.service_ident.clone())
                 })
         });
@@ -143,8 +143,8 @@ mod service_handler {
     use super::{clean_synced, flow_instr, from_synced};
 
     /// Compute the instruction propagating the changes of the input flow.
-    fn propagate<'a>(
-        ctx: &mut flow_instr::Builder<'a>,
+    fn propagate(
+        ctx: &mut flow_instr::Builder<'_>,
         stmt_id: usize,
         flow_id: usize,
     ) -> FlowInstruction {
@@ -157,8 +157,8 @@ mod service_handler {
         }
     }
     /// Compute the instruction propagating the initial values of signals.
-    fn propagate_init<'a>(
-        ctx: &mut flow_instr::Builder<'a>,
+    fn propagate_init(
+        ctx: &mut flow_instr::Builder<'_>,
         imports: impl Iterator<Item = usize>,
     ) -> FlowInstruction {
         debug_assert!(ctx.is_clear());
@@ -169,8 +169,8 @@ mod service_handler {
     }
 
     /// Compute the instruction propagating the changes of the input store.
-    fn propagate_input_store<'a>(
-        ctx: &mut flow_instr::Builder<'a>,
+    fn propagate_input_store(
+        ctx: &mut flow_instr::Builder<'_>,
         delay_id: usize,
     ) -> FlowInstruction {
         debug_assert!(ctx.is_clear());
@@ -193,7 +193,7 @@ mod service_handler {
                 .iter()
                 .filter_map(|(stmt_id, _)| {
                     let res = if i & 1 == 1 { Some(*stmt_id) } else { None };
-                    i = i >> 1;
+                    i >>= 1;
                     res
                 })
                 .collect::<Vec<_>>();
@@ -230,8 +230,8 @@ mod service_handler {
     }
 
     /// Compute the instruction propagating the changes of the input flows.
-    fn flow_instruction<'a>(
-        ctx: &mut flow_instr::Builder<'a>,
+    fn flow_instruction(
+        ctx: &mut flow_instr::Builder<'_>,
         imports: impl Iterator<Item = usize>,
     ) -> FlowInstruction {
         debug_assert!(ctx.is_clear());
@@ -268,8 +268,8 @@ mod service_handler {
     }
 
     /// Compute the input flow's handler.
-    fn flow_handler<'a>(
-        ctx: &mut flow_instr::Builder<'a>,
+    fn flow_handler(
+        ctx: &mut flow_instr::Builder<'_>,
         stmt_id: usize,
         flow_id: usize,
     ) -> FlowHandler {
@@ -299,7 +299,7 @@ mod service_handler {
     }
 
     /// Compute the initialization handler.
-    fn init_handler<'a>(ctx: &mut flow_instr::Builder<'a>) -> InitHandler {
+    fn init_handler(ctx: &mut flow_instr::Builder<'_>) -> InitHandler {
         let ctx0 = ctx.ctx0();
 
         // propagate signals' initial values and timers
@@ -327,7 +327,7 @@ mod service_handler {
     }
 
     /// Compute the service handler.
-    pub fn build<'a>(mut ctx: flow_instr::Builder<'a>) -> ServiceHandler {
+    pub fn build(mut ctx: flow_instr::Builder<'_>) -> ServiceHandler {
         // get service's name
         let service = ctx.service_name().clone();
         let has_time_range = ctx.has_time_range();
@@ -618,7 +618,7 @@ mod flow_instr {
                                 let fresh_name = identifier_creator.new_identifier_with(
                                     event_name.loc(),
                                     "",
-                                    &event_name.to_string(),
+                                    event_name.to_string(),
                                     "old",
                                 );
                                 let typing = symbols.get_typ(flow_event_id).clone();
@@ -671,7 +671,7 @@ mod flow_instr {
                                 stmts_timers.insert(stmt_id, fresh_id);
                                 timing_events.push(TimingEvent {
                                     identifier: fresh_name,
-                                    kind: TimingEventKind::Period(period_ms.clone()),
+                                    kind: TimingEventKind::Period(*period_ms),
                                 });
                             }
                             flow::Kind::Timeout { deadline, .. } => {
@@ -681,7 +681,7 @@ mod flow_instr {
                                 let fresh_name = identifier_creator.fresh_identifier(
                                     flow_name.loc(),
                                     "timeout",
-                                    &flow_name.to_string(),
+                                    flow_name.to_string(),
                                 );
                                 let typing = Typ::event(Typ::unit());
                                 let fresh_id =
@@ -709,7 +709,7 @@ mod flow_instr {
                                 stmts_timers.insert(stmt_id, fresh_id);
                                 timing_events.push(TimingEvent {
                                     identifier: fresh_name,
-                                    kind: TimingEventKind::Timeout(deadline.clone()),
+                                    kind: TimingEventKind::Timeout(*deadline),
                                 })
                             }
                             flow::Kind::ComponentCall {
@@ -744,7 +744,7 @@ mod flow_instr {
             // add new timing event into the identifier creator
             let fresh_name = {
                 let s = symbols.get_name(service.id);
-                identifier_creator.fresh_identifier(s.loc(), "delay", &s.to_string())
+                identifier_creator.fresh_identifier(s.loc(), "delay", s.to_string())
             };
             let typing = Typ::event(Typ::unit());
             let fresh_id = symbols.insert_service_delay(fresh_name.clone(), service.id, min_delay);
@@ -772,7 +772,7 @@ mod flow_instr {
             // add new timing event into the identifier creator
             let fresh_name = {
                 let s = symbols.get_name(service.id);
-                identifier_creator.fresh_identifier(s.loc(), "timeout", &s.to_string())
+                identifier_creator.fresh_identifier(s.loc(), "timeout", s.to_string())
             };
             let typing = Typ::event(Typ::unit());
             let fresh_id =
@@ -821,7 +821,7 @@ mod flow_instr {
         }
 
         /// Compute the instruction that will init the events.
-        pub fn init_events<'b>(&'b self) -> impl Iterator<Item = FlowInstruction> + 'b {
+        pub fn init_events(&self) -> impl Iterator<Item = FlowInstruction> + '_ {
             self.events
                 .iter()
                 .filter(|event_id| !self.is_timer(**event_id))
@@ -991,9 +991,8 @@ mod flow_instr {
             // timer is an event, look if it is defined
             if self.events.contains(&timer_id) {
                 // update signal by taking from source signal
-                let update =
-                    FlowInstruction::update_ctx(flow_name.clone(), self.get_signal(id_source));
-                update
+                
+                FlowInstruction::update_ctx(flow_name.clone(), self.get_signal(id_source))
             } else {
                 // 'scan' can be activated by the source signal, but it won't do anything
                 FlowInstruction::seq(vec![])
@@ -1017,7 +1016,7 @@ mod flow_instr {
             let id_source = dependencies.pop().unwrap();
             let source_name = self.ctx0.get_name(id_source);
 
-            let timer_id = self.stmts_timers[&stmt_id].clone();
+            let timer_id = self.stmts_timers[&stmt_id];
             let import_flow = self.get_stmt_import(stmt_id);
 
             let occurrences = (

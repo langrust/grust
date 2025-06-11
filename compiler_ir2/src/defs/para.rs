@@ -167,8 +167,8 @@ impl<'a> Env<'a> {
                 Identifier { id } | Typed { id, .. } => f(*id),
                 Tuple { elements } => {
                     let mut elms = elements.iter().map(|pat| &pat.kind);
-                    let first = elms.next().ok_or_else(|| "empty tuple in let-binding")?;
-                    curr = &first;
+                    let first = elms.next().ok_or("empty tuple in let-binding")?;
+                    curr = first;
                     stack.extend(elms);
                     continue 'current;
                 }
@@ -201,7 +201,7 @@ impl<'a> Env<'a> {
                 for (_, tgt, label) in graph.edges_directed(node, graph::Direction::Outgoing) {
                     let is_new = known.insert(tgt);
                     if label.has_weight(0) && is_new {
-                        res.add_edge(src, tgt, label.clone());
+                        res.add_edge(src, tgt, *label);
                         todo.push(tgt);
                     }
                 }
@@ -1006,7 +1006,7 @@ impl Stmts {
             let vars_expr = &vars.expr;
             let vars_pat = &vars.bind;
             let subs = subs.iter().map(|sub| sub.to_token_stream_aux(true));
-            let branch_schedule = Self::para_branch_to_schedule(kind, vars_expr, &vars_pat, subs);
+            let branch_schedule = Self::para_branch_to_schedule(kind, vars_expr, vars_pat, subs);
             schedule.merge(branch_schedule);
         }
         if dont_bind {

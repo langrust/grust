@@ -35,7 +35,7 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Component {
                 // get node inputs
                 let inputs = ctx
                     .get_node_inputs(self.sign.id)
-                    .into_iter()
+                    .iter()
                     .map(|id| (ctx.get_name(*id).clone(), ctx.get_typ(*id).clone()));
 
                 // get node output type
@@ -511,20 +511,20 @@ impl Ir1IntoIr2<&'_ mut ir0::Ctx> for ir1::File {
         let typedefs = self
             .typedefs
             .into_iter()
-            .map(|typedef| typedef.into_ir2(&ctx));
+            .map(|typedef| typedef.into_ir2(ctx));
         items.extend(typedefs);
 
         let functions = self
             .functions
             .into_iter()
-            .filter_map(|function| function.into_ir2(&ctx))
+            .filter_map(|function| function.into_ir2(ctx))
             .map(Item::Function);
         items.extend(functions);
 
         let state_machines = self
             .components
             .into_iter()
-            .filter_map(|component| component.into_ir2(&ctx))
+            .filter_map(|component| component.into_ir2(ctx))
             .map(Item::StateMachine);
         items.extend(state_machines);
 
@@ -547,7 +547,7 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Function {
         // get function inputs
         let inputs = ctx
             .get_function_input(self.id)
-            .into_iter()
+            .iter()
             .map(|id| (ctx.get_name(*id).clone(), ctx.get_typ(*id).clone()))
             .collect_vec();
 
