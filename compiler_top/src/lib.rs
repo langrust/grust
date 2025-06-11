@@ -1,4 +1,5 @@
 #![allow(missing_docs)]
+#![allow(clippy::negative_feature_names)]
 //! This crate provides the [handle_tokens] function used in the [`grust!`] macro. It transforms
 //! input GRust tokens into output Rust tokens, performing static analysis.
 //!

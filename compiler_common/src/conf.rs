@@ -79,21 +79,21 @@ impl CompilationMode {
         if let Self::Greusot = self {
             return true;
         }
-        return false;
+        false
     }
     /// Tells if the compilation mode is Test or not.
     pub fn test(&self) -> bool {
         if let Self::Test = self {
             return true;
         }
-        return false;
+        false
     }
     /// Tells if the compilation mode is Demo or not.
     pub fn demo(&self) -> bool {
         if let Self::Demo = self {
             return true;
         }
-        return false;
+        false
     }
 }
 
