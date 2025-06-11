@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 pub extern crate compiler_common as common;
 
 #[macro_use]
