@@ -1,6 +1,7 @@
 use crate::{Timer, Timing};
 use std::{cmp::Ordering, fmt::Debug, time::Instant};
 
+#[allow(clippy::wrong_self_convention)]
 pub trait MergeTimer {
     type TimerTy;
 

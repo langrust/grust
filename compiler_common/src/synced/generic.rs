@@ -651,51 +651,38 @@ impl<'graph, Ctx: CtxSpec + ?Sized> DebugSpec<'graph, Ctx> for NoDebug {
         _builder: &Builder<'graph, Ctx>,
         _root_head: Ctx::Instr,
         _root_tail: &Vec<Ctx::Instr>,
-    ) {
-        ()
-    }
+    ) {}
 
-    fn find_readies(_builder: &Builder<'graph, Ctx>) {
-        ()
-    }
-    fn find_readies_none(_builder: &Builder<'graph, Ctx>) {
-        ()
-    }
-    fn find_readies_one(_builder: &Builder<'graph, Ctx>, _i: Ctx::Instr) {
-        ()
-    }
-    fn find_readies_many(_builder: &Builder<'graph, Ctx>, _i: Ctx::Instr, _is: &Vec<Ctx::Instr>) {
-        ()
-    }
+    fn find_readies(_builder: &Builder<'graph, Ctx>) {}
 
-    fn unstack(_builder: &Builder<'graph, Ctx>, _s: &Synced<Ctx>) {
-        ()
-    }
-    fn unstack_empty(_builder: &Builder<'graph, Ctx>) {
-        ()
-    }
-    fn unstack_empty_todo_nempty(_builder: &Builder<'graph, Ctx>) {
-        ()
-    }
-    fn unstack_empty_todo_empty(_builder: &Builder<'graph, Ctx>) {
-        ()
-    }
+    fn find_readies_none(_builder: &Builder<'graph, Ctx>) {}
+
+    fn find_readies_one(_builder: &Builder<'graph, Ctx>, _i: Ctx::Instr) {}
+
+    fn find_readies_many(_builder: &Builder<'graph, Ctx>, _i: Ctx::Instr, _is: &Vec<Ctx::Instr>) {}
+
+    fn unstack(_builder: &Builder<'graph, Ctx>, _s: &Synced<Ctx>) {}
+
+    fn unstack_empty(_builder: &Builder<'graph, Ctx>) {}
+
+    fn unstack_empty_todo_nempty(_builder: &Builder<'graph, Ctx>) {}
+
+    fn unstack_empty_todo_empty(_builder: &Builder<'graph, Ctx>) {}
+
     fn unstack_seq(
         _builder: &Builder<'graph, Ctx>,
         _acc: &Vec<Synced<Ctx>>,
         _validated: &Set<Ctx::Instr>,
-    ) {
-        ()
-    }
+    ) {}
+
     fn unstack_para_todo_nempty(
         _builder: &Builder<'graph, Ctx>,
         _acc: &Map<Ctx::Cost, Vec<Synced<Ctx>>>,
         _next: Ctx::Instr,
         _todo: &[Ctx::Instr],
         _validated: &Set<Ctx::Instr>,
-    ) {
-        ()
-    }
+    ) {}
+
     fn unstack_para_todo_empty(
         _builder: &Builder<'graph, Ctx>,
         _acc: &Map<Ctx::Cost, Vec<Synced<Ctx>>>,
