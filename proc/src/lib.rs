@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! This crate provides the [grust!] macro for generating Rust code
 //! from GRust programs.
 

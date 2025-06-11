@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 #[macro_use]
 pub mod prelude;
 
