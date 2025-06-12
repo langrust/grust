@@ -74,7 +74,7 @@ compiler_top = { path = "./compiler_top" }
 
 json = { path = "./json" }
 proc = { path = "./proc" }
-creusot-contracts = { path = "./creusot/creusot-contracts" }
+# creusot-contracts = { path = "./creusot/creusot-contracts" }
 
 priority_stream = { path = "./priority_stream" }
 timer_stream = { path = "./timer_stream" }

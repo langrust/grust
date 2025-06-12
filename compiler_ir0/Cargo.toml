@@ -6,7 +6,7 @@ edition.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-no_diagnostics = []
+diagnostics = []
 
 [dependencies]
 compiler_common = { workspace = true }

@@ -546,7 +546,7 @@ impl Error {
     //     self.to_compile_error()
     // }
 
-    #[cfg(not(feature = "no_diagnostics"))]
+    #[cfg(feature = "diagnostics")]
     pub fn to_diagnostic(self) -> macro1::Diagnostic {
         use macro1::*;
         // println!("error:\n{}", self.error().to_string());
@@ -564,7 +564,7 @@ impl Error {
         d
     }
 
-    #[cfg(not(feature = "no_diagnostics"))]
+    #[cfg(feature = "diagnostics")]
     pub fn to_note_diagnostic(self) -> macro1::Diagnostic {
         use macro1::*;
         let (error_kind, notes) = self.val;
@@ -581,12 +581,12 @@ impl Error {
         d
     }
 
-    #[cfg(not(feature = "no_diagnostics"))]
+    #[cfg(feature = "diagnostics")]
     pub fn emit(self) {
         self.to_diagnostic().emit();
     }
 
-    #[cfg(not(feature = "no_diagnostics"))]
+    #[cfg(feature = "diagnostics")]
     pub fn emit_note(self) {
         self.to_note_diagnostic().emit();
     }

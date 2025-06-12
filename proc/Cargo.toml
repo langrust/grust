@@ -9,9 +9,7 @@ edition.workspace = true
 proc-macro = true
 
 [features]
-no_diagnostics = [
-    "compiler_top/no_diagnostics",
-]
+diagnostics = ["compiler_top/diagnostics"]
 
 [dependencies]
 compiler_top = { workspace = true }

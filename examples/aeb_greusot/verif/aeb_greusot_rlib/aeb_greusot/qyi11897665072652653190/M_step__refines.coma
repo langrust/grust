@@ -1,7 +1,0 @@
-(* #"/home/thome/Documents/git/langrust/grustine/examples/aeb_greusot/src/lib.rs" 5 0 54 1 *)
-
-(* <BrakingStateState as grust::grust_core::Component> *)
-
-let%span slib0 = "/home/thome/Documents/git/langrust/grustine/examples/aeb_greusot/src/lib.rs" 5 0 54 1
-
-goal refines : [%#slib0] true

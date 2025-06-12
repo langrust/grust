@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 
 [features]
-no_diagnostics = []
+diagnostics = []
 
 [dependencies]
 compiler_common = { workspace = true }
