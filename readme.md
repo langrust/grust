@@ -37,8 +37,9 @@ Use cargo to build everything:
 > cargo build
 [...]
 
-# To run without macro diagnostics:
-> cargo build --features "compiler_top/no_diagnostics compiler_common/no_diagnostics"
+# To run without macro diagnostics nor Creusot:
+# Doesn't need nightly nor provided rust-toolchain
+> cargo build --no-default-features
 [...]
 
 # To run tests:
