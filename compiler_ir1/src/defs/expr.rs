@@ -292,7 +292,7 @@ impl<E> Kind<E> {
                 expr_pred(expr)
                     && arms.iter().all(|(_, option, body, expr)| {
                         body.iter().all(&stmt_pred)
-                            && option.as_ref().map_or(true, &expr_pred)
+                            && option.as_ref().is_none_or(&expr_pred)
                             && expr_pred(expr)
                     })
             }

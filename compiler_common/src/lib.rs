@@ -19,8 +19,6 @@ pub mod prelude;
 #[macro_use]
 mod mk_new_def;
 
-mod err;
-
 mod constant;
 mod convert_case;
 mod err;

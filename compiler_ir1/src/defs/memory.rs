@@ -53,9 +53,9 @@ impl Memory {
     /// It will return a new memory where the expression has been modified
     /// according to the context:
     /// - if an identifier is mapped to another identifier, then rename all
-    ///     occurrence of the identifier by the new one
+    ///   occurrence of the identifier by the new one
     /// - if the identifier is mapped to an expression, then replace all call to
-    ///     the identifier by the expression
+    ///   the identifier by the expression
     ///
     /// # Example
     ///

@@ -262,7 +262,7 @@ impl Expr {
             | Identifier { .. }
             | Path { .. }
             | Some { .. }
-            | None { .. }
+            | None
             | MemoryAccess { .. }
             | InputAccess { .. }
             | Enumeration { .. }
@@ -297,7 +297,7 @@ impl Expr {
             | Path { .. }
             | UnOp { .. }
             | Some { .. }
-            | None { .. }
+            | None
             | FunctionCall { .. }
             | NodeCall { .. }
             | MemoryAccess { .. }
