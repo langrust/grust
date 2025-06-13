@@ -137,11 +137,11 @@ pub mod integration {
     /// Forward Euler method.
     ///
     /// F_n+1 = F_n + (t_n+1 - t_n) * f_n+1
-    struct ForwardEulerState {
+    pub struct ForwardEulerState {
         integral: f64,
         last_t: f64,
     }
-    struct ForwardEulerInput {
+    pub struct ForwardEulerInput {
         x: f64,
         t: f64,
     }
@@ -161,7 +161,8 @@ pub mod integration {
             let integral = self.integral + input.x * dt;
             self.integral = integral;
             self.last_t = input.t;
-            integral
+            let _result = integral;
+            panic!("not resilient to_oversampling");
         }
     }
 
