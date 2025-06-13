@@ -65,5 +65,5 @@ pub fn from_ast_timed(
 }
 
 pub fn from_ast(ast: Ast, symbols: &mut Ctx) -> Result<File, Vec<Error>> {
-    from_ast_timed(ast, symbols, Stats::new().as_mut()).map(|ir1| ir1)
+    from_ast_timed(ast, symbols, Stats::new().as_mut())
 }

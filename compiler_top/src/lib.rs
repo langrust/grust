@@ -85,7 +85,7 @@ pub fn into_token_stream(ast: Ast, ctx: &mut ir0::Ctx) -> TokenStream2 {
         Ok(pair) => pair,
         Err(errors) => {
             for error in errors {
-                panic!("compilation error detected: {}", error.0);
+                println!("compilation error detected: {}", error.0);
             }
             return parse_quote! {};
         }

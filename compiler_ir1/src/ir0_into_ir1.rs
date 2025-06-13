@@ -83,7 +83,7 @@ mod interface_impl {
             },
     }
 
-    fn into_u64<'a>(time: Either<syn::LitInt, Ident>, ctx: &mut ctx::Simple<'a>) -> TRes<u64> {
+    fn into_u64(time: Either<syn::LitInt, Ident>, ctx: &mut ctx::Simple<'_>) -> TRes<u64> {
         match time {
             Either::Left(lit) => Ok(lit.base10_parse().unwrap()),
             Either::Right(ident) => match ctx.ctx0.get_const(&ident, ctx.errors)? {
@@ -310,7 +310,7 @@ mod interface_impl {
                             .ok_or_else(lerror!(@loc =>
                                 "[internal] failed to retrieve type of pattern"
                             ))
-                            .dewrap(&mut ctx.errors)?
+                            .dewrap(ctx.errors)?
                             .clone();
                         types.push(typ);
                         elements.push(elem);
@@ -783,7 +783,7 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
                             "fatal: symbol kind associated to node `{}` is not node-like",
                             node_symbol.name(),
                         ));
-                        return Err(());
+                        Err(())
                     }
                 }
             }
@@ -1517,7 +1517,7 @@ where
                             ErrorKind::unknown_field(self.name.to_string(), field_name.to_string())
                         )
                     },
-                    |id| Ok(id),
+                    Ok,
                 )?;
                 let expression = expression.into_ir1(ctx)?;
                 Ok((id, expression))
@@ -1525,7 +1525,7 @@ where
         );
 
         // fail on missing fields
-        for field_name in field_ids.keys() {
+        if let Some(field_name) = field_ids.keys().next() {
             bad!(ctx.errors, @self.loc =>
                 ErrorKind::missing_field(self.name.to_string(), field_name.to_string())
                 => | @field_name.loc() => "field declared here"
@@ -1858,7 +1858,7 @@ mod expr_pattern_impl {
                                     self.name.to_string(), field_name.to_string(),
                                 ))
                             },
-                            |id| Ok(id),
+                            Ok,
                         )?;
                         let pattern = optional_pattern
                             .map(|pattern| pattern.into_ir1(ctx))
@@ -1869,7 +1869,7 @@ mod expr_pattern_impl {
 
             if self.rest.is_none() {
                 // check if there are no missing fields
-                for field_name in field_ids.keys() {
+                if let Some(field_name) = field_ids.keys().next() {
                     bad!(ctx.errors, @loc =>
                         ErrorKind::missing_field(self.name.to_string(), field_name.to_string())
                         => | @field_name.loc() => "field declared here"
@@ -1945,7 +1945,7 @@ trait Helper: Sized {
     fn into_default_expr(
         &self,
         defined_signals: &HashMap<Ident, usize>,
-        init_signals: &Vec<Ident>,
+        init_signals: &[Ident],
         ctx: &mut ctx::Simple,
     ) -> TRes<ir1::stream::Expr>;
 }
@@ -1961,18 +1961,18 @@ mod stmt_pattern_impl {
         fn into_default_expr(
             &self,
             defined_signals: &HashMap<Ident, usize>,
-            init_signals: &Vec<Ident>,
+            init_signals: &[Ident],
             ctx: &mut ctx::Simple,
         ) -> TRes<ir1::stream::Expr> {
             let kind = match self {
                 ir0::stmt::Pattern::Identifier(ident)
                 | ir0::stmt::Pattern::Typed(Typed { ident, .. }) => {
-                    if let Some(id) = defined_signals.get(&ident) {
+                    if let Some(id) = defined_signals.get(ident) {
                         ir1::stream::Kind::expr(ir1::expr::Kind::ident(*id))
                     } else {
-                        let signal_id = ctx.ctx0.get_identifier_id(&ident, false, ctx.errors)?;
+                        let signal_id = ctx.ctx0.get_identifier_id(ident, false, ctx.errors)?;
                         if init_signals.contains(ident) {
-                            let init_id = ctx.ctx0.get_init_id(&ident, false, ctx.errors)?;
+                            let init_id = ctx.ctx0.get_init_id(ident, false, ctx.errors)?;
                             ir1::stream::Kind::last(init_id, signal_id)
                         } else {
                             let id = ctx.ctx0.get_identifier_id(ident, false, ctx.errors)?;

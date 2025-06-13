@@ -63,7 +63,7 @@ impl Service {
         flows_context
     }
 
-    pub fn get_dependencies<'a>(&'a self, stmt_id: usize) -> impl Iterator<Item = usize> + 'a {
+    pub fn get_dependencies(& self, stmt_id: usize) -> impl Iterator<Item = usize> + '_ {
         self.graph
             .edges_directed(stmt_id, Direction::Incoming)
             .map(|(incoming, _, _)| incoming)

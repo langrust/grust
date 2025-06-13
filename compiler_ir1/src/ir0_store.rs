@@ -688,14 +688,14 @@ mod expr_pattern {
 
         fn get_signals(
             &self,
-            symbol_table: &Ctx,
-            errors: &mut Vec<Error>,
+            _symbol_table: &Ctx,
+            _errors: &mut Vec<Error>,
         ) -> TRes<Vec<(Ident, Pattern)>> {
             match self {
                 Pattern::Identifier(name) => Ok(vec![(name.clone(), self.clone())]),
                 Pattern::Tuple(PatTuple { elements, .. }) => Ok(elements
                     .iter()
-                    .map(|pattern| pattern.get_signals(symbol_table, errors))
+                    .map(|pattern| pattern.get_signals(_symbol_table, _errors))
                     .collect::<TRes<Vec<_>>>()?
                     .into_iter()
                     .flatten()
@@ -704,7 +704,7 @@ mod expr_pattern {
                     .iter()
                     .map(|(field, optional_pattern)| {
                         if let Some(pattern) = optional_pattern {
-                            pattern.get_signals(symbol_table, errors)
+                            pattern.get_signals(_symbol_table, _errors)
                         } else {
                             Ok(vec![(field.clone(), Pattern::ident(field.clone()))])
                         }
@@ -827,8 +827,8 @@ mod stmt_pattern {
 
         fn get_signals(
             &self,
-            symbol_table: &Ctx,
-            errors: &mut Vec<Error>,
+            _symbol_table: &Ctx,
+            _errors: &mut Vec<Error>,
         ) -> TRes<Vec<(Ident, Pattern)>> {
             match self {
                 Pattern::Identifier(ident) | Pattern::Typed(Typed { ident, .. }) => {
@@ -836,7 +836,7 @@ mod stmt_pattern {
                 }
                 Pattern::Tuple(Tuple { elements, .. }) => Ok(elements
                     .iter()
-                    .map(|pattern| pattern.get_signals(symbol_table, errors))
+                    .map(|pattern| pattern.get_signals(_symbol_table, _errors))
                     .collect::<TRes<Vec<_>>>()?
                     .into_iter()
                     .flatten()
@@ -955,8 +955,7 @@ mod event_pattern {
                 EventPattern::Tuple(tuple) => tuple
                     .patterns
                     .iter()
-                    .map(|pattern| pattern.place_events(events_indices, idx, symbol_table, errors))
-                    .collect::<TRes<()>>(),
+                    .try_for_each(|pattern| pattern.place_events(events_indices, idx, symbol_table, errors)),
                 EventPattern::Let(pattern) => {
                     let event_id = symbol_table.get_identifier_id(&pattern.event, false, errors)?;
                     let _ = events_indices.entry(event_id).or_insert_with(|| {
@@ -1001,7 +1000,7 @@ mod event_pattern {
                     patterns
                         .patterns
                         .into_iter()
-                        .map(|pattern| {
+                        .try_for_each(|pattern| {
                             let opt_guard = pattern.create_tuple_pattern(
                                 tuple,
                                 events_indices,
@@ -1011,8 +1010,7 @@ mod event_pattern {
                             // combine all rising edge detections
                             combine_guard(opt_guard);
                             Ok(())
-                        })
-                        .collect::<TRes<()>>()?;
+                        })?;
 
                     Ok(guard)
                 }

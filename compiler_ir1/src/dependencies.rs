@@ -44,12 +44,12 @@ impl<'a, 'g> GraphCtx<'a, 'g> {
 impl<'a, 'g> std::ops::Deref for GraphCtx<'a, 'g> {
     type Target = DepCtx<'a>;
     fn deref(&self) -> &Self::Target {
-        &self.ctx1
+        self.ctx1
     }
 }
 impl<'a, 'g> std::ops::DerefMut for GraphCtx<'a, 'g> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.ctx1
+        self.ctx1
     }
 }
 impl<'a, 'g> GraphCtx<'a, 'g> {
@@ -71,12 +71,12 @@ pub struct GraphProcCtx<'a, 'graph, 'proc> {
 impl<'a, 'g, 'p> std::ops::Deref for GraphProcCtx<'a, 'g, 'p> {
     type Target = GraphCtx<'a, 'g>;
     fn deref(&self) -> &Self::Target {
-        &self.ctx
+        self.ctx
     }
 }
 impl<'a, 'g, 'p> std::ops::DerefMut for GraphProcCtx<'a, 'g, 'p> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.ctx
+        self.ctx
     }
 }
 impl<'a, 'g, 'p> GraphProcCtx<'a, 'g, 'p> {
@@ -119,11 +119,11 @@ impl Component {
                 let mut process_manager = HashMap::new();
                 self.sign.inputs_in_proc(&mut process_manager, ctx);
                 // add dependencies
-                stats.timed(&format!("compute dependencies (ir1)"), || {
+                stats.timed(("compute dependencies (ir1)").to_string(), || {
                     body.compute_dependencies(graph, process_manager, ctx)
                 })?;
                 // construct reduced graph
-                stats.timed_with(&format!("construct reduced graph (ir1)"), |sub_stats| {
+                stats.timed_with(("construct reduced graph (ir1)").to_string(), |sub_stats| {
                     self.sign
                         .construct_reduced_graph(&body.graph, ctx, sub_stats)
                 });
@@ -131,7 +131,7 @@ impl Component {
             }
             Either::Right(_) => {
                 // direct reduced graph (inputs -[0]-> outputs)
-                stats.timed(&format!("construct reduced graph (ir1)"), || {
+                stats.timed(("construct reduced graph (ir1)").to_string(), || {
                     self.sign.construct_reduced_graph_ext(ctx)
                 });
                 Ok(())
@@ -144,7 +144,7 @@ impl ComponentSignature {
     /// Add inputs as vertices.
     fn inputs_in_graph(&self, graph: &mut Graph, ctx: &ir0::Ctx) {
         // add input signals as vertices
-        ctx.get_node_inputs(self.id).into_iter().for_each(|input| {
+        ctx.get_node_inputs(self.id).iter().for_each(|input| {
             graph.add_node(*input);
         });
     }
@@ -152,7 +152,7 @@ impl ComponentSignature {
     /// Add inputs in process manager.
     fn inputs_in_proc(&self, proc: &mut HashMap<usize, Color>, ctx: &ir0::Ctx) {
         // add input signals with white color (unprocessed)
-        ctx.get_node_inputs(self.id).into_iter().for_each(|input| {
+        ctx.get_node_inputs(self.id).iter().for_each(|input| {
             proc.insert(*input, Color::White);
         });
     }
@@ -175,7 +175,7 @@ impl ComponentSignature {
                 // get the inputs on which `to_propag` depends
                 let input_deps = reduced_graph
                     .edges_directed(to_propag, Direction::Outgoing)
-                    .map(|(a, b, l): (usize, usize, &Label)| (a, b, l.clone()))
+                    .map(|(a, b, l): (usize, usize, &Label)| (a, b, *l))
                     .collect::<Vec<_>>();
 
                 for (depending, _, l1) in depending_edges {
@@ -473,7 +473,7 @@ impl stream::ExprKind {
     fn fun_app_deps(
         ctx: &mut GraphProcCtx,
         function: &stream::Expr,
-        inputs: &Vec<stream::Expr>,
+        inputs: &[stream::Expr],
     ) -> TRes<Vec<(usize, Label)>> {
         // propagate dependencies computation
         function.compute_dependencies(ctx)?;
@@ -491,7 +491,7 @@ impl stream::ExprKind {
     /// Compute dependencies of an array stream expression.
     pub fn array_deps(
         ctx: &mut GraphProcCtx,
-        elms: &Vec<stream::Expr>,
+        elms: &[stream::Expr],
     ) -> TRes<Vec<(usize, Label)>> {
         let mut res = Vec::with_capacity(elms.len());
         // propagate dependencies computation
@@ -581,12 +581,12 @@ impl stream::ExprKind {
     pub fn match_deps(
         ctx: &mut GraphProcCtx,
         expr: &stream::Expr,
-        arms: &Vec<(
+        arms: &[(
             ir1::Pattern,
             Option<stream::Expr>,
             Vec<stream::Stmt>,
             stream::Expr,
-        )>,
+        )],
     ) -> TRes<Vec<(usize, Label)>> {
         // compute arms dependencies
         let mut deps = Vec::with_capacity(25);
@@ -671,7 +671,7 @@ impl stream::ExprKind {
     /// Compute dependencies of an tuple stream expression.
     pub fn tuple_deps(
         ctx: &mut GraphProcCtx,
-        elms: &Vec<stream::Expr>,
+        elms: &[stream::Expr],
     ) -> TRes<Vec<(usize, Label)>> {
         let mut deps = Vec::with_capacity(25);
         // propagate dependencies computation
@@ -693,7 +693,7 @@ impl stream::ExprKind {
     /// Compute dependencies of a zip stream expression.
     pub fn zip_deps(
         ctx: &mut GraphProcCtx,
-        arrays: &Vec<stream::Expr>,
+        arrays: &[stream::Expr],
     ) -> TRes<Vec<(usize, Label)>> {
         let mut deps = Vec::with_capacity(25);
         // propagate dependencies computation
@@ -757,7 +757,7 @@ impl File {
             .iter_mut()
             .map(|component| {
                 stats.timed_with(
-                    &format!(
+                    format!(
                         "`{}` dependency graph generation (ir1)",
                         ctx.get_name(component.get_id())
                     ),
@@ -821,7 +821,7 @@ impl ir1::stream::Stmt {
                 // s = e depends on s' <=> s -> s'
                 self.expr.get_dependencies().iter().for_each(|(id, label)| {
                     // if there was another edge, keep the most important label
-                    add_edge(ctx.graph, signal, *id, label.clone())
+                    add_edge(ctx.graph, signal, *id, *label)
                 });
 
                 // get signal's color
@@ -925,7 +925,7 @@ impl stream::Expr {
                         handle!(input_expression.compute_dependencies(ctx));
 
                         let DepCtx {
-                            ref ctx0,
+                            ctx0,
                             ref mut reduced_graphs,
                             ..
                         } = ctx.ctx1;
@@ -939,7 +939,7 @@ impl stream::Expr {
                                 reduced_graph.edge_weight(*output_signal, *input_id)
                             {
                                 for (id, label2) in input_expression.get_dependencies().iter() {
-                                    vec.push((*id, label1.add(&label2)));
+                                    vec.push((*id, label1.add(label2)));
                                 }
                             }
                         }
