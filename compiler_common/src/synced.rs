@@ -277,7 +277,7 @@ impl WeightBounds {
 }
 impl Default for WeightBounds {
     fn default() -> Self {
-        Self::DEFAULT.clone()
+        Self::DEFAULT
     }
 }
 

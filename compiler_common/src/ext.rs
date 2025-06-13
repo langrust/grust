@@ -364,6 +364,6 @@ impl SynExprExt for syn::Expr {
                 return n.base10_parse();
             }
         }
-        return Err(syn::Error::new_spanned(self, "expected a `usize` value"));
+        Err(syn::Error::new_spanned(self, "expected a `usize` value"))
     }
 }

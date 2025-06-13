@@ -2,6 +2,8 @@
 
 prelude!(graph::Label);
 
+pub type Arm<E> = (Pattern, Option<E>, Vec<Stmt<E>>, E);
+
 #[derive(Debug, PartialEq, Clone)]
 /// expression kind.
 pub enum Kind<E> {
@@ -85,7 +87,7 @@ pub enum Kind<E> {
         /// The expression to match.
         expr: Box<E>,
         /// The different matching cases.
-        arms: Vec<(Pattern, Option<E>, Vec<Stmt<E>>, E)>,
+        arms: Vec<Arm<E>>,
     },
     /// Field access expression.
     FieldAccess {
@@ -176,7 +178,7 @@ mk_new! { impl{E} Kind<E> =>
     Tuple: tuple { elements: Vec<E> }
     MatchExpr: match_expr {
         expr: E = expr.into(),
-        arms: Vec<(ir1::Pattern, Option<E>, Vec<ir1::Stmt<E>>, E)>,
+        arms: Vec<Arm<E>>,
     }
     FieldAccess: field_access {
         expr: E = expr.into(),
@@ -206,7 +208,10 @@ mk_new! { impl{E} Kind<E> =>
     Zip: zip { arrays: Vec<E> }
 }
 
-impl<E: HasWeight> HasWeight for Kind<E> where Stmt<E>: HasWeight {
+impl<E: HasWeight> HasWeight for Kind<E>
+where
+    Stmt<E>: HasWeight,
+{
     fn weight(&self, wb: &synced::WeightBounds, ctx: &Ctx) -> synced::Weight {
         use synced::weight;
         use Kind::*;
@@ -227,19 +232,20 @@ impl<E: HasWeight> HasWeight for Kind<E> where Stmt<E>: HasWeight {
             Enumeration { .. } => weight::zero,
             Array { elements } | Tuple { elements } => w8!(wb, ctx => sum elements) + weight::mid,
             MatchExpr { expr, arms } => {
-                expr.weight(wb, ctx) +
-                    arms
+                expr.weight(wb, ctx)
+                    + arms
                         .iter()
                         .map(|(_, expr_opt, stmts, expr)| {
-                            w8!(wb, ctx => weight? expr_opt.as_ref()) +
-                                w8!(wb, ctx => sum stmts) +
-                                expr.weight(wb, ctx)
+                            w8!(wb, ctx => weight? expr_opt.as_ref())
+                                + w8!(wb, ctx => sum stmts)
+                                + expr.weight(wb, ctx)
                         })
                         .max()
                         .unwrap_or(weight::zero)
             }
-            FieldAccess { expr, .. } | TupleElementAccess { expr, .. } | ArrayAccess { expr, .. } =>
-                expr.weight(wb, ctx),
+            FieldAccess { expr, .. }
+            | TupleElementAccess { expr, .. }
+            | ArrayAccess { expr, .. } => expr.weight(wb, ctx),
             Map { expr, fun } => {
                 // well, we can't do much without knowing the length of the array...
                 expr.weight(wb, ctx) + fun.weight(wb, ctx) + weight::hi
@@ -263,10 +269,12 @@ impl<E: HasWeight> HasWeight for Kind<E> where Stmt<E>: HasWeight {
 impl<E> Kind<E> {
     /// Propagate a predicate over the expression tree.
     pub fn propagate_predicate<F1, F2>(&self, expr_pred: F1, stmt_pred: F2) -> bool
-        where F1: Fn(&E) -> bool, F2: Fn(&ir1::Stmt<E>) -> bool
+    where
+        F1: Fn(&E) -> bool,
+        F2: Fn(&ir1::Stmt<E>) -> bool,
     {
         match self {
-            | Kind::Constant { .. }
+            Kind::Constant { .. }
             | Kind::Identifier { .. }
             | Kind::Lambda { .. }
             | Kind::Enumeration { .. } => true,
@@ -275,24 +283,20 @@ impl<E> Kind<E> {
             Kind::IfThenElse { cnd, thn, els } => {
                 expr_pred(cnd) && expr_pred(thn) && expr_pred(els)
             }
-            Kind::Application { fun, inputs } => { expr_pred(fun) && inputs.iter().all(&expr_pred) }
+            Kind::Application { fun, inputs } => expr_pred(fun) && inputs.iter().all(&expr_pred),
             Kind::Structure { fields, .. } => {
                 fields.iter().all(|(_, expression)| expr_pred(expression))
             }
-            Kind::Array { elements } | Kind::Tuple { elements } => {
-                elements.iter().all(&expr_pred)
-            }
+            Kind::Array { elements } | Kind::Tuple { elements } => elements.iter().all(&expr_pred),
             Kind::MatchExpr { expr, arms } => {
-                expr_pred(expr) &&
-                    arms
-                        .iter()
-                        .all(|(_, option, body, expr)| {
-                            body.iter().all(&stmt_pred) &&
-                                option.as_ref().map_or(true, &expr_pred) &&
-                                expr_pred(expr)
-                        })
+                expr_pred(expr)
+                    && arms.iter().all(|(_, option, body, expr)| {
+                        body.iter().all(&stmt_pred)
+                            && option.as_ref().map_or(true, &expr_pred)
+                            && expr_pred(expr)
+                    })
             }
-            | Kind::FieldAccess { expr, .. }
+            Kind::FieldAccess { expr, .. }
             | Kind::TupleElementAccess { expr, .. }
             | Kind::ArrayAccess { expr, .. } => expr_pred(expr),
             Kind::Map { expr, fun } => expr_pred(expr) && expr_pred(fun),
@@ -305,7 +309,11 @@ impl<E> Kind<E> {
     }
 
     pub fn is_default_constant(&self) -> bool {
-        if let Self::Constant { constant } = self { constant.is_default() } else { false }
+        if let Self::Constant { constant } = self {
+            constant.is_default()
+        } else {
+            false
+        }
     }
 }
 
@@ -339,6 +347,8 @@ impl Expr {
     }
     /// Get expression's dependencies.
     pub fn get_dependencies(&self) -> &Vec<(usize, Label)> {
-        self.dependencies.get().expect("there should be dependencies")
+        self.dependencies
+            .get()
+            .expect("there should be dependencies")
     }
 }

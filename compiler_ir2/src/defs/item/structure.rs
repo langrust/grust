@@ -33,7 +33,7 @@ impl Structure {
     }
 }
 
-impl<'a> ToTokens for StructureTokens<'a> {
+impl ToTokens for StructureTokens<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream2) {
         if self.greusot {
             quote!(

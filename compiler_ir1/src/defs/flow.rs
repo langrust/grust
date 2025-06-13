@@ -146,11 +146,7 @@ mk_new! { impl Kind =>
 
 impl Kind {
     /// Create memory identifiers for [ir1] components called by service.
-    pub fn memorize(
-        &mut self,
-        identifier_creator: &mut IdentifierCreator,
-        ctx: &mut Ctx,
-    ) -> Res<()> {
+    pub fn memorize(&mut self, identifier_creator: &mut IdentifierCreator, ctx: &mut Ctx) -> URes {
         match self {
             Kind::Ident { .. } | Kind::Time { .. } | Kind::Period { .. } => (),
             Kind::Sample { expr, .. }
@@ -307,12 +303,12 @@ impl Expr {
     ) -> Vec<interface::FlowStatement> {
         match &mut self.kind {
             flow::Kind::Ident { .. } | Kind::Time { .. } | Kind::Period { .. } => vec![],
-            flow::Kind::Sample { expr, .. } => expr.into_flow_call(identifier_creator, ctx),
-            flow::Kind::Scan { expr, .. } => expr.into_flow_call(identifier_creator, ctx),
-            flow::Kind::Timeout { expr, .. } => expr.into_flow_call(identifier_creator, ctx),
-            flow::Kind::Throttle { expr, .. } => expr.into_flow_call(identifier_creator, ctx),
-            flow::Kind::OnChange { expr } => expr.into_flow_call(identifier_creator, ctx),
-            flow::Kind::Persist { expr } => expr.into_flow_call(identifier_creator, ctx),
+            flow::Kind::Sample { expr, .. } => expr.as_flow_call(identifier_creator, ctx),
+            flow::Kind::Scan { expr, .. } => expr.as_flow_call(identifier_creator, ctx),
+            flow::Kind::Timeout { expr, .. } => expr.as_flow_call(identifier_creator, ctx),
+            flow::Kind::Throttle { expr, .. } => expr.as_flow_call(identifier_creator, ctx),
+            flow::Kind::OnChange { expr } => expr.as_flow_call(identifier_creator, ctx),
+            flow::Kind::Persist { expr } => expr.as_flow_call(identifier_creator, ctx),
             flow::Kind::Merge { expr_1, expr_2 }
             | Kind::SampleOn {
                 expr: expr_1,
@@ -322,18 +318,18 @@ impl Expr {
                 expr: expr_1,
                 event: expr_2,
             } => {
-                let mut stmts = expr_1.into_flow_call(identifier_creator, ctx);
-                stmts.extend(expr_2.into_flow_call(identifier_creator, ctx));
+                let mut stmts = expr_1.as_flow_call(identifier_creator, ctx);
+                stmts.extend(expr_2.as_flow_call(identifier_creator, ctx));
                 stmts
             }
             flow::Kind::ComponentCall { inputs, .. } | Kind::FunctionCall { inputs, .. } => inputs
                 .iter_mut()
-                .flat_map(|(_, expr)| expr.into_flow_call(identifier_creator, ctx))
+                .flat_map(|(_, expr)| expr.as_flow_call(identifier_creator, ctx))
                 .collect(),
         }
     }
 
-    fn into_flow_call(
+    fn as_flow_call(
         &mut self,
         identifier_creator: &mut IdentifierCreator,
         ctx: &mut Ctx,

@@ -32,15 +32,20 @@ pub struct StatsItem {
 pub struct StatsMut<'a> {
     inner: &'a mut Stats,
 }
-impl<'a> std::ops::Deref for StatsMut<'a> {
+impl std::ops::Deref for StatsMut<'_> {
     type Target = Stats;
     fn deref(&self) -> &Self::Target {
         self.inner
     }
 }
-impl<'a> std::ops::DerefMut for StatsMut<'a> {
+impl std::ops::DerefMut for StatsMut<'_> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.inner
+    }
+}
+impl Default for Stats {
+    fn default() -> Self {
+        Self::new()
     }
 }
 impl Stats {
@@ -95,7 +100,7 @@ impl Stats {
                     (Some(sub), None) => *sub_opt2 = Some(sub),
                     (Some(sub), Some(sub2)) => sub2.augment_merge(sub),
                 }
-                return ();
+                return;
             }
         }
         self.vec.push((desc, time, sub_opt));

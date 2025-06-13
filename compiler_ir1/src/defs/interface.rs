@@ -63,7 +63,7 @@ impl Service {
         flows_context
     }
 
-    pub fn get_dependencies(& self, stmt_id: usize) -> impl Iterator<Item = usize> + '_ {
+    pub fn get_dependencies(&self, stmt_id: usize) -> impl Iterator<Item = usize> + '_ {
         self.graph
             .edges_directed(stmt_id, Direction::Incoming)
             .map(|(incoming, _, _)| incoming)
@@ -170,7 +170,7 @@ impl Service {
     }
 
     /// Create memory identifiers for [ir1] components called by service.
-    pub fn memorize(&mut self, ctx: &mut Ctx) -> Res<()> {
+    pub fn memorize(&mut self, ctx: &mut Ctx) -> URes {
         // create an IdentifierCreator, a local Ctx and Memory
         let mut identifier_creator = IdentifierCreator::from(self.get_flows_names(ctx));
         ctx.local();

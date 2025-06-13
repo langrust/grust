@@ -264,7 +264,7 @@ impl<'a> IsleBuilder<'a> {
             self.stack
                 .extend(stmts_ids.iter().map(|stmt_id| (*stmt_id, true)));
         } else {
-            return ;
+            return;
         }
 
         debug_assert!(self.isles.is_isle_empty(event));

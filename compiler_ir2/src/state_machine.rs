@@ -113,7 +113,7 @@ impl Input {
     }
 }
 
-impl<'a> ToTokens for InputTokens<'a> {
+impl ToTokens for InputTokens<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream2) {
         let pub_token = if self.public {
             quote! {pub}

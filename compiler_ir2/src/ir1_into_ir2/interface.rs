@@ -458,10 +458,7 @@ mod flow_instr {
                 .filter(|(_, stmt)| match stmt {
                     FlowStatement::Declaration(FlowDeclaration { expr, .. })
                     | FlowStatement::Instantiation(FlowInstantiation { expr, .. }) => {
-                        match expr.kind {
-                            flow::Kind::Time { .. } => true,
-                            _ => false,
-                        }
+                        matches!(expr.kind, flow::Kind::Time { .. })
                     }
                 })
                 .for_each(|(stmt_id, _)| {
@@ -812,10 +809,9 @@ mod flow_instr {
 
             imports
                 .iter()
-                .filter(|(_, import_id)| {
+                .find(|(_, import_id)| {
                     self.events.contains(import_id) || self.signals.contains(import_id)
                 })
-                .next()
                 .unwrap()
                 .1
         }
@@ -991,7 +987,7 @@ mod flow_instr {
             // timer is an event, look if it is defined
             if self.events.contains(&timer_id) {
                 // update signal by taking from source signal
-                
+
                 FlowInstruction::update_ctx(flow_name.clone(), self.get_signal(id_source))
             } else {
                 // 'scan' can be activated by the source signal, but it won't do anything
@@ -1331,7 +1327,7 @@ mod flow_instr {
             pattern: &ir1::stmt::Pattern,
             memory_id: usize,
             called_comp_id: usize,
-            inputs: &Vec<(usize, flow::Expr)>,
+            inputs: &[(usize, flow::Expr)],
         ) -> FlowInstruction {
             // get events that might call the component
             let (mut comp_inputs, mut signals, mut events) = (vec![], vec![], vec![]);
@@ -1376,7 +1372,7 @@ mod flow_instr {
             &mut self,
             pattern: &ir1::stmt::Pattern,
             function_id: usize,
-            inputs: &Vec<(usize, flow::Expr)>,
+            inputs: &[(usize, flow::Expr)],
         ) -> FlowInstruction {
             // get events that might call the component
             let (mut fun_inputs, mut signals) = (vec![], vec![]);
@@ -1759,7 +1755,7 @@ mod from_synced {
         }
     }
 
-    impl<'a> CtxSpec for flow_instr::Builder<'a> {
+    impl CtxSpec for flow_instr::Builder<'_> {
         type Instr = usize;
         type Cost = usize;
         type Label = ();
@@ -1780,12 +1776,12 @@ mod from_synced {
             max + 1
         }
     }
-    impl<'a> IntoParaMethod for <flow_instr::Builder<'a> as CtxSpec>::Cost {
+    impl IntoParaMethod for <flow_instr::Builder<'_> as CtxSpec>::Cost {
         fn into_para_method(self) -> ParaMethod {
             ParaMethod::Tokio // todo: depending on benchmarks
         }
     }
-    impl<'a> FromSynced<flow_instr::Builder<'a>> for FlowInstruction {
+    impl FromSynced<flow_instr::Builder<'_>> for FlowInstruction {
         fn from_instr(
             ctx: &mut flow_instr::Builder,
             instr: <flow_instr::Builder as CtxSpec>::Instr,
@@ -1819,13 +1815,13 @@ mod from_synced {
             FlowInstruction::para(para)
         }
 
-        fn prefix(ctx: &mut flow_instr::Builder<'a>) -> Self {
+        fn prefix(ctx: &mut flow_instr::Builder<'_>) -> Self {
             // init events that should be declared as &mut.
             let init_events = ctx.init_events().collect::<Vec<_>>();
             FlowInstruction::seq(init_events)
         }
 
-        fn suffix(_ctx: &mut flow_instr::Builder<'a>) -> Self {
+        fn suffix(_ctx: &mut flow_instr::Builder<'_>) -> Self {
             FlowInstruction::seq(vec![])
         }
     }
@@ -2082,7 +2078,7 @@ mod clean_synced {
         }
     }
 
-    impl<'a> IsExport for flow_instr::Builder<'a> {
+    impl IsExport for flow_instr::Builder<'_> {
         fn is_export(ctx: &Self, instr: Self::Instr) -> bool {
             ctx.get_export(instr).is_some()
         }

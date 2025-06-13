@@ -6,7 +6,7 @@
 /// - a [Scope::Output] meaning that the signal can be retreived by a node/component application
 /// - a [Scope::Local], when it is only reachable in the node/component defining it
 /// - but it can also be a [Scope::VeryLocal] signal, only used during compilation to tag
-/// identifiers defined by patterns in `when` or `match`.
+///   identifiers defined by patterns in `when` or `match`.
 #[derive(Debug, PartialEq, Clone)]
 pub enum Scope {
     /// Input of the node/component.

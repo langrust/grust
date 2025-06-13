@@ -63,7 +63,7 @@ pub struct EventIslesGraph<'a> {
     imports: &'a HashMap<usize, FlowImport>,
     isles: isles::Isles,
 }
-impl<'a> EventIslesGraph<'a> {
+impl EventIslesGraph<'_> {
     /// Returns the identifiers of flows that are defined by the statement.
     fn get_def_flows(&self, id: usize) -> Vec<usize> {
         if let Some(stmt) = self.stmts.get(&id) {
@@ -76,9 +76,7 @@ impl<'a> EventIslesGraph<'a> {
     }
     /// Tells if the statements is a component call.
     fn is_comp_call(&self, id: usize) -> bool {
-        self.stmts
-            .get(&id)
-            .map_or(false, FlowStatement::is_comp_call)
+        self.stmts.get(&id).is_some_and(FlowStatement::is_comp_call)
     }
 
     /// Adds the directed dependencies between 'node' and other existing nodes of the
@@ -137,20 +135,18 @@ impl<'a> TriggersGraph<'a> for EventIslesGraph<'a> {
         }
 
         // get graph dependencies
-        let dependencies = self.graph.neighbors(parent).filter_map(|child| {
-            // filter component call because they will appear in isles
-            if self.is_comp_call(child) {
-                return None;
-            }
-            Some(child)
-        });
+        let dependencies = self
+            .graph
+            .neighbors(parent)
+            .filter(|child| self.is_comp_call(*child));
 
         // get isles dependencies
         let isles = self
             .get_def_flows(parent)
             .into_iter()
             .filter_map(|parent_flow| self.isles.get_isle_for(parent_flow))
-            .flatten().copied();
+            .flatten()
+            .copied();
 
         // extend stack with union of event isle and dependencies
         isles.chain(dependencies).unique().collect()

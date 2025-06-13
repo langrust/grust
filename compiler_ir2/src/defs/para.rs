@@ -173,11 +173,11 @@ impl<'a> Env<'a> {
                     continue 'current;
                 }
             }
-            while let Some(next) = stack.pop() {
+            if let Some(next) = stack.pop() {
                 curr = next;
-                continue 'current;
+            } else {
+                return Ok(());
             }
-            return Ok(());
         }
     }
 
@@ -222,7 +222,7 @@ impl<'a> Env<'a> {
     /// between representatives.
     pub fn new(
         ctx: &'a Ctx,
-        stmts: &'a Vec<ir1::stream::Stmt>,
+        stmts: &'a [ir1::stream::Stmt],
         graph: &Graph,
         weight_bounds: synced::WeightBounds,
     ) -> Result<Self, String> {
@@ -327,7 +327,7 @@ impl<'a> Env<'a> {
     }
 }
 
-impl<'a> synced::generic::CtxSpec for Env<'a> {
+impl synced::generic::CtxSpec for Env<'_> {
     type Instr = usize;
     type Cost = Weight;
     type Label = graph::Label;
@@ -655,13 +655,13 @@ impl Stmts {
     }
 
     /// Builds a sequence of statements from some [ir1] statements.
-    pub fn seq_of_ir1(stmts: &Vec<ir1::stream::Stmt>, ctx: &ir0::Ctx) -> Self {
+    pub fn seq_of_ir1(stmts: &[ir1::stream::Stmt], ctx: &ir0::Ctx) -> Self {
         Self::new_seq(stmts.iter().map(|stmt| Self::new_stmt(stmt, ctx)).collect())
     }
 
     /// Constructor from [ir1] statements.
     pub fn of_ir1(
-        stmts: &Vec<ir1::stream::Stmt>,
+        stmts: &[ir1::stream::Stmt],
         ctx: &ir0::Ctx,
         graph: &Graph,
     ) -> Result<Self, String> {
@@ -768,12 +768,7 @@ impl Stmts {
     }
 
     /// Compiles a sequence of statements to rust code.
-    pub fn seq_to_tokens(
-        dont_bind: bool,
-        vars: &Vars,
-        subs: &Vec<Stmts>,
-        tokens: &mut TokenStream2,
-    ) {
+    pub fn seq_to_tokens(dont_bind: bool, vars: &Vars, subs: &[Stmts], tokens: &mut TokenStream2) {
         for sub in subs {
             sub.extend_tokens_aux(false, tokens)
         }
@@ -968,10 +963,8 @@ impl Stmts {
                     Vec::with_capacity(stmts.len()),
                 );
                 let scope = Schedule::scope_ident();
-                let mut idx = 0;
-                for stmt in stmts.into_iter() {
+                for (idx, stmt) in stmts.into_iter().enumerate() {
                     let id = ident(idx);
-                    idx += 1;
                     stmt_vec.push(quote! {
                         let #id = #scope . spawn(|| { #stmt });
                     });
@@ -996,7 +989,7 @@ impl Stmts {
     pub fn para_to_tokens(
         dont_bind: bool,
         vars: &Vars,
-        data: &Vec<(ParaKind, Vars, Vec<Stmts>)>,
+        data: &[(ParaKind, Vars, Vec<Stmts>)],
         tokens: &mut TokenStream2,
     ) {
         let vars_pat = &vars.bind;

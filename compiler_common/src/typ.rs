@@ -125,7 +125,7 @@ impl PartialEq for Typ {
                     name: r_name,
                     id: r_id,
                 },
-            ) => l_name.to_string() == r_name.to_string() && l_id == r_id,
+            ) => *l_name == *r_name && l_id == r_id,
             (
                 Self::Structure {
                     name: l_name,
@@ -135,7 +135,7 @@ impl PartialEq for Typ {
                     name: r_name,
                     id: r_id,
                 },
-            ) => l_name.to_string() == r_name.to_string() && l_id == r_id,
+            ) => *l_name == *r_name && l_id == r_id,
             (
                 Self::Fn {
                     inputs: l_inputs,
@@ -535,15 +535,15 @@ impl Typ {
     }
 
     /// Fails if `!self.is_arith_like()` at location `loc`.
-    pub fn check_arith_like(&self, loc: Loc) -> Res<()> {
+    pub fn check_arith_like(&self, loc: Loc) -> URes {
         check::typ::arith_like(loc, self)
     }
 
-    pub fn expect(&self, loc: Loc, expected: &Self) -> Res<()> {
+    pub fn expect(&self, loc: Loc, expected: &Self) -> URes {
         check::typ::expect(loc, self, expected)
     }
 
-    pub fn expect_bool(&self, loc: Loc) -> Res<()> {
+    pub fn expect_bool(&self, loc: Loc) -> URes {
         check::typ::expect(loc, self, &Self::bool())
     }
 
@@ -597,7 +597,7 @@ impl Typ {
             // the input_types, then apply the function_type with the input_type just like any other
             // type
             Typ::Polymorphism(fn_typ) => {
-                let mut out_typ = fn_typ(input_types.clone(), loc.clone()).dewrap(errors)?;
+                let mut out_typ = fn_typ(input_types.clone(), loc).dewrap(errors)?;
                 let result = out_typ.apply(input_types.clone(), loc, errors)?;
                 *self = out_typ;
                 Ok(result)
@@ -624,7 +624,7 @@ impl Typ {
     ///
     /// given_type.check_eq(&expected_type, Loc::test_dummy()).unwrap();
     /// ```
-    pub fn check_eq(&self, expected: &Typ, loc: Loc) -> Res<()> {
+    pub fn check_eq(&self, expected: &Typ, loc: Loc) -> URes {
         check::typ::expect(loc, self, expected)
     }
 
@@ -640,7 +640,7 @@ impl Typ {
     /// let fn_type = Typ::function(vec![Typ::int(), Typ::int()], Typ::int());
     /// assert!(fn_type.get_inputs().all(|ty| ty == &Typ::int()));
     /// ```
-    pub fn get_inputs<'a>(&'a self) -> impl Iterator<Item = &'a Typ> + 'a {
+    pub fn get_inputs(&self) -> impl Iterator<Item = &Typ> + '_ {
         match self {
             Typ::Fn { inputs, .. } => inputs.iter(),
             _ => noErrorDesc!(),
@@ -723,10 +723,7 @@ impl Typ {
     }
 
     pub fn is_event(&self) -> bool {
-        match self {
-            Typ::Event { .. } | Typ::Option { .. } => true,
-            _ => false,
-        }
+        matches!(self, Typ::Event { .. } | Typ::Option { .. })
     }
 
     pub fn is_polymorphic(&self) -> bool {

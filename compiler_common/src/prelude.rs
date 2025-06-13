@@ -311,7 +311,7 @@ pub fn levenshtein(s1: impl AsRef<str>, s2: impl AsRef<str>) -> usize {
             min: usize,
             next: TwoBytes<'a>,
         },
-        NoneLeft {
+        None {
             min: usize,
         },
     }
@@ -349,12 +349,12 @@ pub fn levenshtein(s1: impl AsRef<str>, s2: impl AsRef<str>) -> usize {
                     next
                 }
                 Some(Frame::OneLeft { min, next }) => {
-                    stack.push(Frame::NoneLeft {
+                    stack.push(Frame::None {
                         min: distance.min(min),
                     });
                     next
                 }
-                Some(Frame::NoneLeft { min }) => {
+                Some(Frame::None { min }) => {
                     distance = 1 + distance.min(min);
                     continue 'unstack;
                 }

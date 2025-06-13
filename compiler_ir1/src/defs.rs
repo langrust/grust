@@ -40,7 +40,7 @@ pub fn from_ast_timed(
             check_errors!();
             match stats.timed_with($desc, $e) {
                 Ok(res) => res,
-                Err(()) => {
+                Err(ErrorDetected) => {
                     if errors.is_empty() {
                         panic!("empty errors :/ ({})", $desc);
                     }

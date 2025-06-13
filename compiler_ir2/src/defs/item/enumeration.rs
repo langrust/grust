@@ -33,7 +33,7 @@ impl Enumeration {
     }
 }
 
-impl<'a> ToTokens for EnumerationTokens<'a> {
+impl ToTokens for EnumerationTokens<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream2) {
         if self.greusot {
             quote!(#[derive(prelude::Clone, Copy, prelude::PartialEq, DeepModel)]).to_tokens(tokens)

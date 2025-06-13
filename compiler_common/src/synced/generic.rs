@@ -390,8 +390,7 @@ impl<Ctx: CtxSpec + ?Sized> Synced<Ctx> {
             Self::Seq(ss, w) => {
                 let lines = ss
                     .iter()
-                    .map(|s| s.to_pseudo_code_lines(pref, hide_cost))
-                    .flatten();
+                    .flat_map(|s| s.to_pseudo_code_lines(pref, hide_cost));
                 let mut res = if hide_cost {
                     vec![]
                 } else {
@@ -573,7 +572,11 @@ impl<Ctx: CtxSpec + ?Sized> std::ops::Deref for Stack<Ctx> {
         &self.stack
     }
 }
-
+impl<Ctx: CtxSpec + ?Sized> Default for Stack<Ctx> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl<Ctx: CtxSpec + ?Sized> Stack<Ctx> {
     pub fn new() -> Self {
         Self {
@@ -611,16 +614,12 @@ impl<Ctx: CtxSpec + ?Sized> Stack<Ctx> {
 }
 
 pub trait DebugSpec<'graph, Ctx: CtxSpec + ?Sized> {
-    fn debug_init(
-        builder: &Builder<'graph, Ctx>,
-        root_head: Ctx::Instr,
-        root_tail: &Vec<Ctx::Instr>,
-    );
+    fn debug_init(builder: &Builder<'graph, Ctx>, root_head: Ctx::Instr, root_tail: &[Ctx::Instr]);
 
     fn find_readies(builder: &Builder<'graph, Ctx>);
     fn find_readies_none(builder: &Builder<'graph, Ctx>);
     fn find_readies_one(builder: &Builder<'graph, Ctx>, i: Ctx::Instr);
-    fn find_readies_many(builder: &Builder<'graph, Ctx>, i: Ctx::Instr, is: &Vec<Ctx::Instr>);
+    fn find_readies_many(builder: &Builder<'graph, Ctx>, i: Ctx::Instr, is: &[Ctx::Instr]);
 
     fn unstack(builder: &Builder<'graph, Ctx>, s: &Synced<Ctx>);
     fn unstack_empty(builder: &Builder<'graph, Ctx>);
@@ -628,7 +627,7 @@ pub trait DebugSpec<'graph, Ctx: CtxSpec + ?Sized> {
     fn unstack_empty_todo_empty(builder: &Builder<'graph, Ctx>);
     fn unstack_seq(
         builder: &Builder<'graph, Ctx>,
-        acc: &Vec<Synced<Ctx>>,
+        acc: &[Synced<Ctx>],
         validated: &Set<Ctx::Instr>,
     );
     fn unstack_para_todo_nempty(
@@ -650,8 +649,9 @@ impl<'graph, Ctx: CtxSpec + ?Sized> DebugSpec<'graph, Ctx> for NoDebug {
     fn debug_init(
         _builder: &Builder<'graph, Ctx>,
         _root_head: Ctx::Instr,
-        _root_tail: &Vec<Ctx::Instr>,
-    ) {}
+        _root_tail: &[Ctx::Instr],
+    ) {
+    }
 
     fn find_readies(_builder: &Builder<'graph, Ctx>) {}
 
@@ -659,7 +659,7 @@ impl<'graph, Ctx: CtxSpec + ?Sized> DebugSpec<'graph, Ctx> for NoDebug {
 
     fn find_readies_one(_builder: &Builder<'graph, Ctx>, _i: Ctx::Instr) {}
 
-    fn find_readies_many(_builder: &Builder<'graph, Ctx>, _i: Ctx::Instr, _is: &Vec<Ctx::Instr>) {}
+    fn find_readies_many(_builder: &Builder<'graph, Ctx>, _i: Ctx::Instr, _is: &[Ctx::Instr]) {}
 
     fn unstack(_builder: &Builder<'graph, Ctx>, _s: &Synced<Ctx>) {}
 
@@ -671,9 +671,10 @@ impl<'graph, Ctx: CtxSpec + ?Sized> DebugSpec<'graph, Ctx> for NoDebug {
 
     fn unstack_seq(
         _builder: &Builder<'graph, Ctx>,
-        _acc: &Vec<Synced<Ctx>>,
+        _acc: &[Synced<Ctx>],
         _validated: &Set<Ctx::Instr>,
-    ) {}
+    ) {
+    }
 
     fn unstack_para_todo_nempty(
         _builder: &Builder<'graph, Ctx>,
@@ -681,14 +682,14 @@ impl<'graph, Ctx: CtxSpec + ?Sized> DebugSpec<'graph, Ctx> for NoDebug {
         _next: Ctx::Instr,
         _todo: &[Ctx::Instr],
         _validated: &Set<Ctx::Instr>,
-    ) {}
+    ) {
+    }
 
     fn unstack_para_todo_empty(
         _builder: &Builder<'graph, Ctx>,
         _acc: &Map<Ctx::Cost, Vec<Synced<Ctx>>>,
         _validated: &Set<Ctx::Instr>,
     ) {
-        ()
     }
 }
 
@@ -808,7 +809,7 @@ impl<'graph, Ctx: CtxSpec + ?Sized> Builder<'graph, Ctx> {
     }
 
     fn drain_seq_validated(&mut self) -> Set<Ctx::Instr> {
-        std::mem::replace(&mut self.validated, Set::new())
+        std::mem::take(&mut self.validated)
     }
 
     /// Constructs the [`Synced`] structure corresponding to the internal graph, destroying itself.
@@ -842,9 +843,9 @@ impl<'graph, Ctx: CtxSpec + ?Sized> Builder<'graph, Ctx> {
         debug_assert!(self.validated.is_empty());
 
         // extract roots for initial setup
-        let (root, roots) = self.get_readies().ok_or_else(|| {
-            "illegal graph: no root(s) detected, the (sub)graph is empty or cyclic"
-        })?;
+        let (root, roots) = self
+            .get_readies()
+            .ok_or("illegal graph: no root(s) detected, the (sub)graph is empty or cyclic")?;
 
         D::debug_init(self, root, &roots);
 
@@ -920,7 +921,7 @@ impl<'graph, Ctx: CtxSpec + ?Sized> Builder<'graph, Ctx> {
                             D::unstack_empty_todo_nempty(self);
                             // have we made any progress since the last time the stack was empty?
                             let todo_count = self.todo.len();
-                            if !(todo_count < previous_todo_count_on_empty_stack) {
+                            if todo_count >= previous_todo_count_on_empty_stack {
                                 let mut s = format!(
                                     "ill-formed graph: cycle detected\n\
                                     stack has {} element(s)\
@@ -1049,7 +1050,7 @@ pub mod test {
         fn debug_init(
             builder: &Builder<'graph, DummyCtx>,
             root_head: <DummyCtx as CtxSpec>::Instr,
-            root_tail: &Vec<<DummyCtx as CtxSpec>::Instr>,
+            root_tail: &[<DummyCtx as CtxSpec>::Instr],
         ) {
             println!(
                 "starting run with {} todo(s) ({:?}) and {} root(s): ({} :: {:?})",
@@ -1079,7 +1080,7 @@ pub mod test {
         fn find_readies_many(
             _builder: &Builder<'graph, DummyCtx>,
             i: <DummyCtx as CtxSpec>::Instr,
-            is: &Vec<<DummyCtx as CtxSpec>::Instr>,
+            is: &[<DummyCtx as CtxSpec>::Instr],
         ) {
             println!("- readies: {i}, {is:?}");
             println!("- exploring {i} under a parallel frame for the tail");
@@ -1106,7 +1107,7 @@ pub mod test {
         }
         fn unstack_seq(
             _builder: &Builder<'graph, DummyCtx>,
-            acc: &Vec<Synced<DummyCtx>>,
+            acc: &[Synced<DummyCtx>],
             validated: &BTreeSet<<DummyCtx as CtxSpec>::Instr>,
         ) {
             println!("- seq frame {acc:?} with validated {validated:?}");
@@ -1143,7 +1144,7 @@ pub mod test {
         graph_pretty: &str,
         expected_pseudo_code: &str,
         sub_graph: Option<&Set<usize>>,
-        err_do: impl FnOnce(String) -> (),
+        err_do: impl FnOnce(String),
     ) {
         println!("graph:\n\n```\n{graph_pretty}\n```\n");
 
@@ -1155,8 +1156,7 @@ pub mod test {
         match builder.just_run::<DummyCtx>(&DummyCtx) {
             Ok(s) => {
                 let pseudo_code = s.to_pseudo_code("", true);
-                if &pseudo_code != expected_pseudo_code {
-                    println!("");
+                if pseudo_code != expected_pseudo_code {
                     println!(
                         "\
                             \n\ngraph:\n\n```\n{graph_pretty}\n```\n\n\
@@ -1453,7 +1453,6 @@ instr#9;\
         run(g, pretty, expected, None, |e| {
             if e.starts_with(err) {
                 println!("\n\nsuccess: got the expected error `{e}`");
-                ()
             } else {
                 println!("\n\nexpected error `{err}`, got `{e}`");
                 panic!("test failed")

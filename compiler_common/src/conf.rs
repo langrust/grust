@@ -19,9 +19,9 @@ pub enum ComponentPara {
     None,
     Para(WeightBounds),
 }
-impl Into<ComponentPara> for WeightBounds {
-    fn into(self) -> ComponentPara {
-        ComponentPara::Para(self)
+impl From<WeightBounds> for ComponentPara {
+    fn from(val: WeightBounds) -> Self {
+        ComponentPara::Para(val)
     }
 }
 impl Default for ComponentPara {
@@ -53,11 +53,7 @@ impl ComponentPara {
     }
 
     pub fn is_none(&self) -> bool {
-        if let Self::None = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, Self::None)
     }
 
     pub fn decide(&self, weight: synced::Weight) -> synced::Kind {

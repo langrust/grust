@@ -60,7 +60,7 @@ impl<'a> Simple<'a> {
     pub fn add_pat_loc<'b>(
         &'b mut self,
         pat: Option<&'b ir0::stmt::Pattern>,
-        loc: impl Into<Loc>
+        loc: impl Into<Loc>,
     ) -> PatLoc<'b> {
         PatLoc::new(pat, loc, self.ctx0, self.errors)
     }
@@ -81,7 +81,7 @@ impl<'a> PatLoc<'a> {
         pat: Option<&'a ir0::stmt::Pattern>,
         loc: impl Into<Loc>,
         ctx0: &'a mut Ctx,
-        errors: &'a mut Vec<Error>
+        errors: &'a mut Vec<Error>,
     ) -> Self {
         Self {
             pat,
@@ -98,7 +98,7 @@ impl<'a> PatLoc<'a> {
     }
     pub fn set_pat(
         &mut self,
-        pat: Option<&'a ir0::stmt::Pattern>
+        pat: Option<&'a ir0::stmt::Pattern>,
     ) -> Option<&'a ir0::stmt::Pattern> {
         std::mem::replace(&mut self.pat, pat)
     }
@@ -112,9 +112,8 @@ pub struct Flows {
 
 impl Flows {
     pub fn add_element(&mut self, element_name: Ident, element_type: &Typ) {
-        match self.elements.insert(element_name, element_type.clone()) {
-            Some(other_ty) => debug_assert!(other_ty.eq(element_type)),
-            None => (),
+        if let Some(other_ty) = self.elements.insert(element_name, element_type.clone()) {
+            debug_assert!(other_ty.eq(element_type))
         }
     }
     pub fn contains_element(&self, element_name: &Ident) -> bool {
@@ -148,7 +147,8 @@ impl ToTokens for Flows {
             });
             (quote! {
                 mod ctx_ty { #(#items)* }
-            }).to_tokens(tokens);
+            })
+            .to_tokens(tokens);
         }
 
         // `Context` structure type
@@ -157,19 +157,17 @@ impl ToTokens for Flows {
                 let struct_name = element_name.to_camel();
                 quote!(pub #element_name: ctx_ty::#struct_name)
             });
-            (
-                quote! {
+            (quote! {
                 #[derive(Clone, Copy, PartialEq, Default, Debug)]
                 pub struct Context { #(#fields),* }
-            }
-            ).to_tokens(tokens);
+            })
+            .to_tokens(tokens);
         }
 
         // `Context` implementation
         {
             // `init` function
-            let init_fun =
-                quote! {
+            let init_fun = quote! {
                 fn init() -> Context {
                     Default::default()
                 }
@@ -184,14 +182,13 @@ impl ToTokens for Flows {
                     fn reset(&mut self) { #(#stmts)* }
                 }
             };
-            (
-                quote! {
+            (quote! {
                 impl Context {
                     #init_fun
                     #reset_fun
                 }
-            }
-            ).to_tokens(tokens)
+            })
+            .to_tokens(tokens)
         }
     }
 }

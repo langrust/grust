@@ -30,7 +30,7 @@ impl ArrayAlias {
     }
 }
 
-impl<'a> ToTokens for ArrayAliasTokens<'a> {
+impl ToTokens for ArrayAliasTokens<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream2) {
         let size = self.aa.size;
         let name = &self.aa.name;
