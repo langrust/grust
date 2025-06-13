@@ -161,22 +161,20 @@ impl Typing for contract::Term {
 
                 // compute the application type
                 let mut fun_ty = symbols.get_typ(*fun_id).clone();
-                let application_type = fun_ty.apply(input_types, self.loc, errors)?;
-
-                application_type
+                fun_ty.apply(input_types, self.loc, errors)?
             }
+
             contract::Kind::ComponentCall { comp_id, inputs, .. } => {
                 // type all inputs and check their types
                 inputs
                     .iter_mut()
-                    .map(|(id, input)| {
+                    .try_for_each(|(id, input)| {
                         input.typ_check(symbols, errors)?;
 
                         let input_type = input.typing.as_ref().unwrap();
                         let expected_type = symbols.get_typ(*id);
                         input_type.expect(self.loc, expected_type).dewrap(errors)
-                    })
-                    .collect::<TRes<()>>()?;
+                    })?;
 
                 // get the called signal type
                 let comp_call_type = {
@@ -409,13 +407,12 @@ impl Typing for flow::Expr {
                 // type all inputs and check their types
                 inputs
                     .iter_mut()
-                    .map(|(id, input)| {
+                    .try_for_each(|(id, input)| {
                         input.typ_check(symbols, errors)?;
                         let input_type = input.get_typ().unwrap().convert();
                         let expected_type = symbols.get_typ(*id);
                         input_type.expect(self.loc, expected_type).dewrap(errors)
-                    })
-                    .collect::<TRes<()>>()?;
+                    })?;
 
                 // get the outputs types of the called component
                 let mut outputs_types = symbols
@@ -441,13 +438,12 @@ impl Typing for flow::Expr {
                 // type all inputs and check their types
                 inputs
                     .iter_mut()
-                    .map(|(id, input)| {
+                    .try_for_each(|(id, input)| {
                         input.typ_check(symbols, errors)?;
                         let input_type = input.get_typ().unwrap().convert();
                         let expected_type = symbols.get_typ(*id);
                         input_type.expect(self.loc, expected_type).dewrap(errors)
-                    })
-                    .collect::<TRes<()>>()?;
+                    })?;
 
                 // get the output type of the called function
                 let outputs_type = symbols.get_function_output_type(*function_id);
@@ -494,14 +490,13 @@ impl Typing for stream::Expr {
                 // type all inputs and check their types
                 inputs
                     .iter_mut()
-                    .map(|(id, input)| {
+                    .try_for_each(|(id, input)| {
                         input.typ_check(symbols, errors)?;
 
                         let input_type = input.typ.as_ref().unwrap();
                         let expected_type = symbols.get_typ(*id);
                         input_type.expect(self.loc, expected_type).dewrap(errors)
-                    })
-                    .collect::<TRes<()>>()?;
+                    })?;
 
                 // get the called signal type
                 let node_application_type = {
@@ -603,7 +598,7 @@ impl Pattern {
         match self.kind {
             Kind::Constant { ref constant } => {
                 let pattern_type = constant.get_typ();
-                pattern_type.expect(self.loc, &expected_type).dewrap(errors)?;
+                pattern_type.expect(self.loc, expected_type).dewrap(errors)?;
                 self.typing = Some(pattern_type);
                 Ok(())
             }
@@ -685,7 +680,7 @@ impl Pattern {
                 expected_type.expect(self.loc, &typing).dewrap(errors)?;
 
                 match &typing {
-                    Typ::Option { ty, .. } => pattern.typ_check(&ty, symbols, errors)?,
+                    Typ::Option { ty, .. } => pattern.typ_check(ty, symbols, errors)?,
                     ty =>
                         Err(error!(@self.loc() => ErrorKind::expected_event(ty.clone()))).dewrap(
                             errors
@@ -807,7 +802,7 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
         }
     }
 
-    fn lambda(&mut self, inputs: &Vec<usize>, expr: &mut Expr) -> TRes<Typ> {
+    fn lambda(&mut self, inputs: &[usize], expr: &mut Expr) -> TRes<Typ> {
         // type the abstracted expression with the local context
         expr.typ_check(self.table, self.errors)?;
 
@@ -821,7 +816,7 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
         Ok(lambda_type)
     }
 
-    fn application(&mut self, f: &mut E, inputs: &mut Vec<E>) -> TRes<Typ> {
+    fn application(&mut self, f: &mut E, inputs: &mut [E]) -> TRes<Typ> {
         // type all inputs
         for input in inputs.iter_mut() {
             input.typ_check(self.table, self.errors)?;
@@ -841,24 +836,22 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
         Ok(application_type)
     }
 
-    fn array(&mut self, elms: &mut Vec<E>) -> TRes<Typ> {
-        if elms.len() == 0 {
+    fn array(&mut self, elms: &mut [E]) -> TRes<Typ> {
+        if elms.is_empty() {
             bad!(self.errors, @self.loc => ErrorKind::expected_input());
         }
 
         elms
             .iter_mut()
-            .map(|element| element.typ_check(self.table, self.errors))
-            .collect::<TRes<()>>()?;
+            .try_for_each(|element| element.typ_check(self.table, self.errors))?;
 
         let first_type = elms[0].get_typ().unwrap(); // todo: manage zero element error
         elms
             .iter()
-            .map(|element| {
+            .try_for_each(|element| {
                 let element_type = element.get_typ().unwrap();
                 element_type.expect(self.loc, first_type).dewrap(self.errors)
-            })
-            .collect::<TRes<()>>()?;
+            })?;
 
         let array_type = Typ::array(first_type.clone(), elms.len());
 
@@ -1000,7 +993,7 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
     fn matching(
         &mut self,
         expr: &mut E,
-        arms: &mut Vec<(Pattern, Option<E>, Vec<Stmt<E>>, E)>
+        arms: &mut [(Pattern, Option<E>, Vec<Stmt<E>>, E)]
     ) -> TRes<Typ> {
         expr.typ_check(self.table, self.errors)?;
 
@@ -1008,7 +1001,7 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
 
         arms
             .iter_mut()
-            .map(|(pattern, optional_test_expression, body, arm_expression)| {
+            .try_for_each(|(pattern, optional_test_expression, body, arm_expression)| {
                 // check it matches pattern type
                 pattern.typ_check(expr_type, self.table, self.errors)?;
 
@@ -1019,28 +1012,21 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
 
                 // set types for every pattern
                 body
-                    .iter_mut()
-                    .map(|statement| statement.pattern.typ_check(self.table, self.errors))
-                    .collect::<TRes<()>>()?;
-
+                    .iter_mut().try_for_each(|statement| statement.pattern.typ_check(self.table, self.errors))?;
+                
                 // type all equations
                 body
-                    .iter_mut()
-                    .map(|statement| statement.typ_check(self.table, self.errors))
-                    .collect::<TRes<()>>()?;
+                    .iter_mut().try_for_each(|statement| statement.typ_check(self.table, self.errors))?;
 
                 arm_expression.typ_check(self.table, self.errors)
-            })
-            .collect::<TRes<()>>()?;
+            })?;
 
         let first_type = arms[0].3.get_typ().unwrap();
         arms
-            .iter()
-            .map(|(_, _, _, arm_expression)| {
+            .iter().try_for_each(|(_, _, _, arm_expression)| {
                 let arm_expression_type = arm_expression.get_typ().unwrap();
                 arm_expression_type.expect(self.loc, first_type).dewrap(self.errors)
-            })
-            .collect::<TRes<()>>()?;
+            })?;
 
         // todo: patterns should be exhaustive
         Ok(first_type.clone())

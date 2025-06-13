@@ -1143,7 +1143,7 @@ impl Expr {
                 // create fresh identifier for the new memory buffer
                 let node_name = ctx.get_name(*called_node_id);
                 let memory_name =
-                    identifier_creator.new_identifier(node_name.loc(), &node_name.to_string());
+                    identifier_creator.new_identifier(node_name.loc(), node_name.to_string());
                 let memory_id = ctx.insert_fresh_signal(memory_name, Scope::Local, None);
                 memory.add_called_node(memory_id, *called_node_id);
                 // put the 'memory_id' of the called node
@@ -1316,7 +1316,7 @@ impl Expr {
                 let fresh_name = identifier_creator.fresh_identifier(
                     loc,
                     "comp_app",
-                    &ctx.get_name(called_node_id).to_string(),
+                    ctx.get_name(called_node_id).to_string(),
                 );
                 let typ = self.get_type().cloned();
                 let fresh_id = ctx.insert_fresh_signal(fresh_name, Scope::Local, typ.clone());
@@ -1326,10 +1326,10 @@ impl Expr {
                     pattern: ir1::stmt::Pattern {
                         kind: ir1::stmt::Kind::Identifier { id: fresh_id },
                         typ,
-                        loc: self.loc.clone(),
+                        loc: self.loc,
                     },
                     expr: self.clone(),
-                    loc: self.loc.clone(),
+                    loc: self.loc,
                 };
                 new_stmts.push(node_application_statement);
 
@@ -1397,9 +1397,9 @@ impl Expr {
                     pattern: ir1::stmt::Pattern {
                         kind: ir1::stmt::Kind::Identifier { id: fresh_id },
                         typ: typ.cloned(),
-                        loc: self.loc.clone(),
+                        loc: self.loc,
                     },
-                    loc: self.loc.clone(),
+                    loc: self.loc,
                     expr: self.clone(),
                 };
                 new_stmts.push(new_statement);

@@ -185,7 +185,7 @@ impl Kind {
                 // create fresh identifier for the new memory buffer
                 let node_name = ctx.get_name(*called_comp_id);
                 let memory_name =
-                    identifier_creator.new_identifier(node_name.loc(), &node_name.to_string());
+                    identifier_creator.new_identifier(node_name.loc(), node_name.to_string());
                 let memory_id = ctx.insert_fresh_signal(memory_name, Scope::Local, None);
                 // put the 'memory_id' of the called node
                 *comp_memory_id = Some(memory_id);
@@ -275,11 +275,7 @@ impl Expr {
     }
 
     fn is_ident(&self) -> bool {
-        if let flow::Kind::Ident { .. } = &self.kind {
-            true
-        } else {
-            false
-        }
+        matches!(&self.kind, flow::Kind::Ident { .. })
     }
     /// Change [ir1] flow expression into a normal form.
     ///
@@ -365,7 +361,7 @@ impl Expr {
                         pattern: ir1::stmt::Pattern {
                             kind: ir1::stmt::Kind::Identifier { id: fresh_id },
                             typ: Some(typ.clone()),
-                            loc: self.loc.clone(),
+                            loc: self.loc,
                         },
                         eq_token: Default::default(),
                         expr: self.clone(),
