@@ -1,6 +1,7 @@
 use std::ops::Range;
 
 /// Element location in source code for errors display.
+#[allow(clippy::derived_hash_with_manual_eq)]
 #[derive(Debug, Eq, Hash, Clone)]
 pub struct Location {
     /// The file identifier as a [usize] in case there are multiple files.

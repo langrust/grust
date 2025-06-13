@@ -1,5 +1,4 @@
 //! Error-handling.
-#![allow(clippy::negative_feature_names)]
 
 prelude! {}
 
