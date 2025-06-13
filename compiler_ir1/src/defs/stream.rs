@@ -15,18 +15,20 @@ mk_new! { impl Stmt => new {
 impl Stmt {
     pub fn get_identifiers(&self) -> Vec<usize> {
         let mut identifiers = match &self.expr.kind {
-            stream::Kind::Expression { expr } => match expr {
-                expr::Kind::MatchExpr { arms, .. } => arms
-                    .iter()
-                    .flat_map(|(pattern, _, statements, _)| {
-                        statements
+            stream::Kind::Expression { expr } =>
+                match expr {
+                    expr::Kind::MatchExpr { arms, .. } =>
+                        arms
                             .iter()
-                            .flat_map(|statement| statement.get_identifiers())
-                            .chain(pattern.identifiers())
-                    })
-                    .collect(),
-                _ => vec![],
-            },
+                            .flat_map(|(pattern, _, statements, _)| {
+                                statements
+                                    .iter()
+                                    .flat_map(|statement| statement.get_identifiers())
+                                    .chain(pattern.identifiers())
+                            })
+                            .collect(),
+                    _ => vec![],
+                }
             _ => vec![],
         };
 
@@ -48,7 +50,7 @@ impl Stmt {
         &mut self,
         identifier_creator: &mut IdentifierCreator,
         memory: &mut Memory,
-        ctx: &mut Ctx,
+        ctx: &mut Ctx
     ) -> Res<()> {
         self.expr.memorize(identifier_creator, memory, ctx)
     }
@@ -77,19 +79,18 @@ impl Stmt {
         mut self,
         nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
         identifier_creator: &mut IdentifierCreator,
-        ctx: &mut Ctx,
+        ctx: &mut Ctx
     ) -> (Vec<stream::Stmt>, Vec<stream::InitStmt>) {
         // change expression into normal form and get additional statements
         let (mut new_stmts, new_inits) = match self.expr.kind {
-            stream::Kind::NodeApplication {
-                called_node_id,
-                ref mut inputs,
-                ..
-            } => {
+            stream::Kind::NodeApplication { called_node_id, ref mut inputs, .. } => {
                 let (mut new_stmts, mut new_inits) = (vec![], vec![]);
                 for (_, expr) in inputs.iter_mut() {
-                    let (add_stmts, add_inits) =
-                        expr.into_signal_call(nodes_reduced_graphs, identifier_creator, ctx);
+                    let (add_stmts, add_inits) = expr.into_signal_call(
+                        nodes_reduced_graphs,
+                        identifier_creator,
+                        ctx
+                    );
                     new_stmts.extend(add_stmts);
                     new_inits.extend(add_inits);
                 }
@@ -100,8 +101,9 @@ impl Stmt {
                     inputs
                         .iter()
                         .flat_map(|(input_id, expr)| {
-                            ctx.get_node_outputs(called_node_id).iter().flat_map(
-                                |(_, output_id)| {
+                            ctx.get_node_outputs(called_node_id)
+                                .iter()
+                                .flat_map(|(_, output_id)| {
                                     reduced_graph
                                         .edge_weight(*output_id, *input_id)
                                         .into_iter()
@@ -111,17 +113,14 @@ impl Stmt {
                                                 .into_iter()
                                                 .map(|(id, label2)| (id, label1.add(&label2)))
                                         })
-                                },
-                            )
+                                })
                         })
-                        .collect(),
+                        .collect()
                 );
 
                 (new_stmts, new_inits)
             }
-            _ => self
-                .expr
-                .normal_form(nodes_reduced_graphs, identifier_creator, ctx),
+            _ => self.expr.normal_form(nodes_reduced_graphs, identifier_creator, ctx),
         };
 
         // push normal_formed self statement in the statements storage
@@ -135,27 +134,26 @@ impl Stmt {
         let signals = self.pattern.identifiers();
         for from in signals.iter() {
             for (to, label) in self.expr.get_dependencies() {
-                graph::add_edge(graph, *from, *to, label.clone());
+                graph::add_edge(graph, *from, *to, *label);
             }
         }
         match &self.expr.kind {
-            stream::Kind::Expression { expr } => match expr {
-                ir1::expr::Kind::MatchExpr { arms, .. } => {
-                    arms.iter().for_each(|(_, bound, statements, _)| {
-                        if let Some(bound) = bound {
-                            for from in signals.iter() {
-                                for (to, label) in bound.get_dependencies() {
-                                    graph::add_edge(graph, *from, *to, label.clone());
+            stream::Kind::Expression { expr } =>
+                match expr {
+                    ir1::expr::Kind::MatchExpr { arms, .. } => {
+                        arms.iter().for_each(|(_, bound, statements, _)| {
+                            if let Some(bound) = bound {
+                                for from in signals.iter() {
+                                    for (to, label) in bound.get_dependencies() {
+                                        graph::add_edge(graph, *from, *to, *label);
+                                    }
                                 }
                             }
-                        }
-                        statements
-                            .iter()
-                            .for_each(|statement| statement.add_to_graph(graph))
-                    })
+                            statements.iter().for_each(|statement| statement.add_to_graph(graph))
+                        })
+                    }
+                    _ => (),
                 }
-                _ => (),
-            },
             _ => (),
         }
     }
@@ -169,14 +167,14 @@ impl Stmt {
         &self,
         identifier_creator: &mut IdentifierCreator,
         context_map: &mut HashMap<usize, Either<usize, stream::Expr>>,
-        ctx: &mut Ctx,
+        ctx: &mut Ctx
     ) {
         // create fresh identifiers for the new statement
         let local_signals = self.pattern.identifiers();
         for signal_id in local_signals {
             let name = ctx.get_name(signal_id);
             let scope = ctx.get_scope(signal_id).clone();
-            let fresh_name = identifier_creator.new_identifier(name.span(), &name.to_string());
+            let fresh_name = identifier_creator.new_identifier(name.span(), name.to_string());
             if Scope::Output != scope && &fresh_name != name {
                 let typ = Some(ctx.get_typ(signal_id).clone());
                 let fresh_id = ctx.insert_fresh_signal(fresh_name, scope, typ);
@@ -202,24 +200,25 @@ impl Stmt {
     /// x + y` will return `c = a + b/2`.
     pub fn replace_by_context(
         &self,
-        context_map: &HashMap<usize, Either<usize, stream::Expr>>,
+        context_map: &HashMap<usize, Either<usize, stream::Expr>>
     ) -> stream::Stmt {
         let mut new_statement = self.clone();
 
         // replace statement's identifiers by the new ones
         let local_signals = new_statement.pattern.identifiers_mut();
         for signal_id in local_signals {
-            if let Some(element) = context_map.get(&signal_id) {
+            if let Some(element) = context_map.get(signal_id) {
                 match element {
-                    Either::Left(new_id)
-                    | Either::Right(stream::Expr {
-                        kind:
-                            stream::Kind::Expression {
-                                expr: ir1::expr::Kind::Identifier { id: new_id },
-                            },
-                        ..
-                    }) => {
-                        *signal_id = new_id.clone();
+                    | Either::Left(new_id)
+                    | Either::Right(
+                          stream::Expr {
+                              kind: stream::Kind::Expression {
+                                  expr: ir1::expr::Kind::Identifier { id: new_id },
+                              },
+                              ..
+                          },
+                      ) => {
+                        *signal_id = *new_id;
                     }
                     Either::Right(_) => noErrorDesc!(),
                 }
@@ -256,7 +255,7 @@ impl Stmt {
         memory: &mut Memory,
         identifier_creator: &mut IdentifierCreator,
         ctx: &mut Ctx,
-        nodes: &HashMap<usize, Component>,
+        nodes: &HashMap<usize, Component>
     ) -> Vec<stream::Stmt> {
         let mut current_statements = vec![self.clone()];
         let mut new_statements = self.inline_when_needed(memory, identifier_creator, ctx, nodes);
@@ -278,15 +277,10 @@ impl Stmt {
         memory: &mut Memory,
         identifier_creator: &mut IdentifierCreator,
         ctx: &mut Ctx,
-        nodes: &HashMap<usize, Component>,
+        nodes: &HashMap<usize, Component>
     ) -> Vec<stream::Stmt> {
         match &self.expr.kind {
-            stream::Kind::NodeApplication {
-                called_node_id,
-                inputs,
-                memory_id,
-                ..
-            } => {
+            stream::Kind::NodeApplication { called_node_id, inputs, memory_id, .. } => {
                 // a loop in the graph induces that "node call" inputs depends on output
                 let is_loop = {
                     let mut graph = DiGraphMap::new();
@@ -294,7 +288,7 @@ impl Stmt {
                     let in_deps = inputs.iter().flat_map(|(_, expr)| expr.get_dependencies());
                     for (to, label) in in_deps {
                         for from in outs.iter() {
-                            graph.add_edge(*from, *to, label.clone());
+                            graph.add_edge(*from, *to, *label);
                         }
                     }
                     graph::toposort(&graph, None).is_err()
@@ -302,15 +296,15 @@ impl Stmt {
 
                 // then node call must be inlined
                 if is_loop {
-                    let called_unitary_node = nodes.get(&called_node_id).unwrap();
+                    let called_unitary_node = nodes.get(called_node_id).unwrap();
 
                     // get statements from called node, with corresponding inputs
-                    let (retrieved_statements, retrieved_memory) = called_unitary_node
-                        .instantiate_statements_and_memory(
+                    let (retrieved_statements, retrieved_memory) =
+                        called_unitary_node.instantiate_statements_and_memory(
                             identifier_creator,
                             inputs,
                             Some(self.pattern),
-                            ctx,
+                            ctx
                         );
 
                     // remove called node from memory
@@ -346,18 +340,20 @@ impl PartialEq for InitStmt {
 impl InitStmt {
     pub fn get_identifiers(&self) -> Vec<usize> {
         let mut identifiers = match &self.expr.kind {
-            stream::Kind::Expression { expr } => match expr {
-                expr::Kind::MatchExpr { arms, .. } => arms
-                    .iter()
-                    .flat_map(|(pattern, _, statements, _)| {
-                        statements
+            stream::Kind::Expression { expr } =>
+                match expr {
+                    expr::Kind::MatchExpr { arms, .. } =>
+                        arms
                             .iter()
-                            .flat_map(|statement| statement.get_identifiers())
-                            .chain(pattern.identifiers())
-                    })
-                    .collect(),
-                _ => vec![],
-            },
+                            .flat_map(|(pattern, _, statements, _)| {
+                                statements
+                                    .iter()
+                                    .flat_map(|statement| statement.get_identifiers())
+                                    .chain(pattern.identifiers())
+                            })
+                            .collect(),
+                    _ => vec![],
+                }
             _ => vec![],
         };
 
@@ -389,10 +385,10 @@ impl ExprKind {
         &mut self,
         identifier_creator: &mut IdentifierCreator,
         memory: &mut Memory,
-        ctx: &mut Ctx,
+        ctx: &mut Ctx
     ) -> Res<()> {
         match self {
-            Self::Constant { .. }
+            | Self::Constant { .. }
             | Self::Identifier { .. }
             | Self::Lambda { .. }
             | Self::Enumeration { .. } => (),
@@ -436,7 +432,7 @@ impl ExprKind {
                     expr.memorize(identifier_creator, memory, ctx)?;
                 }
             }
-            Self::FieldAccess { expr, .. }
+            | Self::FieldAccess { expr, .. }
             | Self::TupleElementAccess { expr, .. }
             | Self::ArrayAccess { expr, .. } => {
                 expr.memorize(identifier_creator, memory, ctx)?;
@@ -487,16 +483,19 @@ impl ExprKind {
         dependencies: &mut Dependencies,
         nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
         identifier_creator: &mut IdentifierCreator,
-        ctx: &mut Ctx,
+        ctx: &mut Ctx
     ) -> (Vec<stream::Stmt>, Vec<stream::InitStmt>) {
         match self {
-            Self::Constant { .. }
+            | Self::Constant { .. }
             | Self::Identifier { .. }
             | Self::Enumeration { .. }
             | Self::Lambda { .. } => (vec![], vec![]),
             Self::UnOp { expr, .. } => {
-                let (new_stmts, new_inits) =
-                    expr.normal_form(nodes_reduced_graphs, identifier_creator, ctx);
+                let (new_stmts, new_inits) = expr.normal_form(
+                    nodes_reduced_graphs,
+                    identifier_creator,
+                    ctx
+                );
 
                 *dependencies = Dependencies::from(expr.get_dependencies().clone());
 
@@ -504,8 +503,11 @@ impl ExprKind {
             }
 
             Self::BinOp { lft, rgt, .. } => {
-                let (mut new_stmts, mut new_inits) =
-                    lft.normal_form(nodes_reduced_graphs, identifier_creator, ctx);
+                let (mut new_stmts, mut new_inits) = lft.normal_form(
+                    nodes_reduced_graphs,
+                    identifier_creator,
+                    ctx
+                );
                 let (stmts, inits) = rgt.normal_form(nodes_reduced_graphs, identifier_creator, ctx);
                 new_stmts.extend(stmts);
                 new_inits.extend(inits);
@@ -520,8 +522,11 @@ impl ExprKind {
             }
 
             Self::IfThenElse { cnd, thn, els } => {
-                let (mut new_stmts, mut new_inits) =
-                    cnd.normal_form(nodes_reduced_graphs, identifier_creator, ctx);
+                let (mut new_stmts, mut new_inits) = cnd.normal_form(
+                    nodes_reduced_graphs,
+                    identifier_creator,
+                    ctx
+                );
                 let (stmts, inits) = thn.normal_form(nodes_reduced_graphs, identifier_creator, ctx);
                 new_stmts.extend(stmts);
                 new_inits.extend(inits);
@@ -543,8 +548,11 @@ impl ExprKind {
             Self::Application { ref mut inputs, .. } => {
                 let (mut new_stmts, mut new_inits) = (vec![], vec![]);
                 for expr in inputs.iter_mut() {
-                    let (add_stmts, add_inits) =
-                        expr.normal_form(nodes_reduced_graphs, identifier_creator, ctx);
+                    let (add_stmts, add_inits) = expr.normal_form(
+                        nodes_reduced_graphs,
+                        identifier_creator,
+                        ctx
+                    );
                     new_stmts.extend(add_stmts);
                     new_inits.extend(add_inits);
                 }
@@ -553,7 +561,7 @@ impl ExprKind {
                     inputs
                         .iter()
                         .flat_map(|expr| expr.get_dependencies().clone())
-                        .collect(),
+                        .collect()
                 );
 
                 (new_stmts, new_inits)
@@ -562,8 +570,11 @@ impl ExprKind {
             Self::Structure { fields, .. } => {
                 let (mut new_stmts, mut new_inits) = (vec![], vec![]);
                 for (_, expr) in fields.iter_mut() {
-                    let (add_stmts, add_inits) =
-                        expr.normal_form(nodes_reduced_graphs, identifier_creator, ctx);
+                    let (add_stmts, add_inits) = expr.normal_form(
+                        nodes_reduced_graphs,
+                        identifier_creator,
+                        ctx
+                    );
                     new_stmts.extend(add_stmts);
                     new_inits.extend(add_inits);
                 }
@@ -572,7 +583,7 @@ impl ExprKind {
                     fields
                         .iter()
                         .flat_map(|(_, expression)| expression.get_dependencies().clone())
-                        .collect(),
+                        .collect()
                 );
 
                 (new_stmts, new_inits)
@@ -580,8 +591,11 @@ impl ExprKind {
             Self::Array { elements } | Self::Tuple { elements } => {
                 let (mut new_stmts, mut new_inits) = (vec![], vec![]);
                 for expr in elements.iter_mut() {
-                    let (add_stmts, add_inits) =
-                        expr.normal_form(nodes_reduced_graphs, identifier_creator, ctx);
+                    let (add_stmts, add_inits) = expr.normal_form(
+                        nodes_reduced_graphs,
+                        identifier_creator,
+                        ctx
+                    );
                     new_stmts.extend(add_stmts);
                     new_inits.extend(add_inits);
                 }
@@ -590,91 +604,110 @@ impl ExprKind {
                     elements
                         .iter()
                         .flat_map(|expression| expression.get_dependencies().clone())
-                        .collect(),
+                        .collect()
                 );
 
                 (new_stmts, new_inits)
             }
             Self::MatchExpr { expr, arms, .. } => {
-                let (mut new_stmts, mut new_inits) =
-                    expr.normal_form(nodes_reduced_graphs, identifier_creator, ctx);
+                let (mut new_stmts, mut new_inits) = expr.normal_form(
+                    nodes_reduced_graphs,
+                    identifier_creator,
+                    ctx
+                );
                 let mut expr_dependencies = expr.get_dependencies().clone();
 
-                arms.iter_mut()
-                    .for_each(|(pattern, bound, body, matched_expr)| {
-                        // get local signals defined in pattern
-                        let local_signals = pattern.identifiers();
+                arms.iter_mut().for_each(|(pattern, bound, body, matched_expr)| {
+                    // get local signals defined in pattern
+                    let local_signals = pattern.identifiers();
 
-                        // normalize body statements
-                        *body = body
-                            .iter_mut()
-                            .flat_map(|statement| {
-                                let (stmts, inits) = statement.clone().normal_form(
-                                    nodes_reduced_graphs,
-                                    identifier_creator,
-                                    ctx,
-                                );
-                                debug_assert!(inits.is_empty());
-                                stmts
-                            })
-                            .collect();
+                    // normalize body statements
+                    *body = body
+                        .iter_mut()
+                        .flat_map(|statement| {
+                            let (stmts, inits) = statement
+                                .clone()
+                                .normal_form(nodes_reduced_graphs, identifier_creator, ctx);
+                            debug_assert!(inits.is_empty());
+                            stmts
+                        })
+                        .collect();
 
-                        // remove identifiers created by the pattern from the dependencies
-                        bound.as_mut().map(|expr| {
-                            let (stmts, inits) =
-                                expr.normal_form(nodes_reduced_graphs, identifier_creator, ctx);
-                            new_stmts.extend(stmts);
-                            new_inits.extend(inits);
-
-                            expr_dependencies.extend(
-                                expr.get_dependencies()
-                                    .clone()
-                                    .into_iter()
-                                    .filter(|(signal, _)| !local_signals.contains(signal)),
-                            )
-                        });
-
-                        let (stmts, inits) =
-                            matched_expr.normal_form(nodes_reduced_graphs, identifier_creator, ctx);
-                        body.extend(stmts);
-                        debug_assert!(inits.is_empty());
+                    // remove identifiers created by the pattern from the dependencies
+                    bound.as_mut().map(|expr| {
+                        let (stmts, inits) = expr.normal_form(
+                            nodes_reduced_graphs,
+                            identifier_creator,
+                            ctx
+                        );
+                        new_stmts.extend(stmts);
+                        new_inits.extend(inits);
 
                         expr_dependencies.extend(
-                            matched_expr
+                            expr
                                 .get_dependencies()
                                 .clone()
                                 .into_iter()
-                                .filter(|(signal, _)| !local_signals.contains(signal)),
-                        );
+                                .filter(|(signal, _)| !local_signals.contains(signal))
+                        )
                     });
+
+                    let (stmts, inits) = matched_expr.normal_form(
+                        nodes_reduced_graphs,
+                        identifier_creator,
+                        ctx
+                    );
+                    body.extend(stmts);
+                    debug_assert!(inits.is_empty());
+
+                    expr_dependencies.extend(
+                        matched_expr
+                            .get_dependencies()
+                            .clone()
+                            .into_iter()
+                            .filter(|(signal, _)| !local_signals.contains(signal))
+                    );
+                });
 
                 *dependencies = Dependencies::from(expr_dependencies);
 
                 (new_stmts, new_inits)
             }
-            Self::FieldAccess { expr, .. }
+            | Self::FieldAccess { expr, .. }
             | Self::TupleElementAccess { expr, .. }
             | Self::ArrayAccess { expr, .. } => {
-                let (new_stmts, new_inits) =
-                    expr.normal_form(nodes_reduced_graphs, identifier_creator, ctx);
+                let (new_stmts, new_inits) = expr.normal_form(
+                    nodes_reduced_graphs,
+                    identifier_creator,
+                    ctx
+                );
 
                 *dependencies = Dependencies::from(expr.get_dependencies().clone());
 
                 (new_stmts, new_inits)
             }
             Self::Map { expr, .. } => {
-                let (new_stmts, new_inits) =
-                    expr.normal_form(nodes_reduced_graphs, identifier_creator, ctx);
+                let (new_stmts, new_inits) = expr.normal_form(
+                    nodes_reduced_graphs,
+                    identifier_creator,
+                    ctx
+                );
 
                 *dependencies = Dependencies::from(expr.get_dependencies().clone());
 
                 (new_stmts, new_inits)
             }
             Self::Fold { array, init, .. } => {
-                let (mut new_stmts, mut new_inits) =
-                    array.normal_form(nodes_reduced_graphs, identifier_creator, ctx);
-                let (stmts, inits) =
-                    init.normal_form(nodes_reduced_graphs, identifier_creator, ctx);
+                let (mut new_stmts, mut new_inits) = array.normal_form(
+                    nodes_reduced_graphs,
+                    identifier_creator,
+                    ctx
+                );
+                let (stmts, inits) = init.normal_form(
+                    nodes_reduced_graphs,
+                    identifier_creator,
+                    ctx
+                );
                 new_stmts.extend(stmts);
                 new_inits.extend(inits);
 
@@ -689,8 +722,11 @@ impl ExprKind {
                 (new_stmts, new_inits)
             }
             Self::Sort { expr, .. } => {
-                let (new_stmts, new_inits) =
-                    expr.normal_form(nodes_reduced_graphs, identifier_creator, ctx);
+                let (new_stmts, new_inits) = expr.normal_form(
+                    nodes_reduced_graphs,
+                    identifier_creator,
+                    ctx
+                );
 
                 *dependencies = Dependencies::from(expr.get_dependencies().clone());
 
@@ -699,8 +735,11 @@ impl ExprKind {
             Self::Zip { arrays, .. } => {
                 let (mut new_stmts, mut new_inits) = (vec![], vec![]);
                 for expr in arrays.iter_mut() {
-                    let (add_stmts, add_inits) =
-                        expr.normal_form(nodes_reduced_graphs, identifier_creator, ctx);
+                    let (add_stmts, add_inits) = expr.normal_form(
+                        nodes_reduced_graphs,
+                        identifier_creator,
+                        ctx
+                    );
                     new_stmts.extend(add_stmts);
                     new_inits.extend(add_inits);
                 }
@@ -709,7 +748,7 @@ impl ExprKind {
                     arrays
                         .iter()
                         .flat_map(|array| array.get_dependencies().clone())
-                        .collect(),
+                        .collect()
                 );
 
                 (new_stmts, new_inits)
@@ -732,7 +771,7 @@ impl ExprKind {
     pub fn replace_by_context(
         &mut self,
         dependencies: &mut Dependencies,
-        context_map: &HashMap<usize, Either<usize, stream::Expr>>,
+        context_map: &HashMap<usize, Either<usize, stream::Expr>>
     ) -> Option<stream::Expr> {
         match self {
             Self::Constant { .. } | Self::Lambda { .. } | Self::Enumeration { .. } => None,
@@ -781,15 +820,13 @@ impl ExprKind {
                 None
             }
             Self::Application { ref mut inputs, .. } => {
-                inputs
-                    .iter_mut()
-                    .for_each(|expression| expression.replace_by_context(context_map));
+                inputs.iter_mut().for_each(|expression| expression.replace_by_context(context_map));
 
                 *dependencies = Dependencies::from(
                     inputs
                         .iter()
                         .flat_map(|expression| expression.get_dependencies().clone())
-                        .collect(),
+                        .collect()
                 );
                 None
             }
@@ -802,7 +839,7 @@ impl ExprKind {
                     fields
                         .iter()
                         .flat_map(|(_, expression)| expression.get_dependencies().clone())
-                        .collect(),
+                        .collect()
                 );
                 None
             }
@@ -815,56 +852,52 @@ impl ExprKind {
                     elements
                         .iter()
                         .flat_map(|expression| expression.get_dependencies().clone())
-                        .collect(),
+                        .collect()
                 );
                 None
             }
-            Self::MatchExpr {
-                ref mut expr,
-                ref mut arms,
-                ..
-            } => {
+            Self::MatchExpr { ref mut expr, ref mut arms, .. } => {
                 expr.replace_by_context(context_map);
                 let mut expr_dependencies = expr.get_dependencies().clone();
 
-                arms.iter_mut()
-                    .for_each(|(pattern, bound, body, matched_expr)| {
-                        let local_signals = pattern.identifiers();
+                arms.iter_mut().for_each(|(pattern, bound, body, matched_expr)| {
+                    let local_signals = pattern.identifiers();
 
-                        // remove identifiers created by the pattern from the context
-                        let context_map = context_map
-                            .clone()
-                            .into_iter()
-                            .filter(|(key, _)| !local_signals.contains(key))
-                            .collect();
+                    // remove identifiers created by the pattern from the context
+                    let context_map = context_map
+                        .clone()
+                        .into_iter()
+                        .filter(|(key, _)| !local_signals.contains(key))
+                        .collect();
 
-                        if let Some(expr) = bound.as_mut() {
-                            expr.replace_by_context(&context_map);
-                            let mut bound_dependencies = expr
-                                .get_dependencies()
-                                .clone()
-                                .into_iter()
-                                .filter(|(signal, _)| !local_signals.contains(signal))
-                                .collect();
-                            expr_dependencies.append(&mut bound_dependencies);
-                        };
-
-                        body.iter_mut()
-                            .for_each(|statement| statement.expr.replace_by_context(&context_map));
-
-                        matched_expr.replace_by_context(&context_map);
-                        let matched_expr_dependencies = matched_expr
+                    if let Some(expr) = bound.as_mut() {
+                        expr.replace_by_context(&context_map);
+                        let mut bound_dependencies = expr
                             .get_dependencies()
                             .clone()
                             .into_iter()
-                            .filter(|(signal, _)| !local_signals.contains(signal));
-                        expr_dependencies.extend(matched_expr_dependencies);
-                    });
+                            .filter(|(signal, _)| !local_signals.contains(signal))
+                            .collect();
+                        expr_dependencies.append(&mut bound_dependencies);
+                    }
+
+                    body.iter_mut().for_each(|statement|
+                        statement.expr.replace_by_context(&context_map)
+                    );
+
+                    matched_expr.replace_by_context(&context_map);
+                    let matched_expr_dependencies = matched_expr
+                        .get_dependencies()
+                        .clone()
+                        .into_iter()
+                        .filter(|(signal, _)| !local_signals.contains(signal));
+                    expr_dependencies.extend(matched_expr_dependencies);
+                });
 
                 *dependencies = Dependencies::from(expr_dependencies);
                 None
             }
-            Self::FieldAccess { ref mut expr, .. }
+            | Self::FieldAccess { ref mut expr, .. }
             | Self::TupleElementAccess { ref mut expr, .. }
             | Self::ArrayAccess { ref mut expr, .. } => {
                 expr.replace_by_context(context_map);
@@ -882,11 +915,7 @@ impl ExprKind {
                 *dependencies = Dependencies::from(expr_dependencies);
                 None
             }
-            Self::Fold {
-                ref mut array,
-                ref mut init,
-                ..
-            } => {
+            Self::Fold { ref mut array, ref mut init, .. } => {
                 array.replace_by_context(context_map);
                 init.replace_by_context(context_map);
                 // get matched expressions dependencies
@@ -907,15 +936,13 @@ impl ExprKind {
                 None
             }
             Self::Zip { ref mut arrays, .. } => {
-                arrays
-                    .iter_mut()
-                    .for_each(|array| array.replace_by_context(context_map));
+                arrays.iter_mut().for_each(|array| array.replace_by_context(context_map));
 
                 *dependencies = Dependencies::from(
                     arrays
                         .iter()
                         .flat_map(|array| array.get_dependencies().clone())
-                        .collect(),
+                        .collect()
                 );
                 None
             }
@@ -963,11 +990,7 @@ pub enum Kind {
 
 impl Kind {
     pub fn is_default_constant(&self) -> bool {
-        if let Self::Expression { expr } = self {
-            expr.is_default_constant()
-        } else {
-            false
-        }
+        if let Self::Expression { expr } = self { expr.is_default_constant() } else { false }
     }
 }
 
@@ -1055,9 +1078,7 @@ impl Expr {
     }
     /// Get stream expression's dependencies.
     pub fn get_dependencies(&self) -> &Vec<(usize, Label)> {
-        self.dependencies
-            .get()
-            .expect("there should be dependencies")
+        self.dependencies.get().expect("there should be dependencies")
     }
 
     /// Tell if it is in normal form.
@@ -1084,8 +1105,8 @@ impl Expr {
     /// Tell if there is no component application.
     pub fn no_component_application(&self) -> bool {
         match &self.kind {
-            Kind::Expression { expr } => expr
-                .propagate_predicate(Self::no_component_application, |statement| {
+            Kind::Expression { expr } =>
+                expr.propagate_predicate(Self::no_component_application, |statement| {
                     statement.expr.no_component_application()
                 }),
             Kind::Last { .. } => true,
@@ -1099,8 +1120,8 @@ impl Expr {
     /// Tell if there is no rising edge.
     pub fn no_rising_edge(&self) -> bool {
         match &self.kind {
-            Kind::Expression { expr } => expr
-                .propagate_predicate(Self::no_rising_edge, |statement| {
+            Kind::Expression { expr } =>
+                expr.propagate_predicate(Self::no_rising_edge, |statement| {
                     statement.expr.no_rising_edge()
                 }),
             Kind::Last { .. } => true,
@@ -1127,23 +1148,21 @@ impl Expr {
         &mut self,
         identifier_creator: &mut IdentifierCreator,
         memory: &mut Memory,
-        ctx: &mut Ctx,
+        ctx: &mut Ctx
     ) -> Res<()> {
         match &mut self.kind {
             stream::Kind::Expression { expr } => {
                 expr.memorize(identifier_creator, memory, ctx)?;
             }
             stream::Kind::Last { .. } => (),
-            stream::Kind::NodeApplication {
-                called_node_id,
-                memory_id: node_memory_id,
-                ..
-            } => {
+            stream::Kind::NodeApplication { called_node_id, memory_id: node_memory_id, .. } => {
                 debug_assert!(node_memory_id.is_none());
                 // create fresh identifier for the new memory buffer
                 let node_name = ctx.get_name(*called_node_id);
-                let memory_name =
-                    identifier_creator.new_identifier(node_name.loc(), node_name.to_string());
+                let memory_name = identifier_creator.new_identifier(
+                    node_name.loc(),
+                    node_name.to_string()
+                );
                 let memory_id = ctx.insert_fresh_signal(memory_name, Scope::Local, None);
                 memory.add_called_node(memory_id, *called_node_id);
                 // put the 'memory_id' of the called node
@@ -1162,24 +1181,19 @@ impl Expr {
         mut self,
         mut pat: stmt::Pattern,
         memory: &mut Memory,
-        ctx: &mut Ctx,
+        ctx: &mut Ctx
     ) -> Res<()> {
         match (self.kind, pat.kind) {
             (
-                Kind::Expression {
-                    expr:
-                        expr::Kind::Tuple {
-                            elements: expr_elem,
-                        },
-                },
-                stmt::Kind::Tuple {
-                    elements: pat_elems,
-                },
+                Kind::Expression { expr: expr::Kind::Tuple { elements: expr_elem } },
+                stmt::Kind::Tuple { elements: pat_elems },
             ) => {
-                res_vec!(expr_elem
-                    .into_iter()
-                    .zip(pat_elems.into_iter())
-                    .map(|(expr, pat)| expr.store_in_memory(pat, memory, ctx)));
+                res_vec!(
+                    expr_elem
+                        .into_iter()
+                        .zip(pat_elems.into_iter())
+                        .map(|(expr, pat)| expr.store_in_memory(pat, memory, ctx))
+                );
                 Ok(())
             }
             (a, b) => {
@@ -1220,18 +1234,18 @@ impl Expr {
         &mut self,
         nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
         identifier_creator: &mut IdentifierCreator,
-        ctx: &mut Ctx,
+        ctx: &mut Ctx
     ) -> (Vec<stream::Stmt>, Vec<stream::InitStmt>) {
         let loc = self.loc;
         match self.kind {
             stream::Kind::Last { .. } => (vec![], vec![]),
             stream::Kind::RisingEdge { ref mut expr } => {
-                let (new_stmts, mut new_inits) =
-                    expr.into_signal_call(nodes_reduced_graphs, identifier_creator, ctx);
-                if let stream::Kind::Expression {
-                    expr: expr::Kind::Identifier { id },
-                } = expr.kind
-                {
+                let (new_stmts, mut new_inits) = expr.into_signal_call(
+                    nodes_reduced_graphs,
+                    identifier_creator,
+                    ctx
+                );
+                if let stream::Kind::Expression { expr: expr::Kind::Identifier { id } } = expr.kind {
                     let last_dependencies = Dependencies::from(vec![(id, Label::weight(1))]);
                     let init_pat = stmt::Pattern {
                         kind: stmt::Kind::ident(id),
@@ -1239,9 +1253,11 @@ impl Expr {
                         loc,
                     };
                     let init_expr = stream::Expr {
-                        kind: stream::Kind::expr(expr::Kind::constant(Constant::bool(
-                            syn::LitBool::new(false, macro2::Span::call_site()),
-                        ))),
+                        kind: stream::Kind::expr(
+                            expr::Kind::constant(
+                                Constant::bool(syn::LitBool::new(false, macro2::Span::call_site()))
+                            )
+                        ),
                         typ: Some(Typ::Boolean(Default::default())),
                         loc,
                         dependencies: Dependencies::from(vec![]),
@@ -1266,25 +1282,26 @@ impl Expr {
                         dependencies: last_dependencies,
                     };
 
-                    self.dependencies =
-                        Dependencies::from(vec![(id, Label::weight(0)), (id, Label::weight(1))]);
-                    self.kind =
-                        stream::Kind::expr(expr::Kind::binop(BOp::And, *expr.clone(), not_mem));
+                    self.dependencies = Dependencies::from(
+                        vec![(id, Label::weight(0)), (id, Label::weight(1))]
+                    );
+                    self.kind = stream::Kind::expr(
+                        expr::Kind::binop(BOp::And, *expr.clone(), not_mem)
+                    );
 
                     (new_stmts, new_inits)
                 } else {
                     noErrorDesc!("internal error: rising edge should be detected on ident only")
                 }
             }
-            stream::Kind::NodeApplication {
-                called_node_id,
-                ref mut inputs,
-                ..
-            } => {
+            stream::Kind::NodeApplication { called_node_id, ref mut inputs, .. } => {
                 let (mut new_stmts, mut new_inits) = (vec![], vec![]);
                 for (_, expr) in inputs.iter_mut() {
-                    let (add_stmts, add_inits) =
-                        expr.into_signal_call(nodes_reduced_graphs, identifier_creator, ctx);
+                    let (add_stmts, add_inits) = expr.into_signal_call(
+                        nodes_reduced_graphs,
+                        identifier_creator,
+                        ctx
+                    );
                     new_stmts.extend(add_stmts);
                     new_inits.extend(add_inits);
                 }
@@ -1295,8 +1312,9 @@ impl Expr {
                     inputs
                         .iter()
                         .flat_map(|(input_id, expr)| {
-                            ctx.get_node_outputs(called_node_id).iter().flat_map(
-                                |(_, output_id)| {
+                            ctx.get_node_outputs(called_node_id)
+                                .iter()
+                                .flat_map(|(_, output_id)| {
                                     reduced_graph
                                         .edge_weight(*output_id, *input_id)
                                         .into_iter()
@@ -1306,17 +1324,16 @@ impl Expr {
                                                 .into_iter()
                                                 .map(|(id, label2)| (id, label1.add(&label2)))
                                         })
-                                },
-                            )
+                                })
                         })
-                        .collect(),
+                        .collect()
                 );
 
                 // create fresh identifier for the new statement
                 let fresh_name = identifier_creator.fresh_identifier(
                     loc,
                     "comp_app",
-                    ctx.get_name(called_node_id).to_string(),
+                    ctx.get_name(called_node_id).to_string()
                 );
                 let typ = self.get_type().cloned();
                 let fresh_id = ctx.insert_fresh_signal(fresh_name, Scope::Local, typ.clone());
@@ -1342,15 +1359,19 @@ impl Expr {
                 // return new additional statements
                 (new_stmts, new_inits)
             }
-            stream::Kind::Expression { ref mut expr } => expr.normal_form(
-                &mut self.dependencies,
-                nodes_reduced_graphs,
-                identifier_creator,
-                ctx,
-            ),
+            stream::Kind::Expression { ref mut expr } =>
+                expr.normal_form(
+                    &mut self.dependencies,
+                    nodes_reduced_graphs,
+                    identifier_creator,
+                    ctx
+                ),
             stream::Kind::SomeEvent { ref mut expr } => {
-                let (new_stmts, new_inits) =
-                    expr.normal_form(nodes_reduced_graphs, identifier_creator, ctx);
+                let (new_stmts, new_inits) = expr.normal_form(
+                    nodes_reduced_graphs,
+                    identifier_creator,
+                    ctx
+                );
                 self.dependencies = Dependencies::from(expr.get_dependencies().clone());
                 (new_stmts, new_inits)
             }
@@ -1377,15 +1398,16 @@ impl Expr {
         &mut self,
         nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
         identifier_creator: &mut IdentifierCreator,
-        ctx: &mut Ctx,
+        ctx: &mut Ctx
     ) -> (Vec<stream::Stmt>, Vec<stream::InitStmt>) {
         match self.kind {
-            stream::Kind::Expression {
-                expr: expr::Kind::Identifier { .. },
-            } => (vec![], vec![]),
+            stream::Kind::Expression { expr: expr::Kind::Identifier { .. } } => (vec![], vec![]),
             _ => {
-                let (mut new_stmts, new_inits) =
-                    self.normal_form(nodes_reduced_graphs, identifier_creator, ctx);
+                let (mut new_stmts, new_inits) = self.normal_form(
+                    nodes_reduced_graphs,
+                    identifier_creator,
+                    ctx
+                );
 
                 // create fresh identifier for the new statement
                 let fresh_name = identifier_creator.fresh_identifier(self.loc(), "", "x");
@@ -1430,7 +1452,7 @@ impl Expr {
     /// With a context `[x -> a, y -> b/2]`, the expression `x + y` will become `a + b/2`.
     pub fn replace_by_context(
         &mut self,
-        context_map: &HashMap<usize, Either<usize, stream::Expr>>,
+        context_map: &HashMap<usize, Either<usize, stream::Expr>>
     ) {
         match self.kind {
             stream::Kind::Expression { ref mut expr } => {
@@ -1439,38 +1461,33 @@ impl Expr {
                     *self = new_expr;
                 }
             }
-            stream::Kind::NodeApplication {
-                ref mut memory_id,
-                ref mut inputs,
-                ..
-            } => {
+            stream::Kind::NodeApplication { ref mut memory_id, ref mut inputs, .. } => {
                 // replace the id of the called node
                 if let Some(element) = context_map.get(&memory_id.unwrap()) {
                     match element {
-                        Either::Left(new_id)
-                        | Either::Right(stream::Expr {
-                            kind:
-                                stream::Kind::Expression {
-                                    expr: ir1::expr::Kind::Identifier { id: new_id },
-                                },
-                            ..
-                        }) => {
+                        | Either::Left(new_id)
+                        | Either::Right(
+                              stream::Expr {
+                                  kind: stream::Kind::Expression {
+                                      expr: ir1::expr::Kind::Identifier { id: new_id },
+                                  },
+                                  ..
+                              },
+                          ) => {
                             *memory_id = Some(*new_id);
                         }
                         Either::Right(_) => noErrorDesc!(),
                     }
                 }
 
-                inputs
-                    .iter_mut()
-                    .for_each(|(_, expr)| expr.replace_by_context(context_map));
+                inputs.iter_mut().for_each(|(_, expr)| expr.replace_by_context(context_map));
 
                 // change dependencies to be the sum of inputs dependencies
                 self.dependencies = Dependencies::from(
                     inputs
                         .iter()
                         .flat_map(|(_, expr)| expr.get_dependencies().clone())
-                        .collect(),
+                        .collect()
                 );
             }
             stream::Kind::SomeEvent { ref mut expr } => {
@@ -1480,37 +1497,37 @@ impl Expr {
                 self.dependencies = Dependencies::from(expr.get_dependencies().clone());
             }
             stream::Kind::NoneEvent => (),
-            stream::Kind::Last {
-                ref mut signal_id,
-                ref mut init_id,
-            } => {
+            stream::Kind::Last { ref mut signal_id, ref mut init_id } => {
                 if let Some(element) = context_map.get(signal_id) {
                     match element {
-                        Either::Left(new_id)
-                        | Either::Right(stream::Expr {
-                            kind:
-                                stream::Kind::Expression {
-                                    expr: ir1::expr::Kind::Identifier { id: new_id },
-                                },
-                            ..
-                        }) => {
+                        | Either::Left(new_id)
+                        | Either::Right(
+                              stream::Expr {
+                                  kind: stream::Kind::Expression {
+                                      expr: ir1::expr::Kind::Identifier { id: new_id },
+                                  },
+                                  ..
+                              },
+                          ) => {
                             *signal_id = *new_id;
-                            self.dependencies =
-                                Dependencies::from(vec![(*new_id, Label::Weight(1))]);
+                            self.dependencies = Dependencies::from(
+                                vec![(*new_id, Label::Weight(1))]
+                            );
                         }
                         Either::Right(_) => noErrorDesc!(),
                     }
                 }
                 if let Some(element) = context_map.get(init_id) {
                     match element {
-                        Either::Left(new_id)
-                        | Either::Right(stream::Expr {
-                            kind:
-                                stream::Kind::Expression {
-                                    expr: ir1::expr::Kind::Identifier { id: new_id },
-                                },
-                            ..
-                        }) => {
+                        | Either::Left(new_id)
+                        | Either::Right(
+                              stream::Expr {
+                                  kind: stream::Kind::Expression {
+                                      expr: ir1::expr::Kind::Identifier { id: new_id },
+                                  },
+                                  ..
+                              },
+                          ) => {
                             *init_id = *new_id;
                         }
                         Either::Right(_) => noErrorDesc!(),
