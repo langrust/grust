@@ -1,0 +1,40 @@
+syntax = "proto3";
+package interface;
+
+// speed type
+message Speed {
+    double value = 1;
+}
+
+// pedestrian type
+message Pedestrian {
+    double distance = 1;
+}
+
+enum Braking {
+    NO_BRAKE = 0;
+    SOFT_BRAKE = 1;
+    URGENT_BRAKE = 2;
+}
+
+// the input part of the interface
+message Input {
+    int64 timestamp = 1;
+
+    oneof message {
+        Speed speed = 2;
+        Pedestrian pedestrian_l = 3;
+        Pedestrian pedestrian_r = 4;
+    }
+}
+
+// the output part of the interface
+message Output {
+    int64 timestamp = 1;
+    Braking brakes = 2;
+}
+
+// the service interface
+service AEB {
+    rpc RunAEB(stream Input) returns (stream Output);
+}

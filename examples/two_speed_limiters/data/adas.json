@@ -1,0 +1,242 @@
+[
+    {
+        "speed": 125.1,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 125.4,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 125.8,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 125.5,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 125.3,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 124.9,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 125.4,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 126.0,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 126.5,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 126.4,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 126.3,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 125.9,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 125.6,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 125.0,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 124.6,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 124.2,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 123.7,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 122.9,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 122.0,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 122.0,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 122.2,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 122.4,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 122.2,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 122.2,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 122.1,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 122.3,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 122.2,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 122.4,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 123.0,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Activated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 124.8,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Activated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 124.8,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 124.5,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 124.9,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 126.0,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Activated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 128.4,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Activated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 127.5,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 126.4,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 125.7,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 125.5,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    },
+    {
+        "speed": 124.9,
+        "vacuum_brake_state": "AboveMinLevel",
+        "kickdown": "Deactivated",
+        "vdc_disabled": "On"
+    }
+]

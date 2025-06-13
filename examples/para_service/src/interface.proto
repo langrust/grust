@@ -1,0 +1,21 @@
+syntax = "proto3";
+package interface;
+
+// the input part of the interface
+message Input {
+    int64 timestamp = 1;
+    int64 e0 = 2;
+}
+
+// the output part of the interface
+message Output {
+    int64 timestamp = 1;
+    oneof message {
+        int64 o1 = 8;
+    }
+}
+
+// the service interface
+service PARA {
+    rpc RunPARA(stream Input) returns (stream Output);
+}
