@@ -279,51 +279,51 @@ fn into_speed_limiter_service_input(input: Input) -> Option<RuntimeInput> {
     match input.message {
         Some(input::Message::Activation(0)) => Some(RuntimeInput::Activation(
             sl::ActivationRequest::On,
-            INIT.clone() + Duration::from_millis(input.timestamp as u64),
+            *INIT + Duration::from_millis(input.timestamp as u64),
         )),
         Some(input::Message::Activation(1)) => Some(RuntimeInput::Activation(
             sl::ActivationRequest::Off,
-            INIT.clone() + Duration::from_millis(input.timestamp as u64),
+            *INIT + Duration::from_millis(input.timestamp as u64),
         )),
         Some(input::Message::SetSpeed(set_speed)) => Some(RuntimeInput::SetSpeed(
             set_speed,
-            INIT.clone() + Duration::from_millis(input.timestamp as u64),
+            *INIT + Duration::from_millis(input.timestamp as u64),
         )),
         Some(input::Message::Speed(speed)) => Some(RuntimeInput::Speed(
             speed,
-            INIT.clone() + Duration::from_millis(input.timestamp as u64),
+            *INIT + Duration::from_millis(input.timestamp as u64),
         )),
         Some(input::Message::VacuumBrake(0)) => Some(RuntimeInput::VacuumBrake(
             sl::VacuumBrakeState::BelowMinLevel,
-            INIT.clone() + Duration::from_millis(input.timestamp as u64),
+            *INIT + Duration::from_millis(input.timestamp as u64),
         )),
         Some(input::Message::VacuumBrake(1)) => Some(RuntimeInput::VacuumBrake(
             sl::VacuumBrakeState::AboveMinLevel,
-            INIT.clone() + Duration::from_millis(input.timestamp as u64),
+            *INIT + Duration::from_millis(input.timestamp as u64),
         )),
         Some(input::Message::Kickdown(0)) => Some(RuntimeInput::Kickdown(
             sl::Kickdown::Activated,
-            INIT.clone() + Duration::from_millis(input.timestamp as u64),
+            *INIT + Duration::from_millis(input.timestamp as u64),
         )),
         Some(input::Message::Kickdown(1)) => Some(RuntimeInput::Kickdown(
             sl::Kickdown::Deactivated,
-            INIT.clone() + Duration::from_millis(input.timestamp as u64),
+            *INIT + Duration::from_millis(input.timestamp as u64),
         )),
         Some(input::Message::Failure(0)) => Some(RuntimeInput::Failure(
             sl::Failure::Recovered,
-            INIT.clone() + Duration::from_millis(input.timestamp as u64),
+            *INIT + Duration::from_millis(input.timestamp as u64),
         )),
         Some(input::Message::Failure(1)) => Some(RuntimeInput::Failure(
             sl::Failure::Entering,
-            INIT.clone() + Duration::from_millis(input.timestamp as u64),
+            *INIT + Duration::from_millis(input.timestamp as u64),
         )),
         Some(input::Message::Vdc(0)) => Some(RuntimeInput::Vdc(
             sl::VdcState::On,
-            INIT.clone() + Duration::from_millis(input.timestamp as u64),
+            *INIT + Duration::from_millis(input.timestamp as u64),
         )),
         Some(input::Message::Vdc(1)) => Some(RuntimeInput::Vdc(
             sl::VdcState::Off,
-            INIT.clone() + Duration::from_millis(input.timestamp as u64),
+            *INIT + Duration::from_millis(input.timestamp as u64),
         )),
         None => None,
         Some(input::Message::Activation(_))
@@ -338,23 +338,23 @@ fn from_speed_limiter_service_output(output: RuntimeOutput) -> Result<Output, St
     match output {
         RuntimeOutput::InRegulation(in_regulation, instant) => Ok(Output {
             message: Some(output::Message::InRegulation(in_regulation)),
-            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
+            timestamp: instant.duration_since(*INIT).as_millis() as i64,
         }),
         RuntimeOutput::VSet(v_set, instant) => Ok(Output {
             message: Some(output::Message::VSet(v_set)),
-            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
+            timestamp: instant.duration_since(*INIT).as_millis() as i64,
         }),
         RuntimeOutput::SlState(sl::SpeedLimiterOn::StandBy, instant) => Ok(Output {
             message: Some(output::Message::SlState(2)),
-            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
+            timestamp: instant.duration_since(*INIT).as_millis() as i64,
         }),
         RuntimeOutput::SlState(sl::SpeedLimiterOn::Actif, instant) => Ok(Output {
             message: Some(output::Message::SlState(3)),
-            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
+            timestamp: instant.duration_since(*INIT).as_millis() as i64,
         }),
         RuntimeOutput::SlState(sl::SpeedLimiterOn::OverrideVoluntary, instant) => Ok(Output {
             message: Some(output::Message::SlState(4)),
-            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
+            timestamp: instant.duration_since(*INIT).as_millis() as i64,
         }),
     }
 }
@@ -385,7 +385,7 @@ impl Sl for SlRuntime {
 
         let speed_limiter_service = Runtime::new(output_sink);
         tokio::spawn(speed_limiter_service.run_loop(
-            INIT.clone(),
+            *INIT,
             input_stream,
             RuntimeInit {
                 vdc: Default::default(),

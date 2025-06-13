@@ -81,15 +81,15 @@ fn into_aeb_service_input(input: Input) -> Option<RuntimeInput> {
     match input.message {
         Some(Message::PedestrianL(Pedestrian { distance })) => Some(RuntimeInput::PedestrianL(
             distance,
-            INIT.clone() + Duration::from_millis(input.timestamp as u64),
+            *INIT + Duration::from_millis(input.timestamp as u64),
         )),
         Some(Message::PedestrianR(Pedestrian { distance })) => Some(RuntimeInput::PedestrianR(
             distance,
-            INIT.clone() + Duration::from_millis(input.timestamp as u64),
+            *INIT + Duration::from_millis(input.timestamp as u64),
         )),
         Some(Message::Speed(Speed { value })) => Some(RuntimeInput::SpeedKmH(
             value,
-            INIT.clone() + Duration::from_millis(input.timestamp as u64),
+            *INIT + Duration::from_millis(input.timestamp as u64),
         )),
         None => None,
     }
@@ -99,15 +99,15 @@ fn from_aeb_service_output(output: RuntimeOutput) -> Result<Output, Status> {
     match output {
         RuntimeOutput::Brakes(aeb::Braking::UrgentBrake, instant) => Ok(Output {
             brakes: Braking::UrgentBrake.into(),
-            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
+            timestamp: instant.duration_since(*INIT).as_millis() as i64,
         }),
         RuntimeOutput::Brakes(aeb::Braking::SoftBrake, instant) => Ok(Output {
             brakes: Braking::SoftBrake.into(),
-            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
+            timestamp: instant.duration_since(*INIT).as_millis() as i64,
         }),
         RuntimeOutput::Brakes(aeb::Braking::NoBrake, instant) => Ok(Output {
             brakes: Braking::NoBrake.into(),
-            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
+            timestamp: instant.duration_since(*INIT).as_millis() as i64,
         }),
     }
 }
@@ -145,7 +145,7 @@ impl Aeb for AebRuntime {
 
         let aeb_service = Runtime::new(output_sink, timers_sink);
         tokio::spawn(aeb_service.run_loop(
-            INIT.clone(),
+            *INIT,
             input_stream,
             RuntimeInit { speed_km_h: 0.0 },
         ));

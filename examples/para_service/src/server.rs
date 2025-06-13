@@ -99,14 +99,14 @@ fn into_para_service_input(input: Input) -> Option<RuntimeInput> {
     let Input { timestamp, e0 } = input;
     Some(RuntimeInput::E0(
         e0,
-        INIT.clone() + Duration::from_millis(timestamp as u64),
+        *INIT + Duration::from_millis(timestamp as u64),
     ))
 }
 
 fn from_para_service_output(output: RuntimeOutput) -> Result<Output, Status> {
     match output {
         RuntimeOutput::O1(o1, instant) => Ok(Output {
-            timestamp: instant.duration_since(INIT.clone()).as_millis() as i64,
+            timestamp: instant.duration_since(*INIT).as_millis() as i64,
             message: Some(Message::O1(o1)),
         }),
     }
@@ -145,7 +145,7 @@ impl Para for ParaRuntime {
         );
 
         let para_service = Runtime::new(output_sink, timers_sink);
-        tokio::spawn(para_service.run_loop(INIT.clone(), input_stream, RuntimeInit {}));
+        tokio::spawn(para_service.run_loop(*INIT, input_stream, RuntimeInit {}));
 
         Ok(Response::new(output_stream.map(
             from_para_service_output as fn(RuntimeOutput) -> Result<Output, Status>,

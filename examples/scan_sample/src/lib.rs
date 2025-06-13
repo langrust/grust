@@ -43,7 +43,7 @@ pub fn run_scan_sample(
 
     let scan_sample_service = Runtime::new(output_sink, timers_sink);
     tokio::spawn(scan_sample_service.run_loop(
-        INIT.clone(),
+        *INIT,
         input_stream,
         RuntimeInit { temperature: 10.0 },
     ));
@@ -91,55 +91,55 @@ mod sample_scan {
 
         assert_eq!(
             output_stream.next().await,
-            Some(RuntimeOutput::ScannedTemperature(10.0, INIT.clone()))
+            Some(RuntimeOutput::ScannedTemperature(10.0, *INIT))
         );
         assert_eq!(
             output_stream.next().await,
             Some(RuntimeOutput::ScannedTemperature(
                 13.0,
-                INIT.clone() + Duration::from_millis(200)
+                *INIT + Duration::from_millis(200)
             ))
         );
         assert_eq!(
             output_stream.next().await,
             Some(RuntimeOutput::SampledPedestrian(
                 100.0,
-                INIT.clone() + Duration::from_millis(250)
+                *INIT + Duration::from_millis(250)
             ))
         );
         assert_eq!(
             output_stream.next().await,
             Some(RuntimeOutput::ScannedTemperature(
                 15.0,
-                INIT.clone() + Duration::from_millis(300)
+                *INIT + Duration::from_millis(300)
             ))
         );
         assert_eq!(
             output_stream.next().await,
             Some(RuntimeOutput::SampledPedestrian(
                 200.0,
-                INIT.clone() + Duration::from_millis(500)
+                *INIT + Duration::from_millis(500)
             ))
         );
         assert_eq!(
             output_stream.next().await,
             Some(RuntimeOutput::SampledPedestrian(
                 400.0,
-                INIT.clone() + Duration::from_millis(1000)
+                *INIT + Duration::from_millis(1000)
             ))
         );
         assert_eq!(
             output_stream.next().await,
             Some(RuntimeOutput::ScannedTemperature(
                 15.0,
-                INIT.clone() + Duration::from_millis(4000)
+                *INIT + Duration::from_millis(4000)
             ))
         );
         assert_eq!(
             output_stream.next().await,
             Some(RuntimeOutput::ScannedTemperature(
                 15.0,
-                INIT.clone() + Duration::from_millis(7000)
+                *INIT + Duration::from_millis(7000)
             ))
         );
     }

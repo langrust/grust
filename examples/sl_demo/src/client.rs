@@ -28,7 +28,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             match input {
                 Ok(input) => {
                     let duration = tokio::time::Duration::from_millis(input.timestamp as u64);
-                    let deadline = INIT.clone() + duration;
+                    let deadline = *INIT + duration;
                     tokio::time::sleep_until(deadline.into()).await;
                     Some(input)
                 }
