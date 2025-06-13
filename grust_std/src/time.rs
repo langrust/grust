@@ -182,6 +182,7 @@ pub mod integration {
         }
 
         #[test]
+        #[should_panic]
         fn not_resilient_to_oversampling() {
             let mut euler_1 = ForwardEulerState::init();
             let mut euler_2 = ForwardEulerState::init();
@@ -193,7 +194,7 @@ pub mod integration {
             let _ = euler_1.step(i_over_sample); // over sample
             let (o1, o2) = (euler_1.step(i2.clone()), euler_2.step(i2));
 
-            assert_ne!(o1, o2)
+            assert_eq!(o1, o2)
         }
     }
 }
