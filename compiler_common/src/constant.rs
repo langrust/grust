@@ -87,11 +87,7 @@ impl Constant {
     }
 
     pub fn is_default(&self) -> bool {
-        if let Self::Default(_) = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, Self::Default(_))
     }
 
     /// The `syn` version of a constant.
@@ -142,7 +138,7 @@ impl Constant {
         match self {
             Constant::Integer(i) => Expr::Lit(ExprLit {
                 attrs: vec![],
-                lit: syn::Lit::Int(LitInt::new(&(i.base10_digits().to_owned()), i.span())),
+                lit: syn::Lit::Int(LitInt::new(i.base10_digits(), i.span())),
             }),
             Constant::Float(f) => Expr::Lit(ExprLit {
                 attrs: vec![],

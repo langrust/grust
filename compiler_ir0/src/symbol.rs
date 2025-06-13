@@ -564,8 +564,6 @@ impl Table {
         &mut self,
         name: Ident,
         inputs: Vec<usize>,
-        output_type: Option<Typ>,
-        local: bool,
         path_opt: Option<syn::Path>,
         weight_percent_hint: Option<usize>,
         errors: &mut Vec<Error>,
@@ -573,7 +571,7 @@ impl Table {
         let symbol = Symbol::new(
             SymbolKind::Function {
                 inputs,
-                output_type,
+                output_type: None,
                 typing: None,
                 path_opt,
                 weight_percent_hint,
@@ -581,22 +579,21 @@ impl Table {
             name,
         );
 
-        self.insert_symbol(symbol, local, errors)
+        self.insert_symbol(symbol, false, errors)
     }
 
     /// Insert node in symbol table.
     pub fn insert_node(
         &mut self,
         name: Ident,
-        local: bool,
-        inputs: Vec<usize>,
-        outputs: Vec<(Ident, usize)>,
-        locals: Option<HashMap<Ident, usize>>,
-        inits: Option<HashMap<Ident, usize>>,
+        inputs_outputs: (Vec<usize>, Vec<(Ident, usize)>),
+        locals_inits: Option<(HashMap<Ident, usize>, HashMap<Ident, usize>)>,
         path_opt: Option<syn::Path>,
         weight_percent_hint: Option<usize>,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
+        let (inputs, outputs) = inputs_outputs;
+        let (locals, inits) = locals_inits.unzip();
         let symbol = Symbol::new(
             SymbolKind::Node {
                 inputs,
@@ -609,7 +606,7 @@ impl Table {
             name,
         );
 
-        self.insert_symbol(symbol, local, errors)
+        self.insert_symbol(symbol, false, errors)
     }
 
     /// Insert service in symbol table.
@@ -981,10 +978,7 @@ impl Table {
         let symbol = self
             .get_symbol(id)
             .unwrap_or_else(|| panic!("expect symbol for {id}"));
-        match symbol.kind() {
-            SymbolKind::Function { .. } => true,
-            _ => false,
-        }
+        matches!(symbol.kind(), SymbolKind::Function { .. })
     }
 
     /// Function path, used to rewrite function calls for external functions.
@@ -1161,10 +1155,9 @@ impl Table {
             .get_symbol(id)
             .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Flow { timer, .. } => timer.as_ref().map_or(false, |timer| match timer {
-                TimerKind::Deadline(_) => true,
-                _ => false,
-            }),
+            SymbolKind::Flow { timer, .. } => timer
+                .as_ref()
+                .is_some_and(|timer| matches!(timer, TimerKind::Deadline(_))),
             _ => noErrorDesc!(),
         }
     }
@@ -1175,10 +1168,9 @@ impl Table {
             .get_symbol(id)
             .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Flow { timer, .. } => timer.as_ref().map_or(false, |timer| match timer {
-                TimerKind::Period(_) => true,
-                _ => false,
-            }),
+            SymbolKind::Flow { timer, .. } => timer
+                .as_ref()
+                .is_some_and(|timer| matches!(timer, TimerKind::Period(_))),
             _ => noErrorDesc!(),
         }
     }
@@ -1189,12 +1181,10 @@ impl Table {
             .get_symbol(id)
             .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Flow { timer, .. } => timer.as_ref().map_or(false, |timer| match timer {
-                TimerKind::ServiceDelay(other_service_id, _) if service_id == *other_service_id => {
-                    true
-                }
-                _ => false,
-            }),
+            SymbolKind::Flow { timer, .. } => timer
+                .as_ref()
+                .is_some_and(|timer|
+                    matches!(timer, TimerKind::ServiceDelay(other_service_id, _) if service_id == *other_service_id)),
             _ => noErrorDesc!(),
         }
     }
@@ -1205,10 +1195,9 @@ impl Table {
             .get_symbol(id)
             .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Flow { timer, .. } => timer.as_ref().map_or(false, |timer| match timer {
-                TimerKind::ServiceTimeout(_, _) => true,
-                _ => false,
-            }),
+            SymbolKind::Flow { timer, .. } => timer
+                .as_ref()
+                .is_some_and(|timer| matches!(timer, TimerKind::ServiceTimeout(_, _))),
             _ => noErrorDesc!(),
         }
     }
@@ -1219,10 +1208,9 @@ impl Table {
             .get_symbol(id)
             .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Flow { timer, .. } => timer.as_ref().map_or(false, |timer| match timer {
-                TimerKind::ServiceDelay(_, _) => true,
-                _ => false,
-            }),
+            SymbolKind::Flow { timer, .. } => timer
+                .as_ref()
+                .is_some_and(|timer| matches!(timer, TimerKind::ServiceDelay(_, _))),
             _ => noErrorDesc!(),
         }
     }
@@ -1238,14 +1226,10 @@ impl Table {
             .get_symbol(id)
             .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Flow { timer, .. } => timer.as_ref().map_or(false, |timer| match timer {
-                TimerKind::ServiceTimeout(other_service_id, _)
-                    if service_id == *other_service_id =>
-                {
-                    true
-                }
-                _ => false,
-            }),
+            SymbolKind::Flow { timer, .. } => timer
+                .as_ref()
+                .is_some_and(|timer|
+                    matches!(timer, TimerKind::ServiceTimeout(other_service_id, _) if service_id == *other_service_id)),
             _ => noErrorDesc!(),
         }
     }
@@ -1256,12 +1240,10 @@ impl Table {
             .get_symbol(id)
             .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Flow { timer, .. } => timer
-                .as_ref()
-                .and_then(|timer| match timer {
-                    TimerKind::Period(period) => Some(period),
-                    _ => None,
-                }),
+            SymbolKind::Flow { timer, .. } => timer.as_ref().and_then(|timer| match timer {
+                TimerKind::Period(period) => Some(period),
+                _ => None,
+            }),
             _ => noErrorDesc!(),
         }
     }

@@ -107,7 +107,7 @@ pub fn add_edge(
     dependency_id: usize,
     label: Label,
 ) {
-    let prev_label = graph.add_edge(signal_id, dependency_id, label.clone());
+    let prev_label = graph.add_edge(signal_id, dependency_id, label);
     match (prev_label, label) {
         (Some(Label::Weight(prev_weight)), Label::Weight(new_weight))
             if prev_weight < new_weight =>

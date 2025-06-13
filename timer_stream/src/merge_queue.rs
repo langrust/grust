@@ -27,7 +27,7 @@ where
 impl<U, const N: usize> Default for MergeQueue<U, N>
 where
     U: MergeTimer,
- {
+{
     fn default() -> Self {
         Self::new()
     }
@@ -157,7 +157,7 @@ where
         }
     }
 }
-impl<U, const N: usize> From<MergeQueue<U, N>> for Vec<U> 
+impl<U, const N: usize> From<MergeQueue<U, N>> for Vec<U>
 where
     U: MergeTimer,
 {

@@ -144,7 +144,7 @@ impl Component {
     ///     },
     /// }
     /// ```
-    pub fn memorize(&mut self, ctx: &mut Ctx) -> Res<()> {
+    pub fn memorize(&mut self, ctx: &mut Ctx) -> URes {
         match &mut self.body_or_path {
             Either::Left(body) => body.memorize(ctx),
             Either::Right(_) => Ok(()),
@@ -267,7 +267,7 @@ impl Component {
                     .collect::<HashMap<_, _>>();
 
                 // add output signals to context
-                new_output_pattern.map(|pattern| {
+                if let Some(pattern) = new_output_pattern {
                     let signals = pattern.identifiers();
                     ctx.get_node_outputs(self.sign.id)
                         .iter()
@@ -275,7 +275,7 @@ impl Component {
                         .for_each(|((_, output_id), new_output_id)| {
                             context_map.insert(*output_id, Either::Left(new_output_id));
                         })
-                });
+                };
 
                 body.instantiate_statements_and_memory(identifier_creator, context_map, ctx)
             }
@@ -380,7 +380,7 @@ pub mod dump_graph {
         }
     }
 
-    #[derive(Debug, Clone, Copy, Eq, Ord)]
+    #[derive(Debug, Clone, Copy, Eq)]
     pub struct Flow<'a> {
         id: usize,
         name: &'a Ident,
@@ -391,22 +391,27 @@ pub mod dump_graph {
             Self { id, name, weight }
         }
     }
-    impl<'a> Hash for Flow<'a> {
+    impl Hash for Flow<'_> {
         fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
             self.id.hash(state);
         }
     }
-    impl<'a> PartialEq for Flow<'a> {
+    impl PartialEq for Flow<'_> {
         fn eq(&self, other: &Self) -> bool {
             self.id == other.id
         }
     }
-    impl<'a> PartialOrd for Flow<'a> {
+    impl PartialOrd for Flow<'_> {
         fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-            self.id.partial_cmp(&other.id)
+            Some(self.cmp(other))
         }
     }
-    impl<'a> compiler_common::prelude::Serialize for Flow<'a> {
+    impl Ord for Flow<'_> {
+        fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+            self.id.cmp(&other.id)
+        }
+    }
+    impl compiler_common::prelude::Serialize for Flow<'_> {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where
             S: serde::Serializer,
@@ -426,7 +431,7 @@ pub mod dump_graph {
             Self { name, graph }
         }
     }
-    impl<'a> compiler_common::prelude::Serialize for ComponentGraph<'a> {
+    impl compiler_common::prelude::Serialize for ComponentGraph<'_> {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where
             S: serde::Serializer,
@@ -553,7 +558,7 @@ impl ComponentBody {
     ///     },
     /// }
     /// ```
-    pub fn memorize(&mut self, ctx: &mut Ctx) -> Res<()> {
+    pub fn memorize(&mut self, ctx: &mut Ctx) -> URes {
         // create an IdentifierCreator, a local Ctx and Memory
         let mut identifier_creator = IdentifierCreator::from(self.get_signals_names(ctx));
         ctx.local();
@@ -749,7 +754,7 @@ impl ComponentBody {
             .collect();
 
         // reduce memory according to the context
-        let memory = self.memory.replace_by_context(&context_map, &ctx);
+        let memory = self.memory.replace_by_context(&context_map, ctx);
 
         (statements, memory)
     }
@@ -828,15 +833,13 @@ impl ComponentBody {
         // sort statements
         self.statements.sort_by_key(compare);
         self.statements.iter_mut().for_each(|statement| {
-            match &mut statement.expr.kind {
-                stream::Kind::Expression { expr } => match expr {
-                    ir1::expr::Kind::MatchExpr { arms, .. } => arms
-                        .iter_mut()
-                        .for_each(|(_, _, statements, _)| statements.sort_by_key(compare)),
-                    _ => (),
-                },
-                _ => (),
-            };
+            if let stream::Kind::Expression {
+                expr: ir1::expr::Kind::MatchExpr { arms, .. },
+            } = &mut statement.expr.kind
+            {
+                arms.iter_mut()
+                    .for_each(|(_, _, statements, _)| statements.sort_by_key(compare))
+            }
         })
     }
 }

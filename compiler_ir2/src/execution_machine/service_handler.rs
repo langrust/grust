@@ -82,7 +82,7 @@ impl ServiceHandler {
     }
 }
 
-impl<'a> ToTokens for ServiceHandlerTokens<'a> {
+impl ToTokens for ServiceHandlerTokens<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream2) {
         let service_store_ident = &self.sh.service_store_ident;
         let service_name = &self.sh.service_struct_ident;
@@ -664,7 +664,7 @@ impl ToTokens for FlowInstruction {
                 if events.is_empty() && signals.is_empty() {
                     if let Some(els) = els {
                         els.to_tokens(tokens)
-                    } 
+                    }
                 } else {
                     let els = els.as_ref().map(|els| quote!(else { #els }));
                     quote! {

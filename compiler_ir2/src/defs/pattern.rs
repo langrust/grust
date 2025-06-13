@@ -110,9 +110,7 @@ impl ToTokens for Pattern {
             Pattern::None => tokens.extend(quote! { None }),
             Pattern::Typed { pattern, .. } => pattern.to_tokens(tokens),
             Pattern::Structure { name, fields } => {
-                let fields = fields
-                    .iter()
-                    .map(|(name, pattern)| quote!(#name: #pattern));
+                let fields = fields.iter().map(|(name, pattern)| quote!(#name: #pattern));
                 tokens.extend(quote! {
                     #name { #(#fields),* }
                 })

@@ -61,9 +61,9 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for Ast {
         };
 
         Ok(File {
-            typedefs: typedefs,
-            functions: functions,
-            components: components,
+            typedefs,
+            functions,
+            components,
             interface,
             loc: Loc::nu_call_site(),
         })
@@ -783,7 +783,7 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
                             "fatal: symbol kind associated to node `{}` is not node-like",
                             node_symbol.name(),
                         ));
-                        Err(())
+                        Err(ErrorDetected)
                     }
                 }
             }
@@ -1283,7 +1283,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                     let guard = None;
                     // create the tuple expression
                     let expression =
-                        def_eq_pat.into_default_expr(&HashMap::new(), &init_signals, ctx)?;
+                        def_eq_pat.default_expr(&HashMap::new(), &init_signals, ctx)?;
 
                     (pattern, guard, vec![], expression)
                 };
@@ -1358,7 +1358,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
 
                             // create the tuple expression
                             let expression =
-                                def_eq_pat.into_default_expr(&signals, &init_signals, ctx)?;
+                                def_eq_pat.default_expr(&signals, &init_signals, ctx)?;
 
                             Ok((matched_pattern, guard, statements, expression))
                         },
@@ -1942,7 +1942,7 @@ mod expr_pattern_impl {
 trait Helper: Sized {
     fn get_inits(&self, init_signals: &mut Vec<Ident>);
 
-    fn into_default_expr(
+    fn default_expr(
         &self,
         defined_signals: &HashMap<Ident, usize>,
         init_signals: &[Ident],
@@ -1958,7 +1958,7 @@ mod stmt_pattern_impl {
     }
 
     impl Helper for ir0::stmt::Pattern {
-        fn into_default_expr(
+        fn default_expr(
             &self,
             defined_signals: &HashMap<Ident, usize>,
             init_signals: &[Ident],
@@ -1990,7 +1990,7 @@ mod stmt_pattern_impl {
                 ir0::stmt::Pattern::Tuple(Tuple { elements, .. }) => {
                     let elements = res_vec!(
                         elements.len(),
-                        elements.iter().map(|pat| pat.into_default_expr(
+                        elements.iter().map(|pat| pat.default_expr(
                             defined_signals,
                             init_signals,
                             ctx
@@ -2164,7 +2164,7 @@ mod stream_impl {
                 // transform guard and equations into [ir1] with local context
                 let guard = None;
                 // create the tuple expression
-                let expression = def_eq_pat.into_default_expr(
+                let expression = def_eq_pat.default_expr(
                     &HashMap::new(),
                     &init_signals,
                     &mut ctx.remove_pat_loc(),
@@ -2298,7 +2298,7 @@ mod stream_impl {
                                     "fatal: symbol kind associated with node `{}` is not node-like",
                                     node_symbol.name(),
                                 ));
-                                return Err(());
+                                return Err(ErrorDetected);
                             }
                         }
                     }

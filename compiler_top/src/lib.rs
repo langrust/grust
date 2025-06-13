@@ -109,7 +109,7 @@ pub fn into_token_stream(ast: Ast, ctx: &mut ir0::Ctx) -> TokenStream2 {
 }
 
 /// Writes the generated code at the given filepath.
-pub fn dump_code(path_lit: &syn::LitStr, tokens: &TokenStream2) -> Res<()> {
+pub fn dump_code(path_lit: &syn::LitStr, tokens: &TokenStream2) -> URes {
     use std::{fs::OpenOptions, io::Write, path::Path, process::Command};
     let path_str = path_lit.value();
     let path = Path::new(&path_str);

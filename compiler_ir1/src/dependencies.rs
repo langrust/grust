@@ -41,13 +41,13 @@ impl<'a, 'g> GraphCtx<'a, 'g> {
         Self { ctx1, graph }
     }
 }
-impl<'a, 'g> std::ops::Deref for GraphCtx<'a, 'g> {
+impl<'a> std::ops::Deref for GraphCtx<'a, '_> {
     type Target = DepCtx<'a>;
     fn deref(&self) -> &Self::Target {
         self.ctx1
     }
 }
-impl<'a, 'g> std::ops::DerefMut for GraphCtx<'a, 'g> {
+impl std::ops::DerefMut for GraphCtx<'_, '_> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.ctx1
     }
@@ -68,13 +68,13 @@ pub struct GraphProcCtx<'a, 'graph, 'proc> {
     ctx: &'proc mut GraphCtx<'a, 'graph>,
     pub proc_manager: &'proc mut ProcManager,
 }
-impl<'a, 'g, 'p> std::ops::Deref for GraphProcCtx<'a, 'g, 'p> {
+impl<'a, 'g> std::ops::Deref for GraphProcCtx<'a, 'g, '_> {
     type Target = GraphCtx<'a, 'g>;
     fn deref(&self) -> &Self::Target {
         self.ctx
     }
 }
-impl<'a, 'g, 'p> std::ops::DerefMut for GraphProcCtx<'a, 'g, 'p> {
+impl std::ops::DerefMut for GraphProcCtx<'_, '_, '_> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.ctx
     }
@@ -489,10 +489,7 @@ impl stream::ExprKind {
     }
 
     /// Compute dependencies of an array stream expression.
-    pub fn array_deps(
-        ctx: &mut GraphProcCtx,
-        elms: &[stream::Expr],
-    ) -> TRes<Vec<(usize, Label)>> {
+    pub fn array_deps(ctx: &mut GraphProcCtx, elms: &[stream::Expr]) -> TRes<Vec<(usize, Label)>> {
         let mut res = Vec::with_capacity(elms.len());
         // propagate dependencies computation
         for e in elms.iter() {
@@ -636,7 +633,7 @@ impl stream::ExprKind {
     /// Compute dependencies of a structure stream expression.
     pub fn structure_deps(
         ctx: &mut GraphProcCtx,
-        fields: &Vec<(usize, stream::Expr)>,
+        fields: &[(usize, stream::Expr)],
     ) -> TRes<Vec<(usize, Label)>> {
         // propagate dependencies computation
         let mut deps = Vec::with_capacity(25);
@@ -669,10 +666,7 @@ impl stream::ExprKind {
     }
 
     /// Compute dependencies of an tuple stream expression.
-    pub fn tuple_deps(
-        ctx: &mut GraphProcCtx,
-        elms: &[stream::Expr],
-    ) -> TRes<Vec<(usize, Label)>> {
+    pub fn tuple_deps(ctx: &mut GraphProcCtx, elms: &[stream::Expr]) -> TRes<Vec<(usize, Label)>> {
         let mut deps = Vec::with_capacity(25);
         // propagate dependencies computation
         for e in elms.iter() {
@@ -691,10 +685,7 @@ impl stream::ExprKind {
     }
 
     /// Compute dependencies of a zip stream expression.
-    pub fn zip_deps(
-        ctx: &mut GraphProcCtx,
-        arrays: &[stream::Expr],
-    ) -> TRes<Vec<(usize, Label)>> {
+    pub fn zip_deps(ctx: &mut GraphProcCtx, arrays: &[stream::Expr]) -> TRes<Vec<(usize, Label)>> {
         let mut deps = Vec::with_capacity(25);
         // propagate dependencies computation
         for a in arrays.iter() {

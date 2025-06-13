@@ -55,15 +55,9 @@ pub enum Kind {
         right: Box<Term>,
     },
     /// Forall term: `forall x, P(x)`.
-    ForAll {
-        id: usize,
-        term: Box<Term>,
-    },
+    ForAll { id: usize, term: Box<Term> },
     /// Implication term: `P => Q`.
-    Implication {
-        left: Box<Term>,
-        right: Box<Term>,
-    },
+    Implication { left: Box<Term>, right: Box<Term> },
     /// Present event pattern.
     PresentEvent {
         /// The event identifier
@@ -159,27 +153,30 @@ impl Term {
                 dependencies.extend(left.compute_dependencies(ctx));
                 dependencies
             }
-            Kind::Constant { .. } | Kind::Enumeration { .. } => { vec![] }
-            Kind::Identifier { id } | Kind::PresentEvent { pattern: id, .. } => {
-                if ctx.is_function(*id) { vec![] } else { vec![*id] }
+            Kind::Constant { .. } | Kind::Enumeration { .. } => {
+                vec![]
             }
-            Kind::ForAll { id, term, .. } =>
-                term
-                    .compute_dependencies(ctx)
-                    .into_iter()
-                    .filter(|signal| id != signal)
-                    .collect(),
+            Kind::Identifier { id } | Kind::PresentEvent { pattern: id, .. } => {
+                if ctx.is_function(*id) {
+                    vec![]
+                } else {
+                    vec![*id]
+                }
+            }
+            Kind::ForAll { id, term, .. } => term
+                .compute_dependencies(ctx)
+                .into_iter()
+                .filter(|signal| id != signal)
+                .collect(),
             Kind::Last { .. } => vec![],
-            Kind::Application { inputs, .. } =>
-                inputs
-                    .iter()
-                    .flat_map(|term| term.compute_dependencies(ctx))
-                    .collect(),
-            Kind::ComponentCall { inputs, .. } =>
-                inputs
-                    .iter()
-                    .flat_map(|(_, term)| term.compute_dependencies(ctx))
-                    .collect(),
+            Kind::Application { inputs, .. } => inputs
+                .iter()
+                .flat_map(|term| term.compute_dependencies(ctx))
+                .collect(),
+            Kind::ComponentCall { inputs, .. } => inputs
+                .iter()
+                .flat_map(|(_, term)| term.compute_dependencies(ctx))
+                .collect(),
         }
     }
 
@@ -202,23 +199,25 @@ impl Term {
         &mut self,
         identifier_creator: &mut IdentifierCreator,
         memory: &mut Memory,
-        ctx: &mut Ctx
+        ctx: &mut Ctx,
     ) {
         match &mut self.kind {
-            contract::Kind::ComponentCall { comp_id, memory_id: comp_memory_id, .. } => {
+            contract::Kind::ComponentCall {
+                comp_id,
+                memory_id: comp_memory_id,
+                ..
+            } => {
                 debug_assert!(comp_memory_id.is_none());
                 // create fresh identifier for the new memory buffer
                 let comp_name = ctx.get_name(*comp_id);
-                let memory_name = identifier_creator.new_identifier(
-                    comp_name.loc(),
-                    comp_name.to_string()
-                );
+                let memory_name =
+                    identifier_creator.new_identifier(comp_name.loc(), comp_name.to_string());
                 let memory_id = ctx.insert_fresh_signal(memory_name, Scope::Local, None);
                 memory.add_ghost_node(memory_id, *comp_id);
                 // put the 'memory_id' of the called node
                 *comp_memory_id = Some(memory_id);
             }
-            | Kind::Constant { .. }
+            Kind::Constant { .. }
             | Kind::Identifier { .. }
             | Kind::Last { .. }
             | Kind::Enumeration { .. }
@@ -231,7 +230,9 @@ impl Term {
                 right.memorize(identifier_creator, memory, ctx);
             }
             Kind::Application { inputs, .. } => {
-                inputs.iter_mut().for_each(|term| term.memorize(identifier_creator, memory, ctx));
+                inputs
+                    .iter_mut()
+                    .for_each(|term| term.memorize(identifier_creator, memory, ctx));
             }
         }
     }
@@ -240,12 +241,19 @@ impl Term {
     pub fn substitution(&mut self, old_id: usize, new_id: usize) {
         match &mut self.kind {
             Kind::Constant { .. } | Kind::Enumeration { .. } => (),
-            Kind::Identifier { ref mut id } | Kind::PresentEvent { pattern: ref mut id, .. } => {
+            Kind::Identifier { ref mut id }
+            | Kind::PresentEvent {
+                pattern: ref mut id,
+                ..
+            } => {
                 if *id == old_id {
                     *id = new_id;
                 }
             }
-            Kind::Last { ref mut init_id, ref mut signal_id } => {
+            Kind::Last {
+                ref mut init_id,
+                ref mut signal_id,
+            } => {
                 if *signal_id == old_id {
                     *signal_id = new_id;
                 }
@@ -256,8 +264,16 @@ impl Term {
             Kind::Unary { ref mut term, .. } | Kind::Paren { ref mut term } => {
                 term.substitution(old_id, new_id);
             }
-            | Kind::Binary { ref mut left, ref mut right, .. }
-            | Kind::Implication { ref mut left, ref mut right, .. } => {
+            Kind::Binary {
+                ref mut left,
+                ref mut right,
+                ..
+            }
+            | Kind::Implication {
+                ref mut left,
+                ref mut right,
+                ..
+            } => {
                 left.substitution(old_id, new_id);
                 right.substitution(old_id, new_id);
             }
@@ -271,13 +287,19 @@ impl Term {
                 if *fun_id == old_id {
                     *fun_id = new_id;
                 }
-                inputs.iter_mut().for_each(|term| term.substitution(old_id, new_id));
+                inputs
+                    .iter_mut()
+                    .for_each(|term| term.substitution(old_id, new_id));
             }
-            Kind::ComponentCall { memory_id, inputs, .. } => {
+            Kind::ComponentCall {
+                memory_id, inputs, ..
+            } => {
                 if *memory_id == Some(old_id) {
                     *memory_id = Some(new_id);
                 }
-                inputs.iter_mut().for_each(|(_, term)| term.substitution(old_id, new_id));
+                inputs
+                    .iter_mut()
+                    .for_each(|(_, term)| term.substitution(old_id, new_id));
             }
         }
     }
@@ -297,16 +319,28 @@ pub struct Contract {
 impl Contract {
     /// Substitutes an identifier from another.
     pub fn substitution(&mut self, old_id: usize, new_id: usize) {
-        self.requires.iter_mut().for_each(|term| term.substitution(old_id, new_id));
-        self.ensures.iter_mut().for_each(|term| term.substitution(old_id, new_id));
-        self.invariant.iter_mut().for_each(|term| term.substitution(old_id, new_id));
+        self.requires
+            .iter_mut()
+            .for_each(|term| term.substitution(old_id, new_id));
+        self.ensures
+            .iter_mut()
+            .for_each(|term| term.substitution(old_id, new_id));
+        self.invariant
+            .iter_mut()
+            .for_each(|term| term.substitution(old_id, new_id));
     }
 
     /// Add dependencies of a contract to the graph.
     pub fn add_dependencies(&self, node_graph: &mut DiGraphMap<usize, Label>, ctx: &Ctx) {
-        self.requires.iter().for_each(|term| term.add_term_dependencies(node_graph, ctx));
-        self.ensures.iter().for_each(|term| term.add_term_dependencies(node_graph, ctx));
-        self.invariant.iter().for_each(|term| term.add_term_dependencies(node_graph, ctx));
+        self.requires
+            .iter()
+            .for_each(|term| term.add_term_dependencies(node_graph, ctx));
+        self.ensures
+            .iter()
+            .for_each(|term| term.add_term_dependencies(node_graph, ctx));
+        self.invariant
+            .iter()
+            .for_each(|term| term.add_term_dependencies(node_graph, ctx));
     }
 
     /// Increment memory with ghost component applications.
@@ -314,10 +348,16 @@ impl Contract {
         &mut self,
         identifier_creator: &mut IdentifierCreator,
         memory: &mut Memory,
-        ctx: &mut Ctx
+        ctx: &mut Ctx,
     ) {
-        self.requires.iter_mut().for_each(|term| term.memorize(identifier_creator, memory, ctx));
-        self.ensures.iter_mut().for_each(|term| term.memorize(identifier_creator, memory, ctx));
-        self.invariant.iter_mut().for_each(|term| term.memorize(identifier_creator, memory, ctx));
+        self.requires
+            .iter_mut()
+            .for_each(|term| term.memorize(identifier_creator, memory, ctx));
+        self.ensures
+            .iter_mut()
+            .for_each(|term| term.memorize(identifier_creator, memory, ctx));
+        self.invariant
+            .iter_mut()
+            .for_each(|term| term.memorize(identifier_creator, memory, ctx));
     }
 }

@@ -40,11 +40,7 @@ where
     P: AsRef<Path>,
 {
     // Open file and append when writing
-    let mut file = OpenOptions::new()
-        
-        .append(true)
-        .open(filepath)
-        .unwrap();
+    let mut file = OpenOptions::new().append(true).open(filepath).unwrap();
     // Save the JSON structure into the other file.
     writeln!(file, "]").unwrap();
 }
@@ -58,11 +54,7 @@ where
     P: AsRef<Path>,
 {
     // Open file and append when writing
-    let mut file = OpenOptions::new()
-        
-        .append(true)
-        .open(filepath)
-        .unwrap();
+    let mut file = OpenOptions::new().append(true).open(filepath).unwrap();
     // Convert to 'JSON like' String
     let json_string = to_string_pretty(&outputs).unwrap();
     // Save the JSON structure into the other file.

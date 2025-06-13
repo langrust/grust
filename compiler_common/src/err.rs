@@ -595,8 +595,12 @@ impl Error {
 /// [`Result`]-type with [`Error`] as errors.
 pub type Res<T> = Result<T, Error>;
 
+/// Termination error, the compilation has detected an error.
+#[derive(Debug)]
+pub struct ErrorDetected;
+
 /// Top-level result type.
-pub type TRes<T> = Result<T, ()>;
+pub type TRes<T> = Result<T, ErrorDetected>;
 
 /// Alias for `Res<()>`.
 pub type URes = Res<()>;
@@ -627,7 +631,7 @@ impl<T> ResExt for Res<T> {
             Ok(res) => Ok(res),
             Err(e) => {
                 errors.push(e);
-                Err(())
+                Err(ErrorDetected)
             }
         }
     }
@@ -760,7 +764,7 @@ macro_rules! bail {
 
 #[macro_export]
 macro_rules! bad {
-    {} => { return (Err(()) as TRes<_>) };
+    {} => { return (Err(ErrorDetected) as TRes<_>) };
     {
         $errors:expr, when $($cnd:expr => { $($stuff:tt)* } )+
     } => {

@@ -82,11 +82,8 @@ impl Ir0Store for Component {
 
         let _ = ctx.ctx0.insert_node(
             self.ident.clone(),
-            false,
-            inputs,
-            outputs,
-            Some(locals),
-            Some(inits),
+            (inputs, outputs),
+            Some((locals, inits)),
             None,
             self.weight,
             ctx.errors,
@@ -294,7 +291,7 @@ mod equation {
                     // we want to collect every identifier, but events might be declared in only one
                     // branch then, it is needed to explore all branches
                     let mut when_signals = HashMap::new();
-                    let mut add_signals = |equations: &Vec<Eq>| {
+                    let mut add_signals = |equations: &[Eq]| {
                         // some flows are defined in multiple branches so we don't want them to trigger
                         // the *duplicated definition* error.
                         symbol_table.local();
@@ -314,11 +311,9 @@ mod equation {
                     }
                     // put the identifiers back in context
                     for (k, v) in when_signals.into_iter() {
-                        if signals.contains_key(&k) {
-                            // todo: delete the symbol
-                        } else {
-                            let loc = k.loc();
-                            signals.insert(k, v);
+                        let loc = k.loc();
+                        if let std::collections::hash_map::Entry::Vacant(e) = signals.entry(k) {
+                            e.insert(v);
                             symbol_table.put_back_in_context(v, false, loc, errors)?;
                         }
                     }
@@ -398,7 +393,7 @@ mod equation {
                     Ok(())
                 }
                 ReactEq::WhenEq(WhenEq { arms, .. }) => {
-                    let mut add_signals = |equations: &Vec<Eq>| {
+                    let mut add_signals = |equations: &[Eq]| {
                         // we want to collect every identifier, but events might be declared in only
                         // one branch then, it is needed to explore all branches
                         for eq in equations {
@@ -498,15 +493,9 @@ impl Ir0Store for ir0::Function {
 
         ctx.global();
 
-        let _ = ctx.ctx0.insert_function(
-            self.ident.clone(),
-            inputs,
-            None,
-            false,
-            None,
-            self.weight,
-            ctx.errors,
-        )?;
+        let _ =
+            ctx.ctx0
+                .insert_function(self.ident.clone(), inputs, None, self.weight, ctx.errors)?;
 
         Ok(())
     }
@@ -541,8 +530,6 @@ impl Ir0Store for ir0::ExtFunDecl {
         let _ = ctx.ctx0.insert_function(
             self.ident.clone(),
             inputs,
-            None,
-            false,
             Some(self.path.clone()),
             self.weight,
             ctx.errors,
@@ -598,15 +585,22 @@ impl Ir0Store for ir0::ExtCompDecl {
 
         let _ = ctx.ctx0.insert_node(
             self.ident.clone(),
-            false,
-            inputs,
-            outputs,
-            None,
+            (inputs, outputs),
             None,
             Some(self.path.clone()),
             self.weight,
             ctx.errors,
         )?;
+        // let _ = ctx.ctx0.insert_node(
+        //     self.ident.clone(),
+        //     inputs,
+        //     outputs,
+        //     Some(locals),
+        //     Some(inits),
+        //     None,
+        //     self.weight,
+        //     ctx.errors,
+        // )?;
 
         Ok(())
     }
@@ -952,10 +946,9 @@ mod event_pattern {
             errors: &mut Vec<Error>,
         ) -> TRes<()> {
             match self {
-                EventPattern::Tuple(tuple) => tuple
-                    .patterns
-                    .iter()
-                    .try_for_each(|pattern| pattern.place_events(events_indices, idx, symbol_table, errors)),
+                EventPattern::Tuple(tuple) => tuple.patterns.iter().try_for_each(|pattern| {
+                    pattern.place_events(events_indices, idx, symbol_table, errors)
+                }),
                 EventPattern::Let(pattern) => {
                     let event_id = symbol_table.get_identifier_id(&pattern.event, false, errors)?;
                     let _ = events_indices.entry(event_id).or_insert_with(|| {
@@ -997,20 +990,13 @@ mod event_pattern {
                         }
                     };
 
-                    patterns
-                        .patterns
-                        .into_iter()
-                        .try_for_each(|pattern| {
-                            let opt_guard = pattern.create_tuple_pattern(
-                                tuple,
-                                events_indices,
-                                symbols,
-                                errors,
-                            )?;
-                            // combine all rising edge detections
-                            combine_guard(opt_guard);
-                            Ok(())
-                        })?;
+                    patterns.patterns.into_iter().try_for_each(|pattern| {
+                        let opt_guard =
+                            pattern.create_tuple_pattern(tuple, events_indices, symbols, errors)?;
+                        // combine all rising edge detections
+                        combine_guard(opt_guard);
+                        Ok(())
+                    })?;
 
                     Ok(guard)
                 }

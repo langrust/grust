@@ -165,7 +165,7 @@ impl std::fmt::Display for BOp {
     }
 }
 impl BOp {
-    fn both_arith(loc: Loc, lft: &Typ, rgt: &Typ, and_same_type: bool) -> Res<()> {
+    fn both_arith(loc: Loc, lft: &Typ, rgt: &Typ, and_same_type: bool) -> URes {
         check::typ::arith_like(loc, lft)?;
         check::typ::arith_like(loc, rgt)?;
         if and_same_type {

@@ -33,7 +33,7 @@ pub mod arity {
         }
     }
 
-    pub fn expect(loc: Loc, value: usize, expected: usize) -> Res<()> {
+    pub fn expect(loc: Loc, value: usize, expected: usize) -> URes {
         if value != expected {
             bail!( @loc => ErrorKind::arity_mismatch(value, expected) )
         }
@@ -45,7 +45,7 @@ pub mod typ {
     prelude! {}
 
     /// Fails if `!typ.is_arith_like()`, at location `loc`.
-    pub fn arith_like(loc: Loc, typ: &Typ) -> Res<()> {
+    pub fn arith_like(loc: Loc, typ: &Typ) -> URes {
         if !typ.is_arith_like() {
             bail!( @loc => ErrorKind::expected_arith_type(typ.clone()) )
         }
@@ -53,14 +53,14 @@ pub mod typ {
     }
 
     /// Checks that `typ.eq(expected)`.
-    pub fn expect(loc: Loc, typ: &Typ, expected: &Typ) -> Res<()> {
+    pub fn expect(loc: Loc, typ: &Typ, expected: &Typ) -> URes {
         if !typ.eq(expected) {
             bail!(@loc => ErrorKind::incompatible_types(typ.clone(), expected.clone()))
         }
         Ok(())
     }
 
-    pub fn expect_bool(loc: Loc, typ: &Typ) -> Res<()> {
+    pub fn expect_bool(loc: Loc, typ: &Typ) -> URes {
         expect(loc, typ, &Typ::bool())
     }
 }
