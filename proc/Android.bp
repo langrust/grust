@@ -1,8 +1,0 @@
-rust_proc_macro {
-    name: "libgrust_proc_macros",
-    srcs: ["src/lib.rs"],
-    crate_name: "grust_proc_macros",
-    rustlibs: [
-        "libcompiler_top",
-    ],
-}
