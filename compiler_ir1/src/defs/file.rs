@@ -23,16 +23,12 @@ impl File {
     /// - component application as root expression
     /// - no rising edge
     pub fn is_normal_form(&self) -> bool {
-        self.components
-            .iter()
-            .all(|component| component.is_normal_form())
+        self.components.iter().all(|component| component.is_normal_form())
     }
 
     /// Tell if there is no component application.
     pub fn no_component_application(&self) -> bool {
-        self.components
-            .iter()
-            .all(|component| component.no_component_application())
+        self.components.iter().all(|component| component.no_component_application())
     }
 
     /// Check the causality of the file.
@@ -182,14 +178,14 @@ impl File {
         let mut nodes_reduced_graphs = HashMap::new();
         // get every nodes' graphs
         self.components.iter().for_each(|node| {
-            let _unique = nodes_reduced_graphs
-                .insert(node.get_id().clone(), node.get_reduced_graph().clone());
+            let _unique = nodes_reduced_graphs.insert(
+                node.get_id(),
+                node.get_reduced_graph().clone()
+            );
             debug_assert!(_unique.is_none())
         });
         // normalize nodes
-        self.components
-            .iter_mut()
-            .for_each(|node| node.normal_form(&nodes_reduced_graphs, ctx));
+        self.components.iter_mut().for_each(|node| node.normal_form(&nodes_reduced_graphs, ctx));
 
         // normalize interface
         self.interface.normal_form(ctx);
@@ -217,14 +213,11 @@ impl File {
     /// We need to inline the code, the output `fib` is defined before the input `fib`,
     /// which can not be computed by a function call.
     pub fn inline_when_needed(&mut self, ctx: &mut Ctx) {
-        let nodes = self
-            .components
+        let nodes = self.components
             .iter()
-            .map(|node| (node.get_id().clone(), node.clone()))
+            .map(|node| (node.get_id(), node.clone()))
             .collect::<HashMap<_, _>>();
-        self.components
-            .iter_mut()
-            .for_each(|node| node.inline_when_needed(&nodes, ctx))
+        self.components.iter_mut().for_each(|node| node.inline_when_needed(&nodes, ctx))
     }
 
     /// Schedule unitary nodes' equations.
@@ -418,15 +411,13 @@ impl File {
 
 pub mod dump_graph {
     prelude! {}
-    use compiler_common::json::{begin_json, end_json};
+    use compiler_common::json::{ begin_json, end_json };
 
     impl File {
         /// Dump dependency graph with parallelization weights.
         pub fn dump_graph<P: AsRef<std::path::Path>>(&self, filepath: P, ctx: &Ctx) {
             begin_json(&filepath);
-            self.components
-                .iter()
-                .for_each(|comp| comp.dump_graph(&filepath, ctx));
+            self.components.iter().for_each(|comp| comp.dump_graph(&filepath, ctx));
             end_json(&filepath);
         }
     }

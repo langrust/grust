@@ -29,13 +29,13 @@ impl Memory {
         &self,
         identifier_creator: &mut IdentifierCreator,
         context_map: &mut HashMap<usize, Either<usize, stream::Expr>>,
-        ctx: &mut Ctx,
+        ctx: &mut Ctx
     ) {
         // buffered signals are renamed with their stmts
         // we just rename the called nodes
         self.called_nodes.keys().for_each(|memory_id| {
             let name = ctx.get_name(*memory_id);
-            let fresh_name = identifier_creator.new_identifier(name.span(), &name.to_string());
+            let fresh_name = identifier_creator.new_identifier(name.span(), name.to_string());
             if &fresh_name != name {
                 // supposed to be Scope::Local
                 let scope = ctx.get_scope(*memory_id).clone();
@@ -53,9 +53,9 @@ impl Memory {
     /// It will return a new memory where the expression has been modified
     /// according to the context:
     /// - if an identifier is mapped to another identifier, then rename all
-    /// occurrence of the identifier by the new one
+    ///     occurrence of the identifier by the new one
     /// - if the identifier is mapped to an expression, then replace all call to
-    /// the identifier by the expression
+    ///     the identifier by the expression
     ///
     /// # Example
     ///
@@ -64,23 +64,23 @@ impl Memory {
     pub fn replace_by_context(
         &self,
         context_map: &HashMap<usize, Either<usize, stream::Expr>>,
-        ctx: &Ctx,
+        ctx: &Ctx
     ) -> Memory {
-        let buffers = self
-            .buffers
+        let buffers = self.buffers
             .iter()
             .map(|(name, buffer)| {
                 let mut new_buffer = buffer.clone();
                 if let Some(element) = context_map.get(&buffer.id) {
                     match element {
-                        Either::Left(new_id)
-                        | Either::Right(stream::Expr {
-                            kind:
-                                stream::Kind::Expression {
-                                    expr: ir1::expr::Kind::Identifier { id: new_id },
-                                },
-                            ..
-                        }) => {
+                        | Either::Left(new_id)
+                        | Either::Right(
+                              stream::Expr {
+                                  kind: stream::Kind::Expression {
+                                      expr: ir1::expr::Kind::Identifier { id: new_id },
+                                  },
+                                  ..
+                              },
+                          ) => {
                             let new_name = ctx.get_name(*new_id);
                             new_buffer.id = *new_id;
                             new_buffer.ident = new_name.clone();
@@ -94,46 +94,46 @@ impl Memory {
             })
             .collect();
 
-        let called_nodes = self
-            .called_nodes
+        let called_nodes = self.called_nodes
             .iter()
             .map(|(memory_id, called_node)| {
                 if let Some(element) = context_map.get(memory_id) {
                     match element {
-                        Either::Left(new_id)
-                        | Either::Right(stream::Expr {
-                            kind:
-                                stream::Kind::Expression {
-                                    expr: ir1::expr::Kind::Identifier { id: new_id },
-                                },
-                            ..
-                        }) => (new_id.clone(), called_node.clone()),
+                        | Either::Left(new_id)
+                        | Either::Right(
+                              stream::Expr {
+                                  kind: stream::Kind::Expression {
+                                      expr: ir1::expr::Kind::Identifier { id: new_id },
+                                  },
+                                  ..
+                              },
+                          ) => (*new_id, called_node.clone()),
                         Either::Right(_) => noErrorDesc!(),
                     }
                 } else {
-                    (memory_id.clone(), called_node.clone())
+                    (*memory_id, called_node.clone())
                 }
             })
             .collect();
 
-        let ghost_nodes = self
-            .ghost_nodes
+        let ghost_nodes = self.ghost_nodes
             .iter()
             .map(|(memory_id, ghost_node)| {
                 if let Some(element) = context_map.get(memory_id) {
                     match element {
-                        Either::Left(new_id)
-                        | Either::Right(stream::Expr {
-                            kind:
-                                stream::Kind::Expression {
-                                    expr: ir1::expr::Kind::Identifier { id: new_id },
-                                },
-                            ..
-                        }) => (new_id.clone(), ghost_node.clone()),
+                        | Either::Left(new_id)
+                        | Either::Right(
+                              stream::Expr {
+                                  kind: stream::Kind::Expression {
+                                      expr: ir1::expr::Kind::Identifier { id: new_id },
+                                  },
+                                  ..
+                              },
+                          ) => (*new_id, ghost_node.clone()),
                         Either::Right(_) => noErrorDesc!(),
                     }
                 } else {
-                    (memory_id.clone(), ghost_node.clone())
+                    (*memory_id, ghost_node.clone())
                 }
             })
             .collect();
@@ -207,13 +207,9 @@ impl Memory {
         id: usize,
         ident: Ident,
         typing: Typ,
-        constant: ir1::stream::Expr,
+        constant: ir1::stream::Expr
     ) -> Res<()> {
-        if let Some(Buffer {
-            init: other_constant,
-            ..
-        }) = self.buffers.get_mut(&ident)
-        {
+        if let Some(Buffer { init: other_constant, .. }) = self.buffers.get_mut(&ident) {
             if other_constant.is_default_constant() {
                 // overwrite default
                 *other_constant = constant;
@@ -224,19 +220,16 @@ impl Memory {
                     "[internal] incompatible initial values for `{}`", ident
                     => | @constant.loc() => "involving this constant",
                     => | @other_constant.loc() => "and this constant",
-                )
+                );
             }
             Ok(())
         } else {
-            self.buffers.insert(
-                ident.clone(),
-                Buffer {
-                    id,
-                    ident: ident,
-                    typing,
-                    init: constant,
-                },
-            );
+            self.buffers.insert(ident.clone(), Buffer {
+                id,
+                ident: ident,
+                typing,
+                init: constant,
+            });
             Ok(())
         }
     }

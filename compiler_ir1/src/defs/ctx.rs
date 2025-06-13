@@ -54,13 +54,13 @@ impl<'a> Simple<'a> {
     pub fn new(ctx0: &'a mut Ctx, errors: &'a mut Vec<Error>) -> Self {
         Self { ctx0, errors }
     }
-    pub fn add_loc<'b>(&'b mut self, loc: Loc) -> WithLoc<'b> {
+    pub fn add_loc(&mut self, loc: Loc) -> WithLoc<'_> {
         WithLoc::new(loc, self.ctx0, self.errors)
     }
     pub fn add_pat_loc<'b>(
         &'b mut self,
         pat: Option<&'b ir0::stmt::Pattern>,
-        loc: Loc,
+        loc: impl Into<Loc>
     ) -> PatLoc<'b> {
         PatLoc::new(pat, loc, self.ctx0, self.errors)
     }
@@ -69,7 +69,7 @@ impl<'a> WithLoc<'a> {
     pub fn new(loc: Loc, ctx0: &'a mut Ctx, errors: &'a mut Vec<Error>) -> Self {
         Self { loc, ctx0, errors }
     }
-    pub fn rm_loc<'b>(&'b mut self) -> Simple<'b> {
+    pub fn rm_loc(&mut self) -> Simple<'_> {
         Simple::new(self.ctx0, self.errors)
     }
     pub fn add_pat<'b>(&'b mut self, pat: Option<&'b ir0::stmt::Pattern>) -> PatLoc<'b> {
@@ -81,7 +81,7 @@ impl<'a> PatLoc<'a> {
         pat: Option<&'a ir0::stmt::Pattern>,
         loc: impl Into<Loc>,
         ctx0: &'a mut Ctx,
-        errors: &'a mut Vec<Error>,
+        errors: &'a mut Vec<Error>
     ) -> Self {
         Self {
             pat,
@@ -93,12 +93,12 @@ impl<'a> PatLoc<'a> {
     pub fn remove_pat(&mut self) -> WithLoc {
         WithLoc::new(self.loc, self.ctx0, self.errors)
     }
-    pub fn remove_pat_loc<'b>(&'b mut self) -> Simple<'b> {
+    pub fn remove_pat_loc(&mut self) -> Simple<'_> {
         Simple::new(self.ctx0, self.errors)
     }
     pub fn set_pat(
         &mut self,
-        pat: Option<&'a ir0::stmt::Pattern>,
+        pat: Option<&'a ir0::stmt::Pattern>
     ) -> Option<&'a ir0::stmt::Pattern> {
         std::mem::replace(&mut self.pat, pat)
     }
@@ -146,35 +146,36 @@ impl ToTokens for Flows {
                     }
                 }
             });
-            quote! {
+            (quote! {
                 mod ctx_ty { #(#items)* }
-            }
-            .to_tokens(tokens)
+            }).to_tokens(tokens);
         }
 
         // `Context` structure type
         {
-            let fields = self.elements.iter().map(|(element_name, _)| {
+            let fields = self.elements.keys().map(|element_name| {
                 let struct_name = element_name.to_camel();
-                quote!( pub #element_name: ctx_ty::#struct_name )
+                quote!(pub #element_name: ctx_ty::#struct_name)
             });
-            quote! {
+            (
+                quote! {
                 #[derive(Clone, Copy, PartialEq, Default, Debug)]
                 pub struct Context { #(#fields),* }
             }
-            .to_tokens(tokens)
+            ).to_tokens(tokens);
         }
 
         // `Context` implementation
         {
             // `init` function
-            let init_fun = quote! {
+            let init_fun =
+                quote! {
                 fn init() -> Context {
                     Default::default()
                 }
             };
             let reset_fun = {
-                let stmts = self.elements.iter().map(|(element_name, _)| {
+                let stmts = self.elements.keys().map(|element_name| {
                     quote! {
                         self.#element_name.reset();
                     }
@@ -183,13 +184,14 @@ impl ToTokens for Flows {
                     fn reset(&mut self) { #(#stmts)* }
                 }
             };
-            quote! {
+            (
+                quote! {
                 impl Context {
                     #init_fun
                     #reset_fun
                 }
             }
-            .to_tokens(tokens)
+            ).to_tokens(tokens)
         }
     }
 }

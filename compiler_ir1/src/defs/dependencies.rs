@@ -1,8 +1,6 @@
 //! [Dependencies] module.
 
-prelude! {
-    graph::Label,
-}
+prelude!(graph::Label);
 
 use super::once_cell::OnceCell;
 
@@ -53,9 +51,7 @@ impl Dependencies {
     /// assert_eq!(*dependencies.get().unwrap(), v);
     /// ```
     pub fn set(&self, v: Vec<(usize, Label)>) {
-        self.0
-            .set(v)
-            .expect("should be the first time setting dependencies")
+        self.0.set(v).expect("should be the first time setting dependencies")
     }
 
     /// Get optional dependencies.
@@ -91,20 +87,23 @@ impl Dependencies {
     /// will depends on `a` and `b`.
     pub fn replace_by_context(
         &mut self,
-        context_map: &HashMap<usize, Either<usize, stream::Expr>>,
+        context_map: &HashMap<usize, Either<usize, stream::Expr>>
     ) {
         let new_dependencies = self
             .get()
             .unwrap()
             .iter()
-            .flat_map(|(id, label)| match context_map.get(id) {
-                Some(Either::Left(new_id)) => vec![(*new_id, label.clone())],
-                Some(Either::Right(expression)) => expression
-                    .get_dependencies()
-                    .iter()
-                    .map(|(new_id, new_label)| (new_id.clone(), label.add(new_label)))
-                    .collect(),
-                None => vec![],
+            .flat_map(|(id, label)| {
+                match context_map.get(id) {
+                    Some(Either::Left(new_id)) => vec![(*new_id, *label)],
+                    Some(Either::Right(expression)) =>
+                        expression
+                            .get_dependencies()
+                            .iter()
+                            .map(|(new_id, new_label)| (*new_id, label.add(new_label)))
+                            .collect(),
+                    None => vec![],
+                }
             })
             .collect();
 
