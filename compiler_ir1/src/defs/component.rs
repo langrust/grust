@@ -332,7 +332,10 @@ impl Component {
 
 pub mod dump_graph {
     prelude! { graph::* }
-    use compiler_common::{json::append_json, serde::ser::SerializeStruct};
+    use compiler_common::{
+        json::append_json,
+        serde::ser::{SerializeSeq, SerializeStruct},
+    };
 
     impl Component {
         /// Dump dependency graph with parallelization weights.
@@ -436,10 +439,51 @@ pub mod dump_graph {
         where
             S: serde::Serializer,
         {
-            let mut comp_graph = serializer.serialize_struct("Component", 2)?;
+            let mut comp_graph = serializer.serialize_struct("Component", 3)?;
             comp_graph.serialize_field("name", &self.name.to_string())?;
-            comp_graph.serialize_field("graph", &self.graph)?;
+            comp_graph.serialize_field("nodes", &SerializeNodes::new(&self.graph))?;
+            comp_graph.serialize_field("edges", &SerializeEdges::new(&self.graph))?;
             comp_graph.end()
+        }
+    }
+    struct SerializeNodes<'a, 'b> {
+        graph: &'a DiGraphMap<Flow<'b>, usize>,
+    }
+    impl<'a, 'b> SerializeNodes<'a, 'b> {
+        fn new(graph: &'a DiGraphMap<Flow<'b>, usize>) -> Self {
+            Self { graph }
+        }
+    }
+    impl compiler_common::prelude::Serialize for SerializeNodes<'_, '_> {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer,
+        {
+            let mut seq = serializer.serialize_seq(Some(self.graph.node_count()))?;
+            for element in self.graph.nodes() {
+                seq.serialize_element(&element)?;
+            }
+            seq.end()
+        }
+    }
+    struct SerializeEdges<'a, 'b> {
+        graph: &'a DiGraphMap<Flow<'b>, usize>,
+    }
+    impl<'a, 'b> SerializeEdges<'a, 'b> {
+        fn new(graph: &'a DiGraphMap<Flow<'b>, usize>) -> Self {
+            Self { graph }
+        }
+    }
+    impl compiler_common::prelude::Serialize for SerializeEdges<'_, '_> {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer,
+        {
+            let mut seq = serializer.serialize_seq(Some(self.graph.edge_count()))?;
+            for (n1, n2, _) in self.graph.all_edges() {
+                seq.serialize_element(&(n1.name.to_string(), n2.name.to_string()))?;
+            }
+            seq.end()
         }
     }
 }
