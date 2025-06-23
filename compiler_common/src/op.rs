@@ -73,6 +73,7 @@ impl BOp {
     pub fn peek(input: ParseStream) -> bool {
         input.peek(Token![*])
             || input.peek(Token![/])
+            || input.peek(Token![%])
             || input.peek(Token![+])
             || input.peek(Token![-])
             || input.peek(Token![&&])
@@ -85,7 +86,7 @@ impl BOp {
             || input.peek(Token![<])
     }
     pub fn peek_prec1(input: ParseStream) -> bool {
-        input.peek(Token![*]) || input.peek(Token![/])
+        input.peek(Token![*]) || input.peek(Token![/]) || input.peek(Token![%])
     }
     pub fn peek_prec2(input: ParseStream) -> bool {
         input.peek(Token![+]) || input.peek(Token![-])
@@ -110,6 +111,9 @@ impl Parse for BOp {
         } else if input.peek(Token![/]) {
             let _: Token![/] = input.parse()?;
             Ok(BOp::Div)
+        } else if input.peek(Token![%]) {
+            let _: Token![%] = input.parse()?;
+            Ok(BOp::Mod)
         } else if input.peek(Token![+]) {
             let _: Token![+] = input.parse()?;
             Ok(BOp::Add)
@@ -364,6 +368,10 @@ mod to_string {
     #[test]
     fn should_convert_division_operator_to_string() {
         assert_eq!(" / ", BOp::Div.to_string());
+    }
+    #[test]
+    fn should_convert_modulo_operator_to_string() {
+        assert_eq!(" % ", BOp::Mod.to_string());
     }
     #[test]
     fn should_convert_addition_operator_to_string() {
