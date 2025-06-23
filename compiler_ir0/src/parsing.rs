@@ -3278,6 +3278,27 @@ mod parsing_tests {
         }
 
         #[test]
+        fn should_parse_modulo() {
+            let term: Expr = parse_quote! {(-x + 1) % 3};
+            let control = Expr::binop(BinOp::new(
+                BOp::Mod,
+                Loc::test_dummy(),
+                Expr::binop(BinOp::new(
+                    BOp::Add,
+                    Loc::test_dummy(),
+                    Expr::unop(UnOp::new(
+                        UOp::Neg,
+                        Loc::test_dummy(),
+                        Expr::test_ident("x"),
+                    )),
+                    Expr::constant(Constant::int(parse_quote! {1})),
+                )),
+                Expr::constant(Constant::int(parse_quote! {3})),
+            ));
+            assert_eq!(term, control)
+        }
+
+        #[test]
         fn should_parse_typed_lambda() {
             let expr: Expr = parse_quote! {|x: int| f(x)};
             let control = Expr::typed_lambda(Lambda::new(
