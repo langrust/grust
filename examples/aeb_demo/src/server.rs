@@ -130,8 +130,8 @@ impl Aeb for AebRuntime {
         &self,
         request: Request<Streaming<Input>>,
     ) -> Result<Response<Self::RunAEBStream>, Status> {
-        let (output_sink, output_stream) = futures::channel::mpsc::channel(TIMER_CHANNEL_SIZE);
-        let (timers_sink, timers_stream) = futures::channel::mpsc::channel(OUTPUT_CHANNEL_SIZE);
+        let (output_sink, output_stream) = futures::channel::mpsc::channel(OUTPUT_CHANNEL_SIZE);
+        let (timers_sink, timers_stream) = futures::channel::mpsc::channel(TIMER_CHANNEL_SIZE);
 
         let request_stream = request
             .into_inner()
