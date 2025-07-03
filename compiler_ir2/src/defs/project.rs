@@ -45,8 +45,12 @@ impl ToTokens for ProjectTokens<'_> {
             match item {
                 Item::ExecutionMachine(em) => {
                     if ctx.conf.mode.test() || ctx.conf.mode.demo() {
-                        em.prepare_tokens(ctx.conf.mode.demo(), ctx.conf.mode.test())
-                            .to_tokens(tokens)
+                        em.prepare_tokens(
+                            ctx.conf.mode.demo(),
+                            ctx.conf.mode.test(),
+                            &ctx.conf.spawn_with,
+                        )
+                        .to_tokens(tokens)
                     }
                 }
                 Item::StateMachine(sm) => sm

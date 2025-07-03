@@ -23,13 +23,20 @@ pub struct ExecutionMachineTokens<'a> {
     em: &'a ExecutionMachine,
     demo: bool,
     test: bool,
+    spawn_fn: &'a Option<syn::Path>,
 }
 impl ExecutionMachine {
-    pub fn prepare_tokens(&self, demo: bool, test: bool) -> ExecutionMachineTokens {
+    pub fn prepare_tokens<'a>(
+        &'a self,
+        demo: bool,
+        test: bool,
+        spawn_fn: &'a Option<syn::Path>,
+    ) -> ExecutionMachineTokens<'a> {
         ExecutionMachineTokens {
             em: self,
             demo,
             test,
+            spawn_fn,
         }
     }
 }
@@ -336,7 +343,7 @@ impl ToTokens for ExecutionMachineTokens<'_> {
             let timer_stream_size = self.em.timing_events.len();
 
             // output, timer, and priority channels and streams + spawned service
-            let (streams, spawn_service);
+            let (streams, new_service);
             if timer_channel_size > 0 {
                 streams = {
                     let timer_stream = if self.demo {
@@ -386,10 +393,8 @@ impl ToTokens for ExecutionMachineTokens<'_> {
                         #prio_stream
                     }
                 };
-                spawn_service = quote! {
-                    let service = runtime::Runtime::new(output_sink, timers_sink);
-                    tokio::spawn(service.run_loop(INIT, prio_stream, init_signals));
-                };
+                new_service =
+                    quote! { let service = runtime::Runtime::new(output_sink, timers_sink); };
             } else {
                 // no timers
                 streams = {
@@ -410,11 +415,14 @@ impl ToTokens for ExecutionMachineTokens<'_> {
                         #prio_stream
                     }
                 };
-                spawn_service = quote! {
-                    let service = runtime::Runtime::new(output_sink);
-                    tokio::spawn(service.run_loop(INIT, prio_stream, init_signals));
-                };
+                new_service = quote! { let service = runtime::Runtime::new(output_sink); };
             }
+
+            let spawn_service = if let Some(spawn_fn) = self.spawn_fn {
+                quote! { #spawn_fn(service.run_loop(INIT, prio_stream, init_signals)); }
+            } else {
+                quote! { tokio::spawn(service.run_loop(INIT, prio_stream, init_signals)); }
+            };
 
             quote! {
                 use futures::{Stream, StreamExt};
@@ -425,6 +433,8 @@ impl ToTokens for ExecutionMachineTokens<'_> {
                 ) -> futures::channel::mpsc::Receiver<runtime::RuntimeOutput> {
 
                     #streams
+
+                    #new_service
 
                     #spawn_service
 
