@@ -422,7 +422,7 @@ impl ToTokens for ExecutionMachineTokens<'_> {
                     INIT: std::time::Instant,
                     input_stream: impl Stream<Item = runtime::RuntimeInput> + Send + 'static,
                     init_signals: runtime::RuntimeInit,
-                ) -> impl Stream<Item = runtime::RuntimeOutput> {
+                ) -> futures::channel::mpsc::Receiver<runtime::RuntimeOutput> {
 
                     #streams
 
