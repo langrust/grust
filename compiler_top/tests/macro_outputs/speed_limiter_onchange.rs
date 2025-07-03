@@ -1234,3 +1234,20 @@ pub mod runtime {
         }
     }
 }
+use futures::{Stream, StreamExt};
+pub fn run(
+    INIT: std::time::Instant,
+    input_stream: impl Stream<Item = runtime::RuntimeInput> + Send + 'static,
+    init_signals: runtime::RuntimeInit,
+) -> impl Stream<Item = runtime::RuntimeOutput> {
+    const OUTPUT_CHANNEL_SIZE: usize = 2usize;
+    let (output_sink, output_stream) = futures::channel::mpsc::channel(OUTPUT_CHANNEL_SIZE);
+    const PRIO_STREAM_SIZE: usize = 8usize;
+    let prio_stream = priority_stream::prio_stream::<_, _, PRIO_STREAM_SIZE>(
+        input_stream,
+        runtime::RuntimeInput::order,
+    );
+    let service = runtime::Runtime::new(output_sink);
+    tokio::spawn(service.run_loop(INIT, prio_stream, init_signals));
+    output_stream
+}

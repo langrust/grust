@@ -19,8 +19,21 @@ pub struct ExecutionMachine {
     /// The services handlers.
     pub services_handlers: Vec<ServiceHandler>,
 }
-
-impl ToTokens for ExecutionMachine {
+pub struct ExecutionMachineTokens<'a> {
+    em: &'a ExecutionMachine,
+    demo: bool,
+    test: bool,
+}
+impl ExecutionMachine {
+    pub fn prepare_tokens(&self, demo: bool, test: bool) -> ExecutionMachineTokens {
+        ExecutionMachineTokens {
+            em: self,
+            demo,
+            test,
+        }
+    }
+}
+impl ToTokens for ExecutionMachineTokens<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream2) {
         let mod_items = {
             let mut tokens = TokenStream2::new();
@@ -45,7 +58,7 @@ impl ToTokens for ExecutionMachine {
             let mut runtime_fields: Vec<TokenStream2> = vec![];
             let mut field_values: Vec<TokenStream2> = vec![];
             {
-                for TimingEvent { identifier, kind } in self.timing_events.iter() {
+                for TimingEvent { identifier, kind } in self.em.timing_events.iter() {
                     let enum_ident = identifier.to_camel();
                     timer_variants.push(enum_ident.to_token_stream());
                     match kind {
@@ -66,7 +79,7 @@ impl ToTokens for ExecutionMachine {
                     }
                 }
 
-                for InterfaceFlow { ident, typ, .. } in self.input_flows.iter() {
+                for InterfaceFlow { ident, typ, .. } in self.em.input_flows.iter() {
                     let enum_ident = ident.to_camel();
                     input_variants.push(quote! { #enum_ident(#typ, std::time::Instant) });
                     input_eq_arms.push(quote! {
@@ -80,7 +93,7 @@ impl ToTokens for ExecutionMachine {
                     }
                 }
 
-                for InterfaceFlow { ident, typ, .. } in self.output_flows.iter() {
+                for InterfaceFlow { ident, typ, .. } in self.em.output_flows.iter() {
                     let enum_ident = ident.to_camel();
                     output_variants.push(quote! { #enum_ident(#typ, std::time::Instant) });
                 }
@@ -101,7 +114,7 @@ impl ToTokens for ExecutionMachine {
                     service_struct_ident,
                     service_mod_ident,
                     ..
-                } in self.services_handlers.iter()
+                } in self.em.services_handlers.iter()
                 {
                     runtime_fields
                         .push(quote! { #service_ident: #service_mod_ident::#service_struct_ident });
@@ -233,7 +246,7 @@ impl ToTokens for ExecutionMachine {
                 // `new` runtime function
                 let new_runtime = {
                     // initialize services
-                    let services_init = self.services_handlers.iter().map(
+                    let services_init = self.em.services_handlers.iter().map(
                     |ServiceHandler {
                          service_ident,
                          service_struct_ident,
@@ -289,7 +302,7 @@ impl ToTokens for ExecutionMachine {
                 };
 
                 // `run_loop` function
-                let run_loop = self.runtime_loop.prepare_tokens(&self.input_flows);
+                let run_loop = self.em.runtime_loop.prepare_tokens(&self.em.input_flows);
 
                 quote! {
                     impl Runtime {
@@ -304,7 +317,7 @@ impl ToTokens for ExecutionMachine {
             }
 
             // services handler functions
-            for handler in self.services_handlers.iter() {
+            for handler in self.em.services_handlers.iter() {
                 handler
                     .prepare_tokens(!timer_variants.is_empty())
                     .to_tokens(&mut tokens)
@@ -313,7 +326,113 @@ impl ToTokens for ExecutionMachine {
             tokens
         };
 
-        quote! { pub mod runtime { #mod_items } }.to_tokens(tokens)
+        // the `run` function to be used directly
+        let run_fn = {
+            // compute channel and stream sizes
+            let output_channel_size = self.em.output_flows.len();
+            let timer_channel_size = self.em.timing_events.len();
+            let prio_stream_size = self.em.input_flows.len() + 1;
+            let timer_stream_size = self.em.timing_events.len();
+
+            // output, timer, and priority channels and streams + spawned service
+            let (streams, spawn_service);
+            if timer_channel_size > 0 {
+                streams = {
+                    let timer_stream = if self.demo {
+                        quote! {
+                            const TIMER_CHANNEL_SIZE: usize = #timer_channel_size;
+                            const TIMER_STREAM_SIZE: usize = #timer_stream_size;
+                            let (timers_sink, timers_stream) = futures::channel::mpsc::channel(TIMER_CHANNEL_SIZE);
+                            let timers_stream = timer_stream::timer_stream::<_, _, TIMER_STREAM_SIZE>(timers_stream)
+                                .map(|(timer, deadline)| runtime::RuntimeInput::Timer(timer, deadline));
+                        }
+                    } else {
+                        debug_assert!(self.test);
+                        quote! {
+                            const TIMER_CHANNEL_SIZE: usize = #timer_channel_size;
+                            let (timers_sink, timers_stream) = futures::channel::mpsc::channel(TIMER_CHANNEL_SIZE);
+                            let timers_stream = timers_stream.map(|(timer, instant): (runtime::RuntimeTimer, std::time::Instant)| {
+                                let deadline = instant + timer_stream::Timing::get_duration(&timer);
+                                runtime::RuntimeInput::Timer(timer, deadline)
+                            });
+                        }
+                    };
+                    let output_stream = quote! {
+                        const OUTPUT_CHANNEL_SIZE: usize = #output_channel_size;
+                        let (output_sink, output_stream) = futures::channel::mpsc::channel(OUTPUT_CHANNEL_SIZE);
+                    };
+                    let prio_stream = {
+                        let prio_const = if self.demo {
+                            quote! { const PRIO_STREAM_SIZE: usize = #prio_stream_size; }
+                        } else {
+                            debug_assert!(self.test);
+                            // TODO: do not use a priority stream but something else
+                            quote! { const PRIO_STREAM_SIZE: usize = 100usize; }
+                        };
+                        quote! {
+                            #prio_const
+                            let prio_stream = priority_stream::prio_stream::<_, _, PRIO_STREAM_SIZE>(
+                                futures::stream::select(input_stream, timers_stream),
+                                runtime::RuntimeInput::order,
+                            );
+                        }
+                    };
+                    quote! {
+                        #timer_stream
+
+                        #output_stream
+
+                        #prio_stream
+                    }
+                };
+                spawn_service = quote! {
+                    let service = runtime::Runtime::new(output_sink, timers_sink);
+                    tokio::spawn(service.run_loop(INIT, prio_stream, init_signals));
+                };
+            } else {
+                // no timers
+                streams = {
+                    let output_stream = quote! {
+                        const OUTPUT_CHANNEL_SIZE: usize = #output_channel_size;
+                        let (output_sink, output_stream) = futures::channel::mpsc::channel(OUTPUT_CHANNEL_SIZE);
+                    };
+                    let prio_stream = quote! {
+                        const PRIO_STREAM_SIZE: usize = #prio_stream_size;
+                        let prio_stream = priority_stream::prio_stream::<_, _, PRIO_STREAM_SIZE>(
+                            input_stream,
+                            runtime::RuntimeInput::order,
+                        );
+                    };
+                    quote! {
+                        #output_stream
+
+                        #prio_stream
+                    }
+                };
+                spawn_service = quote! {
+                    let service = runtime::Runtime::new(output_sink);
+                    tokio::spawn(service.run_loop(INIT, prio_stream, init_signals));
+                };
+            }
+
+            quote! {
+                use futures::{Stream, StreamExt};
+                pub fn run(
+                    INIT: std::time::Instant,
+                    input_stream: impl Stream<Item = runtime::RuntimeInput> + Send + 'static,
+                    init_signals: runtime::RuntimeInit,
+                ) -> impl Stream<Item = runtime::RuntimeOutput> {
+
+                    #streams
+
+                    #spawn_service
+
+                    output_stream
+                }
+            }
+        };
+
+        quote! { pub mod runtime { #mod_items } #run_fn }.to_tokens(tokens)
     }
 }
 
