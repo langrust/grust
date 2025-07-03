@@ -263,7 +263,6 @@ impl ToTokens for ServiceHandlerTokens<'_> {
                         &mut self, instant: std::time::Instant
                     ) -> Result<(), futures::channel::mpsc::SendError> {
                         #service_delay
-                        self.delayed = false;
                         Ok(())
                     }
                 }
@@ -394,6 +393,7 @@ impl ToTokens for FlowHandler {
                         &mut self, #instant: std::time::Instant
                     ) -> Result<(), futures::channel::mpsc::SendError> {
                         self.timer.send((T::#enum_ident, #instant)).await?;
+                        self.delayed = false;
                         Ok(())
                     }
                 }
