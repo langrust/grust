@@ -136,6 +136,7 @@ impl ToTokens for ExecutionMachineTokens<'_> {
                 // runtime input struct
                 {
                     quote! {
+                        #[derive(Debug)]
                         pub enum RuntimeInput {
                             #(#input_variants),*
                         }
@@ -209,7 +210,7 @@ impl ToTokens for ExecutionMachineTokens<'_> {
                 // runtime timer struct
                 if !timer_variants.is_empty() {
                     quote! {
-                        #[derive(PartialEq)]
+                        #[derive(Debug, PartialEq)]
                         pub enum RuntimeTimer {
                             #(#timer_variants),*
                         }
