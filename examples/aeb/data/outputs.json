@@ -1,9 +1,9 @@
 [{
-  "timestamp": 800,
-  "brakes": 2
+  "timestamp": 0,
+  "brakes": 0
 }
 ,{
-  "timestamp": 1000,
+  "timestamp": 800,
   "brakes": 2
 }
 ,{
@@ -27,11 +27,7 @@
   "brakes": 0
 }
 ,{
-  "timestamp": 9100,
-  "brakes": 0
-}
-,{
-  "timestamp": 11100,
+  "timestamp": 10100,
   "brakes": 0
 }
 ,{
@@ -39,7 +35,11 @@
   "brakes": 0
 }
 ,{
-  "timestamp": 15100,
+  "timestamp": 16100,
+  "brakes": 0
+}
+,{
+  "timestamp": 19100,
   "brakes": 0
 }
 ]
