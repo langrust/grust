@@ -61,14 +61,8 @@ use aeb::{
 };
 use futures::{Stream, StreamExt};
 use json::*;
-use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
-
-lazy_static! {
-    /// Initial instant.
-    static ref INIT : Instant = Instant::now();
-}
 
 /// JSON input type, without timestamp.
 #[derive(Deserialize, std::fmt::Debug)]
@@ -107,6 +101,7 @@ impl From<RuntimeOutput> for Output {
 async fn main() {
     const INPUT_PATH: &str = "examples/simple_aeb_demo/data/inputs.json";
     const OUTPUT_PATH: &str = "examples/simple_aeb_demo/data/outputs.json";
+    let INIT: Instant = Instant::now();
 
     // read inputs
     let read_stream = futures::stream::iter(read_json(INPUT_PATH));
@@ -116,7 +111,7 @@ async fn main() {
         match input {
             Ok((timestamp, input)) => {
                 let duration = tokio::time::Duration::from_millis(timestamp as u64);
-                let instant = *INIT + duration;
+                let instant = INIT.clone() + duration;
                 Some(input.into(instant))
             }
             Err(_) => None,
@@ -128,7 +123,7 @@ async fn main() {
 
     // collect N outputs
     const N: usize = 10;
-    let mut output_stream = aeb::run(*INIT, input_stream, RuntimeInit { speed_km_h: 0.0 });
+    let mut output_stream = aeb::run(INIT, input_stream, RuntimeInit { speed_km_h: 0.0 });
     let mut counter = 0;
     while let Some(received) = output_stream.next().await {
         counter += 1;

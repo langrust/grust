@@ -13,4 +13,3 @@ timer_stream = { workspace = true }
 tokio = { workspace = true }
 futures = { workspace = true }
 serde = { workspace = true }
-lazy_static = { workspace = true }
