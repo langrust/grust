@@ -54,7 +54,7 @@ mod aeb {
     }
 }
 
-use aeb::runtime::{Runtime, RuntimeInit, RuntimeInput, RuntimeOutput, RuntimeTimer};
+use aeb::runtime::{RuntimeInit, RuntimeInput, RuntimeOutput};
 use futures::StreamExt;
 use interface::{
     aeb_server::{Aeb, AebServer},
@@ -62,9 +62,7 @@ use interface::{
     Braking, Input, Output, Pedestrian, Speed,
 };
 use lazy_static::lazy_static;
-use priority_stream::prio_stream;
 use std::time::{Duration, Instant};
-use timer_stream::timer_stream;
 use tonic::{transport::Server, Request, Response, Status, Streaming};
 
 // include the `interface` module, which is generated from interface.proto.
@@ -112,11 +110,6 @@ fn from_aeb_service_output(output: RuntimeOutput) -> Result<Output, Status> {
     }
 }
 
-const OUTPUT_CHANNEL_SIZE: usize = 4;
-const TIMER_CHANNEL_SIZE: usize = 4;
-const PRIO_STREAM_SIZE: usize = 6;
-const TIMER_STREAM_SIZE: usize = 3;
-
 pub struct AebRuntime;
 
 #[tonic::async_trait]
@@ -130,21 +123,11 @@ impl Aeb for AebRuntime {
         &self,
         request: Request<Streaming<Input>>,
     ) -> Result<Response<Self::RunAEBStream>, Status> {
-        let (output_sink, output_stream) = futures::channel::mpsc::channel(OUTPUT_CHANNEL_SIZE);
-        let (timers_sink, timers_stream) = futures::channel::mpsc::channel(TIMER_CHANNEL_SIZE);
-
-        let request_stream = request
+        let input_stream = request
             .into_inner()
             .filter_map(|input| async { input.map(into_aeb_service_input).ok().flatten() });
-        let timers_stream = timer_stream::<_, _, TIMER_STREAM_SIZE>(timers_stream)
-            .map(|(timer, deadline): (RuntimeTimer, Instant)| RuntimeInput::Timer(timer, deadline));
-        let input_stream = prio_stream::<_, _, PRIO_STREAM_SIZE>(
-            futures::stream::select(request_stream, timers_stream),
-            RuntimeInput::order,
-        );
 
-        let aeb_service = Runtime::new(output_sink, timers_sink);
-        tokio::spawn(aeb_service.run_loop(*INIT, input_stream, RuntimeInit { speed_km_h: 0.0 }));
+        let output_stream = aeb::run(*INIT, input_stream, RuntimeInit { speed_km_h: 50.0 });
 
         Ok(Response::new(output_stream.map(
             from_aeb_service_output as fn(RuntimeOutput) -> Result<Output, Status>,

@@ -80,8 +80,7 @@ use interface::{
     Input, Output,
 };
 use lazy_static::lazy_static;
-use para::runtime::{Runtime, RuntimeInit, RuntimeInput, RuntimeOutput, RuntimeTimer};
-use priority_stream::prio_stream;
+use para::runtime::{RuntimeInit, RuntimeInput, RuntimeOutput};
 use std::time::{Duration, Instant};
 use tonic::{transport::Server, Request, Response, Status, Streaming};
 
@@ -112,10 +111,6 @@ fn from_para_service_output(output: RuntimeOutput) -> Result<Output, Status> {
     }
 }
 
-const OUTPUT_CHANNEL_SIZE: usize = 4;
-const TIMER_CHANNEL_SIZE: usize = 4;
-const PRIO_STREAM_SIZE: usize = 100;
-
 pub struct ParaRuntime;
 
 #[tonic::async_trait]
@@ -129,23 +124,16 @@ impl Para for ParaRuntime {
         &self,
         request: Request<Streaming<Input>>,
     ) -> Result<Response<Self::RunPARAStream>, Status> {
-        let (timers_sink, timers_stream) = futures::channel::mpsc::channel(TIMER_CHANNEL_SIZE);
-        let (output_sink, output_stream) = futures::channel::mpsc::channel(OUTPUT_CHANNEL_SIZE);
+        // make the server wait for the client to load the inputs (this is because the test mode
+        // load all values in priority stream ad it is possible that the timers are created before
+        // the inputs, which cause issues)
+        tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
 
-        let request_stream = request
+        let input_stream = request
             .into_inner()
             .filter_map(|input| async { input.map(into_para_service_input).ok().flatten() });
-        let timers_stream = timers_stream.map(|(timer, instant): (RuntimeTimer, Instant)| {
-            let deadline = instant + timer_stream::Timing::get_duration(&timer);
-            RuntimeInput::Timer(timer, deadline)
-        });
-        let input_stream = prio_stream::<_, _, PRIO_STREAM_SIZE>(
-            futures::stream::select(request_stream, timers_stream),
-            RuntimeInput::order,
-        );
 
-        let para_service = Runtime::new(output_sink, timers_sink);
-        tokio::spawn(para_service.run_loop(*INIT, input_stream, RuntimeInit {}));
+        let output_stream = para::run(*INIT, input_stream, RuntimeInit {});
 
         Ok(Response::new(output_stream.map(
             from_para_service_output as fn(RuntimeOutput) -> Result<Output, Status>,

@@ -1,35 +1,5 @@
 [
     {
-        "timestamp": 0,
-        "message": {
-            "Speed": 125.1
-        }
-    },
-    {
-        "timestamp": 0,
-        "message": {
-            "VacuumBrake": 1
-        }
-    },
-    {
-        "timestamp": 0,
-        "message": {
-            "Vdc": 0
-        }
-    },
-    {
-        "timestamp": 0,
-        "message": {
-            "Activation": 1
-        }
-    },
-    {
-        "timestamp": 0,
-        "message": {
-            "SetSpeed": 0.0
-        }
-    },
-    {
         "timestamp": 50,
         "message": {
             "Speed": 125.4
