@@ -803,3 +803,28 @@ pub mod runtime {
         }
     }
 }
+use futures::{Stream, StreamExt};
+pub fn run(
+    INIT: std::time::Instant,
+    input_stream: impl Stream<Item = runtime::RuntimeInput> + Send + 'static,
+    init_signals: runtime::RuntimeInit,
+) -> impl Stream<Item = runtime::RuntimeOutput> {
+    const TIMER_CHANNEL_SIZE: usize = 3usize;
+    let (timers_sink, timers_stream) = futures::channel::mpsc::channel(TIMER_CHANNEL_SIZE);
+    let timers_stream = timers_stream.map(
+        |(timer, instant): (runtime::RuntimeTimer, std::time::Instant)| {
+            let deadline = instant + timer_stream::Timing::get_duration(&timer);
+            runtime::RuntimeInput::Timer(timer, deadline)
+        },
+    );
+    const OUTPUT_CHANNEL_SIZE: usize = 2usize;
+    let (output_sink, output_stream) = futures::channel::mpsc::channel(OUTPUT_CHANNEL_SIZE);
+    const PRIO_STREAM_SIZE: usize = 100usize;
+    let prio_stream = priority_stream::prio_stream::<_, _, PRIO_STREAM_SIZE>(
+        futures::stream::select(input_stream, timers_stream),
+        runtime::RuntimeInput::order,
+    );
+    let service = runtime::Runtime::new(output_sink, timers_sink);
+    tokio::spawn(service.run_loop(INIT, prio_stream, init_signals));
+    output_stream
+}

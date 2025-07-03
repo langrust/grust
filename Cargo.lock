@@ -1281,6 +1281,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "simple_aeb_test"
+version = "1.4.0"
+dependencies = [
+ "futures",
+ "grust",
+ "json",
+ "lazy_static",
+ "priority_stream",
+ "serde",
+ "timer_stream",
+ "tokio",
+]
+
+[[package]]
 name = "sl_demo"
 version = "1.4.0"
 dependencies = [

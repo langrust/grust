@@ -3,7 +3,7 @@ mod aeb {
     use grust::grust;
 
     grust! {
-        #![mode = demo, dump = "examples/simple_aeb_demo/out/mod.rs"]
+        #![mode = test, dump = "examples/simple_aeb_test/out/mod.rs"]
         import signal car::speed_km_h                   : float;
         import event  car::detect::left::pedestrian_l   : float;
         import event  car::detect::right::pedestrian_r  : float;
@@ -117,7 +117,6 @@ async fn main() {
             Ok((timestamp, input)) => {
                 let duration = tokio::time::Duration::from_millis(timestamp as u64);
                 let instant = *INIT + duration;
-                tokio::time::sleep_until(instant.into()).await;
                 Some(input.into(instant))
             }
             Err(_) => None,
