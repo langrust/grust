@@ -189,6 +189,9 @@ build_conf! {
         stats_depth: usize = 0 =>
             /// Item for the `stats_depth` configuration value.
             StatsDepth,
+        spawn_with: Option<syn::Path> = None =>
+            /// Item for the `dump_code` configuration value.
+            SpawnWith,
     }
 }
 
@@ -260,6 +263,12 @@ mod parsing {
                     let val: syn::LitBool = input.parse()?;
                     let val: bool = val.value();
                     Self::Levenshtein(span, val)
+                }
+                "spawn_with" => {
+                    let _: Token![=] = input.parse()?;
+                    let val: syn::LitStr = input.parse()?;
+                    let val: syn::Path = val.parse()?;
+                    Self::SpawnWith(span, Some(val))
                 }
                 "component_para" => Self::ComponentPara(span, WeightBounds::parse(input)?.into()),
                 "component_para_none" => Self::ComponentPara(span, ComponentPara::none()),
