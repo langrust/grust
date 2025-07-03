@@ -5,5 +5,7 @@ edition.workspace = true
 
 [dependencies]
 pin-project = { workspace = true }
-tokio = { workspace = true }
 futures = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }
