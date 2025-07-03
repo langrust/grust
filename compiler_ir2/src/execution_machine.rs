@@ -431,8 +431,7 @@ impl ToTokens for ExecutionMachineTokens<'_> {
             let output_ty;
             if let Some(handle_ty) = self.handle_ty {
                 ending = quote! { let handle = #spawn_service; (output_stream, handle) };
-                output_ty =
-                    quote! {(futures::channel::mpsc::Receiver<runtime::RuntimeOutput>, #handle_ty<Result<(), futures::channel::mpsc::SendError>>)};
+                output_ty = quote! {(futures::channel::mpsc::Receiver<runtime::RuntimeOutput>, #handle_ty<Result<(), futures::channel::mpsc::SendError>>)};
             } else {
                 ending = quote! { #spawn_service; output_stream };
                 output_ty = quote! {futures::channel::mpsc::Receiver<runtime::RuntimeOutput>};
