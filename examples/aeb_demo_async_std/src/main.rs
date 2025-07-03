@@ -3,7 +3,10 @@ mod aeb {
     use grust::grust;
 
     grust! {
-        #![mode = demo, dump = "examples/aeb_demo_async_std/out/mod.rs", spawn_with = "async_std::task::spawn"]
+        #![mode = demo,
+           dump = "examples/aeb_demo_async_std/out/mod.rs",
+           spawn_with = "async_std::task::spawn",
+           get_handle = "async_std::task::JoinHandle"]
         import signal car::speed_km_h                   : float;
         import event  car::detect::left::pedestrian_l   : float;
         import event  car::detect::right::pedestrian_r  : float;
@@ -124,7 +127,7 @@ async fn main() {
 
     // collect N outputs
     const N: usize = 10;
-    let mut output_stream = aeb::run(INIT, input_stream, RuntimeInit { speed_km_h: 0.0 });
+    let (mut output_stream, handle) = aeb::run(INIT, input_stream, RuntimeInit { speed_km_h: 0.0 });
     let mut counter = 0;
     while let Some(received) = output_stream.next().await {
         counter += 1;
