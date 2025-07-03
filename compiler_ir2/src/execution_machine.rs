@@ -24,6 +24,7 @@ pub struct ExecutionMachineTokens<'a> {
     demo: bool,
     test: bool,
     spawn_fn: &'a Option<syn::Path>,
+    handle_ty: &'a Option<syn::Type>,
 }
 impl ExecutionMachine {
     pub fn prepare_tokens<'a>(
@@ -31,12 +32,14 @@ impl ExecutionMachine {
         demo: bool,
         test: bool,
         spawn_fn: &'a Option<syn::Path>,
+        handle_ty: &'a Option<syn::Type>,
     ) -> ExecutionMachineTokens<'a> {
         ExecutionMachineTokens {
             em: self,
             demo,
             test,
             spawn_fn,
+            handle_ty,
         }
     }
 }
@@ -419,9 +422,20 @@ impl ToTokens for ExecutionMachineTokens<'_> {
             }
 
             let spawn_service = if let Some(spawn_fn) = self.spawn_fn {
-                quote! { #spawn_fn(service.run_loop(INIT, prio_stream, init_signals)); }
+                quote! { #spawn_fn(service.run_loop(INIT, prio_stream, init_signals)) }
             } else {
-                quote! { tokio::spawn(service.run_loop(INIT, prio_stream, init_signals)); }
+                quote! { tokio::spawn(service.run_loop(INIT, prio_stream, init_signals)) }
+            };
+
+            let ending;
+            let output_ty;
+            if let Some(handle_ty) = self.handle_ty {
+                ending = quote! { let handle = #spawn_service; (output_stream, handle) };
+                output_ty =
+                    quote! {(futures::channel::mpsc::Receiver<runtime::RuntimeOutput>, #handle_ty<Result<(), futures::channel::mpsc::SendError>>)};
+            } else {
+                ending = quote! { #spawn_service; output_stream };
+                output_ty = quote! {futures::channel::mpsc::Receiver<runtime::RuntimeOutput>};
             };
 
             quote! {
@@ -430,15 +444,13 @@ impl ToTokens for ExecutionMachineTokens<'_> {
                     INIT: std::time::Instant,
                     input_stream: impl Stream<Item = runtime::RuntimeInput> + Send + 'static,
                     init_signals: runtime::RuntimeInit,
-                ) -> futures::channel::mpsc::Receiver<runtime::RuntimeOutput> {
+                ) -> #output_ty {
 
                     #streams
 
                     #new_service
 
-                    #spawn_service
-
-                    output_stream
+                    #ending
                 }
             }
         };

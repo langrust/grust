@@ -192,6 +192,9 @@ build_conf! {
         spawn_with: Option<syn::Path> = None =>
             /// Item for the `dump_code` configuration value.
             SpawnWith,
+        get_handle: Option<syn::Type> = None =>
+            /// Item for the `dump_code` configuration value.
+            GetHandle,
     }
 }
 
@@ -266,9 +269,15 @@ mod parsing {
                 }
                 "spawn_with" => {
                     let _: Token![=] = input.parse()?;
-                    let val: syn::LitStr = input.parse()?;
-                    let val: syn::Path = val.parse()?;
+                    let str: syn::LitStr = input.parse()?;
+                    let val: syn::Path = str.parse()?;
                     Self::SpawnWith(span, Some(val))
+                }
+                "get_handle" => {
+                    let _: Token![=] = input.parse()?;
+                    let str: syn::LitStr = input.parse()?;
+                    let val: syn::Type = str.parse()?;
+                    Self::GetHandle(span, Some(val))
                 }
                 "component_para" => Self::ComponentPara(span, WeightBounds::parse(input)?.into()),
                 "component_para_none" => Self::ComponentPara(span, ComponentPara::none()),
