@@ -49,6 +49,7 @@ impl ToTokens for ProjectTokens<'_> {
                             ctx.conf.mode.demo(),
                             ctx.conf.mode.test(),
                             &ctx.conf.spawn_with,
+                            &ctx.conf.get_handle,
                         )
                         .to_tokens(tokens)
                     }
