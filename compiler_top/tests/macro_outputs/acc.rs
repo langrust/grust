@@ -223,6 +223,7 @@ impl grust::core::Component for FilteredAccState {
 pub mod runtime {
     use super::*;
     use futures::{sink::SinkExt, stream::StreamExt};
+    #[derive(Debug)]
     pub enum RuntimeInput {
         DistanceM(f64, std::time::Instant),
         AccActive(Activation, std::time::Instant),
@@ -272,7 +273,7 @@ pub mod runtime {
         pub distance_m: f64,
         pub speed_km_h: f64,
     }
-    #[derive(PartialEq)]
+    #[derive(Debug, PartialEq)]
     pub enum RuntimeTimer {
         DelayAdaptiveCruiseControl,
         TimeoutAdaptiveCruiseControl,
@@ -1030,6 +1031,7 @@ pub mod runtime {
                 self.timer
                     .send((T::DelayAdaptiveCruiseControl, _grust_reserved_instant))
                     .await?;
+                self.delayed = false;
                 Ok(())
             }
             pub async fn handle_speed_km_h(
@@ -1131,7 +1133,6 @@ pub mod runtime {
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.reset_service_delay(instant).await?;
-                self.delayed = false;
                 Ok(())
             }
             #[inline]
