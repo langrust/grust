@@ -542,7 +542,7 @@ pub fn run(
     INIT: std::time::Instant,
     input_stream: impl Stream<Item = runtime::RuntimeInput> + Send + 'static,
     init_signals: runtime::RuntimeInit,
-) -> impl Stream<Item = runtime::RuntimeOutput> {
+) -> futures::channel::mpsc::Receiver<runtime::RuntimeOutput> {
     const OUTPUT_CHANNEL_SIZE: usize = 1usize;
     let (output_sink, output_stream) = futures::channel::mpsc::channel(OUTPUT_CHANNEL_SIZE);
     const PRIO_STREAM_SIZE: usize = 2usize;
