@@ -1164,7 +1164,10 @@ pub fn run(
     INIT: std::time::Instant,
     input_stream: impl Stream<Item = runtime::RuntimeInput> + Send + 'static,
     init_signals: runtime::RuntimeInit,
-) -> futures::channel::mpsc::Receiver<runtime::RuntimeOutput> {
+) -> (
+    futures::channel::mpsc::Receiver<runtime::RuntimeOutput>,
+    async_std::task::JoinHandle<Result<(), futures::channel::mpsc::SendError>>,
+) {
     const TIMER_CHANNEL_SIZE: usize = 3usize;
     const TIMER_STREAM_SIZE: usize = 3usize;
     let (timers_sink, timers_stream) = futures::channel::mpsc::channel(TIMER_CHANNEL_SIZE);
@@ -1178,6 +1181,6 @@ pub fn run(
         runtime::RuntimeInput::order,
     );
     let service = runtime::Runtime::new(output_sink, timers_sink);
-    async_std::task::spawn(service.run_loop(INIT, prio_stream, init_signals));
-    output_stream
+    let handle = async_std::task::spawn(service.run_loop(INIT, prio_stream, init_signals));
+    (output_stream, handle)
 }
