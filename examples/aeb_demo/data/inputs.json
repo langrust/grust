@@ -1,13 +1,5 @@
 [
     {
-        "timestamp": 0,
-        "message": {
-            "Speed": {
-                "value": 50.0
-            }
-        }
-    },
-    {
         "timestamp": 800,
         "message": {
             "PedestrianL": {

@@ -2,7 +2,7 @@ mod aeb {
     use grust::grust;
 
     grust! {
-        #![mode = test]
+        #![mode = test, dump = "examples/aeb/out/mod.rs"]
         import signal car::speed_km_h                   : float;
         import event  car::detect::left::pedestrian_l   : float;
         import event  car::detect::right::pedestrian_r  : float;
@@ -20,31 +20,20 @@ mod aeb {
         // s = speed in km/h.
         // 250 = fixed figure which is always used.
         // f = coefficient of friction, approx. 0.8 on dry asphalt.
-        function compute_soft_braking_distance(speed: float, acc: float) -> float {
-            return speed * speed / (100.0 * acc);
+        function compute_soft_braking_distance(speed: float) -> float {
+            return speed * speed / 100.0;
         }
 
         // determine braking strategy
-        function brakes(distance: float, speed: float, acc: float) -> Braking {
-            let braking_distance: float = compute_soft_braking_distance(speed, acc);
+        function brakes(distance: float, speed: float) -> Braking {
+            let braking_distance: float = compute_soft_braking_distance(speed);
             let response: Braking = if braking_distance < distance
                                     then Braking::SoftBrake
                                     else Braking::UrgentBrake;
             return response;
         }
 
-        component derive(v_km_h: float, t: float) -> (a_km_h: float) {
-            let v: float = v_km_h / 3.6;
-            init (t, v) = (0., 0.);
-            let dt: float = t - (last t);
-            let a: float = when {
-                init => 0.,
-                dt > 10. => (v - (last v))/dt,
-            };
-            a_km_h = 3.6 * a;
-        }
-
-        component braking_state(pedest: float?, timeout_pedest: unit?, speed: float, acc: float) -> (state: Braking)
+        component braking_state(pedest: float?, timeout_pedest: unit?, speed: float) -> (state: Braking)
             requires { 0. <= speed && speed < 55. } // urban limit
             ensures { when _x = pedest? => state != Braking::NoBrake } // safety
         {
@@ -53,7 +42,7 @@ mod aeb {
                     state = Braking::NoBrake;
                 }
                 let d = pedest? => {
-                    state = brakes(d, speed, acc);
+                    state = brakes(d, speed);
                 }
                 let _ = timeout_pedest? => {
                     state = Braking::NoBrake;
@@ -64,13 +53,12 @@ mod aeb {
         service aeb @ [10, 3000] {
             let event pedestrian: float = merge(pedestrian_l, pedestrian_r);
             let event timeout_pedest: unit = timeout(pedestrian, 2000);
-            let signal acc_km_h: float = derive(speed_km_h, time());
-            braking = braking_state(pedestrian, timeout_pedest, speed_km_h, acc_km_h);
+            braking = braking_state(pedestrian, timeout_pedest, speed_km_h);
         }
     }
 }
 
-use aeb::runtime::{Runtime, RuntimeInit, RuntimeInput, RuntimeOutput, RuntimeTimer};
+use aeb::runtime::{RuntimeInit, RuntimeInput, RuntimeOutput};
 use futures::StreamExt;
 use interface::{
     aeb_server::{Aeb, AebServer},
@@ -78,7 +66,6 @@ use interface::{
     Braking, Input, Output, Pedestrian, Speed,
 };
 use lazy_static::lazy_static;
-use priority_stream::prio_stream;
 use std::time::{Duration, Instant};
 use tonic::{transport::Server, Request, Response, Status, Streaming};
 
@@ -127,10 +114,6 @@ fn from_aeb_service_output(output: RuntimeOutput) -> Result<Output, Status> {
     }
 }
 
-const OUTPUT_CHANNEL_SIZE: usize = 4;
-const TIMER_CHANNEL_SIZE: usize = 4;
-const PRIO_STREAM_SIZE: usize = 100;
-
 pub struct AebRuntime;
 
 #[tonic::async_trait]
@@ -144,23 +127,16 @@ impl Aeb for AebRuntime {
         &self,
         request: Request<Streaming<Input>>,
     ) -> Result<Response<Self::RunAEBStream>, Status> {
-        let (output_sink, output_stream) = futures::channel::mpsc::channel(OUTPUT_CHANNEL_SIZE);
-        let (timers_sink, timers_stream) = futures::channel::mpsc::channel(TIMER_CHANNEL_SIZE);
+        // make the server wait for the client to load the inputs (this is because the test mode
+        // load all values in priority stream ad it is possible that the timers are created before
+        // the inputs, which cause issues)
+        tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
 
-        let request_stream = request
+        let input_stream = request
             .into_inner()
             .filter_map(|input| async { input.map(into_aeb_service_input).ok().flatten() });
-        let timers_stream = timers_stream.map(|(timer, instant): (RuntimeTimer, Instant)| {
-            let deadline = instant + timer_stream::Timing::get_duration(&timer);
-            RuntimeInput::Timer(timer, deadline)
-        });
-        let input_stream = prio_stream::<_, _, PRIO_STREAM_SIZE>(
-            futures::stream::select(request_stream, timers_stream),
-            RuntimeInput::order,
-        );
 
-        let aeb_service = Runtime::new(output_sink, timers_sink);
-        tokio::spawn(aeb_service.run_loop(*INIT, input_stream, RuntimeInit { speed_km_h: 0.0 }));
+        let output_stream = aeb::run(*INIT, input_stream, RuntimeInit { speed_km_h: 50.0 });
 
         Ok(Response::new(output_stream.map(
             from_aeb_service_output as fn(RuntimeOutput) -> Result<Output, Status>,

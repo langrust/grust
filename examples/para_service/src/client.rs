@@ -7,8 +7,8 @@ pub mod interface {
     tonic::include_proto!("interface");
 }
 
-const INPATH: &str = "examples/para/data/inputs.json";
-const OUTPATH: &str = "examples/para/data/outputs.json";
+const INPATH: &str = "examples/para_service/data/inputs.json";
+const OUTPATH: &str = "examples/para_service/data/outputs.json";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

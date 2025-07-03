@@ -28,7 +28,7 @@ mod sl {
             return Hysterisis { value: value, flag: true };
         }
 
-        // Enumerates the kinds of activation resquests.
+        // Enumerates the kinds of activation requests.
         enum ActivationRequest { Off, On }
 
         // Vehicle dynamic control states.
@@ -52,7 +52,7 @@ mod sl {
         // Speed limiter 'On' states.
         enum SpeedLimiterOn {
             StandBy,
-            Actif,
+            Active,
             OverrideVoluntary,
         }
 
@@ -172,7 +172,7 @@ mod sl {
             in_reg = in_regulation(hysterisis);
             let kickdown_state: Kickdown = when {
                 init => Kickdown::Deactivated,
-                let Kickdown::Activated = kickdown? if prev_on_state == SpeedLimiterOn::Actif => Kickdown::Activated,
+                let Kickdown::Activated = kickdown? if prev_on_state == SpeedLimiterOn::Active => Kickdown::Activated,
                 let Kickdown::Deactivated = kickdown? => Kickdown::Deactivated,
             };
             match prev_on_state {
@@ -181,18 +181,18 @@ mod sl {
                     let hysterisis: Hysterisis = prev_hysterisis;
                 },
                 SpeedLimiterOn::StandBy if activation_condition(vacuum_brake_state, v_set) => {
-                    on_state = SpeedLimiterOn::Actif;
+                    on_state = SpeedLimiterOn::Active;
                     let hysterisis: Hysterisis = new_hysterisis(0.0);
                 },
                 SpeedLimiterOn::OverrideVoluntary if speed <= v_set => {
-                    on_state = SpeedLimiterOn::Actif;
+                    on_state = SpeedLimiterOn::Active;
                     let hysterisis: Hysterisis = new_hysterisis(0.0);
                 },
-                SpeedLimiterOn::Actif if standby_condition(vacuum_brake_state, v_set) => {
+                SpeedLimiterOn::Active if standby_condition(vacuum_brake_state, v_set) => {
                     on_state = SpeedLimiterOn::StandBy;
                     let hysterisis: Hysterisis = prev_hysterisis;
                 },
-                SpeedLimiterOn::Actif => {
+                SpeedLimiterOn::Active => {
                     on_state = prev_on_state;
                     let hysterisis: Hysterisis = update_hysterisis(prev_hysterisis, speed, v_set);
                 },
@@ -260,8 +260,7 @@ use interface::{
     Input, Output,
 };
 use lazy_static::lazy_static;
-use priority_stream::prio_stream;
-use sl::runtime::{Runtime, RuntimeInit, RuntimeInput, RuntimeOutput};
+use sl::runtime::{RuntimeInit, RuntimeInput, RuntimeOutput};
 use std::time::{Duration, Instant};
 use tonic::{transport::Server, Request, Response, Status, Streaming};
 
@@ -348,7 +347,7 @@ fn from_speed_limiter_service_output(output: RuntimeOutput) -> Result<Output, St
             message: Some(output::Message::SlState(2)),
             timestamp: instant.duration_since(*INIT).as_millis() as i64,
         }),
-        RuntimeOutput::SlState(sl::SpeedLimiterOn::Actif, instant) => Ok(Output {
+        RuntimeOutput::SlState(sl::SpeedLimiterOn::Active, instant) => Ok(Output {
             message: Some(output::Message::SlState(3)),
             timestamp: instant.duration_since(*INIT).as_millis() as i64,
         }),
@@ -358,9 +357,6 @@ fn from_speed_limiter_service_output(output: RuntimeOutput) -> Result<Output, St
         }),
     }
 }
-
-const OUTPUT_CHANNEL_SIZE: usize = 4;
-const PRIO_STREAM_SIZE: usize = 10;
 
 pub struct SlRuntime;
 
@@ -375,25 +371,20 @@ impl Sl for SlRuntime {
         &self,
         request: Request<Streaming<Input>>,
     ) -> Result<Response<Self::RunSLStream>, Status> {
-        let (output_sink, output_stream) = futures::channel::mpsc::channel(OUTPUT_CHANNEL_SIZE);
-
-        let request_stream = request.into_inner().filter_map(|input| async {
+        let input_stream = request.into_inner().filter_map(|input| async {
             input.map(into_speed_limiter_service_input).ok().flatten()
         });
-        let input_stream =
-            prio_stream::<_, _, PRIO_STREAM_SIZE>(request_stream, RuntimeInput::order);
 
-        let speed_limiter_service = Runtime::new(output_sink);
-        tokio::spawn(speed_limiter_service.run_loop(
+        let output_stream = sl::run(
             *INIT,
             input_stream,
             RuntimeInit {
-                vdc: Default::default(),
-                vacuum_brake: Default::default(),
-                set_speed: Default::default(),
-                speed: Default::default(),
+                vdc: sl::VdcState::On,
+                vacuum_brake: sl::VacuumBrakeState::AboveMinLevel,
+                set_speed: 0.0,
+                speed: 125.1,
             },
-        ));
+        );
 
         Ok(Response::new(output_stream.map(
             from_speed_limiter_service_output as fn(RuntimeOutput) -> Result<Output, Status>,
