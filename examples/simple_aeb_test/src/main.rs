@@ -111,7 +111,7 @@ async fn main() {
         match input {
             Ok((timestamp, input)) => {
                 let duration = tokio::time::Duration::from_millis(timestamp as u64);
-                let instant = INIT.clone() + duration;
+                let instant = INIT + duration;
                 Some(input.into(instant))
             }
             Err(_) => None,
