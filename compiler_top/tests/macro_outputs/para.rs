@@ -155,6 +155,7 @@ impl grust::core::Component for C5State {
 pub mod runtime {
     use super::*;
     use futures::{sink::SinkExt, stream::StreamExt};
+    #[derive(Debug)]
     pub enum RuntimeInput {
         E0(i64, std::time::Instant),
     }
@@ -522,7 +523,6 @@ pub mod runtime {
                 &mut self,
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.delayed = false;
                 Ok(())
             }
             #[inline]

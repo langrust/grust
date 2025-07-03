@@ -355,6 +355,7 @@ impl grust::core::Component for SpeedLimiterState {
 pub mod runtime {
     use super::*;
     use futures::{sink::SinkExt, stream::StreamExt};
+    #[derive(Debug)]
     pub enum RuntimeInput {
         Vdc(VdcState, std::time::Instant),
         Speed(f64, std::time::Instant),
@@ -1283,7 +1284,6 @@ pub mod runtime {
                 &mut self,
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.delayed = false;
                 Ok(())
             }
             #[inline]
@@ -2043,7 +2043,6 @@ pub mod runtime {
                 &mut self,
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
-                self.delayed = false;
                 Ok(())
             }
             #[inline]

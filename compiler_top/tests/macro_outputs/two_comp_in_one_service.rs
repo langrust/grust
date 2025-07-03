@@ -1,6 +1,7 @@
 pub mod runtime {
     use super::*;
     use futures::{sink::SinkExt, stream::StreamExt};
+    #[derive(Debug)]
     pub enum RuntimeInput {
         Reset(bool, std::time::Instant),
         Timer(T, std::time::Instant),
@@ -44,7 +45,7 @@ pub mod runtime {
     pub struct RuntimeInit {
         pub reset: bool,
     }
-    #[derive(PartialEq)]
+    #[derive(Debug, PartialEq)]
     pub enum RuntimeTimer {
         TimeoutX,
         DelayTest,
@@ -770,6 +771,7 @@ pub mod runtime {
                 self.timer
                     .send((T::DelayTest, _grust_reserved_instant))
                     .await?;
+                self.delayed = false;
                 Ok(())
             }
             #[inline]
@@ -778,7 +780,6 @@ pub mod runtime {
                 instant: std::time::Instant,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.reset_service_delay(instant).await?;
-                self.delayed = false;
                 Ok(())
             }
             #[inline]
