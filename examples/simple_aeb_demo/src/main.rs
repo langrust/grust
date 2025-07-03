@@ -54,13 +54,13 @@ mod aeb {
         }
     }
 
-    use super::INIT;
     use futures::{Stream, StreamExt};
     use priority_stream::prio_stream;
     use runtime::{Runtime, RuntimeInit, RuntimeInput, RuntimeOutput, RuntimeTimer};
     use timer_stream::timer_stream;
 
     pub fn run_aeb(
+        INIT: std::time::Instant,
         input_stream: impl Stream<Item = RuntimeInput> + Send + 'static,
         init_signals: RuntimeInit,
     ) -> impl Stream<Item = RuntimeOutput> {
@@ -80,7 +80,7 @@ mod aeb {
         );
 
         let aeb_service = Runtime::new(output_sink, timers_sink);
-        tokio::spawn(aeb_service.run_loop(*INIT, prio_stream, init_signals));
+        tokio::spawn(aeb_service.run_loop(INIT, prio_stream, init_signals));
 
         output_stream
     }
@@ -161,7 +161,7 @@ async fn main() {
 
     // collect N outputs
     const N: usize = 10;
-    let mut output_stream = run_aeb(input_stream, RuntimeInit { speed_km_h: 0.0 });
+    let mut output_stream = run_aeb(*INIT, input_stream, RuntimeInit { speed_km_h: 0.0 });
     let mut counter = 0;
     while let Some(received) = output_stream.next().await {
         counter += 1;
