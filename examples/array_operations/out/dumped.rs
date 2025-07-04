@@ -68,7 +68,13 @@ pub fn map_two(
     a2: [i64; 10usize],
     f: impl Fn((i64, i64)) -> i64,
 ) -> [i64; 10usize] {
-    std::array::from_fn(|n| (a1[n], a2[n])).map(f)
+    std::array::from_fn(|n| {
+        (
+            a1[n],
+            [0i64, 0i64, 0i64, 0i64, 0i64, 0i64, 0i64, 0i64, 0i64, 0i64][n],
+        )
+    })
+    .map(f)
 }
 pub fn alarm_filtering(alarm_list: [Alarm; 100usize]) -> [FilteredAlarm; 100usize] {
     {

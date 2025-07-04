@@ -7,6 +7,8 @@ grust! {
     array MyArray [int; 10]
     array MyMatrix [MyArray; 10]
 
+    const ZEROS: MyArray = [0; 10];
+
     function init(x: int) -> MyArray {
         return [x; 10];
     }
@@ -37,7 +39,7 @@ grust! {
     }
 
     function map_two(a1: MyArray, a2: MyArray, f: ((int, int)) -> int) -> MyArray {
-        return zip(a1, a2).map(f);
+        return zip(a1, ZEROS).map(f);
     }
 
     enum Priority {
