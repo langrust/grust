@@ -5,7 +5,7 @@ use grust::grust;
 grust! {
     #![mode = greusot]
 
-    const RHO: int = 1; // reaction time
+    const RHO: int = 0+1; // reaction time
     const B_MAX: int = 6; // 0.6*9.81
 
     // Safety distance computation
