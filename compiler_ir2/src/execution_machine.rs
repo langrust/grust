@@ -422,16 +422,22 @@ impl ToTokens for ExecutionMachineTokens<'_> {
             }
 
             let spawn_service = if let Some(spawn_fn) = self.spawn_fn {
-                quote! { #spawn_fn(service.run_loop(INIT, prio_stream, init_signals)) }
+                quote! { #spawn_fn(async move {
+                    let result = service.run_loop(INIT, prio_stream, init_signals).await;
+                    assert!(result.is_ok())
+                }) }
             } else {
-                quote! { tokio::spawn(service.run_loop(INIT, prio_stream, init_signals)) }
+                quote! { tokio::spawn(async move {
+                    let result = service.run_loop(INIT, prio_stream, init_signals).await;
+                    assert!(result.is_ok())
+                }) }
             };
 
             let ending;
             let output_ty;
             if let Some(handle_ty) = self.handle_ty {
                 ending = quote! { let handle = #spawn_service; (output_stream, handle) };
-                output_ty = quote! {(futures::channel::mpsc::Receiver<runtime::RuntimeOutput>, #handle_ty<Result<(), futures::channel::mpsc::SendError>>)};
+                output_ty = quote! {(futures::channel::mpsc::Receiver<runtime::RuntimeOutput>, #handle_ty<()>)};
             } else {
                 ending = quote! { #spawn_service; output_stream };
                 output_ty = quote! {futures::channel::mpsc::Receiver<runtime::RuntimeOutput>};
