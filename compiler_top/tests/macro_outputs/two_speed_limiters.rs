@@ -2071,6 +2071,9 @@ pub fn run(
         runtime::RuntimeInput::order,
     );
     let service = runtime::Runtime::new(output_sink);
-    tokio::spawn(service.run_loop(INIT, prio_stream, init_signals));
+    tokio::spawn(async move {
+        let result = service.run_loop(INIT, prio_stream, init_signals).await;
+        assert!(result.is_ok())
+    });
     output_stream
 }
