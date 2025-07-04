@@ -1166,7 +1166,7 @@ pub fn run(
     init_signals: runtime::RuntimeInit,
 ) -> (
     futures::channel::mpsc::Receiver<runtime::RuntimeOutput>,
-    async_std::task::JoinHandle<Result<(), futures::channel::mpsc::SendError>>,
+    async_std::task::JoinHandle<()>,
 ) {
     const TIMER_CHANNEL_SIZE: usize = 3usize;
     const TIMER_STREAM_SIZE: usize = 3usize;
@@ -1181,6 +1181,9 @@ pub fn run(
         runtime::RuntimeInput::order,
     );
     let service = runtime::Runtime::new(output_sink, timers_sink);
-    let handle = async_std::task::spawn(service.run_loop(INIT, prio_stream, init_signals));
+    let handle = async_std::task::spawn(async move {
+        let result = service.run_loop(INIT, prio_stream, init_signals).await;
+        assert!(result.is_ok())
+    });
     (output_stream, handle)
 }
