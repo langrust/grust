@@ -219,6 +219,47 @@ mk_new! { impl Term =>
     Application: app (val: Application = val)
 }
 
+impl TryFrom<ir0::Expr> for Term {
+    type Error = Error;
+
+    fn try_from(value: ir0::Expr) -> Res<Self> {
+        match value {
+            ir0::Expr::Constant(constant) => Ok(Self::constant(constant)),
+            ir0::Expr::Identifier(ident) => Ok(Self::ident(ident)),
+            ir0::Expr::UnOp(un_op) => {
+                let term = (*un_op.expr).try_into()?;
+                Ok(Self::unary(Unary::new(un_op.op_loc, un_op.op, term)))
+            }
+            ir0::Expr::BinOp(bin_op) => {
+                let lft = (*bin_op.lft).try_into()?;
+                let rgt = (*bin_op.rgt).try_into()?;
+                Ok(Self::binary(Binary::new(
+                    bin_op.op_loc,
+                    lft,
+                    bin_op.op,
+                    rgt,
+                )))
+            }
+            ir0::Expr::Application(application) => match *application.fun {
+                Expr::Identifier(fun) => {
+                    let inputs = application
+                        .inputs
+                        .into_iter()
+                        .map(|expr| -> Res<_> { expr.try_into() })
+                        .collect::<Res<_>>()?;
+                    Ok(Self::app(Application::new(application.loc, fun, inputs)))
+                }
+                _ => Err(error!(@application.loc() => ErrorKind::msg("identifier expected"))),
+            },
+            ir0::Expr::Enumeration(enumeration) => Ok(Self::enumeration(Enumeration::new(
+                enumeration.enum_name,
+                enumeration.elem_name,
+            ))),
+            _ => Err(error!(@value.loc() => ErrorKind::msg("contract-incompatible constant"))),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 /// The kind of the clause.
 pub enum ClauseKind {

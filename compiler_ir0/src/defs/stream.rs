@@ -132,6 +132,8 @@ pub enum Expr {
     FieldAccess(FieldAccess<Self>),
     /// Tuple element access expression.
     TupleElementAccess(TupleElementAccess<Self>),
+    /// Array access expression.
+    ArrayAccess(ArrayAccess<Self>),
     /// Array map operator expression.
     Map(Map<Self>),
     /// Array fold operator expression.
@@ -161,6 +163,7 @@ mk_new! { impl Expr =>
     MatchExpr: match_expr(arg: MatchExpr<Self> = arg)
     FieldAccess: field_access(arg: FieldAccess<Self> = arg)
     TupleElementAccess: tuple_access(arg: TupleElementAccess<Self> = arg)
+    ArrayAccess: array_access(arg: ArrayAccess<Self> = arg)
     Map: map(arg: Map<Self> = arg)
     Fold: fold(arg: Fold<Self> = arg)
     Sort: sort(arg: Sort<Self> = arg)
@@ -190,12 +193,154 @@ impl HasLoc for Expr {
             MatchExpr(m) => m.loc(),
             FieldAccess(fa) => fa.loc(),
             TupleElementAccess(ta) => ta.loc(),
+            ArrayAccess(aa) => aa.loc(),
             Map(m) => m.loc(),
             Fold(f) => f.loc(),
             Sort(s) => s.loc(),
             Zip(z) => z.loc(),
             Last(l) => l.loc(),
             Emit(e) => e.loc(),
+        }
+    }
+}
+
+impl TryFrom<ir0::Expr> for Expr {
+    type Error = Error;
+
+    fn try_from(value: ir0::Expr) -> Res<Self> {
+        match value {
+            ir0::Expr::Constant(constant) => Ok(Self::cst(constant)),
+            ir0::Expr::Identifier(ident) => Ok(Self::ident(ident)),
+            ir0::Expr::UnOp(un_op) => {
+                let expr: Expr = (*un_op.expr).try_into()?;
+                Ok(Self::unop(UnOp::new(un_op.op, un_op.op_loc, expr)))
+            }
+            ir0::Expr::BinOp(bin_op) => {
+                let lft: Expr = (*bin_op.lft).try_into()?;
+                let rgt: Expr = (*bin_op.rgt).try_into()?;
+                Ok(Self::binop(BinOp::new(bin_op.op, bin_op.op_loc, lft, rgt)))
+            }
+            ir0::Expr::IfThenElse(if_then_else) => {
+                let cnd: Expr = (*if_then_else.cnd).try_into()?;
+                let thn: Expr = (*if_then_else.thn).try_into()?;
+                let els: Expr = (*if_then_else.els).try_into()?;
+                Ok(Self::ite(IfThenElse::new(if_then_else.loc, cnd, thn, els)))
+            }
+            ir0::Expr::Application(application) => {
+                let fun: Expr = (*application.fun).try_into()?;
+                let inputs = application
+                    .inputs
+                    .into_iter()
+                    .map(|expr| -> Res<_> { expr.try_into() })
+                    .collect::<Res<_>>()?;
+                Ok(Self::app(Application::new(application.loc, fun, inputs)))
+            }
+            ir0::Expr::Lambda(lambda) => Ok(Self::type_lambda(Lambda::new(
+                lambda.loc,
+                lambda.inputs,
+                *lambda.expr,
+            ))),
+            ir0::Expr::Structure(structure) => {
+                let fields = structure
+                    .fields
+                    .into_iter()
+                    .map(|(ident, expr)| -> Res<_> { Ok((ident, expr.try_into()?)) })
+                    .collect::<Res<_>>()?;
+                Ok(Self::structure(Structure::new(
+                    structure.loc,
+                    structure.name,
+                    fields,
+                )))
+            }
+            ir0::Expr::Tuple(tuple) => {
+                let elements = tuple
+                    .elements
+                    .into_iter()
+                    .map(|expr| -> Res<_> { expr.try_into() })
+                    .collect::<Res<_>>()?;
+                Ok(Self::tuple(Tuple::new(tuple.loc, elements)))
+            }
+            ir0::Expr::Enumeration(enumeration) => Ok(Self::enumeration(Enumeration::new(
+                enumeration.loc,
+                enumeration.enum_name,
+                enumeration.elem_name,
+            ))),
+            ir0::Expr::Array(array) => {
+                let elements = array
+                    .elements
+                    .into_iter()
+                    .map(|expr| -> Res<_> { expr.try_into() })
+                    .collect::<Res<_>>()?;
+                Ok(Self::array(Array::new(array.loc, elements)))
+            }
+            ir0::Expr::MatchExpr(match_expr) => {
+                let expr: Expr = (*match_expr.expr).try_into()?;
+                let arms = match_expr
+                    .arms
+                    .into_iter()
+                    .map(|arm| -> Res<_> {
+                        let Arm {
+                            pattern,
+                            guard,
+                            expr,
+                        } = arm;
+                        Ok(Arm::new_with_guard(
+                            pattern,
+                            expr.try_into()?,
+                            guard.map(|expr| expr.try_into()).transpose()?,
+                        ))
+                    })
+                    .collect::<Res<_>>()?;
+                Ok(Self::match_expr(MatchExpr::new(match_expr.loc, expr, arms)))
+            }
+            ir0::Expr::FieldAccess(field_access) => {
+                let expr: Expr = (*field_access.expr).try_into()?;
+                Ok(Self::field_access(FieldAccess::new(
+                    field_access.loc,
+                    expr,
+                    field_access.field,
+                )))
+            }
+            ir0::Expr::TupleElementAccess(tuple_element_access) => {
+                let expr: Expr = (*tuple_element_access.expr).try_into()?;
+                Ok(Self::tuple_access(TupleElementAccess::new(
+                    tuple_element_access.loc,
+                    expr,
+                    tuple_element_access.element_number,
+                )))
+            }
+            ir0::Expr::ArrayAccess(array_access) => {
+                let expr: Expr = (*array_access.expr).try_into()?;
+                Ok(Self::array_access(ArrayAccess::new(
+                    array_access.loc,
+                    expr,
+                    array_access.index,
+                )))
+            }
+            ir0::Expr::Map(map) => {
+                let expr: Expr = (*map.expr).try_into()?;
+                let fun: Expr = (*map.fun).try_into()?;
+                Ok(Self::map(Map::new(map.loc, expr, fun)))
+            }
+            ir0::Expr::Fold(fold) => {
+                let array: Expr = (*fold.array).try_into()?;
+                let init: Expr = (*fold.init).try_into()?;
+                let fun: Expr = (*fold.fun).try_into()?;
+                Ok(Self::fold(Fold::new(fold.loc, array, init, fun)))
+            }
+            ir0::Expr::Sort(sort) => {
+                let expr: Expr = (*sort.expr).try_into()?;
+                let fun: Expr = (*sort.fun).try_into()?;
+                Ok(Self::sort(Sort::new(sort.loc, expr, fun)))
+            }
+            ir0::Expr::Zip(zip) => {
+                let arrays = zip
+                    .arrays
+                    .into_iter()
+                    .map(|expr| -> Res<_> { expr.try_into() })
+                    .collect::<Res<_>>()?;
+                Ok(Self::zip(Zip::new(zip.loc, arrays)))
+            }
         }
     }
 }
@@ -211,6 +356,7 @@ impl Expr {
             | stream::Expr::Emit { .. }
             | stream::Expr::FieldAccess { .. }
             | stream::Expr::TupleElementAccess { .. }
+            | stream::Expr::ArrayAccess { .. }
             | stream::Expr::Map { .. }
             | stream::Expr::Fold { .. }
             | stream::Expr::Sort { .. }

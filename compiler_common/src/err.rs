@@ -269,6 +269,7 @@ pub enum ErrorKind {
     },
 }
 mk_new! { impl ErrorKind =>
+    Msg: msg { msg: impl Into<String> = msg.into() }
     ArityMismatch: arity_mismatch {
         input_count: usize, arity: usize,
     }
