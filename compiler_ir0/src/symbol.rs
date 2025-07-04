@@ -20,7 +20,7 @@ pub enum SymbolKind {
         /// Identifier type.
         typing: Option<Typ>,
         /// Constant value.
-        constant: Option<Constant>,
+        constant: Option<Expr>,
     },
     /// Initialization kind.
     Init {
@@ -482,7 +482,7 @@ impl Table {
         &mut self,
         name: Ident,
         typing: Typ,
-        constant: Constant,
+        constant: Expr,
         errors: &mut Vec<Error>,
     ) -> TRes<usize> {
         let symbol = Symbol::new(
@@ -1341,7 +1341,7 @@ impl Table {
         ident: &Ident,
         levenshtein: bool,
         errors: &mut Vec<Error>,
-    ) -> TRes<&Constant> {
+    ) -> TRes<&Expr> {
         let id = self.get_ident(ident, false, false, levenshtein, errors)?;
         let symbol = self
             .get_symbol(id)
@@ -1356,7 +1356,7 @@ impl Table {
         .dewrap(errors)
     }
     /// Tries to get constant value.
-    pub fn try_get_const(&self, id: usize) -> Option<&Constant> {
+    pub fn try_get_const(&self, id: usize) -> Option<&Expr> {
         let symbol = self
             .get_symbol(id)
             .unwrap_or_else(|| panic!("expect symbol for {id}"));

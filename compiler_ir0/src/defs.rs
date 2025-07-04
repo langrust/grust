@@ -44,7 +44,7 @@ impl Ctx {
     }
 
     /// Gets a constant value.
-    pub fn get_const(&self, ident: &Ident, errors: &mut Vec<Error>) -> TRes<&Constant> {
+    pub fn get_const(&self, ident: &Ident, errors: &mut Vec<Error>) -> TRes<&Expr> {
         self.table.get_const(ident, self.conf.levenshtein, errors)
     }
 
@@ -173,7 +173,7 @@ pub struct ConstDecl {
     /// Equality token.
     pub eq_token: Token![=],
     /// Constant value.
-    pub value: Constant,
+    pub value: Expr,
     /// Closing semicolon.
     pub semi_token: Token![;],
 }

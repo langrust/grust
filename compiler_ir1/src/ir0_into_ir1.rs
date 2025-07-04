@@ -87,11 +87,10 @@ mod interface_impl {
         match time {
             Either::Left(lit) => Ok(lit.base10_parse().unwrap()),
             Either::Right(ident) => match ctx.ctx0.get_const(&ident, ctx.errors)? {
-                Constant::Integer(lit) => Ok(lit.base10_parse().unwrap()),
-                cst => Err(
-                    error!(@ident.loc() => ErrorKind::incompatible_types(cst.get_typ(), Typ::int())),
-                ),
-            }.dewrap(ctx.errors),
+                ir0::Expr::Constant(Constant::Integer(lit)) => Ok(lit.base10_parse().unwrap()),
+                _ => Err(error!(@ident.loc() => ErrorKind::msg("integer literal expected"))),
+            }
+            .dewrap(ctx.errors),
         }
     }
 
@@ -839,12 +838,16 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
             )),
             Term::Identifier(ident) => {
                 let id = ctx.ctx0.get_ident(&ident, false, false, ctx.errors)?;
-                let kind = if let Some(value) = ctx.ctx0.try_get_const(id) {
-                    ir1::contract::Kind::constant(value.clone())
+                if let Some(value) = ctx.ctx0.try_get_const(id) {
+                    let term: ir0::contract::Term = value.clone().try_into().dewrap(ctx.errors)?;
+                    term.into_ir1(ctx)
                 } else {
-                    ir1::contract::Kind::ident(id)
-                };
-                Ok(ir1::contract::Term::new(kind, None, loc))
+                    Ok(ir1::contract::Term::new(
+                        ir1::contract::Kind::ident(id),
+                        None,
+                        loc,
+                    ))
+                }
             }
             Term::Last(ident) => {
                 let init_id = ctx.ctx0.get_init_id(&ident, false, ctx.errors)?;
@@ -1795,7 +1798,7 @@ mod simple_expr_impl {
                 Identifier(id) => {
                     let id = ctx.ctx0.get_ident(&id, false, true, ctx.errors)?;
                     if let Some(value) = ctx.ctx0.try_get_const(id) {
-                        ir1::expr::Kind::constant(value.clone())
+                        return value.clone().into_ir1(ctx);
                     } else {
                         ir1::expr::Kind::ident(id)
                     }
@@ -2324,7 +2327,9 @@ mod stream_impl {
                 stream::Expr::Identifier(id) => {
                     let id = ctx.ctx0.get_ident(&id, false, true, ctx.errors)?;
                     if let Some(value) = ctx.ctx0.try_get_const(id) {
-                        Kind::expr(ir1::expr::Kind::constant(value.clone()))
+                        let expr: ir0::stream::Expr =
+                            value.clone().try_into().dewrap(ctx.errors)?;
+                        return expr.into_ir1(ctx);
                     } else {
                         Kind::expr(ir1::expr::Kind::ident(id))
                     }
@@ -2344,6 +2349,7 @@ mod stream_impl {
                 stream::Expr::Fold(expr) => Kind::expr(expr.into_ir1(ctx)?),
                 stream::Expr::Sort(expr) => Kind::expr(expr.into_ir1(ctx)?),
                 stream::Expr::Zip(expr) => Kind::expr(expr.into_ir1(ctx)?),
+                stream::Expr::ArrayAccess(expr) => Kind::expr(expr.into_ir1(ctx)?),
             };
             Ok(ir1::stream::Expr {
                 kind,

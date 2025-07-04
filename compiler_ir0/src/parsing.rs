@@ -904,7 +904,7 @@ impl Parse for ConstDecl {
         let colon_token: Token![:] = input.parse()?;
         let ty: Typ = input.parse()?;
         let eq_token: Token![=] = input.parse()?;
-        let value: Constant = input.parse()?;
+        let value: Expr = input.parse()?;
         let semi_token: Token![;] = input.parse()?;
         Ok(ConstDecl {
             const_token,
