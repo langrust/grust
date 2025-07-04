@@ -810,7 +810,7 @@ pub fn run(
     input_stream: impl Stream<Item = runtime::RuntimeInput> + Send + 'static,
     init_signals: runtime::RuntimeInit,
 ) -> futures::channel::mpsc::Receiver<runtime::RuntimeOutput> {
-    const TIMER_CHANNEL_SIZE: usize = 3usize;
+    const TIMER_CHANNEL_SIZE: usize = 3usize + 2;
     let (timers_sink, timers_stream) = futures::channel::mpsc::channel(TIMER_CHANNEL_SIZE);
     let timers_stream = timers_stream.map(
         |(timer, instant): (runtime::RuntimeTimer, std::time::Instant)| {
