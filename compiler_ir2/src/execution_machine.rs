@@ -351,8 +351,8 @@ impl ToTokens for ExecutionMachineTokens<'_> {
                 streams = {
                     let timer_stream = if self.demo {
                         quote! {
-                            const TIMER_CHANNEL_SIZE: usize = #timer_channel_size;
-                            const TIMER_STREAM_SIZE: usize = #timer_stream_size;
+                            const TIMER_CHANNEL_SIZE: usize = #timer_channel_size + 2;
+                            const TIMER_STREAM_SIZE: usize = #timer_stream_size + 2;
                             let (timers_sink, timers_stream) = futures::channel::mpsc::channel(TIMER_CHANNEL_SIZE);
                             let timers_stream = timer_stream::timer_stream::<_, _, TIMER_STREAM_SIZE>(timers_stream)
                                 .map(|(timer, deadline)| runtime::RuntimeInput::Timer(timer, deadline));
@@ -360,7 +360,7 @@ impl ToTokens for ExecutionMachineTokens<'_> {
                     } else {
                         debug_assert!(self.test);
                         quote! {
-                            const TIMER_CHANNEL_SIZE: usize = #timer_channel_size;
+                            const TIMER_CHANNEL_SIZE: usize = #timer_channel_size + 2;
                             let (timers_sink, timers_stream) = futures::channel::mpsc::channel(TIMER_CHANNEL_SIZE);
                             let timers_stream = timers_stream.map(|(timer, instant): (runtime::RuntimeTimer, std::time::Instant)| {
                                 let deadline = instant + timer_stream::Timing::get_duration(&timer);
