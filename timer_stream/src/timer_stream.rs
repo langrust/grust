@@ -84,7 +84,7 @@ where
                     project.sleep.reset(timer_deadline.into());
                     // update `sleep_infos`
                     let output =
-                        std::mem::replace(project.sleep_infos, Some((timer_kind, timer_deadline)));
+                        project.sleep_infos.replace((timer_kind, timer_deadline));
                     // if `sleep` terminated then send its infos
                     if !abort && output.is_some() {
                         Poll::Ready(output)
