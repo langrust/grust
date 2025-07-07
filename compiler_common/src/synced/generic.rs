@@ -929,10 +929,10 @@ impl<'graph, Ctx: CtxSpec + ?Sized> Builder<'graph, Ctx> {
                                     self.seq.len(),
                                 );
                                 for elm in self.seq.iter() {
-                                    s = format!("{}\n- {}", s, elm);
+                                    s = format!("{s}\n- {elm}");
                                 }
                                 for elm in self.todo.iter() {
-                                    s = format!("{}\n- {}", s, elm);
+                                    s = format!("{s}\n- {elm}");
                                 }
                                 return Err(s);
                             }
@@ -1068,7 +1068,7 @@ pub mod test {
             println!("- seq-validated: {:?}", builder.validated);
             println!("- stack:");
             for frame in builder.stack.iter().rev() {
-                println!("  - {}", frame)
+                println!("  - {frame}")
             }
         }
         fn find_readies_none(_builder: &Builder<'graph, DummyCtx>) {
@@ -1088,11 +1088,11 @@ pub mod test {
         fn unstack(builder: &Builder<'graph, DummyCtx>, s: &Synced<DummyCtx>) {
             println!();
             println!("unstacking");
-            println!("- synced: {:?}", s);
+            println!("- synced: {s:?}");
             println!("- validated: {:?}", builder.validated);
             println!("- stack:");
             for frame in builder.stack.iter().rev() {
-                println!("  - {}", frame)
+                println!("  - {frame}")
             }
         }
         fn unstack_empty(_builder: &Builder<'graph, DummyCtx>) {

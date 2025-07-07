@@ -126,8 +126,7 @@ impl WeightBounds {
                 return Err(syn::Error::new(
                     parens.span.close(),
                     format!(
-                        "illegal rayon weight upper-bound: lower than lower-bound, `{} < {}`",
-                        rayon_ubx, no_para_ubx,
+                        "illegal rayon weight upper-bound: lower than lower-bound, `{rayon_ubx} < {no_para_ubx}`"
                     ),
                 ));
             }
@@ -135,8 +134,7 @@ impl WeightBounds {
                 return Err(syn::Error::new(
                     parens.span.close(),
                     format!(
-                        "illegal threads weight upper-bound: lower than lower-bound, `{} < {}`",
-                        threads_ubx, rayon_ubx,
+                        "illegal threads weight upper-bound: lower than lower-bound, `{threads_ubx} < {rayon_ubx}`"
                     ),
                 ));
             }
