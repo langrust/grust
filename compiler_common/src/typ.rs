@@ -179,7 +179,7 @@ impl Display for Typ {
                 write!(f, "(")?;
                 let mut sep = "";
                 for typ in inputs {
-                    write!(f, "{}{}", sep, typ)?;
+                    write!(f, "{sep}{typ}")?;
                     sep = ", "
                 }
                 write!(f, ") -> {}", *output)
@@ -188,7 +188,7 @@ impl Display for Typ {
                 write!(f, "(")?;
                 let mut sep = "";
                 for typ in elements {
-                    write!(f, "{}{}", sep, typ)?;
+                    write!(f, "{sep}{typ}")?;
                     sep = ", "
                 }
                 write!(f, ")")
@@ -196,7 +196,7 @@ impl Display for Typ {
             Typ::Signal { ty, .. } => write!(f, "Signal<{}>", *ty),
             Typ::Event { ty, .. } => write!(f, "Event<{}>", *ty),
             Typ::NotDefinedYet(s) => write!(f, "{s}"),
-            Typ::Polymorphism(v_t) => write!(f, "{:#?}", v_t),
+            Typ::Polymorphism(v_t) => write!(f, "{v_t:#?}"),
             Typ::Any => write!(f, "any"),
         }
     }

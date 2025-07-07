@@ -82,7 +82,7 @@ impl Stats {
 
     pub fn indent(&mut self) {
         for (desc, _, sub_opt) in self.vec.iter_mut() {
-            *desc = format!("  {}", desc);
+            *desc = format!("  {desc}");
             if let Some(sub) = sub_opt {
                 sub.indent()
             }

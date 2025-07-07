@@ -420,8 +420,7 @@ impl Display for ErrorKind {
             IncompatibleTuple => write!(f, "incompatible tuple"),
             IncompatibleMatchStatements { expected, received } => write!(
                 f,
-                "incompatible match statements: got {}, expected {}",
-                received, expected
+                "incompatible match statements: got {received}, expected {expected}"
             ),
             MissingMatchStatement { identifier } => {
                 write!(f, "missing match statement for `{identifier}`")
@@ -439,8 +438,7 @@ impl Display for ErrorKind {
                 signal_name,
             } => write!(
                 f,
-                "unknown output signal in node `{}`: `{}`",
-                node_name, signal_name
+                "unknown output signal in node `{node_name}`: `{signal_name}`"
             ),
             ExpectType { name } => write!(f, "expected type for `{name}`"),
             ExpectConstant => write!(f, "expected constant"),
@@ -448,8 +446,7 @@ impl Display for ErrorKind {
             ExpectArithType { given_type } => {
                 write!(
                     f,
-                    "expected a number such as `7` or `1.32`, got a value of type`{}`",
-                    given_type,
+                    "expected a number such as `7` or `1.32`, got a value of type`{given_type}`"
                 )
             }
             ExpectLambda { given_type, .. } => write!(f, "expected lambda but given {given_type}"),

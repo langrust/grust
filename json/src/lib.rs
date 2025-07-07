@@ -61,9 +61,9 @@ where
     // Remove last comma
     let size = file.metadata().unwrap().len();
     if size == 0 {
-        writeln!(file, "[{}", json_string).unwrap();
+        writeln!(file, "[{json_string}").unwrap();
     } else {
-        writeln!(file, ",{}", json_string).unwrap();
+        writeln!(file, ",{json_string}").unwrap();
     }
 }
 
