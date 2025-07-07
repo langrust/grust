@@ -7,7 +7,8 @@ grust! {
     array MyArray [int; 10]
     array MyMatrix [MyArray; 10]
 
-    const ZEROS: MyArray = [0; 10];
+    const ZERO: int = 0;
+    const ZEROS: MyArray = [ZERO; 10];
 
     function init(x: int) -> MyArray {
         return [x; 10];
