@@ -370,9 +370,7 @@ pub mod runtime {
                         .input_store
                         .pedestrian_r
                         .replace((pedestrian_r, _pedestrian_r_instant));
-                    assert!
-                    (unique.is_none(),
-                    "flow `pedestrian_r` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert ! (unique . is_none () , "flow `pedestrian_r` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -411,9 +409,7 @@ pub mod runtime {
                         .input_store
                         .timeout_timeout_pedest
                         .replace(((), _timeout_timeout_pedest_instant));
-                    assert!
-                    (unique.is_none(),
-                    "flow `timeout_timeout_pedest` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert ! (unique . is_none () , "flow `timeout_timeout_pedest` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -449,9 +445,7 @@ pub mod runtime {
                         .input_store
                         .speed_km_h
                         .replace((speed_km_h, _speed_km_h_instant));
-                    assert!
-                    (unique.is_none(),
-                    "flow `speed_km_h` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert ! (unique . is_none () , "flow `speed_km_h` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -1108,9 +1102,7 @@ pub mod runtime {
                         .input_store
                         .pedestrian_l
                         .replace((pedestrian_l, _pedestrian_l_instant));
-                    assert!
-                    (unique.is_none(),
-                    "flow `pedestrian_l` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert ! (unique . is_none () , "flow `pedestrian_l` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
