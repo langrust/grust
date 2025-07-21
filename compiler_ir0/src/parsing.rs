@@ -1120,6 +1120,8 @@ mod parse_stream {
                     expression = Self::TupleElementAccess(expr::TupleElementAccess::<Self>::parse(
                         expression, input,
                     )?)
+                } else if expr::ArrayAccess::<Self>::peek(input) {
+                    expression = Self::array_access(expr::ArrayAccess::parse(expression, input)?)
                 } else if expr::FieldAccess::<Self>::peek(input) {
                     expression =
                         Self::FieldAccess(expr::FieldAccess::<Self>::parse(expression, input)?)

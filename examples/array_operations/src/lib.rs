@@ -32,6 +32,7 @@ grust! {
 
     function sum_by_fold(a: int, b: int) -> int {
         let my_array: [int; 5] = [1, 2, 3, a, b];
+        let res : int = my_array[0];
         let sum: int = my_array.fold(
             0,
             |x: int, y: int| x + y
