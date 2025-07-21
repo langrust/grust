@@ -1,0 +1,13 @@
+[package]
+name = "merge_at_init"
+version.workspace = true
+edition.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+grust = { workspace = true }
+priority_stream = { workspace = true }
+timer_stream = { workspace = true }
+tokio = { workspace = true }
+futures = { workspace = true }
