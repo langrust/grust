@@ -1173,7 +1173,7 @@ mod flow_instr {
                     // check if second activated
                     if_event_2
                 }
-                (false, false) => noErrorDesc!("'merge' should be activated by one of its sources"),
+                (false, false) => FlowInstruction::seq(vec![]) // noErrorDesc!("'merge' should be activated by one of its sources"),
             }
         }
 
