@@ -58,6 +58,7 @@ pub fn sort_my_array(to_sort: [i64; 10usize]) -> [i64; 10usize] {
 }
 pub fn sum_by_fold(a: i64, b: i64) -> i64 {
     let my_array = [1i64, 2i64, 3i64, a, b];
+    let res = my_array[0];
     let sum = my_array
         .into_iter()
         .fold(0i64, |x: i64, y: i64| -> i64 { x + y });
