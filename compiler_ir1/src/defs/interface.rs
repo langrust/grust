@@ -43,6 +43,7 @@ impl Service {
     pub fn get_flows_context<'a>(
         &self,
         ctx: &Ctx,
+        imports: impl Iterator<Item = &'a FlowImport> + 'a,
         exports: impl Iterator<Item = &'a FlowExport> + 'a,
     ) -> ctx::Flows {
         let mut flows_context = ctx::Flows {
@@ -51,15 +52,17 @@ impl Service {
         self.statements
             .values()
             .for_each(|statement| statement.add_flows_context(&mut flows_context, ctx));
-        exports.for_each(|export| {
-            // if signal push in context
-            let id = export.id;
-            let flow_name = ctx.get_name(id).clone();
-            let ty = ctx.get_typ(id);
-            if ctx.get_flow_kind(id).is_signal() {
-                flows_context.add_element(flow_name.clone(), ty);
-            }
-        });
+        imports
+            .map(|import| import.id)
+            .chain(exports.map(|export| export.id))
+            .for_each(|id| {
+                // if signal push in context
+                let flow_name = ctx.get_name(id).clone();
+                let ty = ctx.get_typ(id);
+                if ctx.get_flow_kind(id).is_signal() {
+                    flows_context.add_element(flow_name.clone(), ty);
+                }
+            });
         flows_context
     }
 

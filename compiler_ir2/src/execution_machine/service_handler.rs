@@ -482,6 +482,7 @@ pub enum FlowInstruction {
     InitEvent(Ident),
     UpdateEvent(Ident, Expression),
     UpdateContext(Ident, Expression),
+    UpdateContextFromInput(Ident),
     SendSignal(Ident, Expression, Option<Ident>),
     SendEvent(Ident, Expression, Expression, Option<Ident>),
     IfThrottle(Ident, Ident, Constant, Box<Self>),
@@ -496,7 +497,7 @@ pub enum FlowInstruction {
         Vec<(Ident, Expression)>,
     ),
     FunctionCall(Pattern, Option<syn::Path>, Ident, Vec<Expression>),
-    HandleDelay(Vec<Ident>, Vec<MatchArm>),
+    HandleDelay(Box<FlowInstruction>),
     Seq(Vec<Self>),
     Para(BTreeMap<ParaMethod, Vec<Self>>),
 }
@@ -522,6 +523,12 @@ impl ToTokens for FlowInstruction {
             FlowInstruction::UpdateContext(ident, flow_expression) => {
                 quote! { self.context.#ident.set(#flow_expression); }.to_tokens(tokens)
             }
+            FlowInstruction::UpdateContextFromInput(ident) => quote! {
+                if let Some((#ident, _)) = self.input_store.#ident.take() {
+                    self.context.#ident.set(#ident);
+                }
+            }
+            .to_tokens(tokens),
             FlowInstruction::SendSignal(name, send_expr, instant) => {
                 let enum_ident = name.to_camel();
                 let instant = if let Some(instant) = instant {
@@ -633,17 +640,12 @@ impl ToTokens for FlowInstruction {
                     .to_tokens(tokens)
                 }
             }
-            FlowInstruction::HandleDelay(input_flows, match_arms) => {
-                let input_flows = input_flows.iter().map(|name| {
-                    quote! { self.input_store.#name.take() }
-                });
+            FlowInstruction::HandleDelay(instr) => {
                 let instant = Ident::instant_var();
                 quote! {
                     if self.input_store.not_empty() {
                         self.reset_time_constraints(#instant).await?;
-                        match (#(#input_flows),*) {
-                            #(#match_arms)*
-                        }
+                        #instr
                     } else {
                         self.delayed = true;
                     }
@@ -749,6 +751,9 @@ mk_new! { impl FlowInstruction =>
         name: impl Into<Ident> = name.into(),
         expr: Expression = expr,
     )
+    UpdateContextFromInput: update_ctx_from_input (
+        name: impl Into<Ident> = name.into()
+    )
     IfThrottle: if_throttle (
         flow_name: impl Into<Ident> = flow_name.into(),
         source_name: impl Into<Ident> = source_name.into(),
@@ -788,8 +793,7 @@ mk_new! { impl FlowInstruction =>
         inputs: impl Into<Vec<Expression>> = inputs.into(),
     )
     HandleDelay: handle_delay(
-        input_names: impl Iterator<Item = Ident> = input_names.collect(),
-        arms: impl Iterator<Item = MatchArm> = arms.collect(),
+        instr: FlowInstruction = instr.into()
     )
     Para: para(
         para_instr: BTreeMap<ParaMethod, Vec<Self>> = para_instr,
@@ -860,6 +864,11 @@ pub enum Expression {
         /// The flow called.
         flow: Ident,
     },
+    /// A call from the input store that will take the optional value: `input_store.e.take().map(|(x,_)| x)`.
+    TakeEventFromInputStore {
+        /// The event called.
+        flow: Ident,
+    },
     /// Some expression: `Some(v)`.
     Some {
         /// The value expression inside.
@@ -887,6 +896,9 @@ mk_new! { impl Expression =>
     TakeFromContext: take_from_ctx {
         flow: impl Into<Ident> = flow.into()
     }
+    TakeEventFromInputStore: take_event_from_input {
+        flow: impl Into<Ident> = flow.into()
+    }
     Some: some {
         expression: Expression = expression.into()
     }
@@ -906,6 +918,9 @@ impl ToTokens for Expression {
             Expression::InContext { flow } => quote! { self.context.#flow.get() }.to_tokens(tokens),
             Expression::TakeFromContext { flow } => {
                 quote! { self.context.#flow.take() }.to_tokens(tokens)
+            }
+            Expression::TakeEventFromInputStore { flow } => {
+                quote! { self.input_store.#flow.take().map(|(x, _)| x) }.to_tokens(tokens)
             }
             Expression::Some { expression } => quote! { Some(#expression) }.to_tokens(tokens),
             Expression::None => quote! { None }.to_tokens(tokens),
