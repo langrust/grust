@@ -508,11 +508,11 @@ pub mod runtime {
                 }
             }
             #[derive(Clone, Copy, PartialEq, Default, Debug)]
-            pub struct ChangedSetSpeedOld(f64, bool);
-            impl ChangedSetSpeedOld {
-                pub fn set(&mut self, changed_set_speed_old: f64) {
-                    self.1 = self.0 != changed_set_speed_old;
-                    self.0 = changed_set_speed_old;
+            pub struct SetSpeed(f64, bool);
+            impl SetSpeed {
+                pub fn set(&mut self, set_speed: f64) {
+                    self.1 = self.0 != set_speed;
+                    self.0 = set_speed;
                 }
                 pub fn get(&self) -> f64 {
                     self.0
@@ -533,6 +533,26 @@ pub mod runtime {
                 pub fn set(&mut self, v_set_aux: f64) {
                     self.1 = self.0 != v_set_aux;
                     self.0 = v_set_aux;
+                }
+                pub fn get(&self) -> f64 {
+                    self.0
+                }
+                pub fn take(&mut self) -> f64 {
+                    std::mem::take(&mut self.0)
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
+            }
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct ChangedSetSpeedOld(f64, bool);
+            impl ChangedSetSpeedOld {
+                pub fn set(&mut self, changed_set_speed_old: f64) {
+                    self.1 = self.0 != changed_set_speed_old;
+                    self.0 = changed_set_speed_old;
                 }
                 pub fn get(&self) -> f64 {
                     self.0
@@ -675,8 +695,9 @@ pub mod runtime {
             pub vacuum_brake: ctx_ty::VacuumBrake,
             pub vdc: ctx_ty::Vdc,
             pub speed: ctx_ty::Speed,
-            pub changed_set_speed_old: ctx_ty::ChangedSetSpeedOld,
+            pub set_speed: ctx_ty::SetSpeed,
             pub v_set_aux: ctx_ty::VSetAux,
+            pub changed_set_speed_old: ctx_ty::ChangedSetSpeedOld,
             pub in_regulation_old: ctx_ty::InRegulationOld,
             pub v_set: ctx_ty::VSet,
             pub in_regulation_aux: ctx_ty::InRegulationAux,
@@ -694,8 +715,9 @@ pub mod runtime {
                 self.vacuum_brake.reset();
                 self.vdc.reset();
                 self.speed.reset();
-                self.changed_set_speed_old.reset();
+                self.set_speed.reset();
                 self.v_set_aux.reset();
+                self.changed_set_speed_old.reset();
                 self.in_regulation_old.reset();
                 self.v_set.reset();
                 self.in_regulation_aux.reset();
@@ -760,6 +782,7 @@ pub mod runtime {
                 speed: f64,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.context.speed.set(speed);
+                self.context.set_speed.set(set_speed);
                 self.context.x.set(set_speed);
                 self.context.changed_set_speed_old.set(self.context.x.get());
                 let (v_set_aux, v_update) = <ProcessSetSpeedState as grust::core::Component>::step(
@@ -1034,6 +1057,7 @@ pub mod runtime {
                     self.context.reset();
                     let in_regulation_ref = &mut None;
                     let changed_set_speed_ref = &mut None;
+                    self.context.set_speed.set(set_speed);
                     if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                         self.context.x.set(set_speed);
                     }

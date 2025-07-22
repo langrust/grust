@@ -695,328 +695,53 @@ pub mod runtime {
                 self.context.reset();
                 if self.input_store.not_empty() {
                     self.reset_time_constraints(_grust_reserved_instant).await?;
-                    match (
-                        self.input_store.distance_m.take(),
-                        self.input_store.acc_active.take(),
-                        self.input_store.speed_km_h.take(),
-                    ) {
-                        (None, None, None) => {}
-                        (Some((distance_m, _distance_m_instant)), None, None) => {
-                            self.context.distance_m.set(distance_m);
-                            if self.context.distance_m.is_new() {
-                                let condition = <ActivateState as grust::core::Component>::step(
-                                    &mut self.activate,
-                                    ActivateInput {
-                                        acc_active: None,
-                                        distance_m: distance_m,
-                                    },
-                                );
-                                self.context.condition.set(condition);
-                            }
-                            let t = (_grust_reserved_instant
-                                .duration_since(self.begin)
-                                .as_millis()) as f64;
-                            self.context.t.set(t);
-                            if self.context.condition.is_new()
-                                || self.context.distance_m.is_new()
-                                || self.context.speed_km_h.is_new()
-                                || self.context.t.is_new()
-                            {
-                                let brakes_m_s = <FilteredAccState as grust::core::Component>::step(
-                                    &mut self.filtered_acc,
-                                    FilteredAccInput {
-                                        condition: self.context.condition.get(),
-                                        distance_m: distance_m,
-                                        sv_v_km_h: self.context.speed_km_h.get(),
-                                        t_ms: t,
-                                    },
-                                );
-                                self.context.brakes_m_s.set(brakes_m_s);
-                            }
-                            if self.context.brakes_m_s.is_new() {
-                                self.send_output(
-                                    O::BrakesMS(
-                                        self.context.brakes_m_s.get(),
-                                        _grust_reserved_instant,
-                                    ),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (None, Some((acc_active, _acc_active_instant)), None) => {
-                            let acc_active_ref = &mut None;
-                            *acc_active_ref = Some(acc_active);
-                            if acc_active_ref.is_some() || self.context.distance_m.is_new() {
-                                let condition = <ActivateState as grust::core::Component>::step(
-                                    &mut self.activate,
-                                    ActivateInput {
-                                        acc_active: *acc_active_ref,
-                                        distance_m: self.context.distance_m.get(),
-                                    },
-                                );
-                                self.context.condition.set(condition);
-                            }
-                            let t = (_grust_reserved_instant
-                                .duration_since(self.begin)
-                                .as_millis()) as f64;
-                            self.context.t.set(t);
-                            if self.context.condition.is_new()
-                                || self.context.distance_m.is_new()
-                                || self.context.speed_km_h.is_new()
-                                || self.context.t.is_new()
-                            {
-                                let brakes_m_s = <FilteredAccState as grust::core::Component>::step(
-                                    &mut self.filtered_acc,
-                                    FilteredAccInput {
-                                        condition: self.context.condition.get(),
-                                        distance_m: self.context.distance_m.get(),
-                                        sv_v_km_h: self.context.speed_km_h.get(),
-                                        t_ms: t,
-                                    },
-                                );
-                                self.context.brakes_m_s.set(brakes_m_s);
-                            }
-                            if self.context.brakes_m_s.is_new() {
-                                self.send_output(
-                                    O::BrakesMS(
-                                        self.context.brakes_m_s.get(),
-                                        _grust_reserved_instant,
-                                    ),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            Some((distance_m, _distance_m_instant)),
-                            Some((acc_active, _acc_active_instant)),
-                            None,
-                        ) => {
-                            let acc_active_ref = &mut None;
-                            *acc_active_ref = Some(acc_active);
-                            self.context.distance_m.set(distance_m);
-                            if acc_active_ref.is_some() || self.context.distance_m.is_new() {
-                                let condition = <ActivateState as grust::core::Component>::step(
-                                    &mut self.activate,
-                                    ActivateInput {
-                                        acc_active: *acc_active_ref,
-                                        distance_m: distance_m,
-                                    },
-                                );
-                                self.context.condition.set(condition);
-                            }
-                            let t = (_grust_reserved_instant
-                                .duration_since(self.begin)
-                                .as_millis()) as f64;
-                            self.context.t.set(t);
-                            if self.context.condition.is_new()
-                                || self.context.distance_m.is_new()
-                                || self.context.speed_km_h.is_new()
-                                || self.context.t.is_new()
-                            {
-                                let brakes_m_s = <FilteredAccState as grust::core::Component>::step(
-                                    &mut self.filtered_acc,
-                                    FilteredAccInput {
-                                        condition: self.context.condition.get(),
-                                        distance_m: distance_m,
-                                        sv_v_km_h: self.context.speed_km_h.get(),
-                                        t_ms: t,
-                                    },
-                                );
-                                self.context.brakes_m_s.set(brakes_m_s);
-                            }
-                            if self.context.brakes_m_s.is_new() {
-                                self.send_output(
-                                    O::BrakesMS(
-                                        self.context.brakes_m_s.get(),
-                                        _grust_reserved_instant,
-                                    ),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (None, None, Some((speed_km_h, _speed_km_h_instant))) => {
-                            self.context.speed_km_h.set(speed_km_h);
-                            let t = (_grust_reserved_instant
-                                .duration_since(self.begin)
-                                .as_millis()) as f64;
-                            self.context.t.set(t);
-                            if self.context.condition.is_new()
-                                || self.context.distance_m.is_new()
-                                || self.context.speed_km_h.is_new()
-                                || self.context.t.is_new()
-                            {
-                                let brakes_m_s = <FilteredAccState as grust::core::Component>::step(
-                                    &mut self.filtered_acc,
-                                    FilteredAccInput {
-                                        condition: self.context.condition.get(),
-                                        distance_m: self.context.distance_m.get(),
-                                        sv_v_km_h: speed_km_h,
-                                        t_ms: t,
-                                    },
-                                );
-                                self.context.brakes_m_s.set(brakes_m_s);
-                            }
-                            if self.context.brakes_m_s.is_new() {
-                                self.send_output(
-                                    O::BrakesMS(
-                                        self.context.brakes_m_s.get(),
-                                        _grust_reserved_instant,
-                                    ),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            Some((distance_m, _distance_m_instant)),
-                            None,
-                            Some((speed_km_h, _speed_km_h_instant)),
-                        ) => {
-                            self.context.speed_km_h.set(speed_km_h);
-                            self.context.distance_m.set(distance_m);
-                            if self.context.distance_m.is_new() {
-                                let condition = <ActivateState as grust::core::Component>::step(
-                                    &mut self.activate,
-                                    ActivateInput {
-                                        acc_active: None,
-                                        distance_m: distance_m,
-                                    },
-                                );
-                                self.context.condition.set(condition);
-                            }
-                            let t = (_grust_reserved_instant
-                                .duration_since(self.begin)
-                                .as_millis()) as f64;
-                            self.context.t.set(t);
-                            if self.context.condition.is_new()
-                                || self.context.distance_m.is_new()
-                                || self.context.speed_km_h.is_new()
-                                || self.context.t.is_new()
-                            {
-                                let brakes_m_s = <FilteredAccState as grust::core::Component>::step(
-                                    &mut self.filtered_acc,
-                                    FilteredAccInput {
-                                        condition: self.context.condition.get(),
-                                        distance_m: distance_m,
-                                        sv_v_km_h: speed_km_h,
-                                        t_ms: t,
-                                    },
-                                );
-                                self.context.brakes_m_s.set(brakes_m_s);
-                            }
-                            if self.context.brakes_m_s.is_new() {
-                                self.send_output(
-                                    O::BrakesMS(
-                                        self.context.brakes_m_s.get(),
-                                        _grust_reserved_instant,
-                                    ),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            None,
-                            Some((acc_active, _acc_active_instant)),
-                            Some((speed_km_h, _speed_km_h_instant)),
-                        ) => {
-                            let acc_active_ref = &mut None;
-                            self.context.speed_km_h.set(speed_km_h);
-                            *acc_active_ref = Some(acc_active);
-                            if acc_active_ref.is_some() || self.context.distance_m.is_new() {
-                                let condition = <ActivateState as grust::core::Component>::step(
-                                    &mut self.activate,
-                                    ActivateInput {
-                                        acc_active: *acc_active_ref,
-                                        distance_m: self.context.distance_m.get(),
-                                    },
-                                );
-                                self.context.condition.set(condition);
-                            }
-                            let t = (_grust_reserved_instant
-                                .duration_since(self.begin)
-                                .as_millis()) as f64;
-                            self.context.t.set(t);
-                            if self.context.condition.is_new()
-                                || self.context.distance_m.is_new()
-                                || self.context.speed_km_h.is_new()
-                                || self.context.t.is_new()
-                            {
-                                let brakes_m_s = <FilteredAccState as grust::core::Component>::step(
-                                    &mut self.filtered_acc,
-                                    FilteredAccInput {
-                                        condition: self.context.condition.get(),
-                                        distance_m: self.context.distance_m.get(),
-                                        sv_v_km_h: speed_km_h,
-                                        t_ms: t,
-                                    },
-                                );
-                                self.context.brakes_m_s.set(brakes_m_s);
-                            }
-                            if self.context.brakes_m_s.is_new() {
-                                self.send_output(
-                                    O::BrakesMS(
-                                        self.context.brakes_m_s.get(),
-                                        _grust_reserved_instant,
-                                    ),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            Some((distance_m, _distance_m_instant)),
-                            Some((acc_active, _acc_active_instant)),
-                            Some((speed_km_h, _speed_km_h_instant)),
-                        ) => {
-                            let acc_active_ref = &mut None;
-                            self.context.speed_km_h.set(speed_km_h);
-                            *acc_active_ref = Some(acc_active);
-                            self.context.distance_m.set(distance_m);
-                            if acc_active_ref.is_some() || self.context.distance_m.is_new() {
-                                let condition = <ActivateState as grust::core::Component>::step(
-                                    &mut self.activate,
-                                    ActivateInput {
-                                        acc_active: *acc_active_ref,
-                                        distance_m: distance_m,
-                                    },
-                                );
-                                self.context.condition.set(condition);
-                            }
-                            let t = (_grust_reserved_instant
-                                .duration_since(self.begin)
-                                .as_millis()) as f64;
-                            self.context.t.set(t);
-                            if self.context.condition.is_new()
-                                || self.context.distance_m.is_new()
-                                || self.context.speed_km_h.is_new()
-                                || self.context.t.is_new()
-                            {
-                                let brakes_m_s = <FilteredAccState as grust::core::Component>::step(
-                                    &mut self.filtered_acc,
-                                    FilteredAccInput {
-                                        condition: self.context.condition.get(),
-                                        distance_m: distance_m,
-                                        sv_v_km_h: speed_km_h,
-                                        t_ms: t,
-                                    },
-                                );
-                                self.context.brakes_m_s.set(brakes_m_s);
-                            }
-                            if self.context.brakes_m_s.is_new() {
-                                self.send_output(
-                                    O::BrakesMS(
-                                        self.context.brakes_m_s.get(),
-                                        _grust_reserved_instant,
-                                    ),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
+                    let acc_active_ref = &mut None;
+                    let _speed_km_h_input_store = self.input_store.speed_km_h.take();
+                    if let Some((speed_km_h, _)) = _speed_km_h_input_store {
+                        self.context.speed_km_h.set(speed_km_h);
+                    }
+                    let _acc_active_input_store = self.input_store.acc_active.take();
+                    *acc_active_ref = _acc_active_input_store.map(|(x, _)| x);
+                    let _distance_m_input_store = self.input_store.distance_m.take();
+                    if let Some((distance_m, _)) = _distance_m_input_store {
+                        self.context.distance_m.set(distance_m);
+                    }
+                    if acc_active_ref.is_some() || self.context.distance_m.is_new() {
+                        let condition = <ActivateState as grust::core::Component>::step(
+                            &mut self.activate,
+                            ActivateInput {
+                                acc_active: *acc_active_ref,
+                                distance_m: self.context.distance_m.get(),
+                            },
+                        );
+                        self.context.condition.set(condition);
+                    }
+                    let t = (_grust_reserved_instant
+                        .duration_since(self.begin)
+                        .as_millis()) as f64;
+                    self.context.t.set(t);
+                    if self.context.condition.is_new()
+                        || self.context.distance_m.is_new()
+                        || self.context.speed_km_h.is_new()
+                        || self.context.t.is_new()
+                    {
+                        let brakes_m_s = <FilteredAccState as grust::core::Component>::step(
+                            &mut self.filtered_acc,
+                            FilteredAccInput {
+                                condition: self.context.condition.get(),
+                                distance_m: self.context.distance_m.get(),
+                                sv_v_km_h: self.context.speed_km_h.get(),
+                                t_ms: t,
+                            },
+                        );
+                        self.context.brakes_m_s.set(brakes_m_s);
+                    }
+                    if self.context.brakes_m_s.is_new() {
+                        self.send_output(
+                            O::BrakesMS(self.context.brakes_m_s.get(), _grust_reserved_instant),
+                            _grust_reserved_instant,
+                        )
+                        .await?;
                     }
                 } else {
                     self.delayed = true;

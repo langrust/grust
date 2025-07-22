@@ -373,20 +373,24 @@ pub mod runtime {
                 self.context.reset();
                 if self.input_store.not_empty() {
                     self.reset_time_constraints(_grust_reserved_instant).await?;
+                    let period_clock_ref = &mut None;
                     let input_e_ref = &mut None;
                     let clock_ref = &mut None;
                     let sampled_ref = &mut None;
-                    *input_e_ref = self.input_store.input_e.take().map(|(x, _)| x);
-                    if let Some((input_s, _)) = self.input_store.input_s.take() {
+                    let _input_e_input_store = self.input_store.input_e.take();
+                    *input_e_ref = _input_e_input_store.map(|(x, _)| x);
+                    let _input_s_input_store = self.input_store.input_s.take();
+                    if let Some((input_s, _)) = _input_s_input_store {
                         self.context.input_s.set(input_s);
                     }
-                    self.send_timer(T::PeriodClock, _grust_reserved_instant)
-                        .await?;
-                    *clock_ref = Some(
-                        (_grust_reserved_instant
-                            .duration_since(self.begin)
-                            .as_millis()) as f64,
-                    );
+                    let _period_clock_input_store = self.input_store.period_clock.take();
+                    if let Some((_, _period_clock_instant)) = _period_clock_input_store {
+                        self.send_timer(T::PeriodClock, _period_clock_instant)
+                            .await?;
+                    }
+                    *period_clock_ref = _period_clock_input_store.map(|(x, _)| x);
+                    *clock_ref = _period_clock_input_store
+                        .map(|(_, y)| (y.duration_since(self.begin).as_millis()) as f64);
                     if input_e_ref.is_some() {
                         self.context.input_e.set(*input_e_ref);
                     }
