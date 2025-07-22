@@ -114,7 +114,8 @@ impl Ir1IntoIr2<&'_ Ctx> for FlowExport {
 impl Ir1IntoIr2<ir1::ctx::Full<'_, TimingEvent>> for Service {
     type Ir2 = ServiceHandler;
     fn into_ir2(mut self, mut ctx: ir1::ctx::Full<TimingEvent>) -> ServiceHandler {
-        let flows_context = self.get_flows_context(&ctx, ctx.exports.values());
+        let flows_context =
+            self.get_flows_context(&ctx, ctx.imports.values(), ctx.exports.values());
         ctx.local();
         let builder: flow_instr::Builder<'_> = flow_instr::Builder::new(
             &mut self,
@@ -132,12 +133,7 @@ impl Ir1IntoIr2<ir1::ctx::Full<'_, TimingEvent>> for Service {
 
 mod service_handler {
     prelude! {
-        {
-            execution_machine::{
-                InitHandler, InterfaceFlow, FlowHandler, FlowInstruction, MatchArm, ServiceHandler, ArrivingFlow,
-            },
-            Pattern,
-        },
+        execution_machine::{InitHandler, InterfaceFlow, FlowHandler, FlowInstruction, ServiceHandler, ArrivingFlow},
         synced::generic::{Builder, Synced},
     }
     use super::{clean_synced, flow_instr, from_synced};
@@ -175,58 +171,19 @@ mod service_handler {
     ) -> FlowInstruction {
         debug_assert!(ctx.is_clear());
         debug_assert!(ctx.is_delay(delay_id));
-        let ctx0 = ctx.ctx0();
 
-        // this is an ORDERED list of the input flows
-        let inputs = ctx.inputs().collect::<Vec<_>>();
-        let flows_names = inputs
-            .iter()
-            .map(|(_, import_id)| ctx0.get_name(*import_id).clone());
+        // get runtime inputs information
+        let mut import_stmts = vec![];
+        for (stmt_id, _) in ctx.inputs() {
+            import_stmts.push(stmt_id);
+        }
 
-        // Create the handler of the delay timer.
-        // It propagates all changes stored in the service_store by matching
-        // each one of its elements (that are of type Option<(Value, Instant)>).
-        let rng = 0..(2i64.pow(inputs.len() as u32));
-        let arms = rng.map(|mut i| {
-            // gather the flows that have been modified
-            let imports = inputs
-                .iter()
-                .filter_map(|(stmt_id, _)| {
-                    let res = if i & 1 == 1 { Some(*stmt_id) } else { None };
-                    i >>= 1;
-                    res
-                })
-                .collect::<Vec<_>>();
-            let patterns = inputs
-                .iter()
-                .map(|(stmt_id, import_id)| {
-                    if imports.contains(stmt_id) {
-                        let flow_name = ctx0.get_name(*import_id);
-                        let instant = flow_name.to_instant_var();
-                        if ctx0.is_timer(*import_id) {
-                            Pattern::some(Pattern::tuple(vec![
-                                Pattern::literal(Constant::unit(Default::default())),
-                                Pattern::ident(instant),
-                            ]))
-                        } else {
-                            Pattern::some(Pattern::tuple(vec![
-                                Pattern::ident(flow_name.clone()),
-                                Pattern::ident(instant),
-                            ]))
-                        }
-                    } else {
-                        Pattern::none()
-                    }
-                })
-                .collect();
-            // compute the instruction that will propagate changes
-            ctx.set_init_service(false);
-            ctx.set_multiple_inputs(true);
-            let instr = flow_instruction(ctx, imports.into_iter());
-            MatchArm::new(patterns, instr)
-        });
+        // compute the instruction that will propagate all flow
+        ctx.set_init_service(false);
+        ctx.set_multiple_inputs(true);
+        let instr = flow_instruction(ctx, import_stmts.into_iter());
 
-        FlowInstruction::handle_delay(flows_names, arms)
+        FlowInstruction::handle_delay(instr)
     }
 
     /// Compute the instruction propagating the changes of the input flows.
@@ -832,7 +789,11 @@ mod flow_instr {
                 if !self.is_timer(flow_id) {
                     // store the event in the local reference
                     let event_name = self.get_name(flow_id);
-                    let expr = Expression::some(Expression::ident(event_name.clone()));
+                    let expr = if self.multiple_inputs && !self.init_service {
+                        Expression::take_event_from_input(event_name.clone())
+                    } else {
+                        Expression::some(Expression::ident(event_name.clone()))
+                    };
                     self.define_event(flow_id, expr)
                 } else if self.is_period(flow_id) {
                     // reset periodic timer
@@ -842,13 +803,18 @@ mod flow_instr {
                     FlowInstruction::seq(vec![])
                 }
             } else {
-                // add to signals set
-                self.signals.insert(flow_id);
-                if let Some(update) = self.update_ctx(flow_id) {
-                    // update the context if necessary
-                    update
+                if self.multiple_inputs && !self.init_service {
+                    let signal_name = self.get_name(flow_id);
+                    FlowInstruction::update_ctx_from_input(signal_name.clone())
                 } else {
-                    FlowInstruction::seq(vec![])
+                    // add to signals set
+                    self.signals.insert(flow_id);
+                    if let Some(update) = self.update_ctx(flow_id) {
+                        // update the context if necessary
+                        update
+                    } else {
+                        FlowInstruction::seq(vec![])
+                    }
                 }
             }
         }
@@ -1173,7 +1139,7 @@ mod flow_instr {
                     // check if second activated
                     if_event_2
                 }
-                (false, false) => FlowInstruction::seq(vec![]) // noErrorDesc!("'merge' should be activated by one of its sources"),
+                (false, false) => FlowInstruction::seq(vec![]), // noErrorDesc!("'merge' should be activated by one of its sources"),
             }
         }
 
@@ -1420,7 +1386,7 @@ mod flow_instr {
         /// Add reset timer in current propagation branch.
         fn reset_timer(&self, timer_id: usize, import_flow: usize) -> FlowInstruction {
             let timer_name = self.get_name(timer_id);
-            if self.init_service() {
+            if self.init_service() || self.multiple_inputs {
                 FlowInstruction::reset(timer_name.clone())
             } else {
                 let import_name = self.get_name(import_flow);
