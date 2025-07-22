@@ -409,6 +409,86 @@ pub mod runtime {
         use futures::{sink::SinkExt, stream::StreamExt};
         mod ctx_ty {
             #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct ChangedSetSpeedOld(f64, bool);
+            impl ChangedSetSpeedOld {
+                pub fn set(&mut self, changed_set_speed_old: f64) {
+                    self.1 = self.0 != changed_set_speed_old;
+                    self.0 = changed_set_speed_old;
+                }
+                pub fn get(&self) -> f64 {
+                    self.0
+                }
+                pub fn take(&mut self) -> f64 {
+                    std::mem::take(&mut self.0)
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
+            }
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct VSetAux(f64, bool);
+            impl VSetAux {
+                pub fn set(&mut self, v_set_aux: f64) {
+                    self.1 = self.0 != v_set_aux;
+                    self.0 = v_set_aux;
+                }
+                pub fn get(&self) -> f64 {
+                    self.0
+                }
+                pub fn take(&mut self) -> f64 {
+                    std::mem::take(&mut self.0)
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
+            }
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct VSet(f64, bool);
+            impl VSet {
+                pub fn set(&mut self, v_set: f64) {
+                    self.1 = self.0 != v_set;
+                    self.0 = v_set;
+                }
+                pub fn get(&self) -> f64 {
+                    self.0
+                }
+                pub fn take(&mut self) -> f64 {
+                    std::mem::take(&mut self.0)
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
+            }
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct InRegulationOld(bool, bool);
+            impl InRegulationOld {
+                pub fn set(&mut self, in_regulation_old: bool) {
+                    self.1 = self.0 != in_regulation_old;
+                    self.0 = in_regulation_old;
+                }
+                pub fn get(&self) -> bool {
+                    self.0
+                }
+                pub fn take(&mut self) -> bool {
+                    std::mem::take(&mut self.0)
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
+            }
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
             pub struct X(f64, bool);
             impl X {
                 pub fn set(&mut self, x: f64) {
@@ -469,151 +549,11 @@ pub mod runtime {
                 }
             }
             #[derive(Clone, Copy, PartialEq, Default, Debug)]
-            pub struct Speed(f64, bool);
-            impl Speed {
-                pub fn set(&mut self, speed: f64) {
-                    self.1 = self.0 != speed;
-                    self.0 = speed;
-                }
-                pub fn get(&self) -> f64 {
-                    self.0
-                }
-                pub fn take(&mut self) -> f64 {
-                    std::mem::take(&mut self.0)
-                }
-                pub fn is_new(&self) -> bool {
-                    self.1
-                }
-                pub fn reset(&mut self) {
-                    self.1 = false;
-                }
-            }
-            #[derive(Clone, Copy, PartialEq, Default, Debug)]
             pub struct VUpdate(bool, bool);
             impl VUpdate {
                 pub fn set(&mut self, v_update: bool) {
                     self.1 = self.0 != v_update;
                     self.0 = v_update;
-                }
-                pub fn get(&self) -> bool {
-                    self.0
-                }
-                pub fn take(&mut self) -> bool {
-                    std::mem::take(&mut self.0)
-                }
-                pub fn is_new(&self) -> bool {
-                    self.1
-                }
-                pub fn reset(&mut self) {
-                    self.1 = false;
-                }
-            }
-            #[derive(Clone, Copy, PartialEq, Default, Debug)]
-            pub struct SlState(super::SpeedLimiterOn, bool);
-            impl SlState {
-                pub fn set(&mut self, sl_state: super::SpeedLimiterOn) {
-                    self.1 = self.0 != sl_state;
-                    self.0 = sl_state;
-                }
-                pub fn get(&self) -> super::SpeedLimiterOn {
-                    self.0
-                }
-                pub fn take(&mut self) -> super::SpeedLimiterOn {
-                    std::mem::take(&mut self.0)
-                }
-                pub fn is_new(&self) -> bool {
-                    self.1
-                }
-                pub fn reset(&mut self) {
-                    self.1 = false;
-                }
-            }
-            #[derive(Clone, Copy, PartialEq, Default, Debug)]
-            pub struct VSetAux(f64, bool);
-            impl VSetAux {
-                pub fn set(&mut self, v_set_aux: f64) {
-                    self.1 = self.0 != v_set_aux;
-                    self.0 = v_set_aux;
-                }
-                pub fn get(&self) -> f64 {
-                    self.0
-                }
-                pub fn take(&mut self) -> f64 {
-                    std::mem::take(&mut self.0)
-                }
-                pub fn is_new(&self) -> bool {
-                    self.1
-                }
-                pub fn reset(&mut self) {
-                    self.1 = false;
-                }
-            }
-            #[derive(Clone, Copy, PartialEq, Default, Debug)]
-            pub struct ChangedSetSpeedOld(f64, bool);
-            impl ChangedSetSpeedOld {
-                pub fn set(&mut self, changed_set_speed_old: f64) {
-                    self.1 = self.0 != changed_set_speed_old;
-                    self.0 = changed_set_speed_old;
-                }
-                pub fn get(&self) -> f64 {
-                    self.0
-                }
-                pub fn take(&mut self) -> f64 {
-                    std::mem::take(&mut self.0)
-                }
-                pub fn is_new(&self) -> bool {
-                    self.1
-                }
-                pub fn reset(&mut self) {
-                    self.1 = false;
-                }
-            }
-            #[derive(Clone, Copy, PartialEq, Default, Debug)]
-            pub struct InRegulationOld(bool, bool);
-            impl InRegulationOld {
-                pub fn set(&mut self, in_regulation_old: bool) {
-                    self.1 = self.0 != in_regulation_old;
-                    self.0 = in_regulation_old;
-                }
-                pub fn get(&self) -> bool {
-                    self.0
-                }
-                pub fn take(&mut self) -> bool {
-                    std::mem::take(&mut self.0)
-                }
-                pub fn is_new(&self) -> bool {
-                    self.1
-                }
-                pub fn reset(&mut self) {
-                    self.1 = false;
-                }
-            }
-            #[derive(Clone, Copy, PartialEq, Default, Debug)]
-            pub struct VSet(f64, bool);
-            impl VSet {
-                pub fn set(&mut self, v_set: f64) {
-                    self.1 = self.0 != v_set;
-                    self.0 = v_set;
-                }
-                pub fn get(&self) -> f64 {
-                    self.0
-                }
-                pub fn take(&mut self) -> f64 {
-                    std::mem::take(&mut self.0)
-                }
-                pub fn is_new(&self) -> bool {
-                    self.1
-                }
-                pub fn reset(&mut self) {
-                    self.1 = false;
-                }
-            }
-            #[derive(Clone, Copy, PartialEq, Default, Debug)]
-            pub struct InRegulationAux(bool, bool);
-            impl InRegulationAux {
-                pub fn set(&mut self, in_regulation_aux: bool) {
-                    self.1 = self.0 != in_regulation_aux;
-                    self.0 = in_regulation_aux;
                 }
                 pub fn get(&self) -> bool {
                     self.0
@@ -688,43 +628,125 @@ pub mod runtime {
                     self.1 = false;
                 }
             }
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct SetSpeed(f64, bool);
+            impl SetSpeed {
+                pub fn set(&mut self, set_speed: f64) {
+                    self.1 = self.0 != set_speed;
+                    self.0 = set_speed;
+                }
+                pub fn get(&self) -> f64 {
+                    self.0
+                }
+                pub fn take(&mut self) -> f64 {
+                    std::mem::take(&mut self.0)
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
+            }
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct SlState(super::SpeedLimiterOn, bool);
+            impl SlState {
+                pub fn set(&mut self, sl_state: super::SpeedLimiterOn) {
+                    self.1 = self.0 != sl_state;
+                    self.0 = sl_state;
+                }
+                pub fn get(&self) -> super::SpeedLimiterOn {
+                    self.0
+                }
+                pub fn take(&mut self) -> super::SpeedLimiterOn {
+                    std::mem::take(&mut self.0)
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
+            }
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct Speed(f64, bool);
+            impl Speed {
+                pub fn set(&mut self, speed: f64) {
+                    self.1 = self.0 != speed;
+                    self.0 = speed;
+                }
+                pub fn get(&self) -> f64 {
+                    self.0
+                }
+                pub fn take(&mut self) -> f64 {
+                    std::mem::take(&mut self.0)
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
+            }
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct InRegulationAux(bool, bool);
+            impl InRegulationAux {
+                pub fn set(&mut self, in_regulation_aux: bool) {
+                    self.1 = self.0 != in_regulation_aux;
+                    self.0 = in_regulation_aux;
+                }
+                pub fn get(&self) -> bool {
+                    self.0
+                }
+                pub fn take(&mut self) -> bool {
+                    std::mem::take(&mut self.0)
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
+            }
         }
         #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct Context {
+            pub changed_set_speed_old: ctx_ty::ChangedSetSpeedOld,
+            pub v_set_aux: ctx_ty::VSetAux,
+            pub v_set: ctx_ty::VSet,
+            pub in_regulation_old: ctx_ty::InRegulationOld,
             pub x: ctx_ty::X,
             pub on_state: ctx_ty::OnState,
             pub state: ctx_ty::State,
-            pub speed: ctx_ty::Speed,
             pub v_update: ctx_ty::VUpdate,
-            pub sl_state: ctx_ty::SlState,
-            pub v_set_aux: ctx_ty::VSetAux,
-            pub changed_set_speed_old: ctx_ty::ChangedSetSpeedOld,
-            pub in_regulation_old: ctx_ty::InRegulationOld,
-            pub v_set: ctx_ty::VSet,
-            pub in_regulation_aux: ctx_ty::InRegulationAux,
             pub vacuum_brake: ctx_ty::VacuumBrake,
             pub state_update: ctx_ty::StateUpdate,
             pub vdc: ctx_ty::Vdc,
+            pub set_speed: ctx_ty::SetSpeed,
+            pub sl_state: ctx_ty::SlState,
+            pub speed: ctx_ty::Speed,
+            pub in_regulation_aux: ctx_ty::InRegulationAux,
         }
         impl Context {
             fn init() -> Context {
                 Default::default()
             }
             fn reset(&mut self) {
+                self.changed_set_speed_old.reset();
+                self.v_set_aux.reset();
+                self.v_set.reset();
+                self.in_regulation_old.reset();
                 self.x.reset();
                 self.on_state.reset();
                 self.state.reset();
-                self.speed.reset();
                 self.v_update.reset();
-                self.sl_state.reset();
-                self.v_set_aux.reset();
-                self.changed_set_speed_old.reset();
-                self.in_regulation_old.reset();
-                self.v_set.reset();
-                self.in_regulation_aux.reset();
                 self.vacuum_brake.reset();
                 self.state_update.reset();
                 self.vdc.reset();
+                self.set_speed.reset();
+                self.sl_state.reset();
+                self.speed.reset();
+                self.in_regulation_aux.reset();
             }
         }
         #[derive(Default)]
@@ -783,6 +805,7 @@ pub mod runtime {
                 speed: f64,
             ) -> Result<(), futures::channel::mpsc::SendError> {
                 self.context.speed.set(speed);
+                self.context.set_speed.set(set_speed);
                 self.context.x.set(set_speed);
                 self.context.changed_set_speed_old.set(self.context.x.get());
                 let (v_set_aux, v_update) = <ProcessSetSpeedState as grust::core::Component>::step(
@@ -884,7 +907,9 @@ pub mod runtime {
                     }
                 } else {
                     let unique = self.input_store.vdc.replace((vdc, _vdc_instant));
-                    assert ! (unique . is_none () , "flow `vdc` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert!
+                    (unique.is_none(),
+                    "flow `vdc` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -949,7 +974,9 @@ pub mod runtime {
                         .input_store
                         .vacuum_brake
                         .replace((vacuum_brake, _vacuum_brake_instant));
-                    assert ! (unique . is_none () , "flow `vacuum_brake` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert!
+                    (unique.is_none(),
+                    "flow `vacuum_brake` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -1016,7 +1043,9 @@ pub mod runtime {
                         .input_store
                         .activation
                         .replace((activation, _activation_instant));
-                    assert ! (unique . is_none () , "flow `activation` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert!
+                    (unique.is_none(),
+                    "flow `activation` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -1083,7 +1112,9 @@ pub mod runtime {
                         .input_store
                         .kickdown
                         .replace((kickdown, _kickdown_instant));
-                    assert ! (unique . is_none () , "flow `kickdown` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert!
+                    (unique.is_none(),
+                    "flow `kickdown` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -1097,6 +1128,7 @@ pub mod runtime {
                     self.context.reset();
                     let changed_set_speed_ref = &mut None;
                     let in_regulation_ref = &mut None;
+                    self.context.set_speed.set(set_speed);
                     if (self.context.x.get() - set_speed).abs() >= 1.0f64 {
                         self.context.x.set(set_speed);
                     }
@@ -1172,7 +1204,9 @@ pub mod runtime {
                         .input_store
                         .set_speed
                         .replace((set_speed, _set_speed_instant));
-                    assert ! (unique . is_none () , "flow `set_speed` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert!
+                    (unique.is_none(),
+                    "flow `set_speed` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -1236,7 +1270,9 @@ pub mod runtime {
                         .input_store
                         .failure
                         .replace((failure, _failure_instant));
-                    assert ! (unique . is_none () , "flow `failure` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert!
+                    (unique.is_none(),
+                    "flow `failure` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -1295,7 +1331,9 @@ pub mod runtime {
                     }
                 } else {
                     let unique = self.input_store.speed.replace((speed, _speed_instant));
-                    assert ! (unique . is_none () , "flow `speed` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert!
+                    (unique.is_none(),
+                    "flow `speed` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }

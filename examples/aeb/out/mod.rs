@@ -370,7 +370,9 @@ pub mod runtime {
                         .input_store
                         .pedestrian_r
                         .replace((pedestrian_r, _pedestrian_r_instant));
-                    assert ! (unique . is_none () , "flow `pedestrian_r` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert!
+                    (unique.is_none(),
+                    "flow `pedestrian_r` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -409,7 +411,9 @@ pub mod runtime {
                         .input_store
                         .timeout_timeout_pedest
                         .replace(((), _timeout_timeout_pedest_instant));
-                    assert ! (unique . is_none () , "flow `timeout_timeout_pedest` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert!
+                    (unique.is_none(),
+                    "flow `timeout_timeout_pedest` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -445,7 +449,9 @@ pub mod runtime {
                         .input_store
                         .speed_km_h
                         .replace((speed_km_h, _speed_km_h_instant));
-                    assert ! (unique . is_none () , "flow `speed_km_h` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert!
+                    (unique.is_none(),
+                    "flow `speed_km_h` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -456,594 +462,50 @@ pub mod runtime {
                 self.context.reset();
                 if self.input_store.not_empty() {
                     self.reset_time_constraints(_grust_reserved_instant).await?;
-                    match (
-                        self.input_store.pedestrian_r.take(),
-                        self.input_store.timeout_timeout_pedest.take(),
-                        self.input_store.speed_km_h.take(),
-                        self.input_store.pedestrian_l.take(),
-                    ) {
-                        (None, None, None, None) => {}
-                        (Some((pedestrian_r, _pedestrian_r_instant)), None, None, None) => {
-                            let pedestrian_ref = &mut None;
-                            let pedestrian_r_ref = &mut None;
-                            *pedestrian_r_ref = Some(pedestrian_r);
-                            if pedestrian_r_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_r_ref;
-                            }
-                            if pedestrian_ref.is_some() {
-                                self.send_timer(T::TimeoutTimeoutPedest, _pedestrian_r_instant)
-                                    .await?;
-                            }
-                            if pedestrian_ref.is_some() || self.context.speed_km_h.is_new() {
-                                let braking = <BrakingStateState as grust::core::Component>::step(
-                                    &mut self.braking_state,
-                                    BrakingStateInput {
-                                        pedest: *pedestrian_ref,
-                                        timeout_pedest: None,
-                                        speed: self.context.speed_km_h.get(),
-                                    },
-                                );
-                                self.context.braking.set(braking);
-                            }
-                            if self.context.braking.is_new() {
-                                self.send_output(
-                                    O::Braking(self.context.braking.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
+                    let timeout_pedest_ref = &mut None;
+                    let pedestrian_l_ref = &mut None;
+                    let pedestrian_ref = &mut None;
+                    let pedestrian_r_ref = &mut None;
+                    *pedestrian_l_ref = self.input_store.pedestrian_l.take().map(|(x, _)| x);
+                    if let Some((speed_km_h, _)) = self.input_store.speed_km_h.take() {
+                        self.context.speed_km_h.set(speed_km_h);
+                    }
+                    *pedestrian_r_ref = self.input_store.pedestrian_r.take().map(|(x, _)| x);
+                    if pedestrian_l_ref.is_some() {
+                        *pedestrian_ref = *pedestrian_l_ref;
+                    } else {
+                        if pedestrian_r_ref.is_some() {
+                            *pedestrian_ref = *pedestrian_r_ref;
                         }
-                        (None, Some(((), _timeout_timeout_pedest_instant)), None, None) => {
-                            let timeout_pedest_ref = &mut None;
-                            *timeout_pedest_ref = Some(());
-                            self.send_timer(
-                                T::TimeoutTimeoutPedest,
-                                _timeout_timeout_pedest_instant,
-                            )
+                    }
+                    if pedestrian_ref.is_some() {
+                        self.send_timer(T::TimeoutTimeoutPedest, _grust_reserved_instant)
                             .await?;
-                            if timeout_pedest_ref.is_some() || self.context.speed_km_h.is_new() {
-                                let braking = <BrakingStateState as grust::core::Component>::step(
-                                    &mut self.braking_state,
-                                    BrakingStateInput {
-                                        pedest: None,
-                                        timeout_pedest: *timeout_pedest_ref,
-                                        speed: self.context.speed_km_h.get(),
-                                    },
-                                );
-                                self.context.braking.set(braking);
-                            }
-                            if self.context.braking.is_new() {
-                                self.send_output(
-                                    O::Braking(self.context.braking.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            Some((pedestrian_r, _pedestrian_r_instant)),
-                            Some(((), _timeout_timeout_pedest_instant)),
-                            None,
-                            None,
-                        ) => {
-                            let timeout_pedest_ref = &mut None;
-                            let pedestrian_ref = &mut None;
-                            let pedestrian_r_ref = &mut None;
-                            *pedestrian_r_ref = Some(pedestrian_r);
-                            if pedestrian_r_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_r_ref;
-                            }
-                            if pedestrian_ref.is_some() {
-                                self.send_timer(T::TimeoutTimeoutPedest, _pedestrian_r_instant)
-                                    .await?;
-                            } else {
-                                *timeout_pedest_ref = Some(());
-                                self.send_timer(T::TimeoutTimeoutPedest, _pedestrian_r_instant)
-                                    .await?;
-                            }
-                            if pedestrian_ref.is_some()
-                                || timeout_pedest_ref.is_some()
-                                || self.context.speed_km_h.is_new()
-                            {
-                                let braking = <BrakingStateState as grust::core::Component>::step(
-                                    &mut self.braking_state,
-                                    BrakingStateInput {
-                                        pedest: *pedestrian_ref,
-                                        timeout_pedest: *timeout_pedest_ref,
-                                        speed: self.context.speed_km_h.get(),
-                                    },
-                                );
-                                self.context.braking.set(braking);
-                            }
-                            if self.context.braking.is_new() {
-                                self.send_output(
-                                    O::Braking(self.context.braking.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (None, None, Some((speed_km_h, _speed_km_h_instant)), None) => {
-                            self.context.speed_km_h.set(speed_km_h);
-                            if self.context.speed_km_h.is_new() {
-                                let braking = <BrakingStateState as grust::core::Component>::step(
-                                    &mut self.braking_state,
-                                    BrakingStateInput {
-                                        pedest: None,
-                                        timeout_pedest: None,
-                                        speed: speed_km_h,
-                                    },
-                                );
-                                self.context.braking.set(braking);
-                            }
-                            if self.context.braking.is_new() {
-                                self.send_output(
-                                    O::Braking(self.context.braking.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            Some((pedestrian_r, _pedestrian_r_instant)),
-                            None,
-                            Some((speed_km_h, _speed_km_h_instant)),
-                            None,
-                        ) => {
-                            let pedestrian_ref = &mut None;
-                            let pedestrian_r_ref = &mut None;
-                            self.context.speed_km_h.set(speed_km_h);
-                            *pedestrian_r_ref = Some(pedestrian_r);
-                            if pedestrian_r_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_r_ref;
-                            }
-                            if pedestrian_ref.is_some() {
-                                self.send_timer(T::TimeoutTimeoutPedest, _pedestrian_r_instant)
-                                    .await?;
-                            }
-                            if pedestrian_ref.is_some() || self.context.speed_km_h.is_new() {
-                                let braking = <BrakingStateState as grust::core::Component>::step(
-                                    &mut self.braking_state,
-                                    BrakingStateInput {
-                                        pedest: *pedestrian_ref,
-                                        timeout_pedest: None,
-                                        speed: speed_km_h,
-                                    },
-                                );
-                                self.context.braking.set(braking);
-                            }
-                            if self.context.braking.is_new() {
-                                self.send_output(
-                                    O::Braking(self.context.braking.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            None,
-                            Some(((), _timeout_timeout_pedest_instant)),
-                            Some((speed_km_h, _speed_km_h_instant)),
-                            None,
-                        ) => {
-                            let timeout_pedest_ref = &mut None;
-                            self.context.speed_km_h.set(speed_km_h);
-                            *timeout_pedest_ref = Some(());
-                            self.send_timer(
-                                T::TimeoutTimeoutPedest,
-                                _timeout_timeout_pedest_instant,
-                            )
+                    } else {
+                        *timeout_pedest_ref = Some(());
+                        self.send_timer(T::TimeoutTimeoutPedest, _grust_reserved_instant)
                             .await?;
-                            if timeout_pedest_ref.is_some() || self.context.speed_km_h.is_new() {
-                                let braking = <BrakingStateState as grust::core::Component>::step(
-                                    &mut self.braking_state,
-                                    BrakingStateInput {
-                                        pedest: None,
-                                        timeout_pedest: *timeout_pedest_ref,
-                                        speed: speed_km_h,
-                                    },
-                                );
-                                self.context.braking.set(braking);
-                            }
-                            if self.context.braking.is_new() {
-                                self.send_output(
-                                    O::Braking(self.context.braking.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            Some((pedestrian_r, _pedestrian_r_instant)),
-                            Some(((), _timeout_timeout_pedest_instant)),
-                            Some((speed_km_h, _speed_km_h_instant)),
-                            None,
-                        ) => {
-                            let timeout_pedest_ref = &mut None;
-                            let pedestrian_ref = &mut None;
-                            let pedestrian_r_ref = &mut None;
-                            self.context.speed_km_h.set(speed_km_h);
-                            *pedestrian_r_ref = Some(pedestrian_r);
-                            if pedestrian_r_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_r_ref;
-                            }
-                            if pedestrian_ref.is_some() {
-                                self.send_timer(T::TimeoutTimeoutPedest, _pedestrian_r_instant)
-                                    .await?;
-                            } else {
-                                *timeout_pedest_ref = Some(());
-                                self.send_timer(T::TimeoutTimeoutPedest, _pedestrian_r_instant)
-                                    .await?;
-                            }
-                            if pedestrian_ref.is_some()
-                                || timeout_pedest_ref.is_some()
-                                || self.context.speed_km_h.is_new()
-                            {
-                                let braking = <BrakingStateState as grust::core::Component>::step(
-                                    &mut self.braking_state,
-                                    BrakingStateInput {
-                                        pedest: *pedestrian_ref,
-                                        timeout_pedest: *timeout_pedest_ref,
-                                        speed: speed_km_h,
-                                    },
-                                );
-                                self.context.braking.set(braking);
-                            }
-                            if self.context.braking.is_new() {
-                                self.send_output(
-                                    O::Braking(self.context.braking.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (None, None, None, Some((pedestrian_l, _pedestrian_l_instant))) => {
-                            let pedestrian_l_ref = &mut None;
-                            let pedestrian_ref = &mut None;
-                            *pedestrian_l_ref = Some(pedestrian_l);
-                            if pedestrian_l_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_l_ref;
-                            }
-                            if pedestrian_ref.is_some() {
-                                self.send_timer(T::TimeoutTimeoutPedest, _pedestrian_l_instant)
-                                    .await?;
-                            }
-                            if pedestrian_ref.is_some() || self.context.speed_km_h.is_new() {
-                                let braking = <BrakingStateState as grust::core::Component>::step(
-                                    &mut self.braking_state,
-                                    BrakingStateInput {
-                                        pedest: *pedestrian_ref,
-                                        timeout_pedest: None,
-                                        speed: self.context.speed_km_h.get(),
-                                    },
-                                );
-                                self.context.braking.set(braking);
-                            }
-                            if self.context.braking.is_new() {
-                                self.send_output(
-                                    O::Braking(self.context.braking.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            Some((pedestrian_r, _pedestrian_r_instant)),
-                            None,
-                            None,
-                            Some((pedestrian_l, _pedestrian_l_instant)),
-                        ) => {
-                            let pedestrian_l_ref = &mut None;
-                            let pedestrian_ref = &mut None;
-                            let pedestrian_r_ref = &mut None;
-                            *pedestrian_l_ref = Some(pedestrian_l);
-                            *pedestrian_r_ref = Some(pedestrian_r);
-                            if pedestrian_l_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_l_ref;
-                            } else {
-                                if pedestrian_r_ref.is_some() {
-                                    *pedestrian_ref = *pedestrian_r_ref;
-                                }
-                            }
-                            if pedestrian_ref.is_some() {
-                                self.send_timer(T::TimeoutTimeoutPedest, _pedestrian_r_instant)
-                                    .await?;
-                            }
-                            if pedestrian_ref.is_some() || self.context.speed_km_h.is_new() {
-                                let braking = <BrakingStateState as grust::core::Component>::step(
-                                    &mut self.braking_state,
-                                    BrakingStateInput {
-                                        pedest: *pedestrian_ref,
-                                        timeout_pedest: None,
-                                        speed: self.context.speed_km_h.get(),
-                                    },
-                                );
-                                self.context.braking.set(braking);
-                            }
-                            if self.context.braking.is_new() {
-                                self.send_output(
-                                    O::Braking(self.context.braking.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            None,
-                            Some(((), _timeout_timeout_pedest_instant)),
-                            None,
-                            Some((pedestrian_l, _pedestrian_l_instant)),
-                        ) => {
-                            let timeout_pedest_ref = &mut None;
-                            let pedestrian_l_ref = &mut None;
-                            let pedestrian_ref = &mut None;
-                            *pedestrian_l_ref = Some(pedestrian_l);
-                            if pedestrian_l_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_l_ref;
-                            }
-                            if pedestrian_ref.is_some() {
-                                self.send_timer(
-                                    T::TimeoutTimeoutPedest,
-                                    _timeout_timeout_pedest_instant,
-                                )
-                                .await?;
-                            } else {
-                                *timeout_pedest_ref = Some(());
-                                self.send_timer(
-                                    T::TimeoutTimeoutPedest,
-                                    _timeout_timeout_pedest_instant,
-                                )
-                                .await?;
-                            }
-                            if pedestrian_ref.is_some()
-                                || timeout_pedest_ref.is_some()
-                                || self.context.speed_km_h.is_new()
-                            {
-                                let braking = <BrakingStateState as grust::core::Component>::step(
-                                    &mut self.braking_state,
-                                    BrakingStateInput {
-                                        pedest: *pedestrian_ref,
-                                        timeout_pedest: *timeout_pedest_ref,
-                                        speed: self.context.speed_km_h.get(),
-                                    },
-                                );
-                                self.context.braking.set(braking);
-                            }
-                            if self.context.braking.is_new() {
-                                self.send_output(
-                                    O::Braking(self.context.braking.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            Some((pedestrian_r, _pedestrian_r_instant)),
-                            Some(((), _timeout_timeout_pedest_instant)),
-                            None,
-                            Some((pedestrian_l, _pedestrian_l_instant)),
-                        ) => {
-                            let timeout_pedest_ref = &mut None;
-                            let pedestrian_l_ref = &mut None;
-                            let pedestrian_ref = &mut None;
-                            let pedestrian_r_ref = &mut None;
-                            *pedestrian_l_ref = Some(pedestrian_l);
-                            *pedestrian_r_ref = Some(pedestrian_r);
-                            if pedestrian_l_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_l_ref;
-                            } else {
-                                if pedestrian_r_ref.is_some() {
-                                    *pedestrian_ref = *pedestrian_r_ref;
-                                }
-                            }
-                            if pedestrian_ref.is_some() {
-                                self.send_timer(T::TimeoutTimeoutPedest, _pedestrian_r_instant)
-                                    .await?;
-                            } else {
-                                *timeout_pedest_ref = Some(());
-                                self.send_timer(T::TimeoutTimeoutPedest, _pedestrian_r_instant)
-                                    .await?;
-                            }
-                            if pedestrian_ref.is_some()
-                                || timeout_pedest_ref.is_some()
-                                || self.context.speed_km_h.is_new()
-                            {
-                                let braking = <BrakingStateState as grust::core::Component>::step(
-                                    &mut self.braking_state,
-                                    BrakingStateInput {
-                                        pedest: *pedestrian_ref,
-                                        timeout_pedest: *timeout_pedest_ref,
-                                        speed: self.context.speed_km_h.get(),
-                                    },
-                                );
-                                self.context.braking.set(braking);
-                            }
-                            if self.context.braking.is_new() {
-                                self.send_output(
-                                    O::Braking(self.context.braking.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            None,
-                            None,
-                            Some((speed_km_h, _speed_km_h_instant)),
-                            Some((pedestrian_l, _pedestrian_l_instant)),
-                        ) => {
-                            let pedestrian_l_ref = &mut None;
-                            let pedestrian_ref = &mut None;
-                            *pedestrian_l_ref = Some(pedestrian_l);
-                            if pedestrian_l_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_l_ref;
-                            }
-                            if pedestrian_ref.is_some() {
-                                self.send_timer(T::TimeoutTimeoutPedest, _pedestrian_l_instant)
-                                    .await?;
-                            }
-                            self.context.speed_km_h.set(speed_km_h);
-                            if pedestrian_ref.is_some() || self.context.speed_km_h.is_new() {
-                                let braking = <BrakingStateState as grust::core::Component>::step(
-                                    &mut self.braking_state,
-                                    BrakingStateInput {
-                                        pedest: *pedestrian_ref,
-                                        timeout_pedest: None,
-                                        speed: speed_km_h,
-                                    },
-                                );
-                                self.context.braking.set(braking);
-                            }
-                            if self.context.braking.is_new() {
-                                self.send_output(
-                                    O::Braking(self.context.braking.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            Some((pedestrian_r, _pedestrian_r_instant)),
-                            None,
-                            Some((speed_km_h, _speed_km_h_instant)),
-                            Some((pedestrian_l, _pedestrian_l_instant)),
-                        ) => {
-                            let pedestrian_l_ref = &mut None;
-                            let pedestrian_ref = &mut None;
-                            let pedestrian_r_ref = &mut None;
-                            *pedestrian_l_ref = Some(pedestrian_l);
-                            self.context.speed_km_h.set(speed_km_h);
-                            *pedestrian_r_ref = Some(pedestrian_r);
-                            if pedestrian_l_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_l_ref;
-                            } else {
-                                if pedestrian_r_ref.is_some() {
-                                    *pedestrian_ref = *pedestrian_r_ref;
-                                }
-                            }
-                            if pedestrian_ref.is_some() {
-                                self.send_timer(T::TimeoutTimeoutPedest, _pedestrian_r_instant)
-                                    .await?;
-                            }
-                            if pedestrian_ref.is_some() || self.context.speed_km_h.is_new() {
-                                let braking = <BrakingStateState as grust::core::Component>::step(
-                                    &mut self.braking_state,
-                                    BrakingStateInput {
-                                        pedest: *pedestrian_ref,
-                                        timeout_pedest: None,
-                                        speed: speed_km_h,
-                                    },
-                                );
-                                self.context.braking.set(braking);
-                            }
-                            if self.context.braking.is_new() {
-                                self.send_output(
-                                    O::Braking(self.context.braking.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            None,
-                            Some(((), _timeout_timeout_pedest_instant)),
-                            Some((speed_km_h, _speed_km_h_instant)),
-                            Some((pedestrian_l, _pedestrian_l_instant)),
-                        ) => {
-                            let timeout_pedest_ref = &mut None;
-                            let pedestrian_l_ref = &mut None;
-                            let pedestrian_ref = &mut None;
-                            *pedestrian_l_ref = Some(pedestrian_l);
-                            if pedestrian_l_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_l_ref;
-                            }
-                            self.context.speed_km_h.set(speed_km_h);
-                            if pedestrian_ref.is_some() {
-                                self.send_timer(
-                                    T::TimeoutTimeoutPedest,
-                                    _timeout_timeout_pedest_instant,
-                                )
-                                .await?;
-                            } else {
-                                *timeout_pedest_ref = Some(());
-                                self.send_timer(
-                                    T::TimeoutTimeoutPedest,
-                                    _timeout_timeout_pedest_instant,
-                                )
-                                .await?;
-                            }
-                            if pedestrian_ref.is_some()
-                                || timeout_pedest_ref.is_some()
-                                || self.context.speed_km_h.is_new()
-                            {
-                                let braking = <BrakingStateState as grust::core::Component>::step(
-                                    &mut self.braking_state,
-                                    BrakingStateInput {
-                                        pedest: *pedestrian_ref,
-                                        timeout_pedest: *timeout_pedest_ref,
-                                        speed: speed_km_h,
-                                    },
-                                );
-                                self.context.braking.set(braking);
-                            }
-                            if self.context.braking.is_new() {
-                                self.send_output(
-                                    O::Braking(self.context.braking.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            Some((pedestrian_r, _pedestrian_r_instant)),
-                            Some(((), _timeout_timeout_pedest_instant)),
-                            Some((speed_km_h, _speed_km_h_instant)),
-                            Some((pedestrian_l, _pedestrian_l_instant)),
-                        ) => {
-                            let timeout_pedest_ref = &mut None;
-                            let pedestrian_l_ref = &mut None;
-                            let pedestrian_ref = &mut None;
-                            let pedestrian_r_ref = &mut None;
-                            *pedestrian_l_ref = Some(pedestrian_l);
-                            self.context.speed_km_h.set(speed_km_h);
-                            *pedestrian_r_ref = Some(pedestrian_r);
-                            if pedestrian_l_ref.is_some() {
-                                *pedestrian_ref = *pedestrian_l_ref;
-                            } else {
-                                if pedestrian_r_ref.is_some() {
-                                    *pedestrian_ref = *pedestrian_r_ref;
-                                }
-                            }
-                            if pedestrian_ref.is_some() {
-                                self.send_timer(T::TimeoutTimeoutPedest, _pedestrian_r_instant)
-                                    .await?;
-                            } else {
-                                *timeout_pedest_ref = Some(());
-                                self.send_timer(T::TimeoutTimeoutPedest, _pedestrian_r_instant)
-                                    .await?;
-                            }
-                            if pedestrian_ref.is_some()
-                                || timeout_pedest_ref.is_some()
-                                || self.context.speed_km_h.is_new()
-                            {
-                                let braking = <BrakingStateState as grust::core::Component>::step(
-                                    &mut self.braking_state,
-                                    BrakingStateInput {
-                                        pedest: *pedestrian_ref,
-                                        timeout_pedest: *timeout_pedest_ref,
-                                        speed: speed_km_h,
-                                    },
-                                );
-                                self.context.braking.set(braking);
-                            }
-                            if self.context.braking.is_new() {
-                                self.send_output(
-                                    O::Braking(self.context.braking.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
+                    }
+                    if pedestrian_ref.is_some()
+                        || timeout_pedest_ref.is_some()
+                        || self.context.speed_km_h.is_new()
+                    {
+                        let braking = <BrakingStateState as grust::core::Component>::step(
+                            &mut self.braking_state,
+                            BrakingStateInput {
+                                pedest: *pedestrian_ref,
+                                timeout_pedest: *timeout_pedest_ref,
+                                speed: self.context.speed_km_h.get(),
+                            },
+                        );
+                        self.context.braking.set(braking);
+                    }
+                    if self.context.braking.is_new() {
+                        self.send_output(
+                            O::Braking(self.context.braking.get(), _grust_reserved_instant),
+                            _grust_reserved_instant,
+                        )
+                        .await?;
                     }
                 } else {
                     self.delayed = true;
@@ -1102,7 +564,9 @@ pub mod runtime {
                         .input_store
                         .pedestrian_l
                         .replace((pedestrian_l, _pedestrian_l_instant));
-                    assert ! (unique . is_none () , "flow `pedestrian_l` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert!
+                    (unique.is_none(),
+                    "flow `pedestrian_l` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }

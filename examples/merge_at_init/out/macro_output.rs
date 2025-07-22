@@ -257,73 +257,30 @@ pub mod runtime {
                 self.context.reset();
                 if self.input_store.not_empty() {
                     self.reset_time_constraints(_grust_reserved_instant).await?;
-                    match (
-                        self.input_store.measure.take(),
-                        self.input_store.stabilize.take(),
-                    ) {
-                        (None, None) => {}
-                        (Some((measure, _measure_instant)), None) => {
-                            let compute_ev_ref = &mut None;
-                            let measure_ev_ref = &mut None;
-                            self.context.measure.set(measure);
-                            if self.context.measure_ev_old.get() != measure {
-                                self.context.measure_ev_old.set(measure);
-                                *measure_ev_ref = Some(measure);
-                            }
-                            if measure_ev_ref.is_some() {
-                                *compute_ev_ref = *measure_ev_ref;
-                            }
-                            if let Some(compute_ev) = *compute_ev_ref {
-                                self.send_output(
-                                    O::ComputeEv(compute_ev, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
+                    let stabilize_ref = &mut None;
+                    let measure_ev_ref = &mut None;
+                    let compute_ev_ref = &mut None;
+                    *stabilize_ref = self.input_store.stabilize.take().map(|(x, _)| x);
+                    if let Some((measure, _)) = self.input_store.measure.take() {
+                        self.context.measure.set(measure);
+                    }
+                    if self.context.measure_ev_old.get() != self.context.measure.get() {
+                        self.context.measure_ev_old.set(self.context.measure.get());
+                        *measure_ev_ref = Some(self.context.measure.get());
+                    }
+                    if measure_ev_ref.is_some() {
+                        *compute_ev_ref = *measure_ev_ref;
+                    } else {
+                        if stabilize_ref.is_some() {
+                            *compute_ev_ref = *stabilize_ref;
                         }
-                        (None, Some((stabilize, _stabilize_instant))) => {
-                            let compute_ev_ref = &mut None;
-                            let stabilize_ref = &mut None;
-                            *stabilize_ref = Some(stabilize);
-                            if stabilize_ref.is_some() {
-                                *compute_ev_ref = *stabilize_ref;
-                            }
-                            if let Some(compute_ev) = *compute_ev_ref {
-                                self.send_output(
-                                    O::ComputeEv(compute_ev, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            Some((measure, _measure_instant)),
-                            Some((stabilize, _stabilize_instant)),
-                        ) => {
-                            let stabilize_ref = &mut None;
-                            let measure_ev_ref = &mut None;
-                            let compute_ev_ref = &mut None;
-                            *stabilize_ref = Some(stabilize);
-                            self.context.measure.set(measure);
-                            if self.context.measure_ev_old.get() != measure {
-                                self.context.measure_ev_old.set(measure);
-                                *measure_ev_ref = Some(measure);
-                            }
-                            if measure_ev_ref.is_some() {
-                                *compute_ev_ref = *measure_ev_ref;
-                            } else {
-                                if stabilize_ref.is_some() {
-                                    *compute_ev_ref = *stabilize_ref;
-                                }
-                            }
-                            if let Some(compute_ev) = *compute_ev_ref {
-                                self.send_output(
-                                    O::ComputeEv(compute_ev, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
+                    }
+                    if let Some(compute_ev) = *compute_ev_ref {
+                        self.send_output(
+                            O::ComputeEv(compute_ev, _grust_reserved_instant),
+                            _grust_reserved_instant,
+                        )
+                        .await?;
                     }
                 } else {
                     self.delayed = true;
@@ -390,7 +347,9 @@ pub mod runtime {
                         .input_store
                         .measure
                         .replace((measure, _measure_instant));
-                    assert ! (unique . is_none () , "flow `measure` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert!
+                    (unique.is_none(),
+                    "flow `measure` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -420,7 +379,9 @@ pub mod runtime {
                         .input_store
                         .stabilize
                         .replace((stabilize, _stabilize_instant));
-                    assert ! (unique . is_none () , "flow `stabilize` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert!
+                    (unique.is_none(),
+                    "flow `stabilize` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
