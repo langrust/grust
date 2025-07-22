@@ -360,7 +360,9 @@ pub mod runtime {
                         .input_store
                         .period_clock
                         .replace(((), _period_clock_instant));
-                    assert ! (unique . is_none () , "flow `period_clock` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert!
+                    (unique.is_none(),
+                    "flow `period_clock` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -371,196 +373,42 @@ pub mod runtime {
                 self.context.reset();
                 if self.input_store.not_empty() {
                     self.reset_time_constraints(_grust_reserved_instant).await?;
-                    match (
-                        self.input_store.period_clock.take(),
-                        self.input_store.input_s.take(),
-                        self.input_store.input_e.take(),
-                    ) {
-                        (None, None, None) => {}
-                        (Some(((), _period_clock_instant)), None, None) => {
-                            let clock_ref = &mut None;
-                            let sampled_ref = &mut None;
-                            self.send_timer(T::PeriodClock, _period_clock_instant)
-                                .await?;
-                            *clock_ref = Some(
-                                (_grust_reserved_instant
-                                    .duration_since(self.begin)
-                                    .as_millis()) as f64,
-                            );
-                            if clock_ref.is_some() {
-                                *sampled_ref = self.context.input_e.take();
-                            }
-                            if let Some(sampled) = *sampled_ref {
-                                self.send_output(
-                                    O::Sampled(sampled, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                            if clock_ref.is_some() {
-                                self.context.scanned.set(self.context.input_s.get());
-                            }
-                            if self.context.scanned.is_new() {
-                                self.send_output(
-                                    O::Scanned(self.context.scanned.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (None, Some((input_s, _input_s_instant)), None) => {
-                            self.context.input_s.set(input_s);
-                            if self.context.scanned.is_new() {
-                                self.send_output(
-                                    O::Scanned(self.context.scanned.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            Some(((), _period_clock_instant)),
-                            Some((input_s, _input_s_instant)),
-                            None,
-                        ) => {
-                            let clock_ref = &mut None;
-                            let sampled_ref = &mut None;
-                            self.context.input_s.set(input_s);
-                            self.send_timer(T::PeriodClock, _period_clock_instant)
-                                .await?;
-                            *clock_ref = Some(
-                                (_grust_reserved_instant
-                                    .duration_since(self.begin)
-                                    .as_millis()) as f64,
-                            );
-                            if clock_ref.is_some() {
-                                *sampled_ref = self.context.input_e.take();
-                            }
-                            if let Some(sampled) = *sampled_ref {
-                                self.send_output(
-                                    O::Sampled(sampled, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                            if clock_ref.is_some() {
-                                self.context.scanned.set(input_s);
-                            }
-                            if self.context.scanned.is_new() {
-                                self.send_output(
-                                    O::Scanned(self.context.scanned.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (None, None, Some((input_e, _input_e_instant))) => {
-                            let input_e_ref = &mut None;
-                            *input_e_ref = Some(input_e);
-                            if input_e_ref.is_some() {
-                                self.context.input_e.set(*input_e_ref);
-                            }
-                        }
-                        (
-                            Some(((), _period_clock_instant)),
-                            None,
-                            Some((input_e, _input_e_instant)),
-                        ) => {
-                            let input_e_ref = &mut None;
-                            let clock_ref = &mut None;
-                            let sampled_ref = &mut None;
-                            *input_e_ref = Some(input_e);
-                            self.send_timer(T::PeriodClock, _period_clock_instant)
-                                .await?;
-                            *clock_ref = Some(
-                                (_grust_reserved_instant
-                                    .duration_since(self.begin)
-                                    .as_millis()) as f64,
-                            );
-                            if input_e_ref.is_some() {
-                                self.context.input_e.set(*input_e_ref);
-                            }
-                            if clock_ref.is_some() {
-                                *sampled_ref = self.context.input_e.take();
-                            }
-                            if let Some(sampled) = *sampled_ref {
-                                self.send_output(
-                                    O::Sampled(sampled, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                            if clock_ref.is_some() {
-                                self.context.scanned.set(self.context.input_s.get());
-                            }
-                            if self.context.scanned.is_new() {
-                                self.send_output(
-                                    O::Scanned(self.context.scanned.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            None,
-                            Some((input_s, _input_s_instant)),
-                            Some((input_e, _input_e_instant)),
-                        ) => {
-                            let input_e_ref = &mut None;
-                            *input_e_ref = Some(input_e);
-                            if input_e_ref.is_some() {
-                                self.context.input_e.set(*input_e_ref);
-                            }
-                            self.context.input_s.set(input_s);
-                            if self.context.scanned.is_new() {
-                                self.send_output(
-                                    O::Scanned(self.context.scanned.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
-                        (
-                            Some(((), _period_clock_instant)),
-                            Some((input_s, _input_s_instant)),
-                            Some((input_e, _input_e_instant)),
-                        ) => {
-                            let input_e_ref = &mut None;
-                            let clock_ref = &mut None;
-                            let sampled_ref = &mut None;
-                            *input_e_ref = Some(input_e);
-                            self.context.input_s.set(input_s);
-                            self.send_timer(T::PeriodClock, _period_clock_instant)
-                                .await?;
-                            *clock_ref = Some(
-                                (_grust_reserved_instant
-                                    .duration_since(self.begin)
-                                    .as_millis()) as f64,
-                            );
-                            if input_e_ref.is_some() {
-                                self.context.input_e.set(*input_e_ref);
-                            }
-                            if clock_ref.is_some() {
-                                *sampled_ref = self.context.input_e.take();
-                            }
-                            if let Some(sampled) = *sampled_ref {
-                                self.send_output(
-                                    O::Sampled(sampled, _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                            if clock_ref.is_some() {
-                                self.context.scanned.set(input_s);
-                            }
-                            if self.context.scanned.is_new() {
-                                self.send_output(
-                                    O::Scanned(self.context.scanned.get(), _grust_reserved_instant),
-                                    _grust_reserved_instant,
-                                )
-                                .await?;
-                            }
-                        }
+                    let input_e_ref = &mut None;
+                    let clock_ref = &mut None;
+                    let sampled_ref = &mut None;
+                    *input_e_ref = self.input_store.input_e.take().map(|(x, _)| x);
+                    if let Some((input_s, _)) = self.input_store.input_s.take() {
+                        self.context.input_s.set(input_s);
+                    }
+                    self.send_timer(T::PeriodClock, _grust_reserved_instant)
+                        .await?;
+                    *clock_ref = Some(
+                        (_grust_reserved_instant
+                            .duration_since(self.begin)
+                            .as_millis()) as f64,
+                    );
+                    if input_e_ref.is_some() {
+                        self.context.input_e.set(*input_e_ref);
+                    }
+                    if clock_ref.is_some() {
+                        *sampled_ref = self.context.input_e.take();
+                    }
+                    if let Some(sampled) = *sampled_ref {
+                        self.send_output(
+                            O::Sampled(sampled, _grust_reserved_instant),
+                            _grust_reserved_instant,
+                        )
+                        .await?;
+                    }
+                    if clock_ref.is_some() {
+                        self.context.scanned.set(self.context.input_s.get());
+                    }
+                    if self.context.scanned.is_new() {
+                        self.send_output(
+                            O::Scanned(self.context.scanned.get(), _grust_reserved_instant),
+                            _grust_reserved_instant,
+                        )
+                        .await?;
                     }
                 } else {
                     self.delayed = true;
@@ -599,7 +447,9 @@ pub mod runtime {
                         .input_store
                         .input_s
                         .replace((input_s, _input_s_instant));
-                    assert ! (unique . is_none () , "flow `input_s` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert!
+                    (unique.is_none(),
+                    "flow `input_s` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -644,7 +494,9 @@ pub mod runtime {
                         .input_store
                         .input_e
                         .replace((input_e, _input_e_instant));
-                    assert ! (unique . is_none () , "flow `input_e` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert!
+                    (unique.is_none(),
+                    "flow `input_e` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
