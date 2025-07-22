@@ -342,8 +342,6 @@ mod flow_instr {
         on_change_events: HashMap<usize, usize>,
         /// Maps statement indices to the indices and kinds of their timing_events.
         stmts_timers: HashMap<usize, usize>,
-        /// Tells if we handle multiple incoming flows.
-        multiple_inputs: bool,
         /// Maps statement to their related imports.
         stmts_imports: HashMap<usize, Vec<(usize, usize)>>,
         /// Service to build propagations for.
@@ -356,8 +354,12 @@ mod flow_instr {
         components: Vec<(Ident, Option<syn::Path>, Ident)>,
         /// Triggers graph,
         graph: trigger::Graph<'a>,
+        /// Tells if we handle multiple incoming flows.
+        multiple_inputs: bool,
         /// Tells wether we are in service initialization.
         init_service: bool,
+        /// Tells if we handle a service delay.
+        delay: bool,
     }
     impl ops::Deref for Builder<'_> {
         type Target = Ctx;
@@ -438,20 +440,18 @@ mod flow_instr {
                 stmts_timers,
                 events: HashSet::new(),
                 signals: HashSet::new(),
-                multiple_inputs: false,
                 stmts_imports,
                 service,
                 imports,
                 exports,
                 components,
                 graph,
+                multiple_inputs: false,
                 init_service: false,
+                delay: false,
             }
         }
 
-        pub fn init_service(&self) -> bool {
-            self.init_service
-        }
         pub fn has_time_range(&self) -> bool {
             self.service.time_range.is_some()
         }
@@ -490,10 +490,12 @@ mod flow_instr {
             })
         }
         pub fn set_multiple_inputs(&mut self, multiple_inputs: bool) {
-            self.multiple_inputs = multiple_inputs
+            self.multiple_inputs = multiple_inputs;
+            self.delay = multiple_inputs && !self.init_service;
         }
         pub fn set_init_service(&mut self, init_service: bool) {
-            self.init_service = init_service
+            self.init_service = init_service;
+            self.delay = self.multiple_inputs && !init_service;
         }
         pub fn destroy(self) -> (ir1::ctx::Flows, Vec<(Ident, Option<syn::Path>, Ident)>) {
             (self.flows_context, self.components)
@@ -757,66 +759,94 @@ mod flow_instr {
         }
 
         /// Returns the import flow that have triggered the stmt.
-        fn get_stmt_import(&self, stmt_id: usize) -> usize {
-            let imports = self
-                .stmts_imports
-                .get(&stmt_id)
-                .expect("there should be imports");
-            debug_assert!(!imports.is_empty());
+        fn get_stmt_import(&self, stmt_id: usize) -> Option<usize> {
+            if self.multiple_inputs {
+                None
+            } else {
+                let imports = self
+                    .stmts_imports
+                    .get(&stmt_id)
+                    .expect("there should be imports");
+                debug_assert!(!imports.is_empty());
 
-            imports
-                .iter()
-                .find(|(_, import_id)| {
-                    self.events.contains(import_id) || self.signals.contains(import_id)
-                })
-                .unwrap()
-                .1
+                Some(
+                    imports
+                        .iter()
+                        .find(|(_, import_id)| {
+                            self.events.contains(import_id) || self.signals.contains(import_id)
+                        })
+                        .unwrap()
+                        .1,
+                )
+            }
         }
 
         /// Compute the instruction that will init the events.
         pub fn init_events(&self) -> impl Iterator<Item = FlowInstruction> + '_ {
             self.events
                 .iter()
-                .filter(|event_id| !self.is_timer(**event_id))
+                .filter(|event_id| self.delay || !self.is_timer(**event_id))
                 .map(|event_id| FlowInstruction::init_event(self.get_name(*event_id).clone()))
         }
 
         /// Compute the instruction from an import.
         pub fn handle_import(&mut self, flow_id: usize) -> FlowInstruction {
+            // get flow name
+            let name = self.get_name(flow_id).clone();
+
+            // if delay then take from context
+            let mut seq = if self.delay {
+                vec![FlowInstruction::take_from_input_store(name.clone())]
+            } else {
+                vec![]
+            };
+
             if self.get_flow_kind(flow_id).is_event() {
-                // add to events set
+                // add to set of possible events
                 self.events.insert(flow_id);
                 if !self.is_timer(flow_id) {
-                    // store the event in the local reference
-                    let event_name = self.get_name(flow_id);
-                    let expr = if self.multiple_inputs && !self.init_service {
-                        Expression::take_event_from_input(event_name.clone())
+                    // define the event optional value
+                    let expr = if self.delay {
+                        Expression::event_from_input_store(name)
                     } else {
-                        Expression::some(Expression::ident(event_name.clone()))
+                        Expression::some(Expression::ident(name))
                     };
-                    self.define_event(flow_id, expr)
-                } else if self.is_period(flow_id) {
-                    // reset periodic timer
-                    self.reset_timer(flow_id, flow_id)
+                    seq.push(self.define_event(flow_id, expr))
                 } else {
-                    // if timer other than period, then do nothing
-                    FlowInstruction::seq(vec![])
+                    if self.is_period(flow_id) {
+                        // reset periodic timer
+                        if self.delay {
+                            seq.push(FlowInstruction::reset_from_input_store(name.clone()))
+                        } else {
+                            let import_flow = if self.init_service {
+                                None
+                            } else {
+                                Some(flow_id)
+                            };
+                            seq.push(self.reset_timer(flow_id, import_flow))
+                        }
+                    }
+                    // define the event optional value
+                    if self.delay {
+                        let expr = Expression::event_from_input_store(name);
+                        seq.push(self.define_event(flow_id, expr))
+                    }
                 }
             } else {
-                if self.multiple_inputs && !self.init_service {
-                    let signal_name = self.get_name(flow_id);
-                    FlowInstruction::update_ctx_from_input(signal_name.clone())
+                if self.delay {
+                    // get the optional signal change from input store
+                    seq.push(FlowInstruction::update_ctx_from_input_store(name))
                 } else {
                     // add to signals set
                     self.signals.insert(flow_id);
                     if let Some(update) = self.update_ctx(flow_id) {
                         // update the context if necessary
-                        update
-                    } else {
-                        FlowInstruction::seq(vec![])
+                        seq.push(update)
                     }
                 }
             }
+
+            FlowInstruction::seq(seq)
         }
 
         /// Compute the instruction from an expression flow.
@@ -906,6 +936,7 @@ mod flow_instr {
             let timer_id = self.stmts_timers[&stmt_id];
 
             let mut instrs = vec![];
+
             // source is an event, look if it is defined
             if self.events.contains(&id_source) {
                 // if activated, store event value in context
@@ -920,12 +951,26 @@ mod flow_instr {
                     None,
                 ))
             }
+
             // if timing event is activated
             if self.events.contains(&timer_id) {
                 // if activated, create event by taking from stored event value
                 let take =
                     self.define_event(id_pattern, Expression::take_from_ctx(source_name.clone()));
-                instrs.push(take)
+
+                if self.delay {
+                    // if we are in service delay, all imports (including timers) are activated
+                    // so we need to check if it has arrived
+                    let timer_name = self.get_name(timer_id).clone();
+                    instrs.push(FlowInstruction::if_activated(
+                        vec![timer_name],
+                        [],
+                        take,
+                        None,
+                    ))
+                } else {
+                    instrs.push(take)
+                }
             }
 
             FlowInstruction::seq(instrs)
@@ -950,11 +995,20 @@ mod flow_instr {
 
             let timer_id = self.stmts_timers[&stmt_id];
 
-            // timer is an event, look if it is defined
+            // if timing event is activated
             if self.events.contains(&timer_id) {
                 // update signal by taking from source signal
+                let update =
+                    FlowInstruction::update_ctx(flow_name.clone(), self.get_signal(id_source));
 
-                FlowInstruction::update_ctx(flow_name.clone(), self.get_signal(id_source))
+                if self.delay {
+                    // if we are in service delay, all imports (including timers) are activated
+                    // so we need to check if it has arrived
+                    let timer_name = self.get_name(timer_id).clone();
+                    FlowInstruction::if_activated(vec![timer_name], [], update, None)
+                } else {
+                    update
+                }
             } else {
                 // 'scan' can be activated by the source signal, but it won't do anything
                 FlowInstruction::seq(vec![])
@@ -994,13 +1048,28 @@ mod flow_instr {
             };
             let mut timer_instr = || {
                 // if activated, define timeout event and reset timer
-                let unit_expr = Expression::some(Expression::lit(Constant::unit_default()));
-                let reset = self.reset_timer(timer_id, import_flow);
-                if self.init_service() {
+                if self.init_service {
+                    // at service initialization, only need to reset the timer
+                    let reset = self.reset_timer(timer_id, import_flow);
                     FlowInstruction::seq(vec![reset])
                 } else {
+                    let unit_expr = Expression::some(Expression::lit(Constant::unit_default()));
+                    let reset = self.reset_timer(timer_id, import_flow);
                     let def = self.define_event(id_pattern, unit_expr);
-                    FlowInstruction::seq(vec![def, reset])
+                    if self.delay {
+                        // if we are in service delay, all imports (including timers) are activated
+                        // so we need to check if it has arrived
+                        let timer_name = self.get_name(timer_id).clone();
+                        let reset = FlowInstruction::reset_from_input_store(timer_name.clone());
+                        FlowInstruction::if_activated(
+                            vec![timer_name],
+                            [],
+                            FlowInstruction::seq(vec![def, reset]),
+                            None,
+                        )
+                    } else {
+                        FlowInstruction::seq(vec![def, reset])
+                    }
                 }
             };
             match occurrences {
@@ -1033,7 +1102,7 @@ mod flow_instr {
 
             // update created signal
             let instr = FlowInstruction::update_ctx(flow_name.clone(), self.get_signal(id_source));
-            if self.init_service() {
+            if self.init_service {
                 instr
             } else {
                 FlowInstruction::if_throttle(flow_name, source_name, delta, instr)
@@ -1061,7 +1130,7 @@ mod flow_instr {
             // detect changes on signal
             let update =
                 FlowInstruction::update_ctx(old_event_name.clone(), self.get_signal(id_source));
-            if self.init_service() {
+            if self.init_service {
                 update
             } else {
                 let then = FlowInstruction::seq(vec![
@@ -1139,7 +1208,10 @@ mod flow_instr {
                     // check if second activated
                     if_event_2
                 }
-                (false, false) => FlowInstruction::seq(vec![]), // noErrorDesc!("'merge' should be activated by one of its sources"),
+                (false, false) => {
+                    debug_assert!(self.init_service);
+                    FlowInstruction::seq(vec![])
+                }
             }
         }
 
@@ -1155,14 +1227,11 @@ mod flow_instr {
             debug_assert!(ids.len() == 1);
             let id_pattern = ids.pop().unwrap();
             // get the import flow that triggered ``time``
-            let opt_name = if self.init_service || self.multiple_inputs {
-                None
-            } else {
-                let import_flow = self.get_stmt_import(stmt_id);
-                let mut name = self.get_name(import_flow).clone();
+            let opt_name = self.get_stmt_import(stmt_id).map(|id| {
+                let mut name = self.get_name(id).clone();
                 name.set_span(loc.span);
-                Some(name)
-            };
+                name
+            });
 
             // retrieve the instant of computation
             let expr = Expression::instant(opt_name);
@@ -1190,19 +1259,26 @@ mod flow_instr {
 
             let timer_id = self.stmts_timers[&stmt_id];
 
-            // get the import flow that triggered ``time``
-            let opt_name = if self.init_service || self.multiple_inputs {
-                None
-            } else {
-                let import_flow = self.get_stmt_import(stmt_id);
-                let mut name = self.get_name(import_flow).clone();
+            // get the import flow that triggered ``period``
+            let opt_name = self.get_stmt_import(stmt_id).map(|id| {
+                let mut name = self.get_name(id).clone();
                 name.set_span(loc.span);
-                Some(name)
-            };
+                name
+            });
 
             // timer is an event, look if it is defined
             if self.events.contains(&timer_id) {
-                self.define_event(id_pattern, Expression::some(Expression::instant(opt_name)))
+                if self.delay {
+                    // if we are in service delay, all imports (including timers) are activated
+                    // so we need to check if it has arrived
+                    let timer_name = self.get_name(timer_id).clone();
+                    self.define_event(
+                        id_pattern,
+                        Expression::instant_from_input_store(timer_name.clone()),
+                    )
+                } else {
+                    self.define_event(id_pattern, Expression::some(Expression::instant(opt_name)))
+                }
             } else {
                 FlowInstruction::seq(vec![])
             }
@@ -1384,13 +1460,13 @@ mod flow_instr {
         }
 
         /// Add reset timer in current propagation branch.
-        fn reset_timer(&self, timer_id: usize, import_flow: usize) -> FlowInstruction {
-            let timer_name = self.get_name(timer_id);
-            if self.init_service() || self.multiple_inputs {
-                FlowInstruction::reset(timer_name.clone())
-            } else {
+        fn reset_timer(&self, timer_id: usize, opt_import_flow: Option<usize>) -> FlowInstruction {
+            let timer_name = self.get_name(timer_id).clone();
+            if let Some(import_flow) = opt_import_flow {
                 let import_name = self.get_name(import_flow);
-                FlowInstruction::reset_instant(timer_name.clone(), import_name.clone())
+                FlowInstruction::reset_instant(timer_name, import_name.clone())
+            } else {
+                FlowInstruction::reset(timer_name)
             }
         }
 
@@ -1441,7 +1517,7 @@ mod flow_instr {
 
             match self.conf.propagation {
                 conf::Propagation::EventIsles => comp_call,
-                conf::Propagation::OnChange if self.init_service() => comp_call,
+                conf::Propagation::OnChange if self.init_service => comp_call,
                 conf::Propagation::OnChange => {
                     // call component when activated by inputs
                     FlowInstruction::if_activated(events, signals, comp_call, None)
@@ -1480,7 +1556,7 @@ mod flow_instr {
 
             match self.conf.propagation {
                 conf::Propagation::EventIsles => fun_call,
-                conf::Propagation::OnChange if self.init_service() => fun_call,
+                conf::Propagation::OnChange if self.init_service => fun_call,
                 conf::Propagation::OnChange => {
                     // call component when activated by inputs
                     FlowInstruction::if_activated(vec![], signals, fun_call, None)
@@ -1488,30 +1564,45 @@ mod flow_instr {
             }
         }
 
+        fn send_from(
+            &self,
+            name: &Ident,
+            expr: Expression,
+            opt_import_flow: Option<usize>,
+            is_event: bool,
+        ) -> FlowInstruction {
+            if let Some(import_flow) = opt_import_flow {
+                let import_name = self.get_name(import_flow);
+                FlowInstruction::send_from(name.clone(), expr, import_name.clone(), is_event)
+            } else {
+                FlowInstruction::send(name.clone(), expr, is_event)
+            }
+        }
+
         /// Add signal send in current propagation branch.
-        fn send_signal(&self, signal_id: usize, import_flow: usize) -> FlowInstruction {
+        fn send_signal(&self, signal_id: usize, opt_import_flow: Option<usize>) -> FlowInstruction {
             let signal_name = self.get_name(signal_id);
             let expr = self.get_signal(signal_id);
             let send = if self.init_service || self.multiple_inputs {
                 FlowInstruction::send(signal_name.clone(), expr, false)
             } else {
-                let import_name = self.get_name(import_flow);
-                FlowInstruction::send_from(signal_name.clone(), expr, import_name.clone(), false)
+                self.send_from(signal_name, expr, opt_import_flow, false)
             };
-            if self.init_service
-                || self
-                    .events
-                    .iter()
-                    .any(|event_id| self.ctx0.is_timeout(*event_id))
-            {
+            let service_timeout = self
+                .events
+                .iter()
+                .any(|event_id| self.ctx0.is_timeout(*event_id));
+            if self.init_service || service_timeout {
+                // if init or service timeout then send anyway
                 send
             } else {
+                // otherwise, only if signal has changed its value
                 FlowInstruction::if_activated([], vec![signal_name.clone()], send, None)
             }
         }
 
         /// Add event send in current propagation branch.
-        fn send_event(&self, event_id: usize, import_flow: usize) -> FlowInstruction {
+        fn send_event(&self, event_id: usize, opt_import_flow: Option<usize>) -> FlowInstruction {
             // timer is an event, look if it is defined
             if self.events.contains(&event_id) {
                 // if activated, send event
@@ -1520,8 +1611,7 @@ mod flow_instr {
                 if self.init_service || self.multiple_inputs {
                     FlowInstruction::send(event_name.clone(), expr, true)
                 } else {
-                    let import_name = self.get_name(import_flow);
-                    FlowInstruction::send_from(event_name.clone(), expr, import_name.clone(), true)
+                    self.send_from(event_name, expr, opt_import_flow, true)
                 }
             } else {
                 FlowInstruction::seq(vec![])

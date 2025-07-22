@@ -481,14 +481,16 @@ pub enum FlowInstruction {
     Let(Ident, Expression),
     InitEvent(Ident),
     UpdateEvent(Ident, Expression),
-    UpdateContext(Ident, Expression),
-    UpdateContextFromInput(Ident),
+    UpCtx(Ident, Expression),
+    TakeFromInputStore(Ident),
+    UpCtxFromInputStore(Ident),
     SendSignal(Ident, Expression, Option<Ident>),
     SendEvent(Ident, Expression, Expression, Option<Ident>),
     IfThrottle(Ident, Ident, Constant, Box<Self>),
     IfChange(Ident, Expression, Box<Self>),
     IfActivated(Vec<Ident>, Vec<Ident>, Box<Self>, Option<Box<Self>>),
     ResetTimer(Ident, Option<Ident>),
+    ResetTimerFromInputStore(Ident),
     ComponentCall(
         Pattern,
         Ident,
@@ -520,15 +522,22 @@ impl ToTokens for FlowInstruction {
                 let ident = ident.to_ref_var();
                 quote! { *#ident = #expr; }.to_tokens(tokens)
             }
-            FlowInstruction::UpdateContext(ident, flow_expression) => {
+            FlowInstruction::UpCtx(ident, flow_expression) => {
                 quote! { self.context.#ident.set(#flow_expression); }.to_tokens(tokens)
             }
-            FlowInstruction::UpdateContextFromInput(ident) => quote! {
-                if let Some((#ident, _)) = self.input_store.#ident.take() {
-                    self.context.#ident.set(#ident);
+            FlowInstruction::UpCtxFromInputStore(ident) => {
+                let input_store_var = ident.to_input_store_var();
+                quote! {
+                    if let Some((#ident, _)) = #input_store_var {
+                        self.context.#ident.set(#ident);
+                    }
                 }
+                .to_tokens(tokens)
             }
-            .to_tokens(tokens),
+            FlowInstruction::TakeFromInputStore(ident) => {
+                let input_store_var = ident.to_input_store_var();
+                quote! { let #input_store_var  = self.input_store.#ident.take(); }.to_tokens(tokens)
+            }
             FlowInstruction::SendSignal(name, send_expr, instant) => {
                 let enum_ident = name.to_camel();
                 let instant = if let Some(instant) = instant {
@@ -579,6 +588,17 @@ impl ToTokens for FlowInstruction {
                     Ident::instant_var()
                 };
                 quote! { self.send_timer(T::#enum_ident, #instant).await?; }.to_tokens(tokens)
+            }
+            FlowInstruction::ResetTimerFromInputStore(timer_name) => {
+                let input_store_var = timer_name.to_input_store_var();
+                let enum_ident = timer_name.to_ty();
+                let instant = timer_name.to_instant_var();
+                quote! {
+                    if let Some((_, #instant)) = #input_store_var {
+                        self.send_timer(T::#enum_ident, #instant).await?;
+                    }
+                }
+                .to_tokens(tokens)
             }
             FlowInstruction::ComponentCall(
                 pattern,
@@ -747,11 +767,14 @@ mk_new! { impl FlowInstruction =>
         name: impl Into<Ident> = name.into(),
         expr: Expression = expr,
     )
-    UpdateContext: update_ctx (
+    UpCtx: update_ctx (
         name: impl Into<Ident> = name.into(),
         expr: Expression = expr,
     )
-    UpdateContextFromInput: update_ctx_from_input (
+    UpCtxFromInputStore: update_ctx_from_input_store (
+        name: impl Into<Ident> = name.into()
+    )
+    TakeFromInputStore: take_from_input_store (
         name: impl Into<Ident> = name.into()
     )
     IfThrottle: if_throttle (
@@ -778,6 +801,9 @@ mk_new! { impl FlowInstruction =>
     ResetTimer: reset (
         name: impl Into<Ident> = name.into(),
         instant = None,
+    )
+    ResetTimerFromInputStore: reset_from_input_store (
+        name: impl Into<Ident> = name.into(),
     )
     ComponentCall: comp_call (
         pat: Pattern = pat,
@@ -864,8 +890,8 @@ pub enum Expression {
         /// The flow called.
         flow: Ident,
     },
-    /// A call from the input store that will take the optional value: `input_store.e.take().map(|(x,_)| x)`.
-    TakeEventFromInputStore {
+    /// Get event from the input store.
+    EventFromInputStore {
         /// The event called.
         flow: Ident,
     },
@@ -877,7 +903,15 @@ pub enum Expression {
     /// None expression: `None`.
     None,
     /// Retrieve the instant of computation.
-    Instant { opt_ident: Option<Ident> },
+    Instant {
+        /// Flow from which we want the instant.
+        opt_ident: Option<Ident>,
+    },
+    /// Retrieve the instant of computation from the input store.
+    InstantFromInputStore {
+        /// Flow from which we want the instant.
+        flow: Ident,
+    },
 }
 
 mk_new! { impl Expression =>
@@ -896,7 +930,7 @@ mk_new! { impl Expression =>
     TakeFromContext: take_from_ctx {
         flow: impl Into<Ident> = flow.into()
     }
-    TakeEventFromInputStore: take_event_from_input {
+    EventFromInputStore: event_from_input_store {
         flow: impl Into<Ident> = flow.into()
     }
     Some: some {
@@ -904,6 +938,7 @@ mk_new! { impl Expression =>
     }
     None: none {}
     Instant: instant { opt_ident: Option<Ident> }
+    InstantFromInputStore: instant_from_input_store { flow: Ident }
 }
 impl ToTokens for Expression {
     #[inline(always)]
@@ -919,8 +954,9 @@ impl ToTokens for Expression {
             Expression::TakeFromContext { flow } => {
                 quote! { self.context.#flow.take() }.to_tokens(tokens)
             }
-            Expression::TakeEventFromInputStore { flow } => {
-                quote! { self.input_store.#flow.take().map(|(x, _)| x) }.to_tokens(tokens)
+            Expression::EventFromInputStore { flow } => {
+                let input_store_var = flow.to_input_store_var();
+                quote! { #input_store_var.map(|(x, _)| x) }.to_tokens(tokens)
             }
             Expression::Some { expression } => quote! { Some(#expression) }.to_tokens(tokens),
             Expression::None => quote! { None }.to_tokens(tokens),
@@ -932,6 +968,10 @@ impl ToTokens for Expression {
                 };
                 quote! { (#instant.duration_since(self.begin).as_millis()) as f64 }
                     .to_tokens(tokens)
+            }
+            Expression::InstantFromInputStore { flow } => {
+                let input_store_var = flow.to_input_store_var();
+                quote! { #input_store_var.map(|(_, y)| (y.duration_since(self.begin).as_millis()) as f64) }.to_tokens(tokens)
             }
         }
     }

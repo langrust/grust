@@ -246,6 +246,9 @@ pub trait IdentExt: Sized {
     fn to_instant_var(&self) -> Self {
         self.to_snake_with("_", "_instant")
     }
+    fn to_input_store_var(&self) -> Self {
+        self.to_snake_with("_", "_input_store")
+    }
     fn to_ref_var(&self) -> Self {
         self.to_snake_suff("_ref")
     }
