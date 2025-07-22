@@ -591,15 +591,18 @@ pub mod runtime {
                     self.reset_time_constraints(_grust_reserved_instant).await?;
                     let acc_active_ref = &mut None;
                     let radar_e_ref = &mut None;
-                    if let Some((speed_km_h, _)) = self.input_store.speed_km_h.take() {
+                    let _speed_km_h_input_store = self.input_store.speed_km_h.take();
+                    if let Some((speed_km_h, _)) = _speed_km_h_input_store {
                         self.context.speed_km_h.set(speed_km_h);
                     }
                     if self.context.speed_km_h.is_new() {
                         let speed_m_s = utils::convert(self.context.speed_km_h.get());
                         self.context.speed_m_s.set(speed_m_s);
                     }
-                    *acc_active_ref = self.input_store.acc_active.take().map(|(x, _)| x);
-                    if let Some((radar_m, _)) = self.input_store.radar_m.take() {
+                    let _acc_active_input_store = self.input_store.acc_active.take();
+                    *acc_active_ref = _acc_active_input_store.map(|(x, _)| x);
+                    let _radar_m_input_store = self.input_store.radar_m.take();
+                    if let Some((radar_m, _)) = _radar_m_input_store {
                         self.context.radar_m.set(radar_m);
                     }
                     if self.context.radar_e_old.get() != self.context.radar_m.get() {

@@ -260,8 +260,10 @@ pub mod runtime {
                     let stabilize_ref = &mut None;
                     let measure_ev_ref = &mut None;
                     let compute_ev_ref = &mut None;
-                    *stabilize_ref = self.input_store.stabilize.take().map(|(x, _)| x);
-                    if let Some((measure, _)) = self.input_store.measure.take() {
+                    let _stabilize_input_store = self.input_store.stabilize.take();
+                    *stabilize_ref = _stabilize_input_store.map(|(x, _)| x);
+                    let _measure_input_store = self.input_store.measure.take();
+                    if let Some((measure, _)) = _measure_input_store {
                         self.context.measure.set(measure);
                     }
                     if self.context.measure_ev_old.get() != self.context.measure.get() {

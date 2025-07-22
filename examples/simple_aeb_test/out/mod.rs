@@ -377,15 +377,23 @@ pub mod runtime {
                 self.context.reset();
                 if self.input_store.not_empty() {
                     self.reset_time_constraints(_grust_reserved_instant).await?;
+                    let timeout_timeout_pedestrian_ref = &mut None;
                     let pedestrian_ref = &mut None;
                     let pedestrian_l_ref = &mut None;
                     let timeout_pedestrian_ref = &mut None;
                     let pedestrian_r_ref = &mut None;
-                    *pedestrian_l_ref = self.input_store.pedestrian_l.take().map(|(x, _)| x);
-                    if let Some((speed_km_h, _)) = self.input_store.speed_km_h.take() {
+                    let _timeout_timeout_pedestrian_input_store =
+                        self.input_store.timeout_timeout_pedestrian.take();
+                    *timeout_timeout_pedestrian_ref =
+                        _timeout_timeout_pedestrian_input_store.map(|(x, _)| x);
+                    let _pedestrian_l_input_store = self.input_store.pedestrian_l.take();
+                    *pedestrian_l_ref = _pedestrian_l_input_store.map(|(x, _)| x);
+                    let _speed_km_h_input_store = self.input_store.speed_km_h.take();
+                    if let Some((speed_km_h, _)) = _speed_km_h_input_store {
                         self.context.speed_km_h.set(speed_km_h);
                     }
-                    *pedestrian_r_ref = self.input_store.pedestrian_r.take().map(|(x, _)| x);
+                    let _pedestrian_r_input_store = self.input_store.pedestrian_r.take();
+                    *pedestrian_r_ref = _pedestrian_r_input_store.map(|(x, _)| x);
                     if pedestrian_l_ref.is_some() {
                         *pedestrian_ref = *pedestrian_l_ref;
                     } else {
@@ -397,9 +405,18 @@ pub mod runtime {
                         self.send_timer(T::TimeoutTimeoutPedestrian, _grust_reserved_instant)
                             .await?;
                     } else {
-                        *timeout_pedestrian_ref = Some(());
-                        self.send_timer(T::TimeoutTimeoutPedestrian, _grust_reserved_instant)
-                            .await?;
+                        if timeout_timeout_pedestrian_ref.is_some() {
+                            *timeout_pedestrian_ref = Some(());
+                            if let Some((_, _timeout_timeout_pedestrian_instant)) =
+                                _timeout_timeout_pedestrian_input_store
+                            {
+                                self.send_timer(
+                                    T::TimeoutTimeoutPedestrian,
+                                    _timeout_timeout_pedestrian_instant,
+                                )
+                                .await?;
+                            }
+                        }
                     }
                     if pedestrian_ref.is_some()
                         || timeout_pedestrian_ref.is_some()
