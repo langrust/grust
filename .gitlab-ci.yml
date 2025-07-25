@@ -41,7 +41,7 @@ pages:
     - website-setup
   script:
     - echo "Deploying documentation..."
-    - cargo doc --no-deps
+    - cargo doc --no-deps --package grust
     - mkdir -p public
     - cp -r target/doc/* public/
     - echo "Documentation successfully deployed."
