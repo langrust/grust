@@ -832,17 +832,15 @@ mod flow_instr {
                         seq.push(self.define_event(flow_id, expr))
                     }
                 }
+            } else if self.delay {
+                // get the optional signal change from input store
+                seq.push(FlowInstruction::update_ctx_from_input_store(name))
             } else {
-                if self.delay {
-                    // get the optional signal change from input store
-                    seq.push(FlowInstruction::update_ctx_from_input_store(name))
-                } else {
-                    // add to signals set
-                    self.signals.insert(flow_id);
-                    if let Some(update) = self.update_ctx(flow_id) {
-                        // update the context if necessary
-                        seq.push(update)
-                    }
+                // add to signals set
+                self.signals.insert(flow_id);
+                if let Some(update) = self.update_ctx(flow_id) {
+                    // update the context if necessary
+                    seq.push(update)
                 }
             }
 
