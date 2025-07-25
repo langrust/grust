@@ -42,10 +42,13 @@ pages:
   script:
     - echo "Deploying documentation..."
     - cargo doc --no-deps
+    - mkdir -p public
+    - cp -r target/doc/grust public/
+    - mv public/grust/* public/
     - echo "Documentation successfully deployed."
   artifacts:
     paths:
-      - target/doc/grust
+      - public
 
 workflow:
   rules:
