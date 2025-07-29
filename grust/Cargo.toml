@@ -7,9 +7,9 @@ edition.workspace = true
 
 [features]
 default = ["diagnostics"]
-diagnostics = ["proc/diagnostics"]
+diagnostics = ["grust_proc/diagnostics"]
 
 [dependencies]
-proc = { workspace = true }
+grust_proc = { workspace = true }
 grust_std = { workspace = true }
 grust_core = { workspace = true }

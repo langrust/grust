@@ -475,7 +475,7 @@ impl ExtFunDecl {
                 Path(p) => {
                     return Err(syn::Error::new_spanned(
                         p,
-                        format!("unexpected `path` attribute, {exp}" ),
+                        format!("unexpected `path` attribute, {exp}"),
                     ))
                 }
                 List(m) => {

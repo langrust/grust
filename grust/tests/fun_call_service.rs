@@ -1,0 +1,22 @@
+#![allow(warnings)]
+
+use grust::grust;
+
+mod utils {
+    pub fn floor(a: f64) -> i64 {
+        a.floor() as i64
+    }
+}
+
+grust! {
+    #![dump = "grust/out/fun_call_service.rs"]
+
+    use function utils::floor(a: float) -> int;
+
+    import signal float_signal: float;
+    export signal int_signal: int;
+
+    service test {
+        int_signal = floor(float_signal);
+    }
+}

@@ -1,0 +1,15 @@
+[package]
+name = "grust_proc"
+version.workspace = true
+edition.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+diagnostics = ["compiler_top/diagnostics"]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+compiler_top = { workspace = true }

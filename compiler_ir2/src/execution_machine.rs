@@ -51,7 +51,7 @@ impl ToTokens for ExecutionMachineTokens<'_> {
             // generate tokens corresponding to required imports
             {
                 tokens.extend(quote! {
-                    use futures::{stream::StreamExt, sink::SinkExt};
+                    use grust::futures::{stream::StreamExt, sink::SinkExt};
                     use super::*;
                 });
             }
@@ -131,11 +131,11 @@ impl ToTokens for ExecutionMachineTokens<'_> {
                     field_values.push(service_ident.to_token_stream())
                 }
 
-                runtime_fields.push(quote!(output : futures::channel::mpsc::Sender<O>));
+                runtime_fields.push(quote!(output : grust::futures::channel::mpsc::Sender<O>));
                 field_values.push(quote!(output));
                 if !timer_variants.is_empty() {
                     runtime_fields.push(
-                        quote! { timer: futures::channel::mpsc::Sender<(T, std::time::Instant)> },
+                        quote! { timer: grust::futures::channel::mpsc::Sender<(T, std::time::Instant)> },
                     );
                     field_values.push(quote!(timer));
                 }
@@ -154,12 +154,12 @@ impl ToTokens for ExecutionMachineTokens<'_> {
                     }
                     .to_tokens(&mut tokens);
                     let timer_reset = if !timer_variants.is_empty() {
-                        quote! {I::Timer(timer, _) => timer_stream::Timing::do_reset(timer),}
+                        quote! {I::Timer(timer, _) => grust::core::timer_stream::Timing::do_reset(timer),}
                     } else {
                         quote! {}
                     };
                     quote! {
-                        impl priority_stream::Reset for RuntimeInput {
+                        impl grust::core::priority_stream::Reset for RuntimeInput {
                             fn do_reset(&self) -> bool {
                                 match self {
                                         #timer_reset
@@ -229,7 +229,7 @@ impl ToTokens for ExecutionMachineTokens<'_> {
                     .to_tokens(&mut tokens);
 
                     quote! {
-                        impl timer_stream::Timing for RuntimeTimer {
+                        impl grust::core::timer_stream::Timing for RuntimeTimer {
                             fn get_duration(&self) -> std::time::Duration {
                                 match self { #(#timer_duration_arms),* }
                             }
@@ -280,13 +280,13 @@ impl ToTokens for ExecutionMachineTokens<'_> {
                     // parse the function that creates a new runtime
                     let timer = {
                         if !timer_variants.is_empty() {
-                            quote! {timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>}
+                            quote! {timer: grust::futures::channel::mpsc::Sender<(T, std::time::Instant)>}
                         } else {
                             quote! {}
                         }
                     };
                     quote! {
-                        pub fn new(output: futures::channel::mpsc::Sender<O>, #timer) -> Runtime {
+                        pub fn new(output: grust::futures::channel::mpsc::Sender<O>, #timer) -> Runtime {
                             #(#services_init)*
                             Runtime {
                                 #(#field_values),*
@@ -302,7 +302,7 @@ impl ToTokens for ExecutionMachineTokens<'_> {
                             #[inline]
                             pub async fn send_timer(
                                 &mut self, timer: T, instant: std::time::Instant,
-                            ) -> Result<(), futures::channel::mpsc::SendError> {
+                            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                                 self.timer.send((timer, instant)).await?;
                                 Ok(())
                             }
@@ -349,28 +349,28 @@ impl ToTokens for ExecutionMachineTokens<'_> {
             let (streams, new_service);
             if timer_channel_size > 0 {
                 streams = {
-                    let timer_stream = if self.demo {
+                    let timers_stream = if self.demo {
                         quote! {
                             const TIMER_CHANNEL_SIZE: usize = #timer_channel_size + 2;
                             const TIMER_STREAM_SIZE: usize = #timer_stream_size + 2;
-                            let (timers_sink, timers_stream) = futures::channel::mpsc::channel(TIMER_CHANNEL_SIZE);
-                            let timers_stream = timer_stream::timer_stream::<_, _, TIMER_STREAM_SIZE>(timers_stream)
+                            let (timers_sink, timers_stream) = grust::futures::channel::mpsc::channel(TIMER_CHANNEL_SIZE);
+                            let timers_stream = grust::core::timer_stream::timer_stream::<_, _, TIMER_STREAM_SIZE>(timers_stream)
                                 .map(|(timer, deadline)| runtime::RuntimeInput::Timer(timer, deadline));
                         }
                     } else {
                         debug_assert!(self.test);
                         quote! {
                             const TIMER_CHANNEL_SIZE: usize = #timer_channel_size + 2;
-                            let (timers_sink, timers_stream) = futures::channel::mpsc::channel(TIMER_CHANNEL_SIZE);
+                            let (timers_sink, timers_stream) = grust::futures::channel::mpsc::channel(TIMER_CHANNEL_SIZE);
                             let timers_stream = timers_stream.map(|(timer, instant): (runtime::RuntimeTimer, std::time::Instant)| {
-                                let deadline = instant + timer_stream::Timing::get_duration(&timer);
+                                let deadline = instant + grust::core::timer_stream::Timing::get_duration(&timer);
                                 runtime::RuntimeInput::Timer(timer, deadline)
                             });
                         }
                     };
                     let output_stream = quote! {
                         const OUTPUT_CHANNEL_SIZE: usize = #output_channel_size;
-                        let (output_sink, output_stream) = futures::channel::mpsc::channel(OUTPUT_CHANNEL_SIZE);
+                        let (output_sink, output_stream) = grust::futures::channel::mpsc::channel(OUTPUT_CHANNEL_SIZE);
                     };
                     let prio_stream = {
                         let prio_const = if self.demo {
@@ -382,14 +382,14 @@ impl ToTokens for ExecutionMachineTokens<'_> {
                         };
                         quote! {
                             #prio_const
-                            let prio_stream = priority_stream::prio_stream::<_, _, PRIO_STREAM_SIZE>(
-                                futures::stream::select(input_stream, timers_stream),
+                            let prio_stream = grust::core::priority_stream::prio_stream::<_, _, PRIO_STREAM_SIZE>(
+                                grust::futures::stream::select(input_stream, timers_stream),
                                 runtime::RuntimeInput::order,
                             );
                         }
                     };
                     quote! {
-                        #timer_stream
+                        #timers_stream
 
                         #output_stream
 
@@ -403,11 +403,11 @@ impl ToTokens for ExecutionMachineTokens<'_> {
                 streams = {
                     let output_stream = quote! {
                         const OUTPUT_CHANNEL_SIZE: usize = #output_channel_size;
-                        let (output_sink, output_stream) = futures::channel::mpsc::channel(OUTPUT_CHANNEL_SIZE);
+                        let (output_sink, output_stream) = grust::futures::channel::mpsc::channel(OUTPUT_CHANNEL_SIZE);
                     };
                     let prio_stream = quote! {
                         const PRIO_STREAM_SIZE: usize = #prio_stream_size;
-                        let prio_stream = priority_stream::prio_stream::<_, _, PRIO_STREAM_SIZE>(
+                        let prio_stream = grust::core::priority_stream::prio_stream::<_, _, PRIO_STREAM_SIZE>(
                             input_stream,
                             runtime::RuntimeInput::order,
                         );
@@ -427,7 +427,7 @@ impl ToTokens for ExecutionMachineTokens<'_> {
                     assert!(result.is_ok())
                 }) }
             } else {
-                quote! { tokio::spawn(async move {
+                quote! { grust::tokio::spawn(async move {
                     let result = service.run_loop(INIT, prio_stream, init_signals).await;
                     assert!(result.is_ok())
                 }) }
@@ -437,14 +437,15 @@ impl ToTokens for ExecutionMachineTokens<'_> {
             let output_ty;
             if let Some(handle_ty) = self.handle_ty {
                 ending = quote! { let handle = #spawn_service; (output_stream, handle) };
-                output_ty = quote! {(futures::channel::mpsc::Receiver<runtime::RuntimeOutput>, #handle_ty<()>)};
+                output_ty = quote! {(grust::futures::channel::mpsc::Receiver<runtime::RuntimeOutput>, #handle_ty<()>)};
             } else {
                 ending = quote! { #spawn_service; output_stream };
-                output_ty = quote! {futures::channel::mpsc::Receiver<runtime::RuntimeOutput>};
+                output_ty =
+                    quote! {grust::futures::channel::mpsc::Receiver<runtime::RuntimeOutput>};
             };
 
             quote! {
-                use futures::{Stream, StreamExt};
+                use grust::futures::{Stream, StreamExt};
                 pub fn run(
                     INIT: std::time::Instant,
                     input_stream: impl Stream<Item = runtime::RuntimeInput> + Send + 'static,

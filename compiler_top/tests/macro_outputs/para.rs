@@ -154,13 +154,13 @@ impl grust::core::Component for C5State {
 }
 pub mod runtime {
     use super::*;
-    use futures::{sink::SinkExt, stream::StreamExt};
+    use grust::futures::{sink::SinkExt, stream::StreamExt};
     #[derive(Debug)]
     pub enum RuntimeInput {
         E0(i64, std::time::Instant),
     }
     use RuntimeInput as I;
-    impl priority_stream::Reset for RuntimeInput {
+    impl grust::core::priority_stream::Reset for RuntimeInput {
         fn do_reset(&self) -> bool {
             match self {
                 _ => false,
@@ -194,20 +194,20 @@ pub mod runtime {
     pub struct RuntimeInit {}
     pub struct Runtime {
         para_mess: para_mess_service::ParaMessService,
-        output: futures::channel::mpsc::Sender<O>,
+        output: grust::futures::channel::mpsc::Sender<O>,
     }
     impl Runtime {
-        pub fn new(output: futures::channel::mpsc::Sender<O>) -> Runtime {
+        pub fn new(output: grust::futures::channel::mpsc::Sender<O>) -> Runtime {
             let para_mess = para_mess_service::ParaMessService::init(output.clone());
             Runtime { para_mess, output }
         }
         pub async fn run_loop(
             self,
             _grust_reserved_init_instant: std::time::Instant,
-            input: impl futures::Stream<Item = I>,
+            input: impl grust::futures::Stream<Item = I>,
             init_vals: RuntimeInit,
-        ) -> Result<(), futures::channel::mpsc::SendError> {
-            futures::pin_mut!(input);
+        ) -> Result<(), grust::futures::channel::mpsc::SendError> {
+            grust::futures::pin_mut!(input);
             let mut runtime = self;
             let RuntimeInit {} = init_vals;
             runtime
@@ -229,7 +229,7 @@ pub mod runtime {
     }
     pub mod para_mess_service {
         use super::*;
-        use futures::{sink::SinkExt, stream::StreamExt};
+        use grust::futures::{sink::SinkExt, stream::StreamExt};
         mod ctx_ty {
             #[derive(Clone, Copy, PartialEq, Default, Debug)]
             pub struct S2(i64, bool);
@@ -415,10 +415,10 @@ pub mod runtime {
             c_5: C5State,
             c_2: C2State,
             c_3: C3State,
-            output: futures::channel::mpsc::Sender<O>,
+            output: grust::futures::channel::mpsc::Sender<O>,
         }
         impl ParaMessService {
-            pub fn init(output: futures::channel::mpsc::Sender<O>) -> ParaMessService {
+            pub fn init(output: grust::futures::channel::mpsc::Sender<O>) -> ParaMessService {
                 let context = Context::init();
                 let delayed = true;
                 let input_store = Default::default();
@@ -443,14 +443,14 @@ pub mod runtime {
             pub async fn handle_init(
                 &mut self,
                 _grust_reserved_instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                 Ok(())
             }
             pub async fn handle_e0(
                 &mut self,
                 _e0_instant: std::time::Instant,
                 e0: i64,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constraints(_e0_instant).await?;
                     self.context.reset();
@@ -467,7 +467,7 @@ pub mod runtime {
                         self.context.s2.set(s2);
                         *e1_ref = e1;
                     }
-                    tokio::join!(
+                    grust::tokio::join!(
                         async {
                             if e1_ref.is_some() {
                                 let (s3, e3) = <C2State as grust::core::Component>::step(
@@ -522,7 +522,7 @@ pub mod runtime {
             pub async fn reset_time_constraints(
                 &mut self,
                 instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                 Ok(())
             }
             #[inline]
@@ -530,28 +530,28 @@ pub mod runtime {
                 &mut self,
                 output: O,
                 instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                 self.output.feed(output).await?;
                 Ok(())
             }
         }
     }
 }
-use futures::{Stream, StreamExt};
+use grust::futures::{Stream, StreamExt};
 pub fn run(
     INIT: std::time::Instant,
     input_stream: impl Stream<Item = runtime::RuntimeInput> + Send + 'static,
     init_signals: runtime::RuntimeInit,
-) -> futures::channel::mpsc::Receiver<runtime::RuntimeOutput> {
+) -> grust::futures::channel::mpsc::Receiver<runtime::RuntimeOutput> {
     const OUTPUT_CHANNEL_SIZE: usize = 1usize;
-    let (output_sink, output_stream) = futures::channel::mpsc::channel(OUTPUT_CHANNEL_SIZE);
+    let (output_sink, output_stream) = grust::futures::channel::mpsc::channel(OUTPUT_CHANNEL_SIZE);
     const PRIO_STREAM_SIZE: usize = 2usize;
-    let prio_stream = priority_stream::prio_stream::<_, _, PRIO_STREAM_SIZE>(
+    let prio_stream = grust::core::priority_stream::prio_stream::<_, _, PRIO_STREAM_SIZE>(
         input_stream,
         runtime::RuntimeInput::order,
     );
     let service = runtime::Runtime::new(output_sink);
-    tokio::spawn(async move {
+    grust::tokio::spawn(async move {
         let result = service.run_loop(INIT, prio_stream, init_signals).await;
         assert!(result.is_ok())
     });
