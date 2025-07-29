@@ -88,7 +88,7 @@ impl ToTokens for ServiceHandlerTokens<'_> {
         let service_name = &self.sh.service_struct_ident;
 
         let mut item_tokens = quote! {
-            use futures::{stream::StreamExt, sink::SinkExt};
+            use grust::futures::{stream::StreamExt, sink::SinkExt};
             use super::*;
         }
         .to_token_stream();
@@ -172,11 +172,11 @@ impl ToTokens for ServiceHandlerTokens<'_> {
                 field_values.push(field_ident.to_token_stream());
             }
             // and sending channels
-            service_fields.push(quote! { output: futures::channel::mpsc::Sender<O> });
+            service_fields.push(quote! { output: grust::futures::channel::mpsc::Sender<O> });
             field_values.push(quote! { output });
             if self.has_timer {
                 service_fields.push(
-                    quote! { timer: futures::channel::mpsc::Sender<(T, std::time::Instant)> },
+                    quote! { timer: grust::futures::channel::mpsc::Sender<(T, std::time::Instant)> },
                 );
                 field_values.push(quote! { timer });
             }
@@ -216,13 +216,13 @@ impl ToTokens for ServiceHandlerTokens<'_> {
                         },
                     );
                     let timer = if self.has_timer {
-                        quote! {timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,}
+                        quote! {timer: grust::futures::channel::mpsc::Sender<(T, std::time::Instant)>,}
                     } else {
                         quote! {}
                     };
                     quote! {
                         pub fn init(
-                            output: futures::channel::mpsc::Sender<O>,
+                            output: grust::futures::channel::mpsc::Sender<O>,
                             #timer
                         ) -> #service_name {
                             let context = Context::init();
@@ -261,7 +261,7 @@ impl ToTokens for ServiceHandlerTokens<'_> {
                     #[inline]
                     pub async fn reset_time_constraints(
                         &mut self, instant: std::time::Instant
-                    ) -> Result<(), futures::channel::mpsc::SendError> {
+                    ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                         #service_delay
                         Ok(())
                     }
@@ -271,7 +271,7 @@ impl ToTokens for ServiceHandlerTokens<'_> {
                     #[inline]
                     pub async fn send_output(
                         &mut self, output: O, instant: std::time::Instant
-                    ) -> Result<(), futures::channel::mpsc::SendError> {
+                    ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                         #service_timeout
                         self.output.feed(output).await?;
                         Ok(())
@@ -283,7 +283,7 @@ impl ToTokens for ServiceHandlerTokens<'_> {
                         #[inline]
                         pub async fn send_timer(
                             &mut self, timer: T, instant: std::time::Instant
-                        ) -> Result<(), futures::channel::mpsc::SendError> {
+                        ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                             self.timer.feed((timer, instant)).await?;
                             Ok(())
                         }
@@ -321,7 +321,7 @@ impl ToTokens for FlowHandler {
                 quote! {
                     pub async fn #function_name(
                         &mut self, #instant: std::time::Instant, #flow_name: #ty
-                    ) -> Result<(), futures::channel::mpsc::SendError> {
+                    ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                         if self.delayed {
                             // reset time constraints
                             self.reset_time_constraints(#instant).await?;
@@ -351,7 +351,7 @@ impl ToTokens for FlowHandler {
                 quote! {
                     pub async fn #function_name(
                         &mut self,  #instant: std::time::Instant
-                    ) -> Result<(), futures::channel::mpsc::SendError> {
+                    ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                         if self.delayed {
                             // reset time constraints
                             self.reset_time_constraints(#instant).await?;
@@ -377,7 +377,7 @@ impl ToTokens for FlowHandler {
                 quote! {
                     pub async fn #function_name(
                         &mut self, #instant: std::time::Instant
-                    ) -> Result<(), futures::channel::mpsc::SendError> {
+                    ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                         // reset all signals' update
                         self.context.reset();
                         // propagate changes
@@ -391,7 +391,7 @@ impl ToTokens for FlowHandler {
                     #[inline]
                     pub async fn reset_service_delay(
                         &mut self, #instant: std::time::Instant
-                    ) -> Result<(), futures::channel::mpsc::SendError> {
+                    ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                         self.timer.send((T::#enum_ident, #instant)).await?;
                         self.delayed = false;
                         Ok(())
@@ -405,7 +405,7 @@ impl ToTokens for FlowHandler {
                 quote! {
                     pub async fn #function_name(
                         &mut self, #instant: std::time::Instant
-                    ) -> Result<(), futures::channel::mpsc::SendError> {
+                    ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                         // reset time constraints
                         self.reset_time_constraints(#instant).await?;
                         // reset all signals' update
@@ -421,7 +421,7 @@ impl ToTokens for FlowHandler {
                     #[inline]
                     pub async fn reset_service_timeout(
                         &mut self, #instant: std::time::Instant
-                    ) -> Result<(), futures::channel::mpsc::SendError> {
+                    ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                         self.timer.send((T::#enum_ident, #instant)).await?;
                         Ok(())
                     }
@@ -466,7 +466,7 @@ impl ToTokens for InitHandler {
                 &mut self,
                 #instant: std::time::Instant,
                 #(#init_args),*
-            ) -> Result<(), futures::channel::mpsc::SendError> {
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                 #service_timeout
                 #instrs
                 Ok(())
@@ -716,7 +716,7 @@ impl ToTokens for FlowInstruction {
                     para_instrs.iter().map(|instr| quote! { async { #instr } })
                 });
                 quote! {
-                    tokio::join!(#(#para_futures),*);
+                    grust::tokio::join!(#(#para_futures),*);
                 }
                 .to_tokens(tokens)
             }

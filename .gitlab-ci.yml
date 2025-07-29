@@ -3,10 +3,6 @@ image: rust:1.76-slim
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
 
-# to remove when no dependency to protoc
-before_script:
-  - apt-get update && apt-get install -y protobuf-compiler curl
-
 stages:
   - build
   - test

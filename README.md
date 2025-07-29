@@ -11,12 +11,7 @@ A procedural macro for the grust language.
     ```
 
 2. Restart terminal
-3. Install `protoc` (instructions: https://protobuf.dev/installation/)
-
-    ```text
-    > sudo apt install protobuf-compiler
-
-4. Retrieve `grustine` repository
+3. Retrieve `grustine` repository
 
     ```text
     > git clone https://gitlab.isae-supaero.fr/langrust/grustine.git

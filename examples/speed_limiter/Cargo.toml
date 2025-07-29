@@ -7,7 +7,5 @@ edition.workspace = true
 
 [dependencies]
 grust = { workspace = true }
-priority_stream = { workspace = true }
-timer_stream = { workspace = true }
-tokio = { workspace = true }
-futures = { workspace = true }
+json = { workspace = true }
+serde = { workspace = true }

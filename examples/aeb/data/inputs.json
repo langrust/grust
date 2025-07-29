@@ -1,90 +1,86 @@
 [
-    {
-        "timestamp": 800,
-        "message": {
-            "PedestrianL": {
-                "distance": 10.0
-            }
+    [
+        0,
+        {
+            "variant": "SpeedKmH",
+            "value": 50.0
         }
-    },
-    {
-        "timestamp": 900,
-        "message": {
-            "Speed": {
-                "value": 45.0
-            }
+    ],
+    [
+        800,
+        {
+            "variant": "PedestrianL",
+            "value": 10.0
         }
-    },
-    {
-        "timestamp": 1000,
-        "message": {
-            "PedestrianL": {
-                "distance": 8.8
-            }
+    ],
+    [
+        900,
+        {
+            "variant": "SpeedKmH",
+            "value": 45.0
         }
-    },
-    {
-        "timestamp": 1400,
-        "message": {
-            "Speed": {
-                "value": 30.0
-            }
+    ],
+    [
+        1000,
+        {
+            "variant": "PedestrianL",
+            "value": 8.8
         }
-    },
-    {
-        "timestamp": 2000,
-        "message": {
-            "Speed": {
-                "value": 10.0
-            }
+    ],
+    [
+        1400,
+        {
+            "variant": "SpeedKmH",
+            "value": 30.0
         }
-    },
-    {
-        "timestamp": 2500,
-        "message": {
-            "PedestrianL": {
-                "distance": 4.2
-            }
+    ],
+    [
+        2000,
+        {
+            "variant": "SpeedKmH",
+            "value": 10.0
         }
-    },
-    {
-        "timestamp": 2800,
-        "message": {
-            "PedestrianR": {
-                "distance": 0.8
-            }
+    ],
+    [
+        2500,
+        {
+            "variant": "PedestrianL",
+            "value": 4.2
         }
-    },
-    {
-        "timestamp": 3000,
-        "message": {
-            "Speed": {
-                "value": 15.0
-            }
+    ],
+    [
+        2800,
+        {
+            "variant": "PedestrianR",
+            "value": 0.8
         }
-    },
-    {
-        "timestamp": 4000,
-        "message": {
-            "Speed": {
-                "value": 35.0
-            }
+    ],
+    [
+        3000,
+        {
+            "variant": "SpeedKmH",
+            "value": 15.0
         }
-    },
-    {
-        "timestamp": 5000,
-        "message": {
-            "Speed": {
-                "value": 50.0
-            }
+    ],
+    [
+        4000,
+        {
+            "variant": "SpeedKmH",
+            "value": 35.0
         }
-    },
-    {
-        "timestamp": 5100,
-        "message": {
-            "PedestrianR": {
-                "distance": 30.0
-            }
+    ],
+    [
+        5000,
+        {
+            "variant": "SpeedKmH",
+            "value": 50.0
         }
-    }
+    ],
+    [
+        5100,
+        {
+            "variant": "PedestrianR",
+            "value": 30.0
+        }
+    ]
 ]

@@ -354,7 +354,7 @@ impl grust::core::Component for SpeedLimiterState {
 }
 pub mod runtime {
     use super::*;
-    use futures::{sink::SinkExt, stream::StreamExt};
+    use grust::futures::{sink::SinkExt, stream::StreamExt};
     #[derive(Debug)]
     pub enum RuntimeInput {
         Vdc(VdcState, std::time::Instant),
@@ -365,7 +365,7 @@ pub mod runtime {
         SetSpeed(f64, std::time::Instant),
     }
     use RuntimeInput as I;
-    impl priority_stream::Reset for RuntimeInput {
+    impl grust::core::priority_stream::Reset for RuntimeInput {
         fn do_reset(&self) -> bool {
             match self {
                 _ => false,
@@ -417,10 +417,10 @@ pub mod runtime {
     }
     pub struct Runtime {
         speed_limiter: speed_limiter_service::SpeedLimiterService,
-        output: futures::channel::mpsc::Sender<O>,
+        output: grust::futures::channel::mpsc::Sender<O>,
     }
     impl Runtime {
-        pub fn new(output: futures::channel::mpsc::Sender<O>) -> Runtime {
+        pub fn new(output: grust::futures::channel::mpsc::Sender<O>) -> Runtime {
             let speed_limiter = speed_limiter_service::SpeedLimiterService::init(output.clone());
             Runtime {
                 speed_limiter,
@@ -430,10 +430,10 @@ pub mod runtime {
         pub async fn run_loop(
             self,
             _grust_reserved_init_instant: std::time::Instant,
-            input: impl futures::Stream<Item = I>,
+            input: impl grust::futures::Stream<Item = I>,
             init_vals: RuntimeInit,
-        ) -> Result<(), futures::channel::mpsc::SendError> {
-            futures::pin_mut!(input);
+        ) -> Result<(), grust::futures::channel::mpsc::SendError> {
+            grust::futures::pin_mut!(input);
             let mut runtime = self;
             let RuntimeInit {
                 vdc,
@@ -500,7 +500,7 @@ pub mod runtime {
     }
     pub mod speed_limiter_service {
         use super::*;
-        use futures::{sink::SinkExt, stream::StreamExt};
+        use grust::futures::{sink::SinkExt, stream::StreamExt};
         mod ctx_ty {
             #[derive(Clone, Copy, PartialEq, Default, Debug)]
             pub struct InRegulation(bool, bool);
@@ -847,10 +847,10 @@ pub mod runtime {
             input_store: SpeedLimiterServiceStore,
             process_set_speed: ProcessSetSpeedState,
             speed_limiter: SpeedLimiterState,
-            output: futures::channel::mpsc::Sender<O>,
+            output: grust::futures::channel::mpsc::Sender<O>,
         }
         impl SpeedLimiterService {
-            pub fn init(output: futures::channel::mpsc::Sender<O>) -> SpeedLimiterService {
+            pub fn init(output: grust::futures::channel::mpsc::Sender<O>) -> SpeedLimiterService {
                 let context = Context::init();
                 let delayed = true;
                 let input_store = Default::default();
@@ -875,7 +875,7 @@ pub mod runtime {
                 activation: ActivationRequest,
                 kickdown: KickdownState,
                 set_speed: f64,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                 self.context.set_speed.set(set_speed);
                 let (v_set_aux, v_update) = <ProcessSetSpeedState as grust::core::Component>::step(
                     &mut self.process_set_speed,
@@ -926,7 +926,7 @@ pub mod runtime {
                 &mut self,
                 _vdc_instant: std::time::Instant,
                 vdc: VdcState,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constraints(_vdc_instant).await?;
                     self.context.reset();
@@ -974,7 +974,7 @@ pub mod runtime {
                 &mut self,
                 _speed_instant: std::time::Instant,
                 speed: f64,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constraints(_speed_instant).await?;
                     self.context.reset();
@@ -1022,7 +1022,7 @@ pub mod runtime {
                 &mut self,
                 _vacuum_brake_instant: std::time::Instant,
                 vacuum_brake: VacuumBrakeState,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constraints(_vacuum_brake_instant).await?;
                     self.context.reset();
@@ -1073,7 +1073,7 @@ pub mod runtime {
                 &mut self,
                 _activation_instant: std::time::Instant,
                 activation: ActivationRequest,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constraints(_activation_instant).await?;
                     self.context.reset();
@@ -1124,7 +1124,7 @@ pub mod runtime {
                 &mut self,
                 _kickdown_instant: std::time::Instant,
                 kickdown: KickdownState,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constraints(_kickdown_instant).await?;
                     self.context.reset();
@@ -1175,7 +1175,7 @@ pub mod runtime {
                 &mut self,
                 _set_speed_instant: std::time::Instant,
                 set_speed: f64,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constraints(_set_speed_instant).await?;
                     self.context.reset();
@@ -1243,7 +1243,7 @@ pub mod runtime {
             pub async fn reset_time_constraints(
                 &mut self,
                 instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                 Ok(())
             }
             #[inline]
@@ -1251,28 +1251,28 @@ pub mod runtime {
                 &mut self,
                 output: O,
                 instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                 self.output.feed(output).await?;
                 Ok(())
             }
         }
     }
 }
-use futures::{Stream, StreamExt};
+use grust::futures::{Stream, StreamExt};
 pub fn run(
     INIT: std::time::Instant,
     input_stream: impl Stream<Item = runtime::RuntimeInput> + Send + 'static,
     init_signals: runtime::RuntimeInit,
-) -> futures::channel::mpsc::Receiver<runtime::RuntimeOutput> {
+) -> grust::futures::channel::mpsc::Receiver<runtime::RuntimeOutput> {
     const OUTPUT_CHANNEL_SIZE: usize = 2usize;
-    let (output_sink, output_stream) = futures::channel::mpsc::channel(OUTPUT_CHANNEL_SIZE);
+    let (output_sink, output_stream) = grust::futures::channel::mpsc::channel(OUTPUT_CHANNEL_SIZE);
     const PRIO_STREAM_SIZE: usize = 7usize;
-    let prio_stream = priority_stream::prio_stream::<_, _, PRIO_STREAM_SIZE>(
+    let prio_stream = grust::core::priority_stream::prio_stream::<_, _, PRIO_STREAM_SIZE>(
         input_stream,
         runtime::RuntimeInput::order,
     );
     let service = runtime::Runtime::new(output_sink);
-    tokio::spawn(async move {
+    grust::tokio::spawn(async move {
         let result = service.run_loop(INIT, prio_stream, init_signals).await;
         assert!(result.is_ok())
     });

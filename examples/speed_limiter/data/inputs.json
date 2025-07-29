@@ -1,0 +1,310 @@
+[
+    [
+        50,
+        {
+            "variant": "Speed",
+            "value": 125.4
+        }
+    ],
+    [
+        100,
+        {
+            "variant": "Speed",
+            "value": 125.8
+        }
+    ],
+    [
+        150,
+        {
+            "variant": "Speed",
+            "value": 125.5
+        }
+    ],
+    [
+        200,
+        {
+            "variant": "Speed",
+            "value": 125.3
+        }
+    ],
+    [
+        250,
+        {
+            "variant": "Speed",
+            "value": 124.9
+        }
+    ],
+    [
+        300,
+        {
+            "variant": "Speed",
+            "value": 125.4
+        }
+    ],
+    [
+        350,
+        {
+            "variant": "Speed",
+            "value": 126.0
+        }
+    ],
+    [
+        400,
+        {
+            "variant": "Speed",
+            "value": 126.5
+        }
+    ],
+    [
+        450,
+        {
+            "variant": "Speed",
+            "value": 126.4
+        }
+    ],
+    [
+        500,
+        {
+            "variant": "Speed",
+            "value": 126.3
+        }
+    ],
+    [
+        550,
+        {
+            "variant": "Speed",
+            "value": 125.9
+        }
+    ],
+    [
+        600,
+        {
+            "variant": "Speed",
+            "value": 125.6
+        }
+    ],
+    [
+        600,
+        {
+            "variant": "Activation",
+            "value": 0
+        }
+    ],
+    [
+        600,
+        {
+            "variant": "SetSpeed",
+            "value": 125.9
+        }
+    ],
+    [
+        650,
+        {
+            "variant": "Speed",
+            "value": 125.0
+        }
+    ],
+    [
+        700,
+        {
+            "variant": "Speed",
+            "value": 124.6
+        }
+    ],
+    [
+        750,
+        {
+            "variant": "Speed",
+            "value": 124.2
+        }
+    ],
+    [
+        800,
+        {
+            "variant": "Speed",
+            "value": 123.7
+        }
+    ],
+    [
+        850,
+        {
+            "variant": "Speed",
+            "value": 122.9
+        }
+    ],
+    [
+        900,
+        {
+            "variant": "Speed",
+            "value": 122.0
+        }
+    ],
+    [
+        1000,
+        {
+            "variant": "Speed",
+            "value": 122.2
+        }
+    ],
+    [
+        1050,
+        {
+            "variant": "Speed",
+            "value": 122.4
+        }
+    ],
+    [
+        1100,
+        {
+            "variant": "Speed",
+            "value": 122.2
+        }
+    ],
+    [
+        1200,
+        {
+            "variant": "Speed",
+            "value": 122.1
+        }
+    ],
+    [
+        1250,
+        {
+            "variant": "Speed",
+            "value": 122.3
+        }
+    ],
+    [
+        1300,
+        {
+            "variant": "Speed",
+            "value": 122.2
+        }
+    ],
+    [
+        1350,
+        {
+            "variant": "Speed",
+            "value": 122.4
+        }
+    ],
+    [
+        1400,
+        {
+            "variant": "Speed",
+            "value": 123.0
+        }
+    ],
+    [
+        1450,
+        {
+            "variant": "Speed",
+            "value": 124.8
+        }
+    ],
+    [
+        1450,
+        {
+            "variant": "Kickdown",
+            "value": 0
+        }
+    ],
+    [
+        1500,
+        {
+            "variant": "Kickdown",
+            "value": 1
+        }
+    ],
+    [
+        1550,
+        {
+            "variant": "Speed",
+            "value": 124.5
+        }
+    ],
+    [
+        1600,
+        {
+            "variant": "Speed",
+            "value": 124.9
+        }
+    ],
+    [
+        1650,
+        {
+            "variant": "Speed",
+            "value": 126.0
+        }
+    ],
+    [
+        1700,
+        {
+            "variant": "Speed",
+            "value": 128.4
+        }
+    ],
+    [
+        1700,
+        {
+            "variant": "Kickdown",
+            "value": 0
+        }
+    ],
+    [
+        1750,
+        {
+            "variant": "Speed",
+            "value": 127.5
+        }
+    ],
+    [
+        1775,
+        {
+            "variant": "Kickdown",
+            "value": 1
+        }
+    ],
+    [
+        1800,
+        {
+            "variant": "Speed",
+            "value": 126.4
+        }
+    ],
+    [
+        1850,
+        {
+            "variant": "Speed",
+            "value": 125.7
+        }
+    ],
+    [
+        1900,
+        {
+            "variant": "Speed",
+            "value": 125.5
+        }
+    ],
+    [
+        1920,
+        {
+            "variant": "Activation",
+            "value": 1
+        }
+    ],
+    [
+        1920,
+        {
+            "variant": "SetSpeed",
+            "value": 0.0
+        }
+    ],
+    [
+        1950,
+        {
+            "variant": "Speed",
+            "value": 124.9
+        }
+    ]
+]

@@ -97,10 +97,10 @@ impl ToTokens for RuntimeLoopTokens<'_> {
             pub async fn run_loop(
                 self,
                 #init_instant: std::time::Instant,
-                input: impl futures::Stream<Item = I>,
+                input: impl grust::futures::Stream<Item = I>,
                 init_vals: RuntimeInit,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
-                futures::pin_mut!(input);
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
+                grust::futures::pin_mut!(input);
                 let mut runtime = self;
                 let RuntimeInit {
                     #(#init_args),*
@@ -226,9 +226,9 @@ mod old {
             // `run_loop` function
             syn::ImplItem::Fn(parse_quote! {
                 pub async fn run_loop(
-                    self, #init_instant: std::time::Instant, input: impl futures::Stream<Item = I>
-                ) -> Result<(), futures::channel::mpsc::SendError> {
-                    futures::pin_mut!(input);
+                    self, #init_instant: std::time::Instant, input: impl grust::futures::Stream<Item = I>
+                ) -> Result<(), grust::futures::channel::mpsc::SendError> {
+                    grust::futures::pin_mut!(input);
                     let mut runtime = self;
                     #(#init_timers)*
                     #(#init_outputs)*

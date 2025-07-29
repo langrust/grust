@@ -1,16 +1,16 @@
 pub mod runtime {
     use super::*;
-    use futures::{sink::SinkExt, stream::StreamExt};
+    use grust::futures::{sink::SinkExt, stream::StreamExt};
     #[derive(Debug)]
     pub enum RuntimeInput {
         Reset(bool, std::time::Instant),
         Timer(T, std::time::Instant),
     }
     use RuntimeInput as I;
-    impl priority_stream::Reset for RuntimeInput {
+    impl grust::core::priority_stream::Reset for RuntimeInput {
         fn do_reset(&self) -> bool {
             match self {
-                I::Timer(timer, _) => timer_stream::Timing::do_reset(timer),
+                I::Timer(timer, _) => grust::core::timer_stream::Timing::do_reset(timer),
                 _ => false,
             }
         }
@@ -52,7 +52,7 @@ pub mod runtime {
         TimeoutTest,
     }
     use RuntimeTimer as T;
-    impl timer_stream::Timing for RuntimeTimer {
+    impl grust::core::timer_stream::Timing for RuntimeTimer {
         fn get_duration(&self) -> std::time::Duration {
             match self {
                 T::TimeoutX => std::time::Duration::from_millis(1000u64),
@@ -70,13 +70,13 @@ pub mod runtime {
     }
     pub struct Runtime {
         test: test_service::TestService,
-        output: futures::channel::mpsc::Sender<O>,
-        timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
+        output: grust::futures::channel::mpsc::Sender<O>,
+        timer: grust::futures::channel::mpsc::Sender<(T, std::time::Instant)>,
     }
     impl Runtime {
         pub fn new(
-            output: futures::channel::mpsc::Sender<O>,
-            timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
+            output: grust::futures::channel::mpsc::Sender<O>,
+            timer: grust::futures::channel::mpsc::Sender<(T, std::time::Instant)>,
         ) -> Runtime {
             let test = test_service::TestService::init(output.clone(), timer.clone());
             Runtime {
@@ -90,17 +90,17 @@ pub mod runtime {
             &mut self,
             timer: T,
             instant: std::time::Instant,
-        ) -> Result<(), futures::channel::mpsc::SendError> {
+        ) -> Result<(), grust::futures::channel::mpsc::SendError> {
             self.timer.send((timer, instant)).await?;
             Ok(())
         }
         pub async fn run_loop(
             self,
             _grust_reserved_init_instant: std::time::Instant,
-            input: impl futures::Stream<Item = I>,
+            input: impl grust::futures::Stream<Item = I>,
             init_vals: RuntimeInit,
-        ) -> Result<(), futures::channel::mpsc::SendError> {
-            futures::pin_mut!(input);
+        ) -> Result<(), grust::futures::channel::mpsc::SendError> {
+            grust::futures::pin_mut!(input);
             let mut runtime = self;
             let RuntimeInit { reset } = init_vals;
             runtime
@@ -146,7 +146,7 @@ pub mod runtime {
     }
     pub mod test_service {
         use super::*;
-        use futures::{sink::SinkExt, stream::StreamExt};
+        use grust::futures::{sink::SinkExt, stream::StreamExt};
         mod ctx_ty {
             #[derive(Clone, Copy, PartialEq, Default, Debug)]
             pub struct O2(i64, bool);
@@ -243,13 +243,13 @@ pub mod runtime {
             input_store: TestServiceStore,
             counter: utils::CounterState,
             counter_1: utils::CounterState,
-            output: futures::channel::mpsc::Sender<O>,
-            timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
+            output: grust::futures::channel::mpsc::Sender<O>,
+            timer: grust::futures::channel::mpsc::Sender<(T, std::time::Instant)>,
         }
         impl TestService {
             pub fn init(
-                output: futures::channel::mpsc::Sender<O>,
-                timer: futures::channel::mpsc::Sender<(T, std::time::Instant)>,
+                output: grust::futures::channel::mpsc::Sender<O>,
+                timer: grust::futures::channel::mpsc::Sender<(T, std::time::Instant)>,
             ) -> TestService {
                 let context = Context::init();
                 let delayed = true;
@@ -271,7 +271,7 @@ pub mod runtime {
                 &mut self,
                 _grust_reserved_instant: std::time::Instant,
                 reset: bool,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                 self.reset_service_timeout(_grust_reserved_instant).await?;
                 self.context.reset.set(reset);
                 let o1 = <utils::CounterState as grust::core::Component>::step(
@@ -307,7 +307,7 @@ pub mod runtime {
             pub async fn handle_timeout_test(
                 &mut self,
                 _timeout_test_instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                 self.reset_time_constraints(_timeout_test_instant).await?;
                 self.context.reset();
                 self.send_output(
@@ -326,7 +326,7 @@ pub mod runtime {
             pub async fn reset_service_timeout(
                 &mut self,
                 _timeout_test_instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                 self.timer
                     .send((T::TimeoutTest, _timeout_test_instant))
                     .await?;
@@ -336,7 +336,7 @@ pub mod runtime {
                 &mut self,
                 _clock_instant: std::time::Instant,
                 clock: (),
-            ) -> Result<(), futures::channel::mpsc::SendError> {
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constraints(_clock_instant).await?;
                     self.context.reset();
@@ -388,7 +388,7 @@ pub mod runtime {
             pub async fn handle_timeout_x(
                 &mut self,
                 _timeout_x_instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constraints(_timeout_x_instant).await?;
                     self.context.reset();
@@ -422,7 +422,7 @@ pub mod runtime {
                 &mut self,
                 _reset_instant: std::time::Instant,
                 reset: bool,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                 if self.delayed {
                     self.reset_time_constraints(_reset_instant).await?;
                     self.context.reset();
@@ -470,7 +470,7 @@ pub mod runtime {
             pub async fn handle_delay_test(
                 &mut self,
                 _grust_reserved_instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                 self.context.reset();
                 if self.input_store.not_empty() {
                     self.reset_time_constraints(_grust_reserved_instant).await?;
@@ -539,7 +539,7 @@ pub mod runtime {
             pub async fn reset_service_delay(
                 &mut self,
                 _grust_reserved_instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                 self.timer
                     .send((T::DelayTest, _grust_reserved_instant))
                     .await?;
@@ -550,7 +550,7 @@ pub mod runtime {
             pub async fn reset_time_constraints(
                 &mut self,
                 instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                 self.reset_service_delay(instant).await?;
                 Ok(())
             }
@@ -559,7 +559,7 @@ pub mod runtime {
                 &mut self,
                 output: O,
                 instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                 self.reset_service_timeout(instant).await?;
                 self.output.feed(output).await?;
                 Ok(())
@@ -569,36 +569,36 @@ pub mod runtime {
                 &mut self,
                 timer: T,
                 instant: std::time::Instant,
-            ) -> Result<(), futures::channel::mpsc::SendError> {
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                 self.timer.feed((timer, instant)).await?;
                 Ok(())
             }
         }
     }
 }
-use futures::{Stream, StreamExt};
+use grust::futures::{Stream, StreamExt};
 pub fn run(
     INIT: std::time::Instant,
     input_stream: impl Stream<Item = runtime::RuntimeInput> + Send + 'static,
     init_signals: runtime::RuntimeInit,
-) -> futures::channel::mpsc::Receiver<runtime::RuntimeOutput> {
+) -> grust::futures::channel::mpsc::Receiver<runtime::RuntimeOutput> {
     const TIMER_CHANNEL_SIZE: usize = 3usize + 2;
-    let (timers_sink, timers_stream) = futures::channel::mpsc::channel(TIMER_CHANNEL_SIZE);
+    let (timers_sink, timers_stream) = grust::futures::channel::mpsc::channel(TIMER_CHANNEL_SIZE);
     let timers_stream = timers_stream.map(
         |(timer, instant): (runtime::RuntimeTimer, std::time::Instant)| {
-            let deadline = instant + timer_stream::Timing::get_duration(&timer);
+            let deadline = instant + grust::core::timer_stream::Timing::get_duration(&timer);
             runtime::RuntimeInput::Timer(timer, deadline)
         },
     );
     const OUTPUT_CHANNEL_SIZE: usize = 2usize;
-    let (output_sink, output_stream) = futures::channel::mpsc::channel(OUTPUT_CHANNEL_SIZE);
+    let (output_sink, output_stream) = grust::futures::channel::mpsc::channel(OUTPUT_CHANNEL_SIZE);
     const PRIO_STREAM_SIZE: usize = 100usize;
-    let prio_stream = priority_stream::prio_stream::<_, _, PRIO_STREAM_SIZE>(
-        futures::stream::select(input_stream, timers_stream),
+    let prio_stream = grust::core::priority_stream::prio_stream::<_, _, PRIO_STREAM_SIZE>(
+        grust::futures::stream::select(input_stream, timers_stream),
         runtime::RuntimeInput::order,
     );
     let service = runtime::Runtime::new(output_sink, timers_sink);
-    tokio::spawn(async move {
+    grust::tokio::spawn(async move {
         let result = service.run_loop(INIT, prio_stream, init_signals).await;
         assert!(result.is_ok())
     });
