@@ -195,6 +195,9 @@ build_conf! {
         get_handle: Option<syn::Type> = None =>
             /// Item for the `dump_code` configuration value.
             GetHandle,
+        tracing: bool = false =>
+            /// Item for the `tracing` configuration value.
+            Tracing,
     }
 }
 
@@ -261,6 +264,7 @@ mod parsing {
                     let val: bool = val.value();
                     Self::PubThings(span, val)
                 }
+                "tracing" => Self::Tracing(span, true),
                 "levenshtein" => {
                     let _: Token![=] = input.parse()?;
                     let val: syn::LitBool = input.parse()?;

@@ -7,6 +7,7 @@ edition.workspace = true
 pin-project = { workspace = true }
 futures = { workspace = true }
 tokio = { workspace = true }
+tracing = { workspace = true }
 
 [dev-dependencies]
 rand = { workspace = true }

@@ -106,10 +106,15 @@ mk_new! { impl Input =>
 pub struct InputTokens<'a> {
     i: &'a Input,
     public: bool,
+    tracing: bool,
 }
 impl Input {
-    pub fn prepare_tokens(&self, public: bool) -> InputTokens<'_> {
-        InputTokens { i: self, public }
+    pub fn prepare_tokens(&self, public: bool, tracing: bool) -> InputTokens<'_> {
+        InputTokens {
+            i: self,
+            public,
+            tracing,
+        }
     }
 }
 
@@ -118,7 +123,12 @@ impl ToTokens for InputTokens<'_> {
         let pub_token = if self.public {
             quote! {pub}
         } else {
-            quote! {}
+            TokenStream2::new()
+        };
+        let debug_attr = if self.tracing {
+            quote! {#[derive(Debug)]}
+        } else {
+            TokenStream2::new()
         };
         let fields = self
             .i
@@ -127,6 +137,7 @@ impl ToTokens for InputTokens<'_> {
             .map(|InputElm { identifier, typ }| quote!(#pub_token #identifier : #typ));
         let input_ty = self.i.node_name.to_input_ty();
         quote!(
+            #debug_attr
             #pub_token struct #input_ty {
                 #(#fields,)*
             }
@@ -204,12 +215,14 @@ mk_new! { impl Step =>
 pub struct StepTokens<'a> {
     step: &'a Step,
     with_contracts: bool,
+    tracing: bool,
 }
 impl Step {
-    pub fn prepare_tokens(&self, with_contracts: bool) -> StepTokens {
+    pub fn prepare_tokens(&self, with_contracts: bool, tracing: bool) -> StepTokens {
         StepTokens {
             step: self,
             with_contracts,
+            tracing,
         }
     }
 }
@@ -245,7 +258,14 @@ impl ToTokens for StepTokens<'_> {
             tokens
         };
 
+        let tracing_attr = if self.tracing {
+            quote! {#[grust::tracing::instrument]}
+        } else {
+            TokenStream2::new()
+        };
+
         quote! {
+            #tracing_attr
             fn #id(&mut self, input: #input_ty) -> #output_ty {
                 #statements
             }
@@ -295,14 +315,22 @@ pub struct StateTokens<'a> {
     with_contracts: bool,
     align: bool,
     public: bool,
+    tracing: bool,
 }
 impl State {
-    pub fn prepare_tokens(&self, with_contracts: bool, align: bool, public: bool) -> StateTokens {
+    pub fn prepare_tokens(
+        &self,
+        with_contracts: bool,
+        align: bool,
+        public: bool,
+        tracing: bool,
+    ) -> StateTokens {
         StateTokens {
             state: self,
             with_contracts,
             align,
             public,
+            tracing,
         }
     }
 }
@@ -334,21 +362,30 @@ impl StateTokens<'_> {
         let align_conf = if self.align {
             quote! { #[repr(align(64))]}
         } else {
-            quote! {}
+            TokenStream2::new()
         };
         let pub_token = if self.public {
             quote! {pub}
         } else {
-            quote! {}
+            TokenStream2::new()
+        };
+        let debug_attr = if self.tracing {
+            quote! {#[derive(Debug)]}
+        } else {
+            TokenStream2::new()
         };
 
         let structure = quote! {
             #align_conf
+            #debug_attr
             #pub_token struct #state_ty { #(#fields),* }
         };
 
         let init = &self.state.init;
-        let step = self.state.step.prepare_tokens(self.with_contracts);
+        let step = self
+            .state
+            .step
+            .prepare_tokens(self.with_contracts, self.tracing);
         let implementation = quote!(
             impl grust::core::Component for #state_ty {
                 type Input = #input_ty;
@@ -384,6 +421,7 @@ pub struct StateMachineTokens<'a> {
     with_contracts: bool,
     align: bool,
     public: bool,
+    tracing: bool,
 }
 impl StateMachine {
     pub fn prepare_tokens(
@@ -391,12 +429,14 @@ impl StateMachine {
         with_contracts: bool,
         align: bool,
         public: bool,
+        tracing: bool,
     ) -> StateMachineTokens {
         StateMachineTokens {
             sm: self,
             with_contracts,
             align,
             public,
+            tracing,
         }
     }
 }
@@ -406,13 +446,13 @@ impl ToTokens for StateMachineTokens<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream2) {
         let input_structure = &self.sm.input;
         input_structure
-            .prepare_tokens(self.public)
+            .prepare_tokens(self.public, self.tracing)
             .to_tokens(tokens);
 
         let (state_structure, state_implementation) = self
             .sm
             .state
-            .prepare_tokens(self.with_contracts, self.align, self.public)
+            .prepare_tokens(self.with_contracts, self.align, self.public, self.tracing)
             .to_struct_and_impl_tokens();
         state_structure.to_tokens(tokens);
         state_implementation.to_tokens(tokens);
@@ -535,7 +575,7 @@ mod test {
                 o + y
             }
         };
-        let step = step.prepare_tokens(false);
+        let step = step.prepare_tokens(false, false);
         let f: syn::ItemFn = parse_quote!(#step);
         assert_eq!(f, control)
     }
@@ -585,7 +625,7 @@ mod test {
                 o + y
             }
         };
-        let step = step.prepare_tokens(false);
+        let step = step.prepare_tokens(false, false);
         let f: syn::ItemFn = parse_quote!(#step);
         assert_eq!(f, control)
     }
@@ -599,7 +639,7 @@ mod test {
                 typ: Typ::int(),
             }],
         }
-        .prepare_tokens(true)
+        .prepare_tokens(true, false)
         .to_token_stream();
         let control = parse_quote!(
             pub struct NodeInput {
