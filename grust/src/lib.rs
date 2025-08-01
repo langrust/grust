@@ -5,4 +5,5 @@ pub use grust_std as std;
 
 pub use grust_core::futures;
 pub use grust_core::tokio;
+pub use grust_core::tracing;
 pub use grust_std::rayon;
