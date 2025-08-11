@@ -3,7 +3,7 @@
 use grust::grust;
 
 grust! {
-    #![mode = greusot]
+    #![mode = greusot, dump = "examples/acc_greusot/out/mod.rs"]
 
     const RHO: int = 0+1; // reaction time
     const B_MAX: int = 6; // 0.6*9.81
@@ -21,8 +21,10 @@ grust! {
 
     // Filters the ACC on driver activation and when approaching FV
     component acc(c: bool, d: int, v: int, s: int) -> (b: int)
-        requires { d < 150 } // radar detection limitation
-        requires { c => (0 < s && s <= 50) && (0 < s+v && v < 0 && -v <= 10) } // scope
+        // radar detection limitation
+        requires { d < 150 }
+        // ACC scope of usage
+        requires { c => (0 < s && s <= 50) && (0 < s+v && v < 0 && -v <= 10) }
         // there is enough distance to brake at maximum rate
         requires { c => d - safety_distance(s, s+v) > (v^2)/(2*B_MAX) }
         // braking rate is in correct interval
