@@ -426,6 +426,11 @@ mod interface {
         }
     }
 
+    impl Call {
+        pub fn peek(input: ParseStream) -> bool {
+            input.peek(Ident) && input.peek2(token::Paren)
+        }
+    }
     impl Parse for Call {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let ident: Ident = input.parse()?;
@@ -465,7 +470,7 @@ mod interface {
                 Ok(Self::sample_on(input.parse()?))
             } else if ScanOn::peek(input) {
                 Ok(Self::scan_on(input.parse()?))
-            } else if input.fork().call(Call::parse).is_ok() {
+            } else if Call::peek(input) {
                 Ok(Self::comp_call(input.parse()?))
             } else {
                 let ident: Ident = input.parse()?;
@@ -542,15 +547,6 @@ mod interface {
         }
     }
 
-    impl FlowInstantiation {
-        pub fn peek(input: ParseStream) -> bool {
-            let forked = input.fork();
-            if forked.call(FlowPattern::parse).is_err() {
-                return false;
-            }
-            forked.peek(Token![=])
-        }
-    }
     impl Parse for FlowInstantiation {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let pattern: FlowPattern = input.parse()?;
@@ -568,11 +564,7 @@ mod interface {
 
     impl FlowImport {
         pub fn peek(input: ParseStream) -> bool {
-            let forked = input.fork();
-            forked
-                .parse::<keyword::import>()
-                .and_then(|_| forked.parse::<FlowKind>())
-                .is_ok()
+            input.peek(keyword::import)
         }
     }
     impl Parse for FlowImport {
@@ -612,9 +604,7 @@ mod interface {
 
     impl ExtFunDecl {
         pub fn peek(input: ParseStream) -> bool {
-            let forked = input.fork();
-            let res = forked.parse::<Token![use]>().is_ok();
-            res && forked.parse::<keyword::function>().is_ok()
+            input.peek(Token![use]) && input.peek2(keyword::function)
         }
     }
     impl Parse for ExtFunDecl {
@@ -679,9 +669,7 @@ mod interface {
 
     impl ExtCompDecl {
         pub fn peek(input: ParseStream) -> bool {
-            let forked = input.fork();
-            let res = forked.parse::<Token![use]>().is_ok();
-            res && forked.parse::<keyword::component>().is_ok()
+            input.peek(Token![use]) && input.peek2(keyword::component)
         }
     }
     impl Parse for ExtCompDecl {
@@ -741,19 +729,12 @@ mod interface {
         }
     }
 
-    impl FlowStatement {
-        pub fn peek(input: ParseStream) -> bool {
-            FlowDeclaration::peek(input) || FlowInstantiation::peek(input)
-        }
-    }
     impl Parse for FlowStatement {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             if FlowDeclaration::peek(input) {
                 Ok(FlowStatement::Declaration(input.parse()?))
-            } else if FlowInstantiation::peek(input) {
-                Ok(FlowStatement::Instantiation(input.parse()?))
             } else {
-                Err(input.error("expected flow declaration or instantiation"))
+                Ok(FlowStatement::Instantiation(input.parse()?))
             }
         }
     }
@@ -1071,8 +1052,7 @@ mod parse_stream {
 
     impl ParsePrec for stream::Expr {
         fn parse_term(input: ParseStream) -> syn::Res<Self> {
-            // #TODO: have a cheap peeking for complex expressions
-            let mut expression = if input.fork().call(Constant::parse).is_ok() {
+            let mut expression = if Constant::peek(input) {
                 Self::Constant(input.parse()?)
             } else if Last::peek(input) {
                 Self::Last(input.parse()?)
@@ -1095,7 +1075,7 @@ mod parse_stream {
                 Self::Structure(input.parse()?)
             } else if expr::Enumeration::<Self>::peek(input) {
                 Self::Enumeration(input.parse()?)
-            } else if input.fork().call(Ident::parse).is_ok() {
+            } else if input.peek(Ident) {
                 Self::Identifier(input.parse()?)
             } else {
                 return Err(input.error("expected expression"));
@@ -1489,6 +1469,7 @@ mod parse_expr {
         E: Parse,
     {
         pub fn peek(input: ParseStream) -> bool {
+            // TODO: have a cheap peeking for structures (that does not clash with match)
             let forked = input.fork();
             forked.call(Structure::<E>::parse).is_ok()
         }
@@ -1540,11 +1521,7 @@ mod parse_expr {
 
     impl<E> Enumeration<E> {
         pub fn peek(input: ParseStream) -> bool {
-            let forked = input.fork();
-            if forked.call(Ident::parse).is_err() {
-                return false;
-            }
-            forked.peek(Token![::])
+            input.peek(Ident) && input.peek2(Token![::])
         }
     }
 
@@ -1608,11 +1585,7 @@ mod parse_expr {
 
     impl PatStructure {
         pub fn peek(input: ParseStream) -> bool {
-            let forked = input.fork();
-            if forked.call(Ident::parse).is_err() {
-                return false;
-            }
-            forked.peek(token::Brace)
+            input.peek(Ident) && input.peek2(token::Brace)
         }
     }
 
@@ -1662,11 +1635,7 @@ mod parse_expr {
 
     impl PatEnumeration {
         pub fn peek(input: ParseStream) -> bool {
-            let forked = input.fork();
-            if forked.call(Ident::parse).is_err() {
-                return false;
-            }
-            forked.peek(Token![::])
+            input.peek(Ident) && input.peek2(Token![::])
         }
     }
 
@@ -1702,7 +1671,7 @@ mod parse_expr {
 
     impl Parse for Pattern {
         fn parse(input: ParseStream) -> syn::Res<Self> {
-            let pattern = if input.fork().call(Constant::parse).is_ok() {
+            let pattern = if Constant::peek(input) {
                 Pattern::Constant(input.parse()?)
             } else if PatStructure::peek(input) {
                 Pattern::Structure(input.parse()?)
@@ -1710,7 +1679,7 @@ mod parse_expr {
                 Pattern::Tuple(input.parse()?)
             } else if PatEnumeration::peek(input) {
                 Pattern::Enumeration(input.parse()?)
-            } else if input.fork().peek(Token![_]) {
+            } else if input.peek(Token![_]) {
                 let token: Token![_] = input.parse()?;
                 Pattern::Default(token.span.into())
             } else {
@@ -1778,11 +1747,7 @@ mod parse_expr {
         E: Parse + HasLoc,
     {
         pub fn peek(input: ParseStream) -> bool {
-            let forked = input.fork();
-            if forked.call(token::Dot::parse).is_err() {
-                return false;
-            }
-            forked.call(Ident::parse).is_ok()
+            input.peek(token::Dot) && input.peek2(Ident)
         }
 
         pub fn parse(expr: E, input: ParseStream) -> syn::Res<Self> {
@@ -1808,11 +1773,7 @@ mod parse_expr {
         E: Parse + HasLoc,
     {
         pub fn peek(input: ParseStream) -> bool {
-            let forked = input.fork();
-            if forked.call(token::Dot::parse).is_err() {
-                return false;
-            }
-            forked.call(syn::LitInt::parse).is_ok()
+            input.peek(token::Dot) && input.peek2(LitInt)
         }
 
         pub fn parse(expr: E, input: ParseStream) -> syn::Res<Self> {
@@ -1866,11 +1827,7 @@ mod parse_expr {
         E: Parse + HasLoc,
     {
         pub fn peek(input: ParseStream) -> bool {
-            let forked = input.fork();
-            if forked.call(token::Dot::parse).is_err() {
-                return false;
-            }
-            forked.peek(keyword::map)
+            input.peek(token::Dot) && input.peek2(keyword::map)
         }
 
         pub fn parse(expr: E, input: ParseStream) -> syn::Res<Self> {
@@ -1910,11 +1867,7 @@ mod parse_expr {
         E: Parse + HasLoc,
     {
         pub fn peek(input: ParseStream) -> bool {
-            let forked = input.fork();
-            if forked.call(token::Dot::parse).is_err() {
-                return false;
-            }
-            forked.peek(keyword::fold)
+            input.peek(token::Dot) && input.peek2(keyword::fold)
         }
 
         pub fn parse(expr: E, input: ParseStream) -> syn::Res<Self> {
@@ -1968,11 +1921,7 @@ mod parse_expr {
         E: Parse + HasLoc,
     {
         pub fn peek(input: ParseStream) -> bool {
-            let forked = input.fork();
-            if forked.call(token::Dot::parse).is_err() {
-                return false;
-            }
-            forked.peek(keyword::sort)
+            input.peek(token::Dot) && input.peek2(keyword::sort)
         }
 
         pub fn parse(expr: E, input: ParseStream) -> syn::Res<Self> {
@@ -2033,7 +1982,7 @@ mod parse_expr {
 
     impl ParsePrec for Expr {
         fn parse_term(input: ParseStream) -> syn::Res<Self> {
-            let mut expr = if input.fork().call(Constant::parse).is_ok() {
+            let mut expr = if Constant::peek(input) {
                 Self::cst(input.parse()?)
             } else if UnOp::<Self>::peek(input) {
                 Self::unop(input.parse()?)
@@ -2054,7 +2003,7 @@ mod parse_expr {
                 Self::structure(input.parse()?)
             } else if Enumeration::<Self>::peek(input) {
                 Self::enumeration(input.parse()?)
-            } else if input.fork().call(Ident::parse).is_ok() {
+            } else if input.peek(Ident) {
                 let ident: Ident = input.parse()?;
                 Self::ident(ident)
             } else {
@@ -2174,7 +2123,7 @@ mod parse_equation {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let pattern = input.parse()?;
             let guard = {
-                if input.fork().peek(Token![if]) {
+                if input.peek(Token![if]) {
                     let token = input.parse()?;
                     let guard = input.parse()?;
                     Some((token, guard))
@@ -2220,6 +2169,11 @@ mod parse_equation {
         }
     }
 
+    impl TupleEventPattern {
+        pub fn peek(input: ParseStream) -> bool {
+            input.peek(token::Paren)
+        }
+    }
     impl Parse for TupleEventPattern {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let content;
@@ -2229,6 +2183,14 @@ mod parse_equation {
         }
     }
 
+    impl LetEventPattern {
+        pub fn peek(input: ParseStream) -> bool {
+            input.peek(Token![let])
+        }
+        pub fn peek_sugared(input: ParseStream) -> bool {
+            input.peek(Ident) && input.peek2(Token![?])
+        }
+    }
     impl Parse for LetEventPattern {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let let_token = input.parse()?;
@@ -2248,28 +2210,21 @@ mod parse_equation {
 
     impl Parse for EventPattern {
         fn parse(input: ParseStream) -> syn::Res<Self> {
-            if input.peek(token::Paren) {
+            if TupleEventPattern::peek(input) {
                 Ok(EventPattern::Tuple(input.parse()?))
-            } else if input.peek(Token![let]) {
+            } else if LetEventPattern::peek(input) {
                 Ok(EventPattern::Let(input.parse()?))
+            } else if LetEventPattern::peek_sugared(input) {
+                let event: Ident = input.parse()?;
+                let question_token: token::Question = input.parse()?;
+                let span = event.span();
+                let let_token = token::Let { span };
+                let pattern = expr::Pattern::ident(event.clone());
+                let eq_token = token::Eq { spans: [span] };
+                let pat = LetEventPattern::new(let_token, pattern, eq_token, event, question_token);
+                Ok(EventPattern::Let(pat))
             } else {
-                let forked = input.fork();
-                let is_event = forked
-                    .parse::<Ident>()
-                    .is_ok_and(|_| forked.parse::<token::Question>().is_ok());
-                if is_event {
-                    let event: Ident = input.parse()?;
-                    let question_token: token::Question = input.parse()?;
-                    let span = event.span();
-                    let let_token = token::Let { span };
-                    let pattern = expr::Pattern::ident(event.clone());
-                    let eq_token = token::Eq { spans: [span] };
-                    let pat =
-                        LetEventPattern::new(let_token, pattern, eq_token, event, question_token);
-                    Ok(EventPattern::Let(pat))
-                } else {
-                    Ok(EventPattern::RisingEdge(input.parse()?))
-                }
+                Ok(EventPattern::RisingEdge(input.parse()?))
             }
         }
     }
@@ -2278,7 +2233,7 @@ mod parse_equation {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let pat = input.parse()?;
             let guard = {
-                if input.fork().peek(Token![if]) {
+                if input.peek(Token![if]) {
                     let token = input.parse()?;
                     let guard = input.parse()?;
                     Some((token, guard))
@@ -2444,11 +2399,7 @@ mod parse_contract {
 
     impl Enumeration {
         pub fn peek(input: ParseStream) -> bool {
-            let forked = input.fork();
-            if forked.call(Ident::parse).is_err() {
-                return false;
-            }
-            forked.peek(Token![::])
+            input.peek(Ident) && input.peek2(Token![::])
         }
     }
     impl Parse for Enumeration {
@@ -2538,13 +2489,13 @@ mod parse_contract {
                 let _: keyword::last = input.parse()?;
                 let ident: Ident = input.parse()?;
                 Term::last(ident)
-            } else if input.fork().call(Constant::parse).is_ok() {
+            } else if Constant::peek(input) {
                 Term::constant(input.parse()?)
             } else if Enumeration::peek(input) {
                 Term::enumeration(input.parse()?)
             } else if Unary::peek(input) {
                 Term::unary(input.parse()?)
-            } else if input.fork().call(Ident::parse).is_ok() {
+            } else if input.peek(Ident) {
                 let ident: Ident = input.parse()?;
                 if Application::peek(input) {
                     Term::app(Application::parse(ident, input)?)

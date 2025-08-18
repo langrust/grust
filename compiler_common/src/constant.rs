@@ -182,6 +182,16 @@ impl Constant {
             Constant::Default(_) => Typ::Any,
         }
     }
+    pub fn peek(input: ParseStream) -> bool {
+        input.peek(LitInt) || input.peek(LitFloat) || input.peek(LitBool) || {
+            (|| {
+                let content;
+                let _ = parenthesized!(content in input.fork());
+                Ok(content)
+            })()
+            .is_ok_and(|content| content.is_empty())
+        }
+    }
 }
 impl Parse for Constant {
     fn parse(input: ParseStream) -> syn::Res<Self> {
