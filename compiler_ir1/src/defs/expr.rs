@@ -349,6 +349,6 @@ impl Expr {
     pub fn get_dependencies(&self) -> &Vec<(usize, Label)> {
         self.dependencies
             .get()
-            .expect("there should be dependencies")
+            .expect("internal error: there should be dependencies")
     }
 }

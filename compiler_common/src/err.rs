@@ -527,7 +527,7 @@ impl Error {
     // pub fn to_syn_error(&self) -> syn::Error {
     //     // we're ignoring notes, sadly...
     //     // let loc = self.loc.unwrap_or_else(Loc::mixed_site);
-    //     let loc = self.loc.expect("error has no location >_<");
+    //     let loc = self.loc.expect("internal error: error has no location >_<");
     //     // println!("-> {:?}", loc);
     //     let msg = self.error().to_string();
     //     let error = syn::Error::new(loc.span, msg);
@@ -549,7 +549,10 @@ impl Error {
         use macro1::*;
         // println!("error:\n{}", self.error().to_string());
         let (error_kind, notes) = self.val;
-        let loc = self.loc.expect("error has no location >_<").unwrap();
+        let loc = self
+            .loc
+            .expect("internal error: error has no location >_<")
+            .unwrap();
         let mut d = Diagnostic::spanned(&[loc] as &[Span], Level::Error, error_kind.to_string());
         for note in notes {
             let msg = note.val;
@@ -566,7 +569,10 @@ impl Error {
     pub fn to_note_diagnostic(self) -> macro1::Diagnostic {
         use macro1::*;
         let (error_kind, notes) = self.val;
-        let loc = self.loc.expect("error has no location >_<").unwrap();
+        let loc = self
+            .loc
+            .expect("internal error: error has no location >_<")
+            .unwrap();
         let mut d = Diagnostic::spanned(&[loc] as &[Span], Level::Note, error_kind.to_string());
         for note in notes {
             let msg = note.val;

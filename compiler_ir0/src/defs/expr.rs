@@ -25,8 +25,6 @@ mk_new! { impl{E} UnOp<E> =>
 }
 
 /// Binary operator.
-///
-/// TODO: precedence
 #[derive(Debug, PartialEq, Clone)]
 pub struct BinOp<E> {
     /// The unary operator.

@@ -253,7 +253,7 @@ mod term {
                     let views = ctx.get_typ(id).needs_view();
                     match ctx.get_scope(id) {
                         Scope::Input => contract::Term::input(name.clone(), views),
-                        // todo: this will broke for components with multiple outputs
+                        // TODO: this will broke for components with multiple outputs
                         Scope::Output => {
                             let ident = Ident::result(name.span());
                             contract::Term::ident(ident, views)
@@ -309,10 +309,9 @@ mod term {
                     inputs,
                 } => {
                     let memory_ident = ctx
-                        .get_name(
-                            memory_id
-                                .expect("should be defined in `ir1::contract::Term::memorize`"),
-                        )
+                        .get_name(memory_id.expect(
+                            "internal error: should be defined in `ir1::contract::Term::memorize`",
+                        ))
                         .clone();
                     let comp_name = ctx.get_name(comp_id).clone();
                     let input_fields = inputs
@@ -388,7 +387,10 @@ where
                     .iter()
                     .map(|id| (ctx.get_name(*id).clone(), ctx.get_typ(*id).clone()))
                     .collect();
-                let output = expr.try_get_typ().expect("it should be typed").clone();
+                let output = expr
+                    .try_get_typ()
+                    .expect("internal error: it should be typed")
+                    .clone();
                 let body = Expr::block(Block::new(vec![Stmt::expr_last(expr.into_ir2(ctx))]));
                 Expr::lambda(false, inputs, output, body)
             }
@@ -700,9 +702,9 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::stream::Expr {
                 ..
             } => {
                 let memory_ident = ctx
-                    .get_name(
-                        memory_id.expect("should be defined in `ir1::stream::Expr::memorize`"),
-                    )
+                    .get_name(memory_id.expect(
+                        "internal error: should be defined in `ir1::stream::Expr::memorize`",
+                    ))
                     .clone();
                 let name = ctx.get_name(called_node_id).clone();
                 let input_fields = inputs

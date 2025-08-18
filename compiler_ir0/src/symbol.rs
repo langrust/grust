@@ -271,7 +271,9 @@ impl Context {
         }
     }
     fn get_global_context(self) -> Context {
-        *self.global_context.expect("there is no global context")
+        *self
+            .global_context
+            .expect("internal error: there is no global context")
     }
 }
 
@@ -357,53 +359,6 @@ impl Table {
             }
         }
         Err(e)
-    }
-
-    /// Initialize symbol table with builtin operators.
-    pub fn initialize(&mut self) {
-        // initialize with unary, binary and other operators
-        // UOp::iter().for_each(|op| {
-        //     let symbol = Symbol {
-        //         kind: SymbolKind::Function {
-        //             inputs: vec![],
-        //             output_type: None,
-        //             typing: Some(op.get_typ()),
-        //         },
-        //         name: Loc::builtin_id(op.to_string()),
-        //         loc: None,
-        //     };
-
-        //     self.insert_symbol(symbol, false, &mut vec![])
-        //         .expect("you should not fail");
-        // });
-        // BOp::iter().for_each(|op| {
-        //     let symbol = Symbol {
-        //         kind: SymbolKind::Function {
-        //             inputs: vec![],
-        //             output_type: None,
-        //             typing: Some(op.get_typ()),
-        //         },
-        //         name: Loc::builtin_id(op.to_string()),
-        //         loc: None,
-        //     };
-
-        //     self.insert_symbol(symbol, false, &mut vec![])
-        //         .expect("you should not fail");
-        // });
-        // OtherOp::iter().for_each(|op| {
-        //     let symbol = Symbol {
-        //         kind: SymbolKind::Function {
-        //             inputs: vec![],
-        //             output_type: None,
-        //             typing: Some(op.get_typ()),
-        //         },
-        //         name: Loc::builtin_id(op.to_string()),
-        //         loc: None,
-        //     };
-
-        //     self.insert_symbol(symbol, false, &mut vec![])
-        //         .expect("you should not fail");
-        // });
     }
 
     /// Create local context in symbol table.
@@ -703,7 +658,7 @@ impl Table {
         );
 
         self.insert_symbol(symbol, false, &mut vec![])
-            .expect("you should not fail") // todo make it local
+            .expect("internal error: you should not fail")
     }
 
     /// Insert fresh flow in symbol table.
@@ -719,7 +674,7 @@ impl Table {
         );
 
         self.insert_symbol(symbol, false, &mut vec![])
-            .expect("you should not fail") // todo make it local
+            .expect("internal error: you should not fail")
     }
 
     /// Insert fresh period timer in symbol table.
@@ -735,7 +690,7 @@ impl Table {
         );
 
         self.insert_symbol(symbol, false, &mut vec![])
-            .expect("you should not fail") // todo make it local
+            .expect("internal error: you should not fail")
     }
 
     /// Insert fresh deadline timer in symbol table.
@@ -751,7 +706,7 @@ impl Table {
         );
 
         self.insert_symbol(symbol, false, &mut vec![])
-            .expect("you should not fail") // todo make it local
+            .expect("internal error: you should not fail")
     }
 
     /// Insert service delay timer in symbol table.
@@ -772,7 +727,7 @@ impl Table {
         );
 
         self.insert_symbol(symbol, false, &mut vec![])
-            .expect("you should not fail") // todo make it local
+            .expect("internal error: you should not fail")
     }
 
     /// Insert service timeout timer in symbol table.
@@ -793,7 +748,7 @@ impl Table {
         );
 
         self.insert_symbol(symbol, false, &mut vec![])
-            .expect("you should not fail") // todo make it local
+            .expect("internal error: you should not fail")
     }
 
     /// Restore a local context from identifiers.
@@ -901,7 +856,9 @@ impl Table {
             .get_symbol(id)
             .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Function { output_type, .. } => output_type.as_ref().expect("expect type"),
+            SymbolKind::Function { output_type, .. } => {
+                output_type.as_ref().expect("internal error: expect type")
+            }
             _ => noErrorDesc!(),
         }
     }
@@ -1318,7 +1275,7 @@ impl Table {
             SymbolKind::Array { array_type, size } => Typ::array(
                 array_type
                     .as_ref()
-                    .expect("expect array element type")
+                    .expect("internal error: expect array element type")
                     .clone(),
                 *size,
             ),
@@ -1332,9 +1289,9 @@ impl Table {
             .get_symbol(id)
             .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Array { array_type, .. } => {
-                array_type.as_ref().expect("expect array element type")
-            }
+            SymbolKind::Array { array_type, .. } => array_type
+                .as_ref()
+                .expect("internal error: expect array element type"),
             _ => noErrorDesc!(),
         }
     }

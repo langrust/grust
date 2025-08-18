@@ -727,7 +727,7 @@ impl ToTokens for FlowInstruction {
 impl FlowInstruction {
     pub fn seq(mut vec: Vec<Self>) -> Self {
         if vec.len() == 1 {
-            vec.pop().expect("len is `1`")
+            vec.pop().expect("internal error: len is `1`")
         } else {
             Self::Seq(vec)
         }

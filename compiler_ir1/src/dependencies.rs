@@ -733,11 +733,11 @@ impl File {
                 let index1 = sorted_nodes
                     .iter()
                     .position(|id| *id == c1.get_id())
-                    .expect("should be in sorted list");
+                    .expect("internal error: should be in sorted list");
                 let index2 = sorted_nodes
                     .iter()
                     .position(|id| *id == c2.get_id())
-                    .expect("should be in sorted list");
+                    .expect("internal error: should be in sorted list");
                 Ord::cmp(&index2, &index1)
             })
         });
@@ -795,7 +795,7 @@ impl ir1::stream::Stmt {
         let color = ctx
             .proc_manager
             .get_mut(&signal)
-            .expect("signal should be in processing manager");
+            .expect("internal error: signal should be in processing manager");
 
         match color {
             // if vertex unprocessed
@@ -819,7 +819,7 @@ impl ir1::stream::Stmt {
                 let color = ctx
                     .proc_manager
                     .get_mut(&signal)
-                    .expect("signal should be in processing manager");
+                    .expect("internal error: signal should be in processing manager");
                 // update status: processed
                 *color = Color::Black;
 

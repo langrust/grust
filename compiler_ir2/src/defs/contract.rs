@@ -287,7 +287,12 @@ impl ToTokens for TermTokens<'_> {
                 let args = arguments.iter().map(|term| self.set_term(term));
                 quote!(logical::#function(#(#args),*)).to_tokens(tokens)
             }
-            Term::ComponentCall { .. } => todo!("not supported yet"),
+            Term::ComponentCall { .. } => {
+                assert!(
+                    false,
+                    "`ir2::Contract::to_tokens` does not support component calls yet"
+                )
+            }
         }
     }
 }

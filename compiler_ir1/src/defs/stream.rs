@@ -1052,7 +1052,7 @@ impl Expr {
     pub fn get_dependencies(&self) -> &Vec<(usize, Label)> {
         self.dependencies
             .get()
-            .expect("there should be dependencies")
+            .expect("internal error: there should be dependencies")
     }
 
     /// Tell if it is in normal form.
@@ -1249,7 +1249,7 @@ impl Expr {
                     new_inits.push(init_mem);
 
                     let mem = stream::Expr {
-                        kind: stream::Kind::last(id, id), // todo: is it ok?
+                        kind: stream::Kind::last(id, id),
                         typ: Some(Typ::Boolean(Default::default())),
                         loc,
                         dependencies: last_dependencies.clone(),

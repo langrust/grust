@@ -369,7 +369,9 @@ impl FlowStatement {
                 debug_assert!(expr.is_normal());
                 let dependencies = expr.get_dependencies();
                 dependencies.iter().for_each(|flow_id| {
-                    let dep_id = flows_statements.get(flow_id).expect("should be there");
+                    let dep_id = flows_statements
+                        .get(flow_id)
+                        .expect("internal error: should be there");
                     graph.add_edge(*dep_id, stmt_id, ());
                 });
             }

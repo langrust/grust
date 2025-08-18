@@ -308,7 +308,7 @@ impl<'a> Env<'a> {
         let stmt = self
             .repr_to_stmt
             .get(&uid)
-            .expect("unknown instruction uid");
+            .expect("internal error: unknown instruction uid");
         stmt.weight(&self.weight_bounds, self.ctx)
     }
 
@@ -413,7 +413,9 @@ impl Vars {
                 }
                 Kind::Tuple { elements } => {
                     let mut elms = elements.into_iter().map(|pat| pat.kind);
-                    curr = elms.next().expect("unexpected empty tuple pattern");
+                    curr = elms
+                        .next()
+                        .expect("internal error: unexpected empty tuple pattern");
                     stack.push((elms, vec![], vec![]));
                     continue 'current;
                 }
@@ -852,9 +854,9 @@ impl Stmts {
     ///
     /// See [module-level documentation](self) for details on fast-rayon
     ///
-    /// # TODO
+    /// ## TODOs
     ///
-    /// - not exactly super efficient...
+    /// - improve efficiency
     fn rayon(exprs: impl IntoIterator<Item = TokenStream2> + ExactSizeIterator) -> TokenStream2 {
         let len = exprs.len();
         let len_lit = Self::usize_lit(len);

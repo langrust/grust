@@ -78,7 +78,7 @@ macro_rules! iter_1 {
     { $e:expr, |$iter:ident| $iter_do:expr, |$elem:ident| $one_do:expr $(,)? } => {{
         let mut iter = $e;
         if iter.len() == 1 {
-            let $elem = iter.next().expect("len is `1`");
+            let $elem = iter.next().expect("internal error: len is `1`");
             $one_do
         } else {
             let $iter = iter;
@@ -200,14 +200,14 @@ impl Loc {
 }
 impl PartialEq for Loc {
     fn eq(&self, other: &Self) -> bool {
-        // #TODO: that's pretty bad, but we can't have `PartialEq` on `Span` itself...
+        // TODO: that's pretty bad, but we can't have `PartialEq` on `Span` itself...
         format!("{:?}", self.span) == format!("{:?}", other.span)
     }
 }
 impl Eq for Loc {}
 impl std::hash::Hash for Loc {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        // #TODO: that's pretty bad, but we can't have `Hash` on `Span` itself...
+        // TODO: that's pretty bad, but we can't have `Hash` on `Span` itself...
         format!("{:?}", self.span).hash(state)
     }
 }

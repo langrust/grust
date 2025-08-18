@@ -15,9 +15,6 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for Ast {
     type Ir1 = File;
 
     fn into_ir1(self, ctx: &mut ctx::Simple) -> TRes<Self::Ir1> {
-        // initialize symbol table with builtin operators
-        ctx.ctx0.initialize();
-
         // store elements in symbol table
         self.store(ctx.ctx0, ctx.errors)?;
 
@@ -706,7 +703,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Contract {
                 Invariant(_) => invariant.push(clause.term.into_ir1(ctx)?),
                 Assert(a) => {
                     bad!(ctx.errors, @a.span =>
-                        "`ir0::Contract::into_ir1` does not support assertions clauses"
+                        "`ir0::Contract::into_ir1` does not support assertions clauses yet"
                     )
                 }
             }
@@ -752,7 +749,7 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
                 let called_node_id = ctx.ctx0.get_node_id(&app.fun, false, ctx.errors)?;
                 let node_symbol = ctx
                     .get_symbol(called_node_id)
-                    .expect("there should be a symbol")
+                    .expect("internal error: there should be a symbol")
                     .clone();
                 match node_symbol.kind() {
                     SymbolKind::Node { inputs, .. } => {
@@ -807,7 +804,6 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
                 let element_id = ctx
                     .ctx0
                     .get_enum_elem_id(&elem_name, &enum_name, false, loc, ctx.errors)?;
-                // TODO check elem is in enum
                 Ok(ir1::contract::Term::new(
                     ir1::contract::Kind::enumeration(enum_id, element_id),
                     None,
@@ -1567,7 +1563,6 @@ mod simple_expr_impl {
                 ctx.loc,
                 ctx.errors,
             )?;
-            // TODO check elem is in enum
             Ok(expr::Kind::Enumeration { enum_id, elem_id })
         }
     }
@@ -2110,7 +2105,10 @@ mod stream_impl {
                 arms,
                 when_token,
             } = self;
-            let def_eq_pat = ctx.pat.take().expect("there should be a pattern");
+            let def_eq_pat = ctx
+                .pat
+                .take()
+                .expect("internal error: there should be a pattern");
 
             let (
                 // default patterns for events detection
@@ -2274,7 +2272,7 @@ mod stream_impl {
                         let called_node_id = ctx.ctx0.get_node_id(&node, false, ctx.errors)?;
                         let node_symbol = ctx
                             .get_symbol(called_node_id)
-                            .expect("there should be a symbol")
+                            .expect("internal error: there should be a symbol")
                             .clone();
                         match node_symbol.kind() {
                             SymbolKind::Node { inputs, .. } => {
