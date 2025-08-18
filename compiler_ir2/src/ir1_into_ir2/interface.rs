@@ -201,10 +201,11 @@ mod service_handler {
                 return FlowInstruction::seq(vec![]);
             }
             let builder = Builder::<flow_instr::Builder>::new(subgraph);
-            builder.run(ctx).expect("oh no")
+            builder.run(ctx).expect("internal error: oh no")
         } else {
             // else, construct an ordered sequence of instructions
-            let ord_instrs = graph::toposort(subgraph, None).expect("no cycle expected");
+            let ord_instrs =
+                graph::toposort(subgraph, None).expect("internal error: no cycle expected");
             let seq: Vec<_> = ord_instrs
                 .into_iter()
                 .map(|i| Synced::instr(i, ctx))
@@ -269,7 +270,7 @@ mod service_handler {
             .filter_map(|(stmt_id, _)| {
                 let import = ctx
                     .get_import(*stmt_id)
-                    .expect("there should be a flow import");
+                    .expect("internal error: there should be a flow import");
                 import.clone().into_ir2(ctx)
             })
             .collect();
@@ -674,7 +675,9 @@ mod flow_instr {
                                 ..
                             } => components.push((
                                 symbols
-                                    .get_name(*memory_id.as_ref().expect("memorized"))
+                                    .get_name(
+                                        *memory_id.as_ref().expect("internal error: memorized"),
+                                    )
                                     .clone(),
                                 symbols.try_get_comp_path(*called_comp_id).cloned(),
                                 symbols.get_name(*called_comp_id).clone(),
@@ -766,7 +769,7 @@ mod flow_instr {
                 let imports = self
                     .stmts_imports
                     .get(&stmt_id)
-                    .expect("there should be imports");
+                    .expect("internal error: there should be imports");
                 debug_assert!(!imports.is_empty());
 
                 Some(
@@ -876,7 +879,7 @@ mod flow_instr {
                     inputs,
                 } => self.handle_component_call(
                     pattern,
-                    *memory_id.as_ref().expect("memorized"),
+                    *memory_id.as_ref().expect("internal error: memorized"),
                     *called_comp_id,
                     inputs,
                 ),
@@ -1732,17 +1735,17 @@ mod from_synced {
                     todo.reverse();
                     current = todo
                         .pop()
-                        .expect("there should be a synced in this sequence");
+                        .expect("internal error: there should be a synced in this sequence");
                     stack.push(Frame::Seq { done: vec![], todo });
                     continue 'go_down;
                 }
                 Synced::Para(mut todo, _) => {
                     let (cost, mut cost_todo) = todo
                         .pop_first()
-                        .expect("there should be synced elements in this parallel execution");
-                    current = cost_todo
-                        .pop()
-                        .expect("there should be a synced in this parallel execution");
+                        .expect("internal error: there should be synced elements in this parallel execution");
+                    current = cost_todo.pop().expect(
+                        "internal error: there should be a synced in this parallel execution",
+                    );
                     if !cost_todo.is_empty() {
                         todo.insert(cost.clone(), cost_todo);
                     }
@@ -1761,7 +1764,8 @@ mod from_synced {
                     None => {
                         // prefix ; acc ; suffix
                         let prefix = Instr::prefix(ctx);
-                        let instr = acc.expect("there should be an instruction to return");
+                        let instr =
+                            acc.expect("internal error: there should be an instruction to return");
                         let suffix = Instr::suffix(ctx);
                         return Instr::from_seq(ctx, vec![prefix, instr, suffix]);
                     }
@@ -1770,13 +1774,14 @@ mod from_synced {
                         method,
                         mut todo,
                     }) => {
-                        let instr = std::mem::take(&mut acc)
-                            .expect("there should be an instruction to parallelize");
+                        let instr = std::mem::take(&mut acc).expect(
+                            "internal error: there should be an instruction to parallelize",
+                        );
                         done.entry(method).or_insert_with(Vec::new).push(instr);
                         if let Some((cost, mut cost_todo)) = todo.pop_first() {
                             current = cost_todo
                                 .pop()
-                                .expect("impossible: `if !cost_todo.is_empty() {`");
+                                .expect("internal error: impossible: `if !cost_todo.is_empty() {`");
                             if !cost_todo.is_empty() {
                                 todo.insert(cost.clone(), cost_todo);
                             }
@@ -1793,7 +1798,7 @@ mod from_synced {
                     }
                     Some(Frame::Seq { mut done, mut todo }) => {
                         let instr = std::mem::take(&mut acc)
-                            .expect("there should be an instruction to sequence");
+                            .expect("internal error: there should be an instruction to sequence");
                         done.push(instr);
                         if let Some(current_todo) = todo.pop() {
                             current = current_todo;
@@ -1817,7 +1822,7 @@ mod from_synced {
             false
         }
         fn instr_cost(&self, _i: Self::Instr) -> Self::Cost {
-            1 // todo: nb of expressions used in component
+            1 // TODO: nb of expressions used in component
         }
         fn sync_seq_cost(&self, seq: &[Synced<Self>]) -> Self::Cost {
             seq.iter().map(Synced::cost).sum()
@@ -1832,7 +1837,7 @@ mod from_synced {
     }
     impl IntoParaMethod for <flow_instr::Builder<'_> as CtxSpec>::Cost {
         fn into_para_method(self) -> ParaMethod {
-            ParaMethod::Tokio // todo: depending on benchmarks
+            ParaMethod::Tokio // TODO: depending on benchmarks
         }
     }
     impl FromSynced<flow_instr::Builder<'_>> for FlowInstruction {
@@ -1946,7 +1951,7 @@ mod clean_synced {
                     todo.reverse();
                     current = todo
                         .pop()
-                        .expect("there should be a synced in this sequence");
+                        .expect("internal error: there should be a synced in this sequence");
                     stack.push(Frame::Seq { done: vec![], todo });
                     continue 'go_down;
                 }
@@ -1959,12 +1964,13 @@ mod clean_synced {
                 debug_assert!(acc.is_some());
                 match stack.pop() {
                     None => {
-                        let synced = acc.expect("there should be a synced to return");
+                        let synced =
+                            acc.expect("internal error: there should be a synced to return");
                         return synced;
                     }
                     Some(Frame::Seq { mut done, mut todo }) => {
                         let instr = std::mem::take(&mut acc)
-                            .expect("there should be an instruction to sequence");
+                            .expect("internal error: there should be an instruction to sequence");
                         done.push(instr);
                         if let Some(current_todo) = todo.pop() {
                             current = current_todo;
@@ -2047,17 +2053,17 @@ mod clean_synced {
                     todo.reverse();
                     current = todo
                         .pop()
-                        .expect("there should be a synced in this sequence");
+                        .expect("internal error: there should be a synced in this sequence");
                     stack.push(ExtractFrame::Seq { done: vec![], todo });
                     continue 'go_down;
                 }
                 Synced::Para(mut todo, _) => {
                     let (cost, mut cost_todo) = todo
                         .pop_first()
-                        .expect("there should be synced elements in this parallel execution");
-                    current = cost_todo
-                        .pop()
-                        .expect("there should be a synced in this parallel execution");
+                        .expect("internal error: there should be synced elements in this parallel execution");
+                    current = cost_todo.pop().expect(
+                        "internal error: there should be a synced in this parallel execution",
+                    );
                     if !cost_todo.is_empty() {
                         todo.insert(cost.clone(), cost_todo);
                     }
@@ -2099,7 +2105,7 @@ mod clean_synced {
                         if let Some((cost, mut cost_todo)) = todo.pop_first() {
                             current = cost_todo
                                 .pop()
-                                .expect("impossible: `if !cost_todo.is_empty() {`");
+                                .expect("internal error: impossible: `if !cost_todo.is_empty() {`");
                             if !cost_todo.is_empty() {
                                 todo.insert(cost.clone(), cost_todo);
                             }

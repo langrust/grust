@@ -168,7 +168,7 @@ impl<T> VecExt<T> for Vec<T> {
         if self.len() == 1 {
             let res = self
                 .pop()
-                .expect("popping a vector of length 1 is always legal");
+                .expect("internal error: popping a vector of length 1 is always legal");
             debug_assert_eq!(self.len(), 0);
             Some(res)
         } else {

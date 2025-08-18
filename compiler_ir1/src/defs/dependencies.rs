@@ -53,7 +53,7 @@ impl Dependencies {
     pub fn set(&self, v: Vec<(usize, Label)>) {
         self.0
             .set(v)
-            .expect("should be the first time setting dependencies")
+            .expect("internal error: should be the first time setting dependencies")
     }
 
     /// Get optional dependencies.

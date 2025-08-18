@@ -41,10 +41,9 @@ impl Typing for Function {
             }
             body.returned.typ_check(symbols, errors)?;
             let expected_type = symbols.get_function_output_type(self.id);
-            // #TODO don't `unwrap` below
             body.returned
                 .get_typ()
-                .unwrap()
+                .expect("internal error: expression should be typed")
                 .expect(self.loc, expected_type)
                 .dewrap(errors)
         } else {
@@ -874,7 +873,9 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
         elms.iter_mut()
             .try_for_each(|element| element.typ_check(self.table, self.errors))?;
 
-        let first_type = elms[0].get_typ().unwrap(); // todo: manage zero element error
+        let first_type = elms[0]
+            .get_typ()
+            .expect("internal error: arrays cannot be empty");
         elms.iter().try_for_each(|element| {
             let element_type = element.get_typ().unwrap();
             element_type
@@ -915,7 +916,7 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
                 let symbol = self
                     .table
                     .get_symbol(*id)
-                    .expect("there should be a symbol");
+                    .expect("internal error: there should be a symbol");
                 match symbol.kind() {
                     ir0::symbol::SymbolKind::Structure { fields } => {
                         let option_field_type = fields
@@ -1070,7 +1071,6 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
                 .dewrap(self.errors)
         })?;
 
-        // todo: patterns should be exhaustive
         Ok(first_type.clone())
     }
 
@@ -1174,7 +1174,10 @@ impl<'a, E: Typing> ExprTyping<'a, E> {
             .iter_mut()
             .map(|element| {
                 element.typ_check(self.table, self.errors)?;
-                Ok(element.get_typ().expect("should be typed").clone())
+                Ok(element
+                    .get_typ()
+                    .expect("internal error: should be typed")
+                    .clone())
             })
             .collect::<TRes<Vec<Typ>>>()?;
 

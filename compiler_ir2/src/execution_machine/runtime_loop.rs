@@ -32,7 +32,7 @@ impl ToTokens for RuntimeLoopTokens<'_> {
                 quote! { #ident }
             });
 
-        // todo: call init functions of services with initial signals' values
+        // TODO: call init functions of services with initial signals' values
         let run_inits = self.rl.init_handlers.iter().map(
             |ServiceInit {
                  service,
