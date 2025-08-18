@@ -15,14 +15,17 @@ struct AccInput {
     v: f64,
     s: f64,
 }
+struct AccOutput {
+    b: f64,
+}
 struct AccState {}
 impl grust::core::Component for AccState {
     type Input = AccInput;
-    type Output = f64;
+    type Output = AccOutput;
     fn init() -> AccState {
         AccState {}
     }
-    fn step(&mut self, input: AccInput) -> f64 {
+    fn step(&mut self, input: AccInput) -> AccOutput {
         let (d_safe, b, fv_v) = match input.c {
             true => {
                 let fv_v = input.s + input.v;
@@ -36,12 +39,15 @@ impl grust::core::Component for AccState {
                 (d_safe, b, fv_v)
             }
         };
-        b
+        AccOutput { b }
     }
 }
 struct ActivateInput {
     act: Option<Activation>,
     r: Option<f64>,
+}
+struct ActivateOutput {
+    c: bool,
 }
 struct ActivateState {
     last_active: bool,
@@ -50,7 +56,7 @@ struct ActivateState {
 }
 impl grust::core::Component for ActivateState {
     type Input = ActivateInput;
-    type Output = bool;
+    type Output = ActivateOutput;
     fn init() -> ActivateState {
         ActivateState {
             last_active: false,
@@ -58,7 +64,7 @@ impl grust::core::Component for ActivateState {
             last_d: 0.0f64,
         }
     }
-    fn step(&mut self, input: ActivateInput) -> bool {
+    fn step(&mut self, input: ActivateInput) -> ActivateOutput {
         let (active, d, approach) = match (input.act, input.r) {
             (Some(act), _) => {
                 let active = act == Activation::On;
@@ -75,7 +81,7 @@ impl grust::core::Component for ActivateState {
         self.last_active = active;
         self.last_approach = approach;
         self.last_d = d;
-        c
+        ActivateOutput { c }
     }
 }
 pub mod runtime {
@@ -483,7 +489,7 @@ pub mod runtime {
                 self.context.speed_m_s.set(speed_m_s);
                 self.context.radar_m.set(radar_m);
                 self.context.radar_e_old.set(radar_m);
-                let cond = <ActivateState as grust::core::Component>::step(
+                let ActivateOutput { c: cond } = <ActivateState as grust::core::Component>::step(
                     &mut self.activate,
                     ActivateInput { act: None, r: None },
                 );
@@ -492,13 +498,13 @@ pub mod runtime {
                     .duration_since(self.begin)
                     .as_millis()) as f64;
                 self.context.x.set(x);
-                let vel_delta =
+                let grust::std::time::derivation::DeriveOutput { d: vel_delta } =
                     <grust::std::time::derivation::DeriveState as grust::core::Component>::step(
                         &mut self.derive,
                         grust::std::time::derivation::DeriveInput { x: radar_m, t: x },
                     );
                 self.context.vel_delta.set(vel_delta);
-                let brakes_m_s = <AccState as grust::core::Component>::step(
+                let AccOutput { b: brakes_m_s } = <AccState as grust::core::Component>::step(
                     &mut self.acc,
                     AccInput {
                         c: self.context.cond.get(),
@@ -530,19 +536,21 @@ pub mod runtime {
                         *radar_e_ref = Some(radar_m);
                     }
                     if radar_e_ref.is_some() {
-                        let cond = <ActivateState as grust::core::Component>::step(
-                            &mut self.activate,
-                            ActivateInput {
-                                act: None,
-                                r: *radar_e_ref,
-                            },
-                        );
+                        let ActivateOutput { c: cond } =
+                            <ActivateState as grust::core::Component>::step(
+                                &mut self.activate,
+                                ActivateInput {
+                                    act: None,
+                                    r: *radar_e_ref,
+                                },
+                            );
                         self.context.cond.set(cond);
                     }
                     let x = (_radar_m_instant.duration_since(self.begin).as_millis()) as f64;
                     self.context.x.set(x);
                     if self.context.radar_m.is_new() || self.context.x.is_new() {
-                        let vel_delta = < grust :: std :: time :: derivation ::
+                        let grust :: std :: time :: derivation :: DeriveOutput
+                        { d : vel_delta } = < grust :: std :: time :: derivation ::
                         DeriveState as grust :: core :: Component > ::
                         step(& mut self.derive, grust :: std :: time :: derivation
                         :: DeriveInput { x : radar_m, t : x });
@@ -553,15 +561,16 @@ pub mod runtime {
                         || self.context.vel_delta.is_new()
                         || self.context.speed_m_s.is_new()
                     {
-                        let brakes_m_s = <AccState as grust::core::Component>::step(
-                            &mut self.acc,
-                            AccInput {
-                                c: self.context.cond.get(),
-                                d: radar_m,
-                                v: self.context.vel_delta.get(),
-                                s: self.context.speed_m_s.get(),
-                            },
-                        );
+                        let AccOutput { b: brakes_m_s } =
+                            <AccState as grust::core::Component>::step(
+                                &mut self.acc,
+                                AccInput {
+                                    c: self.context.cond.get(),
+                                    d: radar_m,
+                                    v: self.context.vel_delta.get(),
+                                    s: self.context.speed_m_s.get(),
+                                },
+                            );
                         self.context.brakes_m_s.set(brakes_m_s);
                     }
                     if self.context.brakes_m_s.is_new() {
@@ -610,13 +619,14 @@ pub mod runtime {
                         *radar_e_ref = Some(self.context.radar_m.get());
                     }
                     if acc_active_ref.is_some() || radar_e_ref.is_some() {
-                        let cond = <ActivateState as grust::core::Component>::step(
-                            &mut self.activate,
-                            ActivateInput {
-                                act: *acc_active_ref,
-                                r: *radar_e_ref,
-                            },
-                        );
+                        let ActivateOutput { c: cond } =
+                            <ActivateState as grust::core::Component>::step(
+                                &mut self.activate,
+                                ActivateInput {
+                                    act: *acc_active_ref,
+                                    r: *radar_e_ref,
+                                },
+                            );
                         self.context.cond.set(cond);
                     }
                     let x = (_grust_reserved_instant
@@ -624,7 +634,8 @@ pub mod runtime {
                         .as_millis()) as f64;
                     self.context.x.set(x);
                     if self.context.radar_m.is_new() || self.context.x.is_new() {
-                        let vel_delta = < grust :: std :: time :: derivation ::
+                        let grust :: std :: time :: derivation :: DeriveOutput
+                        { d : vel_delta } = < grust :: std :: time :: derivation ::
                         DeriveState as grust :: core :: Component > ::
                         step(& mut self.derive, grust :: std :: time :: derivation
                         :: DeriveInput { x : self.context.radar_m.get(), t : x });
@@ -635,15 +646,16 @@ pub mod runtime {
                         || self.context.vel_delta.is_new()
                         || self.context.speed_m_s.is_new()
                     {
-                        let brakes_m_s = <AccState as grust::core::Component>::step(
-                            &mut self.acc,
-                            AccInput {
-                                c: self.context.cond.get(),
-                                d: self.context.radar_m.get(),
-                                v: self.context.vel_delta.get(),
-                                s: self.context.speed_m_s.get(),
-                            },
-                        );
+                        let AccOutput { b: brakes_m_s } =
+                            <AccState as grust::core::Component>::step(
+                                &mut self.acc,
+                                AccInput {
+                                    c: self.context.cond.get(),
+                                    d: self.context.radar_m.get(),
+                                    v: self.context.vel_delta.get(),
+                                    s: self.context.speed_m_s.get(),
+                                },
+                            );
                         self.context.brakes_m_s.set(brakes_m_s);
                     }
                     if self.context.brakes_m_s.is_new() {
@@ -680,19 +692,21 @@ pub mod runtime {
                     let acc_active_ref = &mut None;
                     *acc_active_ref = Some(acc_active);
                     if acc_active_ref.is_some() {
-                        let cond = <ActivateState as grust::core::Component>::step(
-                            &mut self.activate,
-                            ActivateInput {
-                                act: *acc_active_ref,
-                                r: None,
-                            },
-                        );
+                        let ActivateOutput { c: cond } =
+                            <ActivateState as grust::core::Component>::step(
+                                &mut self.activate,
+                                ActivateInput {
+                                    act: *acc_active_ref,
+                                    r: None,
+                                },
+                            );
                         self.context.cond.set(cond);
                     }
                     let x = (_acc_active_instant.duration_since(self.begin).as_millis()) as f64;
                     self.context.x.set(x);
                     if self.context.radar_m.is_new() || self.context.x.is_new() {
-                        let vel_delta = < grust :: std :: time :: derivation ::
+                        let grust :: std :: time :: derivation :: DeriveOutput
+                        { d : vel_delta } = < grust :: std :: time :: derivation ::
                         DeriveState as grust :: core :: Component > ::
                         step(& mut self.derive, grust :: std :: time :: derivation
                         :: DeriveInput { x : self.context.radar_m.get(), t : x });
@@ -703,15 +717,16 @@ pub mod runtime {
                         || self.context.vel_delta.is_new()
                         || self.context.speed_m_s.is_new()
                     {
-                        let brakes_m_s = <AccState as grust::core::Component>::step(
-                            &mut self.acc,
-                            AccInput {
-                                c: self.context.cond.get(),
-                                d: self.context.radar_m.get(),
-                                v: self.context.vel_delta.get(),
-                                s: self.context.speed_m_s.get(),
-                            },
-                        );
+                        let AccOutput { b: brakes_m_s } =
+                            <AccState as grust::core::Component>::step(
+                                &mut self.acc,
+                                AccInput {
+                                    c: self.context.cond.get(),
+                                    d: self.context.radar_m.get(),
+                                    v: self.context.vel_delta.get(),
+                                    s: self.context.speed_m_s.get(),
+                                },
+                            );
                         self.context.brakes_m_s.set(brakes_m_s);
                     }
                     if self.context.brakes_m_s.is_new() {
@@ -744,7 +759,7 @@ pub mod runtime {
                     .as_millis()) as f64;
                 self.context.x.set(x);
                 if self.context.radar_m.is_new() || self.context.x.is_new() {
-                    let vel_delta =
+                    let grust::std::time::derivation::DeriveOutput { d: vel_delta } =
                         <grust::std::time::derivation::DeriveState as grust::core::Component>::step(
                             &mut self.derive,
                             grust::std::time::derivation::DeriveInput {
@@ -759,7 +774,7 @@ pub mod runtime {
                     || self.context.vel_delta.is_new()
                     || self.context.speed_m_s.is_new()
                 {
-                    let brakes_m_s = <AccState as grust::core::Component>::step(
+                    let AccOutput { b: brakes_m_s } = <AccState as grust::core::Component>::step(
                         &mut self.acc,
                         AccInput {
                             c: self.context.cond.get(),
@@ -809,7 +824,8 @@ pub mod runtime {
                     let x = (_speed_km_h_instant.duration_since(self.begin).as_millis()) as f64;
                     self.context.x.set(x);
                     if self.context.radar_m.is_new() || self.context.x.is_new() {
-                        let vel_delta = < grust :: std :: time :: derivation ::
+                        let grust :: std :: time :: derivation :: DeriveOutput
+                        { d : vel_delta } = < grust :: std :: time :: derivation ::
                         DeriveState as grust :: core :: Component > ::
                         step(& mut self.derive, grust :: std :: time :: derivation
                         :: DeriveInput { x : self.context.radar_m.get(), t : x });
@@ -820,15 +836,16 @@ pub mod runtime {
                         || self.context.vel_delta.is_new()
                         || self.context.speed_m_s.is_new()
                     {
-                        let brakes_m_s = <AccState as grust::core::Component>::step(
-                            &mut self.acc,
-                            AccInput {
-                                c: self.context.cond.get(),
-                                d: self.context.radar_m.get(),
-                                v: self.context.vel_delta.get(),
-                                s: self.context.speed_m_s.get(),
-                            },
-                        );
+                        let AccOutput { b: brakes_m_s } =
+                            <AccState as grust::core::Component>::step(
+                                &mut self.acc,
+                                AccInput {
+                                    c: self.context.cond.get(),
+                                    d: self.context.radar_m.get(),
+                                    v: self.context.vel_delta.get(),
+                                    s: self.context.speed_m_s.get(),
+                                },
+                            );
                         self.context.brakes_m_s.set(brakes_m_s);
                     }
                     if self.context.brakes_m_s.is_new() {

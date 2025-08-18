@@ -13,12 +13,15 @@ pub struct Alarm {
 pub struct DelayedAlarmInput {
     pub alarm: Alarm,
 }
+pub struct DelayedAlarmOutput {
+    pub delayed: Alarm,
+}
 pub struct DelayedAlarmState {
     last_temp: Alarm,
 }
 impl grust::core::Component for DelayedAlarmState {
     type Input = DelayedAlarmInput;
-    type Output = Alarm;
+    type Output = DelayedAlarmOutput;
     fn init() -> DelayedAlarmState {
         DelayedAlarmState {
             last_temp: Alarm {
@@ -27,10 +30,10 @@ impl grust::core::Component for DelayedAlarmState {
             },
         }
     }
-    fn step(&mut self, input: DelayedAlarmInput) -> Alarm {
+    fn step(&mut self, input: DelayedAlarmInput) -> DelayedAlarmOutput {
         let delayed = self.last_temp;
         let temp = input.alarm;
         self.last_temp = temp;
-        delayed
+        DelayedAlarmOutput { delayed }
     }
 }

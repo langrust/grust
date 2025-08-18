@@ -14,31 +14,38 @@ pub struct CommandInput {
     pub sv_v_km_h: f64,
     pub t_ms: f64,
 }
+pub struct CommandOutput {
+    pub brakes_command: f64,
+}
 pub struct CommandState {
     derive: core::time::derivation::DeriveState,
 }
 impl grust::core::Component for CommandState {
     type Input = CommandInput;
-    type Output = f64;
+    type Output = CommandOutput;
     fn init() -> CommandState {
         CommandState {
             derive: <core::time::derivation::DeriveState as grust::core::Component>::init(),
         }
     }
-    fn step(&mut self, input: CommandInput) -> f64 {
-        let comp_app_derive = <core::time::derivation::DeriveState as grust::core::Component>::step(
-            &mut self.derive,
-            core::time::derivation::DeriveInput {
-                x: input.distance_m,
-                t: input.t_ms,
-            },
-        );
+    fn step(&mut self, input: CommandInput) -> CommandOutput {
+        let comp_app_derive = {
+            let core::time::derivation::DeriveOutput { i } =
+                <core::time::derivation::DeriveState as grust::core::Component>::step(
+                    &mut self.derive,
+                    core::time::derivation::DeriveInput {
+                        x: input.distance_m,
+                        t: input.t_ms,
+                    },
+                );
+            (i)
+        };
         let distancing_m_s = comp_app_derive / 1000.0f64;
         let sv_v_m_s = input.sv_v_km_h / 3.6f64;
         let fv_v_m_s = sv_v_m_s + distancing_m_s;
         let d_safe_m = safety_distance(sv_v_m_s, fv_v_m_s);
         let brakes_command = (distancing_m_s * distancing_m_s) / (input.distance_m - d_safe_m);
-        brakes_command
+        CommandOutput { brakes_command }
     }
 }
 pub struct ErrorInput {
@@ -46,37 +53,47 @@ pub struct ErrorInput {
     pub brakes_m_s_command: f64,
     pub t_ms: f64,
 }
+pub struct ErrorOutput {
+    pub e_m_s: f64,
+}
 pub struct ErrorState {
     derive: core::time::derivation::DeriveState,
 }
 impl grust::core::Component for ErrorState {
     type Input = ErrorInput;
-    type Output = f64;
+    type Output = ErrorOutput;
     fn init() -> ErrorState {
         ErrorState {
             derive: <core::time::derivation::DeriveState as grust::core::Component>::init(),
         }
     }
-    fn step(&mut self, input: ErrorInput) -> f64 {
+    fn step(&mut self, input: ErrorInput) -> ErrorOutput {
         let sv_v_m_s = input.sv_v_km_h / 3.6f64;
         let x = sv_v_m_s * 1000.0f64;
-        let comp_app_derive = <core::time::derivation::DeriveState as grust::core::Component>::step(
-            &mut self.derive,
-            core::time::derivation::DeriveInput {
-                x: x,
-                t: input.t_ms,
-            },
-        );
+        let comp_app_derive = {
+            let core::time::derivation::DeriveOutput { i } =
+                <core::time::derivation::DeriveState as grust::core::Component>::step(
+                    &mut self.derive,
+                    core::time::derivation::DeriveInput {
+                        x: x,
+                        t: input.t_ms,
+                    },
+                );
+            (i)
+        };
         let a_m_s = comp_app_derive / (1000.0f64 * 1000.0f64);
         let a_m_s_command = -(input.brakes_m_s_command);
         let e_m_s = a_m_s_command - a_m_s;
-        e_m_s
+        ErrorOutput { e_m_s }
     }
 }
 pub struct PidInput {
     pub sv_v_km_h: f64,
     pub b_m_s_command: f64,
     pub t_ms: f64,
+}
+pub struct PidOutput {
+    pub b_m_s_control: f64,
 }
 pub struct PidState {
     error: ErrorState,
@@ -85,7 +102,7 @@ pub struct PidState {
 }
 impl grust::core::Component for PidState {
     type Input = PidInput;
-    type Output = f64;
+    type Output = PidOutput;
     fn init() -> PidState {
         PidState {
             error: <ErrorState as grust::core::Component>::init(),
@@ -94,36 +111,50 @@ impl grust::core::Component for PidState {
             derive: <core::time::derivation::DeriveState as grust::core::Component>::init(),
         }
     }
-    fn step(&mut self, input: PidInput) -> f64 {
-        let p_e = <ErrorState as grust::core::Component>::step(
-            &mut self.error,
-            ErrorInput {
-                sv_v_km_h: input.sv_v_km_h,
-                brakes_m_s_command: input.b_m_s_command,
-                t_ms: input.t_ms,
-            },
-        );
-        let i_e = <core::time::integration::BackwardEulerState as grust::core::Component>::step(
-            &mut self.backward_euler,
-            core::time::integration::BackwardEulerInput {
-                x: p_e,
-                t: input.t_ms,
-            },
-        );
-        let d_e = <core::time::derivation::DeriveState as grust::core::Component>::step(
-            &mut self.derive,
-            core::time::derivation::DeriveInput {
-                x: p_e,
-                t: input.t_ms,
-            },
-        );
+    fn step(&mut self, input: PidInput) -> PidOutput {
+        let p_e = {
+            let ErrorOutput { e_m_s } = <ErrorState as grust::core::Component>::step(
+                &mut self.error,
+                ErrorInput {
+                    sv_v_km_h: input.sv_v_km_h,
+                    brakes_m_s_command: input.b_m_s_command,
+                    t_ms: input.t_ms,
+                },
+            );
+            (e_m_s)
+        };
+        let i_e = {
+            let core::time::integration::BackwardEulerOutput { i } =
+                <core::time::integration::BackwardEulerState as grust::core::Component>::step(
+                    &mut self.backward_euler,
+                    core::time::integration::BackwardEulerInput {
+                        x: p_e,
+                        t: input.t_ms,
+                    },
+                );
+            (i)
+        };
+        let d_e = {
+            let core::time::derivation::DeriveOutput { i } =
+                <core::time::derivation::DeriveState as grust::core::Component>::step(
+                    &mut self.derive,
+                    core::time::derivation::DeriveInput {
+                        x: p_e,
+                        t: input.t_ms,
+                    },
+                );
+            (i)
+        };
         let b_m_s_control = ((1.0f64 * p_e) + (0.1f64 * i_e)) + (0.05f64 * d_e);
-        b_m_s_control
+        PidOutput { b_m_s_control }
     }
 }
 pub struct ActivateInput {
     pub acc_active: Option<Activation>,
     pub distance_m: f64,
+}
+pub struct ActivateOutput {
+    pub condition: bool,
 }
 pub struct ActivateState {
     last_active: bool,
@@ -134,7 +165,7 @@ pub struct ActivateState {
 }
 impl grust::core::Component for ActivateState {
     type Input = ActivateInput;
-    type Output = bool;
+    type Output = ActivateOutput;
     fn init() -> ActivateState {
         ActivateState {
             last_active: false,
@@ -144,7 +175,7 @@ impl grust::core::Component for ActivateState {
             last_x_1: false,
         }
     }
-    fn step(&mut self, input: ActivateInput) -> bool {
+    fn step(&mut self, input: ActivateInput) -> ActivateOutput {
         let x = input.distance_m < self.last_distance_m;
         let x_1 = input.distance_m >= self.last_distance_m;
         let (active, approaching) = match (input.acc_active) {
@@ -168,7 +199,7 @@ impl grust::core::Component for ActivateState {
         self.last_distance_m = input.distance_m;
         self.last_x = x;
         self.last_x_1 = x_1;
-        condition
+        ActivateOutput { condition }
     }
 }
 pub struct FilteredAccInput {
@@ -177,38 +208,48 @@ pub struct FilteredAccInput {
     pub sv_v_km_h: f64,
     pub t_ms: f64,
 }
+pub struct FilteredAccOutput {
+    pub brakes_m_s: f64,
+}
 pub struct FilteredAccState {
     command: CommandState,
     pid: PidState,
 }
 impl grust::core::Component for FilteredAccState {
     type Input = FilteredAccInput;
-    type Output = f64;
+    type Output = FilteredAccOutput;
     fn init() -> FilteredAccState {
         FilteredAccState {
             command: <CommandState as grust::core::Component>::init(),
             pid: <PidState as grust::core::Component>::init(),
         }
     }
-    fn step(&mut self, input: FilteredAccInput) -> f64 {
+    fn step(&mut self, input: FilteredAccInput) -> FilteredAccOutput {
         let (brakes_command_m_s, brakes_m_s) = match input.condition {
             true => {
-                let brakes_command_m_s = <CommandState as grust::core::Component>::step(
-                    &mut self.command,
-                    CommandInput {
-                        distance_m: input.distance_m,
-                        sv_v_km_h: input.sv_v_km_h,
-                        t_ms: input.t_ms,
-                    },
-                );
-                let brakes_m_s = <PidState as grust::core::Component>::step(
-                    &mut self.pid,
-                    PidInput {
-                        sv_v_km_h: input.sv_v_km_h,
-                        b_m_s_command: brakes_command_m_s,
-                        t_ms: input.t_ms,
-                    },
-                );
+                let brakes_command_m_s = {
+                    let CommandOutput { brakes_command } =
+                        <CommandState as grust::core::Component>::step(
+                            &mut self.command,
+                            CommandInput {
+                                distance_m: input.distance_m,
+                                sv_v_km_h: input.sv_v_km_h,
+                                t_ms: input.t_ms,
+                            },
+                        );
+                    (brakes_command)
+                };
+                let brakes_m_s = {
+                    let PidOutput { b_m_s_control } = <PidState as grust::core::Component>::step(
+                        &mut self.pid,
+                        PidInput {
+                            sv_v_km_h: input.sv_v_km_h,
+                            b_m_s_command: brakes_command_m_s,
+                            t_ms: input.t_ms,
+                        },
+                    );
+                    (b_m_s_control)
+                };
                 (brakes_command_m_s, brakes_m_s)
             }
             false => {
@@ -217,7 +258,7 @@ impl grust::core::Component for FilteredAccState {
                 (brakes_command_m_s, brakes_m_s)
             }
         };
-        brakes_m_s
+        FilteredAccOutput { brakes_m_s }
     }
 }
 pub mod runtime {
@@ -552,7 +593,9 @@ pub mod runtime {
                 self.reset_service_timeout(_grust_reserved_instant).await?;
                 self.context.speed_km_h.set(speed_km_h);
                 self.context.distance_m.set(distance_m);
-                let condition = <ActivateState as grust::core::Component>::step(
+                let ActivateOutput {
+                    condition: condition,
+                } = <ActivateState as grust::core::Component>::step(
                     &mut self.activate,
                     ActivateInput {
                         acc_active: None,
@@ -564,7 +607,9 @@ pub mod runtime {
                     .duration_since(self.begin)
                     .as_millis()) as f64;
                 self.context.t.set(t);
-                let brakes_m_s = <FilteredAccState as grust::core::Component>::step(
+                let FilteredAccOutput {
+                    brakes_m_s: brakes_m_s,
+                } = <FilteredAccState as grust::core::Component>::step(
                     &mut self.filtered_acc,
                     FilteredAccInput {
                         condition: self.context.condition.get(),
@@ -591,7 +636,9 @@ pub mod runtime {
                     self.context.reset();
                     self.context.distance_m.set(distance_m);
                     if self.context.distance_m.is_new() {
-                        let condition = <ActivateState as grust::core::Component>::step(
+                        let ActivateOutput {
+                            condition: condition,
+                        } = <ActivateState as grust::core::Component>::step(
                             &mut self.activate,
                             ActivateInput {
                                 acc_active: None,
@@ -607,7 +654,9 @@ pub mod runtime {
                         || self.context.speed_km_h.is_new()
                         || self.context.t.is_new()
                     {
-                        let brakes_m_s = <FilteredAccState as grust::core::Component>::step(
+                        let FilteredAccOutput {
+                            brakes_m_s: brakes_m_s,
+                        } = <FilteredAccState as grust::core::Component>::step(
                             &mut self.filtered_acc,
                             FilteredAccInput {
                                 condition: self.context.condition.get(),
@@ -645,7 +694,9 @@ pub mod runtime {
                     let acc_active_ref = &mut None;
                     *acc_active_ref = Some(acc_active);
                     if acc_active_ref.is_some() || self.context.distance_m.is_new() {
-                        let condition = <ActivateState as grust::core::Component>::step(
+                        let ActivateOutput {
+                            condition: condition,
+                        } = <ActivateState as grust::core::Component>::step(
                             &mut self.activate,
                             ActivateInput {
                                 acc_active: *acc_active_ref,
@@ -661,7 +712,9 @@ pub mod runtime {
                         || self.context.speed_km_h.is_new()
                         || self.context.t.is_new()
                     {
-                        let brakes_m_s = <FilteredAccState as grust::core::Component>::step(
+                        let FilteredAccOutput {
+                            brakes_m_s: brakes_m_s,
+                        } = <FilteredAccState as grust::core::Component>::step(
                             &mut self.filtered_acc,
                             FilteredAccInput {
                                 condition: self.context.condition.get(),
@@ -707,7 +760,9 @@ pub mod runtime {
                         self.context.distance_m.set(distance_m);
                     }
                     if acc_active_ref.is_some() || self.context.distance_m.is_new() {
-                        let condition = <ActivateState as grust::core::Component>::step(
+                        let ActivateOutput {
+                            condition: condition,
+                        } = <ActivateState as grust::core::Component>::step(
                             &mut self.activate,
                             ActivateInput {
                                 acc_active: *acc_active_ref,
@@ -725,7 +780,9 @@ pub mod runtime {
                         || self.context.speed_km_h.is_new()
                         || self.context.t.is_new()
                     {
-                        let brakes_m_s = <FilteredAccState as grust::core::Component>::step(
+                        let FilteredAccOutput {
+                            brakes_m_s: brakes_m_s,
+                        } = <FilteredAccState as grust::core::Component>::step(
                             &mut self.filtered_acc,
                             FilteredAccInput {
                                 condition: self.context.condition.get(),
@@ -775,7 +832,9 @@ pub mod runtime {
                         || self.context.speed_km_h.is_new()
                         || self.context.t.is_new()
                     {
-                        let brakes_m_s = <FilteredAccState as grust::core::Component>::step(
+                        let FilteredAccOutput {
+                            brakes_m_s: brakes_m_s,
+                        } = <FilteredAccState as grust::core::Component>::step(
                             &mut self.filtered_acc,
                             FilteredAccInput {
                                 condition: self.context.condition.get(),
@@ -818,7 +877,9 @@ pub mod runtime {
                     || self.context.speed_km_h.is_new()
                     || self.context.t.is_new()
                 {
-                    let brakes_m_s = <FilteredAccState as grust::core::Component>::step(
+                    let FilteredAccOutput {
+                        brakes_m_s: brakes_m_s,
+                    } = <FilteredAccState as grust::core::Component>::step(
                         &mut self.filtered_acc,
                         FilteredAccInput {
                             condition: self.context.condition.get(),

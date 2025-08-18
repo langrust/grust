@@ -6,16 +6,19 @@ pub struct AccZInput {
     pub gravy: f64,
     pub gravz: f64,
 }
+pub struct AccZOutput {
+    pub accz: f64,
+}
 pub struct AccZState {}
 impl grust::core::Component for AccZState {
     type Input = AccZInput;
-    type Output = f64;
+    type Output = AccZOutput;
     fn init() -> AccZState {
         AccZState {}
     }
-    fn step(&mut self, input: AccZInput) -> f64 {
+    fn step(&mut self, input: AccZInput) -> AccZOutput {
         let accz = ((input.ax * input.gravx) + (input.ay * input.gravy)) + (input.az * input.gravz);
-        accz
+        AccZOutput { accz }
     }
 }
 pub struct AccZWithoutGravityInput {
@@ -26,31 +29,37 @@ pub struct AccZWithoutGravityInput {
     pub gravy: f64,
     pub gravz: f64,
 }
+pub struct AccZWithoutGravityOutput {
+    pub acc_z: f64,
+}
 pub struct AccZWithoutGravityState {
     acc_z_1: AccZState,
 }
 impl grust::core::Component for AccZWithoutGravityState {
     type Input = AccZWithoutGravityInput;
-    type Output = f64;
+    type Output = AccZWithoutGravityOutput;
     fn init() -> AccZWithoutGravityState {
         AccZWithoutGravityState {
             acc_z_1: <AccZState as grust::core::Component>::init(),
         }
     }
-    fn step(&mut self, input: AccZWithoutGravityInput) -> f64 {
-        let acc_z_g = <AccZState as grust::core::Component>::step(
-            &mut self.acc_z_1,
-            AccZInput {
-                ax: input.ax,
-                ay: input.ay,
-                az: input.az,
-                gravx: input.gravx,
-                gravy: input.gravy,
-                gravz: input.gravz,
-            },
-        );
+    fn step(&mut self, input: AccZWithoutGravityInput) -> AccZWithoutGravityOutput {
+        let acc_z_g = {
+            let AccZOutput { accz } = <AccZState as grust::core::Component>::step(
+                &mut self.acc_z_1,
+                AccZInput {
+                    ax: input.ax,
+                    ay: input.ay,
+                    az: input.az,
+                    gravx: input.gravx,
+                    gravy: input.gravy,
+                    gravz: input.gravz,
+                },
+            );
+            (accz)
+        };
         let acc_z = acc_z_g - 9.80665f64;
-        acc_z
+        AccZWithoutGravityOutput { acc_z }
     }
 }
 pub struct NormalizeVec3Input {
@@ -58,19 +67,24 @@ pub struct NormalizeVec3Input {
     pub y: f64,
     pub z: f64,
 }
+pub struct NormalizeVec3Output {
+    pub nx: f64,
+    pub ny: f64,
+    pub nz: f64,
+}
 pub struct NormalizeVec3State {}
 impl grust::core::Component for NormalizeVec3State {
     type Input = NormalizeVec3Input;
-    type Output = (f64, f64, f64);
+    type Output = NormalizeVec3Output;
     fn init() -> NormalizeVec3State {
         NormalizeVec3State {}
     }
-    fn step(&mut self, input: NormalizeVec3Input) -> (f64, f64, f64) {
+    fn step(&mut self, input: NormalizeVec3Input) -> NormalizeVec3Output {
         let r = module::invsqrt(((input.x * input.x) + (input.y * input.y)) + (input.z * input.z));
         let nx = r * input.x;
         let ny = r * input.y;
         let nz = r * input.z;
-        (nx, ny, nz)
+        NormalizeVec3Output { nx, ny, nz }
     }
 }
 pub struct NormalizeQuatInput {
@@ -79,14 +93,20 @@ pub struct NormalizeQuatInput {
     pub qy: f64,
     pub qz: f64,
 }
+pub struct NormalizeQuatOutput {
+    pub nqw: f64,
+    pub nqx: f64,
+    pub nqy: f64,
+    pub nqz: f64,
+}
 pub struct NormalizeQuatState {}
 impl grust::core::Component for NormalizeQuatState {
     type Input = NormalizeQuatInput;
-    type Output = (f64, f64, f64, f64);
+    type Output = NormalizeQuatOutput;
     fn init() -> NormalizeQuatState {
         NormalizeQuatState {}
     }
-    fn step(&mut self, input: NormalizeQuatInput) -> (f64, f64, f64, f64) {
+    fn step(&mut self, input: NormalizeQuatInput) -> NormalizeQuatOutput {
         let r = module::invsqrt(
             (((input.qw * input.qw) + (input.qx * input.qx)) + (input.qy * input.qy))
                 + (input.qz * input.qz),
@@ -95,31 +115,34 @@ impl grust::core::Component for NormalizeQuatState {
         let nqx = r * input.qx;
         let nqy = r * input.qy;
         let nqz = r * input.qz;
-        (nqw, nqx, nqy, nqz)
+        NormalizeQuatOutput { nqw, nqx, nqy, nqz }
     }
 }
 pub struct IntegralFeedbackInput {
     pub x: f64,
     pub halfx: f64,
 }
+pub struct IntegralFeedbackOutput {
+    pub integralFB: f64,
+}
 pub struct IntegralFeedbackState {
     last_integral_f_b: f64,
 }
 impl grust::core::Component for IntegralFeedbackState {
     type Input = IntegralFeedbackInput;
-    type Output = f64;
+    type Output = IntegralFeedbackOutput;
     fn init() -> IntegralFeedbackState {
         IntegralFeedbackState {
             last_integral_f_b: 0.0f64,
         }
     }
-    fn step(&mut self, input: IntegralFeedbackInput) -> f64 {
+    fn step(&mut self, input: IntegralFeedbackInput) -> IntegralFeedbackOutput {
         let twoKi = 2.0f64 * 0.001f64;
         let estimator_attitude_update_dt = 1.0f64 / 250.0f64;
         let integralFB =
             self.last_integral_f_b + ((twoKi * estimator_attitude_update_dt) * input.halfx);
         self.last_integral_f_b = integralFB;
-        integralFB
+        IntegralFeedbackOutput { integralFB }
     }
 }
 pub struct Sensfusion6QuatInput {
@@ -129,6 +152,12 @@ pub struct Sensfusion6QuatInput {
     pub ax: f64,
     pub ay: f64,
     pub az: f64,
+}
+pub struct Sensfusion6QuatOutput {
+    pub qw: f64,
+    pub qx: f64,
+    pub qy: f64,
+    pub qz: f64,
 }
 pub struct Sensfusion6QuatState {
     last_qw: f64,
@@ -143,7 +172,7 @@ pub struct Sensfusion6QuatState {
 }
 impl grust::core::Component for Sensfusion6QuatState {
     type Input = Sensfusion6QuatInput;
-    type Output = (f64, f64, f64, f64);
+    type Output = Sensfusion6QuatOutput;
     fn init() -> Sensfusion6QuatState {
         Sensfusion6QuatState {
             last_qw: 1.0f64,
@@ -157,20 +186,24 @@ impl grust::core::Component for Sensfusion6QuatState {
             normalize_quat: <NormalizeQuatState as grust::core::Component>::init(),
         }
     }
-    fn step(&mut self, input: Sensfusion6QuatInput) -> (f64, f64, f64, f64) {
+    fn step(&mut self, input: Sensfusion6QuatInput) -> Sensfusion6QuatOutput {
         let twoKp = 2.0f64 * 0.4f64;
         let estimator_attitude_update_dt = 1.0f64 / 250.0f64;
         let grx = (input.gx * 3.141592653589793238462f64) / 180.0f64;
         let gry = (input.gy * 3.141592653589793238462f64) / 180.0f64;
         let grz = (input.gz * 3.141592653589793238462f64) / 180.0f64;
-        let (arx, ary, arz) = <NormalizeVec3State as grust::core::Component>::step(
-            &mut self.normalize_vec3,
-            NormalizeVec3Input {
-                x: input.ax,
-                y: input.ay,
-                z: input.az,
-            },
-        );
+        let (arx, ary, arz) = {
+            let NormalizeVec3Output { nx, ny, nz } =
+                <NormalizeVec3State as grust::core::Component>::step(
+                    &mut self.normalize_vec3,
+                    NormalizeVec3Input {
+                        x: input.ax,
+                        y: input.ay,
+                        z: input.az,
+                    },
+                );
+            (nx, ny, nz)
+        };
         let halfvx = (self.last_qx * self.last_qz) - (self.last_qw * self.last_qy);
         let halfvy = (self.last_qw * self.last_qx) + (self.last_qy * self.last_qz);
         let halfvz = ((self.last_qw * self.last_qw) - 0.5f64) + (self.last_qz * self.last_qz);
@@ -179,32 +212,41 @@ impl grust::core::Component for Sensfusion6QuatState {
         let halfez = (arx * halfvy) - (ary * halfvx);
         let (gx1, gz1, gy1) = match !((input.ax, input.ay, input.az) == (0.0f64, 0.0f64, 0.0f64)) {
             true => {
-                let comp_app_integral_feedback =
-                    <IntegralFeedbackState as grust::core::Component>::step(
-                        &mut self.integral_feedback,
-                        IntegralFeedbackInput {
-                            x: grx,
-                            halfx: halfex,
-                        },
-                    );
+                let comp_app_integral_feedback = {
+                    let IntegralFeedbackOutput { integralFB } =
+                        <IntegralFeedbackState as grust::core::Component>::step(
+                            &mut self.integral_feedback,
+                            IntegralFeedbackInput {
+                                x: grx,
+                                halfx: halfex,
+                            },
+                        );
+                    (integralFB)
+                };
                 let gx1 = (grx + comp_app_integral_feedback) + (twoKp * halfex);
-                let comp_app_integral_feedback_1 =
-                    <IntegralFeedbackState as grust::core::Component>::step(
-                        &mut self.integral_feedback_1,
-                        IntegralFeedbackInput {
-                            x: gry,
-                            halfx: halfey,
-                        },
-                    );
+                let comp_app_integral_feedback_1 = {
+                    let IntegralFeedbackOutput { integralFB } =
+                        <IntegralFeedbackState as grust::core::Component>::step(
+                            &mut self.integral_feedback_1,
+                            IntegralFeedbackInput {
+                                x: gry,
+                                halfx: halfey,
+                            },
+                        );
+                    (integralFB)
+                };
                 let gy1 = (gry + comp_app_integral_feedback_1) + (twoKp * halfey);
-                let comp_app_integral_feedback_2 =
-                    <IntegralFeedbackState as grust::core::Component>::step(
-                        &mut self.integral_feedback_2,
-                        IntegralFeedbackInput {
-                            x: grz,
-                            halfx: halfez,
-                        },
-                    );
+                let comp_app_integral_feedback_2 = {
+                    let IntegralFeedbackOutput { integralFB } =
+                        <IntegralFeedbackState as grust::core::Component>::step(
+                            &mut self.integral_feedback_2,
+                            IntegralFeedbackInput {
+                                x: grz,
+                                halfx: halfez,
+                            },
+                        );
+                    (integralFB)
+                };
                 let gz1 = (grz + comp_app_integral_feedback_2) + (twoKp * halfez);
                 (gx1, gz1, gy1)
             }
@@ -226,19 +268,23 @@ impl grust::core::Component for Sensfusion6QuatState {
             ((self.last_qy + (self.last_qw * gy2)) - (self.last_qx * gz2)) + (self.last_qz * gx2);
         let qzl =
             ((self.last_qz + (self.last_qw * gz2)) + (self.last_qx * gy2)) - (self.last_qy * gx2);
-        let (qw, qx, qy, qz) = <NormalizeQuatState as grust::core::Component>::step(
-            &mut self.normalize_quat,
-            NormalizeQuatInput {
-                qw: qwl,
-                qx: qxl,
-                qy: qyl,
-                qz: qzl,
-            },
-        );
+        let (qw, qx, qy, qz) = {
+            let NormalizeQuatOutput { nqw, nqx, nqy, nqz } =
+                <NormalizeQuatState as grust::core::Component>::step(
+                    &mut self.normalize_quat,
+                    NormalizeQuatInput {
+                        qw: qwl,
+                        qx: qxl,
+                        qy: qyl,
+                        qz: qzl,
+                    },
+                );
+            (nqw, nqx, nqy, nqz)
+        };
         self.last_qw = qw;
         self.last_qx = qx;
         self.last_qy = qy;
         self.last_qz = qz;
-        (qw, qx, qy, qz)
+        Sensfusion6QuatOutput { qw, qx, qy, qz }
     }
 }

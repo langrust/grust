@@ -3,6 +3,10 @@ pub struct MultipleEventsInput {
     pub b: Option<i64>,
     pub v: i64,
 }
+pub struct MultipleEventsOutput {
+    pub c: i64,
+    pub d: i64,
+}
 pub struct MultipleEventsState {
     last_a_bis: i64,
     last_d: i64,
@@ -10,7 +14,7 @@ pub struct MultipleEventsState {
 }
 impl grust::core::Component for MultipleEventsState {
     type Input = MultipleEventsInput;
-    type Output = (i64, i64);
+    type Output = MultipleEventsOutput;
     fn init() -> MultipleEventsState {
         MultipleEventsState {
             last_a_bis: 0i64,
@@ -18,7 +22,7 @@ impl grust::core::Component for MultipleEventsState {
             last_z: 0i64,
         }
     }
-    fn step(&mut self, input: MultipleEventsInput) -> (i64, i64) {
+    fn step(&mut self, input: MultipleEventsInput) -> MultipleEventsOutput {
         let (a_bis, z) = match (input.a, input.b) {
             (Some(a), Some(b)) if input.v > 50i64 => {
                 let z = self.last_a_bis;
@@ -44,6 +48,6 @@ impl grust::core::Component for MultipleEventsState {
         self.last_a_bis = a_bis;
         self.last_d = d;
         self.last_z = z;
-        (c, d)
+        MultipleEventsOutput { c, d }
     }
 }

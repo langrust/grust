@@ -1,5 +1,5 @@
 [package]
-name = "simple_aeb_test"
+name = "aeb_test"
 version.workspace = true
 edition.workspace = true
 

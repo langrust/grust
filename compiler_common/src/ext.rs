@@ -226,6 +226,10 @@ pub trait IdentExt: Sized {
     fn to_input_ty(&self) -> Self {
         self.to_camel_suff("Input")
     }
+    /// Adapts the identifier to one for an output type, typically for a component/state-machine.
+    fn to_output_ty(&self) -> Self {
+        self.to_camel_suff("Output")
+    }
 
     /// Adapts the identifier to one for a service store type.
     fn to_service_store_ty(&self) -> Self {

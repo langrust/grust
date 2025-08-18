@@ -53,7 +53,7 @@ impl Ir0Store for Component {
                         true,
                         ctx.errors,
                     )?;
-                    Ok((self.ident.clone(), id))
+                    Ok((self.ident.clone(), id)) // TODO: ident.clone()
                 },
             )
             .collect::<TRes<Vec<_>>>()?;

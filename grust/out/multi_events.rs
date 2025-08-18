@@ -3,6 +3,9 @@ pub struct MultipleEventsInput {
     pub b: Option<i64>,
     pub v: i64,
 }
+pub struct MultipleEventsOutput {
+    pub c: i64,
+}
 pub struct MultipleEventsState {
     last_aux1: i64,
     last_aux2: i64,
@@ -12,7 +15,7 @@ pub struct MultipleEventsState {
 }
 impl grust::core::Component for MultipleEventsState {
     type Input = MultipleEventsInput;
-    type Output = i64;
+    type Output = MultipleEventsOutput;
     fn init() -> MultipleEventsState {
         MultipleEventsState {
             last_aux1: 0i64,
@@ -22,7 +25,7 @@ impl grust::core::Component for MultipleEventsState {
             last_z: 0i64,
         }
     }
-    fn step(&mut self, input: MultipleEventsInput) -> i64 {
+    fn step(&mut self, input: MultipleEventsInput) -> MultipleEventsOutput {
         let c = self.last_z;
         let x = input.v > 50i64;
         let y = match () {
@@ -56,7 +59,7 @@ impl grust::core::Component for MultipleEventsState {
         self.last_aux3 = aux3;
         self.last_x = x;
         self.last_z = z;
-        c
+        MultipleEventsOutput { c }
     }
 }
 pub struct DefineEventsInput {
@@ -64,20 +67,25 @@ pub struct DefineEventsInput {
     pub b: Option<i64>,
     pub v: i64,
 }
+pub struct DefineEventsOutput {
+    pub c: i64,
+    pub d: f64,
+    pub x: Option<i64>,
+}
 pub struct DefineEventsState {
     last_d: f64,
     last_z: i64,
 }
 impl grust::core::Component for DefineEventsState {
     type Input = DefineEventsInput;
-    type Output = (i64, f64, Option<i64>);
+    type Output = DefineEventsOutput;
     fn init() -> DefineEventsState {
         DefineEventsState {
             last_d: 0.0f64,
             last_z: 0i64,
         }
     }
-    fn step(&mut self, input: DefineEventsInput) -> (i64, f64, Option<i64>) {
+    fn step(&mut self, input: DefineEventsInput) -> DefineEventsOutput {
         let (z, y, x) = match (input.a, input.b) {
             (Some(a), Some(e)) => {
                 let y = Some(());
@@ -103,13 +111,18 @@ impl grust::core::Component for DefineEventsState {
         };
         self.last_d = d;
         self.last_z = z;
-        (c, d, x)
+        DefineEventsOutput { c, d, x }
     }
 }
 pub struct FinalTestInput {
     pub a: Option<i64>,
     pub b: Option<i64>,
     pub v: i64,
+}
+pub struct FinalTestOutput {
+    pub u: i64,
+    pub t: Option<i64>,
+    pub x: Option<i64>,
 }
 pub struct FinalTestState {
     last_test: bool,
@@ -118,7 +131,7 @@ pub struct FinalTestState {
 }
 impl grust::core::Component for FinalTestState {
     type Input = FinalTestInput;
-    type Output = (i64, Option<i64>, Option<i64>);
+    type Output = FinalTestOutput;
     fn init() -> FinalTestState {
         FinalTestState {
             last_test: false,
@@ -126,7 +139,7 @@ impl grust::core::Component for FinalTestState {
             last_z: 0i64,
         }
     }
-    fn step(&mut self, input: FinalTestInput) -> (i64, Option<i64>, Option<i64>) {
+    fn step(&mut self, input: FinalTestInput) -> FinalTestOutput {
         let (z, y, x) = match (input.a, input.b) {
             (Some(a), Some(_)) => {
                 let y = Some(());
@@ -161,6 +174,6 @@ impl grust::core::Component for FinalTestState {
         self.last_test = test;
         self.last_u = u;
         self.last_z = z;
-        (u, t, x)
+        FinalTestOutput { u, t, x }
     }
 }

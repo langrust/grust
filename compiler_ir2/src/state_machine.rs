@@ -71,35 +71,19 @@ impl ToTokens for StateElmInit {
     }
 }
 
-/// An input element structure.
-#[derive(Debug, PartialEq)]
-pub struct InputElm {
-    /// The name of the input.
-    pub identifier: Ident,
-    /// The type of the input.
-    pub typ: Typ,
-}
-
-mk_new! { impl InputElm =>
-    new {
-        identifier : impl Into<Ident> = identifier.into(),
-        typ : Typ,
-    }
-}
-
 /// A node input structure.
 #[derive(Debug, PartialEq)]
 pub struct Input {
     /// The node's name.
     pub node_name: Ident,
     /// The input's elements.
-    pub elements: Vec<InputElm>,
+    pub elements: Vec<(Ident, Typ)>,
 }
 
 mk_new! { impl Input =>
     new {
         node_name : impl Into<Ident> = node_name.into(),
-        elements : Vec<InputElm>,
+        elements : Vec<(Ident, Typ)>,
     }
 }
 
@@ -134,11 +118,70 @@ impl ToTokens for InputTokens<'_> {
             .i
             .elements
             .iter()
-            .map(|InputElm { identifier, typ }| quote!(#pub_token #identifier : #typ));
+            .map(|(identifier, typ)| quote!(#pub_token #identifier : #typ));
         let input_ty = self.i.node_name.to_input_ty();
         quote!(
             #debug_attr
             #pub_token struct #input_ty {
+                #(#fields,)*
+            }
+        )
+        .to_tokens(tokens)
+    }
+}
+
+/// A node output structure.
+#[derive(Debug, PartialEq)]
+pub struct Output {
+    /// The node's name.
+    pub node_name: Ident,
+    /// The output's elements.
+    pub elements: Vec<(Ident, Typ)>,
+}
+
+mk_new! { impl Output =>
+    new {
+        node_name : impl Into<Ident> = node_name.into(),
+        elements : Vec<(Ident, Typ)>,
+    }
+}
+
+pub struct OutputTokens<'a> {
+    i: &'a Output,
+    public: bool,
+    tracing: bool,
+}
+impl Output {
+    pub fn prepare_tokens(&self, public: bool, tracing: bool) -> OutputTokens<'_> {
+        OutputTokens {
+            i: self,
+            public,
+            tracing,
+        }
+    }
+}
+
+impl ToTokens for OutputTokens<'_> {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
+        let pub_token = if self.public {
+            quote! {pub}
+        } else {
+            TokenStream2::new()
+        };
+        let debug_attr = if self.tracing {
+            quote! {#[derive(Debug)]}
+        } else {
+            TokenStream2::new()
+        };
+        let fields = self
+            .i
+            .elements
+            .iter()
+            .map(|(identifier, typ)| quote!(#pub_token #identifier : #typ));
+        let output_ty = self.i.node_name.to_output_ty();
+        quote!(
+            #debug_attr
+            #pub_token struct #output_ty {
                 #(#fields,)*
             }
         )
@@ -209,7 +252,6 @@ pub struct Step {
     /// The node's name.
     pub node_name: Ident,
     /// The output type.
-    pub output_type: Typ,
     /// The body of the step function.
     pub body: para::Stmts,
     /// The update of the node's state.
@@ -217,7 +259,7 @@ pub struct Step {
     /// Logs.
     pub logs: Vec<Stmt>,
     /// The output expression.
-    pub output: Expr,
+    pub outputs: Vec<Ident>,
     /// The contract to prove.
     pub contract: Contract,
 }
@@ -225,11 +267,10 @@ pub struct Step {
 mk_new! { impl Step =>
     new {
         node_name: impl Into<Ident> = node_name.into(),
-        output_type: Typ,
         body: para::Stmts,
         state_elements_step: Vec<StateElmStep>,
         logs: impl Iterator<Item= Stmt> = logs.collect(),
-        output: Expr,
+        outputs: impl Iterator<Item= Ident> = outputs.collect(),
         contract: Contract,
     }
 }
@@ -256,7 +297,7 @@ impl ToTokens for StepTokens<'_> {
         }
 
         let input_ty = self.step.node_name.to_input_ty();
-        let output_ty = &self.step.output_type;
+        let output_ty = self.step.node_name.to_output_ty();
         let id = quote_spanned!(self.step.node_name.span() => step);
 
         let statements = {
@@ -275,7 +316,8 @@ impl ToTokens for StepTokens<'_> {
                 l.to_tokens(&mut tokens)
             }
             // add output expression
-            self.step.output.to_tokens(&mut tokens);
+            let outputs = self.step.outputs.iter();
+            quote! { #output_ty { #(#outputs),* } }.to_tokens(&mut tokens);
 
             tokens
         };
@@ -379,7 +421,7 @@ impl StateTokens<'_> {
         });
 
         let input_ty = self.state.node_name.to_input_ty();
-        let output_ty = &self.state.step.output_type;
+        let output_ty = &self.state.step.node_name.to_output_ty();
         let state_ty = self.state.node_name.to_state_ty();
         let align_conf = if self.align {
             quote! { #[repr(align(64))]}
@@ -428,6 +470,8 @@ pub struct StateMachine {
     pub name: Ident,
     /// The input structure.
     pub input: Input,
+    /// The output structure.
+    pub output: Output,
     /// The state structure.
     pub state: State,
 }
@@ -435,6 +479,7 @@ pub struct StateMachine {
 mk_new! { impl StateMachine => new {
     name : impl Into<Ident> = name.into(),
     input : Input,
+    output: Output,
     state : State,
 } }
 
@@ -468,6 +513,11 @@ impl ToTokens for StateMachineTokens<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream2) {
         let input_structure = &self.sm.input;
         input_structure
+            .prepare_tokens(self.public, self.tracing)
+            .to_tokens(tokens);
+
+        let output_structure = &self.sm.output;
+        output_structure
             .prepare_tokens(self.public, self.tracing)
             .to_tokens(tokens);
 
@@ -552,7 +602,6 @@ mod test {
         let step = Step {
             contract: Default::default(),
             node_name: Loc::test_id("Node"),
-            output_type: Typ::int(),
             body: para::Stmts::seq_of_pairs(vec![
                 (
                     Loc::test_id("o"),
@@ -566,8 +615,8 @@ mod test {
                     Expr::node_call(
                         Loc::test_id("called_node_state"),
                         Loc::test_id("called_node"),
-                        Loc::test_id("CalledNodeInput"),
                         vec![],
+                        std::iter::once(Loc::test_id("out")),
                         None,
                     ),
                 ),
@@ -587,16 +636,19 @@ mod test {
                 ),
             ],
             logs: vec![],
-            output: Expr::binop(BOp::Add, Expr::test_ident("o"), Expr::test_ident("y")),
+            outputs: vec![Loc::test_id("out")],
         };
 
         let control = parse_quote! {
-            fn step(&mut self, input: NodeInput) -> i64 {
+            fn step(&mut self, input: NodeInput) -> NodeOutput {
                 let o = self.mem_i;
-                let y =  <CalledNodeState as grust::core::Component>::step(&mut self.called_node_state, CalledNodeInput {});
+                let y =  {
+                    let CalledNodeOutput { out } = <CalledNodeState as grust::core::Component>::step(&mut self.called_node_state, CalledNodeInput {});
+                    (out)
+                };
                 self.mem_i = o + 1i64;
                 self.called_node_state = new_called_node_state;
-                o + y
+                NodeOutput { out }
             }
         };
         let step = step.prepare_tokens(false, false);
@@ -609,7 +661,6 @@ mod test {
         let step = Step {
             contract: Default::default(),
             node_name: Loc::test_id("Node"),
-            output_type: Typ::int(),
             body: para::Stmts::seq_of_pairs(vec![
                 (
                     Loc::test_id("o"),
@@ -623,8 +674,8 @@ mod test {
                     Expr::node_call(
                         Loc::test_id("called_node_state"),
                         Loc::test_id("called_node"),
-                        Loc::test_id("CalledNodeInput"),
                         vec![],
+                        std::iter::once(Loc::test_id("out")),
                         Some(parse_quote!(path::to::called_node)),
                     ),
                 ),
@@ -638,15 +689,18 @@ mod test {
                 ),
             )],
             logs: vec![],
-            output: Expr::binop(BOp::Add, Expr::test_ident("o"), Expr::test_ident("y")),
+            outputs: vec![Loc::test_id("out")],
         };
 
         let control = parse_quote! {
-            fn step(&mut self, input: NodeInput) -> i64 {
+            fn step(&mut self, input: NodeInput) -> NodeOutput {
                 let o = self.mem_i;
-                let y =  <path::to::CalledNodeState as grust::core::Component>::step(&mut self.called_node_state, path::to::CalledNodeInput {});
+                let y =  {
+                    let path::to::CalledNodeOutput { out } = <path::to::CalledNodeState as grust::core::Component>::step(&mut self.called_node_state, path::to::CalledNodeInput {});
+                    (out)
+                };
                 self.mem_i = o + 1i64;
-                o + y
+                NodeOutput { out }
             }
         };
         let step = step.prepare_tokens(false, false);
@@ -658,10 +712,7 @@ mod test {
     fn should_create_rust_ast_structure_from_ir2_node_input() {
         let input = Input {
             node_name: Loc::test_id("Node"),
-            elements: vec![InputElm {
-                identifier: Loc::test_id("i"),
-                typ: Typ::int(),
-            }],
+            elements: vec![(Loc::test_id("i"), Typ::int())],
         }
         .prepare_tokens(true, false)
         .to_token_stream();
