@@ -1,7 +1,7 @@
 //! [StateMachine] module.
 
 prelude! {
-    ir0::contract::Term,
+    ir2::contract::Term,
 }
 
 /// A state element structure.
@@ -154,22 +154,44 @@ pub struct Init {
     /// The initialization of the node's state.
     pub state_init: Vec<StateElmInit>,
     /// The invariant initialization to prove.
-    pub invariant_initialization: Vec<Term>,
+    pub invariant_init: Vec<Term>,
 }
 
 mk_new! { impl Init =>
     new {
         node_name : impl Into<Ident> = node_name.into(),
         state_init : Vec<StateElmInit>,
-        invariant_initialization : Vec<Term>,
+        invariant_init : Vec<Term>,
     }
 }
 
-impl ToTokens for Init {
+pub struct InitTokens<'a> {
+    init: &'a Init,
+    with_contracts: bool,
+}
+
+impl Init {
+    pub fn prepare_tokens(&self, with_contracts: bool) -> InitTokens {
+        InitTokens {
+            init: self,
+            with_contracts,
+        }
+    }
+}
+
+impl ToTokens for InitTokens<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream2) {
-        let state_ty = self.node_name.to_state_ty();
-        let fields = self.state_init.iter();
-        let id = quote_spanned!(self.node_name.span() => init);
+        if self.with_contracts {
+            for term in self.init.invariant_init.iter() {
+                let term = term.prepare_tokens(false, false);
+                quote!(#[ensures(#term)]).to_tokens(tokens);
+            }
+        }
+
+        let state_ty = self.init.node_name.to_state_ty();
+        let fields = self.init.state_init.iter();
+        let id = quote_spanned!(self.init.node_name.span() => init);
+
         quote!(
             fn #id() -> #state_ty {
                 #state_ty {
@@ -381,7 +403,7 @@ impl StateTokens<'_> {
             #pub_token struct #state_ty { #(#fields),* }
         };
 
-        let init = &self.state.init;
+        let init = &self.state.init.prepare_tokens(self.with_contracts);
         let step = self
             .state
             .step
@@ -465,7 +487,7 @@ mod test {
 
     #[test]
     fn should_create_rust_ast_associated_method_from_ir2_node_init() {
-        let init = Init::new(
+        let binding = Init::new(
             Loc::test_id("Node"),
             vec![
                 StateElmInit::buffer(
@@ -480,6 +502,7 @@ mod test {
             ],
             vec![],
         );
+        let init = binding.prepare_tokens(false);
 
         let control = parse_quote! {
             fn init() -> NodeState {
@@ -495,7 +518,7 @@ mod test {
 
     #[test]
     fn should_create_rust_ast_associated_method_from_ir2_ext_node_init() {
-        let init = Init::new(
+        let binding = Init::new(
             Loc::test_id("Node"),
             vec![
                 StateElmInit::buffer(
@@ -510,6 +533,7 @@ mod test {
             ],
             vec![],
         );
+        let init = binding.prepare_tokens(false);
 
         let control = parse_quote! {
             fn init() -> NodeState {
