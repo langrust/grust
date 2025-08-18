@@ -303,6 +303,21 @@ impl Table {
         }
     }
 
+    pub fn count_events(&self) -> usize {
+        self.table
+            .values()
+            .filter(|symbol| {
+                matches!(
+                    symbol.kind(),
+                    SymbolKind::Identifier {
+                        typing: Some(Typ::Option { .. }),
+                        ..
+                    }
+                )
+            })
+            .count()
+    }
+
     pub fn levenshtein_closest(&self, name: impl AsRef<str>, at_least: usize) -> Option<&Symbol> {
         let name = name.as_ref();
         let min = at_least + 1;
