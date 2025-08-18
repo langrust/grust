@@ -71,12 +71,12 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Component {
 
                 // transform contract
                 let contract = body.contract.into_ir2(ctx);
-                let invariant_initialization = vec![]; // TODO
+                let invariant_init = contract.invariant.clone();
 
                 use state_machine::*;
 
                 // 'init' method
-                let init = Init::new(name.clone(), state_elements_init, invariant_initialization);
+                let init = Init::new(name.clone(), state_elements_init, invariant_init);
 
                 // 'step' method
                 let step = {
