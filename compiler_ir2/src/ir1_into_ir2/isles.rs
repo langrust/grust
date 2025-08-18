@@ -106,9 +106,8 @@ pub struct IsleBuilder<'a> {
 }
 impl<'a> IsleBuilder<'a> {
     /// Factored [`Isles`] allocation.
-    fn new_isles(_ctx: &'a Ctx) -> Isles {
-        // #TODO retrieve event count from `_ctx` for capacity
-        Isles::with_capacity(10)
+    fn new_isles(ctx: &'a Ctx) -> Isles {
+        Isles::with_capacity(ctx.count_events())
     }
 
     /// Constructor.
