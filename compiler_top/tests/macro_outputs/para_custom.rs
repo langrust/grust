@@ -4,23 +4,29 @@ pub fn add(i: i64, j: i64) -> i64 {
 pub struct NextInput {
     pub i: i64,
 }
+pub struct NextOutput {
+    pub next_o: i64,
+}
 pub struct NextState {
     last_i: i64,
 }
 impl grust::core::Component for NextState {
     type Input = NextInput;
-    type Output = i64;
+    type Output = NextOutput;
     fn init() -> NextState {
         NextState { last_i: 1i64 }
     }
-    fn step(&mut self, input: NextInput) -> i64 {
+    fn step(&mut self, input: NextInput) -> NextOutput {
         let next_o = add(input.i, self.last_i);
         self.last_i = input.i;
-        next_o
+        NextOutput { next_o }
     }
 }
 pub struct SemiFibInput {
     pub i: i64,
+}
+pub struct SemiFibOutput {
+    pub o: i64,
 }
 pub struct SemiFibState {
     last_next_o: i64,
@@ -28,20 +34,21 @@ pub struct SemiFibState {
 }
 impl grust::core::Component for SemiFibState {
     type Input = SemiFibInput;
-    type Output = i64;
+    type Output = SemiFibOutput;
     fn init() -> SemiFibState {
         SemiFibState {
             last_next_o: 0i64,
             next: <NextState as grust::core::Component>::init(),
         }
     }
-    fn step(&mut self, input: SemiFibInput) -> i64 {
+    fn step(&mut self, input: SemiFibInput) -> SemiFibOutput {
         let (o, next_o) = std::thread::scope(|reserved_grust_thread_scope| {
             let reserved_grust_thread_kid_0 = reserved_grust_thread_scope.spawn(|| {
-                <NextState as grust::core::Component>::step(
+                let NextOutput { next_o } = <NextState as grust::core::Component>::step(
                     &mut self.next,
                     NextInput { i: input.i },
-                )
+                );
+                (next_o)
             });
             let o = { self.last_next_o };
             let next_o = {
@@ -52,10 +59,13 @@ impl grust::core::Component for SemiFibState {
             (o, next_o)
         });
         self.last_next_o = next_o;
-        o
+        SemiFibOutput { o }
     }
 }
 pub struct FibCallInput {}
+pub struct FibCallOutput {
+    pub fib: i64,
+}
 pub struct FibCallState {
     last_next_o_1: i64,
     next: NextState,
@@ -63,7 +73,7 @@ pub struct FibCallState {
 }
 impl grust::core::Component for FibCallState {
     type Input = FibCallInput;
-    type Output = i64;
+    type Output = FibCallOutput;
     fn init() -> FibCallState {
         FibCallState {
             last_next_o_1: 0i64,
@@ -71,14 +81,22 @@ impl grust::core::Component for FibCallState {
             next_1: <NextState as grust::core::Component>::init(),
         }
     }
-    fn step(&mut self, input: FibCallInput) -> i64 {
+    fn step(&mut self, input: FibCallInput) -> FibCallOutput {
         let fib = self.last_next_o_1;
         let (next_o, next_o_1) = std::thread::scope(|reserved_grust_thread_scope| {
             let reserved_grust_thread_kid_0 = reserved_grust_thread_scope.spawn(|| {
-                <NextState as grust::core::Component>::step(&mut self.next, NextInput { i: fib })
+                let NextOutput { next_o } = <NextState as grust::core::Component>::step(
+                    &mut self.next,
+                    NextInput { i: fib },
+                );
+                (next_o)
             });
             let reserved_grust_thread_kid_1 = reserved_grust_thread_scope.spawn(|| {
-                <NextState as grust::core::Component>::step(&mut self.next_1, NextInput { i: fib })
+                let NextOutput { next_o } = <NextState as grust::core::Component>::step(
+                    &mut self.next_1,
+                    NextInput { i: fib },
+                );
+                (next_o)
             });
             let (next_o, next_o_1) = (
                 {
@@ -95,28 +113,31 @@ impl grust::core::Component for FibCallState {
             (next_o, next_o_1)
         });
         self.last_next_o_1 = next_o_1;
-        fib
+        FibCallOutput { fib }
     }
 }
 pub struct FibInput {}
+pub struct FibOutput {
+    pub fib: i64,
+}
 pub struct FibState {
     last_fib: i64,
     last_next_o: i64,
 }
 impl grust::core::Component for FibState {
     type Input = FibInput;
-    type Output = i64;
+    type Output = FibOutput;
     fn init() -> FibState {
         FibState {
             last_fib: 1i64,
             last_next_o: 0i64,
         }
     }
-    fn step(&mut self, input: FibInput) -> i64 {
+    fn step(&mut self, input: FibInput) -> FibOutput {
         let fib = self.last_next_o;
         let next_o = fib + self.last_fib;
         self.last_fib = fib;
         self.last_next_o = next_o;
-        fib
+        FibOutput { fib }
     }
 }

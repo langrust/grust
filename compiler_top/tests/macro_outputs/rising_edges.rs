@@ -3,6 +3,11 @@ pub struct RisingEdgesInput {
     pub b: Option<i64>,
     pub v: i64,
 }
+pub struct RisingEdgesOutput {
+    pub c: i64,
+    pub d: f64,
+    pub x: Option<i64>,
+}
 pub struct RisingEdgesState {
     last_c: i64,
     last_d: f64,
@@ -13,7 +18,7 @@ pub struct RisingEdgesState {
 }
 impl grust::core::Component for RisingEdgesState {
     type Input = RisingEdgesInput;
-    type Output = (i64, f64, Option<i64>);
+    type Output = RisingEdgesOutput;
     fn init() -> RisingEdgesState {
         RisingEdgesState {
             last_c: 0i64,
@@ -24,7 +29,7 @@ impl grust::core::Component for RisingEdgesState {
             last_z: 0i64,
         }
     }
-    fn step(&mut self, input: RisingEdgesInput) -> (i64, f64, Option<i64>) {
+    fn step(&mut self, input: RisingEdgesInput) -> RisingEdgesOutput {
         let c = match (input.a) {
             (Some(a)) => a,
             (_) => self.last_c,
@@ -63,6 +68,6 @@ impl grust::core::Component for RisingEdgesState {
         self.last_x_2 = x_2;
         self.last_x_3 = x_3;
         self.last_z = z;
-        (c, d, x)
+        RisingEdgesOutput { c, d, x }
     }
 }

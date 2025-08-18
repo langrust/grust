@@ -407,7 +407,7 @@ impl Vars {
         'current: loop {
             use ir1::stmt::Kind;
             let (mut bind, mut expr) = match curr {
-                Kind::Identifier { id } => {
+                Kind::Identifier { id } | Kind::Typed { id, .. } => {
                     let id = ctx.get_name(id).clone();
                     (Pattern::ident(id.clone()), Expr::ident(id))
                 }
@@ -418,13 +418,6 @@ impl Vars {
                         .expect("internal error: unexpected empty tuple pattern");
                     stack.push((elms, vec![], vec![]));
                     continue 'current;
-                }
-                Kind::Typed { id, typ } => {
-                    let id = ctx.get_name(id).clone();
-                    (
-                        Pattern::typed(Pattern::ident(id.clone()), typ),
-                        Expr::ident(id),
-                    )
                 }
             };
 

@@ -27,20 +27,23 @@ pub struct BrakingStateInput {
     pub timeout_pedest: Option<()>,
     pub speed: i64,
 }
+pub struct BrakingStateOutput {
+    pub state: Braking,
+}
 pub struct BrakingStateState {
     last_state: Braking,
 }
 impl grust::core::Component for BrakingStateState {
     type Input = BrakingStateInput;
-    type Output = Braking;
+    type Output = BrakingStateOutput;
     fn init() -> BrakingStateState {
         BrakingStateState {
             last_state: Braking::NoBrake,
         }
     }
     # [requires (0 <= input . speed @ && input . speed @ < 50)]
-    # [ensures (forall < p : i64 > Some (p) == input . pedest == > result != Braking :: NoBrake)]
-    fn step(&mut self, input: BrakingStateInput) -> Braking {
+    # [ensures (forall < p : i64 > Some (p) == input . pedest == > result . state != Braking :: NoBrake)]
+    fn step(&mut self, input: BrakingStateInput) -> BrakingStateOutput {
         let state = match (input.pedest, input.timeout_pedest) {
             (Some(d), _) => {
                 let state = brakes(d, input.speed);
@@ -53,7 +56,7 @@ impl grust::core::Component for BrakingStateState {
             (_, _) => self.last_state,
         };
         self.last_state = state;
-        state
+        BrakingStateOutput { state }
     }
 }
 mod logical {

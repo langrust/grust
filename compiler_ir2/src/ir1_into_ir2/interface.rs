@@ -1494,7 +1494,7 @@ mod flow_instr {
 
             // call component
             let mut instrs = vec![FlowInstruction::comp_call(
-                output_pattern.into_ir2(self),
+                Pattern::comp_output(output_pattern, called_comp_id, self.ctx0),
                 mem_name.clone(),
                 path_opt.cloned(),
                 comp_name.clone(),

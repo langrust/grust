@@ -1,16 +1,19 @@
 pub struct AuxInput {
     pub i: i64,
 }
+pub struct AuxOutput {
+    pub next_o: i64,
+}
 pub struct AuxState {
     last_i: i64,
 }
 impl grust::core::Component for AuxState {
     type Input = AuxInput;
-    type Output = i64;
+    type Output = AuxOutput;
     fn init() -> AuxState {
         AuxState { last_i: 0i64 }
     }
-    fn step(&mut self, input: AuxInput) -> i64 {
+    fn step(&mut self, input: AuxInput) -> AuxOutput {
         let ((i3, i1, i2), ()) = {
             let (i3, i1, i2) = {
                 let (
@@ -161,11 +164,14 @@ impl grust::core::Component for AuxState {
             }
         };
         self.last_i = input.i;
-        next_o
+        AuxOutput { next_o }
     }
 }
 pub struct TestInput {
     pub i: i64,
+}
+pub struct TestOutput {
+    pub next_o: i64,
 }
 pub struct TestState {
     last_i: i64,
@@ -175,7 +181,7 @@ pub struct TestState {
 }
 impl grust::core::Component for TestState {
     type Input = TestInput;
-    type Output = i64;
+    type Output = TestOutput;
     fn init() -> TestState {
         TestState {
             last_i: 0i64,
@@ -184,10 +190,14 @@ impl grust::core::Component for TestState {
             aux_2: <AuxState as grust::core::Component>::init(),
         }
     }
-    fn step(&mut self, input: TestInput) -> i64 {
+    fn step(&mut self, input: TestInput) -> TestOutput {
         let ((i1_1, i1_2), i1_3) = std::thread::scope(|reserved_grust_thread_scope| {
             let reserved_grust_thread_kid_0 = reserved_grust_thread_scope.spawn(|| {
-                <AuxState as grust::core::Component>::step(&mut self.aux, AuxInput { i: input.i })
+                let AuxOutput { next_o } = <AuxState as grust::core::Component>::step(
+                    &mut self.aux,
+                    AuxInput { i: input.i },
+                );
+                (next_o)
             });
             let (i1_1, i1_2) = {
                 let (reserved_grust_rayon_opt_var_0, reserved_grust_rayon_opt_var_1) = {
@@ -252,16 +262,24 @@ impl grust::core::Component for TestState {
         let ((x, i2_1), (x_1, i2_2)) = std::thread::scope(|reserved_grust_thread_scope| {
             let reserved_grust_thread_kid_0 = reserved_grust_thread_scope.spawn(|| {
                 let x = (i1_1 + i1_2) - i1_3;
-                let i2_1 =
-                    <AuxState as grust::core::Component>::step(&mut self.aux_1, AuxInput { i: x });
+                let i2_1 = {
+                    let AuxOutput { next_o } = <AuxState as grust::core::Component>::step(
+                        &mut self.aux_1,
+                        AuxInput { i: x },
+                    );
+                    (next_o)
+                };
                 (x, i2_1)
             });
             let reserved_grust_thread_kid_1 = reserved_grust_thread_scope.spawn(|| {
                 let x_1 = (i1_2 - i1_2) + i1_3;
-                let i2_2 = <AuxState as grust::core::Component>::step(
-                    &mut self.aux_2,
-                    AuxInput { i: x_1 },
-                );
+                let i2_2 = {
+                    let AuxOutput { next_o } = <AuxState as grust::core::Component>::step(
+                        &mut self.aux_2,
+                        AuxInput { i: x_1 },
+                    );
+                    (next_o)
+                };
                 (x_1, i2_2)
             });
             let ((x, i2_1), (x_1, i2_2)) = (
@@ -293,6 +311,6 @@ impl grust::core::Component for TestState {
             }
         };
         self.last_i = input.i;
-        next_o
+        TestOutput { next_o }
     }
 }

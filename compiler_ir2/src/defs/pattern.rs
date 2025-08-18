@@ -15,17 +15,10 @@ pub enum Pattern {
         /// The matching literal (constant).
         literal: Constant,
     },
-    /// Typed pattern.
-    Typed {
-        /// The pattern.
-        pattern: Box<Pattern>,
-        /// The type.
-        typ: Typ,
-    },
     /// Structure pattern that matches the structure and its fields.
     Structure {
-        /// The structure id.
-        name: Ident,
+        /// The structure path.
+        path: syn::Path,
         /// The structure fields with the corresponding patterns to match.
         fields: Vec<(Ident, Pattern)>,
     },
@@ -65,12 +58,8 @@ mk_new! { impl Pattern =>
     Identifier: ident { name: impl Into<Ident> = name.into() }
     Identifier: test_ident { name: impl AsRef<str> = Loc::test_id(name.as_ref()) }
     Literal: literal {literal: Constant }
-    Typed: typed {
-        pattern: Self = Box::new(pattern),
-        typ: Typ
-    }
     Structure: structure {
-        name: impl Into<Ident> = name.into(),
+        path: impl Into<syn::Path> = path.into(),
         fields: Vec<(Ident, Self)>
     }
     Enumeration: enumeration {
@@ -108,11 +97,10 @@ impl ToTokens for Pattern {
             Pattern::Err => tokens.extend(quote! { Err(()) }),
             Pattern::Some { pattern } => tokens.extend(quote! { Some(#pattern) }),
             Pattern::None => tokens.extend(quote! { None }),
-            Pattern::Typed { pattern, .. } => pattern.to_tokens(tokens),
-            Pattern::Structure { name, fields } => {
+            Pattern::Structure { path, fields } => {
                 let fields = fields.iter().map(|(name, pattern)| quote!(#name: #pattern));
                 tokens.extend(quote! {
-                    #name { #(#fields),* }
+                    #path { #(#fields),* }
                 })
             }
             Pattern::Enumeration {
@@ -186,7 +174,7 @@ mod test {
     #[test]
     fn should_create_a_rust_ast_structure_pattern_from_a_ir2_structure_pattern() {
         let pattern = Pattern::Structure {
-            name: Loc::test_id("Point"),
+            path: Loc::test_id("Point").into(),
             fields: vec![
                 (Loc::test_id("x"), Pattern::Default(Loc::test_dummy())),
                 (Loc::test_id("y"), Pattern::test_ident("y")),

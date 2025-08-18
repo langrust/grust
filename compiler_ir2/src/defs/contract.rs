@@ -29,9 +29,16 @@ pub enum Term {
         /// True if its type needs logical model.
         views: bool,
     },
-    /// An input access: `self.i_mem`.
+    /// An input access: `input.i`.
     InputAccess {
         /// The identifier to the input.
+        identifier: Ident,
+        /// True if its type needs logical model.
+        views: bool,
+    },
+    /// An output access: `result.o`.
+    OutputAccess {
+        /// The identifier to the output.
         identifier: Ident,
         /// True if its type needs logical model.
         views: bool,
@@ -125,6 +132,10 @@ mk_new! { impl Term =>
         views: bool,
     }
     InputAccess: input {
+        identifier: impl Into<Ident> = identifier.into(),
+        views: bool,
+    }
+    OutputAccess: output {
         identifier: impl Into<Ident> = identifier.into(),
         views: bool,
     }
@@ -242,6 +253,17 @@ impl ToTokens for TermTokens<'_> {
                     identifier.to_tokens(tokens)
                 } else {
                     quote!(input.).to_tokens(tokens);
+                    identifier.to_tokens(tokens)
+                };
+                if *views {
+                    quote!(@).to_tokens(tokens)
+                }
+            }
+            Term::OutputAccess { identifier, views } => {
+                if self.function_like {
+                    identifier.to_tokens(tokens)
+                } else {
+                    quote!(result.).to_tokens(tokens);
                     identifier.to_tokens(tokens)
                 };
                 if *views {

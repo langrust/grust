@@ -38,32 +38,8 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Component {
                     .iter()
                     .map(|id| (ctx.get_name(*id).clone(), ctx.get_typ(*id).clone()));
 
-                // get node output type
+                // get node outputs
                 let outputs = ctx.get_node_outputs(self.sign.id);
-                let output_type = {
-                    iter_1! {
-                        outputs.iter(),
-                        |iter| Typ::tuple(
-                            iter.map(|(_, id)| ctx.get_typ(*id).clone()).collect()
-                        ),
-                        |just_one| ctx.get_typ(just_one.1).clone()
-                    }
-                };
-
-                // get node output expression
-                let output_expression = {
-                    iter_1! {
-                        outputs.iter(),
-                        |iter| Expr::Tuple {
-                            elements: iter.map(|(_, output_id)| Expr::Identifier {
-                                identifier: ctx.get_name(*output_id).clone(),
-                            }).collect()
-                        },
-                        |just_one| Expr::Identifier {
-                            identifier: ctx.get_name(just_one.1).clone(),
-                        },
-                    }
-                };
 
                 // get memory/state elements
                 let (elements, state_elements_init, state_elements_step) =
@@ -101,11 +77,10 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Component {
                     };
                     Step::new(
                         name.clone(),
-                        output_type,
                         body,
                         state_elements_step,
                         logs,
-                        output_expression,
+                        outputs.iter().map(|(_, id)| ctx.get_name(*id).clone()),
                         contract,
                     )
                 };
@@ -113,9 +88,13 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Component {
                 // 'input' structure
                 let input = Input {
                     node_name: name.clone(),
-                    elements: inputs
-                        .into_iter()
-                        .map(|(identifier, typ)| InputElm::new(identifier, typ))
+                    elements: inputs.collect(),
+                };
+                let output = Output {
+                    node_name: name.clone(),
+                    elements: outputs
+                        .iter()
+                        .map(|(_, id)| (ctx.get_name(*id).clone(), ctx.get_typ(*id).clone()))
                         .collect(),
                 };
 
@@ -127,7 +106,7 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Component {
                     init,
                 };
 
-                Some(StateMachine::new(name.clone(), input, state))
+                Some(StateMachine::new(name.clone(), input, output, state))
             }
             Either::Right(_) => None,
         }
@@ -253,11 +232,7 @@ mod term {
                     let views = ctx.get_typ(id).needs_view();
                     match ctx.get_scope(id) {
                         Scope::Input => contract::Term::input(name.clone(), views),
-                        // TODO: this will broke for components with multiple outputs
-                        Scope::Output => {
-                            let ident = Ident::result(name.span());
-                            contract::Term::ident(ident, views)
-                        }
+                        Scope::Output => contract::Term::output(name.clone(), views),
                         Scope::Local => contract::Term::ident(name.clone(), views),
                         Scope::VeryLocal => noErrorDesc!("you should not do that with this ident"),
                     }
@@ -607,7 +582,7 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Pattern {
             },
             Kind::Constant { constant } => Pattern::Literal { literal: constant },
             Kind::Structure { id, fields } => Pattern::Structure {
-                name: ctx.get_name(id).clone(),
+                path: ctx.get_name(id).clone().into(),
                 fields: fields
                     .into_iter()
                     .map(|(id, optional_pattern)| {
@@ -656,21 +631,69 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::stmt::Pattern {
 
     fn into_ir2(self, ctx: &ir0::Ctx) -> Self::Ir2 {
         match self.kind {
-            ir1::stmt::Kind::Identifier { id } => Pattern::Identifier {
-                name: ctx.get_name(id).clone(),
-            },
-            ir1::stmt::Kind::Typed { id, typ } => Pattern::Typed {
-                pattern: Box::new(Pattern::Identifier {
+            ir1::stmt::Kind::Identifier { id } | ir1::stmt::Kind::Typed { id, .. } => {
+                Pattern::Identifier {
                     name: ctx.get_name(id).clone(),
-                }),
-                typ,
-            },
+                }
+            }
             ir1::stmt::Kind::Tuple { elements } => Pattern::Tuple {
                 elements: elements
                     .into_iter()
                     .map(|element| element.into_ir2(ctx))
                     .collect(),
             },
+        }
+    }
+}
+
+impl Pattern {
+    fn comp_output(pat: ir1::stmt::Pattern, comp_id: usize, ctx: &ir0::Ctx) -> Self {
+        let mut outputs = ctx.get_node_outputs(comp_id).clone();
+        let output_ty = ctx.get_name(comp_id).to_output_ty();
+        let path = if let Some(path) = ctx.try_get_comp_path(comp_id) {
+            let mut path = path.clone();
+            path.segments.pop();
+            let mut output_path = path;
+            output_path.segments.push(output_ty.into());
+            output_path
+        } else {
+            output_ty.into()
+        };
+        match pat.kind {
+            ir1::stmt::Kind::Identifier { id } | ir1::stmt::Kind::Typed { id, .. } => {
+                let (_, out_id) = outputs
+                    .pop()
+                    .expect("internal error: type should be already checked");
+                let out_name = ctx.get_name(out_id).clone();
+                debug_assert!(
+                    outputs.is_empty(),
+                    "internal error: type should be already checked"
+                );
+                Pattern::Structure {
+                    path,
+                    fields: vec![(
+                        out_name,
+                        Pattern::Identifier {
+                            name: ctx.get_name(id).clone(),
+                        },
+                    )],
+                }
+            }
+            ir1::stmt::Kind::Tuple { elements } => {
+                debug_assert!(
+                    outputs.len() == elements.len(),
+                    "internal error: type should be already checked"
+                );
+
+                Pattern::Structure {
+                    path,
+                    fields: elements
+                        .into_iter()
+                        .zip(outputs)
+                        .map(|(pat, (_, out_id))| (ctx.get_name(out_id).clone(), pat.into_ir2(ctx)))
+                        .collect(),
+                }
+            }
         }
     }
 }
@@ -699,7 +722,6 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::stream::Expr {
                 memory_id,
                 called_node_id,
                 inputs,
-                ..
             } => {
                 let memory_ident = ctx
                     .get_name(memory_id.expect(
@@ -711,15 +733,12 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::stream::Expr {
                     .into_iter()
                     .map(|(id, expression)| (ctx.get_name(id).clone(), expression.into_ir2(ctx)))
                     .collect_vec();
-                let input_ty = name.to_input_ty();
                 let path_opt = ctx.try_get_comp_path(called_node_id);
-                ir2::Expr::node_call(
-                    memory_ident,
-                    name,
-                    input_ty,
-                    input_fields,
-                    path_opt.cloned(),
-                )
+                let outputs = ctx
+                    .get_node_outputs(called_node_id)
+                    .iter()
+                    .map(|(_, id)| ctx.get_name(*id).clone());
+                ir2::Expr::node_call(memory_ident, name, input_fields, outputs, path_opt.cloned())
             }
             Expression { expr } => expr.into_ir2(ctx),
             SomeEvent { expr } => ir2::Expr::some(expr.into_ir2(ctx)),

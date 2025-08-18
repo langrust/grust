@@ -9,7 +9,7 @@ pub mod utils {
 
 grust! {
     #![mode = demo, dump = "grust/out/acc.rs", public = false]
-    use component grust::std::time::derivation::derive(x: float, t: float) -> (i: float);
+    use component grust::std::time::derivation::derive(x: float, t: float) -> (d: float);
     use function utils::convert(x_km_h: float) -> float;
 
     import signal car::state::speed_km_h        : float;

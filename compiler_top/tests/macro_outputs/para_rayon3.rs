@@ -1,16 +1,19 @@
 pub struct TestRayon3AuxInput {
     pub i: i64,
 }
+pub struct TestRayon3AuxOutput {
+    pub next_o: i64,
+}
 pub struct TestRayon3AuxState {
     last_i: i64,
 }
 impl grust::core::Component for TestRayon3AuxState {
     type Input = TestRayon3AuxInput;
-    type Output = i64;
+    type Output = TestRayon3AuxOutput;
     fn init() -> TestRayon3AuxState {
         TestRayon3AuxState { last_i: 0i64 }
     }
-    fn step(&mut self, input: TestRayon3AuxInput) -> i64 {
+    fn step(&mut self, input: TestRayon3AuxInput) -> TestRayon3AuxOutput {
         let ((i3, i1, i2), ()) = {
             let (i3, i1, i2) = ({ 7i64 * input.i }, { (input.i - 54i64) * 2i64 }, {
                 (input.i + 54i64) * 2i64
@@ -37,11 +40,14 @@ impl grust::core::Component for TestRayon3AuxState {
             }
         };
         self.last_i = input.i;
-        next_o
+        TestRayon3AuxOutput { next_o }
     }
 }
 pub struct TestRayon3Input {
     pub i: i64,
+}
+pub struct TestRayon3Output {
+    pub next_o: i64,
 }
 pub struct TestRayon3State {
     last_i: i64,
@@ -51,7 +57,7 @@ pub struct TestRayon3State {
 }
 impl grust::core::Component for TestRayon3State {
     type Input = TestRayon3Input;
-    type Output = i64;
+    type Output = TestRayon3Output;
     fn init() -> TestRayon3State {
         TestRayon3State {
             last_i: 0i64,
@@ -60,16 +66,20 @@ impl grust::core::Component for TestRayon3State {
             test_rayon3_aux_2: <TestRayon3AuxState as grust::core::Component>::init(),
         }
     }
-    fn step(&mut self, input: TestRayon3Input) -> i64 {
+    fn step(&mut self, input: TestRayon3Input) -> TestRayon3Output {
         let ((i1_1, i1_2, i1_3), ()) = {
             let (i1_1, i1_2, i1_3) = (
                 { (input.i - 54i64) * 2i64 },
                 { (input.i + 54i64) * 2i64 },
                 {
-                    <TestRayon3AuxState as grust::core::Component>::step(
-                        &mut self.test_rayon3_aux,
-                        TestRayon3AuxInput { i: input.i },
-                    )
+                    {
+                        let TestRayon3AuxOutput { next_o } =
+                            <TestRayon3AuxState as grust::core::Component>::step(
+                                &mut self.test_rayon3_aux,
+                                TestRayon3AuxInput { i: input.i },
+                            );
+                        (next_o)
+                    }
                 },
             );
             ((i1_1, i1_2, i1_3), ())
@@ -78,18 +88,26 @@ impl grust::core::Component for TestRayon3State {
             let ((x, i2_1), (x_1, i2_2)) = (
                 {
                     let x = (i1_1 + i1_2) - i1_3;
-                    let i2_1 = <TestRayon3AuxState as grust::core::Component>::step(
-                        &mut self.test_rayon3_aux_1,
-                        TestRayon3AuxInput { i: x },
-                    );
+                    let i2_1 = {
+                        let TestRayon3AuxOutput { next_o } =
+                            <TestRayon3AuxState as grust::core::Component>::step(
+                                &mut self.test_rayon3_aux_1,
+                                TestRayon3AuxInput { i: x },
+                            );
+                        (next_o)
+                    };
                     (x, i2_1)
                 },
                 {
                     let x_1 = (i1_2 - i1_2) + i1_3;
-                    let i2_2 = <TestRayon3AuxState as grust::core::Component>::step(
-                        &mut self.test_rayon3_aux_2,
-                        TestRayon3AuxInput { i: x_1 },
-                    );
+                    let i2_2 = {
+                        let TestRayon3AuxOutput { next_o } =
+                            <TestRayon3AuxState as grust::core::Component>::step(
+                                &mut self.test_rayon3_aux_2,
+                                TestRayon3AuxInput { i: x_1 },
+                            );
+                        (next_o)
+                    };
                     (x_1, i2_2)
                 },
             );
@@ -110,6 +128,6 @@ impl grust::core::Component for TestRayon3State {
             }
         };
         self.last_i = input.i;
-        next_o
+        TestRayon3Output { next_o }
     }
 }

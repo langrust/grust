@@ -13,9 +13,12 @@ pub mod integration {
         pub x: f64,
         pub t: f64,
     }
+    pub struct BackwardEulerOutput {
+        pub i: f64,
+    }
     impl grust_core::Component for BackwardEulerState {
         type Input = BackwardEulerInput;
-        type Output = f64;
+        type Output = BackwardEulerOutput;
 
         fn init() -> Self {
             BackwardEulerState {
@@ -31,7 +34,7 @@ pub mod integration {
             self.integral = integral;
             self.last_t = input.t;
             self.last_x = input.x;
-            integral
+            Self::Output { i: integral }
         }
     }
 
@@ -62,7 +65,7 @@ pub mod integration {
             let _ = euler_1.step(i_over_sample); // over sample
             let (o1, o2) = (euler_1.step(i2.clone()), euler_2.step(i2));
 
-            assert_eq!(o1, o2)
+            assert_eq!(o1.i, o2.i)
         }
     }
 
@@ -79,9 +82,12 @@ pub mod integration {
         pub x: f64,
         pub t: f64,
     }
+    pub struct TrapezeOutput {
+        pub i: f64,
+    }
     impl grust_core::Component for TrapezeState {
         type Input = TrapezeInput;
-        type Output = f64;
+        type Output = TrapezeOutput;
 
         fn init() -> Self {
             TrapezeState {
@@ -99,7 +105,7 @@ pub mod integration {
                 self.last_t = input.t;
                 self.last_x = input.x;
             }
-            integral
+            Self::Output { i: integral }
         }
     }
 
@@ -130,7 +136,7 @@ pub mod integration {
             let _ = trapeze_1.step(i_over_sample); // over sample
             let (o1, o2) = (trapeze_1.step(i2.clone()), trapeze_2.step(i2));
 
-            assert_eq!(o1, o2)
+            assert_eq!(o1.i, o2.i)
         }
     }
 
@@ -145,9 +151,12 @@ pub mod integration {
         x: f64,
         t: f64,
     }
+    pub struct ForwardEulerOutput {
+        pub i: f64,
+    }
     impl grust_core::Component for ForwardEulerState {
         type Input = ForwardEulerInput;
-        type Output = f64;
+        type Output = ForwardEulerOutput;
 
         fn init() -> Self {
             ForwardEulerState {
@@ -194,7 +203,7 @@ pub mod integration {
             let _ = euler_1.step(i_over_sample); // over sample
             let (o1, o2) = (euler_1.step(i2.clone()), euler_2.step(i2));
 
-            assert_eq!(o1, o2)
+            assert_eq!(o1.i, o2.i)
         }
     }
 }
@@ -212,9 +221,12 @@ pub mod derivation {
         pub x: f64,
         pub t: f64,
     }
+    pub struct DeriveOutput {
+        pub d: f64,
+    }
     impl grust_core::Component for DeriveState {
         type Input = DeriveInput;
-        type Output = f64;
+        type Output = DeriveOutput;
 
         fn init() -> Self {
             DeriveState {
@@ -230,7 +242,7 @@ pub mod derivation {
                 self.last_t = input.t;
                 self.last_x = input.x;
             }
-            dx / dt
+            Self::Output { d: dx / dt }
         }
     }
 
@@ -261,7 +273,7 @@ pub mod derivation {
             let _ = derive_1.step(i_over_sample); // over sample
             let (o1, o2) = (derive_1.step(i2.clone()), derive_2.step(i2));
 
-            assert_eq!(o1, o2)
+            assert_eq!(o1.d, o2.d)
         }
     }
 }

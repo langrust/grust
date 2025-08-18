@@ -1,16 +1,20 @@
 pub struct C1Input {
     pub e0: Option<i64>,
 }
+pub struct C1Output {
+    pub s2: i64,
+    pub e1: Option<i64>,
+}
 pub struct C1State {
     last_s2: i64,
 }
 impl grust::core::Component for C1State {
     type Input = C1Input;
-    type Output = (i64, Option<i64>);
+    type Output = C1Output;
     fn init() -> C1State {
         C1State { last_s2: 0i64 }
     }
-    fn step(&mut self, input: C1Input) -> (i64, Option<i64>) {
+    fn step(&mut self, input: C1Input) -> C1Output {
         let prev_s2 = self.last_s2;
         let (s2, e1) = match (input.e0) {
             (Some(e0)) if e0 > prev_s2 => {
@@ -25,22 +29,26 @@ impl grust::core::Component for C1State {
             (_) => (self.last_s2, None),
         };
         self.last_s2 = s2;
-        (s2, e1)
+        C1Output { s2, e1 }
     }
 }
 pub struct C2Input {
     pub e1: Option<i64>,
+}
+pub struct C2Output {
+    pub s3: i64,
+    pub e3: Option<i64>,
 }
 pub struct C2State {
     last_s3: i64,
 }
 impl grust::core::Component for C2State {
     type Input = C2Input;
-    type Output = (i64, Option<i64>);
+    type Output = C2Output;
     fn init() -> C2State {
         C2State { last_s3: 0i64 }
     }
-    fn step(&mut self, input: C2Input) -> (i64, Option<i64>) {
+    fn step(&mut self, input: C2Input) -> C2Output {
         let (s3, e3) = match (input.e1) {
             (Some(e1)) if e1 > 1i64 => {
                 let s3 = e1;
@@ -54,56 +62,65 @@ impl grust::core::Component for C2State {
             (_) => (self.last_s3, None),
         };
         self.last_s3 = s3;
-        (s3, e3)
+        C2Output { s3, e3 }
     }
 }
 pub struct C3Input {
     pub s2: i64,
+}
+pub struct C3Output {
+    pub e2: Option<i64>,
 }
 pub struct C3State {
     last_x: bool,
 }
 impl grust::core::Component for C3State {
     type Input = C3Input;
-    type Output = Option<i64>;
+    type Output = C3Output;
     fn init() -> C3State {
         C3State { last_x: false }
     }
-    fn step(&mut self, input: C3Input) -> Option<i64> {
+    fn step(&mut self, input: C3Input) -> C3Output {
         let x = input.s2 > 1i64;
         let e2 = match () {
             () if x && !(self.last_x) => Some(input.s2),
             () => None,
         };
         self.last_x = x;
-        e2
+        C3Output { e2 }
     }
 }
 pub struct C4Input {
     pub e2: Option<i64>,
+}
+pub struct C4Output {
+    pub s4: i64,
 }
 pub struct C4State {
     last_s4: i64,
 }
 impl grust::core::Component for C4State {
     type Input = C4Input;
-    type Output = i64;
+    type Output = C4Output;
     fn init() -> C4State {
         C4State { last_s4: 0i64 }
     }
-    fn step(&mut self, input: C4Input) -> i64 {
+    fn step(&mut self, input: C4Input) -> C4Output {
         let s4 = match (input.e2) {
             (Some(e2)) => e2,
             (_) => self.last_s4,
         };
         self.last_s4 = s4;
-        s4
+        C4Output { s4 }
     }
 }
 pub struct C5Input {
     pub s4: i64,
     pub s3: i64,
     pub e3: Option<i64>,
+}
+pub struct C5Output {
+    pub o: i64,
 }
 pub struct C5State {
     last_o: i64,
@@ -112,7 +129,7 @@ pub struct C5State {
 }
 impl grust::core::Component for C5State {
     type Input = C5Input;
-    type Output = i64;
+    type Output = C5Output;
     fn init() -> C5State {
         C5State {
             last_o: 0i64,
@@ -120,7 +137,7 @@ impl grust::core::Component for C5State {
             last_x_1: false,
         }
     }
-    fn step(&mut self, input: C5Input) -> i64 {
+    fn step(&mut self, input: C5Input) -> C5Output {
         let x = input.s4 > 0i64;
         let x_1 = input.s3 >= 0i64;
         let o = match (input.e3) {
@@ -132,7 +149,7 @@ impl grust::core::Component for C5State {
         self.last_o = o;
         self.last_x = x;
         self.last_x_1 = x_1;
-        o
+        C5Output { o }
     }
 }
 pub mod runtime {
@@ -508,7 +525,7 @@ pub mod runtime {
                     let _e0_input_store = self.input_store.e0.take();
                     *e0_ref = _e0_input_store.map(|(x, _)| x);
                     if e0_ref.is_some() {
-                        let (s2, e1) = <C1State as grust::core::Component>::step(
+                        let C1Output { s2: s2, e1: e1 } = <C1State as grust::core::Component>::step(
                             &mut self.c_1,
                             C1Input { e0: *e0_ref },
                         );
@@ -518,17 +535,18 @@ pub mod runtime {
                     grust::tokio::join!(
                         async {
                             if e1_ref.is_some() {
-                                let (s3, e3) = <C2State as grust::core::Component>::step(
-                                    &mut self.c_2,
-                                    C2Input { e1: *e1_ref },
-                                );
+                                let C2Output { s3: s3, e3: e3 } =
+                                    <C2State as grust::core::Component>::step(
+                                        &mut self.c_2,
+                                        C2Input { e1: *e1_ref },
+                                    );
                                 self.context.s3.set(s3);
                                 *e3_ref = e3;
                             }
                         },
                         async {
                             if self.context.s2.is_new() {
-                                let e2 = <C3State as grust::core::Component>::step(
+                                let C3Output { e2: e2 } = <C3State as grust::core::Component>::step(
                                     &mut self.c_3,
                                     C3Input {
                                         s2: self.context.s2.get(),
@@ -537,7 +555,7 @@ pub mod runtime {
                                 *e2_ref = e2;
                             }
                             if e2_ref.is_some() {
-                                let s4 = <C4State as grust::core::Component>::step(
+                                let C4Output { s4: s4 } = <C4State as grust::core::Component>::step(
                                     &mut self.c_4,
                                     C4Input { e2: *e2_ref },
                                 );
@@ -546,7 +564,7 @@ pub mod runtime {
                         }
                     );
                     if e3_ref.is_some() || self.context.s4.is_new() || self.context.s3.is_new() {
-                        let o1 = <C5State as grust::core::Component>::step(
+                        let C5Output { o: o1 } = <C5State as grust::core::Component>::step(
                             &mut self.c_5,
                             C5Input {
                                 s4: self.context.s4.get(),
@@ -593,7 +611,7 @@ pub mod runtime {
                     let e2_ref = &mut None;
                     *e0_ref = Some(e0);
                     if e0_ref.is_some() {
-                        let (s2, e1) = <C1State as grust::core::Component>::step(
+                        let C1Output { s2: s2, e1: e1 } = <C1State as grust::core::Component>::step(
                             &mut self.c_1,
                             C1Input { e0: *e0_ref },
                         );
@@ -603,17 +621,18 @@ pub mod runtime {
                     grust::tokio::join!(
                         async {
                             if e1_ref.is_some() {
-                                let (s3, e3) = <C2State as grust::core::Component>::step(
-                                    &mut self.c_2,
-                                    C2Input { e1: *e1_ref },
-                                );
+                                let C2Output { s3: s3, e3: e3 } =
+                                    <C2State as grust::core::Component>::step(
+                                        &mut self.c_2,
+                                        C2Input { e1: *e1_ref },
+                                    );
                                 self.context.s3.set(s3);
                                 *e3_ref = e3;
                             }
                         },
                         async {
                             if self.context.s2.is_new() {
-                                let e2 = <C3State as grust::core::Component>::step(
+                                let C3Output { e2: e2 } = <C3State as grust::core::Component>::step(
                                     &mut self.c_3,
                                     C3Input {
                                         s2: self.context.s2.get(),
@@ -622,7 +641,7 @@ pub mod runtime {
                                 *e2_ref = e2;
                             }
                             if e2_ref.is_some() {
-                                let s4 = <C4State as grust::core::Component>::step(
+                                let C4Output { s4: s4 } = <C4State as grust::core::Component>::step(
                                     &mut self.c_4,
                                     C4Input { e2: *e2_ref },
                                 );
@@ -631,7 +650,7 @@ pub mod runtime {
                         }
                     );
                     if e3_ref.is_some() || self.context.s4.is_new() || self.context.s3.is_new() {
-                        let o1 = <C5State as grust::core::Component>::step(
+                        let C5Output { o: o1 } = <C5State as grust::core::Component>::step(
                             &mut self.c_5,
                             C5Input {
                                 s4: self.context.s4.get(),

@@ -21,10 +21,13 @@ pub struct AccInput {
     pub v: i64,
     pub s: i64,
 }
+pub struct AccOutput {
+    pub b: i64,
+}
 pub struct AccState {}
 impl grust::core::Component for AccState {
     type Input = AccInput;
-    type Output = i64;
+    type Output = AccOutput;
     fn init() -> AccState {
         AccState {}
     }
@@ -34,8 +37,8 @@ impl grust::core::Component for AccState {
     #[requires(input.c == > input.d @ - logical ::
     safety_distance(input.s @ , input.s @ + input.v @) >
     (input.v @ * input.v @) / (2 * 6))]
-    #[ensures(0 <= result @ && result @ <= 6)]
-    fn step(&mut self, input: AccInput) -> i64 {
+    #[ensures(0 <= result.b @ && result.b @ <= 6)]
+    fn step(&mut self, input: AccInput) -> AccOutput {
         let (d_safe, b, fv_v) = match input.c {
             true => {
                 let fv_v = input.s + input.v;
@@ -49,7 +52,7 @@ impl grust::core::Component for AccState {
                 (d_safe, b, fv_v)
             }
         };
-        b
+        AccOutput { b }
     }
 }
 mod logical {

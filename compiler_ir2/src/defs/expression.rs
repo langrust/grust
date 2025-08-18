@@ -104,10 +104,10 @@ pub enum Expr {
         memory_ident: Ident,
         /// The identifier to the node.
         node_identifier: Ident,
-        /// The name of the input structure of the called node.
-        input_name: Ident,
         /// The filled input's fields.
         input_fields: Vec<(Ident, Self)>,
+        /// Components outputs.
+        outputs: Vec<Ident>,
         /// Path to call component from.
         path_opt: Option<syn::Path>,
     },
@@ -217,8 +217,8 @@ impl Expr {
         NodeCall: node_call {
             memory_ident: impl Into<Ident> = memory_ident.into(),
             node_identifier: impl Into<Ident> = node_identifier.into(),
-            input_name: impl Into<Ident> = input_name.into(),
             input_fields: Vec<(Ident, Self)>,
+            outputs: impl Iterator<Item = Ident> = outputs.collect(),
             path_opt: Option<syn::Path>,
         }
         FieldAccess: field_access {
@@ -367,32 +367,41 @@ impl ToTokens for Expr {
             Self::NodeCall {
                 memory_ident,
                 input_fields,
+                outputs,
                 path_opt,
                 node_identifier: name,
-                ..
             } => {
                 let state_ty = name.to_state_ty();
                 let input_ty = name.to_input_ty();
+                let output_ty = name.to_output_ty();
                 let input_fields = input_fields.iter().map(|(name, expr)| {
                     quote! { #name : #expr }
                 });
                 if let Some(mut path) = path_opt.clone() {
                     path.segments.pop();
                     let mut state_path = path.clone();
-                    let mut input_path = path;
+                    let mut input_path = path.clone();
+                    let mut output_path = path;
                     state_path.segments.push(state_ty.into());
                     input_path.segments.push(input_ty.into());
+                    output_path.segments.push(output_ty.into());
                     quote! {
-                        <#state_path as grust::core::Component>::step(
-                            &mut self.#memory_ident, #input_path { #(#input_fields),* }
-                        )
+                        {
+                            let #output_path { #(#outputs),* } = <#state_path as grust::core::Component>::step(
+                                &mut self.#memory_ident, #input_path { #(#input_fields),* }
+                            );
+                            (#(#outputs),*)
+                        }
                     }
                     .to_tokens(tokens)
                 } else {
                     quote! {
-                        <#state_ty as grust::core::Component>::step(
-                            &mut self.#memory_ident, #input_ty { #(#input_fields),* }
-                        )
+                        {
+                            let #output_ty { #(#outputs),* } = <#state_ty as grust::core::Component>::step(
+                                &mut self.#memory_ident, #input_ty { #(#input_fields),* }
+                            );
+                            (#(#outputs),*)
+                        }
                     }
                     .to_tokens(tokens)
                 }
@@ -776,17 +785,20 @@ mod test {
         let expression = Expr::node_call(
             Loc::test_id("node_state"),
             Loc::test_id("node"),
-            Loc::test_id("NodeInput"),
             vec![(
                 Loc::test_id("i"),
                 Expr::Literal {
                     literal: Constant::Integer(parse_quote!(1i64)),
                 },
             )],
+            std::iter::once(Loc::test_id("out")),
             None,
         );
 
-        let control = parse_quote! { <NodeState as grust::core::Component>::step(&mut self.node_state, NodeInput { i : 1i64 }) };
+        let control = parse_quote! { {
+            let NodeOutput {out} = <NodeState as grust::core::Component>::step(&mut self.node_state, NodeInput { i : 1i64 });
+            (out)
+        } };
         let expr: syn::Expr = parse_quote!(#expression);
         assert_eq!(expr, control)
     }
@@ -796,17 +808,20 @@ mod test {
         let expression = Expr::node_call(
             Loc::test_id("node_state"),
             Loc::test_id("node"),
-            Loc::test_id("NodeInput"),
             vec![(
                 Loc::test_id("i"),
                 Expr::Literal {
                     literal: Constant::Integer(parse_quote!(1i64)),
                 },
             )],
+            std::iter::once(Loc::test_id("out")),
             Some(parse_quote!(path::to::node)),
         );
 
-        let control = parse_quote! { <path::to::NodeState as grust::core::Component>::step(&mut self.node_state, path::to::NodeInput { i : 1i64 }) };
+        let control = parse_quote! { {
+            let path::to::NodeOutput {out} = <path::to::NodeState as grust::core::Component>::step(&mut self.node_state, path::to::NodeInput { i : 1i64 });
+            (out)
+        } };
         let expr: syn::Expr = parse_quote!(#expression);
         assert_eq!(expr, control)
     }
