@@ -7,7 +7,7 @@ prelude! {
 use super::memory::Memory;
 
 #[derive(Debug, Clone, PartialEq)]
-/// LanGRust component.
+/// GRust component.
 pub struct Component {
     /// Component's signature
     pub sign: ComponentSignature,
@@ -53,37 +53,6 @@ impl Component {
     }
 
     /// Check the causality of the component.
-    ///
-    /// # Example
-    ///
-    /// The following simple component is causal, there is no causality loop.
-    ///
-    /// ```GR
-    /// component causal_node1(i: int) {
-    ///     out o: int = x;
-    ///     x: int = i;
-    /// }
-    /// ```
-    ///
-    /// The next component is causal as well, `x` does not depends on `o` but depends on the memory of
-    /// `o`. Then there is no causality loop.
-    ///
-    /// ```GR
-    /// component causal_node2() {
-    ///     out o: int = x;
-    ///     x: int = 0 fby o;
-    /// }
-    /// ```
-    ///
-    /// But the component that follows is not causal, `o` depends on `x` which depends on `o`. Values of
-    /// signals can not be determined, then the compilation raises a causality error.
-    ///
-    /// ```GR
-    /// component not_causal_node(i: int) {
-    ///     out o: int = x;
-    ///     x: int = o;
-    /// }
-    /// ```
     pub fn causal(&self, ctx: &Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         match &self.body_or_path {
             Either::Left(body) => {
@@ -101,9 +70,9 @@ impl Component {
 
                 // if a schedule exists, then the component is causal
                 let res = graph::toposort(&subgraph, None);
-                if let Err(signal) = res {
-                    let name = ctx.get_name(signal.node_id());
-                    bad!( errors, @self.get_location() => ErrorKind::signal_non_causal(name.to_string()) )
+                if let Err(ident) = res {
+                    let name = ctx.get_name(ident.node_id());
+                    bad!( errors, @self.get_location() => ErrorKind::ident_non_causal(name.to_string()) )
                 }
 
                 Ok(())
@@ -114,36 +83,8 @@ impl Component {
 
     /// Create memory for [ir1] component.
     ///
-    /// Store buffer for followed by expressions and component applications.
-    /// Transform followed by expressions in signal call.
-    ///
-    /// # Example
-    ///
-    /// ```GR
-    /// component test(s: int, v: int) {
-    ///     x_1: int = 0 fby v;
-    ///     x_2: int = my_node(s, x_1).o;
-    ///     out x: int = 1 + x_2;
-    /// }
-    /// ```
-    ///
-    /// The above example becomes:
-    ///
-    /// ```GR
-    /// component test(s: int, v: int) {
-    ///     x_1: int = mem;
-    ///     x_2: int = my_node(s, x_1).o;
-    ///     out x: int = 1 + x_2;
-    /// }
-    /// memory test {
-    ///     buffers: {
-    ///         mem: int = 0 fby v;
-    ///     },
-    ///     called_nodes: {
-    ///         mem_my_node_o_: (my_node, o);
-    ///     },
-    /// }
-    /// ```
+    /// Store buffer for last expressions and component applications.
+    /// Transform last expressions in ident call.
     pub fn memorize(&mut self, ctx: &mut Ctx) -> URes {
         match &mut self.body_or_path {
             Either::Left(body) => body.memorize(ctx),
@@ -155,14 +96,14 @@ impl Component {
     ///
     /// The normal form of a component is as follows:
     /// - component application can only append at root expression
-    /// - component application inputs are signal calls
+    /// - component application inputs are ident calls
     ///
     /// # Example
     ///
     /// ```GR
     /// component test(s: int, v: int, g: int) {
-    ///     out x: int = 1 + my_node(s, v*2).o;
-    ///     out y: int = other_node(g-1, v).o;
+    ///     out x: int = 1 + my_comp(s, v*2).o;
+    ///     out y: int = other_comp(g-1, v).o;
     /// }
     /// ```
     ///
@@ -170,10 +111,10 @@ impl Component {
     ///
     /// ```GR
     /// component test_x(s: int, v: int) {
-    ///     out x: int = 1 + my_node(s, v*2).o;
+    ///     out x: int = 1 + my_comp(s, v*2).o;
     /// }
     /// component test_y(v: int, g: int) {
-    ///     out y: int = other_node(g-1, v).o;
+    ///     out y: int = other_comp(g-1, v).o;
     /// }
     /// ```
     ///
@@ -182,21 +123,21 @@ impl Component {
     /// ```GR
     /// component test_x(s: int, v: int) {
     ///     x_1: int = v*2;
-    ///     x_2: int = my_node(s, x_1).o;
+    ///     x_2: int = my_comp(s, x_1).o;
     ///     out x: int = 1 + x_2;
     /// }
     /// component test_y(v: int, g: int) {
     ///     x: int = g-1;
-    ///     out y: int = other_node(x_1, v).o;
+    ///     out y: int = other_comp(x_1, v).o;
     /// }
     /// ```
     pub fn normal_form(
         &mut self,
-        nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
+        components_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
         ctx: &mut Ctx,
     ) {
         match &mut self.body_or_path {
-            Either::Left(body) => body.normal_form(nodes_reduced_graphs, ctx),
+            Either::Left(body) => body.normal_form(components_reduced_graphs, ctx),
             Either::Right(_) => (),
         }
     }
@@ -204,21 +145,6 @@ impl Component {
     /// Inline component application when it is needed.
     ///
     /// Inlining needed for "shifted causality loop".
-    ///
-    /// # Example:
-    /// ```GR
-    /// component semi_fib(i: int) {
-    ///     out o: int = 0 fby (i + 1 fby i);
-    /// }
-    /// component fib_call() {
-    ///    out fib: int = semi_fib(fib).o;
-    /// }
-    /// ```
-    /// In this example, `fib_call` calls `semi_fib` with the same input and output signal. There is
-    /// no causality loop, `o` depends on the memory of `i`.
-    ///
-    /// We need to inline the code, the output `fib` is defined before the input `fib`, which can
-    /// not be computed by a function call.
     pub fn inline_when_needed(&mut self, components: &HashMap<usize, Component>, ctx: &mut Ctx) {
         match &mut self.body_or_path {
             Either::Left(body) => body.inline_when_needed(components, ctx),
@@ -228,29 +154,8 @@ impl Component {
 
     /// Instantiate component's statements with inputs.
     ///
-    /// It will return new statements where the input signals are instantiated by expressions. New
+    /// It will return new statements where the input idents are instantiated by expressions. New
     /// statements should have fresh id according to the calling component.
-    ///
-    /// # Example
-    ///
-    /// ```GR
-    /// component to_be_inlined(i: int) {
-    ///     o: int = 0 fby j;
-    ///     out j: int = i + 1;
-    /// }
-    ///
-    /// component calling_node(i: int) {
-    ///     out o: int = to_be_inlined(o);
-    ///     j: int = i * o;
-    /// }
-    /// ```
-    ///
-    /// The call to `to_be_inlined` will generate th following statements:
-    ///
-    /// ```GR
-    /// o: int = 0 fby j_1;
-    /// j_1: int = o + 1;
-    /// ```
     pub fn instantiate_statements_and_memory(
         &self,
         identifier_creator: &mut IdentifierCreator,
@@ -266,12 +171,12 @@ impl Component {
                     .map(|(input, expression)| (*input, Either::Right(expression.clone())))
                     .collect::<HashMap<_, _>>();
 
-                // add output signals to context
+                // add output idents to context
                 if let Some(pattern) = new_output_pattern {
-                    let signals = pattern.identifiers();
-                    ctx.get_node_outputs(self.sign.id)
+                    let idents = pattern.identifiers();
+                    ctx.get_comp_outputs(self.sign.id)
                         .iter()
-                        .zip(signals)
+                        .zip(idents)
                         .for_each(|((_, output_id), new_output_id)| {
                             context_map.insert(*output_id, Either::Left(new_output_id));
                         })
@@ -284,28 +189,6 @@ impl Component {
     }
 
     /// Schedule statements.
-    ///
-    /// # Example.
-    ///
-    /// ```GR
-    /// component test(v: int) {
-    ///     out y: int = x-1
-    ///     o_1: int = 0 fby x
-    ///     x: int = v*2 + o_1
-    /// }
-    /// ```
-    ///
-    /// In the component above, signal `y` depends on the current value of `x`, `o_1` depends on the
-    /// memory of `x` and `x` depends on `v` and `o_1`. The component is causal and should be scheduled
-    /// as bellow:
-    ///
-    /// ```GR
-    /// component test(v: int) {
-    ///     o_1: int = 0 fby x  // depends on no current values of signals
-    ///     x: int = v*2 + o_1  // depends on the computed value of `o_1` and given `v`
-    ///     out y: int = x-1    // depends on the computed value of `x`
-    /// }
-    /// ```
     pub fn schedule(&mut self) {
         match &mut self.body_or_path {
             Either::Left(body) => body.schedule(),
@@ -322,9 +205,9 @@ impl Component {
     }
 
     /// Tell if there is no component application.
-    pub fn no_component_application(&self) -> bool {
+    pub fn no_comp_application(&self) -> bool {
         match &self.body_or_path {
-            Either::Left(body) => body.no_component_application(),
+            Either::Left(body) => body.no_comp_application(),
             Either::Right(_) => true,
         }
     }
@@ -352,7 +235,7 @@ pub mod dump_graph {
                             stmt.get_identifiers().into_iter().map(move |id| (id, w))
                         })
                         .collect();
-                    // build another graph, with more infos (such as signals' names, and their weights)
+                    // build another graph, with more infos (such as idents' names, and their weights)
                     for (a, b, label) in body.graph.all_edges() {
                         match label {
                             Label::Contract => (),
@@ -489,7 +372,7 @@ pub mod dump_graph {
 }
 
 #[derive(Debug, Clone)]
-/// LanGRust component definition.
+/// GRust component definition.
 pub struct ComponentBody {
     /// Component's initialization statements.
     pub inits: Vec<ir1::stream::InitStmt>,
@@ -499,7 +382,7 @@ pub struct ComponentBody {
     pub contract: ir1::Contract,
     /// Logs.
     pub logs: Vec<usize>,
-    /// Unitary component's memory.
+    /// Component's memory.
     pub memory: Memory,
     /// Component dependency graph.
     pub graph: DiGraphMap<usize, Label>,
@@ -531,16 +414,16 @@ impl ComponentBody {
         }
     }
 
-    /// Return vector of component's signals id.
-    pub fn get_signals_id(&self) -> Vec<usize> {
+    /// Return vector of component's idents id.
+    pub fn get_idents_id(&self) -> Vec<usize> {
         self.statements
             .iter()
             .flat_map(|statement| statement.get_identifiers())
             .collect()
     }
 
-    /// Return vector of component's signals name.
-    pub fn get_signals_names(&self, ctx: &Ctx) -> Vec<Ident> {
+    /// Return vector of component's idents name.
+    pub fn get_idents_names(&self, ctx: &Ctx) -> Vec<Ident> {
         self.statements
             .iter()
             .flat_map(|statement| statement.get_identifiers())
@@ -550,11 +433,11 @@ impl ComponentBody {
     }
 
     fn eq_graph(&self, other: &ComponentBody) -> bool {
-        let graph_nodes = self.graph.nodes();
-        let other_nodes = other.graph.nodes();
+        let graph_comps = self.graph.nodes();
+        let other_comps = other.graph.nodes();
         let graph_edges = self.graph.all_edges();
         let other_edges = other.graph.all_edges();
-        graph_nodes.eq(other_nodes) && graph_edges.eq(other_edges)
+        graph_comps.eq(other_comps) && graph_edges.eq(other_edges)
     }
 
     /// Tell if it is in normal form.
@@ -564,47 +447,19 @@ impl ComponentBody {
             .all(|statement| statement.is_normal_form())
     }
     /// Tell if there is no component application.
-    pub fn no_component_application(&self) -> bool {
+    pub fn no_comp_application(&self) -> bool {
         self.statements
             .iter()
-            .all(|statement| statement.no_component_application())
+            .all(|statement| statement.no_comp_application())
     }
 
     /// Create memory for [ir1] component.
     ///
-    /// Store buffer for followed by expressions and component applications.
-    /// Transform followed by expressions in signal call.
-    ///
-    /// # Example
-    ///
-    /// ```GR
-    /// component test(s: int, v: int) {
-    ///     x_1: int = 0 fby v;
-    ///     x_2: int = my_node(s, x_1).o;
-    ///     out x: int = 1 + x_2;
-    /// }
-    /// ```
-    ///
-    /// The above example becomes:
-    ///
-    /// ```GR
-    /// component test(s: int, v: int) {
-    ///     x_1: int = mem;
-    ///     x_2: int = my_node(s, x_1).o;
-    ///     out x: int = 1 + x_2;
-    /// }
-    /// memory test {
-    ///     buffers: {
-    ///         mem: int = 0 fby v;
-    ///     },
-    ///     called_nodes: {
-    ///         mem_my_node_o_: (my_node, o);
-    ///     },
-    /// }
-    /// ```
+    /// Store buffer for last expressions and component applications.
+    /// Transform last expressions in ident call.
     pub fn memorize(&mut self, ctx: &mut Ctx) -> URes {
         // create an IdentifierCreator, a local Ctx and Memory
-        let mut identifier_creator = IdentifierCreator::from(self.get_signals_names(ctx));
+        let mut identifier_creator = IdentifierCreator::from(self.get_idents_names(ctx));
         ctx.local();
         let mut memory = Memory::new();
 
@@ -625,8 +480,8 @@ impl ComponentBody {
 
         // add a dependency graph to the component
         let mut graph = GraphMap::new();
-        self.get_signals_id().iter().for_each(|signal_id| {
-            graph.add_node(*signal_id);
+        self.get_idents_id().iter().for_each(|ident_id| {
+            graph.add_node(*ident_id);
         });
         self.statements
             .iter()
@@ -639,14 +494,14 @@ impl ComponentBody {
     ///
     /// The normal form of a component is as follows:
     /// - component application can only append at root expression
-    /// - component application inputs are signal calls
+    /// - component application inputs are ident calls
     ///
     /// # Example
     ///
     /// ```GR
     /// component test(s: int, v: int, g: int) {
-    ///     out x: int = 1 + my_node(s, v*2).o;
-    ///     out y: int = other_node(g-1, v).o;
+    ///     out x: int = 1 + my_comp(s, v*2).o;
+    ///     out y: int = other_comp(g-1, v).o;
     /// }
     /// ```
     ///
@@ -654,10 +509,10 @@ impl ComponentBody {
     ///
     /// ```GR
     /// component test_x(s: int, v: int) {
-    ///     out x: int = 1 + my_node(s, v*2).o;
+    ///     out x: int = 1 + my_comp(s, v*2).o;
     /// }
     /// component test_y(v: int, g: int) {
-    ///     out y: int = other_node(g-1, v).o;
+    ///     out y: int = other_comp(g-1, v).o;
     /// }
     /// ```
     ///
@@ -666,21 +521,21 @@ impl ComponentBody {
     /// ```GR
     /// component test_x(s: int, v: int) {
     ///     x_1: int = v*2;
-    ///     x_2: int = my_node(s, x_1).o;
+    ///     x_2: int = my_comp(s, x_1).o;
     ///     out x: int = 1 + x_2;
     /// }
     /// component test_y(v: int, g: int) {
     ///     x: int = g-1;
-    ///     out y: int = other_node(x_1, v).o;
+    ///     out y: int = other_comp(x_1, v).o;
     /// }
     /// ```
     pub fn normal_form(
         &mut self,
-        nodes_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
+        components_reduced_graphs: &HashMap<usize, DiGraphMap<usize, Label>>,
         ctx: &mut Ctx,
     ) {
         // create an IdentifierCreator and a local Ctx
-        let mut identifier_creator = IdentifierCreator::from(self.get_signals_names(ctx));
+        let mut identifier_creator = IdentifierCreator::from(self.get_idents_names(ctx));
         ctx.local();
 
         for init in &self.inits {
@@ -691,7 +546,7 @@ impl ComponentBody {
         let mut new_stmts = vec![];
         for stmt in self.statements.drain(..) {
             let (add_stmts, add_inits) =
-                stmt.normal_form(nodes_reduced_graphs, &mut identifier_creator, ctx);
+                stmt.normal_form(components_reduced_graphs, &mut identifier_creator, ctx);
             new_stmts.extend(add_stmts);
             self.inits.extend(add_inits);
         }
@@ -702,8 +557,8 @@ impl ComponentBody {
 
         // add a dependency graph to the component
         let mut graph = GraphMap::new();
-        self.get_signals_id().iter().for_each(|signal_id| {
-            graph.add_node(*signal_id);
+        self.get_idents_id().iter().for_each(|ident_id| {
+            graph.add_node(*ident_id);
         });
         self.statements
             .iter()
@@ -714,24 +569,9 @@ impl ComponentBody {
     /// Inline component application when it is needed.
     ///
     /// Inlining needed for "shifted causality loop".
-    ///
-    /// # Example:
-    /// ```GR
-    /// component semi_fib(i: int) {
-    ///     out o: int = 0 fby (i + 1 fby i);
-    /// }
-    /// component fib_call() {
-    ///    out fib: int = semi_fib(fib).o;
-    /// }
-    /// ```
-    /// In this example, `fib_call` calls `semi_fib` with the same input and output signal. There is
-    /// no causality loop, `o` depends on the memory of `i`.
-    ///
-    /// We need to inline the code, the output `fib` is defined before the input `fib`, which can
-    /// not be computed by a function call.
     pub fn inline_when_needed(&mut self, components: &HashMap<usize, Component>, ctx: &mut Ctx) {
-        // create identifier creator containing the signals
-        let mut identifier_creator = IdentifierCreator::from(self.get_signals_names(ctx));
+        // create identifier creator containing the idents
+        let mut identifier_creator = IdentifierCreator::from(self.get_idents_names(ctx));
 
         // compute new statements for the component
         let mut new_statements: Vec<stream::Stmt> = vec![];
@@ -753,29 +593,8 @@ impl ComponentBody {
 
     /// Instantiate component's statements with inputs.
     ///
-    /// It will return new statements where the input signals are instantiated by expressions. New
+    /// It will return new statements where the input idents are instantiated by expressions. New
     /// statements should have fresh id according to the calling component.
-    ///
-    /// # Example
-    ///
-    /// ```GR
-    /// component to_be_inlined(i: int) {
-    ///     o: int = 0 fby j;
-    ///     out j: int = i + 1;
-    /// }
-    ///
-    /// component calling_node(i: int) {
-    ///     out o: int = to_be_inlined(o);
-    ///     j: int = i * o;
-    /// }
-    /// ```
-    ///
-    /// The call to `to_be_inlined` will generate th following statements:
-    ///
-    /// ```GR
-    /// o: int = 0 fby j_1;
-    /// j_1: int = o + 1;
-    /// ```
     pub fn instantiate_statements_and_memory(
         &self,
         identifier_creator: &mut IdentifierCreator,
@@ -809,8 +628,8 @@ impl ComponentBody {
         self.statements = new_statements.to_vec();
         // add a dependency graph to the component
         let mut graph = GraphMap::new();
-        self.get_signals_id().iter().for_each(|signal_id| {
-            graph.add_node(*signal_id);
+        self.get_idents_id().iter().for_each(|ident_id| {
+            graph.add_node(*ident_id);
         });
         self.statements
             .iter()
@@ -819,28 +638,6 @@ impl ComponentBody {
     }
 
     /// Schedule statements.
-    ///
-    /// # Example.
-    ///
-    /// ```GR
-    /// component test(v: int) {
-    ///     out y: int = x-1
-    ///     o_1: int = 0 fby x
-    ///     x: int = v*2 + o_1
-    /// }
-    /// ```
-    ///
-    /// In the component above, signal `y` depends on the current value of `x`, `o_1` depends on the
-    /// memory of `x` and `x` depends on `v` and `o_1`. The component is causal and should be scheduled
-    /// as bellow:
-    ///
-    /// ```GR
-    /// component test(v: int) {
-    ///     o_1: int = 0 fby x  // depends on no current values of signals
-    ///     x: int = v*2 + o_1  // depends on the computed value of `o_1` and given `v`
-    ///     out y: int = x-1    // depends on the computed value of `x`
-    /// }
-    /// ```
     pub fn schedule(&mut self) {
         // get subgraph with only direct dependencies
         let mut subgraph = self.graph.clone();
@@ -858,18 +655,18 @@ impl ComponentBody {
         let mut schedule = toposort(&subgraph, None).unwrap();
         schedule.reverse();
 
-        // construct map from signal_id to their position in the schedule
-        let signals_order = schedule
+        // construct map from ident_id to their position in the schedule
+        let idents_order = schedule
             .into_iter()
             .enumerate()
-            .map(|(order, signal_id)| (signal_id, order))
+            .map(|(order, ident_id)| (ident_id, order))
             .collect::<HashMap<_, _>>();
         let compare = |statement: &stream::Stmt| {
             statement
                 .pattern
                 .identifiers()
                 .into_iter()
-                .map(|signal_id| signals_order.get(&signal_id).unwrap())
+                .map(|ident_id| idents_order.get(&ident_id).unwrap())
                 .min()
                 .unwrap()
         };
@@ -889,7 +686,7 @@ impl ComponentBody {
 }
 
 #[derive(Debug, Clone)]
-/// LanGRust component import.
+/// GRust component import.
 pub struct ComponentSignature {
     /// Component identifier.
     pub id: usize,
@@ -915,10 +712,10 @@ impl ComponentSignature {
     }
 
     fn eq_graph(&self, other: &ComponentSignature) -> bool {
-        let graph_nodes = self.reduced_graph.nodes();
-        let other_nodes = other.reduced_graph.nodes();
+        let graph_comps = self.reduced_graph.nodes();
+        let other_comps = other.reduced_graph.nodes();
         let graph_edges = self.reduced_graph.all_edges();
         let other_edges = other.reduced_graph.all_edges();
-        graph_nodes.eq(other_nodes) && graph_edges.eq(other_edges)
+        graph_comps.eq(other_comps) && graph_edges.eq(other_edges)
     }
 }

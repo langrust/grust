@@ -37,7 +37,7 @@ pub mod ir1 {
         dependencies::DepCtx,
         ir0_into_ir1::Ir0IntoIr1,
         ir0_store::{
-            Ir0Store, Ir0StoreEventPattern, Ir0StoreInit, Ir0StorePattern, Ir0StoreSignals,
+            Ir0Store, Ir0StoreEventPattern, Ir0StoreIdents, Ir0StoreInit, Ir0StorePattern,
             Ir0StoreStmtPattern,
         },
         typing::Typing,

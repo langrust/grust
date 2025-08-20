@@ -91,18 +91,13 @@ pub enum ErrorKind {
         /// The unknown initialization.
         name: String,
     },
-    /// Encountering an unknown signal.
-    UnknownSignal {
+    /// Encountering an unknown flow.
+    UnknownFlow {
         /// The unknown identifier.
         name: String,
     },
-    /// Encountering an unknown node.
-    UnknownNode {
-        /// The unknown identifier.
-        name: String,
-    },
-    /// Encountering an unknown interface.
-    UnknownInterface {
+    /// Encountering an unknown component.
+    UnknownComponent {
         /// The unknown identifier.
         name: String,
     },
@@ -179,12 +174,12 @@ pub enum ErrorKind {
         /// The expected number of inputs.
         arity: usize,
     },
-    /// Calling an unknown output signal.
-    UnknownOutputSignal {
-        /// The node/component identifier.
-        node_name: String,
+    /// Calling an unknown output identifier.
+    UnknownOutputIdent {
+        /// The component identifier.
+        comp_name: String,
         /// The unknown identifier.
-        signal_name: String,
+        ident: String,
     },
     /// Expected constant expression.
     ExpectConstant,
@@ -251,21 +246,21 @@ pub enum ErrorKind {
     /// Can not infer type.
     NoTypeInference,
     /// Causality error.
-    NotCausalSignal {
-        /// Signal's name.
-        signal: String,
+    NotCausalIdent {
+        /// Identifier.
+        ident: String,
     },
     /// Causality error.
-    NotCausalNode {
-        /// Node's name.
-        node: String,
+    NotCausalComponent {
+        /// Component's name.
+        component: String,
     },
-    /// Unused signal error.
-    UnusedSignal {
-        /// Node's name.
-        node: String,
-        /// Signal's name.
-        signal: String,
+    /// Unused identifier error.
+    UnusedIdent {
+        /// Component's name.
+        component: String,
+        /// Identifier.
+        ident: String,
     },
 }
 mk_new! { impl ErrorKind =>
@@ -341,10 +336,10 @@ mk_new! { impl ErrorKind =>
         name: impl Into<String> = name.into(),
         variant: impl Into<String> = variant.into(),
     }
-    UnknownSignal: unknown_signal {
+    UnknownFlow: unknown_flow {
         name: impl Into<String> = name.into(),
     }
-    UnknownNode: unknown_node {
+    UnknownComponent: unknown_comp {
         name: impl Into<String> = name.into(),
     }
     UnknownType: unknown_type {
@@ -355,11 +350,11 @@ mk_new! { impl ErrorKind =>
         field_name: impl Into<String> = field_name.into(),
     }
 
-    NotCausalSignal : signal_non_causal {
-        signal: impl Into<String> = signal.into(),
+    NotCausalIdent : ident_non_causal {
+        ident: impl Into<String> = ident.into(),
     }
-    NotCausalNode : node_non_causal {
-        node: impl Into<String> = node.into(),
+    NotCausalComponent : comp_non_causal {
+        component: impl Into<String> = component.into(),
     }
 }
 
@@ -384,9 +379,8 @@ impl Display for ErrorKind {
             UnknownEnumerationElement { name, variant } => {
                 write!(f, "unknown enumeration variant `{name}::{variant}`")
             }
-            UnknownSignal { name } => write!(f, "unknown signal `{name}`"),
-            UnknownNode { name } => write!(f, "unknown node `{name}`"),
-            UnknownInterface { name } => write!(f, "unknown interface `{name}`"),
+            UnknownFlow { name } => write!(f, "unknown flow `{name}`"),
+            UnknownComponent { name } => write!(f, "unknown component `{name}`"),
             UnknownType { name } => write!(f, "unknown type `{name}`"),
             UnknownEnumeration { name } => write!(f, "unknown enumeration `{name}`"),
             UnknownField {
@@ -433,12 +427,9 @@ impl Display for ErrorKind {
                 plural(*input_count),
                 arity
             ),
-            UnknownOutputSignal {
-                node_name,
-                signal_name,
-            } => write!(
+            UnknownOutputIdent { comp_name, ident } => write!(
                 f,
-                "unknown output signal in node `{node_name}`: `{signal_name}`"
+                "unknown output ident in component `{comp_name}`: `{ident}`"
             ),
             ExpectType { name } => write!(f, "expected type for `{name}`"),
             ExpectConstant => write!(f, "expected constant"),
@@ -468,10 +459,10 @@ impl Display for ErrorKind {
                 "incompatible length, given {given_length} but expect {expected_length}"
             ),
             NoTypeInference => write!(f, "no type inference"),
-            NotCausalSignal { signal } => write!(f, "signal `{signal}` is not causal"),
-            NotCausalNode { node } => write!(f, "node `{node}` is not causal"),
-            UnusedSignal { signal, node } => {
-                write!(f, "signal `{signal}` is unused in node `{node}`")
+            NotCausalIdent { ident } => write!(f, "ident `{ident}` is not causal"),
+            NotCausalComponent { component } => write!(f, "component `{component}` is not causal"),
+            UnusedIdent { ident, component } => {
+                write!(f, "ident `{ident}` is unused in component `{component}`")
             }
         }
     }

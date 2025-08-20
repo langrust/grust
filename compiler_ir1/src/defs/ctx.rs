@@ -104,7 +104,7 @@ impl<'a> PatLoc<'a> {
     }
 }
 
-/// A signals context from where components will get their inputs.
+/// A flows context from where components will get their inputs.
 #[derive(Debug, PartialEq, Default)]
 pub struct Flows {
     pub elements: HashMap<Ident, Typ>,

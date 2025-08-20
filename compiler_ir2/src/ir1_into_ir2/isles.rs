@@ -14,7 +14,7 @@ prelude! { ir1::{ Service, flow, interface::{ FlowImport, FlowStatement } } }
 /// fully compute the effect of receiving `e` (including top stateful calls). The isle is a
 /// sub-list of the original list of statements, in particular it is ordered the same way.
 pub struct Isles {
-    /// Maps event indices to node isles.
+    /// Maps event indices to component isles.
     events_to_isles: HashMap<usize, Vec<usize>>,
 }
 impl Isles {

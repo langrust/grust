@@ -29,17 +29,17 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Component {
     fn into_ir2(self, ctx: &ir0::Ctx) -> Self::Ir2 {
         match self.body_or_path {
             Either::Left(body) => {
-                // get node name
+                // get component name
                 let name = ctx.get_name(self.sign.id);
 
-                // get node inputs
+                // get component inputs
                 let inputs = ctx
-                    .get_node_inputs(self.sign.id)
+                    .get_comp_inputs(self.sign.id)
                     .iter()
                     .map(|id| (ctx.get_name(*id).clone(), ctx.get_typ(*id).clone()));
 
-                // get node outputs
-                let outputs = ctx.get_node_outputs(self.sign.id);
+                // get component outputs
+                let outputs = ctx.get_comp_outputs(self.sign.id);
 
                 // get memory/state elements
                 let (elements, state_elements_init, state_elements_step) =
@@ -87,11 +87,11 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Component {
 
                 // 'input' structure
                 let input = Input {
-                    node_name: name.clone(),
+                    comp_name: name.clone(),
                     elements: inputs.collect(),
                 };
                 let output = Output {
-                    node_name: name.clone(),
+                    comp_name: name.clone(),
                     elements: outputs
                         .iter()
                         .map(|(_, id)| (ctx.get_name(*id).clone(), ctx.get_typ(*id).clone()))
@@ -100,7 +100,7 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::Component {
 
                 // 'state' structure
                 let state = State {
-                    node_name: name.clone(),
+                    comp_name: name.clone(),
                     elements,
                     step,
                     init,
@@ -151,39 +151,39 @@ pub fn memory_state_elements(
             },
         ))
     }
-    mem.called_nodes
+    mem.called_comps
         .into_iter()
         .sorted_by_key(|(id, _)| *id)
-        .for_each(|(memory_id, CalledNode { node_id, .. })| {
+        .for_each(|(memory_id, CalledComponent { comp_id, .. })| {
             let memory_name = ctx.get_name(memory_id);
-            let node_name = ctx.get_name(node_id);
-            let path_opt = ctx.try_get_comp_path(node_id);
-            elements.push(StateElmInfo::called_node(
+            let comp_name = ctx.get_name(comp_id);
+            let path_opt = ctx.try_get_comp_path(comp_id);
+            elements.push(StateElmInfo::called_comp(
                 memory_name.clone(),
-                node_name.clone(),
+                comp_name.clone(),
                 path_opt.cloned(),
             ));
-            inits.push(StateElmInit::called_node(
+            inits.push(StateElmInit::called_comp(
                 memory_name.clone(),
-                node_name.clone(),
+                comp_name.clone(),
                 path_opt.cloned(),
             ));
         });
-    mem.ghost_nodes
+    mem.ghost_comps
         .into_iter()
         .sorted_by_key(|(id, _)| *id)
-        .for_each(|(memory_id, GhostNode { node_id, .. })| {
+        .for_each(|(memory_id, GhostComponent { comp_id, .. })| {
             let memory_name = ctx.get_name(memory_id);
-            let node_name = ctx.get_name(node_id);
-            let path_opt = ctx.try_get_comp_path(node_id);
-            elements.push(StateElmInfo::called_node(
+            let comp_name = ctx.get_name(comp_id);
+            let path_opt = ctx.try_get_comp_path(comp_id);
+            elements.push(StateElmInfo::called_comp(
                 memory_name.clone(),
-                node_name.clone(),
+                comp_name.clone(),
                 path_opt.cloned(),
             ));
-            inits.push(StateElmInit::called_node(
+            inits.push(StateElmInit::called_comp(
                 memory_name.clone(),
-                node_name.clone(),
+                comp_name.clone(),
                 path_opt.cloned(),
             ));
         });
@@ -237,9 +237,9 @@ mod term {
                         Scope::VeryLocal => noErrorDesc!("you should not do that with this ident"),
                     }
                 }
-                Kind::Last { signal_id, .. } => {
-                    let name = ctx.get_name(signal_id).clone();
-                    let views = ctx.get_typ(signal_id).needs_view();
+                Kind::Last { ident_id, .. } => {
+                    let name = ctx.get_name(ident_id).clone();
+                    let views = ctx.get_typ(ident_id).needs_view();
                     contract::Term::mem(name, views)
                 }
                 Kind::Enumeration {
@@ -648,7 +648,7 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::stmt::Pattern {
 
 impl Pattern {
     fn comp_output(pat: ir1::stmt::Pattern, comp_id: usize, ctx: &ir0::Ctx) -> Self {
-        let mut outputs = ctx.get_node_outputs(comp_id).clone();
+        let mut outputs = ctx.get_comp_outputs(comp_id).clone();
         let output_ty = ctx.get_name(comp_id).to_output_ty();
         let path = if let Some(path) = ctx.try_get_comp_path(comp_id) {
             let mut path = path.clone();
@@ -718,9 +718,9 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::stream::Expr {
     fn into_ir2(self, ctx: &ir0::Ctx) -> Self::Ir2 {
         use ir1::stream::Kind::*;
         match self.kind {
-            NodeApplication {
+            ComponentApplication {
                 memory_id,
-                called_node_id,
+                called_comp_id,
                 inputs,
             } => {
                 let memory_ident = ctx
@@ -728,23 +728,23 @@ impl Ir1IntoIr2<&'_ ir0::Ctx> for ir1::stream::Expr {
                         "internal error: should be defined in `ir1::stream::Expr::memorize`",
                     ))
                     .clone();
-                let name = ctx.get_name(called_node_id).clone();
+                let name = ctx.get_name(called_comp_id).clone();
                 let input_fields = inputs
                     .into_iter()
                     .map(|(id, expression)| (ctx.get_name(id).clone(), expression.into_ir2(ctx)))
                     .collect_vec();
-                let path_opt = ctx.try_get_comp_path(called_node_id);
+                let path_opt = ctx.try_get_comp_path(called_comp_id);
                 let outputs = ctx
-                    .get_node_outputs(called_node_id)
+                    .get_comp_outputs(called_comp_id)
                     .iter()
                     .map(|(_, id)| ctx.get_name(*id).clone());
-                ir2::Expr::node_call(memory_ident, name, input_fields, outputs, path_opt.cloned())
+                ir2::Expr::comp_call(memory_ident, name, input_fields, outputs, path_opt.cloned())
             }
             Expression { expr } => expr.into_ir2(ctx),
             SomeEvent { expr } => ir2::Expr::some(expr.into_ir2(ctx)),
             NoneEvent => ir2::Expr::none(),
-            Last { signal_id, .. } => {
-                let name = ctx.get_name(signal_id).clone();
+            Last { ident_id, .. } => {
+                let name = ctx.get_name(ident_id).clone();
                 ir2::Expr::MemoryAccess { identifier: name }
             }
             RisingEdge { .. } => noErrorDesc!(),

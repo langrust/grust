@@ -56,15 +56,15 @@ pub enum SymbolKind {
         /// value **can** go over `100%`.
         weight_percent_hint: Option<usize>,
     },
-    /// Node kind.
-    Node {
-        /// Node's input identifiers.
+    /// Component kind.
+    Component {
+        /// Component's input identifiers.
         inputs: Vec<usize>,
-        /// Node's output identifiers.
+        /// Component's output identifiers.
         outputs: Vec<(Ident, usize)>,
-        /// Node's local identifiers.
+        /// Component's local identifiers.
         locals: Option<HashMap<Ident, usize>>,
-        /// Node's initialized identifiers.
+        /// Component's initialized identifiers.
         inits: Option<HashMap<Ident, usize>>,
         /// Path to call component from.
         path_opt: Option<syn::Path>,
@@ -175,7 +175,7 @@ impl Symbol {
             SymbolKind::Function { .. } => SymbolKey::Function {
                 name: self.name.clone(),
             },
-            SymbolKind::Node { .. } => SymbolKey::Node {
+            SymbolKind::Component { .. } => SymbolKey::Component {
                 name: self.name.clone(),
             },
             SymbolKind::Service => SymbolKey::Service {
@@ -207,7 +207,7 @@ pub enum SymbolKey {
     Init { name: Ident },
     Flow { name: Ident },
     Function { name: Ident },
-    Node { name: Ident },
+    Component { name: Ident },
     Structure { name: Ident },
     Service { name: Ident },
     Enumeration { name: Ident },
@@ -361,6 +361,20 @@ impl Table {
         Err(e)
     }
 
+    pub fn cannot_use_comp<T>(&self, id: &Ident, levenshtein: bool) -> Res<T> {
+        let str = id.to_string();
+        let max_levenshtein_distance = 2;
+        let e = error!(@id.loc() => ErrorKind::msg("impossible to call components here"));
+        if levenshtein {
+            if let Some(symbol) = self.levenshtein_closest(&str, max_levenshtein_distance) {
+                return Err(e
+                    .add_note(note!("did you mean `{}`?", symbol.name_string))
+                    .add_note(note!(@symbol.name.loc() => "declared here")));
+            }
+        }
+        Err(e)
+    }
+
     /// Create local context in symbol table.
     pub fn local(&mut self) {
         let prev = std::mem::take(&mut self.known_symbols);
@@ -406,8 +420,8 @@ impl Table {
         id
     }
 
-    /// Insert signal in symbol table.
-    pub fn insert_signal(
+    /// Insert identifier in symbol table.
+    pub fn insert_ident(
         &mut self,
         name: Ident,
         scope: Scope,
@@ -427,8 +441,8 @@ impl Table {
         self.insert_symbol(symbol, local, errors)
     }
 
-    /// Insert identifier in symbol table.
-    pub fn insert_identifier(
+    /// Insert local identifier in symbol table.
+    pub fn insert_local_ident(
         &mut self,
         name: Ident,
         typing: Option<Typ>,
@@ -552,8 +566,8 @@ impl Table {
         self.insert_symbol(symbol, false, errors)
     }
 
-    /// Insert node in symbol table.
-    pub fn insert_node(
+    /// Insert component in symbol table.
+    pub fn insert_comp(
         &mut self,
         name: Ident,
         inputs_outputs: (Vec<usize>, Vec<(Ident, usize)>),
@@ -565,7 +579,7 @@ impl Table {
         let (inputs, outputs) = inputs_outputs;
         let (locals, inits) = locals_inits.unzip();
         let symbol = Symbol::new(
-            SymbolKind::Node {
+            SymbolKind::Component {
                 inputs,
                 outputs,
                 locals,
@@ -641,8 +655,8 @@ impl Table {
         self.insert_symbol(symbol, local, errors)
     }
 
-    /// Insert fresh signal in symbol table.
-    pub fn insert_fresh_signal(
+    /// Insert fresh ident in symbol table.
+    pub fn insert_fresh_ident(
         &mut self,
         fresh_name: Ident,
         scope: Scope,
@@ -783,7 +797,7 @@ impl Table {
         }
     }
 
-    /// Restore node body or function inputs in context.
+    /// Restore component body or function inputs in context.
     pub fn restore_context(&mut self, id: usize) {
         let symbol = self
             .get_symbol(id)
@@ -793,7 +807,7 @@ impl Table {
             SymbolKind::Function { inputs, .. } => {
                 self.restore_context_from(inputs.iter());
             }
-            SymbolKind::Node {
+            SymbolKind::Component {
                 inputs,
                 outputs,
                 locals,
@@ -874,7 +888,7 @@ impl Table {
         }
     }
 
-    /// Retrieves the weight percent hint of a node/function.
+    /// Retrieves the weight percent hint of a component/function.
     pub fn get_weight_percent_hint(&self, id: usize) -> Option<synced::Weight> {
         let symbol = self
             .get_symbol(id)
@@ -884,7 +898,7 @@ impl Table {
                 weight_percent_hint,
                 ..
             } => Some(weight_percent_hint.unwrap_or(synced::weight::mid)),
-            SymbolKind::Node {
+            SymbolKind::Component {
                 weight_percent_hint,
                 ..
             } => Some(weight_percent_hint.unwrap_or(synced::weight::threads_lbi)),
@@ -1037,48 +1051,48 @@ impl Table {
         }
     }
 
-    /// Get node input identifiers from identifier.
-    pub fn get_node_inputs(&self, id: usize) -> &Vec<usize> {
+    /// Get component input identifiers from identifier.
+    pub fn get_comp_inputs(&self, id: usize) -> &Vec<usize> {
         let symbol = self
             .get_symbol(id)
             .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Node { inputs, .. } => inputs,
+            SymbolKind::Component { inputs, .. } => inputs,
             _ => noErrorDesc!(),
         }
     }
 
-    /// Get node output identifiers from identifier.
-    pub fn get_node_outputs(&self, id: usize) -> &Vec<(Ident, usize)> {
+    /// Get component output identifiers from identifier.
+    pub fn get_comp_outputs(&self, id: usize) -> &Vec<(Ident, usize)> {
         let symbol = self
             .get_symbol(id)
             .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Node { outputs, .. } => outputs,
+            SymbolKind::Component { outputs, .. } => outputs,
             _ => noErrorDesc!(),
         }
     }
 
-    /// Get node local identifiers from identifier.
-    pub fn get_node_locals(&self, id: usize) -> Vec<&usize> {
+    /// Get component local identifiers from identifier.
+    pub fn get_comp_locals(&self, id: usize) -> Vec<&usize> {
         let symbol = self
             .get_symbol(id)
             .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Node { locals, .. } => {
+            SymbolKind::Component { locals, .. } => {
                 locals.as_ref().map_or(vec![], |h| h.values().collect())
             }
             _ => noErrorDesc!(),
         }
     }
 
-    /// Get node's number of identifiers.
-    pub fn node_idents_number(&self, id: usize) -> usize {
+    /// Get component's number of identifiers.
+    pub fn comp_idents_number(&self, id: usize) -> usize {
         let symbol = self
             .get_symbol(id)
             .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Node {
+            SymbolKind::Component {
                 inputs,
                 outputs,
                 locals,
@@ -1105,7 +1119,7 @@ impl Table {
             .get_symbol(id)
             .unwrap_or_else(|| panic!("expect symbol for {id}"));
         match symbol.kind() {
-            SymbolKind::Node { path_opt, .. } => path_opt.as_ref(),
+            SymbolKind::Component { path_opt, .. } => path_opt.as_ref(),
             _ => None,
         }
     }
@@ -1242,9 +1256,9 @@ impl Table {
         }
     }
 
-    /// Tell if identifier is a node.
-    pub fn is_node(&self, name: &Ident, local: bool) -> bool {
-        let symbol_hash = SymbolKey::Node { name: name.clone() };
+    /// Tell if identifier is a component.
+    pub fn is_comp(&self, name: &Ident, local: bool) -> bool {
+        let symbol_hash = SymbolKey::Component { name: name.clone() };
         self.known_symbols.get_id(&symbol_hash, local).is_some()
     }
 
@@ -1353,6 +1367,8 @@ impl Table {
             None => {
                 if or_function {
                     self.get_function_id(name, local, levenshtein, errors)
+                } else if self.is_comp(name, false) {
+                    self.cannot_use_comp(name, levenshtein).dewrap(errors)
                 } else {
                     self.unknown_ident_error(name, levenshtein).dewrap(errors)
                 }
@@ -1386,21 +1402,11 @@ impl Table {
                 match self.known_symbols.get_id(&symbol_hash, local) {
                     Some(id) => Ok(id),
                     None => {
-                        let mut current = &self.known_symbols;
-                        loop {
-                            for pair in current.current.iter() {
-                                println!("- {:?} => {}", pair.0, pair.1);
-                            }
-                            if let Some(next) = current.global_context.as_ref() {
-                                println!("next");
-                                current = next
-                            } else {
-                                break;
-                            }
+                        if self.is_comp(name, false) {
+                            self.cannot_use_comp(name, levenshtein).dewrap(errors)
+                        } else {
+                            self.unknown_ident_error(name, levenshtein).dewrap(errors)
                         }
-                        self.unknown_ident_error(name, levenshtein)
-                            .err_note(|| note!(@name.span() => "bad"))
-                            .dewrap(errors)
                     }
                 }
             }
@@ -1447,16 +1453,16 @@ impl Table {
         let symbol_hash = SymbolKey::Flow { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
-            None => bad!(errors, @name.loc() => ErrorKind::unknown_signal(name.to_string())),
+            None => bad!(errors, @name.loc() => ErrorKind::unknown_flow(name.to_string())),
         }
     }
 
-    /// Get node symbol identifier.
-    pub fn get_node_id(&self, name: &Ident, local: bool, errors: &mut Vec<Error>) -> TRes<usize> {
-        let symbol_hash = SymbolKey::Node { name: name.clone() };
+    /// Get component symbol identifier.
+    pub fn get_comp_id(&self, name: &Ident, local: bool, errors: &mut Vec<Error>) -> TRes<usize> {
+        let symbol_hash = SymbolKey::Component { name: name.clone() };
         match self.known_symbols.get_id(&symbol_hash, local) {
             Some(id) => Ok(id),
-            None => bad!(errors, @name.loc() => ErrorKind::unknown_node(name.to_string())),
+            None => bad!(errors, @name.loc() => ErrorKind::unknown_comp(name.to_string())),
         }
     }
 

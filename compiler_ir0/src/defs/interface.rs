@@ -391,7 +391,7 @@ impl HasLoc for FlowExport {
 /// External component declaration.
 pub struct ExtCompDecl {
     pub use_token: Token![use],
-    pub component_token: keyword::component,
+    pub comp_token: keyword::component,
     /// Component's path.
     pub path: syn::Path,
     /// Component's identifier.
@@ -426,7 +426,7 @@ impl ExtCompDecl {
 }
 impl HasLoc for ExtCompDecl {
     fn loc(&self) -> Loc {
-        Loc::from(self.component_token.span).join(self.semi_token.span)
+        Loc::from(self.comp_token.span).join(self.semi_token.span)
     }
 }
 

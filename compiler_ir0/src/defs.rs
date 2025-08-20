@@ -185,7 +185,7 @@ impl HasLoc for ConstDecl {
 
 /// GRust component AST.
 pub struct Component {
-    pub component_token: keyword::component,
+    pub comp_token: keyword::component,
     /// Component identifier.
     pub ident: Ident,
     pub args_paren: syn::token::Paren,
@@ -205,7 +205,7 @@ pub struct Component {
 }
 impl HasLoc for Component {
     fn loc(&self) -> Loc {
-        Loc::from(self.component_token.span).join(self.brace.span.join())
+        Loc::from(self.comp_token.span).join(self.brace.span.join())
     }
 }
 

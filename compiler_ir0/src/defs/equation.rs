@@ -4,10 +4,10 @@ use super::keyword;
 
 #[derive(Debug, PartialEq)]
 pub struct Instantiation<E> {
-    /// Pattern of instantiated signals.
+    /// Pattern of instantiated identifiers.
     pub pattern: stmt::Pattern,
     pub eq_token: syn::token::Eq,
-    /// The stream expression defining the signals.
+    /// The stream expression defining the identifiers.
     pub expr: E,
     pub semi_token: syn::token::Semi,
 }
@@ -51,7 +51,7 @@ mk_new! { impl Arm =>
 #[derive(Debug, PartialEq)]
 pub struct MatchEq {
     pub match_token: Token![match],
-    /// The stream expression defining the signals.
+    /// The stream expression defining the identifiers.
     pub expr: stream::Expr,
     pub brace_token: syn::token::Brace,
     /// The different matching cases.
@@ -227,21 +227,21 @@ mk_new! { impl WhenEq =>
 }
 
 #[derive(Debug, PartialEq)]
-pub struct InitSignal {
+pub struct InitMemory {
     pub init_token: keyword::init,
-    /// Pattern of instantiated signals.
+    /// Pattern of instantiated memories.
     pub pattern: stmt::Pattern,
     pub eq_token: Token![=],
-    /// The stream expression defining the signal.
+    /// The stream expression defining the memories.
     pub expr: stream::Expr,
     pub semi_token: Token![;],
 }
-impl HasLoc for InitSignal {
+impl HasLoc for InitMemory {
     fn loc(&self) -> Loc {
         Loc::from(self.init_token.span).join(self.semi_token.span)
     }
 }
-mk_new! { impl InitSignal =>
+mk_new! { impl InitMemory =>
     new {
         init_token: keyword::init,
         pattern: stmt::Pattern,
@@ -258,7 +258,7 @@ pub enum ReactEq {
     OutputDef(Instantiation<stream::ReactExpr>),
     WhenEq(WhenEq),
     MatchEq(MatchEq),
-    Init(InitSignal),
+    Init(InitMemory),
     Log(LogStmt),
 }
 impl HasLoc for ReactEq {
@@ -278,6 +278,6 @@ mk_new! { impl ReactEq =>
     OutputDef: out_def(i: Instantiation<stream::ReactExpr> = i)
     WhenEq: when_eq(m : WhenEq = m)
     MatchEq: match_eq(m : MatchEq = m)
-    Init: init(i: InitSignal = i)
+    Init: init(i: InitMemory = i)
     Log: log(l : LogStmt = l)
 }

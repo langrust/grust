@@ -56,7 +56,7 @@ impl Service {
             .map(|import| import.id)
             .chain(exports.map(|export| export.id))
             .for_each(|id| {
-                // if signal push in context
+                // if signal push flow in context
                 let flow_name = ctx.get_name(id).clone();
                 let ty = ctx.get_typ(id);
                 if ctx.get_flow_kind(id).is_signal() {
@@ -82,7 +82,7 @@ impl Service {
     /// statement 3) export signal o;                // depends on statement 5)
     ///
     /// statement 4) let event e2 = timeout(e, 30);  // depends on statement 2)
-    /// statement 5) o = my_component(s, e2);        // depends on statement 1) and 4)
+    /// statement 5) o = my_comp(s, e2);        // depends on statement 1) and 4)
     /// ```
     pub fn compute_dependencies(
         &mut self,
@@ -380,10 +380,6 @@ impl FlowStatement {
 
     /// Change flow statement into a normal form.
     ///
-    /// The normal form of an expression is as follows:
-    /// - node application can only append at root expression
-    /// - node application inputs are signal calls
-    ///
     /// The normal form of a flow expression is as follows:
     /// - flow expressions others than identifiers are root expression
     /// - then, arguments are only identifiers
@@ -391,14 +387,14 @@ impl FlowStatement {
     /// # Example
     ///
     /// ```GR
-    /// x: int = 1 + my_node(s, v*2).o;
+    /// x: int = 1 + my_comp(s, v*2).o;
     /// ```
     ///
     /// The above example becomes:
     ///
     /// ```GR
     /// x_1: int = v*2;
-    /// x_2: int = my_node(s, x_1).o;
+    /// x_2: int = my_comp(s, x_1).o;
     /// x: int = 1 + x_2;
     /// ```
     pub fn normal_form(
@@ -426,7 +422,7 @@ impl FlowStatement {
                         debug_assert!(ids.len() == 1);
                         let pattern_id = ids.pop().unwrap();
 
-                        // push in signals context
+                        // push in flows context
                         let flow_name = ctx.get_name(pattern_id).clone();
                         let ty = ctx.get_typ(pattern_id);
                         flows_context.add_element(flow_name.clone(), ty);
@@ -437,7 +433,7 @@ impl FlowStatement {
                         debug_assert!(ids.len() == 1);
                         let pattern_id = ids.pop().unwrap();
 
-                        // push in signals context
+                        // push in flows context
                         let flow_name = ctx.get_name(pattern_id).clone();
                         let ty = ctx.get_typ(pattern_id);
                         flows_context.add_element(flow_name.clone(), ty);
@@ -454,7 +450,7 @@ impl FlowStatement {
                         assert!(ids.len() == 1);
                         let pattern_id = ids.pop().unwrap();
 
-                        // push in signals context
+                        // push in flows context
                         let source_name = ctx.get_name(id).clone();
                         let flow_name = ctx.get_name(pattern_id).clone();
                         let ty = Typ::sm_event(ctx.get_typ(id).clone());
@@ -471,7 +467,7 @@ impl FlowStatement {
                             _ => noErrorDesc!(),
                         };
 
-                        // push in signals context
+                        // push in flows context
                         let source_name = ctx.get_name(id).clone();
                         let ty = ctx.get_typ(id);
                         flows_context.add_element(source_name, ty);
@@ -481,7 +477,7 @@ impl FlowStatement {
                         // get outputs' ids
                         let outputs_ids = pattern.identifiers();
 
-                        // store output signals in flows_context
+                        // store output flows in flows_context
                         for output_id in outputs_ids.iter() {
                             let output_name = ctx.get_name(*output_id);
                             let output_type = ctx.get_typ(*output_id);

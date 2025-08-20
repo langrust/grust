@@ -94,11 +94,11 @@ impl Typing for contract::Term {
         let ty = match &mut self.kind {
             contract::Kind::Constant { constant } => constant.get_typ(),
             contract::Kind::Identifier { id } => symbols.get_typ(*id).clone(),
-            contract::Kind::Last { init_id, signal_id } => {
-                let signal_type = symbols.get_typ(*signal_id).clone();
+            contract::Kind::Last { init_id, ident_id } => {
+                let ident_type = symbols.get_typ(*ident_id).clone();
                 let init_type = symbols.get_typ(*init_id);
-                check::typ::expect(self.loc, init_type, &signal_type).map_err(|_| ErrorDetected)?;
-                signal_type
+                check::typ::expect(self.loc, init_type, &ident_type).map_err(|_| ErrorDetected)?;
+                ident_type
             }
             contract::Kind::Enumeration { enum_id, .. } => Typ::Enumeration {
                 name: symbols.get_name(*enum_id).clone(),
@@ -176,12 +176,12 @@ impl Typing for contract::Term {
                     input_type.expect(self.loc, expected_type).dewrap(errors)
                 })?;
 
-                // get the called signal type
+                // get the called ident type
                 let comp_call_type = {
                     let mut outputs_types = symbols
-                        .get_node_outputs(*comp_id)
+                        .get_comp_outputs(*comp_id)
                         .iter()
-                        .map(|(_, output_signal)| symbols.get_typ(*output_signal).clone())
+                        .map(|(_, output_ident)| symbols.get_typ(*output_ident).clone())
                         .collect::<Vec<_>>();
                     if outputs_types.len() == 1 {
                         outputs_types.pop().unwrap()
@@ -429,7 +429,7 @@ impl Typing for flow::Expr {
 
                 // get the outputs types of the called component
                 let mut outputs_types = symbols
-                    .get_node_outputs(*called_comp_id)
+                    .get_comp_outputs(*called_comp_id)
                     .iter()
                     .map(|(_, output_id)| {
                         let output_type = symbols.get_typ(*output_id);
@@ -437,14 +437,14 @@ impl Typing for flow::Expr {
                     })
                     .collect::<Vec<_>>();
 
-                // construct node application type
-                let node_application_type = if outputs_types.len() == 1 {
+                // construct component application type
+                let comp_application_type = if outputs_types.len() == 1 {
                     outputs_types.pop().unwrap()
                 } else {
                     Typ::tuple(outputs_types)
                 };
 
-                self.typ = Some(node_application_type);
+                self.typ = Some(comp_application_type);
                 Ok(())
             }
             flow::Kind::FunctionCall {
@@ -481,9 +481,9 @@ impl Typing for flow::Expr {
 impl Typing for stream::Expr {
     fn typ_check(&mut self, symbols: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         match self.kind {
-            stream::Kind::Last { signal_id, .. } => {
+            stream::Kind::Last { ident_id, .. } => {
                 // check the scope is not 'very_local'
-                let sym = symbols.resolve_symbol(self.loc, signal_id).dewrap(errors)?;
+                let sym = symbols.resolve_symbol(self.loc, ident_id).dewrap(errors)?;
                 if sym
                     .kind()
                     .scope()
@@ -495,13 +495,13 @@ impl Typing for stream::Expr {
                     );
                 }
 
-                let id_type = symbols.get_typ(signal_id);
+                let id_type = symbols.get_typ(ident_id);
                 self.typ = Some(id_type.clone());
                 Ok(())
             }
 
-            stream::Kind::NodeApplication {
-                called_node_id,
+            stream::Kind::ComponentApplication {
+                called_comp_id,
                 ref mut inputs,
                 ..
             } => {
@@ -514,12 +514,12 @@ impl Typing for stream::Expr {
                     input_type.expect(self.loc, expected_type).dewrap(errors)
                 })?;
 
-                // get the called signal type
-                let node_application_type = {
+                // get the called ident type
+                let comp_application_type = {
                     let mut outputs_types = symbols
-                        .get_node_outputs(called_node_id)
+                        .get_comp_outputs(called_comp_id)
                         .iter()
-                        .map(|(_, output_signal)| symbols.get_typ(*output_signal).clone())
+                        .map(|(_, output_ident)| symbols.get_typ(*output_ident).clone())
                         .collect::<Vec<_>>();
                     if outputs_types.len() == 1 {
                         outputs_types.pop().unwrap()
@@ -528,7 +528,7 @@ impl Typing for stream::Expr {
                     }
                 };
 
-                self.typ = Some(node_application_type);
+                self.typ = Some(comp_application_type);
                 Ok(())
             }
 

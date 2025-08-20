@@ -3,7 +3,7 @@
 prelude! {}
 
 #[derive(Debug, PartialEq, Clone)]
-/// LanGRust matching pattern [ir1] (resemble to the [ir0]).
+/// GRust matching pattern [ir1] (resemble to the [ir0]).
 pub enum Pattern {
     /// Identifier pattern, gives a name to the matching expression.
     Identifier {

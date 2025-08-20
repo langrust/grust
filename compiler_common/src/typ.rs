@@ -672,19 +672,18 @@ impl Typ {
     /// boolean `c`.
     ///
     /// ```gr
-    /// component my_comp(int x, bool? c) {
-    ///     out res: int = when c then x else prev_res;
-    ///     prev_res: int = 0 fby res;
+    /// import signal s: int;
+    /// import event  e: bool;
+    /// export signal res: int;
+    ///
+    /// service example {
+    ///     res = my_comp(s, e);
     /// }
     ///
-    ///
-    /// interface example {
-    ///     import signal int  s;
-    ///     import event  bool e;
-    ///
-    ///     signal int res = my_comp(s, e);
-    ///
-    ///     export res;
+    /// component my_comp(int x, bool? c) -> (res: int) {
+    ///     init res = 0;
+    ///     res = when c then x else prev_res;
+    ///     prev_res: int = last res;
     /// }
     /// ```
     pub fn convert(&self) -> Self {
@@ -743,7 +742,7 @@ impl Typ {
                 | Enumeration { .. }
                 | Structure { .. }
                 | Any => (),
-                // nodes we need to go down into
+                // components we need to go down into
                 Array { ty, .. } | Option { ty, .. } | Signal { ty, .. } | Event { ty, .. } => {
                     current = ty;
                     continue 'go_down;

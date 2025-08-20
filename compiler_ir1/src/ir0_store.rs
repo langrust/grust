@@ -5,14 +5,14 @@ pub trait Ir0Store {
 }
 
 impl Ir0Store for Component {
-    /// Store node's signals in symbol table.
+    /// Store component's idents in symbol table.
     fn store(&self, symbol_table: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         let loc = self.loc();
         let ctx = &mut ir1::ctx::WithLoc::new(loc, symbol_table, errors);
 
         ctx.local();
 
-        // store input signals and get their ids
+        // store input idents and get their ids
         let inputs = self
             .args
             .iter()
@@ -23,7 +23,7 @@ impl Ir0Store for Component {
                      ..
                  }| {
                     let typ = typ.clone().into_ir1(ctx)?;
-                    let id = ctx.ctx0.insert_signal(
+                    let id = ctx.ctx0.insert_ident(
                         ident.clone(),
                         Scope::Input,
                         Some(typ),
@@ -46,7 +46,7 @@ impl Ir0Store for Component {
                      ..
                  }| {
                     let typ = typ.clone().into_ir1(ctx)?;
-                    let id = ctx.ctx0.insert_signal(
+                    let id = ctx.ctx0.insert_ident(
                         ident.clone(),
                         Scope::Output,
                         Some(typ),
@@ -62,7 +62,7 @@ impl Ir0Store for Component {
         let locals = {
             let mut locals = HashMap::with_capacity(25);
             for equation in self.equations.iter() {
-                equation.store_signals(false, &mut locals, ctx.ctx0, ctx.errors)?;
+                equation.store_idents(false, &mut locals, ctx.ctx0, ctx.errors)?;
             }
             locals.shrink_to_fit();
             locals
@@ -80,7 +80,7 @@ impl Ir0Store for Component {
 
         ctx.global();
 
-        let _ = ctx.ctx0.insert_node(
+        let _ = ctx.ctx0.insert_comp(
             self.ident.clone(),
             (inputs, outputs),
             Some((locals, inits)),
@@ -93,7 +93,7 @@ impl Ir0Store for Component {
     }
 }
 
-pub trait Ir0StoreSignals {
+pub trait Ir0StoreIdents {
     /// Creates identifiers for the equation (depending on the config `store_outputs`)
     ///
     /// # Example
@@ -105,12 +105,12 @@ pub trait Ir0StoreSignals {
     /// }
     /// ```
     ///
-    /// With the above equations, the algorithm insert in the `signals` map
+    /// With the above equations, the algorithm insert in the `idents` map
     /// [ a -> id_a ] and [ b -> id_b ].
-    fn store_signals(
+    fn store_idents(
         &self,
         store_outputs: bool,
-        signals: &mut HashMap<Ident, usize>,
+        idents: &mut HashMap<Ident, usize>,
         symbol_table: &mut Ctx,
         errors: &mut Vec<Error>,
     ) -> TRes<()>;
@@ -123,9 +123,9 @@ pub trait Ir0StoreSignals {
     ) -> TRes<()>;
 
     /// Collects the identifiers of the equation.
-    fn get_signals(
+    fn get_idents(
         &self,
-        signals: &mut HashMap<Ident, ir0::stmt::Pattern>,
+        idents: &mut HashMap<Ident, ir0::stmt::Pattern>,
         symbol_table: &Ctx,
         errors: &mut Vec<Error>,
     ) -> TRes<()>;
@@ -158,11 +158,11 @@ pub trait Ir0StoreInit: Sized {
 mod equation {
     prelude! { ir0::equation::* }
 
-    impl Ir0StoreSignals for Eq {
-        fn store_signals(
+    impl Ir0StoreIdents for Eq {
+        fn store_idents(
             &self,
             store_outputs: bool,
-            signals: &mut HashMap<Ident, usize>,
+            idents: &mut HashMap<Ident, usize>,
             symbol_table: &mut Ctx,
             errors: &mut Vec<Error>,
         ) -> TRes<()> {
@@ -171,17 +171,17 @@ mod equation {
                 Eq::OutputDef(instantiation) if store_outputs => instantiation
                     .pattern
                     .store(false, symbol_table, errors)
-                    .map(|idents| signals.extend(idents)),
+                    .map(|new_idents| idents.extend(new_idents)),
                 // when output definitions are already stored (as component outputs)
                 Eq::OutputDef(_) => Ok(()),
                 Eq::LocalDef(declaration) => declaration
                     .typed_pattern
                     .store(true, symbol_table, errors)
-                    .map(|idents| signals.extend(idents)),
+                    .map(|new_idents| idents.extend(new_idents)),
                 Eq::MatchEq(MatchEq { arms, .. }) => {
                     let Arm { equations, .. } = arms.first().unwrap();
                     for eq in equations.iter() {
-                        eq.store_signals(store_outputs, signals, symbol_table, errors)?;
+                        eq.store_idents(store_outputs, idents, symbol_table, errors)?;
                     }
                     Ok(())
                 }
@@ -197,25 +197,25 @@ mod equation {
             Ok(())
         }
 
-        fn get_signals(
+        fn get_idents(
             &self,
-            signals: &mut HashMap<Ident, ir0::stmt::Pattern>,
+            idents: &mut HashMap<Ident, ir0::stmt::Pattern>,
             symbol_table: &Ctx,
             errors: &mut Vec<Error>,
         ) -> TRes<()> {
             match self {
                 Eq::OutputDef(instantiation) => instantiation
                     .pattern
-                    .get_signals(symbol_table, errors)
-                    .map(|idents| signals.extend(idents)),
+                    .get_idents(symbol_table, errors)
+                    .map(|new_idents| idents.extend(new_idents)),
                 Eq::LocalDef(declaration) => declaration
                     .typed_pattern
-                    .get_signals(symbol_table, errors)
-                    .map(|idents| signals.extend(idents)),
+                    .get_idents(symbol_table, errors)
+                    .map(|new_idents| idents.extend(new_idents)),
                 Eq::MatchEq(MatchEq { arms, .. }) => {
                     let Arm { equations, .. } = arms.first().unwrap();
                     for eq in equations {
-                        eq.get_signals(signals, symbol_table, errors)?;
+                        eq.get_idents(idents, symbol_table, errors)?;
                     }
                     Ok(())
                 }
@@ -253,18 +253,18 @@ mod equation {
             errors: &mut Vec<Error>,
         ) -> TRes<()> {
             for init in &self.equations {
-                let idents = init.pattern.get_signals(symbol_table, errors)?;
+                let idents = init.pattern.get_idents(symbol_table, errors)?;
                 inits.extend(idents);
             }
             Ok(())
         }
     }
 
-    impl Ir0StoreSignals for ReactEq {
-        fn store_signals(
+    impl Ir0StoreIdents for ReactEq {
+        fn store_idents(
             &self,
             store_outputs: bool,
-            signals: &mut HashMap<Ident, usize>,
+            idents: &mut HashMap<Ident, usize>,
             symbol_table: &mut Ctx,
             errors: &mut Vec<Error>,
         ) -> TRes<()> {
@@ -273,46 +273,41 @@ mod equation {
                 ReactEq::OutputDef(instantiation) if store_outputs => instantiation
                     .pattern
                     .store(false, symbol_table, errors)
-                    .map(|idents| signals.extend(idents)),
+                    .map(|new_idents| idents.extend(new_idents)),
                 // when output definitions are already stored (as component's outputs)
                 ReactEq::OutputDef(_) | ReactEq::Init(_) | ReactEq::Log(_) => Ok(()),
                 ReactEq::LocalDef(declaration) => declaration
                     .typed_pattern
                     .store(true, symbol_table, errors)
-                    .map(|idents| signals.extend(idents)),
+                    .map(|new_idents| idents.extend(new_idents)),
                 ReactEq::MatchEq(MatchEq { arms, .. }) => {
                     let Arm { equations, .. } = arms.first().unwrap();
                     for eq in equations.iter() {
-                        eq.store_signals(store_outputs, signals, symbol_table, errors)?;
+                        eq.store_idents(store_outputs, idents, symbol_table, errors)?;
                     }
                     Ok(())
                 }
                 ReactEq::WhenEq(WhenEq { arms, .. }) => {
                     // we want to collect every identifier, but events might be declared in only one
                     // branch then, it is needed to explore all branches
-                    let mut when_signals = HashMap::new();
-                    let mut add_signals = |equations: &[Eq]| {
+                    let mut when_idents = HashMap::new();
+                    let mut add_idents = |equations: &[Eq]| {
                         // some flows are defined in multiple branches so we don't want them to trigger
                         // the *duplicated definition* error.
                         symbol_table.local();
                         for eq in equations {
-                            eq.store_signals(
-                                store_outputs,
-                                &mut when_signals,
-                                symbol_table,
-                                errors,
-                            )?;
+                            eq.store_idents(store_outputs, &mut when_idents, symbol_table, errors)?;
                         }
                         symbol_table.global();
                         Ok(())
                     };
                     for EventArmWhen { equations, .. } in arms {
-                        add_signals(equations)?
+                        add_idents(equations)?
                     }
                     // put the identifiers back in context
-                    for (k, v) in when_signals.into_iter() {
+                    for (k, v) in when_idents.into_iter() {
                         let loc = k.loc();
-                        if let std::collections::hash_map::Entry::Vacant(e) = signals.entry(k) {
+                        if let std::collections::hash_map::Entry::Vacant(e) = idents.entry(k) {
                             e.insert(v);
                             symbol_table.put_back_in_context(v, false, loc, errors)?;
                         }
@@ -370,39 +365,39 @@ mod equation {
             }
         }
 
-        fn get_signals(
+        fn get_idents(
             &self,
-            signals: &mut HashMap<Ident, ir0::stmt::Pattern>,
+            idents: &mut HashMap<Ident, ir0::stmt::Pattern>,
             symbol_table: &Ctx,
             errors: &mut Vec<Error>,
         ) -> TRes<()> {
             match self {
                 ReactEq::OutputDef(instantiation) => instantiation
                     .pattern
-                    .get_signals(symbol_table, errors)
-                    .map(|idents| signals.extend(idents)),
+                    .get_idents(symbol_table, errors)
+                    .map(|new_idents| idents.extend(new_idents)),
                 ReactEq::LocalDef(declaration) => declaration
                     .typed_pattern
-                    .get_signals(symbol_table, errors)
-                    .map(|idents| signals.extend(idents)),
+                    .get_idents(symbol_table, errors)
+                    .map(|new_idents| idents.extend(new_idents)),
                 ReactEq::MatchEq(MatchEq { arms, .. }) => {
                     let Arm { equations, .. } = arms.first().unwrap();
                     for eq in equations {
-                        eq.get_signals(signals, symbol_table, errors)?;
+                        eq.get_idents(idents, symbol_table, errors)?;
                     }
                     Ok(())
                 }
                 ReactEq::WhenEq(WhenEq { arms, .. }) => {
-                    let mut add_signals = |equations: &[Eq]| {
+                    let mut add_idents = |equations: &[Eq]| {
                         // we want to collect every identifier, but events might be declared in only
                         // one branch then, it is needed to explore all branches
                         for eq in equations {
-                            eq.get_signals(signals, symbol_table, errors)?;
+                            eq.get_idents(idents, symbol_table, errors)?;
                         }
                         Ok(())
                     };
                     for EventArmWhen { equations, .. } in arms {
-                        add_signals(equations)?
+                        add_idents(equations)?
                     }
                     Ok(())
                 }
@@ -430,7 +425,7 @@ mod equation {
                 }
                 ReactEq::Init(init) => init
                     .pattern
-                    .get_signals(symbol_table, errors)
+                    .get_idents(symbol_table, errors)
                     .map(|idents| inits.extend(idents)),
             }
         }
@@ -485,7 +480,7 @@ impl Ir0Store for ir0::Function {
                     let typ = typ.clone().into_ir1(ctx)?;
                     let id =
                         ctx.ctx0
-                            .insert_identifier(ident.clone(), Some(typ), true, ctx.errors)?;
+                            .insert_local_ident(ident.clone(), Some(typ), true, ctx.errors)?;
                     Ok(id)
                 },
             )
@@ -519,7 +514,7 @@ impl Ir0Store for ir0::ExtFunDecl {
                     let typ = typ.clone().into_ir1(ctx)?;
                     let id =
                         ctx.ctx0
-                            .insert_identifier(ident.clone(), Some(typ), true, ctx.errors)?;
+                            .insert_local_ident(ident.clone(), Some(typ), true, ctx.errors)?;
                     Ok(id)
                 },
             )
@@ -557,7 +552,7 @@ impl Ir0Store for ir0::ExtCompDecl {
                     let typ = typ.clone().into_ir1(ctx)?;
                     let id =
                         ctx.ctx0
-                            .insert_identifier(ident.clone(), Some(typ), true, ctx.errors)?;
+                            .insert_local_ident(ident.clone(), Some(typ), true, ctx.errors)?;
                     Ok(id)
                 },
             )
@@ -575,7 +570,7 @@ impl Ir0Store for ir0::ExtCompDecl {
                     let typ = typ.clone().into_ir1(ctx)?;
                     let id =
                         ctx.ctx0
-                            .insert_identifier(ident.clone(), Some(typ), true, ctx.errors)?;
+                            .insert_local_ident(ident.clone(), Some(typ), true, ctx.errors)?;
                     Ok((self.ident.clone(), id))
                 },
             )
@@ -583,7 +578,7 @@ impl Ir0Store for ir0::ExtCompDecl {
 
         ctx.global();
 
-        let _ = ctx.ctx0.insert_node(
+        let _ = ctx.ctx0.insert_comp(
             self.ident.clone(),
             (inputs, outputs),
             None,
@@ -591,7 +586,7 @@ impl Ir0Store for ir0::ExtCompDecl {
             self.weight,
             ctx.errors,
         )?;
-        // let _ = ctx.ctx0.insert_node(
+        // let _ = ctx.ctx0.insert_comp(
         //     self.ident.clone(),
         //     inputs,
         //     outputs,
@@ -625,7 +620,7 @@ impl Ir0Store for ir0::ConstDecl {
 pub trait Ir0StorePattern: Sized {
     fn store(&self, symbol_table: &mut Ctx, errors: &mut Vec<Error>) -> TRes<Vec<(Ident, usize)>>;
 
-    fn get_signals(&self, symbol_table: &Ctx, errors: &mut Vec<Error>) -> TRes<Vec<(Ident, Self)>>;
+    fn get_idents(&self, symbol_table: &Ctx, errors: &mut Vec<Error>) -> TRes<Vec<(Ident, Self)>>;
 }
 
 mod expr_pattern {
@@ -641,7 +636,7 @@ mod expr_pattern {
         ) -> TRes<Vec<(Ident, usize)>> {
             match self {
                 Pattern::Identifier(name) => {
-                    let id = symbol_table.insert_signal(
+                    let id = symbol_table.insert_ident(
                         name.clone(),
                         Scope::VeryLocal,
                         None,
@@ -663,7 +658,7 @@ mod expr_pattern {
                         if let Some(pattern) = optional_pattern {
                             pattern.store(symbol_table, errors)
                         } else {
-                            let id = symbol_table.insert_identifier(
+                            let id = symbol_table.insert_local_ident(
                                 field.clone(),
                                 None,
                                 true,
@@ -680,7 +675,7 @@ mod expr_pattern {
             }
         }
 
-        fn get_signals(
+        fn get_idents(
             &self,
             _symbol_table: &Ctx,
             _errors: &mut Vec<Error>,
@@ -689,7 +684,7 @@ mod expr_pattern {
                 Pattern::Identifier(name) => Ok(vec![(name.clone(), self.clone())]),
                 Pattern::Tuple(PatTuple { elements, .. }) => Ok(elements
                     .iter()
-                    .map(|pattern| pattern.get_signals(_symbol_table, _errors))
+                    .map(|pattern| pattern.get_idents(_symbol_table, _errors))
                     .collect::<TRes<Vec<_>>>()?
                     .into_iter()
                     .flatten()
@@ -698,7 +693,7 @@ mod expr_pattern {
                     .iter()
                     .map(|(field, optional_pattern)| {
                         if let Some(pattern) = optional_pattern {
-                            pattern.get_signals(_symbol_table, _errors)
+                            pattern.get_idents(_symbol_table, _errors)
                         } else {
                             Ok(vec![(field.clone(), Pattern::ident(field.clone()))])
                         }
@@ -727,7 +722,7 @@ pub trait Ir0StoreStmtPattern: Sized {
         errors: &mut Vec<Error>,
     ) -> TRes<Vec<(Ident, usize)>>;
 
-    fn get_signals(&self, symbol_table: &Ctx, errors: &mut Vec<Error>) -> TRes<Vec<(Ident, Self)>>;
+    fn get_idents(&self, symbol_table: &Ctx, errors: &mut Vec<Error>) -> TRes<Vec<(Ident, Self)>>;
 }
 
 mod stmt_pattern {
@@ -752,7 +747,7 @@ mod stmt_pattern {
                         let id = symbol_table.get_identifier_id(ident, false, errors)?;
                         // outputs should be already typed
                         let typ = symbol_table.get_typ(id).clone();
-                        let id = symbol_table.insert_identifier(
+                        let id = symbol_table.insert_local_ident(
                             ident.clone(),
                             Some(typ),
                             true,
@@ -769,7 +764,7 @@ mod stmt_pattern {
                         errors,
                     ))?;
                     let id =
-                        symbol_table.insert_identifier(ident.clone(), Some(typ), true, errors)?;
+                        symbol_table.insert_local_ident(ident.clone(), Some(typ), true, errors)?;
                     Ok(vec![(ident.clone(), id)])
                 } else {
                     Err(error!(@ident.loc() => ErrorKind::re_ty(ident.to_string())))
@@ -819,7 +814,7 @@ mod stmt_pattern {
             }
         }
 
-        fn get_signals(
+        fn get_idents(
             &self,
             _symbol_table: &Ctx,
             _errors: &mut Vec<Error>,
@@ -830,7 +825,7 @@ mod stmt_pattern {
                 }
                 Pattern::Tuple(Tuple { elements, .. }) => Ok(elements
                     .iter()
-                    .map(|pattern| pattern.get_signals(_symbol_table, _errors))
+                    .map(|pattern| pattern.get_idents(_symbol_table, _errors))
                     .collect::<TRes<Vec<_>>>()?
                     .into_iter()
                     .flatten()
@@ -858,7 +853,7 @@ impl Ir0Store for ir0::Typedef {
                              ..
                          }| {
                             let typing = typing.clone().into_ir1(ctx)?;
-                            let field_id = ctx.ctx0.insert_identifier(
+                            let field_id = ctx.ctx0.insert_local_ident(
                                 ident.clone(),
                                 Some(typing),
                                 true,

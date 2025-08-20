@@ -21,15 +21,15 @@ pub enum Kind {
     },
     /// Identifier.
     Identifier {
-        /// Signal's identifier in Symbol Table.
+        /// Ident's identifier in Symbol Table.
         id: usize,
     },
     /// Last term: `last <term>`.
     Last {
-        /// Signal's memory in Symbol Table.
+        /// Ident's memory in Symbol Table.
         init_id: usize,
-        /// Signal's identifier in Symbol Table.
-        signal_id: usize,
+        /// Ident's identifier in Symbol Table.
+        ident_id: usize,
     },
     /// Enumeration term.
     Enumeration {
@@ -87,7 +87,7 @@ mk_new! { impl Kind =>
     Constant: constant { constant: Constant }
     Paren: paren { term: Term = term.into() }
     Identifier: ident { id: usize }
-    Last: last { init_id: usize, signal_id: usize }
+    Last: last { init_id: usize, ident_id: usize }
     Enumeration: enumeration {
         enum_id: usize,
         element_id: usize,
@@ -166,7 +166,7 @@ impl Term {
             Kind::ForAll { id, term, .. } => term
                 .compute_dependencies(ctx)
                 .into_iter()
-                .filter(|signal| id != signal)
+                .filter(|ident| id != ident)
                 .collect(),
             Kind::Last { .. } => vec![],
             Kind::Application { inputs, .. } => inputs
@@ -181,14 +181,14 @@ impl Term {
     }
 
     /// Add dependencies of a term to the graph.
-    pub fn add_term_dependencies(&self, node_graph: &mut DiGraphMap<usize, Label>, ctx: &Ctx) {
+    pub fn add_term_dependencies(&self, comp_graph: &mut DiGraphMap<usize, Label>, ctx: &Ctx) {
         let dependencies = self.compute_dependencies(ctx);
-        // signals used in the term depend on each other
+        // idents used in the term depend on each other
         dependencies.iter().for_each(|id1| {
             dependencies.iter().for_each(|id2| {
                 if id1 != id2 {
-                    add_edge(node_graph, *id1, *id2, Label::Contract);
-                    add_edge(node_graph, *id2, *id1, Label::Contract);
+                    add_edge(comp_graph, *id1, *id2, Label::Contract);
+                    add_edge(comp_graph, *id2, *id1, Label::Contract);
                 }
             })
         })
@@ -212,9 +212,9 @@ impl Term {
                 let comp_name = ctx.get_name(*comp_id);
                 let memory_name =
                     identifier_creator.new_identifier(comp_name.loc(), comp_name.to_string());
-                let memory_id = ctx.insert_fresh_signal(memory_name, Scope::Local, None);
-                memory.add_ghost_node(memory_id, *comp_id);
-                // put the 'memory_id' of the called node
+                let memory_id = ctx.insert_fresh_ident(memory_name, Scope::Local, None);
+                memory.add_ghost_comp(memory_id, *comp_id);
+                // put the 'memory_id' of the called component
                 *comp_memory_id = Some(memory_id);
             }
             Kind::Constant { .. }
@@ -252,10 +252,10 @@ impl Term {
             }
             Kind::Last {
                 ref mut init_id,
-                ref mut signal_id,
+                ref mut ident_id,
             } => {
-                if *signal_id == old_id {
-                    *signal_id = new_id;
+                if *ident_id == old_id {
+                    *ident_id = new_id;
                 }
                 if *init_id == old_id {
                     *init_id = new_id;
@@ -331,16 +331,16 @@ impl Contract {
     }
 
     /// Add dependencies of a contract to the graph.
-    pub fn add_dependencies(&self, node_graph: &mut DiGraphMap<usize, Label>, ctx: &Ctx) {
+    pub fn add_dependencies(&self, comp_graph: &mut DiGraphMap<usize, Label>, ctx: &Ctx) {
         self.requires
             .iter()
-            .for_each(|term| term.add_term_dependencies(node_graph, ctx));
+            .for_each(|term| term.add_term_dependencies(comp_graph, ctx));
         self.ensures
             .iter()
-            .for_each(|term| term.add_term_dependencies(node_graph, ctx));
+            .for_each(|term| term.add_term_dependencies(comp_graph, ctx));
         self.invariant
             .iter()
-            .for_each(|term| term.add_term_dependencies(node_graph, ctx));
+            .for_each(|term| term.add_term_dependencies(comp_graph, ctx));
     }
 
     /// Increment memory with ghost component applications.

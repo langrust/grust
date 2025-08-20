@@ -179,11 +179,11 @@ impl Kind {
             } => {
                 debug_assert!(comp_memory_id.is_none());
                 // create fresh identifier for the new memory buffer
-                let node_name = ctx.get_name(*called_comp_id);
+                let comp_name = ctx.get_name(*called_comp_id);
                 let memory_name =
-                    identifier_creator.new_identifier(node_name.loc(), node_name.to_string());
-                let memory_id = ctx.insert_fresh_signal(memory_name, Scope::Local, None);
-                // put the 'memory_id' of the called node
+                    identifier_creator.new_identifier(comp_name.loc(), comp_name.to_string());
+                let memory_id = ctx.insert_fresh_ident(memory_name, Scope::Local, None);
+                // put the 'memory_id' of the called component
                 *comp_memory_id = Some(memory_id);
 
                 // iter on inputs expressions
@@ -275,10 +275,6 @@ impl Expr {
     }
     /// Change [ir1] flow expression into a normal form.
     ///
-    /// The normal form of an expression is as follows:
-    /// - node application can only append at root expression
-    /// - node application inputs are signal calls
-    ///
     /// The normal form of a flow expression is as follows:
     /// - flow expressions others than identifiers are root expression
     /// - then, arguments are only identifiers
@@ -286,14 +282,14 @@ impl Expr {
     /// # Example
     ///
     /// ```GR
-    /// x: int = 1 + my_node(s, v*2).o;
+    /// x: int = 1 + my_comp(s, v*2);
     /// ```
     ///
     /// The above example becomes:
     ///
     /// ```GR
     /// x_1: int = v*2;
-    /// x_2: int = my_node(s, x_1).o;
+    /// x_2: int = my_comp(s, x_1);
     /// x: int = 1 + x_2;
     /// ```
     pub fn normal_form(
