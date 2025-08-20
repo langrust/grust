@@ -8,7 +8,7 @@ pub trait Timing {
 
 /// Timer.
 ///
-/// A timer has a `kind`, which is its identifier (period_component_c, timeout_event_e, etc).
+/// A timer has a `kind`, which is its identifier (period_comp_c, timeout_event_e, etc).
 /// It also has a deadline, to which it should tick.
 #[derive(Debug, PartialEq)]
 pub struct Timer<T> {

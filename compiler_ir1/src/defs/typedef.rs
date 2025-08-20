@@ -3,7 +3,7 @@
 prelude! {}
 
 #[derive(Debug, PartialEq, Clone)]
-/// LanGRust user defined type AST.
+/// GRust user defined type AST.
 pub enum Kind {
     /// Represents a structure definition.
     Structure {
@@ -20,7 +20,7 @@ pub enum Kind {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-/// LanGRust user defined type AST.
+/// GRust user defined type AST.
 pub struct Typedef {
     /// Typedef identifier.
     pub id: usize,

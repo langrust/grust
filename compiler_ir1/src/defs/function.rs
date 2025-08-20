@@ -3,7 +3,7 @@
 prelude! {}
 
 #[derive(Debug, PartialEq)]
-/// LanGRust function AST.
+/// GRust function AST.
 pub struct FunctionBody {
     /// Function's contract.
     pub contract: ir1::Contract,
@@ -16,7 +16,7 @@ pub struct FunctionBody {
 }
 
 #[derive(Debug, PartialEq)]
-/// LanGRust function AST.
+/// GRust function AST.
 pub struct Function {
     /// Function identifier.
     pub id: usize,

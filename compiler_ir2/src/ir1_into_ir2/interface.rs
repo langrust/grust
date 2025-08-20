@@ -877,7 +877,7 @@ mod flow_instr {
                     memory_id,
                     called_comp_id,
                     inputs,
-                } => self.handle_component_call(
+                } => self.handle_comp_call(
                     pattern,
                     *memory_id.as_ref().expect("internal error: memorized"),
                     *called_comp_id,
@@ -1365,7 +1365,7 @@ mod flow_instr {
         }
 
         /// Compute the instruction from a component call.
-        fn handle_component_call(
+        fn handle_comp_call(
             &mut self,
             pattern: &ir1::stmt::Pattern,
             memory_id: usize,
@@ -1400,7 +1400,7 @@ mod flow_instr {
             });
 
             // call component with the events and update output signals
-            self.call_component(
+            self.call_comp(
                 memory_id,
                 called_comp_id,
                 pattern.clone(),
@@ -1478,7 +1478,7 @@ mod flow_instr {
         }
 
         /// Add component call in current propagation branch with outputs update.
-        fn call_component(
+        fn call_comp(
             &mut self,
             memory_id: usize,
             called_comp_id: usize,

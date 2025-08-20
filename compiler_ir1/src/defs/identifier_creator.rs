@@ -33,13 +33,13 @@ impl IdentifierCreator {
     ///
     /// # Example
     ///
-    /// If `mem_x` is requested as new identifier for the node defined below, then it will return it
+    /// If `mem_x` is requested as new identifier for the component defined below, then it will return it
     /// as it is.
     ///
     /// But if it request `mem_x` a second time, then it will return `mem_x_1`.
     ///
     /// ```GR
-    /// node test(i1: int) {
+    /// component test(i1: int) {
     ///     x: int = i1;
     ///     out o1: int = x;
     /// }

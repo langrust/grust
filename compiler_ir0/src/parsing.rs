@@ -675,7 +675,7 @@ mod interface {
     impl Parse for ExtCompDecl {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let use_token: Token![use] = input.parse()?;
-            let component_token: keyword::component = input.parse()?;
+            let comp_token: keyword::component = input.parse()?;
             let path: syn::Path = input.parse()?;
             let ident = if let Some(last) = path.segments.last() {
                 last.ident.clone()
@@ -694,7 +694,7 @@ mod interface {
             let semi_token = input.parse()?;
             Ok(ExtCompDecl {
                 use_token,
-                component_token,
+                comp_token,
                 path,
                 ident,
                 args_paren,
@@ -815,7 +815,7 @@ impl Component {
 }
 impl syn::Parse for Component {
     fn parse(input: ParseStream) -> Res<Self> {
-        let component_token: keyword::component = input.parse()?;
+        let comp_token: keyword::component = input.parse()?;
         let ident: Ident = input.parse()?;
         let content;
         let args_paren: token::Paren = parenthesized!(content in input);
@@ -837,7 +837,7 @@ impl syn::Parse for Component {
             equations
         };
         Ok(Component {
-            component_token,
+            comp_token,
             ident,
             args_paren,
             args,
@@ -2299,14 +2299,14 @@ mod parse_equation {
         }
     }
 
-    impl Parse for InitSignal {
+    impl Parse for InitMemory {
         fn parse(input: ParseStream) -> syn::Res<Self> {
             let init_token: keyword::init = input.parse()?;
             let pattern: stmt::Pattern = input.parse()?;
             let eq_token: token::Eq = input.parse()?;
             let expr: stream::Expr = input.parse()?;
             let semi_token: token::Semi = input.parse()?;
-            Ok(InitSignal::new(
+            Ok(InitMemory::new(
                 init_token, pattern, eq_token, expr, semi_token,
             ))
         }
@@ -3817,7 +3817,7 @@ mod parsing_tests {
             let equation: ReactEq = parse_quote! {
                 init (o1: int, o2: int) = (0, 0);
             };
-            let control = ReactEq::init(equation::InitSignal::new(
+            let control = ReactEq::init(equation::InitMemory::new(
                 parse_quote!(init),
                 stmt::Pattern::tuple(stmt::Tuple::new(
                     Loc::test_dummy(),

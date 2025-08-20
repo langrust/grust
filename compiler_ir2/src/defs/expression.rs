@@ -27,7 +27,7 @@ pub enum Expr {
     },
     /// None value: `None`.
     None,
-    /// An unitary operation: `!x`.
+    /// An unary operation: `!x`.
     UnOp {
         /// The operator.
         op: UOp,
@@ -98,12 +98,12 @@ pub enum Expr {
         /// The arguments.
         arguments: Vec<Self>,
     },
-    /// A node call: `self.called_node.step(inputs)`.
-    NodeCall {
-        /// Node's identifier in memory.
+    /// A component call: `self.called_comp.step(inputs)`.
+    ComponentCall {
+        /// Component's identifier in memory.
         memory_ident: Ident,
-        /// The identifier to the node.
-        node_identifier: Ident,
+        /// The identifier to the component.
+        comp_identifier: Ident,
         /// The filled input's fields.
         input_fields: Vec<(Ident, Self)>,
         /// Components outputs.
@@ -214,9 +214,9 @@ impl Expr {
             function: Self = function.into(),
             arguments: Vec<Self>,
         }
-        NodeCall: node_call {
+        ComponentCall: comp_call {
             memory_ident: impl Into<Ident> = memory_ident.into(),
-            node_identifier: impl Into<Ident> = node_identifier.into(),
+            comp_identifier: impl Into<Ident> = comp_identifier.into(),
             input_fields: Vec<(Ident, Self)>,
             outputs: impl Iterator<Item = Ident> = outputs.collect(),
             path_opt: Option<syn::Path>,
@@ -276,7 +276,7 @@ impl Expr {
             | IfThenElse { .. }
             | Structure { .. }
             | FunctionCall { .. }
-            | NodeCall { .. }
+            | ComponentCall { .. }
             | Lambda { .. }
             | MatchExpr { .. }
             | Map { .. }
@@ -299,7 +299,7 @@ impl Expr {
             | Some { .. }
             | None
             | FunctionCall { .. }
-            | NodeCall { .. }
+            | ComponentCall { .. }
             | MemoryAccess { .. }
             | InputAccess { .. }
             | FieldAccess { .. }
@@ -364,12 +364,12 @@ impl ToTokens for Expr {
                     rgt.to_tokens(tokens)
                 }
             }
-            Self::NodeCall {
+            Self::ComponentCall {
                 memory_ident,
                 input_fields,
                 outputs,
                 path_opt,
-                node_identifier: name,
+                comp_identifier: name,
             } => {
                 let state_ty = name.to_state_ty();
                 let input_ty = name.to_input_ty();
@@ -533,9 +533,9 @@ impl ToLogicTokens for Expr {
                     rgt.to_logic_tokens(tokens)
                 }
             }
-            Self::NodeCall {
+            Self::ComponentCall {
                 memory_ident,
-                node_identifier: name,
+                comp_identifier: name,
                 input_fields,
                 path_opt,
                 ..
@@ -781,10 +781,10 @@ mod test {
     }
 
     #[test]
-    fn should_create_rust_ast_method_call_from_ir2_node_call() {
-        let expression = Expr::node_call(
-            Loc::test_id("node_state"),
-            Loc::test_id("node"),
+    fn should_create_rust_ast_method_call_from_ir2_comp_call() {
+        let expression = Expr::comp_call(
+            Loc::test_id("comp_state"),
+            Loc::test_id("component"),
             vec![(
                 Loc::test_id("i"),
                 Expr::Literal {
@@ -796,7 +796,7 @@ mod test {
         );
 
         let control = parse_quote! { {
-            let NodeOutput {out} = <NodeState as grust::core::Component>::step(&mut self.node_state, NodeInput { i : 1i64 });
+            let ComponentOutput {out} = <ComponentState as grust::core::Component>::step(&mut self.comp_state, ComponentInput { i : 1i64 });
             (out)
         } };
         let expr: syn::Expr = parse_quote!(#expression);
@@ -804,10 +804,10 @@ mod test {
     }
 
     #[test]
-    fn should_create_rust_ast_method_call_from_ir2_node_call_with_path() {
-        let expression = Expr::node_call(
-            Loc::test_id("node_state"),
-            Loc::test_id("node"),
+    fn should_create_rust_ast_method_call_from_ir2_comp_call_with_path() {
+        let expression = Expr::comp_call(
+            Loc::test_id("comp_state"),
+            Loc::test_id("component"),
             vec![(
                 Loc::test_id("i"),
                 Expr::Literal {
@@ -815,11 +815,11 @@ mod test {
                 },
             )],
             std::iter::once(Loc::test_id("out")),
-            Some(parse_quote!(path::to::node)),
+            Some(parse_quote!(path::to::component)),
         );
 
         let control = parse_quote! { {
-            let path::to::NodeOutput {out} = <path::to::NodeState as grust::core::Component>::step(&mut self.node_state, path::to::NodeInput { i : 1i64 });
+            let path::to::ComponentOutput {out} = <path::to::ComponentState as grust::core::Component>::step(&mut self.comp_state, path::to::ComponentInput { i : 1i64 });
             (out)
         } };
         let expr: syn::Expr = parse_quote!(#expression);

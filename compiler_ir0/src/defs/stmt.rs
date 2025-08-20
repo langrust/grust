@@ -71,10 +71,10 @@ impl Pattern {
 #[derive(Debug, PartialEq)]
 pub struct LetDecl<E> {
     pub let_token: syn::token::Let,
-    /// Pattern of instantiated signals and their type.
+    /// Pattern of instantiated identifiers and their type.
     pub typed_pattern: Pattern,
     pub eq_token: syn::token::Eq,
-    /// The stream expression defining the signal.
+    /// The stream expression defining the identifier.
     pub expr: E,
     pub semi_token: syn::token::Semi,
 }
@@ -97,7 +97,7 @@ mk_new! { impl{E} LetDecl<E> =>
 #[derive(Debug, PartialEq)]
 pub struct LogStmt {
     pub log_token: keyword::log,
-    /// Pattern of logged signals and their type.
+    /// Pattern of logged identifiers and their type.
     pub pattern: Pattern,
     pub semi_token: Token![;],
 }

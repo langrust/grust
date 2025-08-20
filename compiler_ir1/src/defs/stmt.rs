@@ -106,7 +106,7 @@ impl Pattern {
 }
 
 #[derive(Debug, Clone)]
-/// LanGRust statement.
+/// GRust statement.
 pub struct Stmt<E> {
     /// Pattern of elements.
     pub pattern: Pattern,
@@ -132,8 +132,8 @@ impl ir1::stream::Stmt {
     pub fn is_normal_form(&self) -> bool {
         self.expr.is_normal_form()
     }
-    /// Tell if there is no node application.
-    pub fn no_component_application(&self) -> bool {
-        self.expr.no_component_application()
+    /// Tell if there is no component application.
+    pub fn no_comp_application(&self) -> bool {
+        self.expr.no_comp_application()
     }
 }

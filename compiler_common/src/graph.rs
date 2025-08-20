@@ -103,16 +103,16 @@ mod label {
 /// If a similar edge already exits then keep the edge with the lowest weight.
 pub fn add_edge(
     graph: &mut DiGraphMap<usize, Label>,
-    signal_id: usize,
+    ident_id: usize,
     dependency_id: usize,
     label: Label,
 ) {
-    let prev_label = graph.add_edge(signal_id, dependency_id, label);
+    let prev_label = graph.add_edge(ident_id, dependency_id, label);
     match (prev_label, label) {
         (Some(Label::Weight(prev_weight)), Label::Weight(new_weight))
             if prev_weight < new_weight =>
         {
-            graph.add_edge(signal_id, dependency_id, Label::Weight(prev_weight));
+            graph.add_edge(ident_id, dependency_id, Label::Weight(prev_weight));
         }
         _ => (),
     }

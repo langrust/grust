@@ -84,12 +84,12 @@ mod test {
     }
 
     #[test]
-    fn should_create_rust_ast_let_statement_from_ir2_let_statement_with_node_call() {
+    fn should_create_rust_ast_let_statement_from_ir2_let_statement_with_comp_call() {
         let statement = Stmt::let_binding(
             Pattern::test_ident("o"),
-            Expr::node_call(
-                Loc::test_id("node_state"),
-                Loc::test_id("node"),
+            Expr::comp_call(
+                Loc::test_id("comp_state"),
+                Loc::test_id("component"),
                 vec![(
                     Loc::test_id("i"),
                     Expr::lit(Constant::int(parse_quote!(1i64))),
@@ -100,7 +100,7 @@ mod test {
         );
 
         let control = parse_quote! { let o = {
-            let NodeOutput {out} = <NodeState as grust::core::Component>::step(&mut self.node_state, NodeInput { i : 1i64 });
+            let ComponentOutput {out} = <ComponentState as grust::core::Component>::step(&mut self.comp_state, ComponentInput { i : 1i64 });
             (out)
         }; };
         let stmt: syn::Stmt = parse_quote!(#statement);

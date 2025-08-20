@@ -43,7 +43,7 @@ pub enum Term {
         /// True if its type needs logical model.
         views: bool,
     },
-    /// An unitary operation: `!x`.
+    /// An unary operation: `!x`.
     Unop {
         /// The operator.
         op: UOp,
@@ -105,13 +105,13 @@ pub enum Term {
         /// The arguments.
         arguments: Vec<Self>,
     },
-    /// A component call: `self.called_node.step(inputs)`.
+    /// A component call: `self.called_comp.step(inputs)`.
     ComponentCall {
         /// Component's identifier in memory.
         memory_ident: Ident,
-        /// The identifier to the node.
+        /// The identifier to the component.
         comp_name: Ident,
-        /// The name of the input structure of the called node.
+        /// The name of the input structure of the called component.
         input_name: Ident,
         /// The filled input's fields.
         input_fields: Vec<(Ident, Self)>,

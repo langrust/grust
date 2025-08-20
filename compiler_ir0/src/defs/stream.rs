@@ -3,12 +3,12 @@ prelude! {
     expr::*,
 }
 
-/// Buffered signal.
+/// Buffered identifier.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Last {
     /// Location.
     pub loc: Loc,
-    /// Signal identifier.
+    /// Identifier.
     pub ident: Ident,
 }
 impl HasLoc for Last {

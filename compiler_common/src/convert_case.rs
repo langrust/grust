@@ -6,8 +6,8 @@
 /// ```
 /// # compiler_common::prelude! { to_camel_case }
 ///
-/// let string = to_camel_case("my_node_o");
-/// let control = format!("MyNodeO");
+/// let string = to_camel_case("my_comp_o");
+/// let control = format!("MyCompO");
 /// assert_eq!(string, control)
 /// ```
 pub fn to_camel_case(s: impl AsRef<str>) -> String {
@@ -30,22 +30,22 @@ mod to_camel_case {
 
     #[test]
     fn should_convert_snake_case_identifier_into_to_camel_case() {
-        let string = to_camel_case("my_node_o");
-        let control = format!("MyNodeO");
+        let string = to_camel_case("my_comp_o");
+        let control = format!("MyCompO");
         assert_eq!(string, control)
     }
 
     #[test]
     fn should_convert_hybrid_identifier_into_to_camel_case() {
-        let string = to_camel_case("my_node_oInput");
-        let control = format!("MyNodeOInput");
+        let string = to_camel_case("my_comp_oInput");
+        let control = format!("MyCompOInput");
         assert_eq!(string, control)
     }
 
     #[test]
     fn should_trim_snake_case_identifier() {
-        let string = to_camel_case("my_node_o_");
-        let control = format!("MyNodeO");
+        let string = to_camel_case("my_comp_o_");
+        let control = format!("MyCompO");
         assert_eq!(string, control)
     }
 }
@@ -60,8 +60,8 @@ mod to_camel_case {
 /// ```
 /// # compiler_common::prelude! { to_snake_case }
 ///
-/// let string = to_snake_case("MyNode76");
-/// let control = format!("my_node_76");
+/// let string = to_snake_case("MyComp76");
+/// let control = format!("my_comp_76");
 /// assert_eq!(string, control)
 /// ```
 pub fn to_snake_case(s: impl AsRef<str>) -> String {
@@ -132,8 +132,8 @@ mod to_snake_case {
 
     #[test]
     fn simple() {
-        let string = to_snake_case("MyNodeO");
-        let control = format!("my_node_o");
+        let string = to_snake_case("MyCompO");
+        let control = format!("my_comp_o");
         assert_eq!(string, control)
     }
 

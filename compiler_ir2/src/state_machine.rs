@@ -16,12 +16,12 @@ pub enum StateElm<T> {
         /// Buffer data.
         data: T,
     },
-    /// A node.
-    CalledNode {
+    /// A component.
+    CalledComponent {
         /// Identifier of the memory storage.
         memory_ident: Ident,
-        /// Name of the node called.
-        node_name: Ident,
+        /// Name of the component called.
+        comp_name: Ident,
         /// Component's path.
         path_opt: Option<syn::Path>,
     },
@@ -32,9 +32,9 @@ mk_new! { impl{T} StateElm<T> =>
         ident : impl Into<Ident> = ident.into(),
         data : T,
     }
-    CalledNode : called_node {
+    CalledComponent : called_comp {
         memory_ident : impl Into<Ident> = memory_ident.into(),
-        node_name : impl Into<Ident> = node_name.into(),
+        comp_name : impl Into<Ident> = comp_name.into(),
         path_opt: Option<syn::Path>,
     }
 }
@@ -47,9 +47,9 @@ impl ToTokens for StateElmInit {
     fn to_tokens(&self, tokens: &mut TokenStream2) {
         match self {
             StateElmInit::Buffer { ident, data } => quote!(#ident : #data).to_tokens(tokens),
-            StateElmInit::CalledNode {
+            StateElmInit::CalledComponent {
                 memory_ident,
-                node_name,
+                comp_name,
                 path_opt,
             } => {
                 memory_ident.to_tokens(tokens);
@@ -64,25 +64,25 @@ impl ToTokens for StateElmInit {
                         }
                     }
                 }
-                let called_state_ty = node_name.to_state_ty();
+                let called_state_ty = comp_name.to_state_ty();
                 quote!(#called_state_ty as grust::core::Component>::init()).to_tokens(tokens)
             }
         }
     }
 }
 
-/// A node input structure.
+/// A component input structure.
 #[derive(Debug, PartialEq)]
 pub struct Input {
-    /// The node's name.
-    pub node_name: Ident,
+    /// The component's name.
+    pub comp_name: Ident,
     /// The input's elements.
     pub elements: Vec<(Ident, Typ)>,
 }
 
 mk_new! { impl Input =>
     new {
-        node_name : impl Into<Ident> = node_name.into(),
+        comp_name : impl Into<Ident> = comp_name.into(),
         elements : Vec<(Ident, Typ)>,
     }
 }
@@ -119,7 +119,7 @@ impl ToTokens for InputTokens<'_> {
             .elements
             .iter()
             .map(|(identifier, typ)| quote!(#pub_token #identifier : #typ));
-        let input_ty = self.i.node_name.to_input_ty();
+        let input_ty = self.i.comp_name.to_input_ty();
         quote!(
             #debug_attr
             #pub_token struct #input_ty {
@@ -130,18 +130,18 @@ impl ToTokens for InputTokens<'_> {
     }
 }
 
-/// A node output structure.
+/// A component output structure.
 #[derive(Debug, PartialEq)]
 pub struct Output {
-    /// The node's name.
-    pub node_name: Ident,
+    /// The component's name.
+    pub comp_name: Ident,
     /// The output's elements.
     pub elements: Vec<(Ident, Typ)>,
 }
 
 mk_new! { impl Output =>
     new {
-        node_name : impl Into<Ident> = node_name.into(),
+        comp_name : impl Into<Ident> = comp_name.into(),
         elements : Vec<(Ident, Typ)>,
     }
 }
@@ -178,7 +178,7 @@ impl ToTokens for OutputTokens<'_> {
             .elements
             .iter()
             .map(|(identifier, typ)| quote!(#pub_token #identifier : #typ));
-        let output_ty = self.i.node_name.to_output_ty();
+        let output_ty = self.i.comp_name.to_output_ty();
         quote!(
             #debug_attr
             #pub_token struct #output_ty {
@@ -192,9 +192,9 @@ impl ToTokens for OutputTokens<'_> {
 /// A init function.
 #[derive(Debug, PartialEq)]
 pub struct Init {
-    /// The node's name.
-    pub node_name: Ident,
-    /// The initialization of the node's state.
+    /// The component's name.
+    pub comp_name: Ident,
+    /// The initialization of the component's state.
     pub state_init: Vec<StateElmInit>,
     /// The invariant initialization to prove.
     pub invariant_init: Vec<Term>,
@@ -202,7 +202,7 @@ pub struct Init {
 
 mk_new! { impl Init =>
     new {
-        node_name : impl Into<Ident> = node_name.into(),
+        comp_name : impl Into<Ident> = comp_name.into(),
         state_init : Vec<StateElmInit>,
         invariant_init : Vec<Term>,
     }
@@ -231,9 +231,9 @@ impl ToTokens for InitTokens<'_> {
             }
         }
 
-        let state_ty = self.init.node_name.to_state_ty();
+        let state_ty = self.init.comp_name.to_state_ty();
         let fields = self.init.state_init.iter();
-        let id = quote_spanned!(self.init.node_name.span() => init);
+        let id = quote_spanned!(self.init.comp_name.span() => init);
 
         quote!(
             fn #id() -> #state_ty {
@@ -249,12 +249,12 @@ impl ToTokens for InitTokens<'_> {
 /// A step function.
 #[derive(Debug, PartialEq)]
 pub struct Step {
-    /// The node's name.
-    pub node_name: Ident,
+    /// The component's name.
+    pub comp_name: Ident,
     /// The output type.
     /// The body of the step function.
     pub body: para::Stmts,
-    /// The update of the node's state.
+    /// The update of the component's state.
     pub state_elements_step: Vec<StateElmStep>,
     /// Logs.
     pub logs: Vec<Stmt>,
@@ -266,7 +266,7 @@ pub struct Step {
 
 mk_new! { impl Step =>
     new {
-        node_name: impl Into<Ident> = node_name.into(),
+        comp_name: impl Into<Ident> = comp_name.into(),
         body: para::Stmts,
         state_elements_step: Vec<StateElmStep>,
         logs: impl Iterator<Item= Stmt> = logs.collect(),
@@ -296,9 +296,9 @@ impl ToTokens for StepTokens<'_> {
             self.step.contract.prepare_tokens(false).to_tokens(tokens);
         }
 
-        let input_ty = self.step.node_name.to_input_ty();
-        let output_ty = self.step.node_name.to_output_ty();
-        let id = quote_spanned!(self.step.node_name.span() => step);
+        let input_ty = self.step.comp_name.to_input_ty();
+        let output_ty = self.step.comp_name.to_output_ty();
+        let id = quote_spanned!(self.step.comp_name.span() => step);
 
         let statements = {
             let mut tokens = TokenStream2::new();
@@ -354,11 +354,11 @@ mk_new! { impl StateElmStep =>
     }
 }
 
-/// A node state structure.
+/// A component state structure.
 #[derive(Debug, PartialEq)]
 pub struct State {
-    /// The node's name.
-    pub node_name: Ident,
+    /// The component's name.
+    pub comp_name: Ident,
     /// The state's elements.
     pub elements: Vec<StateElmInfo>,
     /// The init function.
@@ -368,7 +368,7 @@ pub struct State {
 }
 
 mk_new! { impl State => new {
-    node_name : impl Into<Ident> = node_name.into(),
+    comp_name : impl Into<Ident> = comp_name.into(),
     elements : Vec<StateElmInfo>,
     init : Init,
     step : Step,
@@ -403,12 +403,12 @@ impl StateTokens<'_> {
     fn to_struct_and_impl_tokens(&self) -> (TokenStream2, TokenStream2) {
         let fields = self.state.elements.iter().map(|element| match element {
             StateElm::Buffer { ident, data: typ } => quote!(#ident : #typ),
-            StateElm::CalledNode {
+            StateElm::CalledComponent {
                 memory_ident,
-                node_name,
+                comp_name,
                 path_opt,
             } => {
-                let name = node_name.to_state_ty();
+                let name = comp_name.to_state_ty();
 
                 if let Some(mut path) = path_opt.clone() {
                     path.segments.pop();
@@ -420,9 +420,9 @@ impl StateTokens<'_> {
             }
         });
 
-        let input_ty = self.state.node_name.to_input_ty();
-        let output_ty = &self.state.step.node_name.to_output_ty();
-        let state_ty = self.state.node_name.to_state_ty();
+        let input_ty = self.state.comp_name.to_input_ty();
+        let output_ty = &self.state.step.comp_name.to_output_ty();
+        let state_ty = self.state.comp_name.to_state_ty();
         let align_conf = if self.align {
             quote! { #[repr(align(64))]}
         } else {
@@ -466,7 +466,7 @@ impl StateTokens<'_> {
 /// A state-machine structure.
 #[derive(Debug, PartialEq)]
 pub struct StateMachine {
-    /// The node's name.
+    /// The component's name.
     pub name: Ident,
     /// The input structure.
     pub input: Input,
@@ -536,17 +536,17 @@ mod test {
     use super::*;
 
     #[test]
-    fn should_create_rust_ast_associated_method_from_ir2_node_init() {
+    fn should_create_rust_ast_associated_method_from_ir2_component_init() {
         let binding = Init::new(
-            Loc::test_id("Node"),
+            Loc::test_id("component"),
             vec![
                 StateElmInit::buffer(
                     Loc::test_id("mem_i"),
                     Expr::lit(Constant::int(parse_quote!(0i64))),
                 ),
-                StateElmInit::called_node(
-                    Loc::test_id("called_node_state"),
-                    Loc::test_id("CalledNode"),
+                StateElmInit::called_comp(
+                    Loc::test_id("called_component_state"),
+                    Loc::test_id("CalledComponent"),
                     None,
                 ),
             ],
@@ -555,10 +555,10 @@ mod test {
         let init = binding.prepare_tokens(false);
 
         let control = parse_quote! {
-            fn init() -> NodeState {
-                NodeState {
+            fn init() -> ComponentState {
+                ComponentState {
                     mem_i: 0i64,
-                    called_node_state: <CalledNodeState as grust::core::Component>::init()
+                    called_component_state: <CalledComponentState as grust::core::Component>::init()
                 }
             }
         };
@@ -567,18 +567,18 @@ mod test {
     }
 
     #[test]
-    fn should_create_rust_ast_associated_method_from_ir2_ext_node_init() {
+    fn should_create_rust_ast_associated_method_from_ir2_ext_component_init() {
         let binding = Init::new(
-            Loc::test_id("Node"),
+            Loc::test_id("component"),
             vec![
                 StateElmInit::buffer(
                     Loc::test_id("mem_i"),
                     Expr::lit(Constant::int(parse_quote!(0i64))),
                 ),
-                StateElmInit::called_node(
-                    Loc::test_id("called_node_state"),
-                    Loc::test_id("CalledNode"),
-                    Some(parse_quote!(path::to::called_node)),
+                StateElmInit::called_comp(
+                    Loc::test_id("called_component_state"),
+                    Loc::test_id("CalledComponent"),
+                    Some(parse_quote!(path::to::called_comp)),
                 ),
             ],
             vec![],
@@ -586,10 +586,10 @@ mod test {
         let init = binding.prepare_tokens(false);
 
         let control = parse_quote! {
-            fn init() -> NodeState {
-                NodeState {
+            fn init() -> ComponentState {
+                ComponentState {
                     mem_i: 0i64,
-                    called_node_state: <path::to::CalledNodeState as grust::core::Component>::init()
+                    called_component_state: <path::to::CalledComponentState as grust::core::Component>::init()
                 }
             }
         };
@@ -598,10 +598,10 @@ mod test {
     }
 
     #[test]
-    fn should_create_rust_ast_associated_method_from_ir2_node_step() {
+    fn should_create_rust_ast_associated_method_from_ir2_component_step() {
         let step = Step {
             contract: Default::default(),
-            node_name: Loc::test_id("Node"),
+            comp_name: Loc::test_id("component"),
             body: para::Stmts::seq_of_pairs(vec![
                 (
                     Loc::test_id("o"),
@@ -612,9 +612,9 @@ mod test {
                 ),
                 (
                     Loc::test_id("y"),
-                    Expr::node_call(
-                        Loc::test_id("called_node_state"),
-                        Loc::test_id("called_node"),
+                    Expr::comp_call(
+                        Loc::test_id("called_component_state"),
+                        Loc::test_id("called_component"),
                         vec![],
                         std::iter::once(Loc::test_id("out")),
                         None,
@@ -631,8 +631,8 @@ mod test {
                     ),
                 ),
                 StateElmStep::new(
-                    Loc::test_id("called_node_state"),
-                    Expr::test_ident("new_called_node_state"),
+                    Loc::test_id("called_component_state"),
+                    Expr::test_ident("new_called_component_state"),
                 ),
             ],
             logs: vec![],
@@ -640,15 +640,15 @@ mod test {
         };
 
         let control = parse_quote! {
-            fn step(&mut self, input: NodeInput) -> NodeOutput {
+            fn step(&mut self, input: ComponentInput) -> ComponentOutput {
                 let o = self.mem_i;
                 let y =  {
-                    let CalledNodeOutput { out } = <CalledNodeState as grust::core::Component>::step(&mut self.called_node_state, CalledNodeInput {});
+                    let CalledComponentOutput { out } = <CalledComponentState as grust::core::Component>::step(&mut self.called_component_state, CalledComponentInput {});
                     (out)
                 };
                 self.mem_i = o + 1i64;
-                self.called_node_state = new_called_node_state;
-                NodeOutput { out }
+                self.called_component_state = new_called_component_state;
+                ComponentOutput { out }
             }
         };
         let step = step.prepare_tokens(false, false);
@@ -657,10 +657,10 @@ mod test {
     }
 
     #[test]
-    fn should_create_rust_ast_associated_method_from_ir2_ext_node_step() {
+    fn should_create_rust_ast_associated_method_from_ir2_ext_component_step() {
         let step = Step {
             contract: Default::default(),
-            node_name: Loc::test_id("Node"),
+            comp_name: Loc::test_id("component"),
             body: para::Stmts::seq_of_pairs(vec![
                 (
                     Loc::test_id("o"),
@@ -671,12 +671,12 @@ mod test {
                 ),
                 (
                     Loc::test_id("y"),
-                    Expr::node_call(
-                        Loc::test_id("called_node_state"),
-                        Loc::test_id("called_node"),
+                    Expr::comp_call(
+                        Loc::test_id("called_component_state"),
+                        Loc::test_id("called_component"),
                         vec![],
                         std::iter::once(Loc::test_id("out")),
-                        Some(parse_quote!(path::to::called_node)),
+                        Some(parse_quote!(path::to::called_comp)),
                     ),
                 ),
             ]),
@@ -693,14 +693,14 @@ mod test {
         };
 
         let control = parse_quote! {
-            fn step(&mut self, input: NodeInput) -> NodeOutput {
+            fn step(&mut self, input: ComponentInput) -> ComponentOutput {
                 let o = self.mem_i;
                 let y =  {
-                    let path::to::CalledNodeOutput { out } = <path::to::CalledNodeState as grust::core::Component>::step(&mut self.called_node_state, path::to::CalledNodeInput {});
+                    let path::to::CalledComponentOutput { out } = <path::to::CalledComponentState as grust::core::Component>::step(&mut self.called_component_state, path::to::CalledComponentInput {});
                     (out)
                 };
                 self.mem_i = o + 1i64;
-                NodeOutput { out }
+                ComponentOutput { out }
             }
         };
         let step = step.prepare_tokens(false, false);
@@ -709,15 +709,15 @@ mod test {
     }
 
     #[test]
-    fn should_create_rust_ast_structure_from_ir2_node_input() {
+    fn should_create_rust_ast_structure_from_ir2_component_input() {
         let input = Input {
-            node_name: Loc::test_id("Node"),
+            comp_name: Loc::test_id("component"),
             elements: vec![(Loc::test_id("i"), Typ::int())],
         }
         .prepare_tokens(true, false)
         .to_token_stream();
         let control = parse_quote!(
-            pub struct NodeInput {
+            pub struct ComponentInput {
                 pub i: i64,
             }
         );

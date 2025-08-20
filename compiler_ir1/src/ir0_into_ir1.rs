@@ -463,36 +463,36 @@ mod interface_impl {
 
             /// Transforms AST into [ir1] and check identifiers good use.
             fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc<'a>) -> TRes<ir1::flow::Kind> {
-                if ctx.ctx0.is_node(&self.ident, false) {
+                if ctx.ctx0.is_comp(&self.ident, false) {
                     // get called component id
-                    let component_id = ctx.ctx0.get_node_id(&self.ident, false, ctx.errors)?;
+                    let comp_id = ctx.ctx0.get_comp_id(&self.ident, false, ctx.errors)?;
 
-                    let component_inputs = ctx.get_node_inputs(component_id).clone();
+                    let comp_inputs = ctx.get_comp_inputs(comp_id).clone();
 
-                    // check inputs and node_inputs have the same length
-                    if self.inputs.len() != component_inputs.len() {
+                    // check inputs and comp_inputs have the same length
+                    if self.inputs.len() != comp_inputs.len() {
                         bad!(ctx.errors, @ctx.loc =>
-                            ErrorKind::arity_mismatch(self.inputs.len(), component_inputs.len())
+                            ErrorKind::arity_mismatch(self.inputs.len(), comp_inputs.len())
                         )
                     }
 
                     // transform inputs and map then to the identifiers of the component inputs
                     let inputs = {
                         let mut inputs = Vec::with_capacity(self.inputs.len());
-                        for (input, id) in self.inputs.into_iter().zip(component_inputs) {
+                        for (input, id) in self.inputs.into_iter().zip(comp_inputs) {
                             inputs.push((id, input.into_ir1(ctx)?));
                         }
                         inputs
                     };
 
-                    Ok(ir1::flow::Kind::comp_call(component_id, inputs))
+                    Ok(ir1::flow::Kind::comp_call(comp_id, inputs))
                 } else {
                     // get called function id
                     let function_id = ctx.ctx0.get_function_id(&self.ident, false, ctx.errors)?;
 
                     let function_inputs = ctx.get_function_input(function_id).clone();
 
-                    // check inputs and node_inputs have the same length
+                    // check inputs and comp_inputs have the same length
                     if self.inputs.len() != function_inputs.len() {
                         bad!(ctx.errors, @ctx.loc =>
                             ErrorKind::arity_mismatch(self.inputs.len(), function_inputs.len())
@@ -556,7 +556,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Function {
         let loc = self.loc();
         let id = ctx.ctx0.get_function_id(&self.ident, false, ctx.errors)?;
 
-        // create local context with all signals
+        // create local context with all idents
         ctx.local();
         ctx.restore_context(id);
 
@@ -617,7 +617,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ExtFunDecl {
         let loc = self.loc();
         let id = ctx.ctx0.get_function_id(&self.ident, false, ctx.errors)?;
 
-        // create local context with all signals
+        // create local context with all idents
         ctx.local();
         ctx.restore_context(id);
 
@@ -639,7 +639,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ExtCompDecl {
     // post-condition: construct [ir1] component and check identifiers good use
     fn into_ir1(self, ctx: &mut ctx::Simple) -> TRes<Self::Ir1> {
         let loc = self.loc();
-        let id = ctx.ctx0.get_node_id(&self.ident, false, ctx.errors)?;
+        let id = ctx.ctx0.get_comp_id(&self.ident, false, ctx.errors)?;
 
         Ok(ir1::Component::new_ext(id, self.path, loc))
     }
@@ -648,13 +648,13 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ExtCompDecl {
 impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Component {
     type Ir1 = ir1::Component;
 
-    // pre-condition: node and its signals are already stored in symbol table
-    // post-condition: construct [ir1] node and check identifiers good use
+    // pre-condition: component and its idents are already stored in symbol table
+    // post-condition: construct [ir1] component and check identifiers good use
     fn into_ir1(self, ctx: &mut ctx::Simple) -> TRes<Self::Ir1> {
         let loc = self.loc();
-        let id = ctx.ctx0.get_node_id(&self.ident, false, ctx.errors)?;
+        let id = ctx.ctx0.get_comp_id(&self.ident, false, ctx.errors)?;
 
-        // create local context with all signals
+        // create local context with all idents
         ctx.local();
         ctx.restore_context(id);
 
@@ -745,15 +745,15 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
                     loc,
                 ))
             }
-            Term::Application(app) if ctx.is_node(&app.fun, false) => {
-                let called_node_id = ctx.ctx0.get_node_id(&app.fun, false, ctx.errors)?;
-                let node_symbol = ctx
-                    .get_symbol(called_node_id)
+            Term::Application(app) if ctx.is_comp(&app.fun, false) => {
+                let called_comp_id = ctx.ctx0.get_comp_id(&app.fun, false, ctx.errors)?;
+                let comp_symbol = ctx
+                    .get_symbol(called_comp_id)
                     .expect("internal error: there should be a symbol")
                     .clone();
-                match node_symbol.kind() {
-                    SymbolKind::Node { inputs, .. } => {
-                        // check inputs and node_inputs have the same length
+                match comp_symbol.kind() {
+                    SymbolKind::Component { inputs, .. } => {
+                        // check inputs and comp_inputs have the same length
                         if inputs.len() != app.inputs.len() {
                             bad!(ctx.errors, @app.fun.loc() => ErrorKind::arity_mismatch(
                                 inputs.len(), app.inputs.len()
@@ -769,15 +769,15 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
                         );
 
                         Ok(ir1::contract::Term::new(
-                            ir1::contract::Kind::call(called_node_id, inputs),
+                            ir1::contract::Kind::call(called_comp_id, inputs),
                             None,
                             loc,
                         ))
                     }
                     _ => {
-                        ctx.errors.push(error!( @ node_symbol.name().span() =>
-                            "fatal: symbol kind associated to node `{}` is not node-like",
-                            node_symbol.name(),
+                        ctx.errors.push(error!( @ comp_symbol.name().span() =>
+                            "fatal: symbol kind associated to component `{}` is not component-like",
+                            comp_symbol.name(),
                         ));
                         Err(ErrorDetected)
                     }
@@ -847,9 +847,9 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
             }
             Term::Last(ident) => {
                 let init_id = ctx.ctx0.get_init_id(&ident, false, ctx.errors)?;
-                let signal_id = ctx.ctx0.get_ident(&ident, false, false, ctx.errors)?;
+                let ident_id = ctx.ctx0.get_ident(&ident, false, false, ctx.errors)?;
                 Ok(ir1::contract::Term::new(
-                    ir1::contract::Kind::last(init_id, signal_id),
+                    ir1::contract::Kind::last(init_id, ident_id),
                     None,
                     loc,
                 ))
@@ -861,7 +861,7 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
                 ctx.local();
                 let id = ctx
                     .ctx0
-                    .insert_identifier(ident.clone(), Some(ty), true, ctx.errors)?;
+                    .insert_local_ident(ident.clone(), Some(ty), true, ctx.errors)?;
                 let term = term.into_ir1(ctx)?;
                 ctx.global();
                 Ok(ir1::contract::Term::new(
@@ -879,10 +879,10 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
                 // get the event identifier
                 let event_id = ctx.ctx0.get_identifier_id(&event, false, ctx.errors)?;
                 ctx.local();
-                // set pattern signal in local context
+                // set pattern ident in local context
                 let pattern_id =
                     ctx.ctx0
-                        .insert_identifier(pattern.clone(), None, true, ctx.errors)?;
+                        .insert_local_ident(pattern.clone(), None, true, ctx.errors)?;
                 // transform term into [ir1]
                 let right = term.into_ir1(ctx)?;
                 ctx.global();
@@ -925,7 +925,7 @@ impl<'a> Ir0IntoIr1<ctx::Simple<'a>> for ir0::contract::Term {
 impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Eq {
     type Ir1 = ir1::stream::Stmt;
 
-    /// Pre-condition: equation's signal is already stored in symbol table.
+    /// Pre-condition: equation's ident is already stored in symbol table.
     ///
     /// Post-condition: construct [ir1] equation and check identifiers good use.
     fn into_ir1(self, ctx: &mut ctx::Simple) -> TRes<Self::Ir1> {
@@ -935,9 +935,9 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Eq {
         };
         let loc = self.loc();
 
-        // get signals defined by the equation
-        let mut defined_signals = HashMap::new();
-        self.get_signals(&mut defined_signals, ctx.ctx0, ctx.errors)?;
+        // get idents defined by the equation
+        let mut defined_idents = HashMap::new();
+        self.get_idents(&mut defined_idents, ctx.ctx0, ctx.errors)?;
 
         match self {
             Eq::LocalDef(LetDecl {
@@ -954,8 +954,8 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Eq {
                 // create the receiving pattern for the equation
                 let pattern = {
                     let mut elements = res_vec!(
-                        defined_signals.len(),
-                        defined_signals
+                        defined_idents.len(),
+                        defined_idents
                             .values()
                             .map(|pat| pat.clone().into_ir1(&mut ctx.add_loc(loc))),
                     );
@@ -976,17 +976,17 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Eq {
                 } in arms.into_iter()
                 {
                     // transform pattern guard and equations into [ir1]
-                    let (signals, pattern, guard, statements) = {
+                    let (idents, pattern, guard, statements) = {
                         ctx.local();
 
-                        // set local context: pattern signals + equations' signals
+                        // set local context: pattern idents + equations' idents
                         pattern.store(ctx.ctx0, ctx.errors)?;
-                        let mut signals = HashMap::new();
+                        let mut idents = HashMap::new();
                         equations
                             .iter()
                             .map(|equation| {
-                                // store equations' signals in the local context
-                                equation.store_signals(true, &mut signals, ctx.ctx0, ctx.errors)
+                                // store equations' idents in the local context
+                                equation.store_idents(true, &mut idents, ctx.ctx0, ctx.errors)
                             })
                             .collect_res()?;
 
@@ -1005,28 +1005,28 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Eq {
 
                         ctx.global();
 
-                        (signals, pattern, guard, statements)
+                        (idents, pattern, guard, statements)
                     };
 
                     // create the tuple expression
                     let expression = {
-                        // check defined signals are all the same
-                        if defined_signals.len() != signals.len() {
+                        // check defined idents are all the same
+                        if defined_idents.len() != idents.len() {
                             bad!(ctx.errors, @loc => ErrorKind::incompatible_match(
-                                defined_signals.len(), signals.len(),
+                                defined_idents.len(), idents.len(),
                             ))
                         }
                         let mut elements = {
-                            let mut elements = Vec::with_capacity(defined_signals.len());
-                            for signal_name in defined_signals.keys() {
-                                if let Some(id) = signals.get(signal_name) {
+                            let mut elements = Vec::with_capacity(defined_idents.len());
+                            for ident_name in defined_idents.keys() {
+                                if let Some(id) = idents.get(ident_name) {
                                     elements.push(ir1::stream::Expr::new(
-                                        signal_name.loc(),
+                                        ident_name.loc(),
                                         ir1::stream::Kind::expr(ir1::expr::Kind::ident(*id)),
                                     ));
                                 } else {
                                     bad!(ctx.errors, @loc =>
-                                        ErrorKind::missing_match_stmt(signal_name.to_string())
+                                        ErrorKind::missing_match_stmt(ident_name.to_string())
                                     )
                                 }
                             }
@@ -1066,7 +1066,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
     /// also part of their [ir1] representation, along the (optional) [ir1::stmt::Stmt].
     type Ir1 = Either<(Option<Vec<stream::InitStmt>>, Option<stream::Stmt>), Vec<usize>>;
 
-    /// Pre-condition: equation's signal is already stored in symbol table.
+    /// Pre-condition: equation's ident is already stored in symbol table.
     ///
     /// Post-condition: construct [ir1] equation and check identifiers good use.
     fn into_ir1(self, ctx: &mut ctx::Simple) -> TRes<Self::Ir1> {
@@ -1077,9 +1077,9 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
         };
         let loc = self.loc();
 
-        // get signals defined by the equation
-        let mut defined_signals = HashMap::new();
-        self.get_signals(&mut defined_signals, ctx.ctx0, ctx.errors)?;
+        // get idents defined by the equation
+        let mut defined_idents = HashMap::new();
+        self.get_idents(&mut defined_idents, ctx.ctx0, ctx.errors)?;
 
         match self {
             ReactEq::LocalDef(LetDecl {
@@ -1099,8 +1099,8 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                 // create the receiving pattern for the equation
                 let pattern = {
                     let mut elements = res_vec!(
-                        defined_signals.len(),
-                        defined_signals
+                        defined_idents.len(),
+                        defined_idents
                             .values()
                             .map(|pat| pat.clone().into_ir1(&mut ctx.add_loc(loc))),
                     );
@@ -1122,19 +1122,19 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                              ..
                          }| {
                             // transform pattern guard and equations into [ir1]
-                            let (signals, pattern, guard, statements) = {
+                            let (idents, pattern, guard, statements) = {
                                 ctx.local();
 
-                                // set local context: pattern signals + equations' signals
+                                // set local context: pattern idents + equations' idents
                                 pattern.store(ctx.ctx0, ctx.errors)?;
-                                let mut signals = HashMap::new();
+                                let mut idents = HashMap::new();
                                 equations
                                     .iter()
                                     .map(|equation| {
-                                        // store equations' signals in the local context
-                                        equation.store_signals(
+                                        // store equations' idents in the local context
+                                        equation.store_idents(
                                             true,
-                                            &mut signals,
+                                            &mut idents,
                                             ctx.ctx0,
                                             ctx.errors,
                                         )
@@ -1154,28 +1154,28 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
 
                                 ctx.global();
 
-                                (signals, pattern, guard, statements)
+                                (idents, pattern, guard, statements)
                             };
 
                             // create the tuple expression
                             let expr = {
-                                // check defined signals are all the same
-                                if defined_signals.len() != signals.len() {
+                                // check defined idents are all the same
+                                if defined_idents.len() != idents.len() {
                                     bad!(ctx.errors, @loc => ErrorKind::incompatible_match(
-                                        defined_signals.len(), signals.len(),
+                                        defined_idents.len(), idents.len(),
                                     ))
                                 }
                                 let mut elements = res_vec!(
-                                    defined_signals.len(),
-                                    defined_signals.keys().map(|signal_name| {
-                                        if let Some(id) = signals.get(signal_name) {
+                                    defined_idents.len(),
+                                    defined_idents.keys().map(|ident_name| {
+                                        if let Some(id) = idents.get(ident_name) {
                                             Ok(stream::Expr::new(
-                                                signal_name.loc(),
+                                                ident_name.loc(),
                                                 stream::Kind::expr(ir1::expr::Kind::ident(*id)),
                                             ))
                                         } else {
                                             bad!(ctx.errors, @loc => ErrorKind::missing_match_stmt(
-                                                signal_name.to_string(),
+                                                ident_name.to_string(),
                                             ))
                                         }
                                     }),
@@ -1214,7 +1214,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
             ReactEq::WhenEq(WhenEq { init, arms, .. }) => {
                 // create the pattern defined by the equation
                 let def_eq_pat = {
-                    let mut elements: Vec<_> = defined_signals.into_values().collect();
+                    let mut elements: Vec<_> = defined_idents.into_values().collect();
                     if elements.len() == 1 {
                         elements.pop().unwrap()
                     } else {
@@ -1252,13 +1252,13 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                     (dflt_event_elems, events_indices)
                 };
 
-                // signals initial values
-                let (init_signals, init_stmts) =
+                // idents initial values
+                let (init_idents, init_stmts) =
                     if let Some(ir0::equation::InitArmWhen { equations, .. }) = init {
-                        let mut init_signals = Vec::new();
+                        let mut init_idents = Vec::new();
                         let mut init_stmts = Vec::new();
                         for ir0::equation::Instantiation { pattern, expr, .. } in equations {
-                            pattern.get_inits(&mut init_signals);
+                            pattern.get_inits(&mut init_idents);
                             expr.check_is_constant(ctx.ctx0, ctx.errors)?;
                             let ir1_pat = pattern.into_ir1(&mut ctx.add_loc(loc))?;
                             let ir1_expr = expr.into_ir1(&mut ctx.add_pat_loc(None, loc))?;
@@ -1268,7 +1268,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                                 loc,
                             });
                         }
-                        (init_signals, Some(init_stmts))
+                        (init_idents, Some(init_stmts))
                     } else {
                         (vec![], None)
                     };
@@ -1281,8 +1281,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                     // transform guard and equations into [ir1] with local context
                     let guard = None;
                     // create the tuple expression
-                    let expression =
-                        def_eq_pat.default_expr(&HashMap::new(), &init_signals, ctx)?;
+                    let expression = def_eq_pat.default_expr(&HashMap::new(), &init_idents, ctx)?;
 
                     (pattern, guard, vec![], expression)
                 };
@@ -1337,13 +1336,13 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                                 (matched, guard)
                             };
 
-                            // set and get local context: equations' signals
-                            let mut signals = HashMap::new();
+                            // set and get local context: equations' idents
+                            let mut idents = HashMap::new();
                             equations
                                 .iter()
                                 .map(|equation| {
-                                    // store equations' signals in the local context
-                                    equation.store_signals(true, &mut signals, ctx.ctx0, ctx.errors)
+                                    // store equations' idents in the local context
+                                    equation.store_idents(true, &mut idents, ctx.ctx0, ctx.errors)
                                 })
                                 .collect_res()?;
 
@@ -1356,8 +1355,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                             ctx.global();
 
                             // create the tuple expression
-                            let expression =
-                                def_eq_pat.default_expr(&signals, &init_signals, ctx)?;
+                            let expression = def_eq_pat.default_expr(&idents, &init_idents, ctx)?;
 
                             Ok((matched_pattern, guard, statements, expression))
                         },
@@ -1398,10 +1396,10 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                     }),
                 )))
             }
-            ReactEq::Init(init_signal) => {
-                init_signal.expr.check_is_constant(ctx.ctx0, ctx.errors)?;
-                let ir1_pat = init_signal.pattern.into_ir1(&mut ctx.add_loc(loc))?;
-                let ir1_expr = init_signal.expr.into_ir1(&mut ctx.add_pat_loc(None, loc))?;
+            ReactEq::Init(init_ident) => {
+                init_ident.expr.check_is_constant(ctx.ctx0, ctx.errors)?;
+                let ir1_pat = init_ident.pattern.into_ir1(&mut ctx.add_loc(loc))?;
+                let ir1_expr = init_ident.expr.into_ir1(&mut ctx.add_pat_loc(None, loc))?;
                 let init_stmt = stream::InitStmt {
                     pattern: ir1_pat,
                     expr: ir1_expr,
@@ -1771,7 +1769,7 @@ mod simple_expr_impl {
                 self.inputs.into_iter().map(|(input_name, typing)| {
                     let typing = typing.into_ir1(&mut ctx.remove_pat())?;
                     ctx.ctx0
-                        .insert_identifier(input_name, Some(typing), true, ctx.errors)
+                        .insert_local_ident(input_name, Some(typing), true, ctx.errors)
                 }),
             );
             let expr = self.expr.into_ir1(ctx)?;
@@ -1938,12 +1936,12 @@ mod expr_pattern_impl {
 }
 
 trait Helper: Sized {
-    fn get_inits(&self, init_signals: &mut Vec<Ident>);
+    fn get_inits(&self, init_idents: &mut Vec<Ident>);
 
     fn default_expr(
         &self,
-        defined_signals: &HashMap<Ident, usize>,
-        init_signals: &[Ident],
+        defined_idents: &HashMap<Ident, usize>,
+        init_idents: &[Ident],
         ctx: &mut ctx::Simple,
     ) -> TRes<ir1::stream::Expr>;
 }
@@ -1958,20 +1956,20 @@ mod stmt_pattern_impl {
     impl Helper for ir0::stmt::Pattern {
         fn default_expr(
             &self,
-            defined_signals: &HashMap<Ident, usize>,
-            init_signals: &[Ident],
+            defined_idents: &HashMap<Ident, usize>,
+            init_idents: &[Ident],
             ctx: &mut ctx::Simple,
         ) -> TRes<ir1::stream::Expr> {
             let kind = match self {
                 ir0::stmt::Pattern::Identifier(ident)
                 | ir0::stmt::Pattern::Typed(Typed { ident, .. }) => {
-                    if let Some(id) = defined_signals.get(ident) {
+                    if let Some(id) = defined_idents.get(ident) {
                         ir1::stream::Kind::expr(ir1::expr::Kind::ident(*id))
                     } else {
-                        let signal_id = ctx.ctx0.get_identifier_id(ident, false, ctx.errors)?;
-                        if init_signals.contains(ident) {
+                        let ident_id = ctx.ctx0.get_identifier_id(ident, false, ctx.errors)?;
+                        if init_idents.contains(ident) {
                             let init_id = ctx.ctx0.get_init_id(ident, false, ctx.errors)?;
-                            ir1::stream::Kind::last(init_id, signal_id)
+                            ir1::stream::Kind::last(init_id, ident_id)
                         } else {
                             let id = ctx.ctx0.get_identifier_id(ident, false, ctx.errors)?;
                             let ty = ctx.get_typ(id);
@@ -1989,8 +1987,8 @@ mod stmt_pattern_impl {
                     let elements = res_vec!(
                         elements.len(),
                         elements.iter().map(|pat| pat.default_expr(
-                            defined_signals,
-                            init_signals,
+                            defined_idents,
+                            init_idents,
                             ctx
                         )),
                     );
@@ -2000,19 +1998,19 @@ mod stmt_pattern_impl {
             Ok(stream::Expr::new(self.loc(), kind))
         }
 
-        fn get_inits(&self, init_signals: &mut Vec<Ident>) {
+        fn get_inits(&self, init_idents: &mut Vec<Ident>) {
             match self {
                 Self::Identifier(ident) => {
-                    init_signals.push(ident.clone());
+                    init_idents.push(ident.clone());
                 }
                 Self::Typed(typed) => {
-                    init_signals.push(typed.ident.clone());
+                    init_idents.push(typed.ident.clone());
                 }
                 ir0::stmt::Pattern::Tuple(ir0::stmt::Tuple {
                     elements: pat_elems,
                     ..
                 }) => {
-                    pat_elems.iter().for_each(|pat| pat.get_inits(init_signals));
+                    pat_elems.iter().for_each(|pat| pat.get_inits(init_idents));
                 }
             }
         }
@@ -2139,11 +2137,11 @@ mod stream_impl {
                 (dflt_event_elems, events_indices)
             };
 
-            // signals initial values
-            let (opt_init, init_signals) = if let Some(ir0::stream::InitArmWhen { expr, .. }) = init
+            // idents initial values
+            let (opt_init, init_idents) = if let Some(ir0::stream::InitArmWhen { expr, .. }) = init
             {
-                let mut init_signals = vec![];
-                def_eq_pat.get_inits(&mut init_signals);
+                let mut init_idents = vec![];
+                def_eq_pat.get_inits(&mut init_idents);
                 expr.check_is_constant(ctx.ctx0, ctx.errors)?;
                 let ir1_pat = def_eq_pat.clone().into_ir1(&mut ctx.remove_pat())?;
                 let ir1_expr = expr.into_ir1(ctx)?;
@@ -2152,7 +2150,7 @@ mod stream_impl {
                     expr: ir1_expr,
                     loc: ctx.loc,
                 };
-                (Some(init_stmt), init_signals)
+                (Some(init_stmt), init_idents)
             } else {
                 (None, vec![])
             };
@@ -2167,7 +2165,7 @@ mod stream_impl {
                 // create the tuple expression
                 let expression = def_eq_pat.default_expr(
                     &HashMap::new(),
-                    &init_signals,
+                    &init_idents,
                     &mut ctx.remove_pat_loc(),
                 )?;
 
@@ -2268,15 +2266,15 @@ mod stream_impl {
             use ir1::stream::Kind;
             let kind = match self {
                 stream::Expr::Application(app) => match *app.fun {
-                    stream::Expr::Identifier(node) if ctx.is_node(&node, false) => {
-                        let called_node_id = ctx.ctx0.get_node_id(&node, false, ctx.errors)?;
-                        let node_symbol = ctx
-                            .get_symbol(called_node_id)
+                    stream::Expr::Identifier(component) if ctx.is_comp(&component, false) => {
+                        let called_comp_id = ctx.ctx0.get_comp_id(&component, false, ctx.errors)?;
+                        let comp_symbol = ctx
+                            .get_symbol(called_comp_id)
                             .expect("internal error: there should be a symbol")
                             .clone();
-                        match node_symbol.kind() {
-                            SymbolKind::Node { inputs, .. } => {
-                                // check inputs and node_inputs have the same length
+                        match comp_symbol.kind() {
+                            SymbolKind::Component { inputs, .. } => {
+                                // check inputs and comp_inputs have the same length
                                 if inputs.len() != app.inputs.len() {
                                     bad!(ctx.errors, @ctx.loc => ErrorKind::arity_mismatch(
                                         app.inputs.len(), inputs.len()
@@ -2284,7 +2282,7 @@ mod stream_impl {
                                 }
 
                                 Kind::call(
-                                    called_node_id,
+                                    called_comp_id,
                                     res_vec!(
                                         app.inputs.len(),
                                         app.inputs
@@ -2295,9 +2293,9 @@ mod stream_impl {
                                 )
                             }
                             _ => {
-                                ctx.errors.push(error!(@node_symbol.name().span() =>
-                                    "fatal: symbol kind associated with node `{}` is not node-like",
-                                    node_symbol.name(),
+                                ctx.errors.push(error!(@comp_symbol.name().span() =>
+                                    "fatal: symbol kind associated with component `{}` is not component-like",
+                                    comp_symbol.name(),
                                 ));
                                 return Err(ErrorDetected);
                             }
@@ -2315,8 +2313,8 @@ mod stream_impl {
                 },
                 stream::Expr::Last(last) => {
                     let init_id = ctx.ctx0.get_init_id(&last.ident, false, ctx.errors)?;
-                    let signal_id = ctx.ctx0.get_ident(&last.ident, false, false, ctx.errors)?;
-                    Kind::last(init_id, signal_id)
+                    let ident_id = ctx.ctx0.get_ident(&last.ident, false, false, ctx.errors)?;
+                    Kind::last(init_id, ident_id)
                 }
                 stream::Expr::Emit(emit) => Kind::some_event(emit.expr.into_ir1(ctx)?),
                 stream::Expr::Constant(constant) => Kind::Expression {
