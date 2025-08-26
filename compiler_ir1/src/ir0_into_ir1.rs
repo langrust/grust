@@ -1241,6 +1241,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                             ctx.errors,
                         )?;
                         for _ in prev_idx..idx {
+                            // put default pattern for unlooked events
                             dflt_event_elems.push(Pattern::new(
                                 arm.pattern.loc(),
                                 pattern::Kind::default(arm.pattern.loc()),
@@ -1275,15 +1276,23 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
 
                 // default arm
                 let dflt_arm = {
+                    ctx.local();
+
                     // create tuple pattern
                     let elements = dflt_event_elems.clone();
                     let pattern = Pattern::new(loc, pattern::Kind::tuple(elements));
                     // transform guard and equations into [ir1] with local context
                     let guard = None;
+                    // give last value of the undefined identifiers
+                    let stmts = def_eq_pat
+                        .default_stmt(&HashMap::new(), &init_idents, ctx)?
+                        .collect_vec();
                     // create the tuple expression
-                    let expression = def_eq_pat.default_expr(&HashMap::new(), &init_idents, ctx)?;
+                    let expr = def_eq_pat.default_expr(&HashMap::new(), &init_idents, ctx)?;
 
-                    (pattern, guard, vec![], expression)
+                    ctx.global();
+
+                    (pattern, guard, stmts, expr)
                 };
 
                 // for each arm construct [ir1] pattern, guard and statements
@@ -1346,18 +1355,22 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                                 })
                                 .collect_res()?;
 
+                            // give last value of the undefined identifiers
+                            let dft_stmt = def_eq_pat.default_stmt(&idents, &init_idents, ctx);
+                            // create the tuple expression
+                            let dft_expr = def_eq_pat.default_expr(&idents, &init_idents, ctx)?;
+
                             // transform equations into [ir1] with local context
                             let statements = res_vec!(
                                 equations.len(),
-                                equations.into_iter().map(|equation| equation.into_ir1(ctx)),
+                                dft_stmt.transpose().into_iter().chain(
+                                    equations.into_iter().map(|equation| equation.into_ir1(ctx))
+                                ),
                             );
 
                             ctx.global();
 
-                            // create the tuple expression
-                            let expression = def_eq_pat.default_expr(&idents, &init_idents, ctx)?;
-
-                            Ok((matched_pattern, guard, statements, expression))
+                            Ok((matched_pattern, guard, statements, dft_expr))
                         },
                     ),
                 );
@@ -1938,6 +1951,13 @@ mod expr_pattern_impl {
 trait Helper: Sized {
     fn get_inits(&self, init_idents: &mut Vec<Ident>);
 
+    fn default_stmt(
+        &self,
+        defined_idents: &HashMap<Ident, usize>,
+        init_idents: &[Ident],
+        ctx: &mut ctx::Simple,
+    ) -> TRes<Option<ir1::stream::Stmt>>;
+
     fn default_expr(
         &self,
         defined_idents: &HashMap<Ident, usize>,
@@ -1954,6 +1974,56 @@ mod stmt_pattern_impl {
     }
 
     impl Helper for ir0::stmt::Pattern {
+        fn default_stmt(
+            &self,
+            defined_idents: &HashMap<Ident, usize>,
+            init_idents: &[Ident],
+            ctx: &mut ctx::Simple,
+        ) -> TRes<Option<ir1::stream::Stmt>> {
+            // construct pattern of defined idents + their default expression
+            let (mut pat_elems, mut expr_elems) = (vec![], vec![]);
+            for ident in init_idents
+                .iter()
+                .filter(|ident| defined_idents.get(ident).is_none())
+            {
+                // get the identifier assigned to the memory of the signal
+                let init_id = ctx.ctx0.get_init_id(ident, false, ctx.errors)?;
+                // get the identifier of the signal in the global context
+                let ident_id = ctx.ctx0.get_identifier_id(ident, false, ctx.errors)?;
+                // get its type and transform it into [ir1] types
+                let typ = ctx.ctx0.get_typ(ident_id).clone();
+                // insert local identifier to define the signal locally
+                let def_id =
+                    ctx.ctx0
+                        .insert_local_ident(ident.clone(), Some(typ), true, ctx.errors)?;
+                // construct pattern of defined idents + their default expression
+                let pat = ir1::stmt::Pattern::new(ident.loc(), ir1::stmt::Kind::ident(def_id));
+                let expr =
+                    ir1::stream::Expr::new(ident.loc(), ir1::stream::Kind::last(init_id, ident_id));
+                pat_elems.push(pat);
+                expr_elems.push(expr);
+            }
+            debug_assert_eq!(pat_elems.len(), expr_elems.len());
+            // construct the default statement from the default pattern and the expression
+            match pat_elems.len() {
+                0 => Ok(None),
+                1 => {
+                    let pattern = pat_elems.pop().unwrap();
+                    let expr = expr_elems.pop().unwrap();
+                    Ok(Some(stream::Stmt::new(pattern, expr, self.loc())))
+                }
+                _ => {
+                    let pattern =
+                        ir1::stmt::Pattern::new(self.loc(), ir1::stmt::Kind::tuple(pat_elems));
+                    let expr = ir1::stream::Expr::new(
+                        self.loc(),
+                        ir1::stream::Kind::expr(ir1::expr::Kind::tuple(expr_elems)),
+                    );
+                    Ok(Some(stream::Stmt::new(pattern, expr, self.loc())))
+                }
+            }
+        }
+
         fn default_expr(
             &self,
             defined_idents: &HashMap<Ident, usize>,
@@ -1966,12 +2036,10 @@ mod stmt_pattern_impl {
                     if let Some(id) = defined_idents.get(ident) {
                         ir1::stream::Kind::expr(ir1::expr::Kind::ident(*id))
                     } else {
-                        let ident_id = ctx.ctx0.get_identifier_id(ident, false, ctx.errors)?;
+                        let id = ctx.ctx0.get_identifier_id(ident, false, ctx.errors)?;
                         if init_idents.contains(ident) {
-                            let init_id = ctx.ctx0.get_init_id(ident, false, ctx.errors)?;
-                            ir1::stream::Kind::last(init_id, ident_id)
+                            ir1::stream::Kind::expr(ir1::expr::Kind::ident(id))
                         } else {
-                            let id = ctx.ctx0.get_identifier_id(ident, false, ctx.errors)?;
                             let ty = ctx.get_typ(id);
                             if ty.is_event() {
                                 ir1::stream::Kind::none_event()
@@ -2127,6 +2195,7 @@ mod stream_impl {
                         ctx.errors,
                     )?;
                     for _ in prev_idx..idx {
+                        // put default pattern for unlooked events
                         dflt_event_elems.push(Pattern::new(
                             arm.pattern.loc(),
                             pattern::Kind::default(arm.pattern.loc()),
@@ -2157,19 +2226,24 @@ mod stream_impl {
 
             // default arm
             let dflt_arm = {
+                ctx.local();
+
                 // create tuple pattern
                 let elements = dflt_event_elems.clone();
                 let pattern = Pattern::new(self.when_token.span, pattern::Kind::tuple(elements));
                 // transform guard and equations into [ir1] with local context
                 let guard = None;
+                // give last value of the undefined identifiers
+                let ctx = &mut ctx.remove_pat_loc();
+                let stmts = def_eq_pat
+                    .default_stmt(&HashMap::new(), &init_idents, ctx)?
+                    .collect_vec();
                 // create the tuple expression
-                let expression = def_eq_pat.default_expr(
-                    &HashMap::new(),
-                    &init_idents,
-                    &mut ctx.remove_pat_loc(),
-                )?;
+                let expr = def_eq_pat.default_expr(&HashMap::new(), &init_idents, ctx)?;
 
-                (pattern, guard, vec![], expression)
+                ctx.global();
+
+                (pattern, guard, stmts, expr)
             };
 
             // for each arm construct [ir1] pattern, guard and statements

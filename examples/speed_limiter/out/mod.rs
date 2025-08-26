@@ -116,7 +116,10 @@ impl grust::core::Component for ProcessSetSpeedState {
         let prev_v_set = self.last_v_set;
         let v_set = match (input.set_speed) {
             (Some(v)) => threshold_set_speed(v),
-            (_) => self.last_v_set,
+            (_) => {
+                let v_set = self.last_v_set;
+                v_set
+            }
         };
         let v_update = prev_v_set != v_set;
         self.last_v_set = v_set;
@@ -155,7 +158,10 @@ impl grust::core::Component for SpeedLimiterOnState {
                 Kickdown::Activated
             }
             (Some(Kickdown::Deactivated)) => Kickdown::Deactivated,
-            (_) => self.last_kickdown_state,
+            (_) => {
+                let kickdown_state = self.last_kickdown_state;
+                kickdown_state
+            }
         };
         let (hysterisis, on_state) = match input.prev_on_state {
             _ if kickdown_state == Kickdown::Activated => {
@@ -244,7 +250,10 @@ impl grust::core::Component for SpeedLimiterState {
             (_, Some(f)) if (f == Failure::Recovered) && (prev_state == SpeedLimiter::Fail) => {
                 SpeedLimiter::On
             }
-            (_, _) => self.last_state,
+            (_, _) => {
+                let state = self.last_state;
+                state
+            }
         };
         let (state_update, on_state, in_regulation) = match prev_state {
             SpeedLimiter::On => {
@@ -519,16 +528,16 @@ pub mod runtime {
                 }
             }
             #[derive(Clone, Copy, PartialEq, Default, Debug)]
-            pub struct X(f64, bool);
-            impl X {
-                pub fn set(&mut self, x: f64) {
-                    self.1 = self.0 != x;
-                    self.0 = x;
+            pub struct VacuumBrake(super::VacuumBrakeState, bool);
+            impl VacuumBrake {
+                pub fn set(&mut self, vacuum_brake: super::VacuumBrakeState) {
+                    self.1 = self.0 != vacuum_brake;
+                    self.0 = vacuum_brake;
                 }
-                pub fn get(&self) -> f64 {
+                pub fn get(&self) -> super::VacuumBrakeState {
                     self.0
                 }
-                pub fn take(&mut self) -> f64 {
+                pub fn take(&mut self) -> super::VacuumBrakeState {
                     std::mem::take(&mut self.0)
                 }
                 pub fn is_new(&self) -> bool {
@@ -579,16 +588,16 @@ pub mod runtime {
                 }
             }
             #[derive(Clone, Copy, PartialEq, Default, Debug)]
-            pub struct VUpdate(bool, bool);
-            impl VUpdate {
-                pub fn set(&mut self, v_update: bool) {
-                    self.1 = self.0 != v_update;
-                    self.0 = v_update;
+            pub struct X(f64, bool);
+            impl X {
+                pub fn set(&mut self, x: f64) {
+                    self.1 = self.0 != x;
+                    self.0 = x;
                 }
-                pub fn get(&self) -> bool {
+                pub fn get(&self) -> f64 {
                     self.0
                 }
-                pub fn take(&mut self) -> bool {
+                pub fn take(&mut self) -> f64 {
                     std::mem::take(&mut self.0)
                 }
                 pub fn is_new(&self) -> bool {
@@ -599,16 +608,16 @@ pub mod runtime {
                 }
             }
             #[derive(Clone, Copy, PartialEq, Default, Debug)]
-            pub struct VacuumBrake(super::VacuumBrakeState, bool);
-            impl VacuumBrake {
-                pub fn set(&mut self, vacuum_brake: super::VacuumBrakeState) {
-                    self.1 = self.0 != vacuum_brake;
-                    self.0 = vacuum_brake;
+            pub struct VUpdate(bool, bool);
+            impl VUpdate {
+                pub fn set(&mut self, v_update: bool) {
+                    self.1 = self.0 != v_update;
+                    self.0 = v_update;
                 }
-                pub fn get(&self) -> super::VacuumBrakeState {
+                pub fn get(&self) -> bool {
                     self.0
                 }
-                pub fn take(&mut self) -> super::VacuumBrakeState {
+                pub fn take(&mut self) -> bool {
                     std::mem::take(&mut self.0)
                 }
                 pub fn is_new(&self) -> bool {
@@ -699,26 +708,6 @@ pub mod runtime {
                 }
             }
             #[derive(Clone, Copy, PartialEq, Default, Debug)]
-            pub struct Speed(f64, bool);
-            impl Speed {
-                pub fn set(&mut self, speed: f64) {
-                    self.1 = self.0 != speed;
-                    self.0 = speed;
-                }
-                pub fn get(&self) -> f64 {
-                    self.0
-                }
-                pub fn take(&mut self) -> f64 {
-                    std::mem::take(&mut self.0)
-                }
-                pub fn is_new(&self) -> bool {
-                    self.1
-                }
-                pub fn reset(&mut self) {
-                    self.1 = false;
-                }
-            }
-            #[derive(Clone, Copy, PartialEq, Default, Debug)]
             pub struct InRegulationAux(bool, bool);
             impl InRegulationAux {
                 pub fn set(&mut self, in_regulation_aux: bool) {
@@ -738,6 +727,26 @@ pub mod runtime {
                     self.1 = false;
                 }
             }
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct Speed(f64, bool);
+            impl Speed {
+                pub fn set(&mut self, speed: f64) {
+                    self.1 = self.0 != speed;
+                    self.0 = speed;
+                }
+                pub fn get(&self) -> f64 {
+                    self.0
+                }
+                pub fn take(&mut self) -> f64 {
+                    std::mem::take(&mut self.0)
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
+            }
         }
         #[derive(Clone, Copy, PartialEq, Default, Debug)]
         pub struct Context {
@@ -745,17 +754,17 @@ pub mod runtime {
             pub v_set_aux: ctx_ty::VSetAux,
             pub v_set: ctx_ty::VSet,
             pub in_regulation_old: ctx_ty::InRegulationOld,
-            pub x: ctx_ty::X,
+            pub vacuum_brake: ctx_ty::VacuumBrake,
             pub on_state: ctx_ty::OnState,
             pub state: ctx_ty::State,
+            pub x: ctx_ty::X,
             pub v_update: ctx_ty::VUpdate,
-            pub vacuum_brake: ctx_ty::VacuumBrake,
             pub state_update: ctx_ty::StateUpdate,
             pub vdc: ctx_ty::Vdc,
             pub set_speed: ctx_ty::SetSpeed,
             pub sl_state: ctx_ty::SlState,
-            pub speed: ctx_ty::Speed,
             pub in_regulation_aux: ctx_ty::InRegulationAux,
+            pub speed: ctx_ty::Speed,
         }
         impl Context {
             fn init() -> Context {
@@ -766,17 +775,17 @@ pub mod runtime {
                 self.v_set_aux.reset();
                 self.v_set.reset();
                 self.in_regulation_old.reset();
-                self.x.reset();
+                self.vacuum_brake.reset();
                 self.on_state.reset();
                 self.state.reset();
+                self.x.reset();
                 self.v_update.reset();
-                self.vacuum_brake.reset();
                 self.state_update.reset();
                 self.vdc.reset();
                 self.set_speed.reset();
                 self.sl_state.reset();
-                self.speed.reset();
                 self.in_regulation_aux.reset();
+                self.speed.reset();
             }
         }
         #[derive(Default)]

@@ -36,14 +36,21 @@ impl grust::core::Component for MultipleEventsState {
             }
             (_, Some(b)) => {
                 let z = if input.v > 50i64 { 3i64 } else { 4i64 };
-                (self.last_a_bis, z)
+                let a_bis = self.last_a_bis;
+                (a_bis, z)
             }
-            (_, _) => (self.last_a_bis, self.last_z),
+            (_, _) => {
+                let (z, a_bis) = (self.last_z, self.last_a_bis);
+                (a_bis, z)
+            }
         };
         let c = z;
         let d = match (input.a, input.b) {
             (Some(a), Some(b)) => (10i64 * a) + b,
-            (_, _) => self.last_d,
+            (_, _) => {
+                let d = self.last_d;
+                d
+            }
         };
         self.last_a_bis = a_bis;
         self.last_d = d;

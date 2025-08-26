@@ -26,7 +26,10 @@ impl grust::core::Component for C1State {
                 let s2 = e0;
                 (s2, None)
             }
-            (_) => (self.last_s2, None),
+            (_) => {
+                let s2 = self.last_s2;
+                (s2, None)
+            }
         };
         self.last_s2 = s2;
         C1Output { s2, e1 }
@@ -59,7 +62,10 @@ impl grust::core::Component for C2State {
                 let s3 = e1;
                 (s3, None)
             }
-            (_) => (self.last_s3, None),
+            (_) => {
+                let s3 = self.last_s3;
+                (s3, None)
+            }
         };
         self.last_s3 = s3;
         C2Output { s3, e3 }
@@ -108,7 +114,10 @@ impl grust::core::Component for C4State {
     fn step(&mut self, input: C4Input) -> C4Output {
         let s4 = match (input.e2) {
             (Some(e2)) => e2,
-            (_) => self.last_s4,
+            (_) => {
+                let s4 = self.last_s4;
+                s4
+            }
         };
         self.last_s4 = s4;
         C4Output { s4 }
@@ -144,7 +153,10 @@ impl grust::core::Component for C5State {
             (Some(e3)) => e3,
             (_) if x && !(self.last_x) => input.s4 * 2i64,
             (_) if x_1 && !(self.last_x_1) => input.s3,
-            (_) => self.last_o,
+            (_) => {
+                let o = self.last_o;
+                o
+            }
         };
         self.last_o = o;
         self.last_x = x;
@@ -257,10 +269,10 @@ pub mod runtime {
                 .await?;
             while let Some(input) = input.next().await {
                 match input {
-                    I::E0(e0, _grust_reserved_instant) => {
+                    I::Timer(T::DelayParaMess, _grust_reserved_instant) => {
                         runtime
                             .para_mess
-                            .handle_e0(_grust_reserved_instant, e0)
+                            .handle_delay_para_mess(_grust_reserved_instant)
                             .await?;
                     }
                     I::Timer(T::TimeoutParaMess, _grust_reserved_instant) => {
@@ -269,10 +281,10 @@ pub mod runtime {
                             .handle_timeout_para_mess(_grust_reserved_instant)
                             .await?;
                     }
-                    I::Timer(T::DelayParaMess, _grust_reserved_instant) => {
+                    I::E0(e0, _grust_reserved_instant) => {
                         runtime
                             .para_mess
-                            .handle_delay_para_mess(_grust_reserved_instant)
+                            .handle_e0(_grust_reserved_instant, e0)
                             .await?;
                     }
                 }
@@ -345,26 +357,6 @@ pub mod runtime {
                 }
             }
             #[derive(Clone, Copy, PartialEq, Default, Debug)]
-            pub struct E1(i64, bool);
-            impl E1 {
-                pub fn set(&mut self, e1: i64) {
-                    self.1 = self.0 != e1;
-                    self.0 = e1;
-                }
-                pub fn get(&self) -> i64 {
-                    self.0
-                }
-                pub fn take(&mut self) -> i64 {
-                    std::mem::take(&mut self.0)
-                }
-                pub fn is_new(&self) -> bool {
-                    self.1
-                }
-                pub fn reset(&mut self) {
-                    self.1 = false;
-                }
-            }
-            #[derive(Clone, Copy, PartialEq, Default, Debug)]
             pub struct E3(i64, bool);
             impl E3 {
                 pub fn set(&mut self, e3: i64) {
@@ -405,6 +397,26 @@ pub mod runtime {
                 }
             }
             #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct E1(i64, bool);
+            impl E1 {
+                pub fn set(&mut self, e1: i64) {
+                    self.1 = self.0 != e1;
+                    self.0 = e1;
+                }
+                pub fn get(&self) -> i64 {
+                    self.0
+                }
+                pub fn take(&mut self) -> i64 {
+                    std::mem::take(&mut self.0)
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
+            }
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
             pub struct O1(i64, bool);
             impl O1 {
                 pub fn set(&mut self, o1: i64) {
@@ -430,9 +442,9 @@ pub mod runtime {
             pub s2: ctx_ty::S2,
             pub s4: ctx_ty::S4,
             pub s3: ctx_ty::S3,
-            pub e1: ctx_ty::E1,
             pub e3: ctx_ty::E3,
             pub e2: ctx_ty::E2,
+            pub e1: ctx_ty::E1,
             pub o1: ctx_ty::O1,
         }
         impl Context {
@@ -443,9 +455,9 @@ pub mod runtime {
                 self.s2.reset();
                 self.s4.reset();
                 self.s3.reset();
-                self.e1.reset();
                 self.e3.reset();
                 self.e2.reset();
+                self.e1.reset();
                 self.o1.reset();
             }
         }
@@ -463,11 +475,11 @@ pub mod runtime {
             context: Context,
             delayed: bool,
             input_store: ParaMessServiceStore,
-            c_5: C5State,
-            c_2: C2State,
             c_3: C3State,
             c_4: C4State,
             c_1: C1State,
+            c_5: C5State,
+            c_2: C2State,
             output: grust::futures::channel::mpsc::Sender<O>,
             timer: grust::futures::channel::mpsc::Sender<(T, std::time::Instant)>,
         }
@@ -479,21 +491,21 @@ pub mod runtime {
                 let context = Context::init();
                 let delayed = true;
                 let input_store = Default::default();
-                let c_5 = <C5State as grust::core::Component>::init();
-                let c_2 = <C2State as grust::core::Component>::init();
                 let c_3 = <C3State as grust::core::Component>::init();
                 let c_4 = <C4State as grust::core::Component>::init();
                 let c_1 = <C1State as grust::core::Component>::init();
+                let c_5 = <C5State as grust::core::Component>::init();
+                let c_2 = <C2State as grust::core::Component>::init();
                 ParaMessService {
                     begin: std::time::Instant::now(),
                     context,
                     delayed,
                     input_store,
-                    c_5,
-                    c_2,
                     c_3,
                     c_4,
                     c_1,
+                    c_5,
+                    c_2,
                     output,
                     timer,
                 }
@@ -509,6 +521,105 @@ pub mod runtime {
                     _grust_reserved_instant,
                 )
                 .await?;
+                Ok(())
+            }
+            pub async fn handle_timeout_para_mess(
+                &mut self,
+                _timeout_para_mess_instant: std::time::Instant,
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
+                self.reset_time_constraints(_timeout_para_mess_instant)
+                    .await?;
+                self.context.reset();
+                self.send_output(
+                    O::O1(self.context.o1.get(), _timeout_para_mess_instant),
+                    _timeout_para_mess_instant,
+                )
+                .await?;
+                Ok(())
+            }
+            #[inline]
+            pub async fn reset_service_timeout(
+                &mut self,
+                _timeout_para_mess_instant: std::time::Instant,
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
+                self.timer
+                    .send((T::TimeoutParaMess, _timeout_para_mess_instant))
+                    .await?;
+                Ok(())
+            }
+            pub async fn handle_e0(
+                &mut self,
+                _e0_instant: std::time::Instant,
+                e0: i64,
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
+                if self.delayed {
+                    self.reset_time_constraints(_e0_instant).await?;
+                    self.context.reset();
+                    let e0_ref = &mut None;
+                    let e3_ref = &mut None;
+                    let e1_ref = &mut None;
+                    let e2_ref = &mut None;
+                    *e0_ref = Some(e0);
+                    if e0_ref.is_some() {
+                        let C1Output { s2: s2, e1: e1 } = <C1State as grust::core::Component>::step(
+                            &mut self.c_1,
+                            C1Input { e0: *e0_ref },
+                        );
+                        self.context.s2.set(s2);
+                        *e1_ref = e1;
+                    }
+                    grust::tokio::join!(
+                        async {
+                            if e1_ref.is_some() {
+                                let C2Output { s3: s3, e3: e3 } =
+                                    <C2State as grust::core::Component>::step(
+                                        &mut self.c_2,
+                                        C2Input { e1: *e1_ref },
+                                    );
+                                self.context.s3.set(s3);
+                                *e3_ref = e3;
+                            }
+                        },
+                        async {
+                            if self.context.s2.is_new() {
+                                let C3Output { e2: e2 } = <C3State as grust::core::Component>::step(
+                                    &mut self.c_3,
+                                    C3Input {
+                                        s2: self.context.s2.get(),
+                                    },
+                                );
+                                *e2_ref = e2;
+                            }
+                            if e2_ref.is_some() {
+                                let C4Output { s4: s4 } = <C4State as grust::core::Component>::step(
+                                    &mut self.c_4,
+                                    C4Input { e2: *e2_ref },
+                                );
+                                self.context.s4.set(s4);
+                            }
+                        }
+                    );
+                    if e3_ref.is_some() || self.context.s4.is_new() || self.context.s3.is_new() {
+                        let C5Output { o: o1 } = <C5State as grust::core::Component>::step(
+                            &mut self.c_5,
+                            C5Input {
+                                s4: self.context.s4.get(),
+                                s3: self.context.s3.get(),
+                                e3: *e3_ref,
+                            },
+                        );
+                        self.context.o1.set(o1);
+                    }
+                    if self.context.o1.is_new() {
+                        self.send_output(O::O1(self.context.o1.get(), _e0_instant), _e0_instant)
+                            .await?;
+                    }
+                } else {
+                    let unique = self.input_store.e0.replace((e0, _e0_instant));
+                    assert!
+                    (unique.is_none(),
+                    "flow `e0` changes twice within one minimal delay of the service, consider reducing this delay");
+                }
                 Ok(())
             }
             pub async fn handle_delay_para_mess(
@@ -595,105 +706,6 @@ pub mod runtime {
                     .send((T::DelayParaMess, _grust_reserved_instant))
                     .await?;
                 self.delayed = false;
-                Ok(())
-            }
-            pub async fn handle_e0(
-                &mut self,
-                _e0_instant: std::time::Instant,
-                e0: i64,
-            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
-                if self.delayed {
-                    self.reset_time_constraints(_e0_instant).await?;
-                    self.context.reset();
-                    let e0_ref = &mut None;
-                    let e3_ref = &mut None;
-                    let e1_ref = &mut None;
-                    let e2_ref = &mut None;
-                    *e0_ref = Some(e0);
-                    if e0_ref.is_some() {
-                        let C1Output { s2: s2, e1: e1 } = <C1State as grust::core::Component>::step(
-                            &mut self.c_1,
-                            C1Input { e0: *e0_ref },
-                        );
-                        self.context.s2.set(s2);
-                        *e1_ref = e1;
-                    }
-                    grust::tokio::join!(
-                        async {
-                            if e1_ref.is_some() {
-                                let C2Output { s3: s3, e3: e3 } =
-                                    <C2State as grust::core::Component>::step(
-                                        &mut self.c_2,
-                                        C2Input { e1: *e1_ref },
-                                    );
-                                self.context.s3.set(s3);
-                                *e3_ref = e3;
-                            }
-                        },
-                        async {
-                            if self.context.s2.is_new() {
-                                let C3Output { e2: e2 } = <C3State as grust::core::Component>::step(
-                                    &mut self.c_3,
-                                    C3Input {
-                                        s2: self.context.s2.get(),
-                                    },
-                                );
-                                *e2_ref = e2;
-                            }
-                            if e2_ref.is_some() {
-                                let C4Output { s4: s4 } = <C4State as grust::core::Component>::step(
-                                    &mut self.c_4,
-                                    C4Input { e2: *e2_ref },
-                                );
-                                self.context.s4.set(s4);
-                            }
-                        }
-                    );
-                    if e3_ref.is_some() || self.context.s4.is_new() || self.context.s3.is_new() {
-                        let C5Output { o: o1 } = <C5State as grust::core::Component>::step(
-                            &mut self.c_5,
-                            C5Input {
-                                s4: self.context.s4.get(),
-                                s3: self.context.s3.get(),
-                                e3: *e3_ref,
-                            },
-                        );
-                        self.context.o1.set(o1);
-                    }
-                    if self.context.o1.is_new() {
-                        self.send_output(O::O1(self.context.o1.get(), _e0_instant), _e0_instant)
-                            .await?;
-                    }
-                } else {
-                    let unique = self.input_store.e0.replace((e0, _e0_instant));
-                    assert!
-                    (unique.is_none(),
-                    "flow `e0` changes twice within one minimal delay of the service, consider reducing this delay");
-                }
-                Ok(())
-            }
-            pub async fn handle_timeout_para_mess(
-                &mut self,
-                _timeout_para_mess_instant: std::time::Instant,
-            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
-                self.reset_time_constraints(_timeout_para_mess_instant)
-                    .await?;
-                self.context.reset();
-                self.send_output(
-                    O::O1(self.context.o1.get(), _timeout_para_mess_instant),
-                    _timeout_para_mess_instant,
-                )
-                .await?;
-                Ok(())
-            }
-            #[inline]
-            pub async fn reset_service_timeout(
-                &mut self,
-                _timeout_para_mess_instant: std::time::Instant,
-            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
-                self.timer
-                    .send((T::TimeoutParaMess, _timeout_para_mess_instant))
-                    .await?;
                 Ok(())
             }
             #[inline]
