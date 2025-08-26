@@ -27,23 +27,23 @@ impl grust::core::Component for MatchOkState {
         MatchOkOutput { sampled }
     }
 }
-pub struct WhenBadInput {
+pub struct WhenNowOkInput {
     pub input: Option<i64>,
     pub ck: Option<f64>,
 }
-pub struct WhenBadOutput {
+pub struct WhenNowOkOutput {
     pub sampled: Option<i64>,
 }
-pub struct WhenBadState {
+pub struct WhenNowOkState {
     last_mem: i64,
 }
-impl grust::core::Component for WhenBadState {
-    type Input = WhenBadInput;
-    type Output = WhenBadOutput;
-    fn init() -> WhenBadState {
-        WhenBadState { last_mem: 0i64 }
+impl grust::core::Component for WhenNowOkState {
+    type Input = WhenNowOkInput;
+    type Output = WhenNowOkOutput;
+    fn init() -> WhenNowOkState {
+        WhenNowOkState { last_mem: 0i64 }
     }
-    fn step(&mut self, input: WhenBadInput) -> WhenBadOutput {
+    fn step(&mut self, input: WhenNowOkInput) -> WhenNowOkOutput {
         let (sampled, mem) = match (input.input, input.ck) {
             (Some(input), _) => {
                 let mem = input;
@@ -60,7 +60,7 @@ impl grust::core::Component for WhenBadState {
             }
         };
         self.last_mem = mem;
-        WhenBadOutput { sampled }
+        WhenNowOkOutput { sampled }
     }
 }
 pub struct WhenOkInput {
