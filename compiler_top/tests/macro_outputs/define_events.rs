@@ -26,14 +26,18 @@ impl grust::core::Component for DefineEventsState {
             }
             (Some(_), _) => {
                 let x = Some(2i64);
-                (self.last_z, None, x)
-            }
-            (_, Some(_)) => {
-                let z = if input.v > 50i64 { 3i64 } else { 4i64 };
-                let x = Some(2i64);
+                let z = self.last_z;
                 (z, None, x)
             }
-            (_, _) => (self.last_z, None, None),
+            (_, Some(_)) => {
+                let x = Some(2i64);
+                let z = if input.v > 50i64 { 3i64 } else { 4i64 };
+                (z, None, x)
+            }
+            (_, _) => {
+                let z = self.last_z;
+                (z, None, None)
+            }
         };
         let c = z;
         let d = match (y) {

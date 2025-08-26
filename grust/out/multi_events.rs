@@ -45,14 +45,20 @@ impl grust::core::Component for MultipleEventsState {
                 (aux2, z, aux3, aux1)
             }
             (Some(a), _, _) if a > 0i64 => {
+                let (aux1, aux2, aux3) = (self.last_aux1, self.last_aux2, self.last_aux3);
                 let z = a;
-                (self.last_aux2, z, self.last_aux3, self.last_aux1)
+                (aux2, z, aux3, aux1)
             }
             (_, Some(b), Some(y)) => {
+                let (aux1, aux2, aux3) = (self.last_aux1, self.last_aux2, self.last_aux3);
                 let z = b;
-                (self.last_aux2, z, self.last_aux3, self.last_aux1)
+                (aux2, z, aux3, aux1)
             }
-            (_, _, _) => (self.last_aux2, self.last_z, self.last_aux3, self.last_aux1),
+            (_, _, _) => {
+                let (aux1, aux2, aux3, z) =
+                    (self.last_aux1, self.last_aux2, self.last_aux3, self.last_z);
+                (aux2, z, aux3, aux1)
+            }
         };
         self.last_aux1 = aux1;
         self.last_aux2 = aux2;
@@ -102,12 +108,18 @@ impl grust::core::Component for DefineEventsState {
                 let z = if input.v > 50i64 { 3i64 } else { 4i64 };
                 (z, None, x)
             }
-            (_, _) => (self.last_z, None, None),
+            (_, _) => {
+                let z = self.last_z;
+                (z, None, None)
+            }
         };
         let c = z;
         let d = match (y) {
             (Some(a)) => 0.1f64,
-            (_) => self.last_d,
+            (_) => {
+                let d = self.last_d;
+                d
+            }
         };
         self.last_d = d;
         self.last_z = z;
@@ -156,7 +168,10 @@ impl grust::core::Component for FinalTestState {
                 let z = if input.v > 50i64 { 3i64 } else { 4i64 };
                 (z, None, x)
             }
-            (_, _) => (self.last_z, None, None),
+            (_, _) => {
+                let z = self.last_z;
+                (z, None, None)
+            }
         };
         let t = match (input.a) {
             (Some(a)) => Some(a + z),
@@ -169,7 +184,10 @@ impl grust::core::Component for FinalTestState {
         };
         let u = match (y, w) {
             (Some(y), Some(w)) => w + 3i64,
-            (_, _) => self.last_u,
+            (_, _) => {
+                let u = self.last_u;
+                u
+            }
         };
         self.last_test = test;
         self.last_u = u;

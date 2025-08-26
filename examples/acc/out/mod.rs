@@ -67,15 +67,20 @@ impl grust::core::Component for ActivateState {
     fn step(&mut self, input: ActivateInput) -> ActivateOutput {
         let (active, d, approach) = match (input.act, input.r) {
             (Some(act), _) => {
+                let (d, approach) = (self.last_d, self.last_approach);
                 let active = act == Activation::On;
-                (active, self.last_d, self.last_approach)
+                (active, d, approach)
             }
             (_, Some(r)) => {
+                let active = self.last_active;
                 let d = r;
                 let approach = d < self.last_d;
-                (self.last_active, d, approach)
+                (active, d, approach)
             }
-            (_, _) => (self.last_active, self.last_d, self.last_approach),
+            (_, _) => {
+                let (d, active, approach) = (self.last_d, self.last_active, self.last_approach);
+                (active, d, approach)
+            }
         };
         let c = active && approach;
         self.last_active = active;

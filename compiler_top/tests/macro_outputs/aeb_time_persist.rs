@@ -47,7 +47,10 @@ impl grust::core::Component for DeriveState {
         let x = dt > 10.0f64;
         let a = match () {
             () if x && !(self.last_x) => (v - self.last_v) / dt,
-            () => self.last_a,
+            () => {
+                let a = self.last_a;
+                a
+            }
         };
         let a_km_h = 3.6f64 * a;
         self.last_a = a;
@@ -87,7 +90,10 @@ impl grust::core::Component for BrakingStateState {
                 let state = Braking::NoBrake;
                 state
             }
-            (_, _) => self.last_state,
+            (_, _) => {
+                let state = self.last_state;
+                state
+            }
         };
         self.last_state = state;
         BrakingStateOutput { state }
@@ -351,15 +357,15 @@ pub mod runtime {
         pub struct AebServiceStore {
             speed_km_h: Option<(f64, std::time::Instant)>,
             pedestrian_l: Option<(f64, std::time::Instant)>,
-            timeout_timeout_pedest: Option<((), std::time::Instant)>,
             pedestrian_r: Option<(f64, std::time::Instant)>,
+            timeout_timeout_pedest: Option<((), std::time::Instant)>,
         }
         impl AebServiceStore {
             pub fn not_empty(&self) -> bool {
                 self.speed_km_h.is_some()
                     || self.pedestrian_l.is_some()
-                    || self.timeout_timeout_pedest.is_some()
                     || self.pedestrian_r.is_some()
+                    || self.timeout_timeout_pedest.is_some()
             }
         }
         pub struct AebService {
@@ -367,8 +373,8 @@ pub mod runtime {
             context: Context,
             delayed: bool,
             input_store: AebServiceStore,
-            derive: DeriveState,
             braking_state: BrakingStateState,
+            derive: DeriveState,
             output: grust::futures::channel::mpsc::Sender<O>,
             timer: grust::futures::channel::mpsc::Sender<(T, std::time::Instant)>,
         }
@@ -380,15 +386,15 @@ pub mod runtime {
                 let context = Context::init();
                 let delayed = true;
                 let input_store = Default::default();
-                let derive = <DeriveState as grust::core::Component>::init();
                 let braking_state = <BrakingStateState as grust::core::Component>::init();
+                let derive = <DeriveState as grust::core::Component>::init();
                 AebService {
                     begin: std::time::Instant::now(),
                     context,
                     delayed,
                     input_store,
-                    derive,
                     braking_state,
+                    derive,
                     output,
                     timer,
                 }
@@ -486,6 +492,55 @@ pub mod runtime {
                 }
                 Ok(())
             }
+            pub async fn handle_timeout_aeb(
+                &mut self,
+                _timeout_aeb_instant: std::time::Instant,
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
+                self.reset_time_constraints(_timeout_aeb_instant).await?;
+                self.context.reset();
+                let x = (_timeout_aeb_instant.duration_since(self.begin).as_millis()) as f64;
+                self.context.x.set(x);
+                if self.context.speed_km_h_bis.is_new() || self.context.x.is_new() {
+                    let DeriveOutput { a_km_h: acc_km_h } =
+                        <DeriveState as grust::core::Component>::step(
+                            &mut self.derive,
+                            DeriveInput {
+                                v_km_h: self.context.speed_km_h_bis.get(),
+                                t: x,
+                            },
+                        );
+                    self.context.acc_km_h.set(acc_km_h);
+                }
+                if self.context.speed_km_h_bis.is_new() || self.context.acc_km_h.is_new() {
+                    let BrakingStateOutput { state: brakes } =
+                        <BrakingStateState as grust::core::Component>::step(
+                            &mut self.braking_state,
+                            BrakingStateInput {
+                                pedest: None,
+                                timeout_pedest: None,
+                                speed: self.context.speed_km_h_bis.get(),
+                                acc: self.context.acc_km_h.get(),
+                            },
+                        );
+                    self.context.brakes.set(brakes);
+                }
+                self.send_output(
+                    O::Brakes(self.context.brakes.get(), _timeout_aeb_instant),
+                    _timeout_aeb_instant,
+                )
+                .await?;
+                Ok(())
+            }
+            #[inline]
+            pub async fn reset_service_timeout(
+                &mut self,
+                _timeout_aeb_instant: std::time::Instant,
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
+                self.timer
+                    .send((T::TimeoutAeb, _timeout_aeb_instant))
+                    .await?;
+                Ok(())
+            }
             pub async fn handle_pedestrian_l(
                 &mut self,
                 _pedestrian_l_instant: std::time::Instant,
@@ -494,8 +549,8 @@ pub mod runtime {
                 if self.delayed {
                     self.reset_time_constraints(_pedestrian_l_instant).await?;
                     self.context.reset();
-                    let pedestrian_ref = &mut None;
                     let pedestrian_l_ref = &mut None;
+                    let pedestrian_ref = &mut None;
                     *pedestrian_l_ref = Some(pedestrian_l);
                     if pedestrian_l_ref.is_some() {
                         *pedestrian_ref = *pedestrian_l_ref;
@@ -546,65 +601,6 @@ pub mod runtime {
                         .pedestrian_l
                         .replace((pedestrian_l, _pedestrian_l_instant));
                     assert ! (unique . is_none () , "flow `pedestrian_l` changes twice within one minimal delay of the service, consider reducing this delay");
-                }
-                Ok(())
-            }
-            pub async fn handle_timeout_timeout_pedest(
-                &mut self,
-                _timeout_timeout_pedest_instant: std::time::Instant,
-            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
-                if self.delayed {
-                    self.reset_time_constraints(_timeout_timeout_pedest_instant)
-                        .await?;
-                    self.context.reset();
-                    let timeout_pedest_ref = &mut None;
-                    *timeout_pedest_ref = Some(());
-                    self.send_timer(T::TimeoutTimeoutPedest, _timeout_timeout_pedest_instant)
-                        .await?;
-                    let x = (_timeout_timeout_pedest_instant
-                        .duration_since(self.begin)
-                        .as_millis()) as f64;
-                    self.context.x.set(x);
-                    if self.context.speed_km_h_bis.is_new() || self.context.x.is_new() {
-                        let DeriveOutput { a_km_h: acc_km_h } =
-                            <DeriveState as grust::core::Component>::step(
-                                &mut self.derive,
-                                DeriveInput {
-                                    v_km_h: self.context.speed_km_h_bis.get(),
-                                    t: x,
-                                },
-                            );
-                        self.context.acc_km_h.set(acc_km_h);
-                    }
-                    if timeout_pedest_ref.is_some()
-                        || self.context.speed_km_h_bis.is_new()
-                        || self.context.acc_km_h.is_new()
-                    {
-                        let BrakingStateOutput { state: brakes } =
-                            <BrakingStateState as grust::core::Component>::step(
-                                &mut self.braking_state,
-                                BrakingStateInput {
-                                    pedest: None,
-                                    timeout_pedest: *timeout_pedest_ref,
-                                    speed: self.context.speed_km_h_bis.get(),
-                                    acc: self.context.acc_km_h.get(),
-                                },
-                            );
-                        self.context.brakes.set(brakes);
-                    }
-                    if self.context.brakes.is_new() {
-                        self.send_output(
-                            O::Brakes(self.context.brakes.get(), _timeout_timeout_pedest_instant),
-                            _timeout_timeout_pedest_instant,
-                        )
-                        .await?;
-                    }
-                } else {
-                    let unique = self
-                        .input_store
-                        .timeout_timeout_pedest
-                        .replace(((), _timeout_timeout_pedest_instant));
-                    assert ! (unique . is_none () , "flow `timeout_timeout_pedest` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -671,6 +667,65 @@ pub mod runtime {
                 }
                 Ok(())
             }
+            pub async fn handle_timeout_timeout_pedest(
+                &mut self,
+                _timeout_timeout_pedest_instant: std::time::Instant,
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
+                if self.delayed {
+                    self.reset_time_constraints(_timeout_timeout_pedest_instant)
+                        .await?;
+                    self.context.reset();
+                    let timeout_pedest_ref = &mut None;
+                    *timeout_pedest_ref = Some(());
+                    self.send_timer(T::TimeoutTimeoutPedest, _timeout_timeout_pedest_instant)
+                        .await?;
+                    let x = (_timeout_timeout_pedest_instant
+                        .duration_since(self.begin)
+                        .as_millis()) as f64;
+                    self.context.x.set(x);
+                    if self.context.speed_km_h_bis.is_new() || self.context.x.is_new() {
+                        let DeriveOutput { a_km_h: acc_km_h } =
+                            <DeriveState as grust::core::Component>::step(
+                                &mut self.derive,
+                                DeriveInput {
+                                    v_km_h: self.context.speed_km_h_bis.get(),
+                                    t: x,
+                                },
+                            );
+                        self.context.acc_km_h.set(acc_km_h);
+                    }
+                    if timeout_pedest_ref.is_some()
+                        || self.context.speed_km_h_bis.is_new()
+                        || self.context.acc_km_h.is_new()
+                    {
+                        let BrakingStateOutput { state: brakes } =
+                            <BrakingStateState as grust::core::Component>::step(
+                                &mut self.braking_state,
+                                BrakingStateInput {
+                                    pedest: None,
+                                    timeout_pedest: *timeout_pedest_ref,
+                                    speed: self.context.speed_km_h_bis.get(),
+                                    acc: self.context.acc_km_h.get(),
+                                },
+                            );
+                        self.context.brakes.set(brakes);
+                    }
+                    if self.context.brakes.is_new() {
+                        self.send_output(
+                            O::Brakes(self.context.brakes.get(), _timeout_timeout_pedest_instant),
+                            _timeout_timeout_pedest_instant,
+                        )
+                        .await?;
+                    }
+                } else {
+                    let unique = self
+                        .input_store
+                        .timeout_timeout_pedest
+                        .replace(((), _timeout_timeout_pedest_instant));
+                    assert ! (unique . is_none () , "flow `timeout_timeout_pedest` changes twice within one minimal delay of the service, consider reducing this delay");
+                }
+                Ok(())
+            }
             pub async fn handle_delay_aeb(
                 &mut self,
                 _grust_reserved_instant: std::time::Instant,
@@ -678,18 +733,18 @@ pub mod runtime {
                 self.context.reset();
                 if self.input_store.not_empty() {
                     self.reset_time_constraints(_grust_reserved_instant).await?;
+                    let timeout_timeout_pedest_ref = &mut None;
                     let pedestrian_r_ref = &mut None;
                     let pedestrian_ref = &mut None;
-                    let timeout_pedest_ref = &mut None;
                     let speed_km_h_ref = &mut None;
-                    let timeout_timeout_pedest_ref = &mut None;
+                    let timeout_pedest_ref = &mut None;
                     let pedestrian_l_ref = &mut None;
-                    let _pedestrian_r_input_store = self.input_store.pedestrian_r.take();
-                    *pedestrian_r_ref = _pedestrian_r_input_store.map(|(x, _)| x);
                     let _timeout_timeout_pedest_input_store =
                         self.input_store.timeout_timeout_pedest.take();
                     *timeout_timeout_pedest_ref =
                         _timeout_timeout_pedest_input_store.map(|(x, _)| x);
+                    let _pedestrian_r_input_store = self.input_store.pedestrian_r.take();
+                    *pedestrian_r_ref = _pedestrian_r_input_store.map(|(x, _)| x);
                     let _pedestrian_l_input_store = self.input_store.pedestrian_l.take();
                     *pedestrian_l_ref = _pedestrian_l_input_store.map(|(x, _)| x);
                     if pedestrian_l_ref.is_some() {
@@ -774,55 +829,6 @@ pub mod runtime {
                     .send((T::DelayAeb, _grust_reserved_instant))
                     .await?;
                 self.delayed = false;
-                Ok(())
-            }
-            pub async fn handle_timeout_aeb(
-                &mut self,
-                _timeout_aeb_instant: std::time::Instant,
-            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
-                self.reset_time_constraints(_timeout_aeb_instant).await?;
-                self.context.reset();
-                let x = (_timeout_aeb_instant.duration_since(self.begin).as_millis()) as f64;
-                self.context.x.set(x);
-                if self.context.speed_km_h_bis.is_new() || self.context.x.is_new() {
-                    let DeriveOutput { a_km_h: acc_km_h } =
-                        <DeriveState as grust::core::Component>::step(
-                            &mut self.derive,
-                            DeriveInput {
-                                v_km_h: self.context.speed_km_h_bis.get(),
-                                t: x,
-                            },
-                        );
-                    self.context.acc_km_h.set(acc_km_h);
-                }
-                if self.context.speed_km_h_bis.is_new() || self.context.acc_km_h.is_new() {
-                    let BrakingStateOutput { state: brakes } =
-                        <BrakingStateState as grust::core::Component>::step(
-                            &mut self.braking_state,
-                            BrakingStateInput {
-                                pedest: None,
-                                timeout_pedest: None,
-                                speed: self.context.speed_km_h_bis.get(),
-                                acc: self.context.acc_km_h.get(),
-                            },
-                        );
-                    self.context.brakes.set(brakes);
-                }
-                self.send_output(
-                    O::Brakes(self.context.brakes.get(), _timeout_aeb_instant),
-                    _timeout_aeb_instant,
-                )
-                .await?;
-                Ok(())
-            }
-            #[inline]
-            pub async fn reset_service_timeout(
-                &mut self,
-                _timeout_aeb_instant: std::time::Instant,
-            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
-                self.timer
-                    .send((T::TimeoutAeb, _timeout_aeb_instant))
-                    .await?;
                 Ok(())
             }
             #[inline]

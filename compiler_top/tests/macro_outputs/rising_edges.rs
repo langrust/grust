@@ -32,7 +32,10 @@ impl grust::core::Component for RisingEdgesState {
     fn step(&mut self, input: RisingEdgesInput) -> RisingEdgesOutput {
         let c = match (input.a) {
             (Some(a)) => a,
-            (_) => self.last_c,
+            (_) => {
+                let c = self.last_c;
+                c
+            }
         };
         let x_3 = input.v < 40i64;
         let x_2 = input.v > 50i64;
@@ -49,13 +52,20 @@ impl grust::core::Component for RisingEdgesState {
             }
             (_, Some(e)) if e < 20i64 => {
                 let x = Some(2i64);
-                (self.last_z, None, x)
+                let z = self.last_z;
+                (z, None, x)
             }
-            (_, _) => (self.last_z, None, None),
+            (_, _) => {
+                let z = self.last_z;
+                (z, None, None)
+            }
         };
         let d = match (y) {
             (Some(_)) => 0.1f64,
-            (_) => self.last_d,
+            (_) => {
+                let d = self.last_d;
+                d
+            }
         };
         let x_1 = input.v > 50i64;
         let w = match () {
