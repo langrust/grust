@@ -2,7 +2,7 @@
 use grust::grust;
 
 grust! {
-    #![mode = demo, dump = "grust/out/causality_failure.rs"]
+    #![mode = demo, dump = "grust/out/when_causality.rs"]
 
     component match_ok(input: int) -> (sampled: int) {
         match input {
@@ -11,7 +11,7 @@ grust! {
         }
     }
 
-    component when_bad(input: int?, ck: float?) -> (sampled: int?) {
+    component when_now_ok(input: int?, ck: float?) -> (sampled: int?) {
         when {
             init    => { mem = 0; },
             input?  => { let mem: int = input; }
